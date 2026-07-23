@@ -7,11 +7,7 @@ from app.models.kubernetes import KubernetesConnection
 
 
 def get_kubernetes_connection_by_cluster_id(cluster_id: str) -> KubernetesConnection | None:
-    return (
-        KubernetesConnection.query
-        .filter_by(cluster_id=cluster_id)
-        .first()
-    )
+    return KubernetesConnection.query.filter_by(cluster_id=cluster_id).first()
 
 
 def get_cluster(cluster_id: str) -> Cluster | None:
@@ -29,9 +25,4 @@ def provider_identity_exists(provider_type: str, name: str) -> bool:
     normalized = str(name or '').strip()
     if not normalized:
         return False
-    return (
-        IntegrationInstance.query
-        .filter_by(provider_type=provider_type, name=normalized)
-        .first()
-        is not None
-    )
+    return IntegrationInstance.query.filter_by(provider_type=provider_type, name=normalized).first() is not None

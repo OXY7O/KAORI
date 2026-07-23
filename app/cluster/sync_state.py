@@ -118,8 +118,7 @@ def acquire_cluster_sync_lock(
 
 def get_active_cluster_sync_task_id() -> str | None:
     job = (
-        JobExecution.query
-        .filter(
+        JobExecution.query.filter(
             JobExecution.operation == 'inventory_sync_all',
             JobExecution.status.in_(ACTIVE_JOB_STATUSES),
         )

@@ -15,4 +15,6 @@ CPU_WORKER_CAPACITY_QUERY = get_query_expression('analytics.forecast.queries.CPU
 MEMORY_WORKER_CAPACITY_QUERY = get_query_expression('analytics.forecast.queries.MEMORY_WORKER_CAPACITY_QUERY')
 POD_WORKER_CAPACITY_QUERY = get_query_expression('analytics.forecast.queries.POD_WORKER_CAPACITY_QUERY')
 STORAGE_CAPACITY_QUERY = get_query_expression('analytics.forecast.queries.STORAGE_CAPACITY_QUERY')
-STORAGE_CAPACITY_BY_NAMESPACE_QUERY = get_query_expression('analytics.forecast.queries.STORAGE_CAPACITY_BY_NAMESPACE_QUERY')
+STORAGE_CAPACITY_BY_NAMESPACE_QUERY = get_query_expression(
+    'analytics.forecast.queries.STORAGE_CAPACITY_BY_NAMESPACE_QUERY'
+)

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Collection, Mapping
 from datetime import UTC, datetime
-from typing import Any, Collection, Mapping
+from typing import Any
 
 from sqlalchemy.exc import IntegrityError
 
@@ -11,7 +12,6 @@ from app.intelligence.decision import (
     DecisionError,
     DecisionPolicy,
     DecisionSnapshot,
-    ExecutionAuthorization,
     PolicyOutcome,
     authorize_execution,
     issue_execution_token,
@@ -65,6 +65,18 @@ def persist_decision(
     record.rule_key = snapshot.rule_key
     record.rule_version = snapshot.rule_version
     record.knowledge_version = snapshot.knowledge_version
+    record.runbook_key = snapshot.runbook_key
+    record.runbook_version = snapshot.runbook_version
+    record.runbook_content_hash = snapshot.runbook_content_hash
+    if snapshot.runbook_revision_id is not None:
+        from app.models.knowledge import KnowledgeRunbookRevision
+
+        revision = KnowledgeRunbookRevision.query.filter_by(public_id=snapshot.runbook_revision_id).first()
+        if revision is None or revision.publication_status != 'published':
+            raise DecisionWorkflowError('Decision requires an active published runbook revision.')
+        if revision.content_hash != snapshot.runbook_content_hash:
+            raise DecisionWorkflowError('Runbook revision content hash does not match decision snapshot.')
+        record.runbook_revision_id = revision.id
     record.action_key = snapshot.action_key
     record.cluster_id = snapshot.cluster_id
     record.namespace = snapshot.namespace
@@ -244,10 +256,14 @@ def consume_execution_token(
     except DecisionError as exc:
         raise DecisionWorkflowError(str(exc)) from exc
 
-    journal = IntelligenceExecutionJournal.query.filter_by(
-        decision_id=record.id,
-        token_nonce_hash=_nonce_hash(authorization.nonce),
-    ).with_for_update().first()
+    journal = (
+        IntelligenceExecutionJournal.query.filter_by(
+            decision_id=record.id,
+            token_nonce_hash=_nonce_hash(authorization.nonce),
+        )
+        .with_for_update()
+        .first()
+    )
     if journal is None:
         raise DecisionWorkflowError('Execution token was not issued by the persisted workflow.')
     if journal.status != 'authorized' or journal.consumed_at is not None:
@@ -279,6 +295,10 @@ def snapshot_from_record(record: IntelligenceDecision) -> DecisionSnapshot:
             rule_key=record.rule_key,
             rule_version=record.rule_version,
             knowledge_version=record.knowledge_version,
+            runbook_key=record.runbook_key,
+            runbook_revision_id=record.runbook_revision.public_id if record.runbook_revision else None,
+            runbook_version=record.runbook_version,
+            runbook_content_hash=record.runbook_content_hash,
             action_key=record.action_key,
             cluster_id=record.cluster_id,
             namespace=record.namespace,
@@ -308,7 +328,6 @@ def _assert_active(record: IntelligenceDecision, now: datetime) -> None:
         raise DecisionWorkflowError('Decision has expired.')
 
 
-
 def _aware(value: datetime) -> datetime:
     return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
 
@@ -318,7 +337,11 @@ def _nonce_hash(nonce: str) -> str:
 
 
 def _audit(
-    *, actor_user_id: int | None, target_id: str, action: str, summary: str,
+    *,
+    actor_user_id: int | None,
+    target_id: str,
+    action: str,
+    summary: str,
     metadata: dict[str, Any] | None,
 ) -> None:
     event = AuditEvent()

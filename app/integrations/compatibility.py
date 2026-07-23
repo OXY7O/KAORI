@@ -55,17 +55,68 @@ PROFILES: dict[str, tuple[CompatibilityProfile, ...]] = {
         ),
     ),
     'prometheus': (
-        CompatibilityProfile('prometheus-http-v2', 'prometheus', '>=2.40,<3.0', 'legacy_supported', ('instant_query', 'range_query'), 'Prometheus HTTP API profile for runtime major 2.', 'promql-kubernetes-v1'),
-        CompatibilityProfile('prometheus-http-v3', 'prometheus', '>=3.0,<4.0', 'current', ('instant_query', 'range_query'), 'Prometheus HTTP API profile for runtime major 3.', 'promql-kubernetes-v1'),
+        CompatibilityProfile(
+            'prometheus-http-v2',
+            'prometheus',
+            '>=2.40,<3.0',
+            'legacy_supported',
+            ('instant_query', 'range_query'),
+            'Prometheus HTTP API profile for runtime major 2.',
+            'promql-kubernetes-v1',
+        ),
+        CompatibilityProfile(
+            'prometheus-http-v3',
+            'prometheus',
+            '>=3.0,<4.0',
+            'current',
+            ('instant_query', 'range_query'),
+            'Prometheus HTTP API profile for runtime major 3.',
+            'promql-kubernetes-v1',
+        ),
     ),
     'alertmanager': (
-        CompatibilityProfile('alertmanager-api-v2-legacy', 'alertmanager', '>=0.25,<0.27', 'legacy', ('status_v2', 'alerts_v2', 'silences_v2'), 'Legacy runtime line using Alertmanager API v2 only.'),
-        CompatibilityProfile('alertmanager-api-v2-current', 'alertmanager', '>=0.27,<0.34', 'current', ('status_v2', 'alerts_v2', 'silences_v2'), 'Current Alertmanager API v2 profile.'),
+        CompatibilityProfile(
+            'alertmanager-api-v2-legacy',
+            'alertmanager',
+            '>=0.25,<0.27',
+            'legacy',
+            ('status_v2', 'alerts_v2', 'silences_v2'),
+            'Legacy runtime line using Alertmanager API v2 only.',
+        ),
+        CompatibilityProfile(
+            'alertmanager-api-v2-current',
+            'alertmanager',
+            '>=0.27,<0.34',
+            'current',
+            ('status_v2', 'alerts_v2', 'silences_v2'),
+            'Current Alertmanager API v2 profile.',
+        ),
     ),
     'thanos': (
-        CompatibilityProfile('thanos-query-v0-39', 'thanos', '>=0.39,<0.40', 'supported', ('prometheus_api_v1', 'instant_query', 'range_query'), 'Supported Thanos Query 0.39 profile.'),
-        CompatibilityProfile('thanos-query-v0-40', 'thanos', '>=0.40,<0.41', 'supported', ('prometheus_api_v1', 'instant_query', 'range_query'), 'Supported Thanos Query 0.40 profile.'),
-        CompatibilityProfile('thanos-query-v0-41', 'thanos', '>=0.41,<0.42', 'current', ('prometheus_api_v1', 'instant_query', 'range_query'), 'Current Thanos Query profile.'),
+        CompatibilityProfile(
+            'thanos-query-v0-39',
+            'thanos',
+            '>=0.39,<0.40',
+            'supported',
+            ('prometheus_api_v1', 'instant_query', 'range_query'),
+            'Supported Thanos Query 0.39 profile.',
+        ),
+        CompatibilityProfile(
+            'thanos-query-v0-40',
+            'thanos',
+            '>=0.40,<0.41',
+            'supported',
+            ('prometheus_api_v1', 'instant_query', 'range_query'),
+            'Supported Thanos Query 0.40 profile.',
+        ),
+        CompatibilityProfile(
+            'thanos-query-v0-41',
+            'thanos',
+            '>=0.41,<0.42',
+            'current',
+            ('prometheus_api_v1', 'instant_query', 'range_query'),
+            'Current Thanos Query profile.',
+        ),
     ),
 }
 
@@ -102,22 +153,50 @@ def kubernetes_lifecycle_policy(version: str | None) -> dict[str, str]:
     }
 
 
-
 def evaluate_compatibility(product: str, version: str | None, capabilities: Iterable[str] = ()) -> CompatibilityResult:
     product_key = product.strip().lower()
     raw = (version or '').strip() or None
     detected = normalize_runtime_version(raw) if raw else None
     if not detected or detected.lower() == 'unknown':
-        return CompatibilityResult('version_unknown', 'blocked', None, 'unknown', 'The endpoint responded, but KAORI could not determine a supported runtime version.', detected)
+        return CompatibilityResult(
+            'version_unknown',
+            'blocked',
+            None,
+            'unknown',
+            'The endpoint responded, but KAORI could not determine a supported runtime version.',
+            detected,
+        )
     profile = next((item for item in PROFILES.get(product_key, ()) if item.matches(detected)), None)
     if profile is None:
-        return CompatibilityResult('unsupported_version', 'blocked', None, 'blocked', f'{product.title()} {detected} has no KAORI compatibility profile. Integration activation is blocked.', detected)
+        return CompatibilityResult(
+            'unsupported_version',
+            'blocked',
+            None,
+            'blocked',
+            f'{product.title()} {detected} has no KAORI compatibility profile. Integration activation is blocked.',
+            detected,
+        )
     observed = set(capabilities)
     missing = tuple(item for item in profile.required_capabilities if item not in observed)
     if missing:
-        return CompatibilityResult('capability_mismatch', 'blocked', profile.key, profile.support_level, 'Required API capabilities are missing: ' + ', '.join(missing), detected, missing)
+        return CompatibilityResult(
+            'capability_mismatch',
+            'blocked',
+            profile.key,
+            profile.support_level,
+            'Required API capabilities are missing: ' + ', '.join(missing),
+            detected,
+            missing,
+        )
     warning = profile.support_level in {'legacy', 'deprecated', 'legacy_supported'}
-    return CompatibilityResult('compatible_with_warnings' if warning else 'compatible', 'degraded' if warning else 'ready', profile.key, profile.support_level, profile.notes, detected)
+    return CompatibilityResult(
+        'compatible_with_warnings' if warning else 'compatible',
+        'degraded' if warning else 'ready',
+        profile.key,
+        profile.support_level,
+        profile.notes,
+        detected,
+    )
 
 
 def normalize_runtime_version(value: str) -> str:

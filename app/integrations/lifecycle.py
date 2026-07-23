@@ -14,9 +14,7 @@ def ensure_provider_operational(provider_record: Any, *, provider_type: str) -> 
     lifecycle state is authoritative even when a task was queued while active.
     """
     if not bool(getattr(provider_record, 'enabled', False)):
-        raise RuntimeError(
-            f'{provider_type.title()} operation was canceled because the provider instance is disabled.'
-        )
+        raise RuntimeError(f'{provider_type.title()} operation was canceled because the provider instance is disabled.')
     canonical = getattr(provider_record, 'integration_instance', None)
     if canonical is None:
         raise RuntimeError(
@@ -52,15 +50,15 @@ def ensure_canonical_instance(provider_record: Any, *, provider_type: str) -> In
         db.session.add(canonical)
 
     if canonical.provider_type != provider_type:
-        raise ValueError(
-            f'Provider identity mismatch: expected {provider_type}, found {canonical.provider_type}.'
-        )
+        raise ValueError(f'Provider identity mismatch: expected {provider_type}, found {canonical.provider_type}.')
 
     metadata = dict(canonical.metadata_json or {})
-    metadata.update({
-        'provider_record_id': getattr(provider_record, 'id', None),
-        'endpoint_product': getattr(provider_record, 'endpoint_product', None),
-    })
+    metadata.update(
+        {
+            'provider_record_id': getattr(provider_record, 'id', None),
+            'endpoint_product': getattr(provider_record, 'endpoint_product', None),
+        }
+    )
     canonical.metadata_json = metadata
     return canonical
 

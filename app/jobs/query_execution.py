@@ -73,9 +73,7 @@ def external_query_slot(
         now_epoch=int(time()),
     )
     if not acquired:
-        raise QueryResourceBusy(
-            f'External query budget is busy for resource group {plan.resource_group!r}.'
-        )
+        raise QueryResourceBusy(f'External query budget is busy for resource group {plan.resource_group!r}.')
     try:
         yield
     finally:
@@ -98,9 +96,7 @@ def checkpoint_query_chunk(
         now_epoch=int(time()),
     )
     if not renewed:
-        raise QueryResourceBusy(
-            f'External query budget was lost for resource group {plan.resource_group!r}.'
-        )
+        raise QueryResourceBusy(f'External query budget was lost for resource group {plan.resource_group!r}.')
     current = chunk.sequence if completed else chunk.sequence - 1
     phase = 'Completed' if completed else 'Querying'
     job.checkpoint(

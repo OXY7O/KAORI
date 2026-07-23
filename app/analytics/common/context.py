@@ -33,7 +33,8 @@ def build_analysis_utilization_context(
     check_prometheus_connection: bool = True,
 ) -> tuple[list[Cluster], Cluster | None, UtilizationService | None, dict[str, Any]]:
     clusters = Cluster.query.order_by(
-        Cluster.created_at.asc(), Cluster.id.asc(),
+        Cluster.created_at.asc(),
+        Cluster.id.asc(),
     ).all()
 
     cluster_id = get_query_value(

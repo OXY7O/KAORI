@@ -40,7 +40,9 @@ WORKER_CPU_USAGE_QUERY = get_query_expression('analytics.capacity.queries.WORKER
 WORKER_MEMORY_ALLOCATABLE_QUERY = get_query_expression('analytics.capacity.queries.WORKER_MEMORY_ALLOCATABLE_QUERY')
 WORKER_MEMORY_LIMITS_TOTAL_QUERY = get_query_expression('analytics.capacity.queries.WORKER_MEMORY_LIMITS_TOTAL_QUERY')
 WORKER_MEMORY_PEAK_QUERY_TEMPLATE = get_query_expression('analytics.capacity.queries.WORKER_MEMORY_PEAK_QUERY_TEMPLATE')
-WORKER_MEMORY_REQUESTS_TOTAL_QUERY = get_query_expression('analytics.capacity.queries.WORKER_MEMORY_REQUESTS_TOTAL_QUERY')
+WORKER_MEMORY_REQUESTS_TOTAL_QUERY = get_query_expression(
+    'analytics.capacity.queries.WORKER_MEMORY_REQUESTS_TOTAL_QUERY'
+)
 WORKER_MEMORY_USAGE_QUERY = get_query_expression('analytics.capacity.queries.WORKER_MEMORY_USAGE_QUERY')
 WORKER_POD_ALLOCATABLE_QUERY = get_query_expression('analytics.capacity.queries.WORKER_POD_ALLOCATABLE_QUERY')
 
@@ -68,7 +70,8 @@ def get_capacity_page_context(
     query_args: Mapping[str, Any],
 ) -> dict[str, Any]:
     clusters = Cluster.query.order_by(
-        Cluster.created_at.asc(), Cluster.id.asc(),
+        Cluster.created_at.asc(),
+        Cluster.id.asc(),
     ).all()
 
     selected_time_range = get_selected_time_range(
@@ -172,10 +175,7 @@ def get_capacity_page_context(
             requirements = consumer.requirements(CapacityService.REQUIRED_CAPABILITIES)
             if not requirements.ok:
                 missing = list((requirements.payload or {}).get('missing_capabilities') or [])
-                labels = [
-                    capability_definition(key).label if capability_definition(key) else key
-                    for key in missing
-                ]
+                labels = [capability_definition(key).label if capability_definition(key) else key for key in missing]
                 dependency_blocker = prometheus_capability_blocker(
                     cluster,
                     feature_label='Capacity Analytics',

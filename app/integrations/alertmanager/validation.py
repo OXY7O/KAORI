@@ -33,7 +33,15 @@ def validate_source(source: AlertmanagerInstance, *, source_label: str) -> Valid
     steps: list[ValidationStep] = []
     try:
         connection = client.test_connection()
-        steps.append(ValidationStep('status_v2', 'Status API', 'success', 'Alertmanager status and build information are readable.', int(connection.get('response_time_ms') or 0)))
+        steps.append(
+            ValidationStep(
+                'status_v2',
+                'Status API',
+                'success',
+                'Alertmanager status and build information are readable.',
+                int(connection.get('response_time_ms') or 0),
+            )
+        )
     except AlertmanagerError as exc:
         return _failure(source, exc, source_label=source_label, unexpected=False)
     except Exception as exc:  # pragma: no cover
@@ -80,10 +88,23 @@ def validate_source(source: AlertmanagerInstance, *, source_label: str) -> Valid
     source.readiness_status = compatibility.readiness
     source.validation_message = message
     source.last_validated_at = datetime.now(UTC)
-    mark_status(source, status='connected' if compatibility.readiness != 'blocked' else 'incompatible', error=None if compatibility.readiness != 'blocked' else message, response_time_ms=int(connection.get('response_time_ms') or 0), commit=False)
+    mark_status(
+        source,
+        status='connected' if compatibility.readiness != 'blocked' else 'incompatible',
+        error=None if compatibility.readiness != 'blocked' else message,
+        response_time_ms=int(connection.get('response_time_ms') or 0),
+        commit=False,
+    )
     db.session.commit()
 
-    steps.append(ValidationStep('compatibility', 'Compatibility Profile', 'success' if compatibility.readiness != 'blocked' else 'failed', f'{capability_profile}: {message}'))
+    steps.append(
+        ValidationStep(
+            'compatibility',
+            'Compatibility Profile',
+            'success' if compatibility.readiness != 'blocked' else 'failed',
+            f'{capability_profile}: {message}',
+        )
+    )
     return ValidationResult(
         connected=compatibility.readiness != 'blocked',
         label='Alertmanager Ready' if compatibility.readiness == 'ready' else 'Alertmanager Requires Attention',
@@ -103,7 +124,13 @@ def validate_source(source: AlertmanagerInstance, *, source_label: str) -> Valid
 
 
 def _failure(source: AlertmanagerInstance, exc: Exception, *, source_label: str, unexpected: bool) -> ValidationResult:
-    failure = describe_integration_failure(exc, service_name='Alertmanager', endpoint=source.endpoint, request_path='/api/v2/status', timeout_seconds=min(max(int(source.timeout or 5), 1), 30))
+    failure = describe_integration_failure(
+        exc,
+        service_name='Alertmanager',
+        endpoint=source.endpoint,
+        request_path='/api/v2/status',
+        timeout_seconds=min(max(int(source.timeout or 5), 1), 30),
+    )
     if unexpected:
         logger.exception('Unexpected Alertmanager validation failure for %s.', source_label)
         status, label = 'error', 'Alertmanager Error'

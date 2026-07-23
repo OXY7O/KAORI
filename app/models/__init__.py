@@ -8,6 +8,7 @@ from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.intelligence import (
     IntelligenceDecision,
     IntelligenceDecisionApproval,
+    IntelligenceDecisionCandidate,
     IntelligenceExecutionJournal,
 )
 from app.models.inventory import (
@@ -23,6 +24,7 @@ from app.models.inventory import (
     WorkloadInventory,
 )
 from app.models.job import JobExecution, JobExecutionSubscriber
+from app.models.knowledge import KnowledgeRunbook, KnowledgeRunbookAlertBinding, KnowledgeRunbookRevision
 from app.models.kubernetes import KubernetesConnection
 from app.models.lifecycle import DataLifecyclePolicy
 from app.models.notification import Notification
@@ -45,7 +47,11 @@ __all__ = [
     'IntegrationBinding',
     'IntelligenceDecision',
     'IntelligenceDecisionApproval',
+    'IntelligenceDecisionCandidate',
     'IntelligenceExecutionJournal',
+    'KnowledgeRunbook',
+    'KnowledgeRunbookRevision',
+    'KnowledgeRunbookAlertBinding',
     'KubernetesConnection',
     'ExternalIdentityLink',
     'ClusterStatus',

@@ -97,11 +97,7 @@ def test_prometheus_form_connection(
     endpoint = (form.endpoint.data or '').strip()
     auth_type = form.auth_type.data or 'none'
     detection_mode = form.version_detection_mode.data or 'automatic'
-    source_major = (
-        form.source_prometheus_major.data or None
-        if detection_mode == 'manual'
-        else None
-    )
+    source_major = form.source_prometheus_major.data or None if detection_mode == 'manual' else None
     password = form.password.data or None
     bearer_token = form.bearer_token.data or None
     if existing_instance is not None and auth_type == existing_instance.auth_type:
@@ -176,8 +172,7 @@ def save_prometheus_instance(
         raise PrometheusError('Endpoint must start with http:// or https://')
 
     duplicate = (
-        PrometheusInstance.query
-        .join(PrometheusInstance.integration_instance)
+        PrometheusInstance.query.join(PrometheusInstance.integration_instance)
         .filter(
             IntegrationInstance.provider_type == 'prometheus',
             IntegrationInstance.name == (form.name.data or '').strip(),
@@ -201,7 +196,9 @@ def save_prometheus_instance(
     instance.enabled = bool(form.enabled.data)
     instance.version_detection_mode = form.version_detection_mode.data or 'automatic'
     instance.endpoint_product = 'thanos' if instance.version_detection_mode == 'manual' else 'prometheus'
-    instance.source_prometheus_major = (form.source_prometheus_major.data or None) if instance.version_detection_mode == 'manual' else None
+    instance.source_prometheus_major = (
+        (form.source_prometheus_major.data or None) if instance.version_detection_mode == 'manual' else None
+    )
 
     if instance.auth_type == 'basic':
         instance.username = (form.username.data or '').strip() or None

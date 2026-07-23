@@ -274,5 +274,3 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
         'runtime_display': runtime.split('://')[0] if '://' in runtime else runtime,
         'collected_at': node.collected_at,
     }
-
-

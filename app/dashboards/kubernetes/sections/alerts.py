@@ -15,6 +15,7 @@ def alerts_snapshot_with_message(
     snapshot.message = message
     return snapshot
 
+
 def build_alerts_snapshot(*, live_cluster: Any | None) -> AlertsSnapshot:
     if live_cluster is None:
         return alerts_snapshot_with_message(

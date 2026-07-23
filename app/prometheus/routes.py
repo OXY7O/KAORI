@@ -43,13 +43,11 @@ from app.rbac.decorators import permission_required
 logger = logging.getLogger(__name__)
 
 
-
 prometheus_bp = Blueprint(
     'prometheus',
     __name__,
     url_prefix='/integrations/prometheus',
 )
-
 
 
 def _instance_or_404(instance_id: int) -> PrometheusInstance:
@@ -103,21 +101,13 @@ def _instance_detail_context(
         operation='full_validation',
         instance_id=instance.id,
     )
-    context['validation_job'] = (
-        build_validation_snapshot(validation_task_id)
-        if validation_task_id
-        else None
-    )
+    context['validation_job'] = build_validation_snapshot(validation_task_id) if validation_task_id else None
     runtime_task_id = get_active_validation_task_id(
         provider_type='prometheus',
         operation='runtime_refresh',
         instance_id=instance.id,
     )
-    context['runtime_refresh_job'] = (
-        build_validation_snapshot(runtime_task_id)
-        if runtime_task_id
-        else None
-    )
+    context['runtime_refresh_job'] = build_validation_snapshot(runtime_task_id) if runtime_task_id else None
     binding_job = None
     for binding in context.get('bindings', []):
         task_id = get_active_validation_task_id(
@@ -131,7 +121,6 @@ def _instance_detail_context(
             break
     context['binding_validation_job'] = binding_job
     return context
-
 
 
 @prometheus_bp.route('/instances/new', methods=['GET', 'POST'])
@@ -334,9 +323,9 @@ def test_new_instance_connection() -> ResponseReturnValue:
                 title='Prometheus connection verified',
                 message='KAORI reached the submitted Prometheus-compatible endpoint.',
                 detail=(
-                    f"{str(result.get('endpoint_product') or 'Prometheus').title()} "
-                    f"{result.get('version') or 'unknown'} responded in "
-                    f"{result.get('response_time_ms') or 0} ms. Register the connection, then run Full Validation."
+                    f'{str(result.get("endpoint_product") or "Prometheus").title()} '
+                    f'{result.get("version") or "unknown"} responded in '
+                    f'{result.get("response_time_ms") or 0} ms. Register the connection, then run Full Validation.'
                 ),
                 action_url=url_for('prometheus.new_instance', cluster_id=cluster_id or None),
                 action_label='Review Prometheus form',
@@ -382,9 +371,7 @@ def test_new_instance_connection() -> ResponseReturnValue:
             )
 
     registration_proof = (
-        issue_registration_proof(form=form, user_id=int(current_user.id))
-        if result.get('connected')
-        else ''
+        issue_registration_proof(form=form, user_id=int(current_user.id)) if result.get('connected') else ''
     )
     response = make_response(
         render_template(
@@ -445,11 +432,13 @@ def test_instance_configuration(instance_id: int) -> ResponseReturnValue:
                 else f'KAORI could not verify the submitted settings for {instance.name}.'
             ),
             detail=(
-                f"{str(result.get('endpoint_product') or 'Prometheus').title()} "
-                f"{result.get('version') or 'unknown'} responded in {result.get('response_time_ms') or 0} ms. "
+                f'{str(result.get("endpoint_product") or "Prometheus").title()} '
+                f'{result.get("version") or "unknown"} responded in {result.get("response_time_ms") or 0} ms. '
                 'Save the configuration, then run Full Validation.'
                 if connected
-                else result.get('error') or result.get('reason') or 'Review endpoint, authentication, TLS, and network reachability.'
+                else result.get('error')
+                or result.get('reason')
+                or 'Review endpoint, authentication, TLS, and network reachability.'
             ),
             action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#configuration',
             action_label='Review Prometheus configuration',
@@ -471,7 +460,6 @@ def test_instance_configuration(instance_id: int) -> ResponseReturnValue:
         connection_feedback=feedback,
         notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
     )
-
 
 
 @prometheus_bp.route('/instances/<int:instance_id>', methods=['GET', 'POST'])
@@ -546,6 +534,7 @@ def instance_detail(instance_id: int) -> ResponseReturnValue:
     context['form'] = form
     return render_template('prometheus/instance_detail.html', **context)
 
+
 @prometheus_bp.post('/instances/<int:instance_id>/bindings')
 @permission_required('settings.manage_integrations')
 def add_instance_binding(instance_id: int) -> ResponseReturnValue:
@@ -578,7 +567,7 @@ def add_instance_binding(instance_id: int) -> ResponseReturnValue:
             event_type='prometheus_binding_create_rejected',
             status='error',
             title='Prometheus binding not saved',
-            message=f"KAORI could not bind {instance.name} to {cluster.name if cluster else 'the selected scope'}.",
+            message=f'KAORI could not bind {instance.name} to {cluster.name if cluster else "the selected scope"}.',
             detail=error,
             action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope',
             action_label='Review Prometheus scope',
@@ -601,7 +590,7 @@ def add_instance_binding(instance_id: int) -> ResponseReturnValue:
             event_type='prometheus_binding_create_failed',
             status='error',
             title='Prometheus binding not saved',
-            message=f"KAORI could not bind {instance.name} to {cluster.name if cluster else 'the selected scope'}.",
+            message=f'KAORI could not bind {instance.name} to {cluster.name if cluster else "the selected scope"}.',
             detail=error,
             action_url=url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope',
             action_label='Review Prometheus scope',
@@ -716,7 +705,9 @@ def update_instance_binding_selector(instance_id: int, binding_id: int) -> Respo
         )
     if is_htmx:
         return _render_instance_partial(
-            'prometheus/partials/_detail_scope.html', instance, operation_feedback=feedback,
+            'prometheus/partials/_detail_scope.html',
+            instance,
+            operation_feedback=feedback,
         )
     return redirect(url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope')
 
@@ -738,9 +729,13 @@ def validate_instance_binding(instance_id: int, binding_id: int) -> ResponseRetu
         )
         feedback = record_operational_activity(
             user_id=int(current_user.id),
-            event_type='prometheus_binding_validation_queued' if created else 'prometheus_binding_validation_already_running',
+            event_type='prometheus_binding_validation_queued'
+            if created
+            else 'prometheus_binding_validation_already_running',
             status='info' if created else 'warning',
-            title='Prometheus binding validation queued' if created else 'Prometheus binding validation already running',
+            title='Prometheus binding validation queued'
+            if created
+            else 'Prometheus binding validation already running',
             message=(
                 'KAORI queued the metrics identity validation.'
                 if created
@@ -871,6 +866,7 @@ def delete_instance_binding(instance_id: int, binding_id: int) -> ResponseReturn
         )
     return redirect(url_for('prometheus.instance_detail', instance_id=instance.id) + '#scope')
 
+
 @prometheus_bp.post(
     '/instances/<int:instance_id>/delete',
     endpoint='delete_instance',
@@ -901,7 +897,9 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
             queue_feedback=not is_htmx,
         )
         if is_htmx:
-            return _render_instance_partial('prometheus/partials/_detail_scope.html', instance, operation_feedback=feedback)
+            return _render_instance_partial(
+                'prometheus/partials/_detail_scope.html', instance, operation_feedback=feedback
+            )
         return redirect(url_for('prometheus.instance_detail', instance_id=instance_id) + '#scope')
     except ValueError as exc:
         feedback = record_operational_activity(
@@ -918,7 +916,9 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
             queue_feedback=not is_htmx,
         )
         if is_htmx:
-            return _render_instance_partial('prometheus/partials/_detail_scope.html', instance, operation_feedback=feedback)
+            return _render_instance_partial(
+                'prometheus/partials/_detail_scope.html', instance, operation_feedback=feedback
+            )
         return redirect(url_for('prometheus.instance_detail', instance_id=instance_id) + '#scope')
     except Exception as exc:
         logger.exception('Prometheus instance deletion failed for %s.', instance_id)
@@ -936,7 +936,9 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
             queue_feedback=not is_htmx,
         )
         if is_htmx:
-            return _render_instance_partial('prometheus/partials/_detail_scope.html', instance, operation_feedback=feedback)
+            return _render_instance_partial(
+                'prometheus/partials/_detail_scope.html', instance, operation_feedback=feedback
+            )
         return redirect(url_for('prometheus.instance_detail', instance_id=instance_id) + '#scope')
 
     record_operational_activity(
@@ -954,6 +956,7 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
     )
     location = url_for('integrations.prometheus')
     return _htmx_redirect(location) if is_htmx else redirect(location)
+
 
 @prometheus_bp.post('/instances/<int:instance_id>/test')
 @permission_required('settings.manage_integrations')
@@ -1014,6 +1017,7 @@ def instance_test(instance_id: int) -> ResponseReturnValue:
             operation_feedback=feedback,
         )
     return redirect(url_for('prometheus.instance_detail', instance_id=instance.id) + '#validation')
+
 
 @prometheus_bp.post('/instances/<int:instance_id>/validate')
 @permission_required('settings.manage_integrations')
@@ -1185,7 +1189,10 @@ def instance_runtime_history(instance_id: int) -> ResponseReturnValue:
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 5, type=int)
     rows, pagination = paginate_runtime_history(
-        'prometheus', str(instance.id), page=page, per_page=per_page,
+        'prometheus',
+        str(instance.id),
+        page=page,
+        per_page=per_page,
     )
     return render_template(
         'prometheus/partials/_runtime_history.html',

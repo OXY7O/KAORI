@@ -53,9 +53,11 @@ TOTAL_NODES = get_query_expression('analytics.utilization.queries.TOTAL_NODES')
 WORKER_NODES = get_query_expression('analytics.utilization.queries.WORKER_NODES')
 WORKER_NODE_LIST = get_query_expression('analytics.utilization.queries.WORKER_NODE_LIST')
 
+
 def get_utilization_clusters() -> list[Cluster]:
     return Cluster.query.order_by(
-        Cluster.created_at.asc(), Cluster.id.asc(),
+        Cluster.created_at.asc(),
+        Cluster.id.asc(),
     ).all()
 
 

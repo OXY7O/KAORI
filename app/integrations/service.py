@@ -28,10 +28,10 @@ def safe_endpoint(value: str | None) -> str:
 
 def build_integrations_overview(
     *,
-    tab: str = "catalog",
-    provider: str = "",
-    health: str = "",
-    readiness: str = "",
+    tab: str = 'catalog',
+    provider: str = '',
+    health: str = '',
+    readiness: str = '',
     page: int = 1,
     per_page: int = 5,
 ) -> dict[str, Any]:
@@ -42,20 +42,15 @@ def build_integrations_overview(
     provider assumptions so one absent integration cannot break the overview.
     """
     kubernetes_connections = (
-        KubernetesConnection.query
-        .join(Cluster)
-        .order_by(Cluster.created_at.asc(), Cluster.id.asc())
-        .all()
+        KubernetesConnection.query.join(Cluster).order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
     )
     prometheus_instances = (
-        PrometheusInstance.query
-        .join(PrometheusInstance.integration_instance)
+        PrometheusInstance.query.join(PrometheusInstance.integration_instance)
         .order_by(IntegrationInstance.name.asc())
         .all()
     )
     alertmanager_instances = (
-        AlertmanagerInstance.query
-        .join(AlertmanagerInstance.integration_instance)
+        AlertmanagerInstance.query.join(AlertmanagerInstance.integration_instance)
         .order_by(IntegrationInstance.name.asc())
         .all()
     )
@@ -164,24 +159,36 @@ def _overview_stats(
 def _build_kubernetes_registry_row(connection: KubernetesConnection) -> dict[str, Any]:
     cluster = connection.cluster
     prometheus, prometheus_binding = bound_source_for_scope(
-        'prometheus', scope_type='kubernetes_cluster', scope_key=cluster.id,
+        'prometheus',
+        scope_type='kubernetes_cluster',
+        scope_key=cluster.id,
     )
     alertmanager, alertmanager_binding = bound_source_for_scope(
-        'alertmanager', scope_type='kubernetes_cluster', scope_key=cluster.id,
+        'alertmanager',
+        scope_type='kubernetes_cluster',
+        scope_key=cluster.id,
     )
-    metrics_operational = resolve_binding_operational_status(
-        source_readiness=getattr(prometheus, 'readiness_status', None),
-        binding_validation=getattr(prometheus_binding, 'validation_status', None),
-        source_enabled=bool(getattr(prometheus, 'enabled', True)),
-        binding_enabled=bool(getattr(prometheus_binding, 'enabled', True)),
-    ) if prometheus and prometheus_binding else {'status': 'not_configured', 'label': 'Not Configured'}
+    metrics_operational = (
+        resolve_binding_operational_status(
+            source_readiness=getattr(prometheus, 'readiness_status', None),
+            binding_validation=getattr(prometheus_binding, 'validation_status', None),
+            source_enabled=bool(getattr(prometheus, 'enabled', True)),
+            binding_enabled=bool(getattr(prometheus_binding, 'enabled', True)),
+        )
+        if prometheus and prometheus_binding
+        else {'status': 'not_configured', 'label': 'Not Configured'}
+    )
 
-    alerts_operational = resolve_binding_operational_status(
-        source_readiness=getattr(alertmanager, 'readiness_status', None),
-        binding_validation=getattr(alertmanager_binding, 'validation_status', None),
-        source_enabled=bool(getattr(alertmanager, 'enabled', True)),
-        binding_enabled=bool(getattr(alertmanager_binding, 'enabled', True)),
-    ) if alertmanager and alertmanager_binding else {'status': 'not_configured', 'label': 'Not Configured'}
+    alerts_operational = (
+        resolve_binding_operational_status(
+            source_readiness=getattr(alertmanager, 'readiness_status', None),
+            binding_validation=getattr(alertmanager_binding, 'validation_status', None),
+            source_enabled=bool(getattr(alertmanager, 'enabled', True)),
+            binding_enabled=bool(getattr(alertmanager_binding, 'enabled', True)),
+        )
+        if alertmanager and alertmanager_binding
+        else {'status': 'not_configured', 'label': 'Not Configured'}
+    )
 
     metrics_coverage = resolve_cluster_coverage(
         kubernetes_readiness=connection.readiness_status,
@@ -240,9 +247,7 @@ def _build_kubernetes_registry_row(connection: KubernetesConnection) -> dict[str
         if binding is not None and bool(getattr(binding, 'enabled', True))
     )
     source_operational_count = sum(
-        1
-        for posture in (metrics_operational, alerts_operational)
-        if posture['status'] == 'ready'
+        1 for posture in (metrics_operational, alerts_operational) if posture['status'] == 'ready'
     )
 
     return {
@@ -284,12 +289,7 @@ def build_kubernetes_registry_row(cluster_id: str) -> dict[str, Any] | None:
 
 
 def build_kubernetes_page(*, page: int = 1, per_page: int = 5) -> dict[str, Any]:
-    connections = (
-        KubernetesConnection.query
-        .join(Cluster)
-        .order_by(Cluster.created_at.asc(), Cluster.id.asc())
-        .all()
-    )
+    connections = KubernetesConnection.query.join(Cluster).order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
     rows = [_build_kubernetes_registry_row(connection) for connection in connections]
     page_rows, pagination = _paginate(rows, page=page, per_page=per_page)
     total = len(rows)
@@ -297,30 +297,16 @@ def build_kubernetes_page(*, page: int = 1, per_page: int = 5) -> dict[str, Any]
     kubernetes_attention = total - kubernetes_ready
 
     prometheus_configured = sum(1 for row in rows if row['prometheus_instance_id'])
-    prometheus_source_ready = sum(
-        1 for row in rows if row['prometheus_source_status'] == 'ready'
-    )
-    prometheus_binding_ready = sum(
-        1 for row in rows if row['prometheus_binding_status'] == 'ready'
-    )
-    prometheus_operational = sum(
-        1 for row in rows if row['prometheus_operational']['status'] == 'ready'
-    )
+    prometheus_source_ready = sum(1 for row in rows if row['prometheus_source_status'] == 'ready')
+    prometheus_binding_ready = sum(1 for row in rows if row['prometheus_binding_status'] == 'ready')
+    prometheus_operational = sum(1 for row in rows if row['prometheus_operational']['status'] == 'ready')
 
     alertmanager_configured = sum(1 for row in rows if row['alertmanager_instance_id'])
-    alertmanager_source_ready = sum(
-        1 for row in rows if row['alertmanager_source_status'] == 'ready'
-    )
-    alertmanager_binding_ready = sum(
-        1 for row in rows if row['alertmanager_binding_status'] == 'ready'
-    )
-    alertmanager_operational = sum(
-        1 for row in rows if row['alertmanager_operational']['status'] == 'ready'
-    )
+    alertmanager_source_ready = sum(1 for row in rows if row['alertmanager_source_status'] == 'ready')
+    alertmanager_binding_ready = sum(1 for row in rows if row['alertmanager_binding_status'] == 'ready')
+    alertmanager_operational = sum(1 for row in rows if row['alertmanager_operational']['status'] == 'ready')
 
-    fully_operational = sum(
-        1 for row in rows if row['coverage_summary']['status'] == 'ready'
-    )
+    fully_operational = sum(1 for row in rows if row['coverage_summary']['status'] == 'ready')
     source_bindings = sum(row['source_binding_count'] for row in rows)
 
     return {
@@ -349,11 +335,7 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
     from app.integrations.runtime.presentation import runtime_state_view
     from app.integrations.runtime.repository import list_runtime_history
 
-    connection = (
-        KubernetesConnection.query
-        .filter_by(cluster_id=cluster_id)
-        .first()
-    )
+    connection = KubernetesConnection.query.filter_by(cluster_id=cluster_id).first()
     if connection is None:
         return None
     cluster = connection.cluster
@@ -362,24 +344,30 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
     feature_rows = []
     for key, value in sorted(features.items()):
         selected = value.get('selected_api') or {}
-        feature_rows.append({
-            'key': key,
-            'status': value.get('status') or 'unknown',
-            'api_version': (
-                f"{selected.get('group')}/{selected.get('version')}"
-                if selected.get('group')
-                else selected.get('version')
-            ) or 'Not selected',
-            'resource': selected.get('resource') or '-',
-            'stability': selected.get('stability') or '-',
-            'message': value.get('message') or '',
-        })
+        feature_rows.append(
+            {
+                'key': key,
+                'status': value.get('status') or 'unknown',
+                'api_version': (
+                    f'{selected.get("group")}/{selected.get("version")}'
+                    if selected.get('group')
+                    else selected.get('version')
+                )
+                or 'Not selected',
+                'resource': selected.get('resource') or '-',
+                'stability': selected.get('stability') or '-',
+                'message': value.get('message') or '',
+            }
+        )
     state = get_integration('kubernetes').adapter.get_state(connection)
-    capability_scope = next((
-        binding.capability_scope or []
-        for binding in connection.integration_instance.bindings
-        if binding.asset_type == 'kubernetes_cluster' and binding.asset_key == cluster.id
-    ), [])
+    capability_scope = next(
+        (
+            binding.capability_scope or []
+            for binding in connection.integration_instance.bindings
+            if binding.asset_type == 'kubernetes_cluster' and binding.asset_key == cluster.id
+        ),
+        [],
+    )
     prometheus_source, prometheus_binding = bound_source_for_scope(
         'prometheus',
         scope_type='kubernetes_cluster',
@@ -434,25 +422,25 @@ def build_kubernetes_detail(cluster_id: str) -> dict[str, Any] | None:
         },
     }
 
+
 def build_prometheus_page(
     *,
-    query: str = "",
-    compatibility: str = "",
-    readiness: str = "",
-    tab: str = "coverage",
+    query: str = '',
+    compatibility: str = '',
+    readiness: str = '',
+    tab: str = 'coverage',
     page: int = 1,
     per_page: int = 5,
-    coverage_query: str = "",
-    coverage_environment: str = "",
-    coverage_status: str = "",
+    coverage_query: str = '',
+    coverage_environment: str = '',
+    coverage_status: str = '',
     coverage_page: int = 1,
     coverage_per_page: int = 5,
 ) -> dict[str, Any]:
     clusters_by_id = {cluster.id: cluster for cluster in Cluster.query.all()}
     all_rows: list[dict[str, Any]] = []
     for instance in (
-        PrometheusInstance.query
-        .join(PrometheusInstance.integration_instance)
+        PrometheusInstance.query.join(PrometheusInstance.integration_instance)
         .order_by(IntegrationInstance.name.asc())
         .all()
     ):
@@ -476,27 +464,29 @@ def build_prometheus_page(
                 ],
             )
         )
-        all_rows.append({
-            'instance_id': instance.id,
-            'name': instance.name,
-            'description': instance.description,
-            'endpoint': safe_endpoint(instance.endpoint),
-            'endpoint_product': instance.endpoint_product or 'prometheus',
-            'version': instance.detected_version,
-            'compatibility': compatibility_value,
-            'readiness': readiness_value,
-            'profile': instance.compatibility_profile,
-            'query_profile': instance.query_profile,
-            'capability_profile': instance.capability_profile,
-            'validated_at': present_user_datetime(instance.last_validated_at, empty='Not validated'),
-            'binding_count': len(bindings),
-            'bound_clusters': bound_clusters,
-            'cluster_ids': cluster_ids,
-            'environments': environments,
-            'configured': bool(instance.endpoint),
-            'enabled': instance.enabled,
-            'search_text': search_text,
-        })
+        all_rows.append(
+            {
+                'instance_id': instance.id,
+                'name': instance.name,
+                'description': instance.description,
+                'endpoint': safe_endpoint(instance.endpoint),
+                'endpoint_product': instance.endpoint_product or 'prometheus',
+                'version': instance.detected_version,
+                'compatibility': compatibility_value,
+                'readiness': readiness_value,
+                'profile': instance.compatibility_profile,
+                'query_profile': instance.query_profile,
+                'capability_profile': instance.capability_profile,
+                'validated_at': present_user_datetime(instance.last_validated_at, empty='Not validated'),
+                'binding_count': len(bindings),
+                'bound_clusters': bound_clusters,
+                'cluster_ids': cluster_ids,
+                'environments': environments,
+                'configured': bool(instance.endpoint),
+                'enabled': instance.enabled,
+                'search_text': search_text,
+            }
+        )
 
     filtered = all_rows
     normalized_query = query.strip().lower()
@@ -531,8 +521,21 @@ def build_prometheus_page(
         'selected_query': query,
         'selected_compatibility': compatibility,
         'selected_readiness': readiness,
-        'compatibility_options': _ordered_status_options(all_rows, 'compatibility', ['compatible', 'compatible_with_warnings', 'capability_mismatch', 'unsupported_version', 'version_unknown', 'validation_required']),
-        'readiness_options': _ordered_status_options(all_rows, 'readiness', ['ready', 'degraded', 'blocked', 'validation_required']),
+        'compatibility_options': _ordered_status_options(
+            all_rows,
+            'compatibility',
+            [
+                'compatible',
+                'compatible_with_warnings',
+                'capability_mismatch',
+                'unsupported_version',
+                'version_unknown',
+                'validation_required',
+            ],
+        ),
+        'readiness_options': _ordered_status_options(
+            all_rows, 'readiness', ['ready', 'degraded', 'blocked', 'validation_required']
+        ),
     }
 
 
@@ -657,6 +660,7 @@ def _ordered_status_options(rows: list[dict[str, Any]], field: str, order: list[
     values = {row[field] for row in rows if row.get(field)}
     return [value for value in order if value in values] + sorted(values - set(order))
 
+
 def _paginate(
     rows: list[dict[str, Any]],
     *,
@@ -707,85 +711,105 @@ def _runtime_overview_rows(
         canonical = db.session.get(IntegrationInstance, connection.integration_instance_id)
         observation = latest.get(('kubernetes', str(connection.id)))
         observed_at = observation.observed_at if observation else (connection.last_validated_at)
-        rows.append({
-            'provider': 'kubernetes',
-            'provider_label': 'Kubernetes',
-            'instance_id': str(connection.id),
-            'cluster_id': str(cluster.id),
-            'instance_name': canonical.name if canonical else f'{cluster.name} Kubernetes API',
-            'scope_label': cluster.name,
-            'endpoint_product': 'Kubernetes API',
-            'health_status': observation.health_status if observation else ('healthy' if cluster.status == 'connected' else 'not_observed'),
-            'health_score': observation.health_score if observation else None,
-            'readiness': connection.readiness_status or 'validation_required',
-            'observed_at': observed_at,
-            'observed_at_display': present_user_datetime(observed_at, empty='Not observed'),
-            'latency_ms': observation.latency_ms if observation else None,
-            'latency_display': f'{observation.latency_ms} ms' if observation and observation.latency_ms is not None else None,
-            'capability_profile': connection.compatibility_profile,
-            'capability_attention': 0 if (connection.readiness_status) == 'ready' else 1,
-            'capability_attention_display': 'Ready' if (connection.readiness_status) == 'ready' else 'Validation needs attention',
-            'message': (observation.message if observation else None) or connection.validation_message or connection.validation_message,
-        })
+        rows.append(
+            {
+                'provider': 'kubernetes',
+                'provider_label': 'Kubernetes',
+                'instance_id': str(connection.id),
+                'cluster_id': str(cluster.id),
+                'instance_name': canonical.name if canonical else f'{cluster.name} Kubernetes API',
+                'scope_label': cluster.name,
+                'endpoint_product': 'Kubernetes API',
+                'health_status': observation.health_status
+                if observation
+                else ('healthy' if cluster.status == 'connected' else 'not_observed'),
+                'health_score': observation.health_score if observation else None,
+                'readiness': connection.readiness_status or 'validation_required',
+                'observed_at': observed_at,
+                'observed_at_display': present_user_datetime(observed_at, empty='Not observed'),
+                'latency_ms': observation.latency_ms if observation else None,
+                'latency_display': f'{observation.latency_ms} ms'
+                if observation and observation.latency_ms is not None
+                else None,
+                'capability_profile': connection.compatibility_profile,
+                'capability_attention': 0 if (connection.readiness_status) == 'ready' else 1,
+                'capability_attention_display': 'Ready'
+                if (connection.readiness_status) == 'ready'
+                else 'Validation needs attention',
+                'message': (observation.message if observation else None)
+                or connection.validation_message
+                or connection.validation_message,
+            }
+        )
 
     for instance in prometheus_instances:
         observation = latest.get(('prometheus', str(instance.id)))
-        assessments = ((instance.capabilities or {}).get('assessments') or [])
+        assessments = (instance.capabilities or {}).get('assessments') or []
         attention = sum(1 for item in assessments if item.get('status') != 'available')
         observed_at = observation.observed_at if observation else instance.last_checked_at
         latency_ms = observation.latency_ms if observation else instance.last_response_time_ms
         enabled_bindings = [binding for binding in instance.integration_instance.bindings if binding.enabled]
-        rows.append({
-            'provider': 'prometheus',
-            'provider_label': 'Prometheus / Thanos',
-            'instance_id': str(instance.id),
-            'instance_name': instance.name,
-            'scope_label': f'{len(enabled_bindings)} asset binding(s)',
-            'endpoint_product': (instance.endpoint_product or 'prometheus').replace('_', ' ').title(),
-            'health_status': observation.health_status if observation else 'not_observed',
-            'health_score': observation.health_score if observation else None,
-            'readiness': instance.readiness_status or 'validation_required',
-            'observed_at': observed_at,
-            'observed_at_display': present_user_datetime(observed_at, empty='Not observed'),
-            'latency_ms': latency_ms,
-            'latency_display': f'{latency_ms} ms' if latency_ms is not None else None,
-            'capability_profile': instance.capability_profile or instance.query_profile,
-            'capability_attention': attention,
-            'capability_attention_display': (
-                f'{attention} item needs attention' if attention == 1 else f'{attention} items need attention'
-            ),
-            'message': (observation.message if observation else None) or instance.validation_message or instance.last_error,
-        })
+        rows.append(
+            {
+                'provider': 'prometheus',
+                'provider_label': 'Prometheus / Thanos',
+                'instance_id': str(instance.id),
+                'instance_name': instance.name,
+                'scope_label': f'{len(enabled_bindings)} asset binding(s)',
+                'endpoint_product': (instance.endpoint_product or 'prometheus').replace('_', ' ').title(),
+                'health_status': observation.health_status if observation else 'not_observed',
+                'health_score': observation.health_score if observation else None,
+                'readiness': instance.readiness_status or 'validation_required',
+                'observed_at': observed_at,
+                'observed_at_display': present_user_datetime(observed_at, empty='Not observed'),
+                'latency_ms': latency_ms,
+                'latency_display': f'{latency_ms} ms' if latency_ms is not None else None,
+                'capability_profile': instance.capability_profile or instance.query_profile,
+                'capability_attention': attention,
+                'capability_attention_display': (
+                    f'{attention} item needs attention' if attention == 1 else f'{attention} items need attention'
+                ),
+                'message': (observation.message if observation else None)
+                or instance.validation_message
+                or instance.last_error,
+            }
+        )
 
     for instance in alertmanager_instances:
         observation = latest.get(('alertmanager', str(instance.id)))
         observed_at = observation.observed_at if observation else instance.last_checked_at
         latency_ms = observation.latency_ms if observation else instance.last_response_time_ms
         capability_attention = 0 if instance.capabilities else 1
-        rows.append({
-            'provider': 'alertmanager',
-            'provider_label': 'Alertmanager',
-            'instance_id': str(instance.id),
-            'instance_name': instance.name,
-            'scope_label': f'{len(instance.integration_instance.bindings)} asset binding(s)',
-            'endpoint_product': 'Alertmanager',
-            'health_status': observation.health_status if observation else 'not_observed',
-            'health_score': observation.health_score if observation else None,
-            'readiness': instance.readiness_status or 'validation_required',
-            'observed_at': observed_at,
-            'observed_at_display': present_user_datetime(observed_at, empty='Not observed'),
-            'latency_ms': latency_ms,
-            'latency_display': f'{latency_ms} ms' if latency_ms is not None else None,
-            'capability_profile': instance.capability_profile,
-            'capability_attention': capability_attention,
-            'capability_attention_display': (
-                f'{capability_attention} item needs attention'
-                if capability_attention == 1
-                else f'{capability_attention} items need attention'
-            ),
-            'message': (observation.message if observation else None) or instance.validation_message or instance.last_error,
-        })
+        rows.append(
+            {
+                'provider': 'alertmanager',
+                'provider_label': 'Alertmanager',
+                'instance_id': str(instance.id),
+                'instance_name': instance.name,
+                'scope_label': f'{len(instance.integration_instance.bindings)} asset binding(s)',
+                'endpoint_product': 'Alertmanager',
+                'health_status': observation.health_status if observation else 'not_observed',
+                'health_score': observation.health_score if observation else None,
+                'readiness': instance.readiness_status or 'validation_required',
+                'observed_at': observed_at,
+                'observed_at_display': present_user_datetime(observed_at, empty='Not observed'),
+                'latency_ms': latency_ms,
+                'latency_display': f'{latency_ms} ms' if latency_ms is not None else None,
+                'capability_profile': instance.capability_profile,
+                'capability_attention': capability_attention,
+                'capability_attention_display': (
+                    f'{capability_attention} item needs attention'
+                    if capability_attention == 1
+                    else f'{capability_attention} items need attention'
+                ),
+                'message': (observation.message if observation else None)
+                or instance.validation_message
+                or instance.last_error,
+            }
+        )
 
     health_order = {'unhealthy': 0, 'degraded': 1, 'not_observed': 2, 'healthy': 3}
-    rows.sort(key=lambda row: (health_order.get(row['health_status'], 2), row['provider_label'], row['instance_name'].lower()))
+    rows.sort(
+        key=lambda row: (health_order.get(row['health_status'], 2), row['provider_label'], row['instance_name'].lower())
+    )
     return rows

@@ -81,12 +81,7 @@ def get_enabled_namespace_policy_records(
 
 
 def get_configured_enabled_namespace_names(cluster_id: str) -> list[str]:
-    return sorted(
-        {
-            record.namespace
-            for record in get_enabled_namespace_policy_records(cluster_id)
-        }
-    )
+    return sorted({record.namespace for record in get_enabled_namespace_policy_records(cluster_id)})
 
 
 def get_enabled_namespace_names(cluster_id: str) -> list[str]:
@@ -189,8 +184,7 @@ def set_namespace_reveal_policy(
 
 def build_namespace_policy_rows(cluster: Cluster) -> list[dict[str, Any]]:
     policy_records = {
-        record.namespace: record
-        for record in SecretRevealNamespacePolicy.query.filter_by(cluster_id=cluster.id).all()
+        record.namespace: record for record in SecretRevealNamespacePolicy.query.filter_by(cluster_id=cluster.id).all()
     }
     live_lookup_error = None
     try:
@@ -203,15 +197,9 @@ def build_namespace_policy_rows(cluster: Cluster) -> list[dict[str, Any]]:
     return [
         {
             'namespace': namespace,
-            'policy': (
-                policy_records[namespace].policy
-                if namespace in policy_records
-                else 'disabled'
-            ),
+            'policy': (policy_records[namespace].policy if namespace in policy_records else 'disabled'),
             'policy_label': REVEAL_NAMESPACE_POLICIES.get(
-                policy_records[namespace].policy
-                if namespace in policy_records
-                else 'disabled',
+                policy_records[namespace].policy if namespace in policy_records else 'disabled',
                 'Disabled',
             ),
             'in_live_cluster': namespace in live_names,

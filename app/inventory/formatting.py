@@ -115,5 +115,3 @@ def format_quota_value(
         return format_kubernetes_size(value)
 
     return value
-
-

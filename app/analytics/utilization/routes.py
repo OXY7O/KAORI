@@ -124,7 +124,6 @@ def utilization_trend() -> str:
             cluster_required_blocker(),
         )
 
-
     requirements = service.requirements()
     if not requirements.ok:
         missing = list((requirements.payload or {}).get('missing_capabilities', []))
@@ -296,7 +295,6 @@ def utilization() -> str:
         type=str,
     )
 
-
     selected_trend_node = request.args.get(
         'trend_node',
         '',
@@ -453,7 +451,6 @@ def utilization() -> str:
         if selected_trend_node not in available_worker_nodes:
             selected_trend_node = ''
 
-
         summary = service.get_summary()
 
         cluster_info = service.get_cluster_info(
@@ -567,7 +564,6 @@ def utilization_node_detail() -> str:
             cluster_required_blocker(),
         )
 
-
     requirements = service.requirements()
     if not requirements.ok:
         missing = list((requirements.payload or {}).get('missing_capabilities', []))
@@ -593,7 +589,6 @@ def utilization_node_detail() -> str:
 
         if selected_node not in available_nodes:
             selected_node = ''
-
 
         detail_summary = service.get_detail_summary(
             node_name=selected_node or None,

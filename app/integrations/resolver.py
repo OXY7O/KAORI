@@ -51,8 +51,11 @@ def resolve_integration(
             IntegrationBinding.enabled.is_(True),
         )
         .order_by(
-            case((IntegrationBinding.binding_role == 'primary', 0),
-                 (IntegrationBinding.binding_role == 'secondary', 1), else_=2),
+            case(
+                (IntegrationBinding.binding_role == 'primary', 0),
+                (IntegrationBinding.binding_role == 'secondary', 1),
+                else_=2,
+            ),
             IntegrationBinding.priority.asc(),
             IntegrationBinding.id.asc(),
         )
@@ -66,11 +69,7 @@ def resolve_integration(
         readiness = (instance.readiness_status or '').lower()
         lifecycle = (instance.lifecycle_status or '').strip().lower()
         eligible = bool(
-            instance.enabled
-            and lifecycle == 'active'
-            and binding.enabled
-            and readiness not in _BLOCKED
-            and not missing
+            instance.enabled and lifecycle == 'active' and binding.enabled and readiness not in _BLOCKED and not missing
         )
         if lifecycle != 'active':
             reason = f'Canonical lifecycle {lifecycle or "unknown"} blocks selection.'
@@ -83,12 +82,14 @@ def resolve_integration(
         else:
             reason = 'Runtime is not eligible for selection.'
         candidates.append(IntegrationCandidate(instance, binding, eligible, missing, reason))
-    candidates.sort(key=lambda item: (
-        0 if item.eligible else 1,
-        _ROLE_ORDER.get(item.binding.binding_role, 9),
-        item.binding.priority,
-        item.binding.id,
-    ))
+    candidates.sort(
+        key=lambda item: (
+            0 if item.eligible else 1,
+            _ROLE_ORDER.get(item.binding.binding_role, 9),
+            item.binding.priority,
+            item.binding.id,
+        )
+    )
     return IntegrationResolution(provider_type, asset_type, str(asset_key), required_capabilities, tuple(candidates))
 
 
@@ -96,11 +97,14 @@ def provider_record(instance: IntegrationInstance) -> Any | None:
     """Resolve the provider-specific connection record without coupling consumers to its table."""
     if instance.provider_type == 'prometheus':
         from app.models.prometheus import PrometheusInstance
+
         return PrometheusInstance.query.filter_by(integration_instance_id=instance.id).first()
     if instance.provider_type == 'alertmanager':
         from app.models.alertmanager import AlertmanagerInstance
+
         return AlertmanagerInstance.query.filter_by(integration_instance_id=instance.id).first()
     if instance.provider_type == 'kubernetes':
         from app.models.kubernetes import KubernetesConnection
+
         return KubernetesConnection.query.filter_by(integration_instance_id=instance.id).first()
     return None

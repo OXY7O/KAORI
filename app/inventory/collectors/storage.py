@@ -81,7 +81,8 @@ def _pvc_conditions(status) -> list[dict[str, str]]:
                 'message': _string_value(_model_value(condition, 'message')),
                 'last_transition_time': _isoformat_datetime(
                     _model_value(condition, 'last_transition_time', 'lastTransitionTime')
-                ) or '-',
+                )
+                or '-',
             }
         )
     return rows
@@ -212,10 +213,7 @@ def get_storage_inventory(
             'volume_mode': spec.volume_mode if spec else None,
             'requested_storage': (
                 str(spec.resources.requests.get('storage'))
-                if spec
-                and spec.resources
-                and spec.resources.requests
-                and spec.resources.requests.get('storage')
+                if spec and spec.resources and spec.resources.requests and spec.resources.requests.get('storage')
                 else None
             ),
             'selector': dict(_model_value(selector, 'match_labels', 'matchLabels', default={}) or {}),

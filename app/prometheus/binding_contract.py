@@ -14,11 +14,7 @@ def effective_prometheus_binding_capabilities(binding: IntegrationBinding) -> tu
     narrow Prometheus consumer access. Managed-cluster bindings therefore inherit
     the current complete default contract while preserving any future/custom values.
     """
-    current = tuple(
-        str(item).strip()
-        for item in (binding.capability_scope or ())
-        if str(item).strip()
-    )
+    current = tuple(str(item).strip() for item in (binding.capability_scope or ()) if str(item).strip())
     if binding.asset_type != KUBERNETES_CLUSTER_SCOPE:
         return tuple(dict.fromkeys(current))
     return tuple(dict.fromkeys((*BINDING_CAPABILITY_KEYS, *current)))
@@ -27,11 +23,7 @@ def effective_prometheus_binding_capabilities(binding: IntegrationBinding) -> tu
 def normalize_prometheus_binding_capabilities(binding: IntegrationBinding) -> bool:
     """Persist the effective default capability contract for legacy bindings."""
     effective = list(effective_prometheus_binding_capabilities(binding))
-    current = [
-        str(item).strip()
-        for item in (binding.capability_scope or ())
-        if str(item).strip()
-    ]
+    current = [str(item).strip() for item in (binding.capability_scope or ()) if str(item).strip()]
     if current == effective:
         return False
     binding.capability_scope = effective

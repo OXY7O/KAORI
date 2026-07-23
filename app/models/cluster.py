@@ -31,7 +31,6 @@ class Cluster(db.Model):
 
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-
     secret_reveal_encryption_verified: Mapped[bool] = mapped_column(
         Boolean,
         nullable=False,
@@ -43,7 +42,6 @@ class Cluster(db.Model):
         nullable=False,
         default=False,
     )
-
 
     status: Mapped[str] = mapped_column(String(20), nullable=False, default=ClusterStatus.UNKNOWN.value)
 
@@ -57,7 +55,6 @@ class Cluster(db.Model):
         DateTime(timezone=True), default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
     )
 
-
     kubernetes_connection: Mapped[KubernetesConnection | None] = relationship(
         'KubernetesConnection',
         back_populates='cluster',
@@ -65,7 +62,6 @@ class Cluster(db.Model):
         passive_deletes=True,
         uselist=False,
     )
-
 
     def __repr__(self) -> str:
         return f'<Cluster {self.name}>'

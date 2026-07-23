@@ -17,4 +17,6 @@ WORKLOAD_CPU_PEAK_QUERY_TEMPLATE = get_query_expression('analytics.workload.quer
 WORKLOAD_MEMORY_REQUESTS_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_MEMORY_REQUESTS_QUERY')
 WORKLOAD_MEMORY_LIMITS_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_MEMORY_LIMITS_QUERY')
 WORKLOAD_MEMORY_AVG_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_MEMORY_AVG_QUERY')
-WORKLOAD_MEMORY_PEAK_QUERY_TEMPLATE = get_query_expression('analytics.workload.queries.WORKLOAD_MEMORY_PEAK_QUERY_TEMPLATE')
+WORKLOAD_MEMORY_PEAK_QUERY_TEMPLATE = get_query_expression(
+    'analytics.workload.queries.WORKLOAD_MEMORY_PEAK_QUERY_TEMPLATE'
+)

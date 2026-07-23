@@ -46,7 +46,10 @@ QUERIES: dict[str, QueryDefinition] = {
         expression='(\n    sum(\n        rate(\n            container_cpu_usage_seconds_total{\n                container!="",\n                container!="POD"\n            }[5m]\n        )\n    )\n/\n    sum(\n        kube_node_status_capacity{\n            resource="cpu"\n        }\n    )\n) * 100',
         domain='app.prometheus',
         required_metrics=('container_cpu_usage_seconds_total', 'kube_node_status_capacity'),
-        required_labels=(('container_cpu_usage_seconds_total', ('container',)), ('kube_node_status_capacity', ('resource',))),
+        required_labels=(
+            ('container_cpu_usage_seconds_total', ('container',)),
+            ('kube_node_status_capacity', ('resource',)),
+        ),
     ),
     'prometheus.queries.CLUSTER_MEMORY_CAPACITY': QueryDefinition(
         key='prometheus.queries.CLUSTER_MEMORY_CAPACITY',
@@ -67,7 +70,10 @@ QUERIES: dict[str, QueryDefinition] = {
         expression='(\n    sum(\n        container_memory_working_set_bytes{\n            container!="",\n            container!="POD"\n        }\n    )\n/\n    sum(\n        kube_node_status_capacity{\n            resource="memory"\n        }\n    )\n) * 100',
         domain='app.prometheus',
         required_metrics=('container_memory_working_set_bytes', 'kube_node_status_capacity'),
-        required_labels=(('container_memory_working_set_bytes', ('container',)), ('kube_node_status_capacity', ('resource',))),
+        required_labels=(
+            ('container_memory_working_set_bytes', ('container',)),
+            ('kube_node_status_capacity', ('resource',)),
+        ),
     ),
     'prometheus.queries.CLUSTER_STORAGE_CAPACITY': QueryDefinition(
         key='prometheus.queries.CLUSTER_STORAGE_CAPACITY',
@@ -235,28 +241,40 @@ QUERIES: dict[str, QueryDefinition] = {
         expression='sum(\n  kube_pod_container_resource_requests{\n    resource="cpu",\n    unit="core",\n    namespace!="",\n    pod!="",\n    node!=""\n  }\n  unless on(node)\n  kube_node_role{role=~"control-plane|master"}\n)',
         domain='app.analytics.capacity',
         required_metrics=('kube_pod_container_resource_requests', 'kube_node_role'),
-        required_labels=(('kube_node_role', ('role',)), ('kube_pod_container_resource_requests', ('namespace', 'node', 'pod', 'resource', 'unit'))),
+        required_labels=(
+            ('kube_node_role', ('role',)),
+            ('kube_pod_container_resource_requests', ('namespace', 'node', 'pod', 'resource', 'unit')),
+        ),
     ),
     'analytics.capacity.queries.WORKER_CPU_LIMITS_TOTAL_QUERY': QueryDefinition(
         key='analytics.capacity.queries.WORKER_CPU_LIMITS_TOTAL_QUERY',
         expression='sum(\n  kube_pod_container_resource_limits{\n    resource="cpu",\n    unit="core",\n    namespace!="",\n    pod!="",\n    node!=""\n  }\n  unless on(node)\n  kube_node_role{role=~"control-plane|master"}\n)',
         domain='app.analytics.capacity',
         required_metrics=('kube_pod_container_resource_limits', 'kube_node_role'),
-        required_labels=(('kube_node_role', ('role',)), ('kube_pod_container_resource_limits', ('namespace', 'node', 'pod', 'resource', 'unit'))),
+        required_labels=(
+            ('kube_node_role', ('role',)),
+            ('kube_pod_container_resource_limits', ('namespace', 'node', 'pod', 'resource', 'unit')),
+        ),
     ),
     'analytics.capacity.queries.WORKER_MEMORY_REQUESTS_TOTAL_QUERY': QueryDefinition(
         key='analytics.capacity.queries.WORKER_MEMORY_REQUESTS_TOTAL_QUERY',
         expression='sum(\n  kube_pod_container_resource_requests{\n    resource="memory",\n    unit="byte",\n    namespace!="",\n    pod!="",\n    node!=""\n  }\n  unless on(node)\n  kube_node_role{role=~"control-plane|master"}\n)',
         domain='app.analytics.capacity',
         required_metrics=('kube_pod_container_resource_requests', 'kube_node_role'),
-        required_labels=(('kube_node_role', ('role',)), ('kube_pod_container_resource_requests', ('namespace', 'node', 'pod', 'resource', 'unit'))),
+        required_labels=(
+            ('kube_node_role', ('role',)),
+            ('kube_pod_container_resource_requests', ('namespace', 'node', 'pod', 'resource', 'unit')),
+        ),
     ),
     'analytics.capacity.queries.WORKER_MEMORY_LIMITS_TOTAL_QUERY': QueryDefinition(
         key='analytics.capacity.queries.WORKER_MEMORY_LIMITS_TOTAL_QUERY',
         expression='sum(\n  kube_pod_container_resource_limits{\n    resource="memory",\n    unit="byte",\n    namespace!="",\n    pod!="",\n    node!=""\n  }\n  unless on(node)\n  kube_node_role{role=~"control-plane|master"}\n)',
         domain='app.analytics.capacity',
         required_metrics=('kube_pod_container_resource_limits', 'kube_node_role'),
-        required_labels=(('kube_node_role', ('role',)), ('kube_pod_container_resource_limits', ('namespace', 'node', 'pod', 'resource', 'unit'))),
+        required_labels=(
+            ('kube_node_role', ('role',)),
+            ('kube_pod_container_resource_limits', ('namespace', 'node', 'pod', 'resource', 'unit')),
+        ),
     ),
     'analytics.capacity.queries.CPU_PEAK_QUERY_TEMPLATE': QueryDefinition(
         key='analytics.capacity.queries.CPU_PEAK_QUERY_TEMPLATE',
@@ -277,14 +295,20 @@ QUERIES: dict[str, QueryDefinition] = {
         expression='max_over_time(\n  sum(\n    rate(\n      container_cpu_usage_seconds_total{\n        namespace!="",\n        container!="",\n        image!="",\n        pod!="",\n        node!=""\n      }[5m]\n    )\n    unless on(node)\n    kube_node_role{role=~"control-plane|master"}\n  )[__TIME_RANGE__:__TIME_STEP__]\n)',
         domain='app.analytics.capacity',
         required_metrics=('container_cpu_usage_seconds_total', 'kube_node_role'),
-        required_labels=(('container_cpu_usage_seconds_total', ('container', 'image', 'namespace', 'node', 'pod')), ('kube_node_role', ('role',))),
+        required_labels=(
+            ('container_cpu_usage_seconds_total', ('container', 'image', 'namespace', 'node', 'pod')),
+            ('kube_node_role', ('role',)),
+        ),
     ),
     'analytics.capacity.queries.WORKER_MEMORY_PEAK_QUERY_TEMPLATE': QueryDefinition(
         key='analytics.capacity.queries.WORKER_MEMORY_PEAK_QUERY_TEMPLATE',
         expression='max_over_time(\n  sum(\n    container_memory_working_set_bytes{\n      namespace!="",\n      container!="",\n      image!="",\n      pod!="",\n      node!=""\n    }\n    unless on(node)\n    kube_node_role{role=~"control-plane|master"}\n  )[__TIME_RANGE__:__TIME_STEP__]\n)',
         domain='app.analytics.capacity',
         required_metrics=('container_memory_working_set_bytes', 'kube_node_role'),
-        required_labels=(('container_memory_working_set_bytes', ('container', 'image', 'namespace', 'node', 'pod')), ('kube_node_role', ('role',))),
+        required_labels=(
+            ('container_memory_working_set_bytes', ('container', 'image', 'namespace', 'node', 'pod')),
+            ('kube_node_role', ('role',)),
+        ),
     ),
     'analytics.capacity.queries.WORKER_CPU_ALLOCATABLE_QUERY': QueryDefinition(
         key='analytics.capacity.queries.WORKER_CPU_ALLOCATABLE_QUERY',
@@ -816,7 +840,10 @@ QUERIES: dict[str, QueryDefinition] = {
         expression='(\n    sum(\n        rate(\n            container_cpu_usage_seconds_total{\n                container!="",\n                container!="POD"\n            }[5m]\n        )\n    )\n/\n    sum(\n        kube_node_status_capacity{\n            resource="cpu"\n        }\n    )\n) * 100',
         domain='app.analytics.utilization',
         required_metrics=('container_cpu_usage_seconds_total', 'kube_node_status_capacity'),
-        required_labels=(('container_cpu_usage_seconds_total', ('container',)), ('kube_node_status_capacity', ('resource',))),
+        required_labels=(
+            ('container_cpu_usage_seconds_total', ('container',)),
+            ('kube_node_status_capacity', ('resource',)),
+        ),
     ),
     'analytics.utilization.queries.MEMORY_CAPACITY': QueryDefinition(
         key='analytics.utilization.queries.MEMORY_CAPACITY',
@@ -837,7 +864,10 @@ QUERIES: dict[str, QueryDefinition] = {
         expression='(\n    sum(\n        container_memory_working_set_bytes{\n            container!="",\n            container!="POD"\n        }\n    )\n/\n    sum(\n        kube_node_status_capacity{\n            resource="memory"\n        }\n    )\n) * 100',
         domain='app.analytics.utilization',
         required_metrics=('container_memory_working_set_bytes', 'kube_node_status_capacity'),
-        required_labels=(('container_memory_working_set_bytes', ('container',)), ('kube_node_status_capacity', ('resource',))),
+        required_labels=(
+            ('container_memory_working_set_bytes', ('container',)),
+            ('kube_node_status_capacity', ('resource',)),
+        ),
     ),
     'analytics.utilization.queries.STORAGE_CAPACITY': QueryDefinition(
         key='analytics.utilization.queries.STORAGE_CAPACITY',
@@ -858,14 +888,20 @@ QUERIES: dict[str, QueryDefinition] = {
         expression='sum(\n    node_filesystem_size_bytes{\n        mountpoint="/var",\n        fstype!~"tmpfs|overlay|squashfs"\n    }\n    -\n    node_filesystem_avail_bytes{\n        mountpoint="/var",\n        fstype!~"tmpfs|overlay|squashfs"\n    }\n)\nor\nsum(\n    node_filesystem_size_bytes{\n        mountpoint="/",\n        fstype!~"tmpfs|overlay|squashfs"\n    }\n    -\n    node_filesystem_avail_bytes{\n        mountpoint="/",\n        fstype!~"tmpfs|overlay|squashfs"\n    }\n)',
         domain='app.analytics.utilization',
         required_metrics=('node_filesystem_size_bytes', 'node_filesystem_avail_bytes'),
-        required_labels=(('node_filesystem_avail_bytes', ('mountpoint',)), ('node_filesystem_size_bytes', ('mountpoint',))),
+        required_labels=(
+            ('node_filesystem_avail_bytes', ('mountpoint',)),
+            ('node_filesystem_size_bytes', ('mountpoint',)),
+        ),
     ),
     'analytics.utilization.queries.STORAGE_UTILIZATION': QueryDefinition(
         key='analytics.utilization.queries.STORAGE_UTILIZATION',
         expression='(\n    sum(\n        node_filesystem_size_bytes{\n            mountpoint="/var",\n            fstype!~"tmpfs|overlay|squashfs"\n        }\n        -\n        node_filesystem_avail_bytes{\n            mountpoint="/var",\n            fstype!~"tmpfs|overlay|squashfs"\n        }\n    )\n/\n    sum(\n        node_filesystem_size_bytes{\n            mountpoint="/var",\n            fstype!~"tmpfs|overlay|squashfs"\n        }\n    )\n) * 100\nor\n(\n    sum(\n        node_filesystem_size_bytes{\n            mountpoint="/",\n            fstype!~"tmpfs|overlay|squashfs"\n        }\n        -\n        node_filesystem_avail_bytes{\n            mountpoint="/",\n            fstype!~"tmpfs|overlay|squashfs"\n        }\n    )\n/\n    sum(\n        node_filesystem_size_bytes{\n            mountpoint="/",\n            fstype!~"tmpfs|overlay|squashfs"\n        }\n    )\n) * 100',
         domain='app.analytics.utilization',
         required_metrics=('node_filesystem_size_bytes', 'node_filesystem_avail_bytes'),
-        required_labels=(('node_filesystem_avail_bytes', ('mountpoint',)), ('node_filesystem_size_bytes', ('mountpoint',))),
+        required_labels=(
+            ('node_filesystem_avail_bytes', ('mountpoint',)),
+            ('node_filesystem_size_bytes', ('mountpoint',)),
+        ),
     ),
     'analytics.utilization.queries.POD_COUNT': QueryDefinition(
         key='analytics.utilization.queries.POD_COUNT',
@@ -984,7 +1020,10 @@ QUERIES: dict[str, QueryDefinition] = {
         expression='(\n    sum(\n        rate(\n            container_cpu_usage_seconds_total{\n                container!="",\n                container!="POD",\n                node="{node}"\n            }[5m]\n        )\n    )\n/\n    sum(\n        kube_node_status_capacity{\n            resource="cpu",\n            node="{node}"\n        }\n    )\n) * 100',
         domain='app.analytics.utilization',
         required_metrics=('container_cpu_usage_seconds_total', 'kube_node_status_capacity'),
-        required_labels=(('container_cpu_usage_seconds_total', ('container', 'node')), ('kube_node_status_capacity', ('node', 'resource'))),
+        required_labels=(
+            ('container_cpu_usage_seconds_total', ('container', 'node')),
+            ('kube_node_status_capacity', ('node', 'resource')),
+        ),
     ),
     'analytics.utilization.queries.MEMORY_CAPACITY_BY_NODE': QueryDefinition(
         key='analytics.utilization.queries.MEMORY_CAPACITY_BY_NODE',
@@ -1005,7 +1044,10 @@ QUERIES: dict[str, QueryDefinition] = {
         expression='(\n    sum(\n        container_memory_working_set_bytes{\n            container!="",\n            container!="POD",\n            node="{node}"\n        }\n    )\n/\n    sum(\n        kube_node_status_capacity{\n            resource="memory",\n            node="{node}"\n        }\n    )\n) * 100',
         domain='app.analytics.utilization',
         required_metrics=('container_memory_working_set_bytes', 'kube_node_status_capacity'),
-        required_labels=(('container_memory_working_set_bytes', ('container', 'node')), ('kube_node_status_capacity', ('node', 'resource'))),
+        required_labels=(
+            ('container_memory_working_set_bytes', ('container', 'node')),
+            ('kube_node_status_capacity', ('node', 'resource')),
+        ),
     ),
     'analytics.utilization.queries.POD_COUNT_BY_NODE': QueryDefinition(
         key='analytics.utilization.queries.POD_COUNT_BY_NODE',
@@ -1026,7 +1068,11 @@ QUERIES: dict[str, QueryDefinition] = {
         expression='(\n    count(\n        (\n            kube_pod_status_phase{\n                phase="Running"\n            } == 1\n        )\n        * on(namespace,pod)\n        group_left(node)\n        kube_pod_info{\n            node="{node}"\n        }\n    )\n/\n    sum(\n        kube_node_status_capacity{\n            resource="pods",\n            node="{node}"\n        }\n    )\n) * 100',
         domain='app.analytics.utilization',
         required_metrics=('kube_pod_status_phase', 'kube_pod_info', 'kube_node_status_capacity'),
-        required_labels=(('kube_node_status_capacity', ('node', 'resource')), ('kube_pod_info', ('node',)), ('kube_pod_status_phase', ('phase',))),
+        required_labels=(
+            ('kube_node_status_capacity', ('node', 'resource')),
+            ('kube_pod_info', ('node',)),
+            ('kube_pod_status_phase', ('phase',)),
+        ),
     ),
     'analytics.utilization.queries.STORAGE_CAPACITY_BY_INSTANCE': QueryDefinition(
         key='analytics.utilization.queries.STORAGE_CAPACITY_BY_INSTANCE',
@@ -1047,14 +1093,20 @@ QUERIES: dict[str, QueryDefinition] = {
         expression='sum(\n    node_filesystem_size_bytes{\n        mountpoint="/var",\n        fstype!~"tmpfs|overlay|squashfs",\n        instance="{instance}"\n    }\n    -\n    node_filesystem_avail_bytes{\n        mountpoint="/var",\n        fstype!~"tmpfs|overlay|squashfs",\n        instance="{instance}"\n    }\n)\nor\nsum(\n    node_filesystem_size_bytes{\n        mountpoint="/",\n        fstype!~"tmpfs|overlay|squashfs",\n        instance="{instance}"\n    }\n    -\n    node_filesystem_avail_bytes{\n        mountpoint="/",\n        fstype!~"tmpfs|overlay|squashfs",\n        instance="{instance}"\n    }\n)',
         domain='app.analytics.utilization',
         required_metrics=('node_filesystem_size_bytes', 'node_filesystem_avail_bytes'),
-        required_labels=(('node_filesystem_avail_bytes', ('instance', 'mountpoint')), ('node_filesystem_size_bytes', ('instance', 'mountpoint'))),
+        required_labels=(
+            ('node_filesystem_avail_bytes', ('instance', 'mountpoint')),
+            ('node_filesystem_size_bytes', ('instance', 'mountpoint')),
+        ),
     ),
     'analytics.utilization.queries.STORAGE_UTILIZATION_BY_INSTANCE': QueryDefinition(
         key='analytics.utilization.queries.STORAGE_UTILIZATION_BY_INSTANCE',
         expression='(\n    sum(\n        node_filesystem_size_bytes{\n            mountpoint="/var",\n            fstype!~"tmpfs|overlay|squashfs",\n            instance="{instance}"\n        }\n        -\n        node_filesystem_avail_bytes{\n            mountpoint="/var",\n            fstype!~"tmpfs|overlay|squashfs",\n            instance="{instance}"\n        }\n    )\n/\n    sum(\n        node_filesystem_size_bytes{\n            mountpoint="/var",\n            fstype!~"tmpfs|overlay|squashfs",\n            instance="{instance}"\n        }\n    )\n) * 100\nor\n(\n    sum(\n        node_filesystem_size_bytes{\n            mountpoint="/",\n            fstype!~"tmpfs|overlay|squashfs",\n            instance="{instance}"\n        }\n        -\n        node_filesystem_avail_bytes{\n            mountpoint="/",\n            fstype!~"tmpfs|overlay|squashfs",\n            instance="{instance}"\n        }\n    )\n/\n    sum(\n        node_filesystem_size_bytes{\n            mountpoint="/",\n            fstype!~"tmpfs|overlay|squashfs",\n            instance="{instance}"\n        }\n    )\n) * 100',
         domain='app.analytics.utilization',
         required_metrics=('node_filesystem_size_bytes', 'node_filesystem_avail_bytes'),
-        required_labels=(('node_filesystem_avail_bytes', ('instance', 'mountpoint')), ('node_filesystem_size_bytes', ('instance', 'mountpoint'))),
+        required_labels=(
+            ('node_filesystem_avail_bytes', ('instance', 'mountpoint')),
+            ('node_filesystem_size_bytes', ('instance', 'mountpoint')),
+        ),
     ),
     'analytics.utilization.queries.STORAGE_CAPACITY_BY_NODE': QueryDefinition(
         key='analytics.utilization.queries.STORAGE_CAPACITY_BY_NODE',
@@ -1075,14 +1127,20 @@ QUERIES: dict[str, QueryDefinition] = {
         expression='sum(node_filesystem_size_bytes{mountpoint="/var",fstype!~"tmpfs|overlay|squashfs",node="{node}"} - node_filesystem_avail_bytes{mountpoint="/var",fstype!~"tmpfs|overlay|squashfs",node="{node}"}) or sum(node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs",node="{node}"} - node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs",node="{node}"})',
         domain='app.analytics.utilization',
         required_metrics=('node_filesystem_size_bytes', 'node_filesystem_avail_bytes'),
-        required_labels=(('node_filesystem_size_bytes', ('node', 'mountpoint')), ('node_filesystem_avail_bytes', ('node', 'mountpoint'))),
+        required_labels=(
+            ('node_filesystem_size_bytes', ('node', 'mountpoint')),
+            ('node_filesystem_avail_bytes', ('node', 'mountpoint')),
+        ),
     ),
     'analytics.utilization.queries.STORAGE_UTILIZATION_BY_NODE': QueryDefinition(
         key='analytics.utilization.queries.STORAGE_UTILIZATION_BY_NODE',
         expression='((sum(node_filesystem_size_bytes{mountpoint="/var",fstype!~"tmpfs|overlay|squashfs",node="{node}"} - node_filesystem_avail_bytes{mountpoint="/var",fstype!~"tmpfs|overlay|squashfs",node="{node}"}) / sum(node_filesystem_size_bytes{mountpoint="/var",fstype!~"tmpfs|overlay|squashfs",node="{node}"})) * 100) or ((sum(node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs",node="{node}"} - node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs",node="{node}"}) / sum(node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay|squashfs",node="{node}"})) * 100)',
         domain='app.analytics.utilization',
         required_metrics=('node_filesystem_size_bytes', 'node_filesystem_avail_bytes'),
-        required_labels=(('node_filesystem_size_bytes', ('node', 'mountpoint')), ('node_filesystem_avail_bytes', ('node', 'mountpoint'))),
+        required_labels=(
+            ('node_filesystem_size_bytes', ('node', 'mountpoint')),
+            ('node_filesystem_avail_bytes', ('node', 'mountpoint')),
+        ),
     ),
     'analytics.utilization.queries.MEMORY_PRESSURE_NODES': QueryDefinition(
         key='analytics.utilization.queries.MEMORY_PRESSURE_NODES',

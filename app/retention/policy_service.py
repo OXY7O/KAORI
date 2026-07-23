@@ -77,16 +77,14 @@ def update_policy(
     policy.archive_retention_days = max(int(archive_retention_days), 1)
     policy.batch_size = max(min(int(batch_size), 25000), 100)
     policy.operation_mode = (
-        operation_mode if operation_mode in {'archive_only', 'archive_and_cleanup'}
-        else 'archive_and_cleanup'
+        operation_mode if operation_mode in {'archive_only', 'archive_and_cleanup'} else 'archive_and_cleanup'
     )
     policy.schedule_enabled = bool(schedule_enabled)
     policy.schedule_hour = max(0, min(int(schedule_hour), 23))
     policy.schedule_minute = max(0, min(int(schedule_minute), 59))
     policy.protect_unreviewed = bool(protect_unreviewed)
     policy.protected_max_days = (
-        max(int(protected_max_days), policy.hot_retention_days)
-        if protected_max_days is not None else None
+        max(int(protected_max_days), policy.hot_retention_days) if protected_max_days is not None else None
     )
     policy.settings_json = dict(settings or policy.settings_json or {})
     db.session.commit()
@@ -104,9 +102,7 @@ def scheduled_domains(domain_names: list[str]) -> list[str]:
     now_local = datetime.now(UTC).astimezone(zone)
     stored = {
         item.domain: item
-        for item in DataLifecyclePolicy.query.filter(
-            DataLifecyclePolicy.domain.in_(domain_names)
-        ).all()
+        for item in DataLifecyclePolicy.query.filter(DataLifecyclePolicy.domain.in_(domain_names)).all()
     }
     due: list[str] = []
     for name in domain_names:

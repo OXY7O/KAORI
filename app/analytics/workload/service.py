@@ -41,7 +41,9 @@ WORKLOAD_CPU_PEAK_QUERY_TEMPLATE = get_query_expression('analytics.workload.quer
 WORKLOAD_CPU_REQUESTS_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_CPU_REQUESTS_QUERY')
 WORKLOAD_MEMORY_AVG_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_MEMORY_AVG_QUERY')
 WORKLOAD_MEMORY_LIMITS_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_MEMORY_LIMITS_QUERY')
-WORKLOAD_MEMORY_PEAK_QUERY_TEMPLATE = get_query_expression('analytics.workload.queries.WORKLOAD_MEMORY_PEAK_QUERY_TEMPLATE')
+WORKLOAD_MEMORY_PEAK_QUERY_TEMPLATE = get_query_expression(
+    'analytics.workload.queries.WORKLOAD_MEMORY_PEAK_QUERY_TEMPLATE'
+)
 WORKLOAD_MEMORY_REQUESTS_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_MEMORY_REQUESTS_QUERY')
 WORKLOAD_POD_OWNER_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_POD_OWNER_QUERY')
 WORKLOAD_QOS_QUERY = get_query_expression('analytics.workload.queries.WORKLOAD_QOS_QUERY')
@@ -2235,12 +2237,8 @@ def get_workload_analysis_context(
             actionable_recommendations,
         )
 
-        critical_finding_count = sum(
-            1 for item in governance_findings if item.get('severity') == 'critical'
-        )
-        warning_finding_count = sum(
-            1 for item in governance_findings if item.get('severity') == 'warning'
-        )
+        critical_finding_count = sum(1 for item in governance_findings if item.get('severity') == 'critical')
+        warning_finding_count = sum(1 for item in governance_findings if item.get('severity') == 'warning')
         if critical_finding_count:
             workload_posture = {
                 'value': 'Critical',

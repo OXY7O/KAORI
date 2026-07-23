@@ -84,17 +84,9 @@ def parse_alertmanager_binding_form(form_data: Mapping[str, Any]) -> Alertmanage
         binding_role = 'primary'
 
     if scope_type == 'kubernetes_cluster':
-        scope_key = str(
-            form_data.get('cluster_scope_key')
-            or form_data.get('scope_key')
-            or ''
-        ).strip()
+        scope_key = str(form_data.get('cluster_scope_key') or form_data.get('scope_key') or '').strip()
     else:
-        scope_key = str(
-            form_data.get('generic_scope_key')
-            or form_data.get('scope_key')
-            or ''
-        ).strip()
+        scope_key = str(form_data.get('generic_scope_key') or form_data.get('scope_key') or '').strip()
 
     return AlertmanagerBindingForm(
         scope_type=scope_type,
@@ -117,7 +109,6 @@ def normalize_endpoint(value: str) -> str:
     return endpoint
 
 
-
 def validate_endpoint(endpoint: str) -> None:
     if not endpoint:
         raise ValueError('Alertmanager endpoint is required.')
@@ -130,6 +121,7 @@ def validate_endpoint(endpoint: str) -> None:
         raise ValueError('Alertmanager endpoint must not include query parameters or a fragment.')
     if parsed.path.rstrip('/').endswith('/api/v2'):
         raise ValueError('Use the Alertmanager base URL, not an /api/v2 endpoint path.')
+
 
 def clean_optional_value(value: Any) -> str | None:
     if value is None:

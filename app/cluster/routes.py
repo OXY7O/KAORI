@@ -397,7 +397,11 @@ def add_cluster() -> ResponseReturnValue:
                 action_url=url_for('cluster.add_cluster'),
                 action_label='Review cluster form',
                 action_icon='server-cog',
-                metadata={'cluster_name': form.name.data or '-', 'environment': form.environment.data or '-', 'reason': 'missing_kubeconfig'},
+                metadata={
+                    'cluster_name': form.name.data or '-',
+                    'environment': form.environment.data or '-',
+                    'reason': 'missing_kubeconfig',
+                },
                 queue_feedback=True,
             )
         else:
@@ -429,7 +433,11 @@ def add_cluster() -> ResponseReturnValue:
                         action_url=url_for('cluster.add_cluster'),
                         action_label='Test Kubernetes connection',
                         action_icon='plug-zap',
-                        metadata={'cluster_name': name or '-', 'environment': environment or '-', 'registration_stage': 'connection_test_proof'},
+                        metadata={
+                            'cluster_name': name or '-',
+                            'environment': environment or '-',
+                            'registration_stage': 'connection_test_proof',
+                        },
                         queue_feedback=True,
                     )
                 else:
@@ -446,7 +454,9 @@ def add_cluster() -> ResponseReturnValue:
                             status='error',
                             title='Cluster connection changed before save',
                             message='KAORI could not verify the Kubernetes API immediately before registration.',
-                            detail=recheck.get('error') or recheck.get('reason') or 'Review kubeconfig credentials, API reachability, and TLS settings, then run Test Connection again.',
+                            detail=recheck.get('error')
+                            or recheck.get('reason')
+                            or 'Review kubeconfig credentials, API reachability, and TLS settings, then run Test Connection again.',
                             action_url=url_for('cluster.add_cluster'),
                             action_label='Review cluster form',
                             action_icon='server-cog',
@@ -483,7 +493,9 @@ def add_cluster() -> ResponseReturnValue:
                                 'cluster_id': cluster.id,
                                 'cluster_name': cluster.name,
                                 'environment': cluster.environment,
-                                'server': cluster.kubernetes_connection.server if cluster.kubernetes_connection else None,
+                                'server': cluster.kubernetes_connection.server
+                                if cluster.kubernetes_connection
+                                else None,
                                 'registration_stage': 'persisted_after_recheck',
                             },
                             queue_feedback=True,
@@ -501,7 +513,11 @@ def add_cluster() -> ResponseReturnValue:
                     action_url=url_for('cluster.add_cluster'),
                     action_label='Review cluster form',
                     action_icon='server-cog',
-                    metadata={'cluster_name': form.name.data or '-', 'environment': form.environment.data or '-', 'reason': type(exc).__name__},
+                    metadata={
+                        'cluster_name': form.name.data or '-',
+                        'environment': form.environment.data or '-',
+                        'reason': type(exc).__name__,
+                    },
                     queue_feedback=True,
                 )
             except Exception as exc:
@@ -517,7 +533,11 @@ def add_cluster() -> ResponseReturnValue:
                     action_url=url_for('cluster.add_cluster'),
                     action_label='Review cluster form',
                     action_icon='server-cog',
-                    metadata={'cluster_name': form.name.data or '-', 'environment': form.environment.data or '-', 'reason': type(exc).__name__},
+                    metadata={
+                        'cluster_name': form.name.data or '-',
+                        'environment': form.environment.data or '-',
+                        'reason': type(exc).__name__,
+                    },
                     queue_feedback=True,
                 )
 
@@ -533,7 +553,11 @@ def add_cluster() -> ResponseReturnValue:
             action_url=url_for('cluster.add_cluster'),
             action_label='Review cluster form',
             action_icon='server-cog',
-            metadata={'cluster_name': form.name.data or '-', 'environment': form.environment.data or '-', 'validation_fields': sorted(form.errors.keys())},
+            metadata={
+                'cluster_name': form.name.data or '-',
+                'environment': form.environment.data or '-',
+                'validation_fields': sorted(form.errors.keys()),
+            },
             queue_feedback=True,
         )
 
@@ -577,7 +601,7 @@ def test_new_cluster_connection() -> ResponseReturnValue:
                 status='success',
                 title='Kubernetes connection verified',
                 message='KAORI reached the submitted Kubernetes API.',
-                detail=f"Kubernetes {result.get('version') or 'unknown'} accepted the submitted credentials. Save remains enabled until the tested form changes or the proof expires. Full capability and RBAC validation runs in the dedicated worker.",
+                detail=f'Kubernetes {result.get("version") or "unknown"} accepted the submitted credentials. Save remains enabled until the tested form changes or the proof expires. Full capability and RBAC validation runs in the dedicated worker.',
                 action_url=url_for('cluster.add_cluster'),
                 action_label='Complete cluster registration',
                 action_icon='server-cog',
@@ -597,7 +621,9 @@ def test_new_cluster_connection() -> ResponseReturnValue:
                 status='error',
                 title='Kubernetes connection test failed',
                 message='KAORI could not verify the submitted Kubernetes API connection.',
-                detail=result.get('error') or result.get('reason') or 'Review kubeconfig credentials, API reachability, and TLS policy.',
+                detail=result.get('error')
+                or result.get('reason')
+                or 'Review kubeconfig credentials, API reachability, and TLS policy.',
                 action_url=url_for('cluster.add_cluster'),
                 action_label='Review cluster form',
                 action_icon='server-cog',
@@ -624,14 +650,17 @@ def test_new_cluster_connection() -> ResponseReturnValue:
             verify_ssl=bool(form.kube_verify_ssl.data),
             allow_weak_tls=bool(form.kube_allow_weak_tls.data),
         )
-    response = make_response(render_template(
-        'cluster/partials/_connection_test_result.html',
-        connection_feedback=feedback,
-        notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
-    ))
-    response.headers['HX-Trigger'] = json.dumps({
-        'kubernetes-connection-tested': {'connected': bool(result.get('success')), 'proof': proof}
-    }, separators=(',', ':'))
+    response = make_response(
+        render_template(
+            'cluster/partials/_connection_test_result.html',
+            connection_feedback=feedback,
+            notification_context=get_navigation_notification_context(user_id=int(current_user.id)),
+        )
+    )
+    response.headers['HX-Trigger'] = json.dumps(
+        {'kubernetes-connection-tested': {'connected': bool(result.get('success')), 'proof': proof}},
+        separators=(',', ':'),
+    )
     return response
 
 
@@ -688,9 +717,11 @@ def test_edit_cluster_connection(cluster_id: str) -> ResponseReturnValue:
                 else f'KAORI could not verify the submitted settings for {cluster.name}.'
             ),
             detail=(
-                f"Kubernetes {result.get('version') or 'unknown'} accepted the submitted transport and credential contract. Save the change, then run Full Validation."
+                f'Kubernetes {result.get("version") or "unknown"} accepted the submitted transport and credential contract. Save the change, then run Full Validation.'
                 if connected
-                else result.get('error') or result.get('reason') or 'Review kubeconfig credentials, API reachability, and TLS policy.'
+                else result.get('error')
+                or result.get('reason')
+                or 'Review kubeconfig credentials, API reachability, and TLS policy.'
             ),
             action_url=url_for('cluster.edit_cluster', cluster_id=cluster.id),
             action_label='Review cluster settings',

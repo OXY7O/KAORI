@@ -72,8 +72,7 @@ def get_individual_sync_metadata(task_id: str) -> dict[str, Any]:
 
 def get_tracked_individual_sync_task_ids(user_id: int) -> list[str]:
     jobs = (
-        JobExecution.query
-        .join(JobExecutionSubscriber, JobExecutionSubscriber.job_execution_id == JobExecution.id)
+        JobExecution.query.join(JobExecutionSubscriber, JobExecutionSubscriber.job_execution_id == JobExecution.id)
         .filter(
             JobExecutionSubscriber.user_id == user_id,
             JobExecution.operation == 'inventory_sync_cluster',
@@ -169,7 +168,8 @@ def build_individual_sync_snapshot(task_id: str) -> dict[str, Any]:
         'is_active': state in ACTIVE_CELERY_STATES,
         'status': payload.get('status', 'info'),
         'title': payload.get('title') or 'Cluster inventory sync in progress',
-        'message': payload.get('message') or f"Synchronizing Kubernetes inventory for {payload.get('cluster_name', 'the selected cluster')}.",
+        'message': payload.get('message')
+        or f'Synchronizing Kubernetes inventory for {payload.get("cluster_name", "the selected cluster")}.',
         'detail': payload.get('detail'),
         'cluster_id': payload.get('cluster_id'),
         'cluster_name': payload.get('cluster_name'),

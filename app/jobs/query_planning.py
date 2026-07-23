@@ -33,7 +33,9 @@ def policy_from_config(config: dict[str, object]) -> QueryBudgetPolicy:
     )
 
 
-def recommended_step_seconds(*, start: datetime, end: datetime, requested_step_seconds: int, policy: QueryBudgetPolicy) -> int:
+def recommended_step_seconds(
+    *, start: datetime, end: datetime, requested_step_seconds: int, policy: QueryBudgetPolicy
+) -> int:
     duration_seconds = max(int((end - start).total_seconds()), 1)
     sample_floor = math.ceil(duration_seconds / max(policy.maximum_samples_per_series, 1))
     return max(requested_step_seconds, policy.minimum_step_seconds, sample_floor)

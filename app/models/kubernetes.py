@@ -23,9 +23,7 @@ class KubernetesConnection(db.Model):
     integration_instance_id: Mapped[int] = mapped_column(
         ForeignKey('integration_instances.id', ondelete='CASCADE'), nullable=False, unique=True
     )
-    cluster_id: Mapped[str] = mapped_column(
-        ForeignKey('clusters.id', ondelete='CASCADE'), nullable=False, unique=True
-    )
+    cluster_id: Mapped[str] = mapped_column(ForeignKey('clusters.id', ondelete='CASCADE'), nullable=False, unique=True)
     kubeconfig: Mapped[str] = mapped_column(EncryptedText(), nullable=False)
     verify_ssl: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     allow_weak_tls: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

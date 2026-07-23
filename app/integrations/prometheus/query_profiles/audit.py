@@ -45,16 +45,12 @@ class PromQLProfileAuditor:
         results: list[QueryCheckResult] = []
 
         for definition in definitions:
-            missing_metrics = tuple(
-                metric for metric in definition.required_metrics if metric not in available_metrics
-            )
+            missing_metrics = tuple(metric for metric in definition.required_metrics if metric not in available_metrics)
             missing_labels: list[str] = []
             if not missing_metrics and definition.required_labels:
                 for metric, required_labels in definition.required_labels:
                     labels = metric_label_cache.get(metric, set())
-                    missing_labels.extend(
-                        f'{metric}.{label}' for label in required_labels if label not in labels
-                    )
+                    missing_labels.extend(f'{metric}.{label}' for label in required_labels if label not in labels)
 
             status = 'ready'
             message = 'Required metrics and labels are available.'
@@ -92,17 +88,19 @@ class PromQLProfileAuditor:
                             execution_error = _response_error_detail(response)
                             message = f'Prometheus rejected the registered query: {execution_error}'
 
-            results.append(QueryCheckResult(
-                key=definition.key,
-                status=status,
-                message=message,
-                missing_metrics=missing_metrics,
-                missing_labels=tuple(sorted(set(missing_labels))),
-                deprecated=definition.is_deprecated,
-                replacement_key=definition.replacement_key,
-                execution_error=execution_error,
-                executed_expression=executed_expression,
-            ))
+            results.append(
+                QueryCheckResult(
+                    key=definition.key,
+                    status=status,
+                    message=message,
+                    missing_metrics=missing_metrics,
+                    missing_labels=tuple(sorted(set(missing_labels))),
+                    deprecated=definition.is_deprecated,
+                    replacement_key=definition.replacement_key,
+                    execution_error=execution_error,
+                    executed_expression=executed_expression,
+                )
+            )
 
         retention = self.validate_retention(('24h', '7d', '30d', '60d'))
         blocked = sum(item.status == 'blocked' for item in results)
@@ -113,7 +111,9 @@ class PromQLProfileAuditor:
         capability_assessments = self._capability_assessments(
             available_metrics, metric_label_cache, retention, blocked_details
         )
-        feature_contracts = evaluate_feature_contracts(self.client, sample_namespace=sample_namespace) if execute_queries else []
+        feature_contracts = (
+            evaluate_feature_contracts(self.client, sample_namespace=sample_namespace) if execute_queries else []
+        )
         if feature_contracts:
             self._reconcile_capabilities_from_contracts(capability_assessments, feature_contracts)
         feature_contract_summary = self._feature_contract_summary(feature_contracts)
@@ -143,7 +143,6 @@ class PromQLProfileAuditor:
             'retention': retention,
             'results': [asdict(item) for item in results],
         }
-
 
     @staticmethod
     def _reconcile_capabilities_from_contracts(
@@ -180,25 +179,16 @@ class PromQLProfileAuditor:
             assessment['evidence'] = ' '.join(item['observed'] for item in selected)
             assessment['observed'] = assessment['evidence']
             assessment['expected'] = ' '.join(item['expected'] for item in selected)
-            assessment['technical_checks'] = [
-                check
-                for item in selected
-                for check in item['technical_checks']
-            ]
-            assessment['technical_check_count_display'] = (
-                f"{len(assessment['technical_checks'])} technical checks"
+            assessment['technical_checks'] = [check for item in selected for check in item['technical_checks']]
+            assessment['technical_check_count_display'] = f'{len(assessment["technical_checks"])} technical checks'
+            validation_queries = [query for item in selected for query in item.get('validation_queries', []) if query]
+            assessment['validation_query'] = '\n'.join(dict.fromkeys(validation_queries)) or assessment.get(
+                'validation_query'
             )
-            validation_queries = [
-                query
-                for item in selected
-                for query in item.get('validation_queries', [])
-                if query
-            ]
-            assessment['validation_query'] = '\n'.join(dict.fromkeys(validation_queries)) or assessment.get('validation_query')
-            assessment['recommendation'] = ' '.join(
-                item['recommendation'] for item in selected if item['status'] != 'ready'
-            ) or 'No remediation is required. The exact registered Analytics queries passed.'
-
+            assessment['recommendation'] = (
+                ' '.join(item['recommendation'] for item in selected if item['status'] != 'ready')
+                or 'No remediation is required. The exact registered Analytics queries passed.'
+            )
 
     @staticmethod
     def _feature_contract_summary(contracts: list[dict[str, Any]]) -> dict[str, Any]:
@@ -256,7 +246,7 @@ class PromQLProfileAuditor:
         start = (now - timedelta(minutes=15)).timestamp()
         end = now.timestamp()
         for offset in range(0, len(metric_list), 12):
-            batch = metric_list[offset:offset + 12]
+            batch = metric_list[offset : offset + 12]
             try:
                 response = self.client.series(batch, limit=500, start=start, end=end)
             except PrometheusError:
@@ -300,36 +290,44 @@ class PromQLProfileAuditor:
             checks = technical_checks or []
             for check in checks:
                 check.setdefault('status_label', status_labels.get(check.get('status', ''), 'Unknown'))
-            assessments.append({
-                'key': item.key,
-                'label': item.label,
-                'status': status,
-                'status_label': status_labels.get(status, status.replace('_', ' ').title()),
-                'required_by': list(item.required_by),
-                'required_by_display': ', '.join(item.required_by),
-                'impact': item.impact,
-                'source_owner': item.source_owner,
-                'recommendation': item.recommendation,
-                'expected_signals': list(item.expected_signals),
-                'expected_signals_display': ', '.join(item.expected_signals),
-                'validation_query': item.validation_query,
-                'evidence': evidence,
-                'observed': observed or evidence,
-                'expected': expected or 'The complete feature query contract returns usable data.',
-                'technical_checks': checks,
-                'technical_check_count_display': f'{len(checks)} technical checks',
-                'possible_causes': possible_causes or [],
-            })
+            assessments.append(
+                {
+                    'key': item.key,
+                    'label': item.label,
+                    'status': status,
+                    'status_label': status_labels.get(status, status.replace('_', ' ').title()),
+                    'required_by': list(item.required_by),
+                    'required_by_display': ', '.join(item.required_by),
+                    'impact': item.impact,
+                    'source_owner': item.source_owner,
+                    'recommendation': item.recommendation,
+                    'expected_signals': list(item.expected_signals),
+                    'expected_signals_display': ', '.join(item.expected_signals),
+                    'validation_query': item.validation_query,
+                    'evidence': evidence,
+                    'observed': observed or evidence,
+                    'expected': expected or 'The complete feature query contract returns usable data.',
+                    'technical_checks': checks,
+                    'technical_check_count_display': f'{len(checks)} technical checks',
+                    'possible_causes': possible_causes or [],
+                }
+            )
 
         add('instant_query', 'available', 'The configured endpoint accepted vector(1).')
-        add('range_query', 'available', 'The Prometheus-compatible range query contract is expected and audited by the query profile.')
+        add(
+            'range_query',
+            'available',
+            'The Prometheus-compatible range query contract is expected and audited by the query profile.',
+        )
 
         identity = {'kube_node_info', 'kube_pod_info', 'kube_namespace_status_phase'}
         missing_identity = sorted(identity - available_metrics)
         add(
             'kubernetes_identity',
             'available' if not missing_identity else 'missing',
-            'All Kubernetes identity metrics are queryable.' if not missing_identity else f"Missing metrics: {', '.join(missing_identity)}",
+            'All Kubernetes identity metrics are queryable.'
+            if not missing_identity
+            else f'Missing metrics: {", ".join(missing_identity)}',
         )
 
         utilization_metrics = {
@@ -354,17 +352,15 @@ class PromQLProfileAuditor:
         invalid_utilization_labels = sorted(
             metric
             for metric, required_labels in utilization_label_requirements.items()
-            if metric in available_metrics
-            and not required_labels.issubset(metric_labels.get(metric, set()))
+            if metric in available_metrics and not required_labels.issubset(metric_labels.get(metric, set()))
         )
         if missing_utilization:
             utilization_status = 'missing'
-            utilization_evidence = f"Missing metrics: {', '.join(missing_utilization)}"
+            utilization_evidence = f'Missing metrics: {", ".join(missing_utilization)}'
         elif invalid_utilization_labels:
             utilization_status = 'misconfigured'
             utilization_evidence = (
-                'Required utilization labels are incomplete on: '
-                f"{', '.join(invalid_utilization_labels)}."
+                f'Required utilization labels are incomplete on: {", ".join(invalid_utilization_labels)}.'
             )
         else:
             utilization_status = 'available'
@@ -397,17 +393,16 @@ class PromQLProfileAuditor:
         invalid_workload_labels = sorted(
             metric
             for metric, required_labels in workload_label_requirements.items()
-            if metric in available_metrics
-            and not required_labels.issubset(metric_labels.get(metric, set()))
+            if metric in available_metrics and not required_labels.issubset(metric_labels.get(metric, set()))
         )
         if missing_workload:
             workload_status = 'missing'
-            workload_evidence = f"Missing metrics: {', '.join(missing_workload)}"
+            workload_evidence = f'Missing metrics: {", ".join(missing_workload)}'
         elif invalid_workload_labels:
             workload_status = 'misconfigured'
             workload_evidence = (
                 'Required workload identity and governance labels are incomplete on: '
-                f"{', '.join(invalid_workload_labels)}."
+                f'{", ".join(invalid_workload_labels)}.'
             )
         else:
             workload_status = 'available'
@@ -434,17 +429,15 @@ class PromQLProfileAuditor:
         invalid_capacity_labels = sorted(
             metric
             for metric, required_labels in capacity_label_requirements.items()
-            if metric in available_metrics
-            and not required_labels.issubset(metric_labels.get(metric, set()))
+            if metric in available_metrics and not required_labels.issubset(metric_labels.get(metric, set()))
         )
         if missing_capacity:
             capacity_status = 'missing'
-            capacity_evidence = f"Missing metrics: {', '.join(missing_capacity)}"
+            capacity_evidence = f'Missing metrics: {", ".join(missing_capacity)}'
         elif invalid_capacity_labels:
             capacity_status = 'misconfigured'
             capacity_evidence = (
-                'Required worker-capacity labels are incomplete on: '
-                f"{', '.join(invalid_capacity_labels)}."
+                f'Required worker-capacity labels are incomplete on: {", ".join(invalid_capacity_labels)}.'
             )
         else:
             capacity_status = 'available'
@@ -456,7 +449,9 @@ class PromQLProfileAuditor:
         add(
             'resource_requests_limits',
             'available' if not missing_resource else 'missing',
-            'Request and limit metrics are queryable.' if not missing_resource else f"Missing metrics: {', '.join(missing_resource)}",
+            'Request and limit metrics are queryable.'
+            if not missing_resource
+            else f'Missing metrics: {", ".join(missing_resource)}',
         )
 
         pvc_metrics = (
@@ -465,7 +460,9 @@ class PromQLProfileAuditor:
             'kubelet_volume_stats_available_bytes',
         )
         pvc_checks = [
-            self._technical_metric_check(metric, available_metrics, metric_labels, {'namespace', 'persistentvolumeclaim'})
+            self._technical_metric_check(
+                metric, available_metrics, metric_labels, {'namespace', 'persistentvolumeclaim'}
+            )
             for metric in pvc_metrics
         ]
         pvc_contract = self._query_contract(
@@ -475,10 +472,10 @@ class PromQLProfileAuditor:
         pvc_missing = [metric for metric in pvc_metrics if metric not in available_metrics]
         if pvc_contract['passed']:
             pvc_status = 'available'
-            pvc_evidence = f"Validation query returned {pvc_contract['series_count']} PVC series."
+            pvc_evidence = f'Validation query returned {pvc_contract["series_count"]} PVC series.'
         elif pvc_missing:
             pvc_status = 'missing'
-            pvc_evidence = f"Validation query failed because metrics were not found: {', '.join(pvc_missing)}."
+            pvc_evidence = f'Validation query failed because metrics were not found: {", ".join(pvc_missing)}.'
         else:
             pvc_status = 'not_observed'
             pvc_evidence = 'PVC metrics are available, but the validation query returned no active PVC series.'
@@ -508,12 +505,14 @@ class PromQLProfileAuditor:
             node_status = 'available'
             common_nodes = sorted(size_contract['nodes'] & available_contract['nodes'])
             node_evidence = (
-                f"Storage query contract passed. Capacity and available queries returned canonical node series"
-                f" for {len(common_nodes)} shared nodes."
+                f'Storage query contract passed. Capacity and available queries returned canonical node series'
+                f' for {len(common_nodes)} shared nodes.'
             )
         elif filesystem_missing:
             node_status = 'missing'
-            node_evidence = f"Storage query contract failed because metrics were not found: {', '.join(filesystem_missing)}."
+            node_evidence = (
+                f'Storage query contract failed because metrics were not found: {", ".join(filesystem_missing)}.'
+            )
         else:
             node_status = 'misconfigured'
             node_evidence = (
@@ -526,15 +525,16 @@ class PromQLProfileAuditor:
             node_status,
             node_evidence,
             observed=(
-                f"Capacity query: {size_contract['series_count']} series; available query: "
-                f"{available_contract['series_count']} series; canonical nodes observed: "
-                f"{', '.join(observed_nodes[:5]) or 'none'}."
+                f'Capacity query: {size_contract["series_count"]} series; available query: '
+                f'{available_contract["series_count"]} series; canonical nodes observed: '
+                f'{", ".join(observed_nodes[:5]) or "none"}.'
             ),
             expected=(
                 'Both exact Storage Analytics queries return at least one numeric series with node, '
                 'nodename, or kubernetes_node identity. /var is preferred and / is accepted as fallback.'
             ),
-            technical_checks=filesystem_checks + [
+            technical_checks=filesystem_checks
+            + [
                 size_contract['technical_check'],
                 available_contract['technical_check'],
             ],
@@ -550,7 +550,9 @@ class PromQLProfileAuditor:
         add(
             'long_term_history',
             'available' if history_ready else 'missing',
-            'Historical samples were found at 60 days.' if history_ready else 'No samples were found at the 60-day horizon.',
+            'Historical samples were found at 60 days.'
+            if history_ready
+            else 'No samples were found at the 60-day horizon.',
         )
 
         return assessments
@@ -576,17 +578,15 @@ class PromQLProfileAuditor:
                 },
             }
         rows = response.get('data', {}).get('result', []) if response.get('status') == 'success' else []
-        valid_rows = [
-            row for row in rows
-            if required_labels.issubset(set((row.get('metric') or {}).keys()))
-        ]
+        valid_rows = [row for row in rows if required_labels.issubset(set((row.get('metric') or {}).keys()))]
         passed = bool(valid_rows)
         return {
             'passed': passed,
             'series_count': len(valid_rows),
             'observed': (
                 f'{len(valid_rows)} usable series returned from {len(rows)} total series.'
-                if rows else 'The validation query returned zero series.'
+                if rows
+                else 'The validation query returned zero series.'
             ),
             'technical_check': {
                 'label': 'Validation query',
@@ -602,9 +602,7 @@ class PromQLProfileAuditor:
             f'{metric}{{mountpoint="/", fstype!~"tmpfs|overlay"}}',
         )
         expressions = tuple(
-            'count by (node, nodename, kubernetes_node, mountpoint) '
-            f'({expression})'
-            for expression in raw_expressions
+            f'count by (node, nodename, kubernetes_node, mountpoint) ({expression})' for expression in raw_expressions
         )
         selected_expression = expressions[0]
         rows: list[dict[str, Any]] = []
@@ -635,7 +633,8 @@ class PromQLProfileAuditor:
                 'status': 'available' if passed else 'misconfigured',
                 'evidence': (
                     f'{usable} usable series across {len(nodes)} canonical nodes using: {selected_expression}'
-                    if rows else f'Zero series returned using /var and / fallback queries for {metric}.'
+                    if rows
+                    else f'Zero series returned using /var and / fallback queries for {metric}.'
                 ),
             },
         }
@@ -659,7 +658,7 @@ class PromQLProfileAuditor:
             'label': metric,
             'status': 'available',
             'evidence': (
-                f"Metric is available. Advisory labels observed: {', '.join(matched) or 'none in recent /series sample'}."
+                f'Metric is available. Advisory labels observed: {", ".join(matched) or "none in recent /series sample"}.'
             ),
         }
 
@@ -678,8 +677,12 @@ class PromQLProfileAuditor:
         for domain, values in domain_summary.items():
             blocked = values.get('blocked_count', 0)
             output[domain] = {
-                'label': labels.get(domain, domain.replace('app.analytics.', '').replace('app.', '').replace('_', ' ').title()),
-                'status': 'ready' if blocked == 0 else ('unavailable' if values.get('ready_count', 0) == 0 else 'degraded'),
+                'label': labels.get(
+                    domain, domain.replace('app.analytics.', '').replace('app.', '').replace('_', ' ').title()
+                ),
+                'status': 'ready'
+                if blocked == 0
+                else ('unavailable' if values.get('ready_count', 0) == 0 else 'degraded'),
                 'ready_count': values.get('ready_count', 0),
                 'query_count': values.get('query_count', 0),
                 'blocked_count': blocked,
@@ -693,23 +696,32 @@ class PromQLProfileAuditor:
         for definition, result in zip(definitions, results, strict=True):
             if result.status != 'blocked':
                 continue
-            output.append({
-                'key': result.key,
-                'domain': definition.domain,
-                'domain_label': definition.domain.replace('app.analytics.', '').replace('app.', '').replace('.', ' ').replace('_', ' ').title(),
-                'message': result.message,
-                'missing_metrics': list(result.missing_metrics),
-                'missing_labels': list(result.missing_labels),
-                'execution_error': result.execution_error,
-                'executed_expression': result.executed_expression,
-            })
+            output.append(
+                {
+                    'key': result.key,
+                    'domain': definition.domain,
+                    'domain_label': definition.domain.replace('app.analytics.', '')
+                    .replace('app.', '')
+                    .replace('.', ' ')
+                    .replace('_', ' ')
+                    .title(),
+                    'message': result.message,
+                    'missing_metrics': list(result.missing_metrics),
+                    'missing_labels': list(result.missing_labels),
+                    'execution_error': result.execution_error,
+                    'executed_expression': result.executed_expression,
+                }
+            )
         return output
 
     @staticmethod
     def _domain_summary(definitions: Sequence[Any], results: Sequence[QueryCheckResult]) -> dict[str, dict[str, int]]:
         output: dict[str, dict[str, int]] = {}
         for definition, result in zip(definitions, results, strict=True):
-            item = output.setdefault(definition.domain, {'query_count': 0, 'ready_count': 0, 'blocked_count': 0, 'deprecated_count': 0, 'deferred_count': 0})
+            item = output.setdefault(
+                definition.domain,
+                {'query_count': 0, 'ready_count': 0, 'blocked_count': 0, 'deprecated_count': 0, 'deferred_count': 0},
+            )
             item['query_count'] += 1
             if result.status == 'ready':
                 item['ready_count'] += 1
@@ -753,4 +765,4 @@ def _parse_duration(value: str) -> timedelta:
 
 
 def _escape_label_value(value: str) -> str:
-    return value.replace('\\', '\\\\').replace('\"', '\\"')
+    return value.replace('\\', '\\\\').replace('"', '\\"')

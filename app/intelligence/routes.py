@@ -39,7 +39,6 @@ def catalog() -> ResponseReturnValue:
     return render_template('intelligence/recommendations.html', payload=payload)
 
 
-
 @intelligence_bp.route('/alert-intelligence')
 @permission_required('intelligence.view')
 def alert_intelligence() -> ResponseReturnValue:

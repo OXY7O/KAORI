@@ -61,9 +61,7 @@ def activity_failure_message(event_type: str, text: str) -> str:
     if event_type.startswith('operational_activity_'):
         return 'The activity retention operation could not be completed safely. Review the retention status and worker logs before retrying.'
 
-    return (
-        'The operation could not be completed. Review the related configuration and KAORI logs, then try again.'
-    )
+    return 'The operation could not be completed. Review the related configuration and KAORI logs, then try again.'
 
 
 def standardize_activity_text(

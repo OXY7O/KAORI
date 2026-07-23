@@ -157,8 +157,6 @@ def _release_job_safely(
         )
 
 
-
-
 def _ensure_instance_operational(instance: Any, *, provider_type: str) -> None:
     """Compatibility wrapper around the shared integration lifecycle guard."""
     ensure_provider_operational(instance, provider_type=provider_type)
@@ -228,13 +226,19 @@ def _record_completion(
         user_ids.insert(0, requested_by_user_id)
     if not user_ids:
         return None
-    section = 'scope' if operation == 'binding_validation' else ('runtime' if operation == 'runtime_refresh' else 'validation')
+    section = (
+        'scope'
+        if operation == 'binding_validation'
+        else ('runtime' if operation == 'runtime_refresh' else 'validation')
+    )
     selected_feedback: dict[str, Any] | None = None
     enriched_metadata = {**metadata, 'job_execution_id': job.id if job is not None else None}
     for user_id in user_ids:
         feedback = record_operational_activity(
             user_id=user_id,
-            event_type=f'{provider_type}_{operation}_completed' if status != 'error' else f'{provider_type}_{operation}_failed',
+            event_type=f'{provider_type}_{operation}_completed'
+            if status != 'error'
+            else f'{provider_type}_{operation}_failed',
             status=status,
             title=title,
             message=message,
@@ -333,11 +337,20 @@ def validate_integration_instance(
             operation='full_validation',
             instance_id=instance_id,
         )
-        return {**base, 'status': 'warning', 'title': 'Validation canceled', 'message': 'KAORI canceled the queued validation before provider execution.', 'detail': 'No provider request was started.', 'finished_at': _now_iso()}
+        return {
+            **base,
+            'status': 'warning',
+            'title': 'Validation canceled',
+            'message': 'KAORI canceled the queued validation before provider execution.',
+            'detail': 'No provider request was started.',
+            'finished_at': _now_iso(),
+        }
     _store_progress(self, base)
     operation = str(base['operation'])
     try:
-        _update_worker_phase(self, current=1, total=4, message='Connecting to the provider and loading the full validation contract.')
+        _update_worker_phase(
+            self, current=1, total=4, message='Connecting to the provider and loading the full validation contract.'
+        )
         if provider_type == 'prometheus':
             instance = db.session.get(PrometheusInstance, instance_id)
             if instance is None:
@@ -348,16 +361,25 @@ def validate_integration_instance(
                 instance,
                 trigger_type=trigger_type,
             )
-            _update_worker_phase(self, current=2, total=4, message='Prometheus capability evidence was collected; refreshing scope bindings.')
+            _update_worker_phase(
+                self,
+                current=2,
+                total=4,
+                message='Prometheus capability evidence was collected; refreshing scope bindings.',
+            )
             ensure_canonical_instance(instance, provider_type='prometheus')
             binding_summary = _refresh_prometheus_bindings(instance)
-            _update_worker_phase(self, current=3, total=4, message='Prometheus scope bindings were refreshed; finalizing evidence.')
+            _update_worker_phase(
+                self, current=3, total=4, message='Prometheus scope bindings were refreshed; finalizing evidence.'
+            )
             db.session.commit()
             result_payload = dict(validation_result or {})
             result_payload['binding_validation_summary'] = binding_summary
             readiness = str(result_payload.get('readiness_status') or state.readiness or 'validation_required')
             status = 'success' if readiness == 'ready' else ('error' if readiness == 'blocked' else 'warning')
-            title = 'Prometheus validation completed' if status != 'error' else 'Prometheus validation requires attention'
+            title = (
+                'Prometheus validation completed' if status != 'error' else 'Prometheus validation requires attention'
+            )
             message = f'Full Validation completed for {instance.name}.'
             detail = str(result_payload.get('message') or state.message)
             instance_name = instance.name
@@ -371,12 +393,21 @@ def validate_integration_instance(
                 instance,
                 trigger_type=trigger_type,
             )
-            _update_worker_phase(self, current=2, total=4, message='Alertmanager capability evidence was collected; refreshing scope bindings.')
+            _update_worker_phase(
+                self,
+                current=2,
+                total=4,
+                message='Alertmanager capability evidence was collected; refreshing scope bindings.',
+            )
             ensure_canonical_instance(instance, provider_type='alertmanager')
             binding_summary = _refresh_alertmanager_bindings(instance)
-            _update_worker_phase(self, current=3, total=4, message='Alertmanager scope bindings were refreshed; finalizing evidence.')
+            _update_worker_phase(
+                self, current=3, total=4, message='Alertmanager scope bindings were refreshed; finalizing evidence.'
+            )
             db.session.commit()
-            result_payload = validation_result.to_dict() if hasattr(validation_result, 'to_dict') else dict(validation_result or {})
+            result_payload = (
+                validation_result.to_dict() if hasattr(validation_result, 'to_dict') else dict(validation_result or {})
+            )
             result_payload['binding_validation_summary'] = binding_summary
             readiness = str(result_payload.get('readiness_status') or state.readiness or 'validation_required')
             connected = bool(result_payload.get('connected'))
@@ -398,11 +429,18 @@ def validate_integration_instance(
                 connection,
                 trigger_type=trigger_type,
             )
-            _update_worker_phase(self, current=3, total=4, message='Kubernetes compatibility, capability, and RBAC evidence was collected; finalizing the result.')
+            _update_worker_phase(
+                self,
+                current=3,
+                total=4,
+                message='Kubernetes compatibility, capability, and RBAC evidence was collected; finalizing the result.',
+            )
             result_payload = dict(validation_result or {})
             success = bool(result_payload.get('success'))
             status = 'success' if success and state.readiness == 'ready' else ('warning' if success else 'error')
-            title = 'Kubernetes capability validation completed' if success else 'Kubernetes capability validation failed'
+            title = (
+                'Kubernetes capability validation completed' if success else 'Kubernetes capability validation failed'
+            )
             message = f'Compatibility, capability, and RBAC evidence was rebuilt for {connection.cluster.name}.'
             detail = str(result_payload.get('validation_message') or result_payload.get('message') or state.message)
             instance_name = connection.cluster.name
@@ -510,19 +548,20 @@ def _refresh_prometheus_bindings(instance: PrometheusInstance) -> dict[str, Any]
         )
         if result.get('status') == 'ready':
             ready += 1
-        results.append({
-            'binding_id': binding.id,
-            'status': result.get('status'),
-            'matched_signal': result.get('matched_signal'),
-            'matched_series': result.get('matched_series'),
-        })
+        results.append(
+            {
+                'binding_id': binding.id,
+                'status': result.get('status'),
+                'matched_signal': result.get('matched_signal'),
+                'matched_series': result.get('matched_series'),
+            }
+        )
     return {
         'total': len(bindings),
         'ready': ready,
         'attention': len(bindings) - ready,
         'results': results,
     }
-
 
 
 def _refresh_alertmanager_bindings(instance: AlertmanagerInstance) -> dict[str, Any]:
@@ -548,11 +587,13 @@ def _refresh_alertmanager_bindings(instance: AlertmanagerInstance) -> dict[str, 
         )
         if result.get('status') == 'ready':
             ready += 1
-        results.append({
-            'binding_id': binding.id,
-            'status': result.get('status'),
-            'matched_alerts': result.get('matched_alerts'),
-        })
+        results.append(
+            {
+                'binding_id': binding.id,
+                'status': result.get('status'),
+                'matched_alerts': result.get('matched_alerts'),
+            }
+        )
     return {
         'total': len(bindings),
         'ready': ready,
@@ -603,7 +644,14 @@ def validate_integration_binding(
             instance_id=instance_id,
             binding_id=binding_id,
         )
-        return {**base, 'status': 'warning', 'title': 'Binding validation canceled', 'message': 'KAORI canceled the queued binding validation before provider execution.', 'detail': 'No provider request was started.', 'finished_at': _now_iso()}
+        return {
+            **base,
+            'status': 'warning',
+            'title': 'Binding validation canceled',
+            'message': 'KAORI canceled the queued binding validation before provider execution.',
+            'detail': 'No provider request was started.',
+            'finished_at': _now_iso(),
+        }
     _store_progress(self, base)
     try:
         _update_worker_phase(self, current=1, total=3, message='Loading the binding and its scope identity contract.')
@@ -618,9 +666,7 @@ def validate_integration_binding(
         if not binding.enabled:
             raise RuntimeError('Binding validation was canceled because the binding is disabled.')
         if binding.integration_instance_id != instance.integration_instance_id:
-            raise LookupError(
-                f'{module.label} binding does not belong to the selected source.'
-            )
+            raise LookupError(f'{module.label} binding does not belong to the selected source.')
         result_payload = execute_integration_operation(
             provider_type,
             'binding.validate',
@@ -629,7 +675,9 @@ def validate_integration_binding(
         )
         instance_name = instance.name
 
-        _update_worker_phase(self, current=2, total=3, message='The provider accepted the binding probe; finalizing scope evidence.')
+        _update_worker_phase(
+            self, current=2, total=3, message='The provider accepted the binding probe; finalizing scope evidence.'
+        )
         binding_status = str(result_payload.get('status') or 'validation_required')
         status = 'success' if binding_status == 'ready' else ('error' if binding_status == 'blocked' else 'warning')
         title = f'{provider_type.title()} binding validation completed'
@@ -748,10 +796,19 @@ def refresh_integration_runtime_instance(
             operation='runtime_refresh',
             instance_id=instance_id,
         )
-        return {**base, 'status': 'warning', 'title': 'Runtime refresh canceled', 'message': 'KAORI canceled the queued runtime refresh before provider execution.', 'detail': 'No provider request was started.', 'finished_at': _now_iso()}
+        return {
+            **base,
+            'status': 'warning',
+            'title': 'Runtime refresh canceled',
+            'message': 'KAORI canceled the queued runtime refresh before provider execution.',
+            'detail': 'No provider request was started.',
+            'finished_at': _now_iso(),
+        }
     _store_progress(self, base)
     try:
-        _update_worker_phase(self, current=1, total=3, message='Connecting to the provider for a lightweight runtime health check.')
+        _update_worker_phase(
+            self, current=1, total=3, message='Connecting to the provider for a lightweight runtime health check.'
+        )
         integration = get_integration(provider_type)
         instance = integration.get_instance(instance_id)
         _ensure_instance_operational(instance, provider_type=provider_type)
@@ -762,7 +819,9 @@ def refresh_integration_runtime_instance(
             trigger_type=trigger_type,
             integration_instance_id=instance.integration_instance_id,
         )
-        _update_worker_phase(self, current=2, total=3, message='Runtime health evidence was collected; persisting the observation.')
+        _update_worker_phase(
+            self, current=2, total=3, message='Runtime health evidence was collected; persisting the observation.'
+        )
         completion_status = (
             'success'
             if state.health.status == 'healthy'
@@ -856,9 +915,7 @@ def enqueue_runtime_refresh(*, provider_type: str, instance_id: int) -> str | No
         instance_id=instance_id,
     ):
         return None
-    deduplication_key = build_deduplication_key(
-        'integration', provider_type, instance_id, 'runtime_refresh'
-    )
+    deduplication_key = build_deduplication_key('integration', provider_type, instance_id, 'runtime_refresh')
     job, created = create_or_attach_job(
         job_type='integration_operation',
         operation='runtime_refresh',

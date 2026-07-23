@@ -95,11 +95,7 @@ def get_services(
 
         for port in spec.ports or []:
             target_port = getattr(port, 'target_port', None)
-            target_port_value = (
-                getattr(target_port, 'value', None)
-                if target_port is not None
-                else None
-            )
+            target_port_value = getattr(target_port, 'value', None) if target_port is not None else None
             if target_port_value is None and target_port is not None:
                 target_port_value = str(target_port)
 

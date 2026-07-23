@@ -180,7 +180,6 @@ def record_operational_activity(
     return feedback
 
 
-
 def queue_transient_feedback(
     *,
     status: str,
@@ -216,6 +215,7 @@ def queue_transient_feedback(
     )
     _queue_quick_action_feedback(feedback)
     return feedback
+
 
 def get_navigation_notification_context(
     *,

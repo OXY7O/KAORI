@@ -35,6 +35,7 @@ from app.rbac.decorators import permission_required
 
 integrations_bp = Blueprint('integrations', __name__, url_prefix='/integrations')
 
+
 @integrations_bp.get('/')
 @permission_required('settings.manage_integrations')
 def overview() -> ResponseReturnValue:
@@ -263,7 +264,9 @@ def kubernetes_capability_validate(cluster_id: str) -> ResponseReturnValue:
         )
         feedback = record_operational_activity(
             user_id=int(current_user.id),
-            event_type='kubernetes_capability_validation_queued' if created else 'kubernetes_capability_validation_already_running',
+            event_type='kubernetes_capability_validation_queued'
+            if created
+            else 'kubernetes_capability_validation_already_running',
             status='info' if created else 'warning',
             title='Kubernetes capability validation queued' if created else 'Kubernetes validation already running',
             message=(
@@ -304,12 +307,14 @@ def kubernetes_capability_validate(cluster_id: str) -> ResponseReturnValue:
         )
     if is_htmx:
         context = _kubernetes_detail_context(cluster_id)
-        context.update({
-            'validation_job': validation_job,
-            'capability_validation_job': validation_job,
-            'operation_feedback': feedback,
-            'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
-        })
+        context.update(
+            {
+                'validation_job': validation_job,
+                'capability_validation_job': validation_job,
+                'operation_feedback': feedback,
+                'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
+            }
+        )
         return render_template('integrations/kubernetes/partials/_capability_workspace.html', **context)
     return redirect(url_for('integrations.kubernetes_detail', cluster_id=cluster_id) + '#validation')
 
@@ -328,12 +333,14 @@ def kubernetes_capability_validation_status(cluster_id: str, task_id: str) -> Re
     ):
         abort(404)
     context = _kubernetes_detail_context(cluster_id)
-    context.update({
-        'validation_job': snapshot,
-        'capability_validation_job': snapshot,
-        'operation_feedback': snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
-        'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
-    })
+    context.update(
+        {
+            'validation_job': snapshot,
+            'capability_validation_job': snapshot,
+            'operation_feedback': snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
+            'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
+        }
+    )
     return render_template('integrations/kubernetes/partials/_capability_workspace.html', **context)
 
 
@@ -393,12 +400,14 @@ def kubernetes_runtime_refresh(cluster_id: str) -> ResponseReturnValue:
         )
     if is_htmx:
         context = _kubernetes_detail_context(cluster_id)
-        context.update({
-            'validation_job': validation_job,
-            'runtime_validation_job': validation_job,
-            'operation_feedback': feedback,
-            'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
-        })
+        context.update(
+            {
+                'validation_job': validation_job,
+                'runtime_validation_job': validation_job,
+                'operation_feedback': feedback,
+                'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
+            }
+        )
         return render_template('integrations/kubernetes/partials/_runtime_workspace.html', **context)
     return redirect(url_for('integrations.kubernetes_detail', cluster_id=cluster_id) + '#runtime')
 
@@ -417,12 +426,14 @@ def kubernetes_runtime_refresh_status(cluster_id: str, task_id: str) -> Response
     ):
         abort(404)
     context = _kubernetes_detail_context(cluster_id)
-    context.update({
-        'validation_job': snapshot,
-        'runtime_validation_job': snapshot,
-        'operation_feedback': snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
-        'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
-    })
+    context.update(
+        {
+            'validation_job': snapshot,
+            'runtime_validation_job': snapshot,
+            'operation_feedback': snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
+            'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
+        }
+    )
     return render_template('integrations/kubernetes/partials/_runtime_workspace.html', **context)
 
 
@@ -490,7 +501,6 @@ def alertmanager() -> ResponseReturnValue:
             return render_template('integrations/partials/_coverage_content.html', **context)
         return render_template('integrations/alertmanager/partials/_inventory_content.html', **context)
     return render_template('integrations/alertmanager.html', **context)
-
 
 
 def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnValue:
@@ -590,9 +600,8 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
             )
             if not is_htmx_request():
                 return redirect(
-                    url_for(
-                        'integrations.prometheus' if provider_type == 'prometheus' else 'integrations.alertmanager'
-                    ) + '#integration-coverage'
+                    url_for('integrations.prometheus' if provider_type == 'prometheus' else 'integrations.alertmanager')
+                    + '#integration-coverage'
                 )
 
     context = build_binding_workspace(
@@ -604,9 +613,7 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
     if context['cluster'] is None and request.method == 'GET':
         abort(404)
     context['notification_context'] = (
-        get_navigation_notification_context(user_id=int(current_user.id))
-        if feedback is not None
-        else None
+        get_navigation_notification_context(user_id=int(current_user.id)) if feedback is not None else None
     )
     if is_htmx_request():
         return render_template('integrations/bindings/partials/_workspace.html', **context)

@@ -602,16 +602,9 @@ def build_templates_pagination(
         **pagination.as_dict(),
         'per_page_options': list(PER_PAGE_OPTIONS),
         'has_previous': pagination.has_prev,
-        'previous_href': build_templates_page_href(
-            selected_filters, pagination.prev_page, pagination.per_page
-        ),
-        'next_href': build_templates_page_href(
-            selected_filters, pagination.next_page, pagination.per_page
-        ),
-        'label': (
-            f'Showing {pagination.start_item} - {pagination.end_item} '
-            f'of {pagination.total_items} templates'
-        ),
+        'previous_href': build_templates_page_href(selected_filters, pagination.prev_page, pagination.per_page),
+        'next_href': build_templates_page_href(selected_filters, pagination.next_page, pagination.per_page),
+        'label': (f'Showing {pagination.start_item} - {pagination.end_item} of {pagination.total_items} templates'),
     }
 
 

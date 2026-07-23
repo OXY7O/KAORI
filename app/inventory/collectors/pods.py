@@ -99,9 +99,7 @@ def _container_runtime_rows(
     kind: str,
 ) -> list[dict[str, Any]]:
     spec_by_name = {
-        _model_value(container, 'name'): container
-        for container in specs or []
-        if _model_value(container, 'name')
+        _model_value(container, 'name'): container for container in specs or [] if _model_value(container, 'name')
     }
     status_by_name = {
         _model_value(container_status, 'name'): container_status
@@ -161,10 +159,7 @@ def _volume_source(volume) -> tuple[str, str]:
         source = _model_value(volume, snake_name, camel_name)
         if source is None:
             continue
-        camel_value = ''.join(
-            word.capitalize() if index else word
-            for index, word in enumerate(value_name.split('_'))
-        )
+        camel_value = ''.join(word.capitalize() if index else word for index, word in enumerate(value_name.split('_')))
         return (
             volume_type,
             _string_value(_model_value(source, value_name, camel_value)),
@@ -236,9 +231,7 @@ def _pod_owner_chain(
 ) -> list[dict[str, str]]:
     chain: list[dict[str, str]] = []
 
-    if workload_type and workload_name and (
-        workload_type != direct_kind or workload_name != direct_name
-    ):
+    if workload_type and workload_name and (workload_type != direct_kind or workload_name != direct_name):
         chain.append({'kind': workload_type, 'name': workload_name})
 
     if direct_kind and direct_name:
@@ -307,14 +300,16 @@ def get_pods(
             continue
 
         container_statuses = _model_value(status, 'container_statuses', 'containerStatuses', default=[]) or []
-        init_container_statuses = _model_value(status, 'init_container_statuses', 'initContainerStatuses', default=[]) or []
-        ephemeral_container_statuses = _model_value(status, 'ephemeral_container_statuses', 'ephemeralContainerStatuses', default=[]) or []
+        init_container_statuses = (
+            _model_value(status, 'init_container_statuses', 'initContainerStatuses', default=[]) or []
+        )
+        ephemeral_container_statuses = (
+            _model_value(status, 'ephemeral_container_statuses', 'ephemeralContainerStatuses', default=[]) or []
+        )
 
         total_containers = len(container_statuses)
         ready_containers = sum(
-            1
-            for container in container_statuses
-            if bool(_model_value(container, 'ready', default=False))
+            1 for container in container_statuses if bool(_model_value(container, 'ready', default=False))
         )
         restart_count = sum(
             int(_model_value(container, 'restart_count', 'restartCount', default=0) or 0)
@@ -326,19 +321,13 @@ def get_pods(
         ephemeral_containers = _model_value(spec, 'ephemeral_containers', 'ephemeralContainers', default=[]) or []
 
         container_images = [
-            _model_value(container, 'image')
-            for container in containers
-            if _model_value(container, 'image')
+            _model_value(container, 'image') for container in containers if _model_value(container, 'image')
         ]
         init_container_images = [
-            _model_value(container, 'image')
-            for container in init_containers
-            if _model_value(container, 'image')
+            _model_value(container, 'image') for container in init_containers if _model_value(container, 'image')
         ]
         container_names = [
-            _model_value(container, 'name')
-            for container in containers
-            if _model_value(container, 'name')
+            _model_value(container, 'name') for container in containers if _model_value(container, 'name')
         ]
         image_count = len(container_images) + len(init_container_images)
 
@@ -423,8 +412,7 @@ def get_pods(
                 )
 
         tolerations = [
-            _toleration_display(toleration)
-            for toleration in _model_value(spec, 'tolerations', default=[]) or []
+            _toleration_display(toleration) for toleration in _model_value(spec, 'tolerations', default=[]) or []
         ]
         labels = dict(sorted((metadata.labels or {}).items()))
         annotations = dict(sorted((metadata.annotations or {}).items()))
@@ -448,7 +436,9 @@ def get_pods(
             'placement': {
                 'scheduler': _model_value(spec, 'scheduler_name', 'schedulerName') or '-',
                 'priority_class': _model_value(spec, 'priority_class_name', 'priorityClassName') or '-',
-                'node_selector': dict(sorted((_model_value(spec, 'node_selector', 'nodeSelector', default={}) or {}).items())),
+                'node_selector': dict(
+                    sorted((_model_value(spec, 'node_selector', 'nodeSelector', default={}) or {}).items())
+                ),
                 'tolerations': tolerations,
                 'affinity_configured': _model_value(spec, 'affinity') is not None,
                 'topology_spread_count': len(

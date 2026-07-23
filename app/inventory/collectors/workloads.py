@@ -60,9 +60,7 @@ def _pod_template_details(template_spec) -> dict:
         return defaults
 
     regular_containers = list(_model_value(template_spec, 'containers', default=[]) or [])
-    init_containers = list(
-        _model_value(template_spec, 'init_containers', 'initContainers', default=[]) or []
-    )
+    init_containers = list(_model_value(template_spec, 'init_containers', 'initContainers', default=[]) or [])
     containers: list[dict[str, str]] = []
 
     for container in regular_containers:
@@ -70,9 +68,7 @@ def _pod_template_details(template_spec) -> dict:
             {
                 'name': _string_value(_model_value(container, 'name')),
                 'image': _string_value(_model_value(container, 'image')),
-                'pull_policy': _string_value(
-                    _model_value(container, 'image_pull_policy', 'imagePullPolicy')
-                ),
+                'pull_policy': _string_value(_model_value(container, 'image_pull_policy', 'imagePullPolicy')),
                 'kind': 'Container',
             }
         )
@@ -82,25 +78,23 @@ def _pod_template_details(template_spec) -> dict:
             {
                 'name': _string_value(_model_value(container, 'name')),
                 'image': _string_value(_model_value(container, 'image')),
-                'pull_policy': _string_value(
-                    _model_value(container, 'image_pull_policy', 'imagePullPolicy')
-                ),
+                'pull_policy': _string_value(_model_value(container, 'image_pull_policy', 'imagePullPolicy')),
                 'kind': 'Init container',
             }
         )
 
     tolerations = [
-        _toleration_display(toleration)
-        for toleration in (
-            _model_value(template_spec, 'tolerations', default=[]) or []
-        )
+        _toleration_display(toleration) for toleration in (_model_value(template_spec, 'tolerations', default=[]) or [])
     ]
-    node_selector = _model_value(
-        template_spec,
-        'node_selector',
-        'nodeSelector',
-        default={},
-    ) or {}
+    node_selector = (
+        _model_value(
+            template_spec,
+            'node_selector',
+            'nodeSelector',
+            default={},
+        )
+        or {}
+    )
 
     return {
         'reported': True,
@@ -117,22 +111,14 @@ def _pod_template_details(template_spec) -> dict:
             ),
             'default',
         ),
-        'restart_policy': _string_value(
-            _model_value(template_spec, 'restart_policy', 'restartPolicy')
-        ),
-        'priority_class': _string_value(
-            _model_value(template_spec, 'priority_class_name', 'priorityClassName')
-        ),
+        'restart_policy': _string_value(_model_value(template_spec, 'restart_policy', 'restartPolicy')),
+        'priority_class': _string_value(_model_value(template_spec, 'priority_class_name', 'priorityClassName')),
         'scheduler': _string_value(
             _model_value(template_spec, 'scheduler_name', 'schedulerName'),
             'default-scheduler',
         ),
-        'host_network': bool(
-            _model_value(template_spec, 'host_network', 'hostNetwork', default=False)
-        ),
-        'dns_policy': _string_value(
-            _model_value(template_spec, 'dns_policy', 'dnsPolicy')
-        ),
+        'host_network': bool(_model_value(template_spec, 'host_network', 'hostNetwork', default=False)),
+        'dns_policy': _string_value(_model_value(template_spec, 'dns_policy', 'dnsPolicy')),
         'volume_count': len(_model_value(template_spec, 'volumes', default=[]) or []),
         'node_selector': dict(sorted(node_selector.items())),
         'affinity_configured': _model_value(template_spec, 'affinity') is not None,
@@ -146,9 +132,7 @@ def _pod_template_details(template_spec) -> dict:
             )
             or []
         ),
-        'runtime_class': _string_value(
-            _model_value(template_spec, 'runtime_class_name', 'runtimeClassName')
-        ),
+        'runtime_class': _string_value(_model_value(template_spec, 'runtime_class_name', 'runtimeClassName')),
     }
 
 
@@ -462,7 +446,9 @@ def get_workloads(
                 _detail_row('Suspended', suspended),
                 _detail_row('Active Jobs', active_count),
                 _detail_row('Last schedule', _isoformat_datetime(getattr(status, 'last_schedule_time', None))),
-                _detail_row('Last successful execution', _isoformat_datetime(getattr(status, 'last_successful_time', None))),
+                _detail_row(
+                    'Last successful execution', _isoformat_datetime(getattr(status, 'last_successful_time', None))
+                ),
                 _detail_row('Concurrency policy', getattr(spec, 'concurrency_policy', None)),
             ],
             delivery_rows=[

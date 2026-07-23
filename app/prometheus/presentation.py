@@ -107,7 +107,9 @@ def build_instance_context(
         get_integration('prometheus').adapter.get_state(instance),
         actions={
             'refresh_url': url_for('prometheus.refresh_runtime', instance_id=instance.id),
-            'configuration_url': url_for('prometheus.instance_detail', instance_id=instance.id, _anchor='configuration'),
+            'configuration_url': url_for(
+                'prometheus.instance_detail', instance_id=instance.id, _anchor='configuration'
+            ),
             'history_url': url_for('prometheus.instance_runtime_history', instance_id=instance.id),
         },
     )
@@ -118,14 +120,9 @@ def build_instance_context(
         per_page=per_page,
     )
     capability_rows = [
-        _capability_row(assessment_map.get(key, {'key': key, 'status': 'not_observed'}))
-        for key in CAPABILITIES
+        _capability_row(assessment_map.get(key, {'key': key, 'status': 'not_observed'})) for key in CAPABILITIES
     ]
-    observed_keys = {
-        row['key']
-        for row in capability_rows
-        if row['available']
-    }
+    observed_keys = {row['key'] for row in capability_rows if row['available']}
 
     deletion_guard = provider_deletion_guard(
         provider_type='prometheus',
@@ -185,19 +182,30 @@ def _capability_row(item: dict[str, Any]) -> dict[str, Any]:
     validation_query = item.get('validation_query') or (definition.validation_query if definition else None)
     expected_signals = list(item.get('expected_signals') or (definition.expected_signals if definition else ()))
     required_by = list(item.get('required_by') or (definition.required_by if definition else ()))
-    source_owner = str(item.get('source_owner') or (definition.source_owner if definition else 'Prometheus-compatible metrics pipeline'))
-    recommendation = str(item.get('recommendation') or (definition.recommendation if definition else 'Review the metrics pipeline and rerun Full Validation.'))
+    source_owner = str(
+        item.get('source_owner')
+        or (definition.source_owner if definition else 'Prometheus-compatible metrics pipeline')
+    )
+    recommendation = str(
+        item.get('recommendation')
+        or (definition.recommendation if definition else 'Review the metrics pipeline and rerun Full Validation.')
+    )
     possible_causes = [str(value) for value in item.get('possible_causes') or () if value]
 
     if validation_query and not any(check.get('query') for check in technical_checks):
-        technical_checks.insert(0, {
-            'label': 'Validation Query',
-            'status': 'available' if available else status,
-            'status_label': 'Ready' if available else status.replace('_', ' ').title(),
-            'evidence': item.get('observed') or item.get('evidence') or 'The validator did not record a query result.',
-            'query': str(validation_query),
-            'registered_query': str(validation_query),
-        })
+        technical_checks.insert(
+            0,
+            {
+                'label': 'Validation Query',
+                'status': 'available' if available else status,
+                'status_label': 'Ready' if available else status.replace('_', ' ').title(),
+                'evidence': item.get('observed')
+                or item.get('evidence')
+                or 'The validator did not record a query result.',
+                'query': str(validation_query),
+                'registered_query': str(validation_query),
+            },
+        )
 
     return {
         'key': key,
@@ -239,8 +247,12 @@ def _technical_check_row(check: dict[str, Any]) -> dict[str, Any]:
         'series_count_display': str(check.get('series_count_display') or ''),
         'value_summary': str(check.get('value_summary') or ''),
         'error_detail': str(check.get('error_detail') or ''),
-        'tone': 'normal' if status in {'available', 'ready'} else ('critical' if status in {'missing', 'misconfigured', 'unsupported', 'failed'} else 'warning'),
-        'icon': 'circle-check' if status in {'available', 'ready'} else ('octagon-alert' if status in {'missing', 'misconfigured', 'unsupported', 'failed'} else 'triangle-alert'),
+        'tone': 'normal'
+        if status in {'available', 'ready'}
+        else ('critical' if status in {'missing', 'misconfigured', 'unsupported', 'failed'} else 'warning'),
+        'icon': 'circle-check'
+        if status in {'available', 'ready'}
+        else ('octagon-alert' if status in {'missing', 'misconfigured', 'unsupported', 'failed'} else 'triangle-alert'),
     }
 
 
@@ -273,7 +285,7 @@ def _capability_description(required_by: list[str], source_owner: str) -> str:
 
 def _expected_criteria(expected_signals: list[str]) -> str:
     if expected_signals:
-        return f"The required query contract returns usable data with these signals: {', '.join(expected_signals)}."
+        return f'The required query contract returns usable data with these signals: {", ".join(expected_signals)}.'
     return 'The exact registered query or API contract returns a successful, usable response.'
 
 
@@ -301,28 +313,33 @@ def _module_readiness_rows(
         status = str(state.get('status') or default_status)
         if instance.last_validated_at and missing and status == 'ready':
             status = 'degraded'
-        rows.append({
-            'key': domain,
-            'label': state.get('label') or domain.replace('app.analytics.', '').replace('app.', '').replace('_', ' ').title(),
-            'description': _MODULE_DESCRIPTIONS.get(domain, 'Operational readiness derived from the latest query and capability evidence.'),
-            'status': status,
-            'required_capability_labels': [_capability_label(key) for key in required],
-            'optional_capability_labels': [],
-            'missing_required_labels': [_capability_label(key) for key in missing],
-            'missing_optional_labels': [],
-            'operator_guidance': (
-                'Run Full Validation to establish the first module readiness contract.'
-                if status == 'not_observed'
-                else (
-                    'No action is required. Revalidate after metrics, labels, query rules, retention, or endpoint behavior changes.'
-                    if not missing and status == 'ready'
-                    else f"Restore the missing capability evidence, then rerun Full Validation: {', '.join(_capability_label(key) for key in missing) or 'review blocked query contracts'}."
-                )
-            ),
-            'ready_count': state.get('ready_count', 0),
-            'query_count': state.get('query_count', 0),
-            'blocked_count': state.get('blocked_count', 0),
-        })
+        rows.append(
+            {
+                'key': domain,
+                'label': state.get('label')
+                or domain.replace('app.analytics.', '').replace('app.', '').replace('_', ' ').title(),
+                'description': _MODULE_DESCRIPTIONS.get(
+                    domain, 'Operational readiness derived from the latest query and capability evidence.'
+                ),
+                'status': status,
+                'required_capability_labels': [_capability_label(key) for key in required],
+                'optional_capability_labels': [],
+                'missing_required_labels': [_capability_label(key) for key in missing],
+                'missing_optional_labels': [],
+                'operator_guidance': (
+                    'Run Full Validation to establish the first module readiness contract.'
+                    if status == 'not_observed'
+                    else (
+                        'No action is required. Revalidate after metrics, labels, query rules, retention, or endpoint behavior changes.'
+                        if not missing and status == 'ready'
+                        else f'Restore the missing capability evidence, then rerun Full Validation: {", ".join(_capability_label(key) for key in missing) or "review blocked query contracts"}.'
+                    )
+                ),
+                'ready_count': state.get('ready_count', 0),
+                'query_count': state.get('query_count', 0),
+                'blocked_count': state.get('blocked_count', 0),
+            }
+        )
     return rows
 
 
@@ -344,7 +361,9 @@ def _binding_row(binding: IntegrationBinding, source: PrometheusInstance) -> dic
     return {
         'binding': binding,
         'scope_label': cluster.name if cluster is not None else binding.asset_key,
-        'scope_type_label': 'Managed Cluster' if binding.asset_type == KUBERNETES_CLUSTER_SCOPE else binding.asset_type.replace('_', ' ').title(),
+        'scope_type_label': 'Managed Cluster'
+        if binding.asset_type == KUBERNETES_CLUSTER_SCOPE
+        else binding.asset_type.replace('_', ' ').title(),
         'selector_summary': selector_summary(binding.selector_json),
         'selector_configured': selector_is_configured(binding.selector_json),
         'selector_label': selector_values['label'],
@@ -382,13 +401,15 @@ def _source_resolution_rows(
             )
             for definition in _RESOLUTION_CONSUMERS
         }
-        rows.append({
-            'scope_type': binding.asset_type,
-            'scope_type_label': 'Managed Cluster',
-            'scope_key': binding.asset_key,
-            'scope_label': cluster.name if cluster is not None else binding.asset_key,
-            'consumers': consumers,
-        })
+        rows.append(
+            {
+                'scope_type': binding.asset_type,
+                'scope_type_label': 'Managed Cluster',
+                'scope_key': binding.asset_key,
+                'scope_label': cluster.name if cluster is not None else binding.asset_key,
+                'consumers': consumers,
+            }
+        )
     return rows
 
 
@@ -410,23 +431,21 @@ def _resolution_view(
             'priority': candidate.binding.priority,
             'eligible': candidate.eligible,
             'decision_reason': candidate.decision_reason,
-            'missing_capability_labels': [
-                _capability_label(key)
-                for key in candidate.missing_technical_capabilities
-            ],
+            'missing_capability_labels': [_capability_label(key) for key in candidate.missing_technical_capabilities],
             'missing_binding_capabilities': list(candidate.missing_binding_capabilities),
             'operational_state': candidate.operational_state,
             'is_current_instance': candidate.instance.id == current_instance_id,
-            'is_selected': bool(selected and selected.instance.id == candidate.instance.id and selected.binding.id == candidate.binding.id),
+            'is_selected': bool(
+                selected
+                and selected.instance.id == candidate.instance.id
+                and selected.binding.id == candidate.binding.id
+            ),
         }
         candidates.append(row)
     return {
         'label': label,
         'icon': icon,
-        'required_capabilities': [
-            _capability_label(key)
-            for key in resolution.required_technical_capabilities
-        ],
+        'required_capabilities': [_capability_label(key) for key in resolution.required_technical_capabilities],
         'selected_instance_id': selected.instance.id if selected else None,
         'selected_instance_name': selected.instance.name if selected else None,
         'selected_role': selected.binding.binding_role if selected else None,

@@ -69,9 +69,8 @@ def acquire_resource_admission_locks(*resource_groups: str | None) -> None:
     locks are re-entrant within the same transaction and are skipped in
     non-PostgreSQL test environments.
     """
-    _acquire_admission_locks(
-        *(f'job-resource:{group}' for group in resource_groups if group)
-    )
+    _acquire_admission_locks(*(f'job-resource:{group}' for group in resource_groups if group))
+
 
 def find_active_job(
     *,
@@ -127,22 +126,30 @@ def _enforce_quotas(
 ) -> None:
     if requested_by_user_id is not None:
         max_active = _config_int('JOB_MAX_ACTIVE_PER_USER', 5)
-        if max_active and _active_query().filter(
-            JobExecution.requested_by_user_id == requested_by_user_id
-        ).count() >= max_active:
+        if (
+            max_active
+            and _active_query().filter(JobExecution.requested_by_user_id == requested_by_user_id).count() >= max_active
+        ):
             raise JobQuotaExceeded('The user already has the maximum number of active jobs.')
         if workload_class in HEAVY_WORKLOAD_CLASSES:
             max_heavy = _config_int('JOB_MAX_HEAVY_PER_USER', 1)
-            if max_heavy and _active_query().filter(
-                JobExecution.requested_by_user_id == requested_by_user_id,
-                JobExecution.workload_class.in_(HEAVY_WORKLOAD_CLASSES),
-            ).count() >= max_heavy:
+            if (
+                max_heavy
+                and _active_query()
+                .filter(
+                    JobExecution.requested_by_user_id == requested_by_user_id,
+                    JobExecution.workload_class.in_(HEAVY_WORKLOAD_CLASSES),
+                )
+                .count()
+                >= max_heavy
+            ):
                 raise JobQuotaExceeded('The user already has an active heavy analytics job.')
     if resource_group:
         max_resource = _config_int('JOB_MAX_ACTIVE_PER_RESOURCE', 2)
-        if max_resource and _active_query().filter(
-            JobExecution.resource_group == resource_group
-        ).count() >= max_resource:
+        if (
+            max_resource
+            and _active_query().filter(JobExecution.resource_group == resource_group).count() >= max_resource
+        ):
             raise JobQuotaExceeded('The target resource has reached its active job limit.')
 
 
@@ -335,7 +342,6 @@ def request_job_cancel(job: JobExecution) -> JobExecution:
     return job
 
 
-
 def mark_job_retrying(task_id: str, *, message: str, error: Exception | str | None = None) -> JobExecution | None:
     job = get_job_by_task_id(task_id)
     if job is None:
@@ -365,10 +371,7 @@ def mark_job_canceled(task_id: str, *, message: str = 'Canceled') -> JobExecutio
 
 
 def job_can_cancel(job: JobExecution) -> bool:
-    return bool(
-        job.status == 'queued'
-        or (job.is_active and job.workload_class in HEAVY_WORKLOAD_CLASSES)
-    )
+    return bool(job.status == 'queued' or (job.is_active and job.workload_class in HEAVY_WORKLOAD_CLASSES))
 
 
 def cancel_job_execution(job: JobExecution, *, terminate: bool = False) -> JobExecution:
@@ -392,6 +395,7 @@ def cancel_job_execution(job: JobExecution, *, terminate: bool = False) -> JobEx
     job.progress_message = 'Cancellation requested; waiting for a worker checkpoint'
     db.session.commit()
     return job
+
 
 def is_cancel_requested(task_id: str) -> bool:
     job = get_job_by_task_id(task_id)
@@ -447,9 +451,7 @@ def recover_stale_jobs() -> dict[str, int]:
     now = _now()
     running_cutoff = now - timedelta(seconds=_config_int('JOB_RUNNING_STALE_SECONDS', 7200))
     queued_cutoff = now - timedelta(seconds=_config_int('JOB_QUEUED_STALE_SECONDS', 1800))
-    candidates = JobExecution.query.filter(
-        JobExecution.status.in_(ACTIVE_JOB_STATUSES)
-    ).all()
+    candidates = JobExecution.query.filter(JobExecution.status.in_(ACTIVE_JOB_STATUSES)).all()
     recovered = 0
     expired = 0
     for job in candidates:

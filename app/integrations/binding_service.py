@@ -50,11 +50,13 @@ def create_cluster_source_binding(
         if provider == 'prometheus':
             binding_arguments['cluster'] = cluster
         else:
-            binding_arguments.update({
-                'scope_type': 'kubernetes_cluster',
-                'scope_key': cluster.id,
-                'enabled': True,
-            })
+            binding_arguments.update(
+                {
+                    'scope_type': 'kubernetes_cluster',
+                    'scope_key': cluster.id,
+                    'enabled': True,
+                }
+            )
         binding = module.execute(
             'binding.create',
             source,

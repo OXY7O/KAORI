@@ -93,7 +93,9 @@ class AlertmanagerRuntimeAdapter:
             metadata={'version': instance.detected_version, 'compatibility_status': instance.compatibility_status},
         )
         success_at = instance.last_checked_at if instance.last_status == 'connected' else None
-        failure_at = instance.last_checked_at if instance.last_status in {'error', 'disconnected', 'incompatible'} else None
+        failure_at = (
+            instance.last_checked_at if instance.last_status in {'error', 'disconnected', 'incompatible'} else None
+        )
         return RuntimeState(
             provider=self.provider,
             instance_id=str(instance.id),
@@ -106,7 +108,9 @@ class AlertmanagerRuntimeAdapter:
             last_success_at=success_at,
             last_failure_at=failure_at,
             latency_ms=instance.last_response_time_ms,
-            message=instance.validation_message or instance.last_error or 'Run runtime validation to observe this source.',
+            message=instance.validation_message
+            or instance.last_error
+            or 'Run runtime validation to observe this source.',
         )
 
     @staticmethod
@@ -148,29 +152,87 @@ class AlertmanagerRuntimeAdapter:
                     step_status = str(step.status)
                     detail = str(step.detail)
                     response_time_ms = step.response_time_ms
-                diagnostics.append(DiagnosticResult(
-                    key=key,
-                    label=label,
-                    category='api' if key.endswith('_v2') else 'compatibility',
-                    status=step_status,
-                    detail=detail,
-                    duration_ms=response_time_ms,
-                    severity='critical' if step_status == 'failed' else 'info',
-                    recommendation='Review endpoint, credentials, TLS, and provider logs.' if step_status == 'failed' else None,
-                ))
+                diagnostics.append(
+                    DiagnosticResult(
+                        key=key,
+                        label=label,
+                        category='api' if key.endswith('_v2') else 'compatibility',
+                        status=step_status,
+                        detail=detail,
+                        duration_ms=response_time_ms,
+                        severity='critical' if step_status == 'failed' else 'info',
+                        recommendation='Review endpoint, credentials, TLS, and provider logs.'
+                        if step_status == 'failed'
+                        else None,
+                    )
+                )
             return tuple(diagnostics)
-        status = 'success' if instance.last_status == 'connected' else ('failed' if instance.last_status in {'error', 'disconnected', 'incompatible'} else 'unknown')
-        return (DiagnosticResult('runtime', 'Runtime observation', 'runtime', status, instance.last_error or instance.validation_message or 'Validation has not been observed.'),)
+        status = (
+            'success'
+            if instance.last_status == 'connected'
+            else ('failed' if instance.last_status in {'error', 'disconnected', 'incompatible'} else 'unknown')
+        )
+        return (
+            DiagnosticResult(
+                'runtime',
+                'Runtime observation',
+                'runtime',
+                status,
+                instance.last_error or instance.validation_message or 'Validation has not been observed.',
+            ),
+        )
 
     @staticmethod
     def _factors(instance: AlertmanagerInstance, diagnostics: tuple[DiagnosticResult, ...]) -> tuple[HealthFactor, ...]:
         api_failed = any(row.status == 'failed' and row.category == 'api' for row in diagnostics)
         return (
-            HealthFactor('connectivity', 'Connectivity', 'failed' if instance.last_status in {'error', 'disconnected'} else ('success' if instance.last_status == 'connected' else 'unknown'), 30, 0 if instance.last_status in {'error', 'disconnected'} else (100 if instance.last_status == 'connected' else 55), instance.last_error or ''),
-            HealthFactor('readiness', 'Readiness', 'failed' if instance.readiness_status == 'blocked' else ('success' if instance.readiness_status == 'ready' else 'warning'), 25, 0 if instance.readiness_status == 'blocked' else (100 if instance.readiness_status == 'ready' else 65), instance.validation_message or ''),
-            HealthFactor('api', 'Provider API', 'failed' if api_failed else ('success' if instance.last_status == 'connected' else 'unknown'), 25, 0 if api_failed else (100 if instance.last_status == 'connected' else 55)),
-            HealthFactor('capability', 'Capability discovery', 'success' if instance.capabilities else 'unknown', 10, 100 if instance.capabilities else 50),
-            HealthFactor('latency', 'Latency', 'warning' if (instance.last_response_time_ms or 0) > 1500 else ('success' if instance.last_response_time_ms is not None else 'unknown'), 10, 60 if (instance.last_response_time_ms or 0) > 1500 else (100 if instance.last_response_time_ms is not None else 50)),
+            HealthFactor(
+                'connectivity',
+                'Connectivity',
+                'failed'
+                if instance.last_status in {'error', 'disconnected'}
+                else ('success' if instance.last_status == 'connected' else 'unknown'),
+                30,
+                0
+                if instance.last_status in {'error', 'disconnected'}
+                else (100 if instance.last_status == 'connected' else 55),
+                instance.last_error or '',
+            ),
+            HealthFactor(
+                'readiness',
+                'Readiness',
+                'failed'
+                if instance.readiness_status == 'blocked'
+                else ('success' if instance.readiness_status == 'ready' else 'warning'),
+                25,
+                0 if instance.readiness_status == 'blocked' else (100 if instance.readiness_status == 'ready' else 65),
+                instance.validation_message or '',
+            ),
+            HealthFactor(
+                'api',
+                'Provider API',
+                'failed' if api_failed else ('success' if instance.last_status == 'connected' else 'unknown'),
+                25,
+                0 if api_failed else (100 if instance.last_status == 'connected' else 55),
+            ),
+            HealthFactor(
+                'capability',
+                'Capability discovery',
+                'success' if instance.capabilities else 'unknown',
+                10,
+                100 if instance.capabilities else 50,
+            ),
+            HealthFactor(
+                'latency',
+                'Latency',
+                'warning'
+                if (instance.last_response_time_ms or 0) > 1500
+                else ('success' if instance.last_response_time_ms is not None else 'unknown'),
+                10,
+                60
+                if (instance.last_response_time_ms or 0) > 1500
+                else (100 if instance.last_response_time_ms is not None else 50),
+            ),
         )
 
 

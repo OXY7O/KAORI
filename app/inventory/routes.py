@@ -883,10 +883,7 @@ def pods():
 
         template_name = (
             'inventory/pods/partials/_table_content.html'
-            if (
-                partial_mode == 'table_content'
-                or hx_target == 'pods-table-content'
-            )
+            if (partial_mode == 'table_content' or hx_target == 'pods-table-content')
             else 'inventory/pods/partials/_table_card.html'
         )
     else:
@@ -971,10 +968,7 @@ def services():
         hx_target = request.headers.get('HX-Target', '')
         template_name = (
             'inventory/services/partials/_table_content.html'
-            if (
-                partial_mode == 'table_content'
-                or hx_target == 'services-table-content'
-            )
+            if (partial_mode == 'table_content' or hx_target == 'services-table-content')
             else 'inventory/services/partials/_table_card.html'
         )
     else:
@@ -1058,10 +1052,7 @@ def ingresses():
         hx_target = request.headers.get('HX-Target', '')
         template_name = (
             'inventory/ingresses/partials/_table_content.html'
-            if (
-                partial_mode == 'table_content'
-                or hx_target == 'ingresses-table-content'
-            )
+            if (partial_mode == 'table_content' or hx_target == 'ingresses-table-content')
             else 'inventory/ingresses/partials/_table_card.html'
         )
     else:
@@ -1152,10 +1143,7 @@ def storage():
         hx_target = request.headers.get('HX-Target', '')
         template_name = (
             'inventory/storage/partials/_table_content.html'
-            if (
-                partial_mode == 'table_content'
-                or hx_target == 'storage-table-content'
-            )
+            if (partial_mode == 'table_content' or hx_target == 'storage-table-content')
             else 'inventory/storage/partials/_table_card.html'
         )
     else:

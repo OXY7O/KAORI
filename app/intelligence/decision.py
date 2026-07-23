@@ -47,6 +47,10 @@ class DecisionSnapshot:
     policy: DecisionPolicy
     created_at: datetime
     expires_at: datetime
+    runbook_key: str | None = None
+    runbook_revision_id: str | None = None
+    runbook_version: str | None = None
+    runbook_content_hash: str | None = None
 
     def to_payload(self) -> dict[str, Any]:
         return {
@@ -55,6 +59,10 @@ class DecisionSnapshot:
             'rule_key': self.rule_key,
             'rule_version': self.rule_version,
             'knowledge_version': self.knowledge_version,
+            'runbook_key': self.runbook_key,
+            'runbook_revision_id': self.runbook_revision_id,
+            'runbook_version': self.runbook_version,
+            'runbook_content_hash': self.runbook_content_hash,
             'action_key': self.action_key,
             'cluster_id': self.cluster_id,
             'namespace': self.namespace,
@@ -131,6 +139,10 @@ def create_decision_snapshot(
     action_key: str,
     rule_version: str,
     knowledge_version: str | None = None,
+    runbook_key: str | None = None,
+    runbook_revision_id: str | None = None,
+    runbook_version: str | None = None,
+    runbook_content_hash: str | None = None,
     ttl: timedelta = timedelta(minutes=15),
     now: datetime | None = None,
     maintenance_mode: bool = False,
@@ -169,6 +181,10 @@ def create_decision_snapshot(
         rule_key=base_rule_key,
         rule_version=rule_version,
         knowledge_version=knowledge_version,
+        runbook_key=runbook_key,
+        runbook_revision_id=runbook_revision_id,
+        runbook_version=runbook_version,
+        runbook_content_hash=runbook_content_hash,
         action_key=action_key,
         cluster_id=_optional_text(evidence_copy.get('cluster_id')),
         namespace=_optional_text(evidence_copy.get('namespace')),

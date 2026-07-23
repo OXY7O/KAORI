@@ -21,36 +21,68 @@ from app.models import Cluster
 from app.prometheus.service import PrometheusService
 
 CPU_ALLOCATABLE_QUERY = get_query_expression('analytics.top_consumers.queries.CPU_ALLOCATABLE_QUERY')
-CPU_LIMIT_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.CPU_LIMIT_BY_CONTAINER_NAMESPACE_QUERY')
+CPU_LIMIT_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression(
+    'analytics.top_consumers.queries.CPU_LIMIT_BY_CONTAINER_NAMESPACE_QUERY'
+)
 CPU_LIMIT_BY_CONTAINER_QUERY = get_query_expression('analytics.top_consumers.queries.CPU_LIMIT_BY_CONTAINER_QUERY')
-CPU_REQUEST_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.CPU_REQUEST_BY_CONTAINER_NAMESPACE_QUERY')
+CPU_REQUEST_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression(
+    'analytics.top_consumers.queries.CPU_REQUEST_BY_CONTAINER_NAMESPACE_QUERY'
+)
 CPU_REQUEST_BY_CONTAINER_QUERY = get_query_expression('analytics.top_consumers.queries.CPU_REQUEST_BY_CONTAINER_QUERY')
 MEMORY_ALLOCATABLE_QUERY = get_query_expression('analytics.top_consumers.queries.MEMORY_ALLOCATABLE_QUERY')
-MEMORY_LIMIT_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.MEMORY_LIMIT_BY_CONTAINER_NAMESPACE_QUERY')
-MEMORY_LIMIT_BY_CONTAINER_QUERY = get_query_expression('analytics.top_consumers.queries.MEMORY_LIMIT_BY_CONTAINER_QUERY')
-MEMORY_REQUEST_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.MEMORY_REQUEST_BY_CONTAINER_NAMESPACE_QUERY')
-MEMORY_REQUEST_BY_CONTAINER_QUERY = get_query_expression('analytics.top_consumers.queries.MEMORY_REQUEST_BY_CONTAINER_QUERY')
+MEMORY_LIMIT_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression(
+    'analytics.top_consumers.queries.MEMORY_LIMIT_BY_CONTAINER_NAMESPACE_QUERY'
+)
+MEMORY_LIMIT_BY_CONTAINER_QUERY = get_query_expression(
+    'analytics.top_consumers.queries.MEMORY_LIMIT_BY_CONTAINER_QUERY'
+)
+MEMORY_REQUEST_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression(
+    'analytics.top_consumers.queries.MEMORY_REQUEST_BY_CONTAINER_NAMESPACE_QUERY'
+)
+MEMORY_REQUEST_BY_CONTAINER_QUERY = get_query_expression(
+    'analytics.top_consumers.queries.MEMORY_REQUEST_BY_CONTAINER_QUERY'
+)
 NAMESPACE_ACTIVE_QUERY = get_query_expression('analytics.top_consumers.queries.NAMESPACE_ACTIVE_QUERY')
 POD_CAPACITY_QUERY = get_query_expression('analytics.top_consumers.queries.POD_CAPACITY_QUERY')
-PVC_CAPACITY_BY_CLAIM_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.PVC_CAPACITY_BY_CLAIM_NAMESPACE_QUERY')
+PVC_CAPACITY_BY_CLAIM_NAMESPACE_QUERY = get_query_expression(
+    'analytics.top_consumers.queries.PVC_CAPACITY_BY_CLAIM_NAMESPACE_QUERY'
+)
 PVC_CAPACITY_BY_CLAIM_QUERY = get_query_expression('analytics.top_consumers.queries.PVC_CAPACITY_BY_CLAIM_QUERY')
-TOP_CPU_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_CPU_CONSUMERS_BY_NAMESPACE_QUERY')
+TOP_CPU_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression(
+    'analytics.top_consumers.queries.TOP_CPU_CONSUMERS_BY_NAMESPACE_QUERY'
+)
 TOP_CPU_CONSUMERS_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_CPU_CONSUMERS_QUERY')
-TOP_MEMORY_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_BY_NAMESPACE_QUERY')
+TOP_MEMORY_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression(
+    'analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_BY_NAMESPACE_QUERY'
+)
 TOP_MEMORY_CONSUMERS_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_QUERY')
-TOP_POD_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_POD_CONSUMERS_BY_NAMESPACE_QUERY')
+TOP_POD_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression(
+    'analytics.top_consumers.queries.TOP_POD_CONSUMERS_BY_NAMESPACE_QUERY'
+)
 TOP_POD_CONSUMERS_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_POD_CONSUMERS_QUERY')
-TOP_PVC_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_PVC_CONSUMERS_BY_NAMESPACE_QUERY')
+TOP_PVC_CONSUMERS_BY_NAMESPACE_QUERY = get_query_expression(
+    'analytics.top_consumers.queries.TOP_PVC_CONSUMERS_BY_NAMESPACE_QUERY'
+)
 TOP_PVC_CONSUMERS_QUERY = get_query_expression('analytics.top_consumers.queries.TOP_PVC_CONSUMERS_QUERY')
-TOTAL_CPU_USAGE_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_CPU_USAGE_BY_NAMESPACE_QUERY')
+TOTAL_CPU_USAGE_BY_NAMESPACE_QUERY = get_query_expression(
+    'analytics.top_consumers.queries.TOTAL_CPU_USAGE_BY_NAMESPACE_QUERY'
+)
 TOTAL_CPU_USAGE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_CPU_USAGE_QUERY')
-TOTAL_MEMORY_USAGE_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_MEMORY_USAGE_BY_NAMESPACE_QUERY')
+TOTAL_MEMORY_USAGE_BY_NAMESPACE_QUERY = get_query_expression(
+    'analytics.top_consumers.queries.TOTAL_MEMORY_USAGE_BY_NAMESPACE_QUERY'
+)
 TOTAL_MEMORY_USAGE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_MEMORY_USAGE_QUERY')
-TOTAL_PVC_CAPACITY_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_PVC_CAPACITY_BY_NAMESPACE_QUERY')
+TOTAL_PVC_CAPACITY_BY_NAMESPACE_QUERY = get_query_expression(
+    'analytics.top_consumers.queries.TOTAL_PVC_CAPACITY_BY_NAMESPACE_QUERY'
+)
 TOTAL_PVC_CAPACITY_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_PVC_CAPACITY_QUERY')
-TOTAL_PVC_USED_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_PVC_USED_BY_NAMESPACE_QUERY')
+TOTAL_PVC_USED_BY_NAMESPACE_QUERY = get_query_expression(
+    'analytics.top_consumers.queries.TOTAL_PVC_USED_BY_NAMESPACE_QUERY'
+)
 TOTAL_PVC_USED_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_PVC_USED_QUERY')
-TOTAL_RUNNING_PODS_BY_NAMESPACE_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_RUNNING_PODS_BY_NAMESPACE_QUERY')
+TOTAL_RUNNING_PODS_BY_NAMESPACE_QUERY = get_query_expression(
+    'analytics.top_consumers.queries.TOTAL_RUNNING_PODS_BY_NAMESPACE_QUERY'
+)
 TOTAL_RUNNING_PODS_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_RUNNING_PODS_QUERY')
 
 RESOURCE_OPTIONS: list[dict[str, str]] = [

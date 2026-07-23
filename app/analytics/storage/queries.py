@@ -4,9 +4,13 @@ from app.integrations.prometheus.query_profiles import get_query_expression
 
 NAMESPACE_ACTIVE_QUERY = get_query_expression('analytics.storage.queries.NAMESPACE_ACTIVE_QUERY')
 NODE_VAR_FILESYSTEM_SIZE_QUERY = get_query_expression('analytics.storage.queries.NODE_VAR_FILESYSTEM_SIZE_QUERY')
-NODE_VAR_FILESYSTEM_AVAILABLE_QUERY = get_query_expression('analytics.storage.queries.NODE_VAR_FILESYSTEM_AVAILABLE_QUERY')
+NODE_VAR_FILESYSTEM_AVAILABLE_QUERY = get_query_expression(
+    'analytics.storage.queries.NODE_VAR_FILESYSTEM_AVAILABLE_QUERY'
+)
 NODE_ROOT_FILESYSTEM_SIZE_QUERY = get_query_expression('analytics.storage.queries.NODE_ROOT_FILESYSTEM_SIZE_QUERY')
-NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY = get_query_expression('analytics.storage.queries.NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY')
+NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY = get_query_expression(
+    'analytics.storage.queries.NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY'
+)
 PVC_REQUESTED_TOTAL_QUERY = get_query_expression('analytics.storage.queries.PVC_REQUESTED_TOTAL_QUERY')
 PVC_USED_TOTAL_QUERY = get_query_expression('analytics.storage.queries.PVC_USED_TOTAL_QUERY')
 PVC_AVAILABLE_TOTAL_QUERY = get_query_expression('analytics.storage.queries.PVC_AVAILABLE_TOTAL_QUERY')

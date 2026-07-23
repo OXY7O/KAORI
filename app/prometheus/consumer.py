@@ -29,9 +29,7 @@ class PrometheusConsumer:
         selected = resolution.selected
         if selected is None:
             reasons = '; '.join(candidate.decision_reason for candidate in resolution.candidates)
-            raise PrometheusError(
-                reasons or 'No canonical Prometheus runtime is bound to this Kubernetes cluster.'
-            )
+            raise PrometheusError(reasons or 'No canonical Prometheus runtime is bound to this Kubernetes cluster.')
         self.config = selected.instance
         self.binding = selected.binding
         self.client = self._build_client(selected)
@@ -93,7 +91,6 @@ class PrometheusConsumer:
             required_capabilities=required_capabilities,
         )
 
-
     def requirements(
         self,
         required_capabilities: tuple[str, ...],
@@ -151,8 +148,7 @@ class PrometheusConsumer:
                 ConsumerDiagnostic(
                     code='not_ready',
                     message=(
-                        self.config.validation_message
-                        or 'Prometheus integration is not validated for analytics.'
+                        self.config.validation_message or 'Prometheus integration is not validated for analytics.'
                     ),
                     category='readiness',
                     remediation='Run full validation and resolve capability findings.',
@@ -226,8 +222,7 @@ class PrometheusConsumer:
         labels = ', '.join(required_capabilities)
         requirement = f' Required capabilities: {labels}.' if labels else ''
         raise PrometheusError(
-            (reasons or 'No canonical Prometheus runtime is eligible for this operation.')
-            + requirement
+            (reasons or 'No canonical Prometheus runtime is eligible for this operation.') + requirement
         )
 
     def _build_client(self, source: ResolvedPrometheusSource):

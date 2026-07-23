@@ -27,9 +27,7 @@ class JobExecution(db.Model):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    public_id: Mapped[str] = mapped_column(
-        db.String(36), nullable=False, unique=True, default=lambda: str(uuid4())
-    )
+    public_id: Mapped[str] = mapped_column(db.String(36), nullable=False, unique=True, default=lambda: str(uuid4()))
     job_type: Mapped[str] = mapped_column(db.String(80), nullable=False, index=True)
     operation: Mapped[str] = mapped_column(db.String(80), nullable=False, index=True)
     workload_class: Mapped[str] = mapped_column(db.String(40), nullable=False, default='standard', index=True)
@@ -50,9 +48,7 @@ class JobExecution(db.Model):
     # PostgreSQL permits multiple NULL values in a unique column. Active jobs keep
     # this value populated; terminal jobs clear it, which gives us a database-level
     # multi-process deduplication guard without blocking historical rows.
-    active_deduplication_key: Mapped[str | None] = mapped_column(
-        db.String(255), nullable=True, unique=True
-    )
+    active_deduplication_key: Mapped[str | None] = mapped_column(db.String(255), nullable=True, unique=True)
     parameter_fingerprint: Mapped[str] = mapped_column(db.String(64), nullable=False)
     payload_json: Mapped[dict[str, Any] | None] = mapped_column(db.JSON, nullable=True)
 
@@ -86,8 +82,10 @@ class JobExecution(db.Model):
         db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )
     updated_at: Mapped[datetime] = mapped_column(
-        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC)
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
     requested_by: Mapped[User | None] = relationship('User', foreign_keys=[requested_by_user_id])
@@ -96,8 +94,7 @@ class JobExecution(db.Model):
     )
     children: Mapped[list[JobExecution]] = relationship('JobExecution', back_populates='parent')
     subscribers: Mapped[list[JobExecutionSubscriber]] = relationship(
-        'JobExecutionSubscriber', back_populates='job', cascade='all, delete-orphan',
-        passive_deletes=True
+        'JobExecutionSubscriber', back_populates='job', cascade='all, delete-orphan', passive_deletes=True
     )
 
     @property
@@ -122,9 +119,7 @@ class JobExecutionSubscriber(db.Model):
     job_execution_id: Mapped[int] = mapped_column(
         db.ForeignKey('job_executions.id', ondelete='CASCADE'), nullable=False, index=True
     )
-    user_id: Mapped[int] = mapped_column(
-        db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True
-    )
+    user_id: Mapped[int] = mapped_column(db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
     notify_on_completion: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=True)
     subscribed_at: Mapped[datetime] = mapped_column(
         db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)

@@ -25,7 +25,7 @@ def refresh_integration_runtime_command(json_output: bool) -> None:
         click.echo(json.dumps(result, indent=2, sort_keys=True, default=str))
         return
     click.echo('KAORI integration runtime refresh dispatch')
-    click.echo(f"Queued: {result.get('queued', 0)}")
-    click.echo(f"Skipped: {result.get('skipped', 0)}")
+    click.echo(f'Queued: {result.get("queued", 0)}')
+    click.echo(f'Skipped: {result.get("skipped", 0)}')
     for provider, detail in (result.get('providers') or {}).items():
-        click.echo(f"- {provider}: {detail.get('queued', 0)} queued, {detail.get('skipped', 0)} skipped")
+        click.echo(f'- {provider}: {detail.get("queued", 0)} queued, {detail.get("skipped", 0)} skipped')

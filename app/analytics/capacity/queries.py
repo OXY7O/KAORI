@@ -12,7 +12,9 @@ MEMORY_REQUESTS_TOTAL_QUERY = get_query_expression('analytics.capacity.queries.M
 MEMORY_LIMITS_TOTAL_QUERY = get_query_expression('analytics.capacity.queries.MEMORY_LIMITS_TOTAL_QUERY')
 WORKER_CPU_REQUESTS_TOTAL_QUERY = get_query_expression('analytics.capacity.queries.WORKER_CPU_REQUESTS_TOTAL_QUERY')
 WORKER_CPU_LIMITS_TOTAL_QUERY = get_query_expression('analytics.capacity.queries.WORKER_CPU_LIMITS_TOTAL_QUERY')
-WORKER_MEMORY_REQUESTS_TOTAL_QUERY = get_query_expression('analytics.capacity.queries.WORKER_MEMORY_REQUESTS_TOTAL_QUERY')
+WORKER_MEMORY_REQUESTS_TOTAL_QUERY = get_query_expression(
+    'analytics.capacity.queries.WORKER_MEMORY_REQUESTS_TOTAL_QUERY'
+)
 WORKER_MEMORY_LIMITS_TOTAL_QUERY = get_query_expression('analytics.capacity.queries.WORKER_MEMORY_LIMITS_TOTAL_QUERY')
 CPU_PEAK_QUERY_TEMPLATE = get_query_expression('analytics.capacity.queries.CPU_PEAK_QUERY_TEMPLATE')
 MEMORY_PEAK_QUERY_TEMPLATE = get_query_expression('analytics.capacity.queries.MEMORY_PEAK_QUERY_TEMPLATE')

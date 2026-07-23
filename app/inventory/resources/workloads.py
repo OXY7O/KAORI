@@ -15,6 +15,7 @@ _WORKLOAD_UPDATE_STRATEGIES = {
     'ondelete': ('On Delete', 'on_delete'),
 }
 
+
 def _workload_detail_rows(
     details: dict[str, Any],
     key: str,
@@ -253,9 +254,7 @@ def get_workload_detail(workload_id: int) -> dict[str, Any] | None:
     delivery_rows = _workload_detail_rows(details, 'delivery_rows')
     placement_rows = _placement_rows(pod_template)
     placement_summary_rows = [
-        row
-        for row in placement_rows
-        if row['value'] not in {'0', '0 rules', 'Not configured', '-'}
+        row for row in placement_rows if row['value'] not in {'0', '0 rules', 'Not configured', '-'}
     ]
 
     return {
@@ -586,5 +585,3 @@ def get_workload_inventory(
         ),
         'workloads': workloads_data,
     }
-
-

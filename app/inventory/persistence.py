@@ -695,11 +695,13 @@ def save_configuration_inventory(
 ) -> None:
     if include_configmaps:
         ConfigurationInventory.query.filter_by(
-            cluster_id=cluster.id, object_type='ConfigMap',
+            cluster_id=cluster.id,
+            object_type='ConfigMap',
         ).delete(synchronize_session=False)
     if include_secrets:
         ConfigurationInventory.query.filter_by(
-            cluster_id=cluster.id, object_type='Secret',
+            cluster_id=cluster.id,
+            object_type='Secret',
         ).delete(synchronize_session=False)
 
     for item in get_configuration_inventory(

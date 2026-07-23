@@ -74,9 +74,7 @@ def apply_identity_provider_configuration(
 
     provider.oidc_issuer = 'https://accounts.google.com' if is_google else None
     provider.oidc_client_id = _optional_text(configuration.oidc_client_id) if not is_ldap else None
-    provider.oidc_client_secret_env = (
-        _optional_text(configuration.oidc_client_secret_env) if not is_ldap else None
-    )
+    provider.oidc_client_secret_env = _optional_text(configuration.oidc_client_secret_env) if not is_ldap else None
     provider.default_role_id = configuration.default_role_id if provider.jit_enabled else None
     provider.allowed_domains = (
         _optional_text(configuration.allowed_domains) if is_google and provider.jit_enabled else None

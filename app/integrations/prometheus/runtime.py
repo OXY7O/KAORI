@@ -60,11 +60,7 @@ class PrometheusRuntimeService:
         resolution = self._resolve_compatibility()
         response_time = time.perf_counter() - started
         if not persist:
-            readiness = (
-                'blocked'
-                if resolution.endpoint_compatibility.readiness == 'blocked'
-                else 'degraded'
-            )
+            readiness = 'blocked' if resolution.endpoint_compatibility.readiness == 'blocked' else 'degraded'
             message = (
                 resolution.endpoint_compatibility.message
                 if readiness == 'blocked'
@@ -135,9 +131,7 @@ class PrometheusRuntimeService:
             config.last_checked_at = datetime.now(UTC)
             config.last_response_time_ms = round((time.perf_counter() - started) * 1000)
             config.last_status = (
-                'incompatible'
-                if resolution.endpoint_compatibility.readiness == 'blocked'
-                else 'connected'
+                'incompatible' if resolution.endpoint_compatibility.readiness == 'blocked' else 'connected'
             )
             config.last_error = None
             if resolution.endpoint_compatibility.readiness == 'blocked':
@@ -199,10 +193,14 @@ class PrometheusRuntimeService:
         )
         config.retention_validation_summary = query_audit['retention'] if query_audit else None
         config.capability_profile = query_audit.get('profile') if query_audit else None
-        config.capabilities = {
-            'available': query_audit.get('available_capabilities', []),
-            'assessments': query_audit.get('capability_assessments', []),
-        } if query_audit else None
+        config.capabilities = (
+            {
+                'available': query_audit.get('available_capabilities', []),
+                'assessments': query_audit.get('capability_assessments', []),
+            }
+            if query_audit
+            else None
+        )
         config.module_readiness = query_audit.get('module_readiness') if query_audit else None
         config.validation_message = self._validation_message(resolution, query_status)
         config.last_validated_at = datetime.now(UTC)
@@ -240,9 +238,7 @@ class PrometheusRuntimeService:
                 f'prometheus-http-v{config.source_prometheus_major}',
             )
             if source_profile is None:
-                raise PrometheusError(
-                    'Manual mode requires a supported Prometheus source version profile.'
-                )
+                raise PrometheusError('Manual mode requires a supported Prometheus source version profile.')
             endpoint_product = 'thanos'
             endpoint_compatibility = evaluate_compatibility(
                 endpoint_product,

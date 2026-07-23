@@ -10,6 +10,7 @@ _EMAIL_PATTERN = re.compile(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
 _MAX_KUBERNETES_SECRET_BYTES = 1024 * 1024
 _MAX_UPLOAD_BYTES = 1024 * 1024
 
+
 def _required(value: str | None, label: str) -> str:
     normalized = (value or '').strip()
     if not normalized:
@@ -19,16 +20,11 @@ def _required(value: str | None, label: str) -> str:
 
 def _validate_data_key(key: str) -> None:
     if len(key) > 253 or not _SECRET_DATA_KEY_PATTERN.fullmatch(key):
-        raise ValueError(
-            f'Invalid Secret data key: {key}. Use letters, numbers, dots, hyphens, or underscores.'
-        )
+        raise ValueError(f'Invalid Secret data key: {key}. Use letters, numbers, dots, hyphens, or underscores.')
 
 
 def _validate_secret_size(string_data: dict[str, str]) -> None:
-    payload_size = sum(
-        len(key.encode()) + len(value.encode())
-        for key, value in string_data.items()
-    )
+    payload_size = sum(len(key.encode()) + len(value.encode()) for key, value in string_data.items())
     if payload_size >= _MAX_KUBERNETES_SECRET_BYTES:
         raise ValueError('Replacement content must be smaller than the Kubernetes 1 MiB Secret limit.')
 
@@ -62,9 +58,7 @@ def _validate_ssh_private_key(raw_key: str) -> None:
         except ValueError:
             serialization.load_ssh_private_key(key_bytes, password=None)
     except (TypeError, ValueError, UnsupportedAlgorithm) as exc:
-        raise ValueError(
-            'SSH private key must be a valid, unencrypted PEM or OpenSSH private key.'
-        ) from exc
+        raise ValueError('SSH private key must be a valid, unencrypted PEM or OpenSSH private key.') from exc
 
 
 def _build_opaque_patch(form: Any, target: Any) -> dict[str, str]:
@@ -148,9 +142,7 @@ def _build_registry_patch(form: Any) -> dict[str, str]:
     if normalized_email and not _EMAIL_PATTERN.fullmatch(normalized_email):
         raise ValueError('Registry email address is invalid.')
 
-    auth = base64.b64encode(
-        f'{normalized_username}:{normalized_password}'.encode()
-    ).decode('ascii')
+    auth = base64.b64encode(f'{normalized_username}:{normalized_password}'.encode()).decode('ascii')
     auth_entry: dict[str, str] = {
         'username': normalized_username,
         'password': normalized_password,
@@ -202,4 +194,3 @@ def build_replace_patch(
 
     _validate_secret_size(patch)
     return patch
-

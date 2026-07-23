@@ -100,7 +100,8 @@ def save_policy() -> ResponseReturnValue:
             protect_unreviewed=request.form.get('protect_unreviewed') == 'on',
             protected_max_days=(
                 _int('protected_max_days', fallback.protected_max_days or fallback.retention_days)
-                if domain_name == 'operational_activity' else None
+                if domain_name == 'operational_activity'
+                else None
             ),
             settings=settings,
         )
@@ -161,7 +162,8 @@ def run() -> ResponseReturnValue:
             scope_type='data_domain',
             scope_key=domain_name,
             parameters={
-                'domain': domain_name, 'mode': mode,
+                'domain': domain_name,
+                'mode': mode,
                 'retention_days': policy.retention_days,
                 'archive_retention_days': policy.archive_retention_days,
             },
@@ -173,12 +175,22 @@ def run() -> ResponseReturnValue:
             event_type='data_lifecycle_execution_requested',
             status='info',
             title='Data lifecycle execution queued' if created else 'Data lifecycle execution already active',
-            message=(f'{domain_name.replace("_", " ").title()} archive processing was queued.' if created else f'{domain_name.replace("_", " ").title()} already has an active lifecycle job; this request was attached to it.'),
+            message=(
+                f'{domain_name.replace("_", " ").title()} archive processing was queued.'
+                if created
+                else f'{domain_name.replace("_", " ").title()} already has an active lifecycle job; this request was attached to it.'
+            ),
             detail='KAORI will write and verify the archive before cleanup is allowed to begin.',
             action_url=url_for('settings.data_lifecycle.index', tab='history', archive_domain=domain_name),
             action_label='Review Execution History',
             action_icon='history',
-            metadata={'domain': domain_name, 'mode': mode, 'job_execution_id': job.id, 'celery_task_id': job.celery_task_id, 'created': created},
+            metadata={
+                'domain': domain_name,
+                'mode': mode,
+                'job_execution_id': job.id,
+                'celery_task_id': job.celery_task_id,
+                'created': created,
+            },
         )
     except Exception as exc:
         db.session.rollback()

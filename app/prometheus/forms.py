@@ -18,7 +18,6 @@ class PrometheusConfigForm(FlaskForm):
         },
     )
 
-
     version_detection_mode = SelectField(
         'Compatibility Detection',
         choices=[
@@ -143,7 +142,6 @@ class PrometheusConfigForm(FlaskForm):
             raise ValidationError(
                 'Bearer token is required',
             )
-
 
     def validate_source_prometheus_major(self, field: SelectField) -> None:
         if self.version_detection_mode.data == 'manual' and not field.data:

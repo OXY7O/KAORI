@@ -70,9 +70,7 @@ def resolve_prometheus_sources(
         if provider_instance is None:
             continue
         effective_binding_scope = set(item.binding.capability_scope or ())
-        missing_binding_capabilities = tuple(
-            sorted(set(required_binding_capabilities) - effective_binding_scope)
-        )
+        missing_binding_capabilities = tuple(sorted(set(required_binding_capabilities) - effective_binding_scope))
         candidates.append(
             _evaluate_binding(
                 item.binding,
@@ -130,18 +128,10 @@ def _evaluate_binding(
     selector_eligible = not selector_required or selector_is_configured(binding.selector_json)
     binding_validation = (binding.validation_status or 'validation_required').strip().lower()
     binding_validation_eligible = binding_validation in _ELIGIBLE_BINDING_VALIDATION
-    binding_eligible = (
-        not missing_binding_capabilities
-        and selector_eligible
-        and binding_validation_eligible
-    )
+    binding_eligible = not missing_binding_capabilities and selector_eligible and binding_validation_eligible
     readiness_eligible = readiness in (_READY_READINESS | _DEGRADED_READINESS)
     eligible = bool(
-        instance.enabled
-        and binding.enabled
-        and binding_eligible
-        and readiness_eligible
-        and technical_eligible
+        instance.enabled and binding.enabled and binding_eligible and readiness_eligible and technical_eligible
     )
     operational_rank, operational_state = _operational_rank(readiness=readiness, health=health)
     reason = _decision_reason(
@@ -215,7 +205,9 @@ def _decision_reason(
     if missing_binding:
         return f'Missing binding coverage: {", ".join(missing_binding)}.'
     if capability_state == 'validation_required':
-        return 'Required technical capability evidence has not been recorded. Run Full Validation before operational use.'
+        return (
+            'Required technical capability evidence has not been recorded. Run Full Validation before operational use.'
+        )
     if capability_state == 'missing_required':
         return f'Missing validated technical capabilities: {", ".join(missing_technical)}.'
     if readiness not in (_READY_READINESS | _DEGRADED_READINESS):
@@ -234,5 +226,6 @@ def _selector_required(binding: IntegrationBinding) -> bool:
         IntegrationBinding.query.filter_by(
             integration_instance_id=binding.integration_instance_id,
             enabled=True,
-        ).count() > 1
+        ).count()
+        > 1
     )

@@ -53,11 +53,7 @@ def generated_report_detail(report_id: int) -> ResponseReturnValue:
 
 @permission_required('reports.manage_storage')
 def bulk_archive_generated_reports() -> ResponseReturnValue:
-    report_ids = [
-        int(report_id)
-        for report_id in request.form.getlist('report_ids')
-        if report_id.isdigit()
-    ]
+    report_ids = [int(report_id) for report_id in request.form.getlist('report_ids') if report_id.isdigit()]
     success, message = bulk_archive_report_records(report_ids)
     _record_archive_feedback(
         event_type='generated_reports_bulk_archive',

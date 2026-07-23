@@ -13,7 +13,7 @@ def percent_display(value: Any, *, digits: int = 1) -> str:
 
 def gib_display(value_bytes: Any, *, digits: int = 2) -> str:
     try:
-        return f'{float(value_bytes or 0) / (1024 ** 3):.{digits}f} GiB'
+        return f'{float(value_bytes or 0) / (1024**3):.{digits}f} GiB'
     except (TypeError, ValueError):
         return '0.00 GiB'
 

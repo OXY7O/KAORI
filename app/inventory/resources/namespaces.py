@@ -311,5 +311,3 @@ def get_namespace_detail(
             'Not configured',
         ),
     }
-
-

@@ -344,4 +344,3 @@ INTELLIGENCE_CATALOG: list[dict[str, object]] = [
         'visible_in': ['Recommendations', 'Storage Analysis', 'Reports'],
     },
 ]
-

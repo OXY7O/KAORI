@@ -612,11 +612,7 @@ def _build_node_readiness_findings(rules: dict[str, dict[str, Any]]) -> list[dic
         query = db.session.query(NodeInventory.cluster_id, func.count(NodeInventory.id)).filter(
             NodeInventory.status != 'Ready'
         )
-        rows = (
-            filter_current_generation(query, NodeInventory)
-            .group_by(NodeInventory.cluster_id)
-            .all()
-        )
+        rows = filter_current_generation(query, NodeInventory).group_by(NodeInventory.cluster_id).all()
     except Exception:
         return []
 

@@ -21,17 +21,19 @@ def issue_cluster_registration_proof(
     verify_ssl: bool,
     allow_weak_tls: bool,
 ) -> str:
-    return _serializer().dumps({
-        'user_id': int(user_id),
-        'fingerprint': _fingerprint(
-            name=name,
-            environment=environment,
-            description=description,
-            kubeconfig_content=kubeconfig_content,
-            verify_ssl=verify_ssl,
-            allow_weak_tls=allow_weak_tls,
-        ),
-    })
+    return _serializer().dumps(
+        {
+            'user_id': int(user_id),
+            'fingerprint': _fingerprint(
+                name=name,
+                environment=environment,
+                description=description,
+                kubeconfig_content=kubeconfig_content,
+                verify_ssl=verify_ssl,
+                allow_weak_tls=allow_weak_tls,
+            ),
+        }
+    )
 
 
 def verify_cluster_registration_proof(

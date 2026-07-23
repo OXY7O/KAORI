@@ -46,8 +46,7 @@ def create_binding(
 
     if normalized_role == 'primary':
         conflicting_primary = (
-            IntegrationBinding.query
-            .join(
+            IntegrationBinding.query.join(
                 IntegrationInstance,
                 IntegrationBinding.integration_instance_id == IntegrationInstance.id,
             )
@@ -62,9 +61,7 @@ def create_binding(
             .first()
         )
         if conflicting_primary is not None:
-            raise ValueError(
-                'The selected managed cluster already has an enabled primary Prometheus source.'
-            )
+            raise ValueError('The selected managed cluster already has an enabled primary Prometheus source.')
 
     binding = bind_instance(
         canonical,

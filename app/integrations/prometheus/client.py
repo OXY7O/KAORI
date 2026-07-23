@@ -132,7 +132,6 @@ class PrometheusClient:
             },
         )
 
-
     def _scope_query(self, query: str) -> str:
         try:
             return apply_promql_scope(query, self.scope_selector)
@@ -178,4 +177,3 @@ class PrometheusClient:
                 return detail[:1000]
 
         return (response.text or '').strip()[:1000]
-

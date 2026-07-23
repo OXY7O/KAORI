@@ -68,7 +68,6 @@ def activity_log() -> ResponseReturnValue:
             **context,
         )
 
-
     return render_template(
         'notifications/activity.html',
         **context,

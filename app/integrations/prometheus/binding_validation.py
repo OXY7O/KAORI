@@ -57,17 +57,19 @@ def validate_binding(
                     else 'Prometheus returned an invalid query response.'
                 )
                 raise PrometheusError(detail)
-            result = ((payload.get('data') or {}).get('result') or [])
+            result = (payload.get('data') or {}).get('result') or []
             value = 0.0
             if result and isinstance(result[0], dict):
                 sample = result[0].get('value') or []
                 if len(sample) > 1:
                     value = float(sample[1])
-            probe_results.append({
-                'metric': metric,
-                'label': label,
-                'matched_series': int(value),
-            })
+            probe_results.append(
+                {
+                    'metric': metric,
+                    'label': label,
+                    'matched_series': int(value),
+                }
+            )
             if value > 0 and matched_signal is None:
                 matched_signal = metric
                 matched = value

@@ -63,21 +63,13 @@ def _instance_context(instance) -> dict:
         operation='full_validation',
         instance_id=instance.id,
     )
-    context['validation_job'] = (
-        build_validation_snapshot(validation_task_id)
-        if validation_task_id
-        else None
-    )
+    context['validation_job'] = build_validation_snapshot(validation_task_id) if validation_task_id else None
     runtime_task_id = get_active_validation_task_id(
         provider_type='alertmanager',
         operation='runtime_refresh',
         instance_id=instance.id,
     )
-    context['runtime_refresh_job'] = (
-        build_validation_snapshot(runtime_task_id)
-        if runtime_task_id
-        else None
-    )
+    context['runtime_refresh_job'] = build_validation_snapshot(runtime_task_id) if runtime_task_id else None
     binding_job = None
     for binding in context.get('bindings', []):
         task_id = get_active_validation_task_id(
@@ -256,6 +248,7 @@ def new_instance() -> ResponseReturnValue:
         ),
     )
 
+
 @alertmanager_bp.post('/instances/test-connection')
 @permission_required('settings.manage_integrations')
 def test_new_instance_connection() -> ResponseReturnValue:
@@ -271,7 +264,7 @@ def test_new_instance_connection() -> ResponseReturnValue:
             title='Alertmanager connection verified',
             message='KAORI reached the submitted Alertmanager endpoint.',
             detail=(
-                f"Status API responded in {result.get('response_time_ms', 0)} ms. "
+                f'Status API responded in {result.get("response_time_ms", 0)} ms. '
                 'Register the instance, then run full validation from its detail page.'
             ),
             metadata={
@@ -305,9 +298,7 @@ def test_new_instance_connection() -> ResponseReturnValue:
         )
 
     registration_proof = (
-        issue_registration_proof(form=form, user_id=int(current_user.id))
-        if result.get('connected')
-        else ''
+        issue_registration_proof(form=form, user_id=int(current_user.id)) if result.get('connected') else ''
     )
     response = make_response(
         render_template(
@@ -350,10 +341,12 @@ def test_instance_configuration(instance_id: int) -> ResponseReturnValue:
             else f'KAORI could not verify the submitted settings for {instance.name}.'
         ),
         detail=(
-            f"Alertmanager {result.get('version') or 'unknown'} responded in "
-            f"{result.get('response_time_ms') or 0} ms. Save the configuration, then run Full Validation."
+            f'Alertmanager {result.get("version") or "unknown"} responded in '
+            f'{result.get("response_time_ms") or 0} ms. Save the configuration, then run Full Validation.'
             if connected
-            else result.get('error') or result.get('reason') or 'Review endpoint, authentication, TLS, and network reachability.'
+            else result.get('error')
+            or result.get('reason')
+            or 'Review endpoint, authentication, TLS, and network reachability.'
         ),
         metadata={
             'endpoint_host': result.get('endpoint_host'),
@@ -429,6 +422,7 @@ def instance_detail(instance_id: int) -> ResponseReturnValue:
 
     return render_template('alertmanager/instance_detail.html', **_instance_context(instance))
 
+
 @alertmanager_bp.post('/instances/<int:instance_id>/runtime/refresh')
 @permission_required('settings.manage_integrations')
 def refresh_runtime(instance_id: int) -> ResponseReturnValue:
@@ -445,7 +439,9 @@ def refresh_runtime(instance_id: int) -> ResponseReturnValue:
         feedback = record_instance_activity(
             user_id=int(current_user.id),
             instance=instance,
-            event_type='alertmanager_runtime_refresh_queued' if created else 'alertmanager_runtime_refresh_already_running',
+            event_type='alertmanager_runtime_refresh_queued'
+            if created
+            else 'alertmanager_runtime_refresh_already_running',
             status='info' if created else 'warning',
             title='Alertmanager runtime refresh queued' if created else 'Alertmanager runtime refresh already running',
             message=(
@@ -544,7 +540,9 @@ def validate_instance(instance_id: int) -> ResponseReturnValue:
         feedback = record_instance_activity(
             user_id=int(current_user.id),
             instance=instance,
-            event_type='alertmanager_full_validation_queued' if created else 'alertmanager_full_validation_already_running',
+            event_type='alertmanager_full_validation_queued'
+            if created
+            else 'alertmanager_full_validation_already_running',
             status='info' if created else 'warning',
             title='Alertmanager validation queued' if created else 'Alertmanager validation already running',
             message=(
@@ -690,7 +688,6 @@ def create_binding(instance_id: int) -> ResponseReturnValue:
     return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#scope')
 
 
-
 @alertmanager_bp.post('/instances/<int:instance_id>/bindings/<int:binding_id>/selector')
 @permission_required('settings.manage_integrations')
 def update_binding_selector(instance_id: int, binding_id: int) -> ResponseReturnValue:
@@ -754,7 +751,9 @@ def update_binding_selector(instance_id: int, binding_id: int) -> ResponseReturn
         )
     if is_htmx:
         return _render_instance_partial(
-            'alertmanager/partials/_detail_scope.html', instance, operation_feedback=feedback,
+            'alertmanager/partials/_detail_scope.html',
+            instance,
+            operation_feedback=feedback,
         )
     return redirect(url_for('alertmanager.instance_detail', instance_id=instance.id) + '#scope')
 
@@ -777,9 +776,13 @@ def validate_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
         feedback = record_instance_activity(
             user_id=int(current_user.id),
             instance=instance,
-            event_type='alertmanager_binding_validation_queued' if created else 'alertmanager_binding_validation_already_running',
+            event_type='alertmanager_binding_validation_queued'
+            if created
+            else 'alertmanager_binding_validation_already_running',
             status='info' if created else 'warning',
-            title='Alertmanager binding validation queued' if created else 'Alertmanager binding validation already running',
+            title='Alertmanager binding validation queued'
+            if created
+            else 'Alertmanager binding validation already running',
             message=(
                 'KAORI queued the alert identity validation.'
                 if created
@@ -896,6 +899,7 @@ def remove_binding(instance_id: int, binding_id: int) -> ResponseReturnValue:
         )
     return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#scope')
 
+
 @alertmanager_bp.post('/instances/<int:instance_id>/delete')
 @permission_required('settings.manage_integrations')
 def delete_instance(instance_id: int) -> ResponseReturnValue:
@@ -919,7 +923,9 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
             queue_feedback=not is_htmx,
         )
         if is_htmx:
-            return _render_instance_partial('alertmanager/partials/_detail_scope.html', instance, operation_feedback=feedback)
+            return _render_instance_partial(
+                'alertmanager/partials/_detail_scope.html', instance, operation_feedback=feedback
+            )
         return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#scope')
     except ValueError as exc:
         feedback = record_instance_activity(
@@ -933,7 +939,9 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
             queue_feedback=not is_htmx,
         )
         if is_htmx:
-            return _render_instance_partial('alertmanager/partials/_detail_scope.html', instance, operation_feedback=feedback)
+            return _render_instance_partial(
+                'alertmanager/partials/_detail_scope.html', instance, operation_feedback=feedback
+            )
         return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#scope')
     except Exception as exc:
         logger.exception('Alertmanager instance deletion failed for %s.', instance_id)
@@ -949,7 +957,9 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
             queue_feedback=not is_htmx,
         )
         if is_htmx:
-            return _render_instance_partial('alertmanager/partials/_detail_scope.html', instance, operation_feedback=feedback)
+            return _render_instance_partial(
+                'alertmanager/partials/_detail_scope.html', instance, operation_feedback=feedback
+            )
         return redirect(url_for('alertmanager.instance_detail', instance_id=instance_id) + '#scope')
 
     record_instance_activity(

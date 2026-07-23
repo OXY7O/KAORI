@@ -92,14 +92,16 @@ class JobExecutionArchiveDomain:
             )
             subscribers: dict[int, list[dict[str, Any]]] = {job_id: [] for job_id in job_ids}
             for subscriber, user in subscriber_rows:
-                subscribers.setdefault(subscriber.job_execution_id, []).append({
-                    'user_id': subscriber.user_id,
-                    'username': user.username if user is not None else None,
-                    'display_name': user.display_name if user is not None else None,
-                    'notify_on_completion': subscriber.notify_on_completion,
-                    'subscribed_at': _isoformat(subscriber.subscribed_at),
-                    'last_seen_at': _isoformat(subscriber.last_seen_at),
-                })
+                subscribers.setdefault(subscriber.job_execution_id, []).append(
+                    {
+                        'user_id': subscriber.user_id,
+                        'username': user.username if user is not None else None,
+                        'display_name': user.display_name if user is not None else None,
+                        'notify_on_completion': subscriber.notify_on_completion,
+                        'subscribed_at': _isoformat(subscriber.subscribed_at),
+                        'last_seen_at': _isoformat(subscriber.last_seen_at),
+                    }
+                )
             for job in rows:
                 last_id = job.id
                 yield self._serialize(job, subscribers.get(job.id, []))
@@ -143,14 +145,18 @@ class JobExecutionArchiveDomain:
         retention_clauses = []
         for workload in ('runtime', 'validation', 'analytics', 'forecasting', 'standard'):
             days = max(int(workload_days.get(workload, policy.retention_days)), 1)
-            retention_clauses.append(and_(
-                JobExecution.workload_class == workload,
-                JobExecution.completed_at < now - timedelta(days=days),
-            ))
-        retention_clauses.append(and_(
-            ~JobExecution.workload_class.in_(tuple(workload_days.keys())),
-            JobExecution.completed_at < now - timedelta(days=policy.retention_days),
-        ))
+            retention_clauses.append(
+                and_(
+                    JobExecution.workload_class == workload,
+                    JobExecution.completed_at < now - timedelta(days=days),
+                )
+            )
+        retention_clauses.append(
+            and_(
+                ~JobExecution.workload_class.in_(tuple(workload_days.keys())),
+                JobExecution.completed_at < now - timedelta(days=policy.retention_days),
+            )
+        )
         return and_(
             JobExecution.status.in_(TERMINAL_STATUSES),
             JobExecution.completed_at.is_not(None),

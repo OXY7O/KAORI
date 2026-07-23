@@ -49,44 +49,56 @@ def _build_inventory_risk_hints(
     hints: list[dict[str, str]] = []
 
     if not connected:
-        hints.append({
-            'label': 'Connection risk',
-            'tone': 'red',
-            'icon': 'unlink',
-        })
+        hints.append(
+            {
+                'label': 'Connection risk',
+                'tone': 'red',
+                'icon': 'unlink',
+            }
+        )
 
     if synced_at is None:
-        hints.append({
-            'label': 'Never synced',
-            'tone': 'amber',
-            'icon': 'triangle-alert',
-        })
+        hints.append(
+            {
+                'label': 'Never synced',
+                'tone': 'amber',
+                'icon': 'triangle-alert',
+            }
+        )
     elif _is_stale_inventory(synced_at):
-        hints.append({
-            'label': 'Stale sync',
-            'tone': 'amber',
-            'icon': 'clock-alert',
-        })
+        hints.append(
+            {
+                'label': 'Stale sync',
+                'tone': 'amber',
+                'icon': 'clock-alert',
+            }
+        )
     else:
-        hints.append({
-            'label': 'Fresh sync',
-            'tone': 'green',
-            'icon': 'check-circle-2',
-        })
+        hints.append(
+            {
+                'label': 'Fresh sync',
+                'tone': 'green',
+                'icon': 'check-circle-2',
+            }
+        )
 
     if pod_count >= 100 or workload_count >= 50:
-        hints.append({
-            'label': 'High density',
-            'tone': 'blue',
-            'icon': 'activity',
-        })
+        hints.append(
+            {
+                'label': 'High density',
+                'tone': 'blue',
+                'icon': 'activity',
+            }
+        )
 
     if node_count > 0 and storage_count == 0:
-        hints.append({
-            'label': 'No storage data',
-            'tone': 'slate',
-            'icon': 'hard-drive',
-        })
+        hints.append(
+            {
+                'label': 'No storage data',
+                'tone': 'slate',
+                'icon': 'hard-drive',
+            }
+        )
 
     return hints[:3]
 
@@ -115,9 +127,7 @@ def get_inventory_cluster_summary() -> tuple[
     if cluster_ids:
         inventories = {
             inventory.cluster_id: inventory
-            for inventory in ClusterInventory.query.filter(
-                ClusterInventory.cluster_id.in_(cluster_ids)
-            ).all()
+            for inventory in ClusterInventory.query.filter(ClusterInventory.cluster_id.in_(cluster_ids)).all()
         }
         namespace_counts = {
             cluster_id: count
@@ -147,19 +157,11 @@ def get_inventory_cluster_summary() -> tuple[
 def _cluster_resource_counts(cluster_id: str) -> dict[str, int]:
     return {
         'node_count': NodeInventory.query.filter_by(cluster_id=cluster_id).count(),
-        'workload_count': WorkloadInventory.query.filter_by(
-            cluster_id=cluster_id
-        ).count(),
+        'workload_count': WorkloadInventory.query.filter_by(cluster_id=cluster_id).count(),
         'pod_count': PodInventory.query.filter_by(cluster_id=cluster_id).count(),
-        'service_count': ServiceInventory.query.filter_by(
-            cluster_id=cluster_id
-        ).count(),
-        'ingress_count': IngressInventory.query.filter_by(
-            cluster_id=cluster_id
-        ).count(),
-        'storage_count': StorageInventory.query.filter_by(
-            cluster_id=cluster_id
-        ).count(),
+        'service_count': ServiceInventory.query.filter_by(cluster_id=cluster_id).count(),
+        'ingress_count': IngressInventory.query.filter_by(cluster_id=cluster_id).count(),
+        'storage_count': StorageInventory.query.filter_by(cluster_id=cluster_id).count(),
     }
 
 
@@ -182,35 +184,37 @@ def get_inventory_overview() -> dict[str, Any]:
         sync_status, sync_label, sync_tone = _sync_status(synced_at)
         connection = cluster.kubernetes_connection
 
-        cluster_rows.append({
-            'id': cluster.id,
-            'name': cluster.name,
-            'environment': cluster.environment,
-            'server': connection.server,
-            'status': cluster.status,
-            'node_count': counts['node_count'],
-            'last_check': cluster.last_check,
-            'created_at': cluster.created_at,
-            'updated_at': cluster.updated_at,
-            'kube_verify_ssl': connection.verify_ssl,
-            'kube_allow_weak_tls': connection.allow_weak_tls,
-            'workload_count': counts['workload_count'],
-            'pod_count': counts['pod_count'],
-            'service_count': counts['service_count'],
-            'ingress_count': counts['ingress_count'],
-            'storage_count': counts['storage_count'],
-            'sync_status': sync_status,
-            'sync_status_label': sync_label,
-            'sync_status_tone': sync_tone,
-            'risk_hints': _build_inventory_risk_hints(
-                connected=cluster.status == 'connected',
-                synced_at=synced_at,
-                node_count=counts['node_count'],
-                workload_count=counts['workload_count'],
-                pod_count=counts['pod_count'],
-                storage_count=counts['storage_count'],
-            ),
-        })
+        cluster_rows.append(
+            {
+                'id': cluster.id,
+                'name': cluster.name,
+                'environment': cluster.environment,
+                'server': connection.server,
+                'status': cluster.status,
+                'node_count': counts['node_count'],
+                'last_check': cluster.last_check,
+                'created_at': cluster.created_at,
+                'updated_at': cluster.updated_at,
+                'kube_verify_ssl': connection.verify_ssl,
+                'kube_allow_weak_tls': connection.allow_weak_tls,
+                'workload_count': counts['workload_count'],
+                'pod_count': counts['pod_count'],
+                'service_count': counts['service_count'],
+                'ingress_count': counts['ingress_count'],
+                'storage_count': counts['storage_count'],
+                'sync_status': sync_status,
+                'sync_status_label': sync_label,
+                'sync_status_tone': sync_tone,
+                'risk_hints': _build_inventory_risk_hints(
+                    connected=cluster.status == 'connected',
+                    synced_at=synced_at,
+                    node_count=counts['node_count'],
+                    workload_count=counts['workload_count'],
+                    pod_count=counts['pod_count'],
+                    storage_count=counts['storage_count'],
+                ),
+            }
+        )
 
     return {
         'total_clusters': _count_rows(Cluster),
@@ -242,14 +246,16 @@ def get_inventory_health() -> dict[str, Any]:
     last_sync = None
     connected_clusters = 0
 
-    inventory_by_cluster = {
-        inventory.cluster_id: inventory
-        for inventory in ClusterInventory.query.filter(
-            ClusterInventory.cluster_id.in_(
-                [cluster.id for cluster in clusters]
-            )
-        ).all()
-    } if clusters else {}
+    inventory_by_cluster = (
+        {
+            inventory.cluster_id: inventory
+            for inventory in ClusterInventory.query.filter(
+                ClusterInventory.cluster_id.in_([cluster.id for cluster in clusters])
+            ).all()
+        }
+        if clusters
+        else {}
+    )
 
     for cluster in clusters:
         if cluster.status == 'connected':
@@ -295,28 +301,16 @@ def get_inventory_health() -> dict[str, Any]:
 
 
 def get_recent_inventory_activity() -> list[dict[str, Any]]:
-    inventories = (
-        ClusterInventory.query
-        .order_by(ClusterInventory.collected_at.desc())
-        .limit(5)
-        .all()
-    )
+    inventories = ClusterInventory.query.order_by(ClusterInventory.collected_at.desc()).limit(5).all()
     if not inventories:
         return []
 
     cluster_ids = {inventory.cluster_id for inventory in inventories}
-    clusters = {
-        cluster.id: cluster
-        for cluster in Cluster.query.filter(Cluster.id.in_(cluster_ids)).all()
-    }
+    clusters = {cluster.id: cluster for cluster in Cluster.query.filter(Cluster.id.in_(cluster_ids)).all()}
 
     return [
         {
-            'cluster': (
-                clusters[inventory.cluster_id].name
-                if inventory.cluster_id in clusters
-                else 'Unknown'
-            ),
+            'cluster': (clusters[inventory.cluster_id].name if inventory.cluster_id in clusters else 'Unknown'),
             'collected_at': inventory.collected_at,
         }
         for inventory in inventories

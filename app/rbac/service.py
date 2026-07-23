@@ -35,6 +35,8 @@ PERMISSION_DEPENDENCIES: dict[str, set[str]] = {
     'reports.manage_schedules': {'reports.view'},
     'reports.manage_storage': {'reports.view'},
     'jobs.cancel': {'jobs.view'},
+    'knowledge.runbooks.manage': {'knowledge.runbooks.view'},
+    'knowledge.runbooks.publish': {'knowledge.runbooks.view', 'knowledge.runbooks.manage'},
     'intelligence.decisions.create': {'intelligence.decisions.view'},
     'intelligence.decisions.approve': {'intelligence.decisions.view'},
     'intelligence.decisions.execute': {'intelligence.decisions.view'},
@@ -167,8 +169,7 @@ def replace_role_permissions(role: Role, permission_ids: Iterable[int]) -> set[i
 
     selected_ids = expand_permission_ids(permission_ids)
     existing_by_permission_id = {
-        role_permission.permission_id: role_permission
-        for role_permission in role.role_permissions
+        role_permission.permission_id: role_permission for role_permission in role.role_permissions
     }
 
     for permission_id, role_permission in existing_by_permission_id.items():

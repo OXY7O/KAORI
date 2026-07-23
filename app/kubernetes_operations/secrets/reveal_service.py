@@ -171,8 +171,7 @@ def get_reveal_clusters() -> list[Cluster]:
     return [
         cluster
         for cluster in clusters
-        if _cluster_ready(cluster)
-        and get_configured_enabled_namespace_names(cluster.id)
+        if _cluster_ready(cluster) and get_configured_enabled_namespace_names(cluster.id)
     ]
 
 
@@ -188,21 +187,11 @@ def get_reveal_workspace(
     targets = []
     selection_error = None
     selection_error_title = None
-    cluster = (
-        Cluster.query.filter_by(id=normalized_cluster_id).first()
-        if normalized_cluster_id
-        else None
-    )
+    cluster = Cluster.query.filter_by(id=normalized_cluster_id).first() if normalized_cluster_id else None
 
-    cluster_available = bool(
-        _global_enabled()
-        and cluster is not None
-        and _cluster_ready(cluster)
-    )
+    cluster_available = bool(_global_enabled() and cluster is not None and _cluster_ready(cluster))
     if cluster_available:
-        configured_names = get_configured_enabled_namespace_names(
-            normalized_cluster_id
-        )
+        configured_names = get_configured_enabled_namespace_names(normalized_cluster_id)
         try:
             namespaces = list_live_namespaces(
                 normalized_cluster_id,
@@ -253,11 +242,7 @@ def get_reveal_workspace(
 
 def _allowed_keys(target: LiveSecretSnapshot) -> list[str]:
     return sorted(
-        {
-            str(key).strip()
-            for key in target.key_names
-            if str(key).strip() and str(key).strip() not in BLOCKED_KEY_NAMES
-        }
+        {str(key).strip() for key in target.key_names if str(key).strip() and str(key).strip() not in BLOCKED_KEY_NAMES}
     )
 
 
@@ -316,6 +301,7 @@ def get_reveal_target_context(
         'target_error': None,
     }
 
+
 def get_reveal_page_context(
     *,
     user_id: int,
@@ -346,11 +332,7 @@ def get_reveal_page_context(
     my_total = my_query.count()
     my_pages = max((my_total + normalized_per_page - 1) // normalized_per_page, 1)
     normalized_page = min(normalized_page, my_pages)
-    my_requests = (
-        my_query.offset((normalized_page - 1) * normalized_per_page)
-        .limit(normalized_per_page)
-        .all()
-    )
+    my_requests = my_query.offset((normalized_page - 1) * normalized_per_page).limit(normalized_per_page).all()
     my_pagination = {
         'page': normalized_page,
         'per_page': normalized_per_page,
@@ -382,20 +364,17 @@ def get_reveal_page_context(
     pending_total = 0
     pending_pages = 1
     if can_approve:
-        pending_query = (
-            SecretRevealRequest.query.filter_by(status='pending')
-            .order_by(SecretRevealRequest.requested_at.asc())
+        pending_query = SecretRevealRequest.query.filter_by(status='pending').order_by(
+            SecretRevealRequest.requested_at.asc()
         )
         pending_total = pending_query.count()
         pending_pages = max(
-            (pending_total + normalized_pending_per_page - 1)
-            // normalized_pending_per_page,
+            (pending_total + normalized_pending_per_page - 1) // normalized_pending_per_page,
             1,
         )
         normalized_pending_page = min(normalized_pending_page, pending_pages)
         pending_requests = (
-            pending_query
-            .offset((normalized_pending_page - 1) * normalized_pending_per_page)
+            pending_query.offset((normalized_pending_page - 1) * normalized_pending_per_page)
             .limit(normalized_pending_per_page)
             .all()
         )
@@ -409,10 +388,7 @@ def get_reveal_page_context(
         'has_next': normalized_pending_page < pending_pages,
         'prev_page': normalized_pending_page - 1,
         'next_page': normalized_pending_page + 1,
-        'start': (
-            (normalized_pending_page - 1) * normalized_pending_per_page + 1
-            if pending_total else 0
-        ),
+        'start': ((normalized_pending_page - 1) * normalized_pending_per_page + 1 if pending_total else 0),
         'end': min(normalized_pending_page * normalized_pending_per_page, pending_total),
         'page_sizes': pending_page_sizes,
     }
@@ -424,9 +400,7 @@ def get_reveal_page_context(
         'pending_reveal_requests': pending_requests,
         'pending_reveal_pagination': pending_pagination,
         'reveal_policies': REVEAL_NAMESPACE_POLICIES,
-        'reveal_window_seconds': int(
-            current_app.config.get('KUBERNETES_SECRET_REVEAL_WINDOW_SECONDS', 15)
-        ),
+        'reveal_window_seconds': int(current_app.config.get('KUBERNETES_SECRET_REVEAL_WINDOW_SECONDS', 15)),
     }
 
 
@@ -552,6 +526,7 @@ def create_reveal_request(
         },
     )
 
+
 def decide_reveal_request(
     request_id: str,
     *,
@@ -650,9 +625,7 @@ def _decode_secret_value(encoded_value: str) -> tuple[str, str]:
 
     max_bytes = int(current_app.config.get('KUBERNETES_SECRET_REVEAL_MAX_BYTES', 65536))
     if len(raw) > max_bytes:
-        raise ValueError(
-            f'The selected Secret value exceeds the protected reveal limit of {max_bytes} bytes.'
-        )
+        raise ValueError(f'The selected Secret value exceeds the protected reveal limit of {max_bytes} bytes.')
 
     try:
         decoded = raw.decode('utf-8')
@@ -704,9 +677,7 @@ def reveal_secret_value(request_id: str, *, user_id: int) -> RevealedSecretValue
     except ConfigException as exc:
         raise ValueError('The cluster kubeconfig is invalid or incomplete.') from exc
     except (OSError, Urllib3HTTPError) as exc:
-        raise ValueError(
-            'KAORI could not reach the Kubernetes API using the cluster kubeconfig.'
-        ) from exc
+        raise ValueError('KAORI could not reach the Kubernetes API using the cluster kubeconfig.') from exc
     finally:
         for key in list(secret_data):
             secret_data[key] = ''

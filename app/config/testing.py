@@ -35,7 +35,6 @@ class TestingConfig(Config):
         ),
     )
 
-
     REPORT_RENDER_STAGING_DIR = os.getenv(
         'TEST_REPORT_RENDER_STAGING_DIR',
         str(

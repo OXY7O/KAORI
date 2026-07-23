@@ -20,24 +20,151 @@ class FeatureContract:
 
 
 FEATURE_CONTRACTS: tuple[FeatureContract, ...] = (
-    FeatureContract('capacity.cpu', 'Capacity Analytics', 'CPU Capacity Contract', ('analytics.utilization.queries.CPU_CAPACITY',), 'The analytics query returns a positive numeric CPU capacity value.'),
-    FeatureContract('capacity.memory', 'Capacity Analytics', 'Memory Capacity Contract', ('analytics.utilization.queries.MEMORY_CAPACITY',), 'The analytics query returns a positive numeric memory capacity value.'),
-    FeatureContract('capacity.worker', 'Capacity Analytics', 'Worker Capacity Contract', ('analytics.capacity.queries.CURRENT_WORKER_PODS_QUERY', 'analytics.capacity.queries.WORKER_CPU_USAGE_QUERY'), 'The worker discovery and worker usage queries execute successfully and return usable values.'),
-    FeatureContract('utilization.cpu', 'Utilization Analytics', 'CPU Utilization Contract', ('analytics.utilization.queries.CPU_UTILIZATION',), 'The exact CPU utilization query executes successfully and returns a numeric value.'),
-    FeatureContract('utilization.memory', 'Utilization Analytics', 'Memory Utilization Contract', ('analytics.utilization.queries.MEMORY_UTILIZATION',), 'The exact memory utilization query executes successfully and returns a numeric value.'),
-    FeatureContract('utilization.storage', 'Utilization Analytics', 'Storage Utilization Contract', ('analytics.utilization.queries.STORAGE_UTILIZATION',), 'The exact storage utilization query executes successfully and returns a numeric value.', allow_empty=True),
-    FeatureContract('storage.filesystem', 'Storage Analytics', 'Storage Filesystem Contract', ('analytics.storage.queries.NODE_VAR_FILESYSTEM_SIZE_QUERY', 'analytics.storage.queries.NODE_VAR_FILESYSTEM_AVAILABLE_QUERY', 'analytics.storage.queries.NODE_ROOT_FILESYSTEM_SIZE_QUERY', 'analytics.storage.queries.NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY'), 'Either the /var pair or the / pair returns usable filesystem series with canonical node identity.', required_labels=('node|nodename|kubernetes_node',)),
-    FeatureContract('storage.pvc', 'Storage Analytics', 'PVC Usage Contract', ('analytics.storage.queries.PVC_USED_BY_CLAIM_QUERY', 'analytics.storage.queries.PVC_AVAILABLE_BY_CLAIM_QUERY'), 'PVC usage queries execute successfully. An empty result is valid when no active PVC is observed.', allow_empty=True),
-    FeatureContract('workload.namespace', 'Workload Analytics', 'Namespace Contract', ('analytics.workload.queries.NAMESPACE_ACTIVE_QUERY',), 'The namespace query executes successfully and returns observable namespaces.', allow_empty=True),
-    FeatureContract('workload.owner', 'Workload Analytics', 'Workload Owner Mapping Contract', ('analytics.workload.queries.WORKLOAD_POD_OWNER_QUERY',), 'The exact workload owner query executes successfully. Empty is reported as Not Observed, not Missing.', allow_empty=True),
-    FeatureContract('workload.qos', 'Workload Analytics', 'Workload QoS Contract', ('analytics.workload.queries.WORKLOAD_QOS_QUERY',), 'The exact QoS query executes successfully. Empty is reported as Not Observed.', allow_empty=True),
-    FeatureContract('workload.resources', 'Workload Analytics', 'Requests and Limits Contract', ('analytics.workload.queries.WORKLOAD_CPU_REQUESTS_QUERY', 'analytics.workload.queries.WORKLOAD_CPU_LIMITS_QUERY'), 'The exact workload request and limit queries execute successfully.', allow_empty=True),
-    FeatureContract('forecast.cpu', 'Forecast Analytics', 'CPU Forecast Input Contract', ('analytics.forecast.queries.CPU_USAGE_QUERY', 'analytics.forecast.queries.CPU_WORKER_CAPACITY_QUERY'), 'Current CPU usage and capacity queries execute successfully before range-history validation.'),
-    FeatureContract('forecast.memory', 'Forecast Analytics', 'Memory Forecast Input Contract', ('analytics.forecast.queries.MEMORY_USAGE_QUERY', 'analytics.forecast.queries.MEMORY_WORKER_CAPACITY_QUERY'), 'Current memory usage and capacity queries execute successfully before range-history validation.'),
-    FeatureContract('top.cpu', 'Top Consumers', 'Top CPU Consumers Contract', ('analytics.top_consumers.queries.TOP_CPU_CONSUMERS_QUERY',), 'The exact top CPU consumer query executes successfully. Empty is valid when no eligible workload is observed.', allow_empty=True),
-    FeatureContract('top.memory', 'Top Consumers', 'Top Memory Consumers Contract', ('analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_QUERY',), 'The exact top memory consumer query executes successfully. Empty is valid when no eligible workload is observed.', allow_empty=True),
-    FeatureContract('alerts.active', 'Alerts & Anomalies', 'Active Alerts Contract', ('analytics.alerts.queries.PROMETHEUS_ALERTS_QUERY',), 'The exact active-alert query executes successfully. Empty means no alert is currently observed.', allow_empty=True),
-    FeatureContract('alerts.anomaly', 'Alerts & Anomalies', 'Pod Restart Anomaly Contract', ('analytics.alerts.queries.POD_RESTART_ANOMALY_QUERY',), 'The exact anomaly query executes successfully. Empty means no anomaly is currently observed.', allow_empty=True),
+    FeatureContract(
+        'capacity.cpu',
+        'Capacity Analytics',
+        'CPU Capacity Contract',
+        ('analytics.utilization.queries.CPU_CAPACITY',),
+        'The analytics query returns a positive numeric CPU capacity value.',
+    ),
+    FeatureContract(
+        'capacity.memory',
+        'Capacity Analytics',
+        'Memory Capacity Contract',
+        ('analytics.utilization.queries.MEMORY_CAPACITY',),
+        'The analytics query returns a positive numeric memory capacity value.',
+    ),
+    FeatureContract(
+        'capacity.worker',
+        'Capacity Analytics',
+        'Worker Capacity Contract',
+        ('analytics.capacity.queries.CURRENT_WORKER_PODS_QUERY', 'analytics.capacity.queries.WORKER_CPU_USAGE_QUERY'),
+        'The worker discovery and worker usage queries execute successfully and return usable values.',
+    ),
+    FeatureContract(
+        'utilization.cpu',
+        'Utilization Analytics',
+        'CPU Utilization Contract',
+        ('analytics.utilization.queries.CPU_UTILIZATION',),
+        'The exact CPU utilization query executes successfully and returns a numeric value.',
+    ),
+    FeatureContract(
+        'utilization.memory',
+        'Utilization Analytics',
+        'Memory Utilization Contract',
+        ('analytics.utilization.queries.MEMORY_UTILIZATION',),
+        'The exact memory utilization query executes successfully and returns a numeric value.',
+    ),
+    FeatureContract(
+        'utilization.storage',
+        'Utilization Analytics',
+        'Storage Utilization Contract',
+        ('analytics.utilization.queries.STORAGE_UTILIZATION',),
+        'The exact storage utilization query executes successfully and returns a numeric value.',
+        allow_empty=True,
+    ),
+    FeatureContract(
+        'storage.filesystem',
+        'Storage Analytics',
+        'Storage Filesystem Contract',
+        (
+            'analytics.storage.queries.NODE_VAR_FILESYSTEM_SIZE_QUERY',
+            'analytics.storage.queries.NODE_VAR_FILESYSTEM_AVAILABLE_QUERY',
+            'analytics.storage.queries.NODE_ROOT_FILESYSTEM_SIZE_QUERY',
+            'analytics.storage.queries.NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY',
+        ),
+        'Either the /var pair or the / pair returns usable filesystem series with canonical node identity.',
+        required_labels=('node|nodename|kubernetes_node',),
+    ),
+    FeatureContract(
+        'storage.pvc',
+        'Storage Analytics',
+        'PVC Usage Contract',
+        ('analytics.storage.queries.PVC_USED_BY_CLAIM_QUERY', 'analytics.storage.queries.PVC_AVAILABLE_BY_CLAIM_QUERY'),
+        'PVC usage queries execute successfully. An empty result is valid when no active PVC is observed.',
+        allow_empty=True,
+    ),
+    FeatureContract(
+        'workload.namespace',
+        'Workload Analytics',
+        'Namespace Contract',
+        ('analytics.workload.queries.NAMESPACE_ACTIVE_QUERY',),
+        'The namespace query executes successfully and returns observable namespaces.',
+        allow_empty=True,
+    ),
+    FeatureContract(
+        'workload.owner',
+        'Workload Analytics',
+        'Workload Owner Mapping Contract',
+        ('analytics.workload.queries.WORKLOAD_POD_OWNER_QUERY',),
+        'The exact workload owner query executes successfully. Empty is reported as Not Observed, not Missing.',
+        allow_empty=True,
+    ),
+    FeatureContract(
+        'workload.qos',
+        'Workload Analytics',
+        'Workload QoS Contract',
+        ('analytics.workload.queries.WORKLOAD_QOS_QUERY',),
+        'The exact QoS query executes successfully. Empty is reported as Not Observed.',
+        allow_empty=True,
+    ),
+    FeatureContract(
+        'workload.resources',
+        'Workload Analytics',
+        'Requests and Limits Contract',
+        (
+            'analytics.workload.queries.WORKLOAD_CPU_REQUESTS_QUERY',
+            'analytics.workload.queries.WORKLOAD_CPU_LIMITS_QUERY',
+        ),
+        'The exact workload request and limit queries execute successfully.',
+        allow_empty=True,
+    ),
+    FeatureContract(
+        'forecast.cpu',
+        'Forecast Analytics',
+        'CPU Forecast Input Contract',
+        ('analytics.forecast.queries.CPU_USAGE_QUERY', 'analytics.forecast.queries.CPU_WORKER_CAPACITY_QUERY'),
+        'Current CPU usage and capacity queries execute successfully before range-history validation.',
+    ),
+    FeatureContract(
+        'forecast.memory',
+        'Forecast Analytics',
+        'Memory Forecast Input Contract',
+        ('analytics.forecast.queries.MEMORY_USAGE_QUERY', 'analytics.forecast.queries.MEMORY_WORKER_CAPACITY_QUERY'),
+        'Current memory usage and capacity queries execute successfully before range-history validation.',
+    ),
+    FeatureContract(
+        'top.cpu',
+        'Top Consumers',
+        'Top CPU Consumers Contract',
+        ('analytics.top_consumers.queries.TOP_CPU_CONSUMERS_QUERY',),
+        'The exact top CPU consumer query executes successfully. Empty is valid when no eligible workload is observed.',
+        allow_empty=True,
+    ),
+    FeatureContract(
+        'top.memory',
+        'Top Consumers',
+        'Top Memory Consumers Contract',
+        ('analytics.top_consumers.queries.TOP_MEMORY_CONSUMERS_QUERY',),
+        'The exact top memory consumer query executes successfully. Empty is valid when no eligible workload is observed.',
+        allow_empty=True,
+    ),
+    FeatureContract(
+        'alerts.active',
+        'Alerts & Anomalies',
+        'Active Alerts Contract',
+        ('analytics.alerts.queries.PROMETHEUS_ALERTS_QUERY',),
+        'The exact active-alert query executes successfully. Empty means no alert is currently observed.',
+        allow_empty=True,
+    ),
+    FeatureContract(
+        'alerts.anomaly',
+        'Alerts & Anomalies',
+        'Pod Restart Anomaly Contract',
+        ('analytics.alerts.queries.POD_RESTART_ANOMALY_QUERY',),
+        'The exact anomaly query executes successfully. Empty means no anomaly is currently observed.',
+        allow_empty=True,
+    ),
 )
 
 
@@ -60,42 +187,48 @@ def _evaluate(client: Any, contract: FeatureContract, *, sample_namespace: str) 
         try:
             response = client.query(expression)
         except PrometheusError as exc:
-            checks.append(_check(
-                query_key,
-                'failed',
-                f'Endpoint rejected the validation query: {exc}',
-                expression,
-                0,
-                None,
-                error_detail=str(exc),
-                registered_query=registered_expression,
-            ))
+            checks.append(
+                _check(
+                    query_key,
+                    'failed',
+                    f'Endpoint rejected the validation query: {exc}',
+                    expression,
+                    0,
+                    None,
+                    error_detail=str(exc),
+                    registered_query=registered_expression,
+                )
+            )
             continue
         except Exception as exc:  # unexpected evaluator faults are isolated per query
-            checks.append(_check(
-                query_key,
-                'failed',
-                f'Query evaluation raised {type(exc).__name__}: {exc}',
-                expression,
-                0,
-                None,
-                error_detail=f'{type(exc).__name__}: {exc}',
-                registered_query=registered_expression,
-            ))
+            checks.append(
+                _check(
+                    query_key,
+                    'failed',
+                    f'Query evaluation raised {type(exc).__name__}: {exc}',
+                    expression,
+                    0,
+                    None,
+                    error_detail=f'{type(exc).__name__}: {exc}',
+                    registered_query=registered_expression,
+                )
+            )
             continue
 
         if response.get('status') != 'success':
             detail = _response_error_detail(response)
-            checks.append(_check(
-                query_key,
-                'failed',
-                f'Endpoint rejected the exact registered query: {detail}',
-                expression,
-                0,
-                None,
-                error_detail=detail,
-                registered_query=registered_expression,
-            ))
+            checks.append(
+                _check(
+                    query_key,
+                    'failed',
+                    f'Endpoint rejected the exact registered query: {detail}',
+                    expression,
+                    0,
+                    None,
+                    error_detail=detail,
+                    registered_query=registered_expression,
+                )
+            )
             continue
 
         successful += 1
@@ -106,16 +239,18 @@ def _evaluate(client: Any, contract: FeatureContract, *, sample_namespace: str) 
         observed_labels.update(labels)
         status = 'ready' if row_usable else ('not_observed' if contract.allow_empty else 'failed')
         evidence = value_summary if row_usable else 'Query returned no usable samples.'
-        checks.append(_check(
-            query_key,
-            status,
-            evidence,
-            expression,
-            len(rows),
-            value_summary,
-            registered_query=registered_expression,
-            identity_keys=identity_keys,
-        ))
+        checks.append(
+            _check(
+                query_key,
+                status,
+                evidence,
+                expression,
+                len(rows),
+                value_summary,
+                registered_query=registered_expression,
+                identity_keys=identity_keys,
+            )
+        )
 
     label_ready = _required_labels_satisfied(contract.required_labels, observed_labels)
     if contract.key == 'storage.filesystem':
@@ -129,10 +264,10 @@ def _evaluate(client: Any, contract: FeatureContract, *, sample_namespace: str) 
         status = 'ready' if var_ready or root_ready else 'failed'
         label_ready = bool(var_pairs or root_pairs)
         pair_evidence = (
-            f"/var size {_check_state(checks[0])}; /var available {_check_state(checks[1])}; "
-            f"matching /var pairs {len(var_pairs)}; / size {_check_state(checks[2])}; "
-            f"/ available {_check_state(checks[3])}; matching / pairs {len(root_pairs)}; "
-            f"canonical node identity {'Ready' if label_ready else 'Missing'}."
+            f'/var size {_check_state(checks[0])}; /var available {_check_state(checks[1])}; '
+            f'matching /var pairs {len(var_pairs)}; / size {_check_state(checks[2])}; '
+            f'/ available {_check_state(checks[3])}; matching / pairs {len(root_pairs)}; '
+            f'canonical node identity {"Ready" if label_ready else "Missing"}.'
         )
         observed = (
             f'{pair_evidence} {successful} of {len(contract.query_keys)} queries executed; '
@@ -175,7 +310,6 @@ def _evaluate(client: Any, contract: FeatureContract, *, sample_namespace: str) 
     }
 
 
-
 def _validation_expression(contract: FeatureContract, expression: str) -> str:
     if contract.key != 'storage.filesystem':
         return expression
@@ -183,10 +317,7 @@ def _validation_expression(contract: FeatureContract, expression: str) -> str:
     # node_exporter vectors prevents a large multi-cluster endpoint from returning
     # thousands of label-heavy samples while preserving the labels required to
     # prove a usable size/available pair.
-    return (
-        'count by (node, nodename, kubernetes_node, mountpoint) '
-        f'({expression})'
-    )
+    return f'count by (node, nodename, kubernetes_node, mountpoint) ({expression})'
 
 
 def _filesystem_identity_keys(rows: list[dict[str, Any]]) -> tuple[str, ...]:
@@ -209,9 +340,9 @@ def _matching_identity_pairs(left: dict[str, Any], right: dict[str, Any]) -> set
 
 def _check_state(check: dict[str, Any]) -> str:
     if check.get('status') == 'ready':
-        return f"Ready ({check.get('series_count_display')})"
+        return f'Ready ({check.get("series_count_display")})'
     if check.get('error_detail'):
-        return f"Failed ({check.get('error_detail')})"
+        return f'Failed ({check.get("error_detail")})'
     return 'No Data'
 
 
@@ -228,23 +359,20 @@ def _storage_remediation(checks: list[dict[str, Any]], label_ready: bool) -> str
     ]
     options = []
     if var_missing:
-        options.append(f"complete the preferred /var pair by verifying {', '.join(var_missing)}")
+        options.append(f'complete the preferred /var pair by verifying {", ".join(var_missing)}')
     if root_missing:
-        options.append(f"or complete the fallback / pair by verifying {', '.join(root_missing)}")
+        options.append(f'or complete the fallback / pair by verifying {", ".join(root_missing)}')
     if not options:
-        options.append(
-            'align size and available series on the same canonical node identity and mountpoint'
-        )
+        options.append('align size and available series on the same canonical node identity and mountpoint')
     identity = (
-        ' Also expose a canonical node identity label (node, nodename, or kubernetes_node).'
-        if not label_ready
-        else ''
+        ' Also expose a canonical node identity label (node, nodename, or kubernetes_node).' if not label_ready else ''
     )
     return (
-        f"KAORI observed only part of the filesystem contract: {'; '.join(options)}."
+        f'KAORI observed only part of the filesystem contract: {"; ".join(options)}.'
         f'{identity} Storage readiness requires both node_filesystem_size_bytes and '
         'node_filesystem_avail_bytes for one complete mount pair using the same scope selector.'
     )
+
 
 def _usable_rows(rows: list[dict[str, Any]]) -> tuple[int, set[str], str | None]:
     usable = 0
@@ -267,7 +395,11 @@ def _usable_rows(rows: list[dict[str, Any]]) -> tuple[int, set[str], str | None]
     if len(values) == 1:
         value = values[0]
         rendered = str(int(value)) if value.is_integer() else f'{value:.4g}'
-        return usable, labels, f'One numeric sample returned with value {rendered}. Empty metric labels are valid for aggregate queries.'
+        return (
+            usable,
+            labels,
+            f'One numeric sample returned with value {rendered}. Empty metric labels are valid for aggregate queries.',
+        )
     return usable, labels, f'{len(values)} numeric samples returned.'
 
 

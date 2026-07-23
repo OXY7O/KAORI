@@ -43,9 +43,7 @@ class IntegrationModule:
     def get_instance(self, instance_id: int) -> Any:
         instance = self.instance_loader(int(instance_id))
         if instance is None:
-            raise IntegrationInstanceNotFound(
-                f'{self.label} instance {instance_id} no longer exists.'
-            )
+            raise IntegrationInstanceNotFound(f'{self.label} instance {instance_id} no longer exists.')
         return instance
 
     def execute(self, operation: str, instance: Any, **kwargs: Any) -> Any:
@@ -72,7 +70,9 @@ class IntegrationRegistry:
             raise ValueError(
                 f'Adapter provider {module.adapter.provider!r} does not match registry key {provider_type!r}.'
             )
-        missing_queues = sorted(operation for operation in module.operations if not module.operation_queues.get(operation))
+        missing_queues = sorted(
+            operation for operation in module.operations if not module.operation_queues.get(operation)
+        )
         if missing_queues:
             raise ValueError(
                 f'Integration provider {provider_type!r} has no worker queue mapping for: {", ".join(missing_queues)}.'

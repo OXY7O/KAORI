@@ -297,7 +297,8 @@ def get_cluster_summary(
         connection = cluster.kubernetes_connection
 
         inventory_summary[cluster.id] = {
-            'version': (connection.detected_version if connection else None) or (inventory.kubernetes_version if inventory else '-'),
+            'version': (connection.detected_version if connection else None)
+            or (inventory.kubernetes_version if inventory else '-'),
             'compatibility_status': (connection.compatibility_status if connection else None) or 'not_checked',
             'readiness_status': (connection.readiness_status if connection else None) or 'not_checked',
             'lifecycle_status': (connection.lifecycle_status if connection else None) or 'unknown',
@@ -389,7 +390,6 @@ def get_cluster_by_id(cluster_id: str) -> Cluster | None:
     )
 
 
-
 def _sync_kubernetes_runtime(
     cluster: Cluster,
     *,
@@ -462,15 +462,17 @@ def _sync_kubernetes_runtime(
         binding_role='primary',
     ).first()
     if binding is None:
-        db.session.add(IntegrationBinding(
-            integration_instance_id=canonical.id,
-            asset_type='kubernetes_cluster',
-            asset_key=cluster.id,
-            binding_role='primary',
-            priority=100,
-            enabled=True,
-            capability_scope=['inventory', 'operations', 'governance', 'discovery'],
-        ))
+        db.session.add(
+            IntegrationBinding(
+                integration_instance_id=canonical.id,
+                asset_type='kubernetes_cluster',
+                asset_key=cluster.id,
+                binding_role='primary',
+                priority=100,
+                enabled=True,
+                capability_scope=['inventory', 'operations', 'governance', 'discovery'],
+            )
+        )
     return connection
 
 
@@ -535,7 +537,6 @@ def create_cluster(
     return cluster
 
 
-
 def refresh_cluster_runtime_health(cluster: Cluster) -> dict[str, Any]:
     """Refresh lightweight API health without rebuilding capability evidence."""
     connection = connection_for_cluster(cluster)
@@ -557,6 +558,7 @@ def refresh_cluster_runtime_health(cluster: Cluster) -> dict[str, Any]:
     _sync_kubernetes_runtime(cluster)
     db.session.commit()
     return result
+
 
 def run_test_cluster(cluster: Cluster) -> dict[str, Any]:
     connection = connection_for_cluster(cluster)
@@ -675,23 +677,17 @@ def delete_cluster(cluster: Cluster) -> dict[str, int]:
         if guard.blocked:
             raise DeletionBlocked(guard)
 
-    detached_reports = (
-        Report.query.filter(Report.cluster_id == cluster_id)
-        .update({Report.cluster_id: None}, synchronize_session=False)
+    detached_reports = Report.query.filter(Report.cluster_id == cluster_id).update(
+        {Report.cluster_id: None}, synchronize_session=False
     )
-    detached_schedules = (
-        ReportSchedule.query.filter(ReportSchedule.cluster_id == cluster_id)
-        .update({ReportSchedule.cluster_id: None}, synchronize_session=False)
+    detached_schedules = ReportSchedule.query.filter(ReportSchedule.cluster_id == cluster_id).update(
+        {ReportSchedule.cluster_id: None}, synchronize_session=False
     )
 
-    canonical_bindings = (
-        IntegrationBinding.query.filter(
-            IntegrationBinding.asset_type == 'kubernetes_cluster',
-            IntegrationBinding.asset_key == cluster_id,
-        )
-        .delete(synchronize_session=False)
-    )
-
+    canonical_bindings = IntegrationBinding.query.filter(
+        IntegrationBinding.asset_type == 'kubernetes_cluster',
+        IntegrationBinding.asset_key == cluster_id,
+    ).delete(synchronize_session=False)
 
     # The Cluster relationship removes KubernetesConnection and all rows that
     # carry a real cluster FK. Flush before deleting the canonical integration

@@ -61,8 +61,7 @@ def build_provider_coverage(
         if instance.integration_instance_id is not None
     }
     provider_bindings = (
-        IntegrationBinding.query
-        .join(IntegrationInstance)
+        IntegrationBinding.query.join(IntegrationInstance)
         .filter(IntegrationInstance.provider_type == provider_type)
         .order_by(
             IntegrationBinding.asset_type.asc(),
@@ -81,7 +80,9 @@ def build_provider_coverage(
         if binding.enabled:
             sharing_counts[binding.integration_instance_id] = sharing_counts.get(binding.integration_instance_id, 0) + 1
             if not selector_is_configured(binding.selector_json):
-                unscoped_counts[binding.integration_instance_id] = unscoped_counts.get(binding.integration_instance_id, 0) + 1
+                unscoped_counts[binding.integration_instance_id] = (
+                    unscoped_counts.get(binding.integration_instance_id, 0) + 1
+                )
 
     rows: list[dict[str, Any]] = []
     clusters = Cluster.query.order_by(Cluster.name.asc(), Cluster.id.asc()).all()
@@ -96,12 +97,10 @@ def build_provider_coverage(
             else None
         )
         shared = bool(
-            selected_binding is not None
-            and sharing_counts.get(selected_binding.integration_instance_id, 0) > 1
+            selected_binding is not None and sharing_counts.get(selected_binding.integration_instance_id, 0) > 1
         )
         selector_configured = bool(
-            selected_binding is not None
-            and selector_is_configured(selected_binding.selector_json)
+            selected_binding is not None and selector_is_configured(selected_binding.selector_json)
         )
         coverage_status, coverage_label, coverage_detail = _coverage_status(
             selected_binding=selected_binding,
@@ -109,45 +108,47 @@ def build_provider_coverage(
             shared=shared,
             selector_configured=selector_configured,
         )
-        rows.append({
-            'scope_type': 'kubernetes_cluster',
-            'scope_key': str(cluster.id),
-            'scope_name': cluster.name,
-            'environment': get_environment_label(cluster.environment),
-            'source': selected_source,
-            'source_id': selected_source.id if selected_source is not None else None,
-            'source_name': selected_source.name if selected_source is not None else None,
-            'source_readiness': (
-                selected_source.readiness_status or 'validation_required'
-                if selected_source is not None
-                else 'not_configured'
-            ),
-            'binding': selected_binding,
-            'binding_role': selected_binding.binding_role if selected_binding is not None else None,
-            'binding_priority': selected_binding.priority if selected_binding is not None else None,
-            'selector_summary': (
-                selector_summary(selected_binding.selector_json)
-                if selected_binding is not None
-                else 'Not configured'
-            ),
-            'selector_configured': selector_configured,
-            'shared_source': shared,
-            'coverage_status': coverage_status,
-            'coverage_label': coverage_label,
-            'coverage_detail': coverage_detail,
-            'search_text': ' '.join(
-                filter(
-                    None,
-                    [
-                        cluster.name.lower(),
-                        str(cluster.id).lower(),
-                        get_environment_label(cluster.environment).lower(),
-                        (selected_source.name or '').lower() if selected_source is not None else '',
-                        coverage_label.lower(),
-                    ],
-                )
-            ),
-        })
+        rows.append(
+            {
+                'scope_type': 'kubernetes_cluster',
+                'scope_key': str(cluster.id),
+                'scope_name': cluster.name,
+                'environment': get_environment_label(cluster.environment),
+                'source': selected_source,
+                'source_id': selected_source.id if selected_source is not None else None,
+                'source_name': selected_source.name if selected_source is not None else None,
+                'source_readiness': (
+                    selected_source.readiness_status or 'validation_required'
+                    if selected_source is not None
+                    else 'not_configured'
+                ),
+                'binding': selected_binding,
+                'binding_role': selected_binding.binding_role if selected_binding is not None else None,
+                'binding_priority': selected_binding.priority if selected_binding is not None else None,
+                'selector_summary': (
+                    selector_summary(selected_binding.selector_json)
+                    if selected_binding is not None
+                    else 'Not configured'
+                ),
+                'selector_configured': selector_configured,
+                'shared_source': shared,
+                'coverage_status': coverage_status,
+                'coverage_label': coverage_label,
+                'coverage_detail': coverage_detail,
+                'search_text': ' '.join(
+                    filter(
+                        None,
+                        [
+                            cluster.name.lower(),
+                            str(cluster.id).lower(),
+                            get_environment_label(cluster.environment).lower(),
+                            (selected_source.name or '').lower() if selected_source is not None else '',
+                            coverage_label.lower(),
+                        ],
+                    )
+                ),
+            }
+        )
 
     all_rows = rows
     filtered_rows = all_rows
@@ -169,24 +170,26 @@ def build_provider_coverage(
         canonical_id = instance.integration_instance_id or -1
         unscoped_binding_count = unscoped_counts.get(canonical_id, 0)
         selectable = readiness not in blocked_readiness and unscoped_binding_count == 0
-        source_options.append({
-            'id': instance.id,
-            'name': instance.name,
-            'readiness': readiness,
-            'binding_count': sharing_counts.get(canonical_id, 0),
-            'unscoped_binding_count': unscoped_binding_count,
-            'endpoint_product': getattr(instance, 'endpoint_product', None) or meta['label'],
-            'selectable': selectable,
-            'selection_reason': (
-                'Available for binding; provider and binding validation still apply.'
-                if selectable
-                else (
-                    'Configure and validate selectors on existing bindings before sharing this source.'
-                    if unscoped_binding_count
-                    else f'Provider readiness {readiness.replace("_", " ")} blocks new bindings.'
-                )
-            ),
-        })
+        source_options.append(
+            {
+                'id': instance.id,
+                'name': instance.name,
+                'readiness': readiness,
+                'binding_count': sharing_counts.get(canonical_id, 0),
+                'unscoped_binding_count': unscoped_binding_count,
+                'endpoint_product': getattr(instance, 'endpoint_product', None) or meta['label'],
+                'selectable': selectable,
+                'selection_reason': (
+                    'Available for binding; provider and binding validation still apply.'
+                    if selectable
+                    else (
+                        'Configure and validate selectors on existing bindings before sharing this source.'
+                        if unscoped_binding_count
+                        else f'Provider readiness {readiness.replace("_", " ")} blocks new bindings.'
+                    )
+                ),
+            }
+        )
 
     return {
         'provider': meta,
@@ -205,7 +208,9 @@ def build_provider_coverage(
         'coverage_stats': {
             'total': len(all_rows),
             'ready': sum(1 for row in all_rows if row['coverage_status'] == 'ready'),
-            'attention': sum(1 for row in all_rows if row['coverage_status'] in {'degraded', 'validation_required', 'blocked'}),
+            'attention': sum(
+                1 for row in all_rows if row['coverage_status'] in {'degraded', 'validation_required', 'blocked'}
+            ),
             'uncovered': sum(1 for row in all_rows if row['coverage_status'] == 'uncovered'),
         },
     }
@@ -221,11 +226,7 @@ def build_binding_workspace(
     meta = provider_meta(provider_type)
     cluster = Cluster.query.filter_by(id=scope_key).first()
     instances = _instances(provider_type)
-    cluster_position = (
-        Cluster.query.order_by(Cluster.name.asc(), Cluster.id.asc())
-        .with_entities(Cluster.id)
-        .all()
-    )
+    cluster_position = Cluster.query.order_by(Cluster.name.asc(), Cluster.id.asc()).with_entities(Cluster.id).all()
     position = next((index for index, row in enumerate(cluster_position) if str(row[0]) == str(scope_key)), 0)
     coverage = build_provider_coverage(provider_type, page=(position // 50) + 1, per_page=50)
     scope_row = next(
@@ -252,16 +253,16 @@ def build_binding_workspace(
     }
 
 
-
-def bound_source_for_scope(provider_type: str, *, scope_type: str, scope_key: str) -> tuple[Any | None, IntegrationBinding | None]:
+def bound_source_for_scope(
+    provider_type: str, *, scope_type: str, scope_key: str
+) -> tuple[Any | None, IntegrationBinding | None]:
     """Return the preferred persisted source binding without performing live resolution.
 
     This is used by inventory and navigation surfaces where a blocked or not-yet-
     validated binding must still remain visible and reviewable.
     """
     bindings = (
-        IntegrationBinding.query
-        .join(IntegrationInstance)
+        IntegrationBinding.query.join(IntegrationInstance)
         .filter(
             IntegrationInstance.provider_type == provider_type,
             IntegrationBinding.asset_type == scope_type,
@@ -288,18 +289,17 @@ def bound_source_for_scope(provider_type: str, *, scope_type: str, scope_key: st
     )
     return source, binding
 
+
 def _instances(provider_type: str) -> list[Any]:
     if provider_type == 'prometheus':
         return (
-            PrometheusInstance.query
-            .join(PrometheusInstance.integration_instance)
+            PrometheusInstance.query.join(PrometheusInstance.integration_instance)
             .order_by(IntegrationInstance.name.asc())
             .all()
         )
     if provider_type == 'alertmanager':
         return (
-            AlertmanagerInstance.query
-            .join(AlertmanagerInstance.integration_instance)
+            AlertmanagerInstance.query.join(AlertmanagerInstance.integration_instance)
             .order_by(IntegrationInstance.name.asc())
             .all()
         )
@@ -318,18 +318,35 @@ def _coverage_status(
     if selected_source is None:
         return 'blocked', 'Source Missing', 'The binding points to a provider record that no longer exists.'
     if shared and not selector_configured:
-        return 'blocked', 'Isolation Required', 'This shared source needs a selector before it can safely serve multiple scopes.'
+        return (
+            'blocked',
+            'Isolation Required',
+            'This shared source needs a selector before it can safely serve multiple scopes.',
+        )
     # Binding validity is explicit state, not a timestamp comparison. Provider
     # runtime/full-validation timestamps can move without changing the binding
     # selector or scope contract. Configuration and selector update paths
     # explicitly invalidate affected bindings.
     binding_status = (selected_binding.validation_status or 'validation_required').lower()
     if binding_status == 'blocked':
-        return 'blocked', 'Binding Blocked', selected_binding.validation_message or 'The source binding failed scope validation.'
+        return (
+            'blocked',
+            'Binding Blocked',
+            selected_binding.validation_message or 'The source binding failed scope validation.',
+        )
     if binding_status == 'degraded':
-        return 'degraded', 'Binding Degraded', selected_binding.validation_message or 'The selector was accepted but did not return expected scope evidence.'
+        return (
+            'degraded',
+            'Binding Degraded',
+            selected_binding.validation_message
+            or 'The selector was accepted but did not return expected scope evidence.',
+        )
     if binding_status == 'validation_required':
-        return 'validation_required', 'Binding Validation Required', selected_binding.validation_message or 'Validate the scope selector before operational use.'
+        return (
+            'validation_required',
+            'Binding Validation Required',
+            selected_binding.validation_message or 'Validate the scope selector before operational use.',
+        )
     readiness = (selected_source.readiness_status or 'validation_required').lower()
     if readiness == 'ready':
         return 'ready', 'Ready', 'Source readiness, binding, and scope isolation are available.'
@@ -337,7 +354,12 @@ def _coverage_status(
         return 'degraded', 'Degraded', 'The source is bound but its validation posture needs attention.'
     if readiness == 'blocked':
         return 'blocked', 'Blocked', 'The source is bound but provider readiness currently blocks operational use.'
-    return 'validation_required', 'Validation Required', 'The source is bound; complete provider and binding validation before use.'
+    return (
+        'validation_required',
+        'Validation Required',
+        'The source is bound; complete provider and binding validation before use.',
+    )
+
 
 def _role_rank(role: str) -> int:
     return {'primary': 0, 'secondary': 1, 'fallback': 2}.get(role, 9)

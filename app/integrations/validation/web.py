@@ -89,7 +89,6 @@ def _metadata(
     }
 
 
-
 def _assert_provider_target_exists(*, provider_type: str, instance_id: int) -> None:
     model_by_provider = {
         'prometheus': PrometheusInstance,
@@ -100,9 +99,8 @@ def _assert_provider_target_exists(*, provider_type: str, instance_id: int) -> N
     if model is None:
         raise ValueError(f'Unsupported integration provider: {provider_type}.')
     if db.session.get(model, instance_id) is None:
-        raise RuntimeError(
-            'The integration connection was deleted before KAORI could admit the job.'
-        )
+        raise RuntimeError('The integration connection was deleted before KAORI could admit the job.')
+
 
 def _enqueue_job(
     *,
@@ -192,7 +190,11 @@ def _enqueue_job(
         conflicting_operations=(conflicting_operation,) if conflicting_operation else (),
     )
     if not acquired:
-        mark_job_failed(job.celery_task_id, error='Could not acquire the provider resource lock.', error_code='resource_lock_conflict')
+        mark_job_failed(
+            job.celery_task_id,
+            error='Could not acquire the provider resource lock.',
+            error_code='resource_lock_conflict',
+        )
         active_task_id = get_active_validation_task_id(
             provider_type=provider_type,
             operation=operation,

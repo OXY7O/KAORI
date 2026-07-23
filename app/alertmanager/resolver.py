@@ -255,5 +255,6 @@ def _selector_required(binding: IntegrationBinding) -> bool:
         IntegrationBinding.query.filter_by(
             integration_instance_id=binding.integration_instance_id,
             enabled=True,
-        ).count() > 1
+        ).count()
+        > 1
     )

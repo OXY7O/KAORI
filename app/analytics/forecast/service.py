@@ -34,7 +34,9 @@ NAMESPACE_ACTIVE_QUERY = get_query_expression('analytics.forecast.queries.NAMESP
 POD_USAGE_BY_NAMESPACE_QUERY = get_query_expression('analytics.forecast.queries.POD_USAGE_BY_NAMESPACE_QUERY')
 POD_USAGE_QUERY = get_query_expression('analytics.forecast.queries.POD_USAGE_QUERY')
 POD_WORKER_CAPACITY_QUERY = get_query_expression('analytics.forecast.queries.POD_WORKER_CAPACITY_QUERY')
-STORAGE_CAPACITY_BY_NAMESPACE_QUERY = get_query_expression('analytics.forecast.queries.STORAGE_CAPACITY_BY_NAMESPACE_QUERY')
+STORAGE_CAPACITY_BY_NAMESPACE_QUERY = get_query_expression(
+    'analytics.forecast.queries.STORAGE_CAPACITY_BY_NAMESPACE_QUERY'
+)
 STORAGE_CAPACITY_QUERY = get_query_expression('analytics.forecast.queries.STORAGE_CAPACITY_QUERY')
 STORAGE_USAGE_BY_NAMESPACE_QUERY = get_query_expression('analytics.forecast.queries.STORAGE_USAGE_BY_NAMESPACE_QUERY')
 STORAGE_USAGE_QUERY = get_query_expression('analytics.forecast.queries.STORAGE_USAGE_QUERY')

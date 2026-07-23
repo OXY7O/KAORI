@@ -78,19 +78,25 @@ def evaluate_module_readiness(capabilities: Iterable[str]) -> list[dict[str, obj
             status = 'degraded'
         else:
             status = 'ready'
-        rows.append({
-            'key': requirement.key,
-            'label': requirement.label,
-            'description': requirement.description,
-            'status': status,
-            'required_capabilities': list(requirement.required_capabilities),
-            'optional_capabilities': list(requirement.optional_capabilities),
-            'required_capability_labels': [CAPABILITY_BY_KEY[key].label for key in requirement.required_capabilities],
-            'optional_capability_labels': [CAPABILITY_BY_KEY[key].label for key in requirement.optional_capabilities],
-            'missing_required': missing_required,
-            'missing_required_labels': [CAPABILITY_BY_KEY[key].label for key in missing_required],
-            'missing_optional': missing_optional,
-            'missing_optional_labels': [CAPABILITY_BY_KEY[key].label for key in missing_optional],
-            'operator_guidance': requirement.operator_guidance,
-        })
+        rows.append(
+            {
+                'key': requirement.key,
+                'label': requirement.label,
+                'description': requirement.description,
+                'status': status,
+                'required_capabilities': list(requirement.required_capabilities),
+                'optional_capabilities': list(requirement.optional_capabilities),
+                'required_capability_labels': [
+                    CAPABILITY_BY_KEY[key].label for key in requirement.required_capabilities
+                ],
+                'optional_capability_labels': [
+                    CAPABILITY_BY_KEY[key].label for key in requirement.optional_capabilities
+                ],
+                'missing_required': missing_required,
+                'missing_required_labels': [CAPABILITY_BY_KEY[key].label for key in missing_required],
+                'missing_optional': missing_optional,
+                'missing_optional_labels': [CAPABILITY_BY_KEY[key].label for key in missing_optional],
+                'operator_guidance': requirement.operator_guidance,
+            }
+        )
     return rows

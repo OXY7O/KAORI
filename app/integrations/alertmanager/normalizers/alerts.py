@@ -103,9 +103,5 @@ def _receiver(alert: dict[str, Any]) -> str:
     receivers = alert.get('receivers')
     if not isinstance(receivers, list):
         return '-'
-    names = [
-        str(item.get('name'))
-        for item in receivers
-        if isinstance(item, dict) and item.get('name')
-    ]
+    names = [str(item.get('name')) for item in receivers if isinstance(item, dict) and item.get('name')]
     return ', '.join(names) if names else '-'

@@ -155,9 +155,7 @@ def alert_source_connection_blocker(
     normalized_source = source.strip().lower()
     source_label = 'Alert source' if normalized_source in {'', 'auto', 'none'} else normalized_source.title()
 
-    action_endpoint = (
-        'integrations.prometheus' if normalized_source == 'prometheus' else 'integrations.alertmanager'
-    )
+    action_endpoint = 'integrations.prometheus' if normalized_source == 'prometheus' else 'integrations.alertmanager'
 
     return {
         'kind': 'alert_source_connection',
