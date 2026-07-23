@@ -5,7 +5,7 @@ from app.integrations.alertmanager.capabilities import BINDING_CAPABILITY_KEYS
 from app.integrations.binding_selectors import build_selector
 from app.integrations.lifecycle import ensure_canonical_instance
 from app.models.alertmanager import AlertmanagerInstance
-from app.models.integration import IntegrationBinding
+from app.models.integration import IntegrationBinding, IntegrationInstance
 
 
 def create_binding(
@@ -52,10 +52,16 @@ def create_binding(
         conflicting_primary = (
             IntegrationBinding.query
             .join(
+                IntegrationInstance,
+                IntegrationBinding.integration_instance_id == IntegrationInstance.id,
+            )
+            .join(
                 AlertmanagerInstance,
-                AlertmanagerInstance.integration_instance_id == IntegrationBinding.integration_instance_id,
+                AlertmanagerInstance.integration_instance_id == IntegrationInstance.id,
             )
             .filter(
+                IntegrationInstance.provider_type == 'alertmanager',
+                IntegrationInstance.enabled.is_(True),
                 IntegrationBinding.asset_type == normalized_scope_type,
                 IntegrationBinding.asset_key == normalized_scope_key,
                 IntegrationBinding.binding_role == 'primary',

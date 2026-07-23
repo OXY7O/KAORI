@@ -53,6 +53,7 @@ def create_binding(
             )
             .filter(
                 IntegrationInstance.provider_type == 'prometheus',
+                IntegrationInstance.enabled.is_(True),
                 IntegrationBinding.asset_type == KUBERNETES_CLUSTER_SCOPE,
                 IntegrationBinding.asset_key == cluster.id,
                 IntegrationBinding.binding_role == 'primary',
