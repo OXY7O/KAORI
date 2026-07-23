@@ -6,6 +6,7 @@ from typing import Any
 from app.common.presentation import present_count, present_key_label, present_milliseconds, present_user_datetime
 from app.integrations.compatibility import kubernetes_lifecycle_policy
 from app.integrations.contracts import RuntimeState
+from app.models.runtime import IntegrationRuntimeObservation
 
 
 def runtime_state_view(
@@ -65,12 +66,16 @@ def runtime_state_view(
     }
 
 
-def runtime_history_view(rows, *, pagination: dict[str, object]) -> dict[str, object]:
+def runtime_history_view(
+    rows: list[IntegrationRuntimeObservation],
+    *,
+    pagination: dict[str, object],
+) -> dict[str, object]:
     per_page = _safe_int(pagination.get('per_page'), default=5)
     rendered_source_rows = rows[:per_page]
     chronological = list(reversed(rows))
-    previous_by_id: dict[int, object | None] = {}
-    previous = None
+    previous_by_id: dict[int, IntegrationRuntimeObservation | None] = {}
+    previous: IntegrationRuntimeObservation | None = None
     for row in chronological:
         previous_by_id[row.id] = previous
         previous = row

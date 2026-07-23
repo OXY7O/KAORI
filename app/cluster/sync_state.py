@@ -318,7 +318,7 @@ def build_cluster_sync_snapshot(task_id: str) -> dict[str, Any]:
     async_result: AsyncResult = celery_app.AsyncResult(
         task_id,
     )
-    state = async_result.state
+    state = str(async_result.state or 'PENDING').upper()
     job = JobExecution.query.filter_by(celery_task_id=task_id).first()
     if job is not None:
         state = {

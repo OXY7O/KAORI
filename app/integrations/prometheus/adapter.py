@@ -131,10 +131,12 @@ class PrometheusRuntimeAdapter:
                 ),
             },
         )
+        cluster_id = primary_cluster_id_for_instance(instance)
+        fallback_name = f'Cluster {cluster_id} metrics' if cluster_id else 'Prometheus metrics source'
         return RuntimeState(
             provider=self.provider,
             instance_id=str(instance.id),
-            instance_name=getattr(instance, 'name', None) or f'{instance.cluster.name} metrics',
+            instance_name=getattr(instance, 'name', None) or fallback_name,
             observed_at=instance.last_checked_at or instance.last_validated_at or now,
             readiness=instance.readiness_status or 'validation_required',
             health=health,

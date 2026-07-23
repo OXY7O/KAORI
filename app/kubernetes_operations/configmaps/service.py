@@ -88,9 +88,13 @@ def get_namespaces(cluster_id: str) -> list[str]:
         if exc.status == 401:
             raise ValueError('Kubernetes authentication failed while loading live namespaces.') from exc
         raise ValueError('KAORI could not load live namespaces from the selected Kubernetes cluster.') from exc
-    return sorted(
-        item.metadata.name for item in (response.items or []) if getattr(getattr(item, 'metadata', None), 'name', None)
-    )
+    names: list[str] = []
+    for item in response.items or []:
+        metadata = getattr(item, 'metadata', None)
+        name = getattr(metadata, 'name', None)
+        if isinstance(name, str) and name:
+            names.append(name)
+    return sorted(names)
 
 
 def get_configmaps(cluster_id: str, namespace: str) -> list[LiveConfigMapOption]:
@@ -121,14 +125,18 @@ def get_configmaps(cluster_id: str, namespace: str) -> list[LiveConfigMapOption]
         if exc.status == 401:
             raise ValueError('Kubernetes authentication failed while loading live ConfigMaps.') from exc
         raise ValueError('KAORI could not load live ConfigMaps from the selected Kubernetes namespace.') from exc
-    options = [
-        LiveConfigMapOption(
-            name=item.metadata.name,
-            immutable=bool(getattr(item, 'immutable', False)),
+    options: list[LiveConfigMapOption] = []
+    for item in response.items or []:
+        metadata = getattr(item, 'metadata', None)
+        name = getattr(metadata, 'name', None)
+        if not isinstance(name, str) or not name:
+            continue
+        options.append(
+            LiveConfigMapOption(
+                name=name,
+                immutable=bool(getattr(item, 'immutable', False)),
+            )
         )
-        for item in (response.items or [])
-        if getattr(getattr(item, 'metadata', None), 'name', None)
-    ]
     return sorted(options, key=lambda item: item.name)
 
 
