@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any, cast
 
 from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api, NetworkingV1Api, StorageV1Api, V1NamespaceList, V1Node
@@ -149,6 +150,7 @@ def _get_node_condition_status(
 
 def save_cluster_info(
     cluster: Cluster,
+    collected_at: datetime,
     api: CoreV1Api,
 ) -> None:
     ClusterInventory.query.filter_by(
@@ -158,6 +160,7 @@ def save_cluster_info(
     )
 
     cluster_inventory = ClusterInventory()
+    cluster_inventory.collected_at = collected_at
 
     cluster_inventory.cluster_id = cluster.id
     cluster_inventory.kubernetes_version = get_cluster_version(
@@ -171,6 +174,7 @@ def save_cluster_info(
 
 def save_nodes(
     cluster: Cluster,
+    collected_at: datetime,
     api: CoreV1Api,
 ) -> None:
     NodeInventory.query.filter_by(
@@ -213,6 +217,7 @@ def save_nodes(
         )
 
         node_inventory = NodeInventory()
+        node_inventory.collected_at = collected_at
 
         node_inventory.cluster_id = cluster.id
         node_inventory.node_name = metadata.name
@@ -341,6 +346,7 @@ def _namespace_service_account_snapshot(
 
 def save_namespaces(
     cluster: Cluster,
+    collected_at: datetime,
     api: CoreV1Api,
     networking_api: NetworkingV1Api,
 ) -> None:
@@ -373,6 +379,7 @@ def save_namespaces(
 
         namespace_name = metadata.name
         namespace_inventory = NamespaceInventory()
+        namespace_inventory.collected_at = collected_at
 
         namespace_inventory.cluster_id = cluster.id
         namespace_inventory.namespace = namespace_name
@@ -407,6 +414,7 @@ def save_namespaces(
 
 def save_workloads(
     cluster: Cluster,
+    collected_at: datetime,
     apps_api: AppsV1Api,
     batch_api: BatchV1Api | None = None,
     *,
@@ -426,6 +434,7 @@ def save_workloads(
 
     for workload in workloads:
         workload_inventory = WorkloadInventory()
+        workload_inventory.collected_at = collected_at
 
         workload_inventory.cluster_id = cluster.id
         workload_inventory.namespace = workload['namespace']
@@ -447,6 +456,7 @@ def save_workloads(
 
 def save_pods(
     cluster: Cluster,
+    collected_at: datetime,
     api: CoreV1Api,
     apps_api: AppsV1Api | None = None,
     batch_api: BatchV1Api | None = None,
@@ -465,6 +475,7 @@ def save_pods(
 
     for pod in pods:
         pod_inventory = PodInventory()
+        pod_inventory.collected_at = collected_at
 
         pod_inventory.cluster_id = cluster.id
         pod_inventory.namespace = pod['namespace']
@@ -533,6 +544,7 @@ def save_pods(
 
 def save_services(
     cluster: Cluster,
+    collected_at: datetime,
     api: CoreV1Api,
 ) -> None:
     ServiceInventory.query.filter_by(
@@ -547,6 +559,7 @@ def save_services(
 
     for service in services:
         service_inventory = ServiceInventory()
+        service_inventory.collected_at = collected_at
 
         service_inventory.cluster_id = cluster.id
         service_inventory.namespace = service['namespace']
@@ -578,6 +591,7 @@ def save_services(
 
 def save_ingresses(
     cluster: Cluster,
+    collected_at: datetime,
     api: NetworkingV1Api | None,
     *,
     ingress_items: list[Any] | None = None,
@@ -595,6 +609,7 @@ def save_ingresses(
 
     for ingress in ingresses:
         ingress_inventory = IngressInventory()
+        ingress_inventory.collected_at = collected_at
 
         ingress_inventory.cluster_id = cluster.id
 
@@ -627,6 +642,7 @@ def save_ingresses(
 
 def save_storage_inventory(
     cluster: Cluster,
+    collected_at: datetime,
     core_api: CoreV1Api,
     storage_api: StorageV1Api,
 ) -> None:
@@ -643,6 +659,7 @@ def save_storage_inventory(
 
     for item in items:
         storage_inventory = StorageInventory()
+        storage_inventory.collected_at = collected_at
 
         storage_inventory.cluster_id = cluster.id
 
@@ -670,6 +687,7 @@ def save_storage_inventory(
 
 def save_configuration_inventory(
     cluster: Cluster,
+    collected_at: datetime,
     api: CoreV1Api,
     *,
     include_configmaps: bool = True,
@@ -690,6 +708,7 @@ def save_configuration_inventory(
         include_secrets=include_secrets,
     ):
         inventory = ConfigurationInventory()
+        inventory.collected_at = collected_at
         inventory.cluster_id = cluster.id
         inventory.namespace = item['namespace']
         inventory.name = item['name']
@@ -705,6 +724,7 @@ def save_configuration_inventory(
 
 def save_resource_quotas(
     cluster: Cluster,
+    collected_at: datetime,
     api: CoreV1Api,
 ) -> None:
     ResourceQuotaInventory.query.filter_by(
@@ -715,6 +735,7 @@ def save_resource_quotas(
 
     for item in get_resource_quotas(api):
         inventory = ResourceQuotaInventory()
+        inventory.collected_at = collected_at
         inventory.cluster_id = cluster.id
         inventory.namespace = item['namespace']
         inventory.name = item['name']

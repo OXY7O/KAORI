@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 from kubernetes.client import BatchV1Api
 from sqlalchemy import select
 
@@ -18,6 +20,7 @@ from app.inventory.persistence import (
     save_workloads,
 )
 from app.models import Cluster
+from app.models.kubernetes import KubernetesConnection
 
 
 def _lock_cluster_inventory_sync(
@@ -35,11 +38,12 @@ def _lock_cluster_inventory_sync(
 
 def sync_inventory(
     cluster: Cluster,
+    connection: KubernetesConnection,
 ) -> None:
-    connection = cluster.kubernetes_connection
-    if connection is None:
-        raise ValueError('The selected cluster has no canonical Kubernetes connection.')
+    if connection.cluster_id != cluster.id:
+        raise ValueError('The canonical Kubernetes connection does not belong to the selected cluster.')
     allow_weak_tls = bool(connection.allow_weak_tls)
+    collected_at = datetime.now(UTC)
 
     current_stage = 'cluster lock'
 
@@ -86,6 +90,7 @@ def sync_inventory(
             current_stage = 'cluster information'
             save_cluster_info(
                 cluster,
+                collected_at,
                 core_api,
             )
             db.session.flush()
@@ -93,6 +98,7 @@ def sync_inventory(
             current_stage = 'nodes'
             save_nodes(
                 cluster,
+                collected_at,
                 core_api,
             )
             db.session.flush()
@@ -100,6 +106,7 @@ def sync_inventory(
             current_stage = 'namespaces'
             save_namespaces(
                 cluster,
+                collected_at,
                 core_api,
                 networking_api,
             )
@@ -108,6 +115,7 @@ def sync_inventory(
             current_stage = 'workloads'
             save_workloads(
                 cluster,
+                collected_at,
                 apps_api,
                 batch_api,
                 cronjob_items=cronjob_items,
@@ -117,6 +125,7 @@ def sync_inventory(
             current_stage = 'pods'
             save_pods(
                 cluster,
+                collected_at,
                 core_api,
                 apps_api,
                 batch_api,
@@ -126,6 +135,7 @@ def sync_inventory(
             current_stage = 'services'
             save_services(
                 cluster,
+                collected_at,
                 core_api,
             )
             db.session.flush()
@@ -134,6 +144,7 @@ def sync_inventory(
             if ingress_adapter:
                 save_ingresses(
                     cluster,
+                    collected_at,
                     networking_api if ingress_adapter.get('stability') == 'stable' else None,
                     ingress_items=ingress_items,
                 )
@@ -142,6 +153,7 @@ def sync_inventory(
             current_stage = 'storage'
             save_storage_inventory(
                 cluster,
+                collected_at,
                 core_api,
                 storage_api,
             )
@@ -150,6 +162,7 @@ def sync_inventory(
             current_stage = 'configuration'
             save_configuration_inventory(
                 cluster,
+                collected_at,
                 core_api,
                 include_configmaps='inventory.configmaps' in adapters,
                 include_secrets='inventory.secrets' in adapters,
@@ -159,6 +172,7 @@ def sync_inventory(
             current_stage = 'resource quotas'
             save_resource_quotas(
                 cluster,
+                collected_at,
                 core_api,
             )
             db.session.flush()
