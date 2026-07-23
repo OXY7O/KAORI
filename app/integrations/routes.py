@@ -2,6 +2,7 @@ from flask import Blueprint, abort, current_app, redirect, render_template, requ
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
+from app.common.http import is_htmx_request
 from app.integrations.binding_service import create_cluster_source_binding
 from app.integrations.coverage import build_binding_workspace
 from app.integrations.repository import get_kubernetes_connection_by_cluster_id
