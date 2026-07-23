@@ -3,7 +3,13 @@ from __future__ import annotations
 from typing import Any
 
 from app.alertmanager.service import get_alertmanager_status
-from app.analytics.alerts.contracts import AlertSourceStatus, NormalizedAlert
+from app.analytics.alerts.contracts import (
+    AlertIntegrationStatus,
+    AlertIntegrationStatusMap,
+    AlertSourceHealthSummary,
+    AlertSourceStatus,
+    NormalizedAlert,
+)
 from app.models import Cluster
 from app.prometheus.repository import resolve_instance_for_cluster
 
@@ -64,7 +70,7 @@ def build_prometheus_status(
     *,
     cluster: Cluster | None,
     source_status: AlertSourceStatus,
-) -> dict[str, Any]:
+) -> AlertIntegrationStatus:
     if cluster is None:
         return {
             'configured': False,
@@ -114,7 +120,7 @@ def build_alertmanager_integration_status(
     *,
     cluster: Cluster | None,
     source_status: AlertSourceStatus,
-) -> dict[str, Any]:
+) -> AlertIntegrationStatus:
     if cluster is None:
         return {
             'configured': False,
@@ -180,7 +186,7 @@ def build_integration_status(
     *,
     cluster: Cluster | None,
     source_status: AlertSourceStatus,
-) -> dict[str, dict[str, Any]]:
+) -> AlertIntegrationStatusMap:
     return {
         'prometheus': build_prometheus_status(
             cluster=cluster,
@@ -197,8 +203,8 @@ def build_source_health(
     *,
     cluster: Cluster | None,
     source_status: AlertSourceStatus,
-    integration_status: dict[str, dict[str, Any]],
-) -> dict[str, Any]:
+    integration_status: AlertIntegrationStatusMap,
+) -> AlertSourceHealthSummary:
     if cluster is None:
         return {
             'score': 0,

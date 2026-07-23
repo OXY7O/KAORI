@@ -42,11 +42,7 @@ def build_inventory_context(
     filtered = rows
     normalized_query = query.strip().lower()
     if normalized_query:
-        filtered = [
-            row
-            for row in filtered
-            if normalized_query in row['search_text']
-        ]
+        filtered = [row for row in filtered if normalized_query in row['search_text']]
     if readiness:
         filtered = [row for row in filtered if row['readiness'] == readiness]
     if compatibility:
@@ -109,44 +105,54 @@ def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict
             else 'Not observed in the latest Full Validation evidence.'
         )
         request_target = _alertmanager_request_target(instance.endpoint if instance else '', capability.probe)
-        capability_rows.append({
-            'key': capability.key,
-            'label': capability.label,
-            'category': capability.category,
-            'description': capability.description,
-            'required': capability.required,
-            'available': available,
-            'status_label': 'Observed' if available else ('Required missing' if capability.required else 'Not observed'),
-            'status_tone': 'normal' if available else ('critical' if capability.required else 'warning'),
-            'status_icon': 'circle-check' if available else ('octagon-alert' if capability.required else 'triangle-alert'),
-            'probe': (
-                f'KAORI checks this capability to confirm that the configured Alertmanager source can support '
-                f'{capability.impact.rstrip(".").lower()}. Exact request targets are available under Technical Checks.'
-            ),
-            'technical_checks': [{
-                'label': 'Alertmanager API Request',
-                'status': 'available' if available else 'not_observed',
-                'status_label': 'Ready' if available else 'Not Observed',
-                'evidence': evidence,
-                'query': request_target,
-                'registered_query': request_target,
-                'series_count_display': '',
-                'value_summary': '',
-                'error_detail': '',
-                'tone': 'normal' if available else 'warning',
-                'icon': 'circle-check' if available else 'triangle-alert',
-            }],
-            'success_criteria': capability.success_criteria,
-            'configuration_guidance': capability.configuration_guidance,
-            'impact': capability.impact,
-            'remediation': list(capability.remediation),
-            'evidence': evidence,
-            'next_action': (
-                'No immediate change is required. Revalidate after connection, proxy, authentication, or alert payload changes.'
+        capability_rows.append(
+            {
+                'key': capability.key,
+                'label': capability.label,
+                'category': capability.category,
+                'description': capability.description,
+                'required': capability.required,
+                'available': available,
+                'status_label': 'Observed'
                 if available
-                else capability.remediation[0] if capability.remediation else 'Review the integration configuration and rerun Full Validation.'
-            ),
-        })
+                else ('Required missing' if capability.required else 'Not observed'),
+                'status_tone': 'normal' if available else ('critical' if capability.required else 'warning'),
+                'status_icon': 'circle-check'
+                if available
+                else ('octagon-alert' if capability.required else 'triangle-alert'),
+                'probe': (
+                    f'KAORI checks this capability to confirm that the configured Alertmanager source can support '
+                    f'{capability.impact.rstrip(".").lower()}. Exact request targets are available under Technical Checks.'
+                ),
+                'technical_checks': [
+                    {
+                        'label': 'Alertmanager API Request',
+                        'status': 'available' if available else 'not_observed',
+                        'status_label': 'Ready' if available else 'Not Observed',
+                        'evidence': evidence,
+                        'query': request_target,
+                        'registered_query': request_target,
+                        'series_count_display': '',
+                        'value_summary': '',
+                        'error_detail': '',
+                        'tone': 'normal' if available else 'warning',
+                        'icon': 'circle-check' if available else 'triangle-alert',
+                    }
+                ],
+                'success_criteria': capability.success_criteria,
+                'configuration_guidance': capability.configuration_guidance,
+                'impact': capability.impact,
+                'remediation': list(capability.remediation),
+                'evidence': evidence,
+                'next_action': (
+                    'No immediate change is required. Revalidate after connection, proxy, authentication, or alert payload changes.'
+                    if available
+                    else capability.remediation[0]
+                    if capability.remediation
+                    else 'Review the integration configuration and rerun Full Validation.'
+                ),
+            }
+        )
     deletion_guard = (
         provider_deletion_guard(provider_type='alertmanager', provider_instance_id=instance.id)
         if instance is not None
@@ -163,11 +169,19 @@ def build_instance_context(instance: AlertmanagerInstance | None = None) -> dict
         'capability_summary': {
             'total': len(CAPABILITIES),
             'observed': len(observed_capabilities.intersection(CAPABILITY_BY_KEY)),
-            'required_missing': sum(1 for capability in CAPABILITIES if capability.required and capability.key not in observed_capabilities),
-            'optional_missing': sum(1 for capability in CAPABILITIES if not capability.required and capability.key not in observed_capabilities),
+            'required_missing': sum(
+                1 for capability in CAPABILITIES if capability.required and capability.key not in observed_capabilities
+            ),
+            'optional_missing': sum(
+                1
+                for capability in CAPABILITIES
+                if not capability.required and capability.key not in observed_capabilities
+            ),
         },
         'source_resolution_rows': _source_resolution_rows(instance) if instance else [],
-        'runtime_state': runtime_state_view(get_integration('alertmanager').adapter.get_state(instance)) if instance else None,
+        'runtime_state': runtime_state_view(get_integration('alertmanager').adapter.get_state(instance))
+        if instance
+        else None,
         'runtime_history': build_runtime_history_context(instance) if instance else None,
         'scope_type_labels': {
             'kubernetes_cluster': 'Managed cluster',
@@ -198,7 +212,9 @@ def _instance_row(instance: AlertmanagerInstance) -> dict[str, Any]:
         'deployment_type': instance.deployment_type,
         'validated_at': present_user_datetime(instance.last_validated_at, empty='Not validated'),
         'binding_count': len(list_bindings_for_instance(instance.id)),
-        'scope_types': sorted({binding.asset_type for binding in list_bindings_for_instance(instance.id) if binding.enabled}),
+        'scope_types': sorted(
+            {binding.asset_type for binding in list_bindings_for_instance(instance.id) if binding.enabled}
+        ),
         'search_text': ' '.join(
             filter(
                 None,
@@ -292,17 +308,19 @@ def _source_resolution_rows(instance: AlertmanagerInstance) -> list[dict[str, An
             scope_key=binding.asset_key,
             required_capabilities=('silences_v2',),
         )
-        rows.append({
-            'scope_type': binding.asset_type,
-            'scope_type_label': binding.asset_type.replace('_', ' ').title(),
-        'selector_summary': selector_summary(binding.selector_json),
-        'selector_configured': selector_is_configured(binding.selector_json),
-        'validation_status': binding.validation_status or 'validation_required',
-            'scope_key': binding.asset_key,
-            'scope_label': _scope_label(binding.asset_type, binding.asset_key),
-            'alerts': _resolution_view(alerts_resolution, current_instance_id=instance.id),
-            'silences': _resolution_view(silences_resolution, current_instance_id=instance.id),
-        })
+        rows.append(
+            {
+                'scope_type': binding.asset_type,
+                'scope_type_label': binding.asset_type.replace('_', ' ').title(),
+                'selector_summary': selector_summary(binding.selector_json),
+                'selector_configured': selector_is_configured(binding.selector_json),
+                'validation_status': binding.validation_status or 'validation_required',
+                'scope_key': binding.asset_key,
+                'scope_label': _scope_label(binding.asset_type, binding.asset_key),
+                'alerts': _resolution_view(alerts_resolution, current_instance_id=instance.id),
+                'silences': _resolution_view(silences_resolution, current_instance_id=instance.id),
+            }
+        )
     return rows
 
 

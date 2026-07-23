@@ -1,8 +1,11 @@
 from __future__ import annotations
 
-from typing import Any
-
-from app.analytics.alerts.contracts import AlertSourceStatus, NormalizedAlert
+from app.analytics.alerts.contracts import (
+    AlertRoutingGroup,
+    AlertRoutingSummary,
+    AlertSourceStatus,
+    NormalizedAlert,
+)
 
 
 def normalize_alert_receiver(
@@ -117,7 +120,7 @@ def build_count_groups(
     key_name: str,
     label_default: str,
     limit: int = 5,
-) -> list[dict[str, Any]]:
+) -> list[AlertRoutingGroup]:
     counts: dict[str, int] = {}
 
     for alert in alerts:
@@ -191,7 +194,7 @@ def build_routing_summary(
     *,
     alerts: list[NormalizedAlert],
     source_status: AlertSourceStatus,
-) -> dict[str, Any]:
+) -> AlertRoutingSummary:
     resolved_source = str(
         source_status.get(
             'resolved_source',
@@ -335,7 +338,7 @@ def build_routing_summary(
     }
 
 
-def build_empty_routing_summary() -> dict[str, Any]:
+def build_empty_routing_summary() -> AlertRoutingSummary:
     return {
         'enabled': False,
         'level': 'unavailable',

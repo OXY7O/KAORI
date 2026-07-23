@@ -6,7 +6,8 @@ from app.models import Cluster, NamespaceInventory
 
 def get_clusters_for_filter() -> list[Cluster]:
     return Cluster.query.order_by(
-        Cluster.created_at.asc(), Cluster.id.asc(),
+        Cluster.created_at.asc(),
+        Cluster.id.asc(),
     ).all()
 
 

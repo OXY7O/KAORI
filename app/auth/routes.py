@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from typing import cast
 
-from flask import Blueprint, current_app, flash, redirect, render_template, request, session, url_for
+from flask import Blueprint, current_app, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, logout_user
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -27,6 +27,7 @@ from app.auth.session import clear_authenticated_session, establish_authenticate
 from app.auth.sso import SsoProviderStoreError, enabled_sso_providers, find_enabled_sso_provider, resolve_sso_identity
 from app.extensions import db, limiter
 from app.models import User
+from app.notifications.service import queue_transient_feedback
 
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
 
@@ -120,7 +121,11 @@ def login():
             message = result.message or PROVIDER_UNAVAILABLE_MESSAGE
         else:
             message = result.message or INVALID_LOGIN_MESSAGE
-        flash(message, 'danger')
+        queue_transient_feedback(
+            status='error',
+            title='Sign-in failed',
+            message=message,
+        )
 
     return render_template('auth/index.html', form=form, sso_providers=enabled_sso_providers())
 
@@ -134,17 +139,29 @@ def sso_start(provider_key: str):
     try:
         provider = find_enabled_sso_provider(provider_key)
     except SsoProviderStoreError:
-        flash(DATABASE_UNAVAILABLE_MESSAGE, 'danger')
+        queue_transient_feedback(
+            status='error',
+            title='Authentication unavailable',
+            message=DATABASE_UNAVAILABLE_MESSAGE,
+        )
         return redirect(url_for('auth.login'))
     if provider is None:
-        flash('The selected SSO provider is unavailable.', 'danger')
+        queue_transient_feedback(
+            status='error',
+            title='SSO provider unavailable',
+            message='The selected SSO provider is unavailable.',
+        )
         return redirect(url_for('auth.login'))
 
     state = generate_state()
     try:
         adapter = get_browser_sso_provider(provider.provider_type)
     except SsoProviderError:
-        flash('The selected SSO provider is unavailable.', 'danger')
+        queue_transient_feedback(
+            status='error',
+            title='SSO provider unavailable',
+            message='The selected SSO provider is unavailable.',
+        )
         return redirect(url_for('auth.login'))
 
     nonce = generate_nonce() if adapter.requires_nonce else None
@@ -172,7 +189,11 @@ def sso_start(provider_key: str):
             result='failed',
             reason='provider_unavailable',
         )
-        flash('The selected SSO provider is not configured correctly.', 'danger')
+        queue_transient_feedback(
+            status='error',
+            title='SSO configuration failed',
+            message='The selected SSO provider is not configured correctly.',
+        )
         return redirect(url_for('auth.login'))
     return redirect(authorization_url)
 
@@ -184,15 +205,27 @@ def sso_callback(provider_key: str):
     try:
         provider = find_enabled_sso_provider(provider_key)
     except SsoProviderStoreError:
-        flash(DATABASE_UNAVAILABLE_MESSAGE, 'danger')
+        queue_transient_feedback(
+            status='error',
+            title='Authentication unavailable',
+            message=DATABASE_UNAVAILABLE_MESSAGE,
+        )
         return redirect(url_for('auth.login'))
     if provider is None:
-        flash('The selected SSO provider is unavailable.', 'danger')
+        queue_transient_feedback(
+            status='error',
+            title='SSO provider unavailable',
+            message='The selected SSO provider is unavailable.',
+        )
         return redirect(url_for('auth.login'))
     try:
         adapter = get_browser_sso_provider(provider.provider_type)
     except SsoProviderError:
-        flash('The selected SSO provider is unavailable.', 'danger')
+        queue_transient_feedback(
+            status='error',
+            title='SSO provider unavailable',
+            message='The selected SSO provider is unavailable.',
+        )
         return redirect(url_for('auth.login'))
 
     supplied_state = request.args.get('state', '')
@@ -206,21 +239,33 @@ def sso_callback(provider_key: str):
     ):
         result = AuthResult(False, 'state_mismatch', source=provider.provider_type)
         _record_result(provider.key, result)
-        flash('The SSO request expired or failed state validation. Start sign-in again.', 'danger')
+        queue_transient_feedback(
+            status='error',
+            title='SSO request expired',
+            message='The SSO request expired or failed state validation. Start sign-in again.',
+        )
         return redirect(url_for('auth.login'))
 
     provider_error = request.args.get('error')
     if provider_error:
         result = AuthResult(False, 'authorization_denied', source=provider.provider_type)
         _record_result(provider.key, result)
-        flash('The external sign-in request was cancelled or denied.', 'danger')
+        queue_transient_feedback(
+            status='warning',
+            title='SSO sign-in cancelled',
+            message='The external sign-in request was cancelled or denied.',
+        )
         return redirect(url_for('auth.login'))
 
     code = request.args.get('code', '')
     if not code:
         result = AuthResult(False, 'authorization_code_missing', source=provider.provider_type)
         _record_result(provider.key, result)
-        flash('The SSO callback did not include an authorization code.', 'danger')
+        queue_transient_feedback(
+            status='error',
+            title='SSO callback incomplete',
+            message='The SSO callback did not include an authorization code.',
+        )
         return redirect(url_for('auth.login'))
 
     redirect_uri = url_for('auth.sso_callback', provider_key=provider.key, _external=True)
@@ -253,7 +298,11 @@ def sso_callback(provider_key: str):
             return response
 
     _record_result(audit_username, result)
-    flash(result.message or PROVIDER_UNAVAILABLE_MESSAGE, 'danger')
+    queue_transient_feedback(
+        status='error',
+        title='SSO sign-in failed',
+        message=result.message or PROVIDER_UNAVAILABLE_MESSAGE,
+    )
     return redirect(url_for('auth.login'))
 
 
