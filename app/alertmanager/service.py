@@ -27,6 +27,7 @@ from app.common.integration_errors import describe_integration_failure
 from app.extensions import db
 from app.integrations.alertmanager.exceptions import AlertmanagerError
 from app.integrations.deletion import DeletionBlocked, provider_deletion_guard
+from app.jobs.service import acquire_resource_admission_locks
 from app.integrations.lifecycle import ensure_canonical_instance, invalidate_bindings
 from app.integrations.registry import get_integration
 from app.models.alertmanager import AlertmanagerInstance
@@ -193,6 +194,7 @@ def validate_alertmanager_binding(
 
 
 def remove_alertmanager_instance(instance: AlertmanagerInstance) -> None:
+    acquire_resource_admission_locks(f'integration:alertmanager:{instance.id}')
     canonical_bindings = get_alertmanager_bindings(instance.id)
     if canonical_bindings:
         raise ValueError(

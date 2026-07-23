@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from flask import current_app
+from app.extensions import db
 
 from app.integrations.validation.state import (
     build_validation_snapshot,
@@ -19,8 +20,16 @@ from app.integrations.validation.tasks import (
 )
 from app.jobs.constants import WORKLOAD_RUNTIME, WORKLOAD_VALIDATION
 from app.jobs.fingerprint import build_deduplication_key
-from app.jobs.service import create_or_attach_job, find_active_job, mark_job_failed
+from app.jobs.service import (
+    acquire_resource_admission_locks,
+    create_or_attach_job,
+    find_active_job,
+    mark_job_failed,
+)
 from app.models.job import JobExecutionSubscriber
+from app.models.alertmanager import AlertmanagerInstance
+from app.models.kubernetes import KubernetesConnection
+from app.models.prometheus import PrometheusInstance
 
 
 def _now_iso() -> str:
@@ -80,6 +89,21 @@ def _metadata(
     }
 
 
+
+def _assert_provider_target_exists(*, provider_type: str, instance_id: int) -> None:
+    model_by_provider = {
+        'prometheus': PrometheusInstance,
+        'alertmanager': AlertmanagerInstance,
+        'kubernetes': KubernetesConnection,
+    }
+    model = model_by_provider.get(provider_type)
+    if model is None:
+        raise ValueError(f'Unsupported integration provider: {provider_type}.')
+    if db.session.get(model, instance_id) is None:
+        raise RuntimeError(
+            'The integration connection was deleted before KAORI could admit the job.'
+        )
+
 def _enqueue_job(
     *,
     provider_type: str,
@@ -112,6 +136,9 @@ def _enqueue_job(
         binding_id=binding_id,
     )
     scope_key = f'binding:{binding_id}' if binding_id is not None else None
+    resource_group = f'integration:{provider_type}:{instance_id}'
+    acquire_resource_admission_locks(resource_group)
+    _assert_provider_target_exists(provider_type=provider_type, instance_id=instance_id)
     job, created = create_or_attach_job(
         job_type='integration_operation',
         operation=operation,
@@ -122,7 +149,7 @@ def _enqueue_job(
         provider_instance_id=instance_id,
         scope_type='integration_binding' if binding_id is not None else 'integration_instance',
         scope_key=scope_key,
-        resource_group=f'integration:{provider_type}:{instance_id}',
+        resource_group=resource_group,
         parameters={
             'provider_type': provider_type,
             'instance_id': instance_id,

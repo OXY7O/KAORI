@@ -7,6 +7,7 @@ from app.common.integration_errors import describe_integration_failure
 from app.extensions.db import db
 from app.integrations.binding_selectors import build_selector
 from app.integrations.deletion import DeletionBlocked, provider_deletion_guard
+from app.jobs.service import acquire_resource_admission_locks
 from app.integrations.lifecycle import bind_instance, ensure_canonical_instance, invalidate_bindings
 from app.integrations.prometheus.capabilities import BINDING_CAPABILITY_KEYS
 from app.integrations.prometheus.exceptions import PrometheusError
@@ -286,6 +287,7 @@ def remove_prometheus_instance(instance: PrometheusInstance) -> None:
     records are intentionally retained. Shared-source bindings and active provider
     jobs must be resolved before the connection identity can be deleted.
     """
+    acquire_resource_admission_locks(f'integration:prometheus:{instance.id}')
     canonical_binding_count = 0
     if instance.integration_instance_id is not None:
         canonical_binding_count = IntegrationBinding.query.filter_by(

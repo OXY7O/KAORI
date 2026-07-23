@@ -61,6 +61,18 @@ def _acquire_admission_locks(*values: str | None) -> None:
         )
 
 
+def acquire_resource_admission_locks(*resource_groups: str | None) -> None:
+    """Serialize job admission and destructive resource operations.
+
+    Callers must keep the current database transaction open until the guarded
+    operation commits or rolls back. PostgreSQL transaction-scoped advisory
+    locks are re-entrant within the same transaction and are skipped in
+    non-PostgreSQL test environments.
+    """
+    _acquire_admission_locks(
+        *(f'job-resource:{group}' for group in resource_groups if group)
+    )
+
 def find_active_job(
     *,
     deduplication_key: str | None = None,
@@ -167,8 +179,8 @@ def create_or_attach_job(
     _acquire_admission_locks(
         f'job-dedup:{key}',
         f'job-user:{requested_by_user_id}' if requested_by_user_id is not None else None,
-        f'job-resource:{resource_group}' if resource_group else None,
     )
+    acquire_resource_admission_locks(resource_group)
     existing = find_active_job(deduplication_key=key)
     if existing is not None:
         attach_job_subscriber(existing, requested_by_user_id)
@@ -276,13 +288,6 @@ def mark_job_succeeded(
     job = get_job_by_task_id(task_id)
     if job is None:
         return None
-    if job.is_terminal:
-        return job
-    if job.status == 'cancel_requested':
-        _terminalize(job, 'canceled')
-        job.progress_message = 'Canceled before completion was committed'
-        db.session.commit()
-        return job
     _terminalize(job, 'partially_succeeded' if partial else 'succeeded')
     job.result_summary_json = result_summary or {}
     job.result_type = result_type
@@ -298,13 +303,6 @@ def mark_job_failed(task_id: str, *, error: Exception | str, error_code: str | N
     job = get_job_by_task_id(task_id)
     if job is None:
         return None
-    if job.is_terminal:
-        return job
-    if job.status == 'cancel_requested':
-        _terminalize(job, 'canceled')
-        job.progress_message = 'Canceled before failure finalization'
-        db.session.commit()
-        return job
     _terminalize(job, 'failed')
     job.error_code = error_code or (type(error).__name__ if isinstance(error, Exception) else 'job_failed')
     job.error_message = str(error)[:4000]
@@ -328,8 +326,6 @@ def mark_job_retrying(task_id: str, *, message: str, error: Exception | str | No
     job = get_job_by_task_id(task_id)
     if job is None:
         return None
-    if job.is_terminal or job.status == 'cancel_requested':
-        return job
     job.status = 'retrying'
     job.heartbeat_at = _now()
     job.progress_message = message[:255]
@@ -344,8 +340,6 @@ def mark_job_canceled(task_id: str, *, message: str = 'Canceled') -> JobExecutio
     job = get_job_by_task_id(task_id)
     if job is None:
         return None
-    if job.is_terminal:
-        return job
     _terminalize(job, 'canceled')
     job.progress_message = message[:255]
     db.session.commit()

@@ -9,6 +9,7 @@ from app.cluster.sync_state import store_cluster_sync_metadata
 from app.cluster.tasks import sync_all_clusters_task, sync_single_cluster_task
 from app.jobs.constants import WORKLOAD_STANDARD
 from app.jobs.dispatcher import enqueue_canonical_job
+from app.jobs.service import acquire_resource_admission_locks
 from app.models.cluster import Cluster
 from app.models.job import JobExecution
 from app.models.kubernetes import KubernetesConnection
@@ -63,7 +64,12 @@ def enqueue_cluster_inventory_sync(
     cluster: Cluster,
     requested_by_user_id: int,
 ) -> tuple[JobExecution, bool]:
-    connection: KubernetesConnection | None = cluster.kubernetes_connection
+    resource_group = f'kubernetes-cluster:{cluster.id}'
+    acquire_resource_admission_locks(resource_group)
+    current_cluster = Cluster.query.filter_by(id=cluster.id).populate_existing().first()
+    if current_cluster is None:
+        raise RuntimeError('The Kubernetes cluster was deleted before KAORI could admit the job.')
+    connection: KubernetesConnection | None = current_cluster.kubernetes_connection
     if connection is None:
         raise RuntimeError('The cluster has no canonical Kubernetes connection.')
     job, created = enqueue_canonical_job(
@@ -81,9 +87,9 @@ def enqueue_cluster_inventory_sync(
         provider_instance_id=connection.id,
         scope_type='kubernetes_cluster',
         scope_key=str(cluster.id),
-        resource_group=f'kubernetes-cluster:{cluster.id}',
+        resource_group=resource_group,
         parameters={'cluster_id': str(cluster.id), 'scope': 'single_cluster'},
-        payload={'cluster_id': str(cluster.id), 'cluster_name': cluster.name},
+        payload={'cluster_id': str(current_cluster.id), 'cluster_name': current_cluster.name},
         max_attempts=3,
     )
     created_at = job.queued_at.isoformat() if job.queued_at else _now_iso()

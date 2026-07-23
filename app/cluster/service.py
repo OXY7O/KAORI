@@ -11,6 +11,7 @@ from sqlalchemy import func, or_
 from app.alertmanager.resolver import resolve_alertmanager_sources
 from app.extensions import db
 from app.integrations.deletion import DeletionBlocked, kubernetes_deletion_guard
+from app.jobs.service import acquire_resource_admission_locks
 from app.integrations.kubernetes.resolver import connection_for_cluster
 from app.integrations.kubernetes.validation import test_cluster_connection, test_cluster_runtime_health
 from app.models import Cluster, ClusterInventory, ClusterStatus, NamespaceInventory, Report, ReportSchedule
@@ -658,6 +659,11 @@ def delete_cluster(cluster: Cluster) -> dict[str, int]:
     detaching their cluster reference before the cluster row is deleted.
     """
     cluster_id = str(cluster.id)
+    connection_id = cluster.kubernetes_connection.id if cluster.kubernetes_connection else None
+    acquire_resource_admission_locks(
+        f'kubernetes-cluster:{cluster_id}',
+        f'integration:kubernetes:{connection_id}' if connection_id is not None else None,
+    )
     connection = cluster.kubernetes_connection
     canonical = connection.integration_instance if connection else None
 
