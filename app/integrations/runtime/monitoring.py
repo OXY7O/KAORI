@@ -13,6 +13,8 @@ from .repository import persist_runtime_state
 
 logger = logging.getLogger(__name__)
 
+__all__ = ['dispatch_integration_runtime_refresh', 'refresh_and_record']
+
 
 def _canonical_instance_id(instance: Any) -> int | None:
     value = getattr(instance, 'integration_instance_id', None)
