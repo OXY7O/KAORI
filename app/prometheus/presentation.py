@@ -100,8 +100,16 @@ def build_instance_context(
 ) -> dict[str, Any]:
     bindings = cluster_bindings_for_instance(instance)
     clusters = Cluster.query.order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
-    available_capabilities = set((instance.capabilities or {}).get('available') or ())
-    assessments = list((instance.capabilities or {}).get('assessments') or ())
+    available_capabilities: set[str] = {
+        str(item)
+        for item in ((instance.capabilities or {}).get('available') or ())
+        if item
+    }
+    assessments: list[dict[str, Any]] = [
+        item
+        for item in ((instance.capabilities or {}).get('assessments') or ())
+        if isinstance(item, dict)
+    ]
     assessment_map = {str(item.get('key') or ''): item for item in assessments if item.get('key')}
     runtime_state = runtime_state_view(
         get_integration('prometheus').adapter.get_state(instance),
@@ -119,10 +127,10 @@ def build_instance_context(
         page=page,
         per_page=per_page,
     )
-    capability_rows = [
+    capability_rows: list[dict[str, Any]] = [
         _capability_row(assessment_map.get(key, {'key': key, 'status': 'not_observed'})) for key in CAPABILITIES
     ]
-    observed_keys = {row['key'] for row in capability_rows if row['available']}
+    observed_keys: set[str] = {str(row['key']) for row in capability_rows if row['available']}
 
     deletion_guard = provider_deletion_guard(
         provider_type='prometheus',
@@ -178,7 +186,9 @@ def _capability_row(item: dict[str, Any]) -> dict[str, Any]:
     required = key in _CORE_CAPABILITIES
     status_tone = 'normal' if available else ('critical' if required else 'warning')
     status_icon = 'circle-check' if available else ('octagon-alert' if required else 'triangle-alert')
-    technical_checks = list(item.get('technical_checks') or ())
+    technical_checks: list[dict[str, Any]] = [
+        check for check in (item.get('technical_checks') or ()) if isinstance(check, dict)
+    ]
     validation_query = item.get('validation_query') or (definition.validation_query if definition else None)
     expected_signals = list(item.get('expected_signals') or (definition.expected_signals if definition else ()))
     required_by = list(item.get('required_by') or (definition.required_by if definition else ()))

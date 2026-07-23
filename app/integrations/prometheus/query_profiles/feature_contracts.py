@@ -238,7 +238,7 @@ def _evaluate(client: Any, contract: FeatureContract, *, sample_namespace: str) 
         usable += row_usable
         observed_labels.update(labels)
         status = 'ready' if row_usable else ('not_observed' if contract.allow_empty else 'failed')
-        evidence = value_summary or 'Query returned no usable samples.'
+        evidence = value_summary if row_usable else 'Query returned no usable samples.'
         checks.append(
             _check(
                 query_key,
@@ -335,9 +335,7 @@ def _filesystem_identity_keys(rows: list[dict[str, Any]]) -> tuple[str, ...]:
 
 
 def _matching_identity_pairs(left: dict[str, Any], right: dict[str, Any]) -> set[str]:
-    left_identities = {str(item) for item in (left.get('identity_keys') or ()) if item}
-    right_identities = {str(item) for item in (right.get('identity_keys') or ()) if item}
-    return left_identities & right_identities
+    return set(left.get('identity_keys') or ()) & set(right.get('identity_keys') or ())
 
 
 def _check_state(check: dict[str, Any]) -> str:
@@ -384,6 +382,8 @@ def _usable_rows(rows: list[dict[str, Any]]) -> tuple[int, set[str], str | None]
         metric = row.get('metric') or {}
         labels.update(metric.keys())
         raw = (row.get('value') or [None, None])[1]
+        if raw is None:
+            continue
         try:
             numeric = float(raw)
         except (TypeError, ValueError):

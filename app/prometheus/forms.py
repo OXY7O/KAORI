@@ -2,8 +2,12 @@ from flask_wtf import FlaskForm
 from wtforms import BooleanField, IntegerField, PasswordField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, ValidationError
 
+from app.models.prometheus import PrometheusInstance
+
 
 class PrometheusConfigForm(FlaskForm):
+    existing_instance: PrometheusInstance | None = None
+
     endpoint = StringField(
         'Endpoint',
         validators=[

@@ -99,7 +99,9 @@ def _evaluate_binding(
     readiness = (instance.readiness_status or '').strip().lower()
     health = (instance.last_status or '').strip().lower()
     capability_payload = instance.capabilities or {}
-    observed = set(capability_payload.get('available') or ())
+    observed: set[str] = {
+        str(item) for item in (capability_payload.get('available') or ()) if item
+    }
     observed.update(
         str(item.get('key'))
         for item in (capability_payload.get('assessments') or ())
