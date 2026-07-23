@@ -3,7 +3,14 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from app.analytics.alerts import application
-from app.analytics.alerts.contracts import normalize_page, normalize_per_page, paginate_items
+from app.analytics.alerts.contracts import (
+    AlertSourceStatus,
+    AlertsSnapshot,
+    NormalizedAlert,
+    normalize_page,
+    normalize_per_page,
+    paginate_items,
+)
 from app.analytics.alerts.ownership import (
     extract_alert_contact_from_payload,
     extract_alert_owner_from_payload,
@@ -12,7 +19,43 @@ from app.analytics.alerts.ownership import (
 from app.analytics.alerts.readiness import build_incident_readiness
 from app.analytics.alerts.routing import build_routing_summary
 from app.analytics.alerts.silences import silence_matches_alert
-from app.analytics.alerts.sources import normalize_alertmanager_item, normalize_prometheus_alert
+from app.analytics.alerts.snapshots import _empty_alerts_snapshot
+from app.analytics.alerts.sources import (
+    build_empty_source_status,
+    normalize_alertmanager_item,
+    normalize_prometheus_alert,
+)
+
+
+def test_typed_contracts_match_existing_runtime_dictionary_shapes() -> None:
+    alertmanager_alert = normalize_alertmanager_item(
+        {
+            'labels': {'alertname': 'PodDown'},
+            'annotations': {},
+        }
+    )
+    prometheus_alert = normalize_prometheus_alert(
+        {
+            'metric': {'alertname': 'HighCPU'},
+            'value': [1721700000, '1'],
+        }
+    )
+    source_status = build_empty_source_status(
+        source='auto',
+        message='No cluster available.',
+    )
+    snapshot = _empty_alerts_snapshot()
+
+    required_alert_keys = set(NormalizedAlert.__required_keys__)
+
+    assert required_alert_keys <= set(alertmanager_alert)
+    assert required_alert_keys <= set(prometheus_alert)
+    assert set(source_status) == set(AlertSourceStatus.__required_keys__)
+    assert set(snapshot) == set(AlertsSnapshot.__required_keys__)
+    assert isinstance(alertmanager_alert, dict)
+    assert isinstance(prometheus_alert, dict)
+    assert isinstance(source_status, dict)
+    assert isinstance(snapshot, dict)
 
 
 def test_filter_and_pagination_normalization_is_stable() -> None:

@@ -2,9 +2,11 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.analytics.alerts.contracts import AlertSourceStatus, NormalizedAlert
+
 
 def normalize_alert_receiver(
-    alert: dict[str, Any],
+    alert: NormalizedAlert,
 ) -> str:
     labels = alert.get(
         'labels',
@@ -48,7 +50,7 @@ def normalize_alert_receiver(
 
 
 def build_alert_group_key(
-    alert: dict[str, Any],
+    alert: NormalizedAlert,
 ) -> str:
     labels = alert.get(
         'labels',
@@ -110,7 +112,7 @@ def build_alert_group_key(
 
 
 def build_count_groups(
-    alerts: list[dict[str, Any]],
+    alerts: list[NormalizedAlert],
     *,
     key_name: str,
     label_default: str,
@@ -187,8 +189,8 @@ def build_count_groups(
 
 def build_routing_summary(
     *,
-    alerts: list[dict[str, Any]],
-    source_status: dict[str, Any],
+    alerts: list[NormalizedAlert],
+    source_status: AlertSourceStatus,
 ) -> dict[str, Any]:
     resolved_source = str(
         source_status.get(

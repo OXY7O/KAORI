@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.alertmanager.service import get_alertmanager_silences
+from app.analytics.alerts.contracts import AlertSourceStatus, NormalizedAlert
 from app.models import Cluster
 
 
@@ -219,7 +220,7 @@ def normalize_silence_matchers(
 def silence_matches_alert(
     *,
     silence: dict[str, Any],
-    alert: dict[str, Any],
+    alert: NormalizedAlert,
 ) -> bool:
     matchers = normalize_silence_matchers(
         silence,
@@ -303,8 +304,8 @@ def silence_matches_alert(
 def build_silence_summary(
     *,
     cluster: Cluster | None,
-    alerts: list[dict[str, Any]],
-    source_status: dict[str, Any],
+    alerts: list[NormalizedAlert],
+    source_status: AlertSourceStatus,
 ) -> dict[str, Any]:
     resolved_source = str(
         source_status.get(

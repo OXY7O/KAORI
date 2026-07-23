@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.analytics.alerts.contracts import AlertSourceStatus, NormalizedAlert
+
 
 def build_inhibition_summary(
     *,
-    alerts: list[dict[str, Any]],
-    source_status: dict[str, Any],
+    alerts: list[NormalizedAlert],
+    source_status: AlertSourceStatus,
 ) -> dict[str, Any]:
     resolved_source = str(
         source_status.get(
@@ -45,7 +47,7 @@ def build_inhibition_summary(
             'items': [],
         }
 
-    inhibited_alerts: list[dict[str, Any]] = []
+    inhibited_alerts: list[NormalizedAlert] = []
 
     for alert in alerts:
         if not isinstance(

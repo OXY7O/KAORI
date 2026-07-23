@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from math import ceil
-from typing import Any
+from typing import Any, Literal, NotRequired, TypedDict
 
 DEFAULT_PER_PAGE = 5
 
@@ -10,6 +11,76 @@ PER_PAGE_OPTIONS = [5, 10, 25, 50]
 SOURCE_OPTIONS = ['auto', 'alertmanager', 'prometheus']
 SEVERITY_OPTIONS = ['all', 'critical', 'warning', 'info', 'none']
 STATUS_OPTIONS = ['all', 'firing', 'pending', 'resolved', 'active']
+
+
+class NormalizedAlert(TypedDict):
+    name: str
+    severity: str
+    status: str
+    namespace: Any
+    target: Any
+    source: Literal['Alertmanager', 'Prometheus']
+    summary: Any
+    description: Any
+    starts_at: Any
+    starts_at_display: str
+    ends_at: Any
+    ends_at_display: str
+    labels: dict[str, Any]
+    annotations: dict[str, Any]
+    owner: str
+    runbook_url: str
+    contact: str
+    generator_url: Any
+    fingerprint: Any
+    receiver: NotRequired[Any]
+    route: NotRequired[Any]
+    silenced: NotRequired[bool]
+    inhibited: NotRequired[bool]
+    silenced_by: NotRequired[Any]
+    inhibited_by: NotRequired[Any]
+    value: NotRequired[str]
+
+
+class AlertSourceStatus(TypedDict):
+    source: str
+    selected_source: str
+    resolved_source: str
+    label: str
+    configured: bool
+    connected: bool
+    fallback_used: bool
+    fallback_reason: str | None
+    error: str | None
+    response_time_ms: int | None
+    last_checked_at: datetime | None
+
+
+class AlertsSnapshot(TypedDict):
+    firing_alerts: int
+    pending_alerts: int
+    critical_alerts: int
+    warning_alerts: int
+    recent_anomalies: int
+    highest_severity: str
+    highest_severity_description: str
+    source: str
+    resolved_source: str
+    fallback_used: bool
+    fallback_reason: str | None
+    source_connected: bool
+    source_health: dict[str, Any]
+    routing_summary: dict[str, Any]
+    silence_summary: dict[str, Any]
+    inhibition_summary: dict[str, Any]
+    ownership_summary: dict[str, Any]
+    incident_readiness: dict[str, Any]
+    priority: dict[str, Any]
+    insight: dict[str, Any]
+    recommendation_count: int
+
+
+type AlertLoadResult = tuple[list[NormalizedAlert], AlertSourceStatus]
 
 
 @dataclass(frozen=True)
@@ -134,12 +205,12 @@ def build_pagination(
     )
 
 
-def paginate_items(
-    items: list[dict[str, Any]],
+def paginate_items[T](
+    items: list[T],
     *,
     page: int,
     per_page: int,
-) -> tuple[list[dict[str, Any]], AlertsPagination]:
+) -> tuple[list[T], AlertsPagination]:
     pagination = build_pagination(
         page=page,
         per_page=per_page,

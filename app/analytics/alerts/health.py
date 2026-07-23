@@ -3,15 +3,16 @@ from __future__ import annotations
 from typing import Any
 
 from app.alertmanager.service import get_alertmanager_status
+from app.analytics.alerts.contracts import AlertSourceStatus, NormalizedAlert
 from app.models import Cluster
 from app.prometheus.repository import resolve_instance_for_cluster
 
 
 def build_summary(
     *,
-    alerts: list[dict[str, Any]],
+    alerts: list[NormalizedAlert],
     anomalies: list[dict[str, Any]],
-    source_status: dict[str, Any],
+    source_status: AlertSourceStatus,
 ) -> dict[str, Any]:
     critical_alerts = sum(
         1
@@ -62,7 +63,7 @@ def build_summary(
 def build_prometheus_status(
     *,
     cluster: Cluster | None,
-    source_status: dict[str, Any],
+    source_status: AlertSourceStatus,
 ) -> dict[str, Any]:
     if cluster is None:
         return {
@@ -112,7 +113,7 @@ def build_prometheus_status(
 def build_alertmanager_integration_status(
     *,
     cluster: Cluster | None,
-    source_status: dict[str, Any],
+    source_status: AlertSourceStatus,
 ) -> dict[str, Any]:
     if cluster is None:
         return {
@@ -178,7 +179,7 @@ def build_alertmanager_integration_status(
 def build_integration_status(
     *,
     cluster: Cluster | None,
-    source_status: dict[str, Any],
+    source_status: AlertSourceStatus,
 ) -> dict[str, dict[str, Any]]:
     return {
         'prometheus': build_prometheus_status(
@@ -195,7 +196,7 @@ def build_integration_status(
 def build_source_health(
     *,
     cluster: Cluster | None,
-    source_status: dict[str, Any],
+    source_status: AlertSourceStatus,
     integration_status: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
     if cluster is None:

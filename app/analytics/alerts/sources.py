@@ -5,6 +5,7 @@ from time import perf_counter
 from typing import Any
 
 from app.alertmanager.service import get_alertmanager_alerts, get_alertmanager_status
+from app.analytics.alerts.contracts import AlertLoadResult, AlertSourceStatus, NormalizedAlert
 from app.analytics.alerts.metrics import get_metric_labels
 from app.analytics.alerts.ownership import (
     extract_alert_contact_from_payload,
@@ -23,7 +24,7 @@ def build_empty_source_status(
     *,
     source: str,
     message: str,
-) -> dict[str, Any]:
+) -> AlertSourceStatus:
     return {
         'source': source,
         'selected_source': source,
@@ -71,7 +72,7 @@ def format_alert_datetime(
 
 def normalize_alertmanager_item(
     item: dict[str, Any],
-) -> dict[str, Any]:
+) -> NormalizedAlert:
     labels = item.get(
         'labels',
         {},
@@ -301,7 +302,7 @@ def normalize_alertmanager_item(
 
 def normalize_prometheus_alert(
     item: dict[str, Any],
-) -> dict[str, Any]:
+) -> NormalizedAlert:
     metric = get_metric_labels(
         item,
     )
@@ -404,7 +405,7 @@ def normalize_prometheus_alert(
 def load_alertmanager_alerts(
     *,
     cluster: Cluster,
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+) -> AlertLoadResult:
     started_at = perf_counter()
 
     result = get_alertmanager_alerts(
@@ -471,7 +472,7 @@ def load_alertmanager_alerts(
 def load_prometheus_alerts(
     *,
     cluster: Cluster,
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+) -> AlertLoadResult:
     try:
         service = PrometheusService(
             cluster,
@@ -561,7 +562,7 @@ def load_prometheus_alerts(
 
 
 def get_source_status_message(
-    status: dict[str, Any],
+    status: AlertSourceStatus,
     *,
     default: str,
 ) -> str:
@@ -598,7 +599,7 @@ def load_alerts_by_source(
     *,
     cluster: Cluster | None,
     source: str,
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+) -> AlertLoadResult:
     if cluster is None:
         return [], build_empty_source_status(
             source=source,
@@ -686,13 +687,13 @@ def load_alerts_by_source(
 
 
 def filter_items(
-    items: list[dict[str, Any]],
+    items: list[NormalizedAlert],
     *,
     severity: str,
     status: str,
     namespace: str,
     search: str,
-) -> list[dict[str, Any]]:
+) -> list[NormalizedAlert]:
     filtered = items
 
     if severity != 'all':

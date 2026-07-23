@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.analytics.alerts.anomalies import load_prometheus_anomaly_metrics
+from app.analytics.alerts.contracts import AlertsSnapshot, NormalizedAlert
 from app.analytics.alerts.health import build_integration_status, build_source_health
 from app.analytics.alerts.inhibition import build_inhibition_summary
 from app.analytics.alerts.ownership import build_empty_ownership_summary, build_ownership_summary
@@ -23,7 +24,7 @@ from app.intelligence.recommendation_engine import (
 
 def get_alerts_snapshot(
     cluster_id: str,
-) -> dict[str, Any]:
+) -> AlertsSnapshot:
     selected_cluster = get_selected_cluster(
         cluster_id=cluster_id,
     )
@@ -198,7 +199,7 @@ def get_alerts_snapshot(
         return _empty_alerts_snapshot()
 
 
-def _empty_alerts_snapshot() -> dict[str, Any]:
+def _empty_alerts_snapshot() -> AlertsSnapshot:
     return {
         'firing_alerts': 0,
         'pending_alerts': 0,
@@ -254,7 +255,7 @@ def _empty_alerts_snapshot() -> dict[str, Any]:
 
 def _count_alerts_by_status(
     *,
-    alerts: list[dict[str, Any]],
+    alerts: list[NormalizedAlert],
     statuses: list[str],
 ) -> int:
     normalized_statuses = {status.lower() for status in statuses}
@@ -274,7 +275,7 @@ def _count_alerts_by_status(
 
 def _count_alerts_by_severity(
     *,
-    alerts: list[dict[str, Any]],
+    alerts: list[NormalizedAlert],
     severity: str,
 ) -> int:
     normalized_severity = severity.lower()
@@ -293,8 +294,8 @@ def _count_alerts_by_severity(
 
 
 def _get_highest_severity_alert(
-    alerts: list[dict[str, Any]],
-) -> dict[str, Any] | None:
+    alerts: list[NormalizedAlert],
+) -> NormalizedAlert | None:
     severity_rank = {
         'critical': 0,
         'warning': 1,
@@ -341,7 +342,7 @@ def _resolve_highest_severity(
 
 def _resolve_highest_severity_description(
     *,
-    highest_alert: dict[str, Any] | None,
+    highest_alert: NormalizedAlert | None,
     anomalies: list[dict[str, Any]],
     signal_overview: dict[str, Any],
 ) -> str:

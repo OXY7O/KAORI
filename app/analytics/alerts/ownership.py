@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.analytics.alerts.contracts import AlertSourceStatus, NormalizedAlert
+
 
 def _get_first_string_value(
     mapping: dict[str, Any],
@@ -118,7 +120,7 @@ def extract_alert_contact_from_payload(
 
 
 def get_alert_owner(
-    alert: dict[str, Any],
+    alert: NormalizedAlert,
 ) -> str:
     explicit_owner = str(
         alert.get(
@@ -164,7 +166,7 @@ def get_alert_owner(
 
 
 def get_alert_runbook(
-    alert: dict[str, Any],
+    alert: NormalizedAlert,
 ) -> str:
     explicit_runbook = str(
         alert.get(
@@ -194,7 +196,7 @@ def get_alert_runbook(
 
 
 def get_alert_contact(
-    alert: dict[str, Any],
+    alert: NormalizedAlert,
 ) -> str:
     explicit_contact = str(
         alert.get(
@@ -237,8 +239,8 @@ def get_alert_contact(
 
 def build_ownership_summary(
     *,
-    alerts: list[dict[str, Any]],
-    source_status: dict[str, Any],
+    alerts: list[NormalizedAlert],
+    source_status: AlertSourceStatus,
 ) -> dict[str, Any]:
     alert_rows = [
         alert
