@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from math import ceil
-
+from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window
 from app.extensions.db import db
 from app.integrations.contracts import RuntimeState
 from app.models.runtime import IntegrationRuntimeObservation
@@ -78,37 +77,26 @@ def paginate_runtime_history(
     page: int = 1,
     per_page: int = 5,
 ) -> tuple[list[IntegrationRuntimeObservation], dict[str, object]]:
-    allowed_per_page = (5, 10, 25, 50)
-    if per_page not in allowed_per_page:
-        per_page = 5
-
     query = IntegrationRuntimeObservation.query.filter_by(
         provider=provider,
         instance_id=str(instance_id),
     )
-    total_items = query.count()
-    total_pages = max(ceil(total_items / per_page), 1)
-    page = min(max(page, 1), total_pages)
+    window = build_pagination_window(
+        total_items=query.count(),
+        page=page,
+        per_page=per_page,
+        allowed_per_page=PER_PAGE_OPTIONS,
+    )
     rows = (
         query.order_by(
             IntegrationRuntimeObservation.observed_at.desc(),
             IntegrationRuntimeObservation.id.desc(),
         )
-        .offset((page - 1) * per_page)
-        .limit(per_page + 1)
+        .offset(window.offset)
+        .limit(window.per_page)
         .all()
     )
-    start_item = ((page - 1) * per_page) + 1 if total_items else 0
     return rows, {
-        'page': page,
-        'per_page': per_page,
-        'total_items': total_items,
-        'total_pages': total_pages,
-        'start_item': start_item,
-        'end_item': min(page * per_page, total_items),
-        'has_prev': page > 1,
-        'has_next': page < total_pages,
-        'prev_page': page - 1,
-        'next_page': page + 1,
-        'allowed_per_page': allowed_per_page,
+        **window.as_dict(),
+        'allowed_per_page': PER_PAGE_OPTIONS,
     }
