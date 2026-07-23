@@ -18,12 +18,8 @@ command -v npm >/dev/null 2>&1 || fail 'npm is unavailable.'
 [[ -f package.json ]] || fail 'package.json was not found.'
 [[ -f package-lock.json ]] || fail 'package-lock.json was not found.'
 
-log 'Synchronizing exact frontend runtime dependencies and package-lock.json...'
-npm install --save-dev --save-exact --no-audit --no-fund \
-    alpinejs@3.15.12 \
-    htmx.org@2.0.10 \
-    lucide@1.20.0 \
-    chart.js@4.5.1
+log 'Installing exact frontend dependencies from package-lock.json...'
+npm ci --no-audit --no-fund
 
 log 'Creating committed browser-ready vendor assets and compiled CSS...'
 npm run prepare-frontend
@@ -32,4 +28,4 @@ log 'Running frontend functional and contract gates...'
 ./scripts/test_offline_frontend.sh
 
 log 'Frontend bootstrap completed.'
-log 'Commit package-lock.json, app/static/vendor, app/static/css/output.css, and the source changes.'
+log 'Commit app/static/vendor, app/static/css/output.css, and intentional source changes only.'

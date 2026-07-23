@@ -33,6 +33,7 @@ def test_bootstrap_command_is_explicit_and_reproducible() -> None:
         'bash ./scripts/bootstrap_frontend_assets.sh'
     )
     bootstrap = (ROOT / 'scripts/bootstrap_frontend_assets.sh').read_text(encoding='utf8')
-    assert '--save-exact' in bootstrap
+    assert 'npm ci --no-audit --no-fund' in bootstrap
+    assert 'npm install' not in bootstrap
     assert 'npm run prepare-frontend' in bootstrap
     assert './scripts/test_offline_frontend.sh' in bootstrap
