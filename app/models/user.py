@@ -145,7 +145,15 @@ class User(UserMixin, db.Model):
         if self.is_super_admin:
             return True
 
-        if self.role_record and self.role_record.is_active:
+        # A persisted role assignment is authoritative. An inactive role must
+        # revoke access instead of falling through to the code-owned default
+        # permission map for a role with the same slug.
+        if self.role_record is not None:
+            if not self.role_record.is_active:
+                return False
             return permission_key in self.role_record.permission_keys()
 
+        # Compatibility fallback for legacy/bootstrap records that have not yet
+        # been attached to a persisted role. Keep this path isolated from normal
+        # role lifecycle enforcement.
         return permission_key in DEFAULT_ROLE_PERMISSIONS.get(self.role_name, set())

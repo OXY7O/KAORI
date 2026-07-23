@@ -339,6 +339,9 @@ def _block_admin_level_management(actor: User, target: User) -> tuple[bool, str 
 def can_create_user(
     actor: User, *, requested_role_id: int | None, requested_is_super_admin: bool
 ) -> tuple[bool, str | None]:
+    if not actor.has_permission('users.manage'):
+        return False, 'You do not have permission to create users.'
+
     if (
         requested_admin_level(role_id=requested_role_id, is_super_admin=requested_is_super_admin)
         and not actor.is_super_admin
@@ -349,6 +352,9 @@ def can_create_user(
 
 
 def can_activate_user(actor: User, target: User) -> tuple[bool, str | None]:
+    if not actor.has_permission('users.activate'):
+        return False, 'You do not have permission to activate users.'
+
     allowed, message = _block_deleted_target(target)
     if not allowed:
         return allowed, message
@@ -395,6 +401,9 @@ def can_restore_user(actor: User, target: User) -> tuple[bool, str | None]:
 
 
 def can_deactivate_user(actor: User, target: User) -> tuple[bool, str | None]:
+    if not actor.has_permission('users.activate'):
+        return False, 'You do not have permission to deactivate users.'
+
     allowed, message = _block_deleted_target(target)
     if not allowed:
         return allowed, message
@@ -460,6 +469,9 @@ def can_edit_user(
     requested_is_active: bool,
     requested_is_super_admin: bool,
 ) -> tuple[bool, str | None]:
+    if not actor.has_permission('users.manage'):
+        return False, 'You do not have permission to edit users.'
+
     if target.deleted_at is not None:
         return False, 'Deleted users cannot be edited.'
 
