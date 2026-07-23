@@ -13,13 +13,7 @@ from app.models.prometheus import PrometheusInstance
 logger = logging.getLogger(__name__)
 
 
-@shared_task(
-    bind=True,
-    name='app.integrations.runtime.tasks.refresh_integration_runtime',
-    acks_late=True,
-    reject_on_worker_lost=True,
-)
-def refresh_integration_runtime(self) -> dict[str, object]:
+def dispatch_integration_runtime_refresh() -> dict[str, object]:
     """Fan out lightweight provider health refreshes to the runtime queue.
 
     The Beat dispatcher intentionally performs no provider I/O. Each source receives
@@ -66,3 +60,14 @@ def refresh_integration_runtime(self) -> dict[str, object]:
             provider_result['tasks'].append({'instance_id': instance_id, 'task_id': task_id})
         result['providers'][provider_type] = provider_result
     return result
+
+
+@shared_task(
+    bind=True,
+    name='app.integrations.runtime.tasks.refresh_integration_runtime',
+    acks_late=True,
+    reject_on_worker_lost=True,
+)
+def refresh_integration_runtime(self) -> dict[str, object]:
+    """Celery entrypoint for the canonical integration runtime dispatcher."""
+    return dispatch_integration_runtime_refresh()

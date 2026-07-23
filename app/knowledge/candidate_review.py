@@ -53,23 +53,22 @@ def persist_candidate(
         return existing
 
     payload = _candidate_payload(candidate, evidence, severity)
-    record = IntelligenceDecisionCandidate(
-        binding_id=binding.id,
-        runbook_revision_id=revision.id,
-        deduplication_key=deduplication_key,
-        rule_key=candidate.rule_key,
-        alert_fingerprint=candidate.alert_fingerprint,
-        cluster_id=candidate.cluster_id,
-        namespace=candidate.namespace,
-        severity=(severity or 'info').strip().lower(),
-        evidence_json=evidence,
-        evidence_hash=evidence_hash,
-        candidate_json=payload,
-        review_status='pending',
-        created_by_user_id=actor_user_id,
-        created_at=created_at,
-        expires_at=created_at + ttl,
-    )
+    record = IntelligenceDecisionCandidate()
+    record.binding_id = binding.id
+    record.runbook_revision_id = revision.id
+    record.deduplication_key = deduplication_key
+    record.rule_key = candidate.rule_key
+    record.alert_fingerprint = candidate.alert_fingerprint
+    record.cluster_id = candidate.cluster_id
+    record.namespace = candidate.namespace
+    record.severity = (severity or 'info').strip().lower()
+    record.evidence_json = evidence
+    record.evidence_hash = evidence_hash
+    record.candidate_json = payload
+    record.review_status = 'pending'
+    record.created_by_user_id = actor_user_id
+    record.created_at = created_at
+    record.expires_at = created_at + ttl
     db.session.add(record)
     _audit(actor_user_id, 'intelligence.candidate.created', record.public_id, {
         'binding_key': candidate.binding_key,

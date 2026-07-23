@@ -79,10 +79,11 @@ class PrometheusClient:
             raise PrometheusConnectionError(str(exc)) from exc
 
     def _request_timeout(self) -> tuple[int, int]:
-        read_timeout = min(
-            max(int(self.request_timeout_seconds or self.config.timeout or 5), 1),
-            120,
-        )
+        configured_timeout = self.request_timeout_seconds
+        if configured_timeout is None:
+            configured_timeout = self.config.timeout
+        normalized_timeout = int(configured_timeout) if configured_timeout is not None else 5
+        read_timeout = min(max(normalized_timeout, 1), 120)
         connect_timeout = min(max(read_timeout, 2), 5)
         return connect_timeout, read_timeout
 

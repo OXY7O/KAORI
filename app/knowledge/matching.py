@@ -56,18 +56,17 @@ def create_alert_binding(
     key = binding_key.strip()
     if not key or (not _text(rule_key) and not _text(alertname)):
         raise RunbookMatchError('Binding key and at least one rule or alert selector are required.')
-    record = KnowledgeRunbookAlertBinding(
-        binding_key=key,
-        runbook_revision_id=revision.id,
-        rule_key=_text(rule_key),
-        alertname=_text(alertname),
-        cluster_id=_text(cluster_id),
-        namespace=_text(namespace),
-        required_labels_json=dict(required_labels or {}),
-        evidence_mapping_json=dict(evidence_mapping or {}),
-        priority=int(priority),
-        created_by_user_id=actor_user_id,
-    )
+    record = KnowledgeRunbookAlertBinding()
+    record.binding_key = key
+    record.runbook_revision_id = revision.id
+    record.rule_key = _text(rule_key)
+    record.alertname = _text(alertname)
+    record.cluster_id = _text(cluster_id)
+    record.namespace = _text(namespace)
+    record.required_labels_json = dict(required_labels or {})
+    record.evidence_mapping_json = dict(evidence_mapping or {})
+    record.priority = int(priority)
+    record.created_by_user_id = actor_user_id
     db.session.add(record)
     _audit(actor_user_id, key, 'knowledge.runbook_binding.created', 'KAORI alert-to-runbook binding created.')
     db.session.commit()
