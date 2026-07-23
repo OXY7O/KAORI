@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Collection, Mapping, Sequence
+from typing import Any
 
 from app.intelligence.workflow import (
     approve_decision,
@@ -119,9 +120,7 @@ def approve_and_enqueue_decision(
             now=now,
         )
     elif decision.workflow_status not in {'ready', 'approved'}:
-        raise RemediationWorkflowError(
-            f'Decision cannot enter execution delivery from {decision.workflow_status}.'
-        )
+        raise RemediationWorkflowError(f'Decision cannot enter execution delivery from {decision.workflow_status}.')
 
     token, journal = issue_persisted_execution_token(
         decision,

@@ -1,12 +1,15 @@
+from typing import TYPE_CHECKING
+
 from flask_wtf import FlaskForm
 from wtforms import BooleanField, IntegerField, PasswordField, SelectField, StringField, TextAreaField
 from wtforms.validators import DataRequired, Length, NumberRange, Optional, ValidationError
 
-from app.models.prometheus import PrometheusInstance
+if TYPE_CHECKING:
+    from app.models.prometheus import PrometheusInstance
 
 
 class PrometheusConfigForm(FlaskForm):
-    existing_instance: PrometheusInstance | None = None
+    existing_instance: 'PrometheusInstance | None' = None
 
     endpoint = StringField(
         'Endpoint',
@@ -155,6 +158,11 @@ class PrometheusConfigForm(FlaskForm):
 
 
 class PrometheusInstanceForm(PrometheusConfigForm):
+    # Declare the edit-only runtime context on the concrete form as well.
+    # Some static analyzers do not preserve dynamically generated WTForms
+    # subclass attributes from the base form.
+    existing_instance: 'PrometheusInstance | None' = None
+
     name = StringField(
         'Instance Name',
         validators=[DataRequired(), Length(min=2, max=160)],

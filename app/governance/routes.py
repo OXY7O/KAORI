@@ -61,4 +61,3 @@ governance_bp.add_url_rule(
     view_func=tls_certificates_detail,
     methods=['GET'],
 )
-

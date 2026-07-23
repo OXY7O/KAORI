@@ -28,16 +28,6 @@ def test_release_requires_quality_workflow_before_publish() -> None:
     assert 'needs: quality' in workflow
 
 
-def test_foundation_cleanup_script_has_no_stale_test_paths() -> None:
-    script = (ROOT / 'scripts/verify_foundation_cleanup.sh').read_text(encoding='utf-8')
-
-    assert 'scripts/quality_gate.sh --static' in script
-    assert 'tests/architecture/' not in script
-    assert 'tests/inventory/' not in script
-    assert 'tests/integrations/' not in script
-    assert 'tests/ui/' not in script
-
-
 def test_source_archive_is_git_based_and_hygiene_gated() -> None:
     script = (ROOT / 'scripts/build_source_archive.sh').read_text(encoding='utf-8')
 

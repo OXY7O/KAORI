@@ -15,7 +15,6 @@ from app.integrations.kubernetes.tls import weak_tls_context
 logger = logging.getLogger(__name__)
 
 
-
 def test_cluster_runtime_health(
     kubeconfig_content: str,
     *,
@@ -82,6 +81,7 @@ def test_cluster_runtime_health(
             'endpoint_port': failure['endpoint_port'],
             'request_path': failure['request_path'],
         }
+
 
 def test_cluster_connection(
     kubeconfig_content: str,

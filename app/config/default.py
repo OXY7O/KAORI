@@ -125,10 +125,7 @@ def _retention_queue_name() -> str:
 
 def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
     schedule: dict[str, dict[str, object]] = {}
-    if (
-        _env_bool('ACTIVITY_RETENTION_SCHEDULE_ENABLED', True)
-        or _env_bool('JOB_EXECUTION_RETENTION_ENABLED', True)
-    ):
+    if _env_bool('ACTIVITY_RETENTION_SCHEDULE_ENABLED', True) or _env_bool('JOB_EXECUTION_RETENTION_ENABLED', True):
         schedule['data-lifecycle-dispatcher'] = {
             'task': 'app.retention.tasks.run_scheduled_retention',
             'schedule': crontab(minute='*/15'),
@@ -139,13 +136,18 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
     if _env_bool('INTEGRATION_RUNTIME_MONITORING_ENABLED', True):
         schedule['integration-runtime-monitoring'] = {
             'task': 'app.integrations.runtime.tasks.refresh_integration_runtime',
-            'schedule': crontab(minute=f"*/{_bounded_env_int('INTEGRATION_RUNTIME_MONITORING_INTERVAL_MINUTES', 5, 1, 60)}"),
-            'options': {'queue': _env_str('INTEGRATION_RUNTIME_CELERY_QUEUE', 'integration-runtime').strip() or 'integration-runtime'},
+            'schedule': crontab(
+                minute=f'*/{_bounded_env_int("INTEGRATION_RUNTIME_MONITORING_INTERVAL_MINUTES", 5, 1, 60)}'
+            ),
+            'options': {
+                'queue': _env_str('INTEGRATION_RUNTIME_CELERY_QUEUE', 'integration-runtime').strip()
+                or 'integration-runtime'
+            },
         }
     if _env_bool('JOB_RECOVERY_ENABLED', True):
         schedule['job-execution-recovery'] = {
             'task': 'app.jobs.tasks.reconcile_stale_jobs',
-            'schedule': crontab(minute=f"*/{_bounded_env_int('JOB_RECOVERY_INTERVAL_MINUTES', 5, 1, 60)}"),
+            'schedule': crontab(minute=f'*/{_bounded_env_int("JOB_RECOVERY_INTERVAL_MINUTES", 5, 1, 60)}'),
             'options': {'queue': _env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'},
         }
     return schedule
@@ -260,8 +262,7 @@ class Config:
     RETENTION_CELERY_QUEUE = _retention_queue_name()
 
     INTEGRATION_VALIDATION_CELERY_QUEUE = (
-        _env_str('INTEGRATION_VALIDATION_CELERY_QUEUE', 'integration-validation').strip()
-        or 'integration-validation'
+        _env_str('INTEGRATION_VALIDATION_CELERY_QUEUE', 'integration-validation').strip() or 'integration-validation'
     )
 
     INTEGRATION_VALIDATION_LOCK_TTL_SECONDS = _env_int(
@@ -270,8 +271,7 @@ class Config:
     )
 
     INTEGRATION_RUNTIME_CELERY_QUEUE = (
-        _env_str('INTEGRATION_RUNTIME_CELERY_QUEUE', 'integration-runtime').strip()
-        or 'integration-runtime'
+        _env_str('INTEGRATION_RUNTIME_CELERY_QUEUE', 'integration-runtime').strip() or 'integration-runtime'
     )
     ANALYTICS_CELERY_QUEUE = _env_str('ANALYTICS_CELERY_QUEUE', 'analytics-batch').strip() or 'analytics-batch'
     FORECASTING_CELERY_QUEUE = _env_str('FORECASTING_CELERY_QUEUE', 'forecasting').strip() or 'forecasting'
@@ -493,7 +493,9 @@ class Config:
     ARCHIVE_OBJECT_PREFIX = _env_str('ARCHIVE_OBJECT_PREFIX', 'archives').strip().strip('/')
     ARCHIVE_SCHEDULED_DOMAINS = tuple(
         item.strip().lower().replace('-', '_')
-        for item in _env_str('ARCHIVE_SCHEDULED_DOMAINS', 'operational_activity,job_execution,runtime_observation').split(',')
+        for item in _env_str(
+            'ARCHIVE_SCHEDULED_DOMAINS', 'operational_activity,job_execution,runtime_observation'
+        ).split(',')
         if item.strip()
     )
     ARCHIVE_S3_BUCKET = _env_str('ARCHIVE_S3_BUCKET', _env_str('REPORT_S3_BUCKET', ''))
@@ -542,8 +544,12 @@ class Config:
     RUNTIME_OBSERVATION_RETENTION_DAYS = _env_int('RUNTIME_OBSERVATION_RETENTION_DAYS', 90)
     RUNTIME_OBSERVATION_ARCHIVE_RETENTION_DAYS = _env_int('RUNTIME_OBSERVATION_ARCHIVE_RETENTION_DAYS', 365)
     RUNTIME_OBSERVATION_RETENTION_BATCH_SIZE = _env_int('RUNTIME_OBSERVATION_RETENTION_BATCH_SIZE', 5000)
-    RUNTIME_OBSERVATION_RETENTION_SCHEDULE_HOUR = _bounded_env_int('RUNTIME_OBSERVATION_RETENTION_SCHEDULE_HOUR', 3, 0, 23)
-    RUNTIME_OBSERVATION_RETENTION_SCHEDULE_MINUTE = _bounded_env_int('RUNTIME_OBSERVATION_RETENTION_SCHEDULE_MINUTE', 45, 0, 59)
+    RUNTIME_OBSERVATION_RETENTION_SCHEDULE_HOUR = _bounded_env_int(
+        'RUNTIME_OBSERVATION_RETENTION_SCHEDULE_HOUR', 3, 0, 23
+    )
+    RUNTIME_OBSERVATION_RETENTION_SCHEDULE_MINUTE = _bounded_env_int(
+        'RUNTIME_OBSERVATION_RETENTION_SCHEDULE_MINUTE', 45, 0, 59
+    )
 
     # Reports storage.
     # Supported values:
@@ -566,7 +572,6 @@ class Config:
         ),
         BASE_DIR / 'instance',
     )
-
 
     # Temporary staging directory used while rendering PDFs before they are
     # copied/uploaded to the configured storage backend.

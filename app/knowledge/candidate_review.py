@@ -2,18 +2,19 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Collection, Mapping
 from datetime import UTC, datetime, timedelta
-from typing import Any, Collection, Mapping
+from typing import Any
 
 from sqlalchemy.exc import IntegrityError
 
 from app.extensions import db
 from app.intelligence.decision import PolicyOutcome, compute_evidence_hash, create_decision_snapshot
 from app.intelligence.workflow import persist_decision
+from app.knowledge.matching import DecisionCandidate
 from app.models.audit import AuditEvent
 from app.models.intelligence import IntelligenceDecision, IntelligenceDecisionCandidate
 from app.models.knowledge import KnowledgeRunbookAlertBinding, KnowledgeRunbookRevision
-from app.knowledge.matching import DecisionCandidate
 
 CREATE_PERMISSION = 'intelligence.decisions.create'
 VIEW_PERMISSION = 'intelligence.decisions.view'
@@ -70,11 +71,16 @@ def persist_candidate(
     record.created_at = created_at
     record.expires_at = created_at + ttl
     db.session.add(record)
-    _audit(actor_user_id, 'intelligence.candidate.created', record.public_id, {
-        'binding_key': candidate.binding_key,
-        'evidence_hash': evidence_hash,
-        'executable': False,
-    })
+    _audit(
+        actor_user_id,
+        'intelligence.candidate.created',
+        record.public_id,
+        {
+            'binding_key': candidate.binding_key,
+            'evidence_hash': evidence_hash,
+            'executable': False,
+        },
+    )
     try:
         db.session.commit()
     except IntegrityError:
@@ -140,10 +146,15 @@ def promote_candidate(
     record.review_reason = reason.strip() if reason else None
     record.reviewed_at = checked_at
     record.promoted_decision_id = decision.id
-    _audit(actor_user_id, 'intelligence.candidate.promoted', record.public_id, {
-        'decision_public_id': decision.public_id,
-        'runbook_content_hash': revision.content_hash,
-    })
+    _audit(
+        actor_user_id,
+        'intelligence.candidate.promoted',
+        record.public_id,
+        {
+            'decision_public_id': decision.public_id,
+            'runbook_content_hash': revision.content_hash,
+        },
+    )
     db.session.commit()
     return decision
 
@@ -202,7 +213,10 @@ def _assert_revision_current(candidate: DecisionCandidate, revision: KnowledgeRu
 def _assert_revision_current_payload(candidate: Mapping[str, Any], revision: KnowledgeRunbookRevision) -> None:
     if revision.publication_status != 'published':
         raise CandidateWorkflowError('Candidate requires a currently published runbook revision.')
-    if candidate['runbook_revision_id'] != revision.public_id or candidate['runbook_content_hash'] != revision.content_hash:
+    if (
+        candidate['runbook_revision_id'] != revision.public_id
+        or candidate['runbook_content_hash'] != revision.content_hash
+    ):
         raise CandidateWorkflowError('Candidate runbook revision changed after matching.')
     if candidate['action_key'] != revision.action_key or candidate['resolver_key'] != revision.resolver_key:
         raise CandidateWorkflowError('Candidate action or resolver no longer matches the runbook revision.')

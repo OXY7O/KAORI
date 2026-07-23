@@ -101,14 +101,10 @@ def build_instance_context(
     bindings = cluster_bindings_for_instance(instance)
     clusters = Cluster.query.order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
     available_capabilities: set[str] = {
-        str(item)
-        for item in ((instance.capabilities or {}).get('available') or ())
-        if item
+        str(item) for item in ((instance.capabilities or {}).get('available') or ()) if item
     }
     assessments: list[dict[str, Any]] = [
-        item
-        for item in ((instance.capabilities or {}).get('assessments') or ())
-        if isinstance(item, dict)
+        item for item in ((instance.capabilities or {}).get('assessments') or ()) if isinstance(item, dict)
     ]
     assessment_map = {str(item.get('key') or ''): item for item in assessments if item.get('key')}
     runtime_state = runtime_state_view(

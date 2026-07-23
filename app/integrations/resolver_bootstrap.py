@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from typing import Iterable, Mapping
 
 from flask import Flask
 
@@ -45,12 +45,14 @@ def registry_fingerprint(registry: ResolverRegistry) -> str:
     descriptors = []
     for action in registry.registered_actions():
         descriptor = registry.describe(action)
-        descriptors.append({
-            'action_key': descriptor.action_key,
-            'capability_keys': list(descriptor.capability_keys),
-            'compatibility_profiles': list(descriptor.compatibility_profiles),
-            'rollback_required': descriptor.rollback_required,
-        })
+        descriptors.append(
+            {
+                'action_key': descriptor.action_key,
+                'capability_keys': list(descriptor.capability_keys),
+                'compatibility_profiles': list(descriptor.compatibility_profiles),
+                'rollback_required': descriptor.rollback_required,
+            }
+        )
     payload = json.dumps(descriptors, sort_keys=True, separators=(',', ':')).encode('utf-8')
     return hashlib.sha256(payload).hexdigest()
 
@@ -63,11 +65,13 @@ def build_resolver_registry(settings: ResolverBootstrapSettings) -> ResolverRegi
     if ACTION_DEPLOYMENT_RESTART in settings.enabled_actions:
         if not settings.kubernetes_namespaces:
             raise ResolverError('Kubernetes resolver enablement requires an explicit namespace allowlist.')
-        registry.register(KubernetesDeploymentRestartAdapter(
-            namespace_guardrail=NamespaceGuardrail(
-                allowed_namespaces=frozenset(settings.kubernetes_namespaces),
+        registry.register(
+            KubernetesDeploymentRestartAdapter(
+                namespace_guardrail=NamespaceGuardrail(
+                    allowed_namespaces=frozenset(settings.kubernetes_namespaces),
+                )
             )
-        ))
+        )
     return registry
 
 

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Any, Collection, Mapping, Sequence
+from typing import Any
 
 from app.extensions import db
 from app.models.audit import AuditEvent
@@ -80,7 +81,9 @@ def match_alert_to_runbook(
     labels = alert.get('labels')
     if not isinstance(labels, Mapping):
         raise RunbookMatchError('Alert labels must be a mapping.')
-    active = [binding for binding in bindings if binding.lifecycle_status == 'active' and _matches(binding, alert, labels)]
+    active = [
+        binding for binding in bindings if binding.lifecycle_status == 'active' and _matches(binding, alert, labels)
+    ]
     if not active:
         raise RunbookMatchError('No published runbook binding matches this alert.')
     active.sort(key=lambda item: (item.priority, item.binding_key))
@@ -96,7 +99,7 @@ def match_alert_to_runbook(
     evidence = _extract_evidence(alert, labels, binding.evidence_mapping_json)
     missing = [key for key in revision.required_evidence_json if key not in evidence or evidence[key] in (None, '')]
     if missing:
-        raise RunbookMatchError(f"Matched alert evidence is incomplete: {', '.join(sorted(missing))}.")
+        raise RunbookMatchError(f'Matched alert evidence is incomplete: {", ".join(sorted(missing))}.')
     return DecisionCandidate(
         binding_key=binding.binding_key,
         runbook_key=revision.runbook.runbook_key,
@@ -131,7 +134,9 @@ def _matches(binding: KnowledgeRunbookAlertBinding, alert: Mapping[str, Any], la
     return all(_text(labels.get(key)) == expected for key, expected in binding.required_labels_json.items())
 
 
-def _extract_evidence(alert: Mapping[str, Any], labels: Mapping[str, Any], mapping: Mapping[str, str]) -> dict[str, Any]:
+def _extract_evidence(
+    alert: Mapping[str, Any], labels: Mapping[str, Any], mapping: Mapping[str, str]
+) -> dict[str, Any]:
     evidence = dict(alert.get('evidence') or {})
     defaults = {
         'cluster_id': alert.get('cluster_id') or labels.get('cluster_id') or labels.get('cluster'),

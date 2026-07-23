@@ -68,7 +68,8 @@ def test_candidate_requires_explicit_promotion(app):
         record = persist_candidate(candidate, severity='critical', actor_user_id=None, actor_permissions={'intelligence.decisions.view'})
         decision = promote_candidate(
             record, rule_version='1.0.0', actor_user_id=None,
-            actor_permissions={'intelligence.decisions.create'}, now=datetime.now(UTC),
+            actor_permissions={'intelligence.decisions.create'}, actor_can_execute=True,
+            now=datetime.now(UTC),
         )
         assert record.review_status == 'promoted'
         assert record.promoted_decision_id == decision.id

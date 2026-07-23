@@ -106,21 +106,20 @@ def test_prometheus_form_connection(
         elif auth_type == 'bearer' and not bearer_token:
             bearer_token = existing_instance.bearer_token
 
-    draft = PrometheusInstance(
-        name=(form.name.data or '').strip() or 'Draft Prometheus connection',
-        endpoint=endpoint,
-        description=(form.description.data or '').strip() or None,
-        auth_type=auth_type,
-        username=(form.username.data or '').strip() or None,
-        password=password,
-        bearer_token=bearer_token,
-        timeout=int(form.timeout.data or 5),
-        verify_ssl=bool(form.verify_ssl.data),
-        enabled=bool(form.enabled.data),
-        version_detection_mode=detection_mode,
-        endpoint_product='thanos' if detection_mode == 'manual' else 'prometheus',
-        source_prometheus_major=source_major,
-    )
+    draft = PrometheusInstance()
+    draft.name = (form.name.data or '').strip() or 'Draft Prometheus connection'
+    draft.endpoint = endpoint
+    draft.description = (form.description.data or '').strip() or None
+    draft.auth_type = auth_type
+    draft.username = (form.username.data or '').strip() or None
+    draft.password = password
+    draft.bearer_token = bearer_token
+    draft.timeout = int(form.timeout.data or 5)
+    draft.verify_ssl = bool(form.verify_ssl.data)
+    draft.enabled = bool(form.enabled.data)
+    draft.version_detection_mode = detection_mode
+    draft.endpoint_product = 'thanos' if detection_mode == 'manual' else 'prometheus'
+    draft.source_prometheus_major = source_major
     try:
         result = PrometheusService(draft).test_connection(persist=False)
     except Exception as exc:
@@ -184,7 +183,9 @@ def save_prometheus_instance(
 
     creating = instance is None
     if instance is None:
-        instance = PrometheusInstance(name=(form.name.data or '').strip(), endpoint=endpoint)
+        instance = PrometheusInstance()
+        instance.name = (form.name.data or '').strip()
+        instance.endpoint = endpoint
         db.session.add(instance)
 
     instance.name = (form.name.data or '').strip()

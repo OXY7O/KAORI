@@ -6,7 +6,6 @@ from collections.abc import Mapping
 
 from werkzeug.datastructures import Headers
 
-
 type HeaderSource = Mapping[str, str] | Headers
 
 

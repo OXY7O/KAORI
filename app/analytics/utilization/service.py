@@ -5,11 +5,10 @@ from time import perf_counter
 from typing import Any
 
 from app.integrations.consumer.contracts import ConsumerResult
-
 from app.integrations.prometheus.query_profiles import get_query_expression
 from app.models import Cluster
-from app.prometheus.repository import resolve_instance_for_cluster
 from app.prometheus.consumer import PrometheusConsumer
+from app.prometheus.repository import resolve_instance_for_cluster
 from app.prometheus.service import PrometheusService
 
 CPU_CAPACITY = get_query_expression('analytics.utilization.queries.CPU_CAPACITY')

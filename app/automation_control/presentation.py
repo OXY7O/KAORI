@@ -42,26 +42,114 @@ class DomainDefinition:
 
 
 DOMAIN_DEFINITIONS: tuple[DomainDefinition, ...] = (
-    DomainDefinition(1, 'Authentication & RBAC Hardening', 'Access', 'Existing Settings UI', 'Server-side permission enforcement'),
-    DomainDefinition(2, 'Job & Integration Runtime Safety', 'Runtime', 'Existing Jobs and Integrations UI', 'Admission locks and terminal-state integrity'),
-    DomainDefinition(3, 'Kubernetes Canonical Inventory', 'Inventory', 'Existing Kubernetes UI', 'Atomic committed inventory generation'),
-    DomainDefinition(4, 'Prometheus Runtime Stabilization', 'Metrics', 'Existing Prometheus UI', 'Capability-aware source selection'),
-    DomainDefinition(5, 'Alertmanager Runtime Stabilization', 'Alerts', 'Existing Alertmanager UI', 'Lifecycle-aware alert source selection'),
-    DomainDefinition(6, 'Shared Integration Foundation', 'Integration', 'Existing Integrations UI', 'Canonical provider lifecycle contract'),
-    DomainDefinition(7, 'Intelligence Evidence Consistency', 'Intelligence', 'Recommendations & Catalog', 'Committed-generation recommendation evidence'),
-    DomainDefinition(8, 'Decision Execution Boundary', 'Decision', 'Decision Review', 'Immutable time-bounded decision snapshot'),
-    DomainDefinition(9, 'Decision Approval Workflow', 'Decision', 'Decision Review', 'Persisted approval and rejection evidence'),
-    DomainDefinition(10, 'Safe Resolver Engine', 'Resolver', 'Resolver Operations', 'Provider-neutral allowlisted action contract'),
-    DomainDefinition(11, 'Distributed Execution Orchestration', 'Resolver', 'Resolver Operations', 'Lease, retry, dead-letter, and idempotency state'),
-    DomainDefinition(12, 'Knowledge Runbook Foundation', 'Knowledge', 'Runbooks & Bindings', 'Stable identity and immutable revisions'),
-    DomainDefinition(13, 'Runbook Authoring Validation', 'Knowledge', 'Runbooks & Bindings', 'Publication validation against resolver contracts'),
-    DomainDefinition(14, 'Alert-to-Runbook Matching', 'Knowledge', 'Runbooks & Bindings', 'Deterministic alert selector binding'),
-    DomainDefinition(15, 'Candidate Review & Promotion', 'Decision', 'Decision Review', 'Non-executable review candidate lifecycle'),
-    DomainDefinition(16, 'Kubernetes Resolver Adapter', 'Resolver', 'Resolver Operations', 'Allowlisted deployment restart adapter'),
-    DomainDefinition(17, 'Resolver Registry & Deployment Policy', 'Resolver', 'Resolver Operations', 'Registry fingerprint and scoped policy'),
-    DomainDefinition(18, 'End-to-End Remediation Workflow', 'Automation', 'Decision Review', 'Explicit alert-to-review-to-resolver transitions'),
-    DomainDefinition(19, 'Operational Controls & Observability', 'Operations', 'Resolver Operations', 'Kill switch, limits, circuit breaker, dead letter'),
-    DomainDefinition(20, 'Production Readiness & Rollout', 'Governance', 'Production Readiness', 'Evidence checklist and staged rollout'),
+    DomainDefinition(
+        1, 'Authentication & RBAC Hardening', 'Access', 'Existing Settings UI', 'Server-side permission enforcement'
+    ),
+    DomainDefinition(
+        2,
+        'Job & Integration Runtime Safety',
+        'Runtime',
+        'Existing Jobs and Integrations UI',
+        'Admission locks and terminal-state integrity',
+    ),
+    DomainDefinition(
+        3,
+        'Kubernetes Canonical Inventory',
+        'Inventory',
+        'Existing Kubernetes UI',
+        'Atomic committed inventory generation',
+    ),
+    DomainDefinition(
+        4, 'Prometheus Runtime Stabilization', 'Metrics', 'Existing Prometheus UI', 'Capability-aware source selection'
+    ),
+    DomainDefinition(
+        5,
+        'Alertmanager Runtime Stabilization',
+        'Alerts',
+        'Existing Alertmanager UI',
+        'Lifecycle-aware alert source selection',
+    ),
+    DomainDefinition(
+        6,
+        'Shared Integration Foundation',
+        'Integration',
+        'Existing Integrations UI',
+        'Canonical provider lifecycle contract',
+    ),
+    DomainDefinition(
+        7,
+        'Intelligence Evidence Consistency',
+        'Intelligence',
+        'Recommendations & Catalog',
+        'Committed-generation recommendation evidence',
+    ),
+    DomainDefinition(
+        8, 'Decision Execution Boundary', 'Decision', 'Decision Review', 'Immutable time-bounded decision snapshot'
+    ),
+    DomainDefinition(
+        9, 'Decision Approval Workflow', 'Decision', 'Decision Review', 'Persisted approval and rejection evidence'
+    ),
+    DomainDefinition(
+        10, 'Safe Resolver Engine', 'Resolver', 'Resolver Operations', 'Provider-neutral allowlisted action contract'
+    ),
+    DomainDefinition(
+        11,
+        'Distributed Execution Orchestration',
+        'Resolver',
+        'Resolver Operations',
+        'Lease, retry, dead-letter, and idempotency state',
+    ),
+    DomainDefinition(
+        12,
+        'Knowledge Runbook Foundation',
+        'Knowledge',
+        'Runbooks & Bindings',
+        'Stable identity and immutable revisions',
+    ),
+    DomainDefinition(
+        13,
+        'Runbook Authoring Validation',
+        'Knowledge',
+        'Runbooks & Bindings',
+        'Publication validation against resolver contracts',
+    ),
+    DomainDefinition(
+        14, 'Alert-to-Runbook Matching', 'Knowledge', 'Runbooks & Bindings', 'Deterministic alert selector binding'
+    ),
+    DomainDefinition(
+        15, 'Candidate Review & Promotion', 'Decision', 'Decision Review', 'Non-executable review candidate lifecycle'
+    ),
+    DomainDefinition(
+        16, 'Kubernetes Resolver Adapter', 'Resolver', 'Resolver Operations', 'Allowlisted deployment restart adapter'
+    ),
+    DomainDefinition(
+        17,
+        'Resolver Registry & Deployment Policy',
+        'Resolver',
+        'Resolver Operations',
+        'Registry fingerprint and scoped policy',
+    ),
+    DomainDefinition(
+        18,
+        'End-to-End Remediation Workflow',
+        'Automation',
+        'Decision Review',
+        'Explicit alert-to-review-to-resolver transitions',
+    ),
+    DomainDefinition(
+        19,
+        'Operational Controls & Observability',
+        'Operations',
+        'Resolver Operations',
+        'Kill switch, limits, circuit breaker, dead letter',
+    ),
+    DomainDefinition(
+        20,
+        'Production Readiness & Rollout',
+        'Governance',
+        'Production Readiness',
+        'Evidence checklist and staged rollout',
+    ),
 )
 
 
@@ -125,17 +213,23 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
             _revision_row(record)
             for record in KnowledgeRunbookRevision.query.order_by(
                 KnowledgeRunbookRevision.created_at.desc(), KnowledgeRunbookRevision.id.desc()
-            ).limit(10).all()
+            )
+            .limit(10)
+            .all()
         ]
         payload['binding_rows'] = [
             _binding_row(record)
             for record in KnowledgeRunbookAlertBinding.query.order_by(
                 KnowledgeRunbookAlertBinding.priority.asc(), KnowledgeRunbookAlertBinding.id.desc()
-            ).limit(10).all()
+            )
+            .limit(10)
+            .all()
         ]
-        payload['published_revisions'] = KnowledgeRunbookRevision.query.filter_by(
-            publication_status='published'
-        ).order_by(KnowledgeRunbookRevision.published_at.desc(), KnowledgeRunbookRevision.id.desc()).all()
+        payload['published_revisions'] = (
+            KnowledgeRunbookRevision.query.filter_by(publication_status='published')
+            .order_by(KnowledgeRunbookRevision.published_at.desc(), KnowledgeRunbookRevision.id.desc())
+            .all()
+        )
         payload['all_runbooks'] = KnowledgeRunbook.query.order_by(KnowledgeRunbook.title.asc()).all()
         payload['pagination'] = pagination
         payload['resource_label'] = 'runbooks'
@@ -149,13 +243,17 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
             _decision_row(record, cluster_names)
             for record in IntelligenceDecision.query.order_by(
                 IntelligenceDecision.created_at.desc(), IntelligenceDecision.id.desc()
-            ).limit(10).all()
+            )
+            .limit(10)
+            .all()
         ]
         payload['journal_rows'] = [
             _journal_row(record, cluster_names)
             for record in IntelligenceExecutionJournal.query.order_by(
                 IntelligenceExecutionJournal.created_at.desc(), IntelligenceExecutionJournal.id.desc()
-            ).limit(10).all()
+            )
+            .limit(10)
+            .all()
         ]
         payload['pagination'] = pagination
         payload['resource_label'] = 'candidates'
@@ -173,9 +271,10 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
         ]
         payload['journal_rows'] = [
             _journal_row(record, cluster_names)
-            for record in IntelligenceExecutionJournal.query.filter_by(orchestration_status='dead_letter').order_by(
-                IntelligenceExecutionJournal.updated_at.desc(), IntelligenceExecutionJournal.id.desc()
-            ).limit(10).all()
+            for record in IntelligenceExecutionJournal.query.filter_by(orchestration_status='dead_letter')
+            .order_by(IntelligenceExecutionJournal.updated_at.desc(), IntelligenceExecutionJournal.id.desc())
+            .limit(10)
+            .all()
         ]
         payload['metrics'] = _resolver_metrics()
         payload['pagination'] = pagination
@@ -251,9 +350,19 @@ def upsert_deployment_policy(
 def _workspace_rows(active: str) -> list[dict[str, str | bool]]:
     definitions = (
         ('overview', 'Foundation Map', 'layers-3', 'Domains 1–20 and their operator surfaces.'),
-        ('runbooks', 'Runbooks & Bindings', 'book-open-check', 'Author, validate, publish, and bind immutable runbooks.'),
+        (
+            'runbooks',
+            'Runbooks & Bindings',
+            'book-open-check',
+            'Author, validate, publish, and bind immutable runbooks.',
+        ),
         ('decisions', 'Decision Review', 'clipboard-check', 'Review candidates, approvals, and execution journals.'),
-        ('operations', 'Resolver Operations', 'server-cog', 'Control deployment policy, safety posture, and dead letters.'),
+        (
+            'operations',
+            'Resolver Operations',
+            'server-cog',
+            'Control deployment policy, safety posture, and dead letters.',
+        ),
         ('readiness', 'Production Readiness', 'shield-check', 'Record evidence and advance staged rollout.'),
     )
     return [
@@ -270,12 +379,14 @@ def _registry_rows() -> tuple[list[dict[str, Any]], str]:
     rows = []
     for action_key in registry.registered_actions():
         descriptor = registry.describe(action_key)
-        rows.append({
-            'action_key': descriptor.action_key,
-            'capabilities': list(descriptor.capability_keys),
-            'profiles': list(descriptor.compatibility_profiles),
-            'rollback_required': descriptor.rollback_required,
-        })
+        rows.append(
+            {
+                'action_key': descriptor.action_key,
+                'capabilities': list(descriptor.capability_keys),
+                'profiles': list(descriptor.compatibility_profiles),
+                'rollback_required': descriptor.rollback_required,
+            }
+        )
     return rows, str(current_app.config.get('RESOLVER_REGISTRY_FINGERPRINT') or '')
 
 
@@ -287,8 +398,9 @@ def _paginate_query(query: Any, *, page: Any, per_page: Any) -> tuple[list[Any],
 
 def _paginate_sequence(rows: Sequence[Any], *, page: Any, per_page: Any) -> tuple[list[Any], dict[str, Any]]:
     window = build_pagination_window(total_items=len(rows), page=page, per_page=per_page)
-    return list(rows[window.offset:window.offset + window.per_page]), {
-        **window.as_dict(), 'allowed_per_page': PER_PAGE_OPTIONS
+    return list(rows[window.offset : window.offset + window.per_page]), {
+        **window.as_dict(),
+        'allowed_per_page': PER_PAGE_OPTIONS,
     }
 
 
@@ -459,7 +571,9 @@ def _resolver_metrics() -> dict[str, int]:
         db.session.query(
             IntelligenceExecutionJournal.orchestration_status,
             db.func.count(IntelligenceExecutionJournal.id),
-        ).group_by(IntelligenceExecutionJournal.orchestration_status).all()
+        )
+        .group_by(IntelligenceExecutionJournal.orchestration_status)
+        .all()
     )
     return {
         'queued': int(statuses.get('queued', 0)),

@@ -65,7 +65,12 @@ def test_published_revision_is_resolved_and_locked_into_decision(app) -> None:
             runbook,
             version='1.0.0', action_key='kubernetes.pod.restart', resolver_key='kubernetes.pod.restart',
             approval_policy='needs_approval', required_evidence=['cluster_id', 'namespace', 'pod_name'],
-            parameter_schema={'type': 'object', 'required': ['pod_name']},
+            parameter_schema={
+                'type': 'object',
+                'properties': {'pod_name': {'type': 'string'}},
+                'required': ['pod_name'],
+                'additionalProperties': False,
+            },
             steps=[{'order': 1, 'operation': 'delete_pod'}], rollback={'strategy': 'controller_recreate'},
             actor_user_id=None, actor_permissions={MANAGE_PERMISSION},
         )

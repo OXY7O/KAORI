@@ -163,18 +163,22 @@ def _queue_activity(queue_names: list[str], cutoff: datetime) -> list[dict[str, 
         ).count()
         latest = query.order_by(JobExecution.updated_at.desc(), JobExecution.id.desc()).first()
         state = 'attention' if failed_24h or attention else ('active' if active else 'idle')
-        rows.append({
-            'name': queue_name,
-            'icon': _queue_icon(queue_name),
-            'state': state,
-            'active': active,
-            'queued': queued,
-            'running': running,
-            'attention': attention,
-            'completed_24h': completed_24h,
-            'failed_24h': failed_24h,
-            'latest_activity': present_user_datetime(latest.updated_at, empty='No activity') if latest else 'No activity',
-        })
+        rows.append(
+            {
+                'name': queue_name,
+                'icon': _queue_icon(queue_name),
+                'state': state,
+                'active': active,
+                'queued': queued,
+                'running': running,
+                'attention': attention,
+                'completed_24h': completed_24h,
+                'failed_24h': failed_24h,
+                'latest_activity': present_user_datetime(latest.updated_at, empty='No activity')
+                if latest
+                else 'No activity',
+            }
+        )
     return rows
 
 
@@ -202,15 +206,17 @@ def build_job_execution_context(
         query = query.filter(JobExecution.queue_name == queue)
     if search:
         value = f'%{search.strip()}%'
-        query = query.filter(or_(
-            JobExecution.operation.ilike(value),
-            JobExecution.job_type.ilike(value),
-            JobExecution.provider_type.ilike(value),
-            JobExecution.scope_key.ilike(value),
-            JobExecution.resource_group.ilike(value),
-            JobExecution.public_id.ilike(value),
-            JobExecution.queue_name.ilike(value),
-        ))
+        query = query.filter(
+            or_(
+                JobExecution.operation.ilike(value),
+                JobExecution.job_type.ilike(value),
+                JobExecution.provider_type.ilike(value),
+                JobExecution.scope_key.ilike(value),
+                JobExecution.resource_group.ilike(value),
+                JobExecution.public_id.ilike(value),
+                JobExecution.queue_name.ilike(value),
+            )
+        )
     query = query.order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
     paginated = query.paginate(page=selected_page, per_page=selected_per_page, error_out=False)
     total_items = int(paginated.total or 0)

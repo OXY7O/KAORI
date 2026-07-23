@@ -6,9 +6,9 @@ from typing import Any
 from sqlalchemy import func
 from werkzeug.datastructures import MultiDict
 
+from app.common.inventory_generation import filter_current_generation
 from app.extensions import db
 from app.intelligence.catalog import INTELLIGENCE_CATALOG
-from app.common.inventory_generation import filter_current_generation
 
 PER_PAGE_OPTIONS = [5, 10, 25, 50]
 

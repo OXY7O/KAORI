@@ -109,4 +109,3 @@ def tls_certificates_sync():
         )
 
     return redirect(url_for('governance.tls_certificates', cluster_id=cluster_id or ''))
-

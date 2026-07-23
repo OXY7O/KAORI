@@ -147,7 +147,8 @@ class KubernetesDiscovery:
                     'status': 'blocked',
                     'selected_api': None,
                     'observed': observed,
-                    'message': 'The API is served, but the kubeconfig lacks required access: ' + ', '.join(denied_verbs or missing_verbs),
+                    'message': 'The API is served, but the kubeconfig lacks required access: '
+                    + ', '.join(denied_verbs or missing_verbs),
                 }
 
             status = 'legacy' if candidate.stability == 'legacy' else 'ready'
@@ -173,7 +174,6 @@ class KubernetesDiscovery:
             'observed': observed,
             'message': 'No supported API candidate with the required verbs is available.',
         }
-
 
     def _can_i(self, candidate: ApiCandidate, verb: str) -> bool:
         review = V1SelfSubjectAccessReview(

@@ -28,7 +28,6 @@ class KubernetesRuntimeAdapter:
 
         return refresh_cluster_runtime_health(self._cluster(instance))
 
-
     def build_client(self, instance: KubernetesConnection | Any):
         from app.integrations.kubernetes.client import KubernetesClient
 
@@ -63,10 +62,7 @@ class KubernetesRuntimeAdapter:
         cluster = self._cluster(instance)
         now = datetime.now(UTC)
         connected = cluster.status == 'connected'
-        readiness = (
-            getattr(connection, 'readiness_status', None)
-            or ('ready' if connected else 'validation_required')
-        )
+        readiness = getattr(connection, 'readiness_status', None) or ('ready' if connected else 'validation_required')
         discovery = connection.discovery_summary or {}
         validation_payload = validation_result if isinstance(validation_result, dict) else {}
         runtime_message = (
@@ -77,14 +73,9 @@ class KubernetesRuntimeAdapter:
         )
         blocked = tuple(discovery.get('blocked_features') or ())
         legacy = tuple(discovery.get('legacy_features') or ())
-        lifecycle = str(
-            discovery.get('lifecycle_status')
-            or 'unknown'
-        )
+        lifecycle = str(discovery.get('lifecycle_status') or 'unknown')
         lifecycle_policy = kubernetes_lifecycle_policy(connection.detected_version)
-        readiness_reasons = tuple(
-            str(item) for item in (discovery.get('readiness_reasons') or ()) if item
-        )
+        readiness_reasons = tuple(str(item) for item in (discovery.get('readiness_reasons') or ()) if item)
         selected_adapters = discovery.get('selected_adapters') or {}
         capabilities = tuple(sorted({key.split('.', 1)[0] for key in selected_adapters}))
         if connected:
@@ -139,12 +130,12 @@ class KubernetesRuntimeAdapter:
                 'warning' if lifecycle == 'legacy' else ('pending' if lifecycle == 'unknown' else 'success'),
                 (
                     (' '.join(readiness_reasons) + ' ' if readiness_reasons else '')
-                    + f"KAORI current lifecycle band: {lifecycle_policy['current_version_band']}; "
-                    + f"accepted compatibility contract: {lifecycle_policy['supported_constraint']}."
+                    + f'KAORI current lifecycle band: {lifecycle_policy["current_version_band"]}; '
+                    + f'accepted compatibility contract: {lifecycle_policy["supported_constraint"]}.'
                 ),
                 severity='warning' if lifecycle == 'legacy' else 'info',
                 recommendation=(
-                    f"Plan an upgrade into the KAORI current lifecycle band {lifecycle_policy['current_version_band']}, then rerun Full Validation."
+                    f'Plan an upgrade into the KAORI current lifecycle band {lifecycle_policy["current_version_band"]}, then rerun Full Validation.'
                     if lifecycle == 'legacy'
                     else None
                 ),

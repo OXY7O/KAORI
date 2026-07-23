@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
 from types import MappingProxyType
-from typing import Any, Callable, Mapping, Protocol
+from typing import Any, Protocol
 
 from app.integrations.kubernetes.client import KubernetesClient
 from app.integrations.kubernetes.resolver import resolve_kubernetes_for_cluster
@@ -90,9 +91,7 @@ class KubernetesApiMutationGateway:
                 'uid': str(getattr(metadata, 'uid', '') or ''),
                 'resource_version': str(getattr(metadata, 'resource_version', '') or ''),
                 'generation': int(getattr(metadata, 'generation', 0) or 0),
-                'observed_generation': int(
-                    getattr(getattr(deployment, 'status', None), 'observed_generation', 0) or 0
-                ),
+                'observed_generation': int(getattr(getattr(deployment, 'status', None), 'observed_generation', 0) or 0),
                 'annotations': annotations,
             }
         )
@@ -276,7 +275,7 @@ def _snapshot_hash(snapshot: Mapping[str, Any]) -> str:
 def _rollback_reference(plan: Mapping[str, Any] | None) -> str | None:
     if not plan:
         return None
-    return f"kubernetes-snapshot:{plan.get('snapshot_hash')}"
+    return f'kubernetes-snapshot:{plan.get("snapshot_hash")}'
 
 
 def _safe_int(value: object, *, default: int = 0) -> int:
