@@ -252,11 +252,11 @@ def _require(permissions: Collection[str], permission: str) -> None:
 
 
 def _audit(actor_user_id: int | None, action: str, target_id: str, metadata: Mapping[str, Any]) -> None:
-    db.session.add(AuditEvent(
-        actor_user_id=actor_user_id,
-        action=action,
-        target_type='intelligence_decision_candidate',
-        target_id=target_id,
-        summary=action.replace('.', ' '),
-        metadata_json=dict(metadata),
-    ))
+    event = AuditEvent()
+    event.actor_user_id = actor_user_id
+    event.action = action
+    event.target_type = 'intelligence_decision_candidate'
+    event.target_id = target_id
+    event.summary = action.replace('.', ' ')
+    event.metadata_json = dict(metadata)
+    db.session.add(event)
