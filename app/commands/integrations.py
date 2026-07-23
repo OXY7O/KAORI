@@ -8,11 +8,13 @@ provider workspaces.
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
+from typing import Any
 
 import click
 from flask.cli import with_appcontext
 
-from app.integrations.runtime import monitoring as runtime_monitoring
+from app.integrations.runtime import dispatch_integration_runtime_refresh
 
 
 @click.command('refresh-integration-runtime')
@@ -20,12 +22,24 @@ from app.integrations.runtime import monitoring as runtime_monitoring
 @with_appcontext
 def refresh_integration_runtime_command(json_output: bool) -> None:
     """Queue Kubernetes, Prometheus, and Alertmanager runtime health refreshes."""
-    result = runtime_monitoring.dispatch_integration_runtime_refresh()
+    result = dispatch_integration_runtime_refresh()
     if json_output:
         click.echo(json.dumps(result, indent=2, sort_keys=True, default=str))
         return
+
     click.echo('KAORI integration runtime refresh dispatch')
     click.echo(f'Queued: {result.get("queued", 0)}')
     click.echo(f'Skipped: {result.get("skipped", 0)}')
-    for provider, detail in (result.get('providers') or {}).items():
-        click.echo(f'- {provider}: {detail.get("queued", 0)} queued, {detail.get("skipped", 0)} skipped')
+
+    providers = result.get('providers')
+    if not isinstance(providers, Mapping):
+        return
+
+    for provider, raw_detail in providers.items():
+        detail: Mapping[str, Any] = (
+            raw_detail if isinstance(raw_detail, Mapping) else {}
+        )
+        click.echo(
+            f'- {provider}: {detail.get("queued", 0)} queued, '
+            f'{detail.get("skipped", 0)} skipped'
+        )
