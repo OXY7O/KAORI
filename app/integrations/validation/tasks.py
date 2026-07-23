@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, cast
 
-from celery import shared_task
+from celery import Task, shared_task
 from flask import current_app
 
 from app.extensions import db
@@ -968,7 +968,8 @@ def enqueue_runtime_refresh(*, provider_type: str, instance_id: int) -> str | No
         )
         return None
     try:
-        refresh_integration_runtime_instance.apply_async(
+        runtime_refresh_task = cast(Task, refresh_integration_runtime_instance)
+        runtime_refresh_task.apply_async(
             kwargs={
                 'provider_type': provider_type,
                 'instance_id': instance_id,

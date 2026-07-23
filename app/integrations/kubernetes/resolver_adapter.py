@@ -81,14 +81,15 @@ class KubernetesApiMutationGateway:
 
     def read_deployment(self, namespace: str, name: str) -> Mapping[str, Any]:
         deployment = self._client.apps_api().read_namespaced_deployment(name=name, namespace=namespace)
-        annotations = dict(getattr(getattr(deployment, 'metadata', None), 'annotations', None) or {})
+        metadata = getattr(deployment, 'metadata', None)
+        annotations = dict(getattr(metadata, 'annotations', None) or {})
         return MappingProxyType(
             {
                 'name': name,
                 'namespace': namespace,
-                'uid': str(getattr(deployment.metadata, 'uid', '') or ''),
-                'resource_version': str(getattr(deployment.metadata, 'resource_version', '') or ''),
-                'generation': int(getattr(deployment.metadata, 'generation', 0) or 0),
+                'uid': str(getattr(metadata, 'uid', '') or ''),
+                'resource_version': str(getattr(metadata, 'resource_version', '') or ''),
+                'generation': int(getattr(metadata, 'generation', 0) or 0),
                 'observed_generation': int(
                     getattr(getattr(deployment, 'status', None), 'observed_generation', 0) or 0
                 ),
@@ -111,12 +112,13 @@ class KubernetesApiMutationGateway:
             dry_run='All' if dry_run else None,
             field_manager='kaori-resolver',
         )
+        metadata = getattr(response, 'metadata', None)
         return MappingProxyType(
             {
-                'uid': str(getattr(response.metadata, 'uid', '') or ''),
-                'resource_version': str(getattr(response.metadata, 'resource_version', '') or ''),
-                'generation': int(getattr(response.metadata, 'generation', 0) or 0),
-                'annotations': dict(getattr(response.metadata, 'annotations', None) or {}),
+                'uid': str(getattr(metadata, 'uid', '') or ''),
+                'resource_version': str(getattr(metadata, 'resource_version', '') or ''),
+                'generation': int(getattr(metadata, 'generation', 0) or 0),
+                'annotations': dict(getattr(metadata, 'annotations', None) or {}),
             }
         )
 
