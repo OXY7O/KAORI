@@ -44,8 +44,7 @@ app/analytics/alerts/
 ├── readiness.py      incident-readiness scoring
 ├── signals.py        resource links and signal overview composition
 ├── application.py    interactive page-context orchestration
-├── snapshots.py      dashboard/report snapshot orchestration
-└── service.py        temporary public compatibility façade only
+└── snapshots.py      dashboard/report snapshot orchestration
 ```
 
 ## Dependency Direction
@@ -67,13 +66,12 @@ Rules:
 1. `application.py` and `snapshots.py` do not issue provider requests directly.
 2. Provider payload normalization stays in `sources.py` and `anomalies.py`.
 3. Pure policy functions remain independent of Flask request state.
-4. Internal KAORI consumers import focused modules, not `service.py`.
-5. `service.py` may re-export established names during migration, but it must not contain implementation functions.
-6. New Alerts behavior must be added to the owning module and covered by characterization tests.
+4. Internal KAORI consumers import focused modules; `service.py` is retired.
+5. New Alerts behavior must be added to the owning module and covered by characterization tests.
 
-## Compatibility and Removal Plan
+## Compatibility Cutover
 
-`app.analytics.alerts.service` remains temporarily available for unknown external or historical imports. All known KAORI consumers now use canonical modules:
+`app.analytics.alerts.service` was removed after every known KAORI consumer moved to canonical modules:
 
 - web route → `application.get_alerts_context`;
 - report section → `application.get_alerts_context`;

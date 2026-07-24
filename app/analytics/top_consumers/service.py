@@ -7,6 +7,7 @@ from typing import Any, TypedDict
 
 from app.analytics.common.base_service import AnalyticsBaseService, raw_percent, safe_round
 from app.analytics.common.context import build_analysis_utilization_context
+from app.analytics.common.coercion import safe_float as _safe_float, safe_int as _safe_int
 from app.analytics.common.params import ALLOWED_PER_PAGE_VALUES, get_per_page_arg, get_positive_int_arg, get_query_value
 from app.analytics.utilization.service import UtilizationService
 from app.common.dependencies import prometheus_connection_blocker
@@ -2178,41 +2179,4 @@ def _raw_percent(
     )
 
 
-def _safe_float(
-    value: Any,
-) -> float:
-    if isinstance(
-        value,
-        bool,
-    ):
-        return float(
-            value,
-        )
 
-    if isinstance(
-        value,
-        int | float | str,
-    ):
-        try:
-            return float(
-                value,
-            )
-        except (
-            TypeError,
-            ValueError,
-        ):
-            return 0.0
-
-    return 0.0
-
-
-def _safe_int(
-    value: Any,
-) -> int:
-    return int(
-        round(
-            _safe_float(
-                value,
-            )
-        )
-    )

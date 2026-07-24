@@ -20,7 +20,7 @@ def test_worker_owns_resolver_dispatch_under_a_lease():
     assert 'acquire_execution_lease' in text
     assert 'dispatch_resolver_execution' in text
     assert 'complete_execution_delivery' in text
-    assert "queue='resolver-execution'" in text
+    assert "name='app.resolver.tasks.execute_authorized_resolution'" in text
 
 
 def test_domain18_does_not_add_a_database_migration():

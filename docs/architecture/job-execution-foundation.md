@@ -78,10 +78,10 @@ Queues and workers are separated by workload characteristics:
 | Inventory and maintenance | `inventory,maintenance` | 1 | inventory sync, retention, stale-job recovery |
 | Runtime health | `integration-runtime` | 4 | short reachability and latency probes |
 | Capability validation | `integration-validation` | 1 | provider discovery, RBAC, compatibility, binding evidence |
-| Analytics batch | `analytics-batch` | 2 | capacity aggregation, anomaly preprocessing, materialization |
-| Forecasting | `forecasting` | 1 | historical extraction, model execution, backtesting |
+| Analytics batch | `analytics-batch` | reserved | capacity aggregation, anomaly preprocessing, materialization |
+| Forecasting | `forecasting` | reserved | historical extraction, model execution, backtesting |
 
-Forecasting and validation do not share a worker process. `max-tasks-per-child` is configured conservatively for heavy workers to limit long-lived memory growth.
+The analytics and forecasting queue names are reserved application contracts, but production worker services are intentionally not deployed until concrete task modules and routes exist. When those tasks are introduced, they must use dedicated workers; forecasting and validation must never share a worker process.
 
 ## Quotas and fairness
 

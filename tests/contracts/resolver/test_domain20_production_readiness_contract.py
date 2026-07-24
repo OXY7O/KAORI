@@ -38,13 +38,14 @@ def test_migration_is_default_disabled_and_has_domain19_parent():
 
 def test_worker_enforces_policy_readiness_and_controls_before_execution_lease():
     source = read('app/resolver/tasks.py')
-    body = source[source.index('def execute_authorized_resolution'):]
+    prepare = source[source.index('def _prepare_execution'): source.index('def _persist_preflight_failure')]
+    execute = source[source.index('def _execute_with_lease'): source.index('@shared_task', source.index('def _execute_with_lease'))]
 
-    policy = body.index('assert_deployment_policy_allows(')
-    readiness = body.index('assert_production_execution_ready(')
-    controls = body.index('assert_execution_allowed(journal)')
-    lease = body.index('lease = acquire_execution_lease')
-    dispatch = body.index('result = dispatch_resolver_execution')
+    policy = prepare.index('assert_deployment_policy_allows(')
+    readiness = prepare.index('assert_production_execution_ready(')
+    controls = prepare.index('assert_execution_allowed(journal)')
+    lease = prepare.index('lease = acquire_execution_lease')
 
-    assert policy < readiness < controls < lease < dispatch
+    assert policy < readiness < controls < lease
+    assert 'result = dispatch_resolver_execution' in execute
 

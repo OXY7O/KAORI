@@ -7,6 +7,7 @@ from typing import Any, SupportsFloat, SupportsIndex
 from sqlalchemy import select
 
 from app.analytics.common.cache import get_or_set_cache
+from app.analytics.common.coercion import as_dict as _as_dict
 from app.analytics.overview.schema import (
     build_empty_overview_payload,
     classify_count_risk,
@@ -1893,12 +1894,6 @@ def _pick_number(raw: dict[str, Any], keys: list[str]) -> float | None:
 
     return None
 
-
-def _as_dict(value: Any) -> dict[str, Any]:
-    if isinstance(value, dict):
-        return value
-
-    return {}
 
 
 def _get_nested_float(source: Any, first_key: str, second_key: str) -> FloatLike | None:

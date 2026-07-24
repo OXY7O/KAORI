@@ -6,8 +6,7 @@ from enum import StrEnum
 from typing import Any
 from uuid import uuid4
 
-from sqlalchemy import or_
-
+from flask import current_app, has_app_context
 from app.extensions import db
 from app.jobs.dispatcher import enqueue_canonical_job
 from app.models.audit import AuditEvent
@@ -38,11 +37,19 @@ class Lease:
     attempt: int
 
 
+def resolver_execution_queue_name() -> str:
+    if has_app_context():
+        configured = str(current_app.config.get('RESOLVER_EXECUTION_CELERY_QUEUE') or '').strip()
+        if configured:
+            return configured
+    return RESOLVER_QUEUE
+
+
 def prepare_execution_delivery(
     journal: IntelligenceExecutionJournal,
     *,
     max_attempts: int = DEFAULT_MAX_ATTEMPTS,
-    queue_name: str = RESOLVER_QUEUE,
+    queue_name: str | None = None,
 ) -> bool:
     """Prepare one canonical Celery delivery; return False for an existing delivery."""
     decision = journal.decision
@@ -61,7 +68,7 @@ def prepare_execution_delivery(
     if journal.orchestration_status not in {'pending', 'retry_wait'}:
         return False
     journal.idempotency_key = key
-    journal.queue_name = queue_name
+    journal.queue_name = str(queue_name or resolver_execution_queue_name()).strip() or RESOLVER_QUEUE
     journal.max_attempts = max(1, max_attempts)
     journal.celery_task_id = journal.celery_task_id or str(uuid4())
     journal.orchestration_status = 'queued'
@@ -75,42 +82,54 @@ def enqueue_execution_delivery(
     *,
     task: Any,
     token: str,
-    secret_key: str,
     actor_user_id: int | None,
     max_attempts: int = DEFAULT_MAX_ATTEMPTS,
+    queue_name: str | None = None,
 ) -> tuple[Any, bool]:
     """Dispatch through KAORI's canonical JobExecution foundation exactly once."""
-    if not prepare_execution_delivery(journal, max_attempts=max_attempts):
+    if not prepare_execution_delivery(journal, max_attempts=max_attempts, queue_name=queue_name):
         if journal.resolver_job_id is None:
             raise OrchestrationError('Execution delivery already exists without a canonical job reference.')
         return journal.resolver_job_id, False
     decision = journal.decision
-    job, created = enqueue_canonical_job(
-        task=task,
-        task_kwargs={
-            'execution_journal_id': journal.id,
-            'token': token,
-            'secret_key': secret_key,
-            'actor_user_id': actor_user_id,
-        },
-        job_type='resolver_execution',
-        operation=journal.action_key,
-        queue_name=journal.queue_name,
-        workload_class='mutation',
-        requested_by_user_id=actor_user_id,
-        resource_group=f'resolver:{decision.cluster_id or "global"}',
-        parameters={
-            'decision_id': decision.public_id,
-            'execution_journal_id': journal.public_id,
-            'evidence_hash': journal.evidence_hash,
-        },
-        payload=None,
-        provider_type='resolver',
-        provider_instance_id=None,
-        scope_type='cluster' if decision.cluster_id else 'global',
-        scope_key=decision.cluster_id,
-        max_attempts=journal.max_attempts,
-    )
+    try:
+        job, created = enqueue_canonical_job(
+            task=task,
+            task_kwargs={
+                'execution_journal_id': journal.id,
+                'token': token,
+                'actor_user_id': actor_user_id,
+            },
+            job_type='resolver_execution',
+            operation=journal.action_key,
+            queue_name=journal.queue_name,
+            workload_class='mutation',
+            requested_by_user_id=actor_user_id,
+            resource_group=f'resolver:{decision.cluster_id or "global"}',
+            parameters={
+                'decision_id': decision.public_id,
+                'execution_journal_id': journal.public_id,
+                'evidence_hash': journal.evidence_hash,
+            },
+            payload=None,
+            provider_type='resolver',
+            provider_instance_id=None,
+            scope_type='cluster' if decision.cluster_id else 'global',
+            scope_key=decision.cluster_id,
+            max_attempts=journal.max_attempts,
+        )
+    except Exception as exc:
+        # The canonical dispatcher commits job admission before publishing to
+        # Celery. If publication fails, restore the journal to a retryable
+        # pre-delivery state instead of leaving an orphaned queued execution.
+        journal.orchestration_status = 'pending'
+        journal.celery_task_id = None
+        journal.resolver_job_id = None
+        journal.last_error_code = 'dispatch_failed'
+        journal.error_message = str(exc)
+        journal.next_retry_at = None
+        db.session.commit()
+        raise
     journal.resolver_job_id = job.id
     journal.celery_task_id = job.celery_task_id
     db.session.commit()
@@ -205,6 +224,34 @@ def record_execution_failure(
     return may_retry
 
 
+def record_preflight_failure(
+    journal: IntelligenceExecutionJournal,
+    *,
+    failure_class: FailureClass,
+    message: str,
+    now: datetime | None = None,
+) -> bool:
+    """Persist a worker failure that occurs before execution lease acquisition."""
+    if journal.orchestration_status not in {'queued', 'retry_wait'}:
+        return False
+    current = now or datetime.now(UTC)
+    journal.attempt_count += 1
+    journal.last_error_code = failure_class.value
+    journal.error_message = message
+    may_retry = failure_class == FailureClass.RETRYABLE and journal.attempt_count < journal.max_attempts
+    if may_retry:
+        journal.orchestration_status = 'retry_wait'
+        journal.next_retry_at = current + timedelta(seconds=30)
+    else:
+        journal.orchestration_status = 'dead_letter'
+        journal.completed_at = current
+        journal.next_retry_at = None
+    _release_lease(journal)
+    _audit(journal, 'intelligence.execution.preflight_failed')
+    db.session.flush()
+    return may_retry
+
+
 def recover_stale_execution_leases(*, now: datetime | None = None) -> dict[str, int]:
     current = now or datetime.now(UTC)
     stale = (
@@ -234,21 +281,6 @@ def recover_stale_execution_leases(*, now: datetime | None = None) -> dict[str, 
     db.session.commit()
     return {'recovered': recovered, 'dead_lettered': dead_lettered}
 
-
-def due_retry_journals(*, now: datetime | None = None, limit: int = 100) -> list[IntelligenceExecutionJournal]:
-    current = now or datetime.now(UTC)
-    return (
-        IntelligenceExecutionJournal.query.filter(
-            IntelligenceExecutionJournal.orchestration_status == 'retry_wait',
-            or_(
-                IntelligenceExecutionJournal.next_retry_at.is_(None),
-                IntelligenceExecutionJournal.next_retry_at <= current,
-            ),
-        )
-        .order_by(IntelligenceExecutionJournal.next_retry_at.asc(), IntelligenceExecutionJournal.id.asc())
-        .limit(max(1, min(limit, 500)))
-        .all()
-    )
 
 
 def _require_owner(journal: IntelligenceExecutionJournal, owner: str) -> None:

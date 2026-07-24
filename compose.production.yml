@@ -159,7 +159,7 @@ services:
     cpus: "${INTEGRATION_VALIDATION_WORKER_CPU_LIMIT:-2.0}"
     mem_limit: "${INTEGRATION_VALIDATION_WORKER_MEMORY_LIMIT:-2g}"
 
-  analytics-worker:
+  resolver-execution-worker:
     <<: *kaori-image
     environment:
       APP_ENV: production
@@ -172,38 +172,38 @@ services:
       - -c
       - >-
         exec celery --app celery_worker:celery_app worker
-        --queues="$${ANALYTICS_CELERY_QUEUE:-analytics-batch}"
+        --queues="$${RESOLVER_EXECUTION_CELERY_QUEUE:-resolver-execution}"
         --loglevel="$${CELERY_LOG_LEVEL:-INFO}"
-        --concurrency="$${ANALYTICS_WORKER_CONCURRENCY:-2}"
-        --max-tasks-per-child="$${ANALYTICS_MAX_TASKS_PER_CHILD:-50}"
+        --concurrency="$${RESOLVER_EXECUTION_WORKER_CONCURRENCY:-1}"
+        --max-tasks-per-child="$${RESOLVER_EXECUTION_MAX_TASKS_PER_CHILD:-25}"
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=512m
-    stop_grace_period: 120s
-    cpus: "${ANALYTICS_WORKER_CPU_LIMIT:-2.0}"
-    mem_limit: "${ANALYTICS_WORKER_MEMORY_LIMIT:-4g}"
-
-  forecasting-worker:
-    <<: *kaori-image
-    environment:
-      APP_ENV: production
-      WAIT_FOR_DB: "true"
-    init: true
-    restart: unless-stopped
-    read_only: true
-    command:
-      - sh
-      - -c
-      - >-
-        exec celery --app celery_worker:celery_app worker
-        --queues="$${FORECASTING_CELERY_QUEUE:-forecasting}"
-        --loglevel="$${CELERY_LOG_LEVEL:-INFO}"
-        --concurrency="$${FORECASTING_WORKER_CONCURRENCY:-1}"
-        --max-tasks-per-child="$${FORECASTING_MAX_TASKS_PER_CHILD:-10}"
-    tmpfs:
-      - /tmp:rw,noexec,nosuid,size=1g
+      - /tmp:rw,noexec,nosuid,size=256m
     stop_grace_period: 300s
-    cpus: "${FORECASTING_WORKER_CPU_LIMIT:-4.0}"
-    mem_limit: "${FORECASTING_WORKER_MEMORY_LIMIT:-8g}"
+    cpus: "${RESOLVER_EXECUTION_WORKER_CPU_LIMIT:-1.0}"
+    mem_limit: "${RESOLVER_EXECUTION_WORKER_MEMORY_LIMIT:-1g}"
+
+  resolver-maintenance-worker:
+    <<: *kaori-image
+    environment:
+      APP_ENV: production
+      WAIT_FOR_DB: "true"
+    init: true
+    restart: unless-stopped
+    read_only: true
+    command:
+      - sh
+      - -c
+      - >-
+        exec celery --app celery_worker:celery_app worker
+        --queues="$${RESOLVER_MAINTENANCE_CELERY_QUEUE:-resolver-maintenance}"
+        --loglevel="$${CELERY_LOG_LEVEL:-INFO}"
+        --concurrency="$${RESOLVER_MAINTENANCE_WORKER_CONCURRENCY:-1}"
+        --max-tasks-per-child="$${RESOLVER_MAINTENANCE_MAX_TASKS_PER_CHILD:-500}"
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=128m
+    stop_grace_period: 45s
+    cpus: "${RESOLVER_MAINTENANCE_WORKER_CPU_LIMIT:-0.5}"
+    mem_limit: "${RESOLVER_MAINTENANCE_WORKER_MEMORY_LIMIT:-512m}"
 
   # Run exactly one Beat replica for each KAORI environment.
   beat:

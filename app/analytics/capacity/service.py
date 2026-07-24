@@ -11,6 +11,7 @@ from app.analytics.common.base_service import AnalyticsBaseService, bytes_to_gib
 from app.analytics.common.clusters import get_selected_cluster
 from app.analytics.common.params import get_allowed_time_ranges, get_query_value, get_selected_time_range
 from app.analytics.common.payloads import get_empty_capacity_payload
+from app.analytics.common.coercion import as_dict as _as_dict
 from app.analytics.utilization.service import UtilizationService
 from app.common.dependencies import (
     cluster_required_blocker,
@@ -1200,17 +1201,6 @@ def _empty_capacity_snapshot() -> dict[str, Any]:
         'recommendation_count': 0,
     }
 
-
-def _as_dict(
-    value: Any,
-) -> dict[str, Any]:
-    if isinstance(
-        value,
-        dict,
-    ):
-        return value
-
-    return {}
 
 
 def _safe_int(

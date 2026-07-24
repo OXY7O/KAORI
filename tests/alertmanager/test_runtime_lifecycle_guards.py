@@ -3,7 +3,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.alertmanager import resolver as resolver_module
-from app.integrations.validation.tasks import _ensure_instance_operational
+from app.integrations.lifecycle import ensure_provider_operational
 
 
 def _instance(*, enabled=True, canonical_enabled=True, lifecycle='active'):
@@ -17,7 +17,7 @@ def _instance(*, enabled=True, canonical_enabled=True, lifecycle='active'):
 
 
 def test_worker_guard_accepts_active_instance():
-    _ensure_instance_operational(_instance(), provider_type='alertmanager')
+    ensure_provider_operational(_instance(), provider_type='alertmanager')
 
 
 @pytest.mark.parametrize(
@@ -30,7 +30,7 @@ def test_worker_guard_accepts_active_instance():
 )
 def test_worker_guard_rejects_non_operational_instance(instance, message):
     with pytest.raises(RuntimeError, match=message):
-        _ensure_instance_operational(instance, provider_type='alertmanager')
+        ensure_provider_operational(instance, provider_type='alertmanager')
 
 
 def test_alertmanager_resolver_rejects_non_active_canonical_lifecycle(monkeypatch):

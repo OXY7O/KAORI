@@ -2,21 +2,25 @@
 
 ## Context
 
-Domain 5 centralized provider and canonical lifecycle checks in
-`_ensure_instance_operational()` so Prometheus and Alertmanager workers share one
-fail-closed implementation.
+Domain 5 now calls the canonical integration lifecycle guard directly through
+`ensure_provider_operational()`. The former local wrapper
+`_ensure_instance_operational()` was removed after all Prometheus and
+Alertmanager workers migrated to the canonical boundary.
 
-The Domain 4 contract still required the obsolete inline expression
+The previous Domain 4 contract required an obsolete inline expression
 `if not instance.enabled`. That assertion tested source formatting rather than
-the lifecycle boundary and failed after the valid refactor.
+the lifecycle behavior and failed after the valid consolidation.
 
 ## Contract update
 
 The contract now verifies that:
 
-1. the centralized helper checks provider `enabled` state;
-2. the helper checks canonical integration `enabled` state;
-3. the helper checks canonical `lifecycle_status` against `active`; and
-4. Prometheus full validation invokes the helper before `refresh_and_record()`.
+1. the canonical guard checks provider `enabled` state;
+2. the canonical guard checks canonical integration `enabled` state;
+3. the canonical guard checks canonical `lifecycle_status` against `active`;
+4. Prometheus and Alertmanager validation tasks call the canonical guard before
+   `refresh_and_record()`; and
+5. no domain-local lifecycle wrapper is reintroduced.
 
-No production behavior changes are included.
+The change removes duplicate indirection without changing the fail-closed
+runtime behavior.

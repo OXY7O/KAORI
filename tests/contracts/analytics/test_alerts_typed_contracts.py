@@ -16,7 +16,6 @@ INHIBITION = ALERTS / 'inhibition.py'
 OWNERSHIP = ALERTS / 'ownership.py'
 READINESS = ALERTS / 'readiness.py'
 SIGNALS = ALERTS / 'signals.py'
-SERVICE = ALERTS / 'service.py'
 QUALITY_GATE = ROOT / 'scripts' / 'quality_gate.sh'
 
 TYPED_CONTRACTS = {
@@ -324,12 +323,13 @@ def test_alert_consumers_use_the_canonical_types() -> None:
     assert offenders == []
 
 
-def test_compatibility_facade_reexports_typed_contracts() -> None:
-    source = SERVICE.read_text(encoding='utf-8')
+def test_compatibility_facade_is_removed_after_typed_contract_cutover() -> None:
+    assert not (ALERTS / 'service.py').exists()
+    assert not (ALERTS / 'queries.py').exists()
 
+    module = _load_contracts_module()
     for contract_name in sorted(TYPED_CONTRACTS | {'AlertLoadResult'}):
-        assert contract_name in source
-        assert f"'{contract_name}'" in source
+        assert hasattr(module, contract_name)
 
 
 def test_runtime_typed_dict_metadata_preserves_optional_provider_fields() -> None:

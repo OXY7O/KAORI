@@ -11,6 +11,12 @@ from typing import Any
 
 from app.analytics.common.base_service import AnalyticsBaseService
 from app.analytics.common.context import build_analysis_utilization_context
+from app.analytics.common.coercion import (
+    as_dict as _as_dict,
+    as_list as _as_list,
+    safe_float as _safe_float,
+    safe_int as _safe_int,
+)
 from app.analytics.common.params import get_query_value
 from app.analytics.utilization.service import UtilizationService
 from app.common.dependencies import prometheus_connection_blocker
@@ -2107,65 +2113,6 @@ def _clamp_percent(
     )
 
 
-def _as_dict(
-    value: Any,
-) -> dict[str, Any]:
-    if isinstance(
-        value,
-        dict,
-    ):
-        return value
-
-    return {}
 
 
-def _as_list(
-    value: Any,
-) -> list[Any]:
-    if isinstance(
-        value,
-        list,
-    ):
-        return value
 
-    return []
-
-
-def _safe_float(
-    value: Any,
-) -> float:
-    if isinstance(
-        value,
-        bool,
-    ):
-        return float(
-            value,
-        )
-
-    if isinstance(
-        value,
-        int | float | str,
-    ):
-        try:
-            return float(
-                value,
-            )
-        except (
-            TypeError,
-            ValueError,
-        ):
-            return 0.0
-
-    return 0.0
-
-
-def _safe_int(
-    value: Any,
-) -> int:
-    return int(
-        round(
-            _safe_float(
-                value,
-            )
-        )
-    )

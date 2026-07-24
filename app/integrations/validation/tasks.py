@@ -157,11 +157,6 @@ def _release_job_safely(
         )
 
 
-def _ensure_instance_operational(instance: Any, *, provider_type: str) -> None:
-    """Compatibility wrapper around the shared integration lifecycle guard."""
-    ensure_provider_operational(instance, provider_type=provider_type)
-
-
 def _persist_failure_observation(
     *,
     provider_type: str,
@@ -355,7 +350,7 @@ def validate_integration_instance(
             instance = db.session.get(PrometheusInstance, instance_id)
             if instance is None:
                 raise LookupError('Prometheus instance no longer exists.')
-            _ensure_instance_operational(instance, provider_type='prometheus')
+            ensure_provider_operational(instance, provider_type='prometheus')
             validation_result, state, _ = refresh_and_record(
                 get_integration('prometheus').adapter,
                 instance,
@@ -387,7 +382,7 @@ def validate_integration_instance(
             instance = db.session.get(AlertmanagerInstance, instance_id)
             if instance is None:
                 raise LookupError('Alertmanager instance no longer exists.')
-            _ensure_instance_operational(instance, provider_type='alertmanager')
+            ensure_provider_operational(instance, provider_type='alertmanager')
             validation_result, state, _ = refresh_and_record(
                 get_integration('alertmanager').adapter,
                 instance,
@@ -662,7 +657,7 @@ def validate_integration_binding(
         if 'binding.validate' not in module.operations:
             raise ValueError(f'{module.label} does not support binding validation.')
         instance = module.get_instance(instance_id)
-        _ensure_instance_operational(instance, provider_type=provider_type)
+        ensure_provider_operational(instance, provider_type=provider_type)
         if not binding.enabled:
             raise RuntimeError('Binding validation was canceled because the binding is disabled.')
         if binding.integration_instance_id != instance.integration_instance_id:
@@ -811,7 +806,7 @@ def refresh_integration_runtime_instance(
         )
         integration = get_integration(provider_type)
         instance = integration.get_instance(instance_id)
-        _ensure_instance_operational(instance, provider_type=provider_type)
+        ensure_provider_operational(instance, provider_type=provider_type)
         result_payload = integration.execute('runtime.health', instance)
         state = integration.adapter.get_state(instance, validation_result=result_payload)
         persist_runtime_state(

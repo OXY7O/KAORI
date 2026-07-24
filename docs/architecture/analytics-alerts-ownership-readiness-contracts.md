@@ -113,7 +113,7 @@ instance.
 
 Contract tests verify:
 
-- focused contracts exist and are re-exported by the compatibility facade;
+- focused contracts exist and are consumed through canonical focused modules;
 - ownership and readiness builders use focused return annotations;
 - readiness inputs use the existing focused summary contracts;
 - `AlertsSnapshot` references the focused ownership and readiness contracts;

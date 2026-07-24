@@ -83,7 +83,7 @@ Implemented:
 - provider I/O and payload normalization moved to focused source modules;
 - routing, silences, inhibition, ownership, readiness, and signal composition now have explicit owners;
 - all known internal consumers use canonical focused modules;
-- `service.py` is a temporary compatibility façade with no implementation functions;
+- the temporary `service.py` compatibility façade has been removed;
 - characterization and architecture contracts protect the existing behavior and dependency direction;
 - canonical `NormalizedAlert`, `AlertSourceStatus`, `AlertLoadResult`, and `AlertsSnapshot` contracts now protect internal boundaries.
 - controlled-fake tests now freeze explicit-source behavior, automatic fallback, combined failures, malformed payload handling, and provider exception boundaries;
@@ -95,7 +95,7 @@ Remaining in Batch 3:
 
 1. Continue replacing broad presentation dictionaries, next with ownership and incident-readiness summaries.
 2. Add canonical provider diagnostic codes without changing user-facing wording.
-3. Decide the removal milestone for the compatibility façade.
+3. Continue decomposing oversized Analytics services behind characterization tests.
 
 Do not combine typed-contract migration with a behavioral redesign of alert scoring or routing semantics.
 

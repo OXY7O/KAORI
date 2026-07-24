@@ -77,6 +77,9 @@ def build_resolver_registry(settings: ResolverBootstrapSettings) -> ResolverRegi
 
 def init_resolver_registry(app: Flask) -> ResolverRegistry:
     settings = settings_from_config(app.config)
+    signing_key = str(app.config.get('RESOLVER_TOKEN_SIGNING_KEY') or '')
+    if settings.enabled_actions and len(signing_key) < 32:
+        raise ResolverError('Enabled resolver actions require RESOLVER_TOKEN_SIGNING_KEY with at least 32 characters.')
     registry = build_resolver_registry(settings)
     fingerprint = registry_fingerprint(registry)
     app.extensions[EXTENSION_KEY] = registry

@@ -7,7 +7,7 @@ signal comparison rows and operational resource-link dictionaries produced by
 `app/analytics/alerts/signals.py`.
 
 This is a contract-only refactor. It preserves the ordinary dictionaries and
-lists consumed by compatibility imports, application context, templates, and
+lists consumed by application context, templates, and
 report code. It does not change provider calls, source fallback, signal counts,
 sorting, bar-width calculation, link availability, wording, or UI behavior.
 
@@ -63,9 +63,8 @@ The existing contact-point item additionally retains optional `name` and
 
 `build_resource_links()` now returns `AlertResourceLinks`.
 
-The compatibility facade continues to re-export all three contracts while the
-package migration remains active. New implementation code should import them
-from `app.analytics.alerts.contracts`.
+The package migration is complete. All three contracts are imported directly
+from `app.analytics.alerts.contracts`; no compatibility facade remains.
 
 ## Behavior Preserved
 
@@ -95,7 +94,7 @@ No runtime class instances are introduced.
 
 Contract tests verify:
 
-- all three focused contracts exist and are compatibility-facade exports;
+- all three focused contracts exist and are consumed through canonical modules;
 - both builders use the focused return annotations;
 - the comparison-row literal keys match the typed contract;
 - resource-link top-level and nested dictionaries match their required and
@@ -142,7 +141,6 @@ payloads and executable behavior are unchanged.
 
 ```text
 app/analytics/alerts/contracts.py
-app/analytics/alerts/service.py
 app/analytics/alerts/signals.py
 tests/contracts/analytics/test_alerts_typed_contracts.py
 tests/analytics/test_alerts_characterization.py

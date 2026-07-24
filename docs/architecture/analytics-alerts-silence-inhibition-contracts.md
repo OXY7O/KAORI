@@ -121,7 +121,7 @@ The typed-contract tests verify:
 - `AlertsSnapshot` no longer uses broad dictionary annotations for these
   sections;
 - empty runtime dictionaries have exactly the typed contract keys;
-- the compatibility facade continues exporting the established contract names.
+- canonical modules expose the established contract names directly; no compatibility facade remains.
 
 Characterization tests verify:
 

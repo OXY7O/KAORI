@@ -10,6 +10,8 @@ run_static() {
     python -m compileall -q app migrations tests scripts
     python -m ruff check app migrations tests scripts
     python scripts/verify_architecture_boundaries.py
+    python scripts/verify_celery_topology.py
+    python scripts/verify_code_health.py
     python scripts/verify_migration_graph.py
     bash scripts/verify_source_hygiene.sh
     pytest -q tests/contracts tests/migrations -m 'contract or migration'

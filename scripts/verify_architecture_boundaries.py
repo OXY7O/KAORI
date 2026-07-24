@@ -14,10 +14,37 @@ _PROVIDER_DOMAIN_BOUNDARIES = {
 }
 
 _RETIRED_PYTHON_MODULES = {
+    'app.analytics.alerts.queries',
+    'app.analytics.alerts.service',
+    'app.analytics.capacity.helpers',
+    'app.analytics.capacity.queries',
+    'app.analytics.common.dependencies',
+    'app.analytics.forecast.queries',
+    'app.analytics.overview.queries',
+    'app.analytics.storage.queries',
+    'app.analytics.top_consumers.queries',
+    'app.analytics.utilization.queries',
+    'app.analytics.workload.queries',
+    'app.integrations.alertmanager.alerts',
+    'app.integrations.alertmanager.schemas',
+    'app.integrations.alertmanager.silences',
+    'app.integrations.deprecations',
+    'app.integrations.kubernetes.actions',
+    'app.integrations.kubernetes.discovery',
+    'app.integrations.kubernetes.inventory',
+    'app.integrations.kubernetes.schemas',
+    'app.integrations.prometheus.evidence',
+    'app.integrations.prometheus.queries',
+    'app.integrations.prometheus.schemas',
+    'app.integrations.prometheus.validation',
+    'app.integrations.runtime.contracts',
+    'app.integrations.runtime.dispatcher',
     'app.inventory.collector',
     'app.inventory.service',
-    'app.integrations.runtime.contracts',
-    'app.integrations.prometheus.evidence',
+    'app.prometheus.binding_contract',
+    'app.reports.storage.base',
+    'app.users.lifecycle',
+    'app.utils.formatters',
     'app.utils.helpers',
 }
 
@@ -142,12 +169,10 @@ def validate_boundaries(
     records = list(records)
     errors: list[str] = []
 
-    retired_paths = (
-        app_root / 'inventory' / 'collector.py',
-        app_root / 'inventory' / 'service.py',
-        app_root / 'integrations' / 'runtime' / 'contracts.py',
-        app_root / 'integrations' / 'prometheus' / 'evidence.py',
-        app_root / 'utils' / 'helpers.py',
+    retired_paths = tuple(
+        app_root.parent / Path(*module.split('.')).with_suffix('.py')
+        for module in sorted(_RETIRED_PYTHON_MODULES)
+    ) + (
         app_root / 'static' / 'js' / 'dashboard.js',
         app_root / 'static' / 'js' / 'report.js',
     )
@@ -166,15 +191,6 @@ def validate_boundaries(
         if record.target in _RETIRED_PYTHON_MODULES:
             errors.append(
                 f'{relative_source}:{record.line}: import targets retired module {record.target!r}'
-            )
-
-        if (
-            record.target == 'app.analytics.alerts.service'
-            and record.source != app_root / 'analytics' / 'alerts' / 'service.py'
-        ):
-            errors.append(
-                f'{relative_source}:{record.line}: internal code must import the focused Alerts module '
-                'instead of the compatibility service façade'
             )
 
         relative_to_app = record.source.relative_to(app_root)
@@ -209,7 +225,10 @@ def validate_boundaries(
         imports_forms = 'forms' in target_parts
         source_domain = _source_domain(app_root, record.source)
         target_domain = _top_level_domain(record.target)
-        source_is_bootstrap = record.source == app_root / '__init__.py' or record.source.name == '__init__.py'
+        source_is_bootstrap = record.source in {
+            app_root / '__init__.py',
+            app_root / 'bootstrap' / 'blueprints.py',
+        } or record.source.name == '__init__.py'
         source_is_domain_router = record.source.name == 'routes.py' and target_domain == source_domain
 
         if imports_routes and not (source_is_bootstrap or source_is_domain_router):

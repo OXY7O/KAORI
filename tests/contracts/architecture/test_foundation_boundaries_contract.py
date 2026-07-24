@@ -40,6 +40,7 @@ def test_retired_compatibility_and_empty_artifacts_are_absent() -> None:
         'app/inventory/collector.py',
         'app/inventory/service.py',
         'app/integrations/runtime/contracts.py',
+        'app/integrations/runtime/dispatcher.py',
         'app/integrations/prometheus/evidence.py',
         'app/utils/helpers.py',
         'app/static/js/dashboard.js',
@@ -49,11 +50,13 @@ def test_retired_compatibility_and_empty_artifacts_are_absent() -> None:
     assert [path for path in retired if (ROOT / path).exists()] == []
 
 
-def test_kubernetes_inventory_adapter_uses_canonical_use_case() -> None:
-    source = (ROOT / 'app/integrations/kubernetes/inventory.py').read_text(encoding='utf-8')
+def test_kubernetes_inventory_compatibility_adapter_is_retired() -> None:
+    retired = ROOT / 'app/integrations/kubernetes/inventory.py'
 
-    assert 'from app.inventory.synchronization import sync_inventory' in source
-    assert 'app.inventory.service' not in source
+    assert not retired.exists()
+
+    source = (ROOT / 'scripts/verify_architecture_boundaries.py').read_text(encoding='utf-8')
+    assert "'app.integrations.kubernetes.inventory'" in source
 
 
 def test_runtime_repository_uses_canonical_integration_contract() -> None:

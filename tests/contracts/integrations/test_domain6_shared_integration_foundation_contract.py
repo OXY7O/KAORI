@@ -13,7 +13,7 @@ def test_validation_worker_delegates_to_shared_lifecycle_guard() -> None:
     source = Path('app/integrations/validation/tasks.py').read_text()
 
     assert 'ensure_provider_operational' in source
-    assert 'def _ensure_instance_operational' in source
+    assert 'def _ensure_instance_operational' not in source
     assert 'ensure_provider_operational(instance, provider_type=provider_type)' in source
 
 

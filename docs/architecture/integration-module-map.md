@@ -106,6 +106,8 @@ Compatibility exists at two different layers and must not be confused:
 | `forecasting` | Forecasting workloads and heavy historical calculations. |
 | `reporting` | Report generation/export workloads. |
 
+Queue names for analytics, forecasting, and reporting may be reserved before their task modules exist, but idle production workers must not be deployed. A worker is added only in the same change that registers at least one explicit task route for its queue.
+
 Celery Beat dispatches schedules only. It performs no provider I/O. Every
 provider operation is registered with a queue so a new caller cannot silently
 fall into an unconsumed default queue.

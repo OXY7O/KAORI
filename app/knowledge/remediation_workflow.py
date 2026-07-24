@@ -133,7 +133,6 @@ def approve_and_enqueue_decision(
         journal,
         task=task,
         token=token,
-        secret_key=secret_key,
         actor_user_id=actor_user_id,
         max_attempts=max_attempts,
     )

@@ -21,7 +21,7 @@ The `class` key requires functional `TypedDict` syntax because it is a Python ke
 - `health.py` returns focused integration and source-health contracts.
 - `routing.py` returns focused routing and grouped-row contracts.
 - `AlertsSnapshot` references `AlertSourceHealthSummary` and `AlertRoutingSummary` directly instead of `dict[str, Any]`.
-- `service.py` re-exports the contracts only as a temporary compatibility façade.
+- canonical focused modules import contracts directly; the temporary `service.py` façade is removed.
 
 ## Guardrails
 

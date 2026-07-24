@@ -8,13 +8,6 @@ if TYPE_CHECKING:
     from app.models.prometheus import PrometheusInstance
 
 
-def attach_existing_instance(
-    form: 'PrometheusConfigForm',
-    instance: 'PrometheusInstance | None',
-) -> None:
-    """Attach persisted instance context without relying on WTForms metaclass members."""
-    form._existing_instance = instance
-
 
 class PrometheusConfigForm(FlaskForm):
     _existing_instance: 'PrometheusInstance | None' = None

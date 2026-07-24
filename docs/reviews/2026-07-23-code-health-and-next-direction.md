@@ -108,15 +108,13 @@ No new cycle or service-to-form edge was added. The Automation Control Center wa
    - Validate upgrade from `20260723_candidate_review`, current head, downgrade, and re-upgrade.
    - Run all functional tests, including `tests/intelligence/test_automation_control_behavior.py` and resolver suites.
 
-2. **Persist a deterministic journal outcome when a pre-lease gate blocks execution.**
-   - Files: `app/resolver/tasks.py`, `app/resolver/orchestration.py`, `app/models/intelligence.py`.
-   - Current risk: a policy/readiness/operational failure occurs before lease acquisition and can leave the journal in `queued` while the Celery task fails.
-   - Target: classify blocked vs retryable, record audit evidence, set `retry_wait` or `dead_letter`, and preserve idempotency.
-   - Tests: add worker-gate failure behavior tests for inactive policy, stale fingerprint, disallowed namespace, kill switch, and incomplete readiness.
+2. **Pre-lease journal outcomes — completed in the 24 July foundation hardening slice.**
+   - Policy, readiness, configuration, and operational preflight failures now persist retry/dead-letter state and audit evidence.
+   - Canonical JobExecution status is updated with the same retry or terminal outcome.
 
 3. **Complete stale-worker redelivery.**
-   - Files: `app/resolver/orchestration.py`, `app/resolver/tasks.py`, Celery beat configuration.
-   - `due_retry_journals()` exists but has no scheduled redelivery consumer. Add a maintenance task that safely re-enqueues due journals or document why Celery's native retry owns each case.
+   - Files: `app/resolver/orchestration.py`, `app/resolver/tasks.py`, Celery/broker deployment evidence.
+   - The unused `due_retry_journals()` scaffold was removed. KAORI now relies on `acks_late`, `reject_on_worker_lost`, broker redelivery, and lease recovery, but production enablement still requires evidence that broker retention/visibility preserves the original token-bearing message after worker loss. The alternative is an encrypted expiring execution envelope; plaintext token persistence is forbidden.
 
 4. **Enforce Canary posture, not only Canary evidence.**
    - Files: `app/resolver/production_readiness.py`, `app/resolver/operations.py`.

@@ -72,8 +72,8 @@ contract instead of `dict[str, Any]`. Its scoring behavior is unchanged.
 `AlertSignalPriority` and `AlertSignalInsight` directly. The snapshot key set is
 unchanged.
 
-The compatibility facade continues to re-export all four contracts while the
-package migration remains active.
+The package cutover is complete. Focused consumers import all four contracts
+directly from `app.analytics.alerts.contracts`; no compatibility facade remains.
 
 ## Behavior Preserved
 
@@ -100,7 +100,7 @@ No runtime class instances are introduced.
 
 Contract tests verify:
 
-- all four focused contracts exist and are compatibility-facade exports;
+- all four focused contracts exist and are imported through canonical modules;
 - the selected-cluster builder returns the focused overview contract;
 - incident readiness accepts the focused overview contract;
 - `AlertsSnapshot` references focused priority and insight contracts;
@@ -149,7 +149,6 @@ payloads and executable behavior are unchanged.
 ```text
 app/analytics/alerts/contracts.py
 app/analytics/alerts/readiness.py
-app/analytics/alerts/service.py
 app/analytics/alerts/signals.py
 tests/contracts/analytics/test_alerts_typed_contracts.py
 tests/analytics/test_alerts_characterization.py

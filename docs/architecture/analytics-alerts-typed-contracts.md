@@ -46,12 +46,9 @@ second normalized alert contract.
 
 ## Compatibility
 
-`app.analytics.alerts.service` temporarily re-exports the typed contracts for
-legacy consumers. New implementation code must import the contracts directly
-from `app.analytics.alerts.contracts`.
-
-The compatibility façade remains behavior-free and has a separate removal
-milestone after all external consumers use canonical modules.
+The compatibility cutover is complete. Typed contracts are imported directly from
+`app.analytics.alerts.contracts`. Both `app.analytics.alerts.service` and the
+legacy query export module are retired and blocked by the architecture gate.
 
 ## Behavior Boundary
 
@@ -74,7 +71,7 @@ Contract tests enforce that:
 - snapshot orchestration returns `AlertsSnapshot`;
 - focused summary builders return their canonical presentation contracts;
 - focused consumers import canonical types;
-- the compatibility façade continues to export the public contracts during migration;
+- no compatibility façade or aggregate service import remains;
 - runtime outputs retain the existing dictionary key sets.
 
 

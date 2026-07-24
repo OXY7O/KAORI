@@ -8,6 +8,7 @@ from typing import Any
 
 from app.analytics.common.base_service import AnalyticsBaseService, bytes_to_gib, raw_percent, safe_percent, safe_round
 from app.analytics.common.context import build_analysis_utilization_context
+from app.analytics.common.coercion import as_dict as _as_dict, as_list as _as_list, safe_float as _safe_float
 from app.analytics.common.params import (
     ALLOWED_PER_PAGE_VALUES,
     get_allowed_time_ranges,
@@ -2453,53 +2454,5 @@ def _empty_workload_snapshot() -> dict[str, Any]:
     }
 
 
-def _as_dict(
-    value: Any,
-) -> dict[str, Any]:
-    if isinstance(
-        value,
-        dict,
-    ):
-        return value
-
-    return {}
 
 
-def _as_list(
-    value: Any,
-) -> list[Any]:
-    if isinstance(
-        value,
-        list,
-    ):
-        return value
-
-    return []
-
-
-def _safe_float(
-    value: Any,
-) -> float:
-    if isinstance(
-        value,
-        bool,
-    ):
-        return float(
-            value,
-        )
-
-    if isinstance(
-        value,
-        int | float | str,
-    ):
-        try:
-            return float(
-                value,
-            )
-        except (
-            TypeError,
-            ValueError,
-        ):
-            return 0.0
-
-    return 0.0

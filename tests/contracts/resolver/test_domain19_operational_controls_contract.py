@@ -14,9 +14,17 @@ def test_operational_controls_are_fail_closed_and_audited():
 
 def test_worker_checks_controls_before_lease_and_dispatch():
     source = (ROOT / 'app/resolver/tasks.py').read_text()
-    body = source[source.index('def execute_authorized_resolution'): ]
-    assert body.index('assert_execution_allowed(journal)') < body.index('lease = acquire_execution_lease')
-    assert body.index('lease = acquire_execution_lease') < body.index('result = dispatch_resolver_execution')
+    prepare = source[source.index('def _prepare_execution'): source.index('def _persist_preflight_failure')]
+    execute = source[source.index('def _execute_with_lease'): source.index('@shared_task', source.index('def _execute_with_lease'))]
+    task = source[source.index('def execute_authorized_resolution'): ]
+
+    assert prepare.index('assert_execution_allowed(journal)') < prepare.index('lease = acquire_execution_lease')
+    lease = prepare.index('lease = acquire_execution_lease')
+    commit = prepare.index('db.session.commit()', lease)
+    assert lease < commit
+    assert 'result = dispatch_resolver_execution' in execute
+    assert task.index('state = _prepare_execution') < task.index('return _execute_with_lease')
+    assert 'record_preflight_failure(' in source
 
 
 def test_migration_is_default_safe_and_chained():

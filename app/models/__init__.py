@@ -31,6 +31,11 @@ from app.models.notification import Notification
 from app.models.prometheus import PrometheusInstance
 from app.models.rbac import Permission, Role, RolePermission
 from app.models.report import Report, ReportSchedule, ReportScheduleRun, ReportTemplate
+from app.models.resolver import (
+    ResolverDeploymentPolicy,
+    ResolverOperationalControl,
+    ResolverProductionReadinessRecord,
+)
 from app.models.runtime import IntegrationRuntimeObservation
 from app.models.secret_reveal import SecretRevealNamespacePolicy, SecretRevealRequest
 from app.models.user import User
@@ -81,8 +86,7 @@ __all__ = [
     'ReportScheduleRun',
     'SecretRevealNamespacePolicy',
     'SecretRevealRequest',
+    'ResolverDeploymentPolicy',
+    'ResolverOperationalControl',
+    'ResolverProductionReadinessRecord',
 ]
-
-
-from app.models.resolver import ResolverDeploymentPolicy, ResolverOperationalControl
-from app.models.resolver import ResolverProductionReadinessRecord

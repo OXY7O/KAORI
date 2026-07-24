@@ -13,6 +13,7 @@ def test_bootstrap_requires_explicit_namespace_allowlist_and_fingerprint():
     assert 'explicit namespace allowlist' in source
     assert 'registry_fingerprint' in source
     assert "Unknown enabled resolver actions" in source
+    assert 'RESOLVER_TOKEN_SIGNING_KEY with at least 32 characters' in source
 
 
 def test_policy_migration_is_linear_and_restrictive():

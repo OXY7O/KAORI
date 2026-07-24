@@ -150,6 +150,17 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
             'schedule': crontab(minute=f'*/{_bounded_env_int("JOB_RECOVERY_INTERVAL_MINUTES", 5, 1, 60)}'),
             'options': {'queue': _env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'},
         }
+    if _env_bool('RESOLVER_MAINTENANCE_ENABLED', True):
+        schedule['resolver-lease-recovery'] = {
+            'task': 'app.resolver.tasks.reconcile_stale_execution_leases',
+            'schedule': crontab(
+                minute=f'*/{_bounded_env_int("RESOLVER_MAINTENANCE_INTERVAL_MINUTES", 1, 1, 60)}'
+            ),
+            'options': {
+                'queue': _env_str('RESOLVER_MAINTENANCE_CELERY_QUEUE', 'resolver-maintenance').strip()
+                or 'resolver-maintenance'
+            },
+        }
     return schedule
 
 
@@ -205,6 +216,16 @@ class Config:
         'SECRET_KEY',
         'change-me',
     )
+
+    # ProxyFix remains disabled outside the production configuration unless
+    # a deployment explicitly opts in. Defining the full contract here keeps
+    # application-factory behavior deterministic across every environment.
+    PROXY_FIX_ENABLED = _env_bool('PROXY_FIX_ENABLED', False)
+    PROXY_FIX_X_FOR = _env_int('PROXY_FIX_X_FOR', 1)
+    PROXY_FIX_X_PROTO = _env_int('PROXY_FIX_X_PROTO', 1)
+    PROXY_FIX_X_HOST = _env_int('PROXY_FIX_X_HOST', 1)
+    PROXY_FIX_X_PORT = _env_int('PROXY_FIX_X_PORT', 1)
+    PROXY_FIX_X_PREFIX = _env_int('PROXY_FIX_X_PREFIX', 0)
 
     INTEGRATION_CREDENTIAL_KEY = _env_optional_str(
         'INTEGRATION_CREDENTIAL_KEY',
@@ -276,6 +297,22 @@ class Config:
     ANALYTICS_CELERY_QUEUE = _env_str('ANALYTICS_CELERY_QUEUE', 'analytics-batch').strip() or 'analytics-batch'
     FORECASTING_CELERY_QUEUE = _env_str('FORECASTING_CELERY_QUEUE', 'forecasting').strip() or 'forecasting'
     JOB_MAINTENANCE_CELERY_QUEUE = _env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'
+    RESOLVER_EXECUTION_CELERY_QUEUE = (
+        _env_str('RESOLVER_EXECUTION_CELERY_QUEUE', 'resolver-execution').strip() or 'resolver-execution'
+    )
+    RESOLVER_MAINTENANCE_CELERY_QUEUE = (
+        _env_str('RESOLVER_MAINTENANCE_CELERY_QUEUE', 'resolver-maintenance').strip() or 'resolver-maintenance'
+    )
+    RESOLVER_MAINTENANCE_ENABLED = _env_bool('RESOLVER_MAINTENANCE_ENABLED', True)
+    RESOLVER_MAINTENANCE_INTERVAL_MINUTES = _bounded_env_int(
+        'RESOLVER_MAINTENANCE_INTERVAL_MINUTES',
+        1,
+        1,
+        60,
+    )
+    RESOLVER_ENABLED_ACTIONS = _env_str('RESOLVER_ENABLED_ACTIONS', '')
+    RESOLVER_KUBERNETES_ALLOWED_NAMESPACES = _env_str('RESOLVER_KUBERNETES_ALLOWED_NAMESPACES', '')
+    RESOLVER_TOKEN_SIGNING_KEY = _env_optional_str('RESOLVER_TOKEN_SIGNING_KEY')
     JOB_MAX_ACTIVE_PER_USER = _env_int('JOB_MAX_ACTIVE_PER_USER', 5)
     JOB_MAX_HEAVY_PER_USER = _env_int('JOB_MAX_HEAVY_PER_USER', 1)
     JOB_MAX_ACTIVE_PER_RESOURCE = _env_int('JOB_MAX_ACTIVE_PER_RESOURCE', 2)
@@ -312,6 +349,7 @@ class Config:
             'app.integrations.runtime.tasks',
             'app.integrations.validation.tasks',
             'app.jobs.tasks',
+            'app.resolver.tasks',
         ),
         'task_routes': {
             'app.cluster.tasks.sync_all_clusters': {
@@ -340,6 +378,12 @@ class Config:
             },
             'app.jobs.tasks.reconcile_stale_jobs': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
+            },
+            'app.resolver.tasks.execute_authorized_resolution': {
+                'queue': RESOLVER_EXECUTION_CELERY_QUEUE,
+            },
+            'app.resolver.tasks.reconcile_stale_execution_leases': {
+                'queue': RESOLVER_MAINTENANCE_CELERY_QUEUE,
             },
         },
         'visibility_timeout': CELERY_VISIBILITY_TIMEOUT_SECONDS,
@@ -549,6 +593,11 @@ class Config:
     )
     RUNTIME_OBSERVATION_RETENTION_SCHEDULE_MINUTE = _bounded_env_int(
         'RUNTIME_OBSERVATION_RETENTION_SCHEDULE_MINUTE', 45, 0, 59
+    )
+
+    REPORT_SCHEDULE_TIMEZONE = _env_str(
+        'REPORT_SCHEDULE_TIMEZONE',
+        'Asia/Jakarta',
     )
 
     # Reports storage.
