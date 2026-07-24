@@ -26,7 +26,8 @@ def test_sidebar_toggle_icons_are_supported_by_bundled_lucide() -> None:
 def test_welcome_hero_and_headings_follow_current_presentation_contract() -> None:
     template = (ROOT / 'app/templates/welcome/index.html').read_text()
 
-    assert 'bg-white p-4 text-content-primary' in template
+    assert 'page_hero.context_panel_classes()' in template
+    assert 'bg-white p-4 text-content-primary' not in template
     assert 'Only workspaces permitted for your current role are displayed.' in template
     assert 'Open the Capability You Need' in template
     assert 'No Permitted Workspace Matches This Search' in template

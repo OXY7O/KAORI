@@ -21,29 +21,12 @@
                 </div>
                 <aside class="{{ page_hero.aside_classes() }}"
                        aria-label="Current access scope">
-                    <div class="rounded-xl border border-white/20 bg-white p-4 text-content-primary shadow-lg shadow-black/10">
-                        <div class="flex items-start gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
-                                  aria-hidden="true">
-                                <i data-lucide="key-round" class="h-4 w-4"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <p class="text-[10px] font-extrabold uppercase tracking-[0.12em] text-kaori-primary">Access Scope</p>
-                                <h2 class="mt-1 text-sm font-extrabold text-content-primary">Role-Aware Workspace</h2>
-                                <p class="mt-1.5 text-[11px] font-medium leading-5 text-content-muted">
-                                    Only workspaces permitted for your current role are displayed.
-                                </p>
-                            </div>
-                        </div>
-                        <div class="mt-4 grid grid-cols-2 gap-2 border-t border-outline-subtle pt-3">
-                            <div>
-                                <strong class="block text-lg font-extrabold text-content-primary">{{ shortcut_count }}</strong>
-                                <span class="text-[10px] font-semibold text-content-muted">Workspaces</span>
-                            </div>
-                            <div>
-                                <strong class="block text-lg font-extrabold text-content-primary">{{ workspace_group_count }}</strong>
-                                <span class="text-[10px] font-semibold text-content-muted">Capability Areas</span>
-                            </div>
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        {{ page_hero.context_header('Access Scope', 'Role-Aware Workspace', 'key-round') }}
+                        {{ page_hero.context_note('Only workspaces permitted for your current role are displayed.') }}
+                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                            {{ page_hero.context_metric('panels-top-left', 'Workspaces', shortcut_count, 'Available to your assigned role.') }}
+                            {{ page_hero.context_metric('layout-grid', 'Capability Areas', workspace_group_count, 'Grouped by operational purpose.') }}
                         </div>
                     </div>
                 </aside>
