@@ -10,7 +10,7 @@ Production principles:
 - Validate production environment variables before migration.
 - Back up PostgreSQL before every schema migration.
 - Run migration once, separately from web startup.
-- Run the Celery `inventory` worker as a separate production service.
+- Run dedicated Celery `inventory` and `maintenance` workers as separate services.
 - Use dedicated Redis logical databases for Celery broker, rate limiting, and task results.
 - Bootstrap the first administrator only during initial installation.
 - Place Gunicorn behind a trusted HTTPS reverse proxy.
@@ -27,9 +27,11 @@ Celery Beat
 
 - Celery Beat publishes `app.jobs.tasks.dispatch_scheduled_jobs` once per minute.
 - The maintenance worker claims due `job_policies` rows and dispatches registered jobs.
-- The inventory worker executes the Kubernetes inventory task recorded by `JobExecution`.
+- The inventory worker executes Kubernetes inventory tasks recorded by `JobExecution`; it must not consume maintenance, validation, runtime, analytics, or forecasting queues.
 - Set `JOB_POLICY_SCHEDULER_ENABLED=true` on the Beat deployment. Policy intervals remain database-backed and do not require a Beat restart.
 - Keep one logical Beat scheduler active. PostgreSQL row locking prevents duplicate policy claims, but a single Beat owner remains the operational standard.
+- Development Compose service names are `inventory-worker` and `maintenance-worker`; production uses the same names.
+- Default inventory worker tuning is concurrency `1`, max tasks per child `50`, CPU `1.0`, and memory `1g`. Adjust only after measuring sync duration, Kubernetes API pressure, and peak inventory memory.
 
 After deploying this change:
 

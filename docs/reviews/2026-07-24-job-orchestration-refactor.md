@@ -63,12 +63,12 @@ Current automatic policies use validated intervals from 5 to 1,440 minutes. Cron
 Required services:
 
 ```text
-Celery Beat
-maintenance worker
-inventory worker
+beat
+maintenance-worker   → maintenance queue
+inventory-worker     → inventory queue
 ```
 
-Enable `JOB_POLICY_SCHEDULER_ENABLED=true`, run `flask db upgrade`, then validate the Jobs Configuration page and one manual Inventory Sync execution.
+Development and production Compose use the same worker service names. The former generic `worker` service is retired so provider-heavy inventory collection cannot delay policy dispatch and stale-job recovery. Enable `JOB_POLICY_SCHEDULER_ENABLED=true`, run `flask db upgrade`, recreate the Compose services, then validate the Jobs Configuration page and one manual Inventory Sync execution.
 
 ## Validation
 
@@ -106,6 +106,7 @@ The downgrade cannot preserve future non-inventory policies because the legacy t
 - `app/models/job.py`: generic `JobPolicy`.
 - `app/rbac/`: execution and configuration permissions.
 - `app/templates/jobs/`: Executions and Job Configuration tabs.
+- `.devcontainer/compose.devcontainer.yml`, `.devcontainer/devcontainer.json`, and `compose.production.yml`: dedicated inventory and maintenance worker topology.
 - navigation, Welcome catalog, deployment environment examples, and architecture documentation.
 
 ## Retired Areas

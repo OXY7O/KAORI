@@ -70,7 +70,7 @@ services:
       retries: 5
       start_period: 20s
 
-  worker:
+  inventory-worker:
     <<: *kaori-image
     environment:
       APP_ENV: production
@@ -85,10 +85,14 @@ services:
         exec celery --app celery_worker:celery_app worker
         --queues=inventory
         --loglevel="$${CELERY_LOG_LEVEL:-INFO}"
-        --concurrency="$${CELERY_WORKER_CONCURRENCY:-1}"
+        --concurrency="$${INVENTORY_WORKER_CONCURRENCY:-1}"
+        --max-tasks-per-child="$${INVENTORY_MAX_TASKS_PER_CHILD:-50}"
+        --hostname=inventory@%h
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=128m
-    stop_grace_period: 45s
+    stop_grace_period: 90s
+    cpus: "$${INVENTORY_WORKER_CPU_LIMIT:-1.0}"
+    mem_limit: "$${INVENTORY_WORKER_MEMORY_LIMIT:-1g}"
 
   maintenance-worker:
     <<: *kaori-image

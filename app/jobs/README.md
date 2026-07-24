@@ -62,4 +62,4 @@ A definition may require an additional domain permission. Inventory Sync require
 
 ## Scheduler
 
-Celery Beat runs `app.jobs.tasks.dispatch_scheduled_jobs` every minute on the maintenance queue. The task claims due `job_policies` rows with `FOR UPDATE SKIP LOCKED`, advances the next due time, and dispatches through the registry. Policy changes do not require a Beat restart.
+Celery Beat runs `app.jobs.tasks.dispatch_scheduled_jobs` every minute on the maintenance queue. The dedicated `maintenance-worker` claims policies and dispatches jobs; Kubernetes inventory execution is consumed only by the dedicated `inventory-worker`. The task claims due `job_policies` rows with `FOR UPDATE SKIP LOCKED`, advances the next due time, and dispatches through the registry. Policy changes do not require a Beat restart.
