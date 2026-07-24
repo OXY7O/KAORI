@@ -91,7 +91,7 @@
             <input type="hidden" name="status" value="{{ selected_status }}">
             <input type="hidden" name="search" value="{{ search }}">
             <select name="per_page"
-                    aria-label="Rows per page"
+                    aria-label="Rows Per Page"
                     onchange="this.form.requestSubmit()"
                     class="{{ pagination_ui.page_size_classes() }}">
                 {% for option in pagination.allowed_per_page %}

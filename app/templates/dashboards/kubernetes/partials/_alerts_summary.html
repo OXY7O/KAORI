@@ -15,12 +15,12 @@
         <div class="ml-auto flex shrink-0 items-center gap-2">
             <a @click.stop
                href="/analytics/alerts"
-               class="hidden text-xs font-semibold text-kaori-primary transition hover:text-kaori-primary-hover sm:inline-flex">View alerts</a>
+               class="hidden text-xs font-semibold text-kaori-primary transition hover:text-kaori-primary-hover sm:inline-flex">View Alerts</a>
             <button type="button"
                     class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card"
                     @click.stop="open = !open"
                     :aria-expanded="open.toString()"
-                    aria-label="Toggle alerts summary">
+                    aria-label="Toggle Alerts Summary">
                 <i data-lucide="chevron-down"
                    class="h-4 w-4 transition-transform duration-200"
                    :class="open ? 'rotate-180' : ''"></i>
@@ -66,7 +66,7 @@
                 {% else %}
                     <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-5 text-center">
                         <i data-lucide="circle-alert" class="mx-auto h-6 w-6 text-kaori-primary"></i>
-                        <p class="mt-2 text-sm font-semibold text-kaori-primary">No active alert snapshot</p>
+                        <p class="mt-2 text-sm font-semibold text-kaori-primary">No Active Alert Snapshot</p>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">{{ dashboard.alerts_snapshot.message }}</p>
                     </div>
                 {% endif %}
@@ -78,7 +78,7 @@
                             <i data-lucide="radio-tower" class="h-4 w-4"></i>
                         </div>
                         <div class="min-w-0">
-                            <p class="text-sm font-semibold text-content-primary">Alert insight</p>
+                            <p class="text-sm font-semibold text-content-primary">Alert Insight</p>
                             <p class="mt-1 text-xs leading-5 text-content-muted">
                                 {% if dashboard.alerts_snapshot.critical > 0 %}
                                     Critical alert signals are present. Prioritize incident triage before routine capacity review.

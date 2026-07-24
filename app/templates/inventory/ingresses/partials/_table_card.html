@@ -18,14 +18,13 @@
     <div class="border-b border-outline-subtle px-5 py-4">
         <form id="ingresses-filter-form"
               hx-get="{{ url_for('inventory.ingresses') }}"
-              hx-target="#ingresses-inventory-scope"
+              hx-target="#ingresses-inventory-card"
               hx-swap="outerHTML"
-              hx-trigger="change from:select, keyup changed delay:500ms from:input[name='search']"
+              hx-trigger="change, keyup changed delay:500ms"
               hx-indicator="#ingresses-table-loading"
               class="grid gap-4 xl:grid-cols-12 xl:items-end">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
-            <input type="hidden" name="partial_mode" value="inventory_scope" />
             <div class="xl:col-span-2">
                 <label class="mb-2 block text-sm font-semibold text-content-secondary">Cluster</label>
                 <select name="cluster_id"
@@ -48,7 +47,7 @@
                 </select>
             </div>
             <div class="xl:col-span-2">
-                <label class="mb-2 block text-sm font-semibold text-content-secondary">Ingress class</label>
+                <label class="mb-2 block text-sm font-semibold text-content-secondary">Ingress Class</label>
                 <select name="class"
                         class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                     <option value="">All Classes</option>
@@ -59,7 +58,7 @@
                 </select>
             </div>
             <div class="xl:col-span-2">
-                <label class="mb-2 block text-sm font-semibold text-content-secondary">TLS state</label>
+                <label class="mb-2 block text-sm font-semibold text-content-secondary">TLS State</label>
                 <select name="tls"
                         class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                     <option value="">All TLS States</option>
@@ -69,14 +68,14 @@
                 </select>
             </div>
             <div class="xl:col-span-4">
-                <label class="mb-2 block text-sm font-semibold text-content-secondary">Search ingress</label>
+                <label class="mb-2 block text-sm font-semibold text-content-secondary">Search Ingress</label>
                 <div class="relative">
                     <i data-lucide="search"
                        class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
                     <input type="search"
                            name="search"
                            value="{{ search }}"
-                           placeholder="Name, host, address, or class"
+                           placeholder="Name, Host, Address, Or Class"
                            class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                 </div>
             </div>

@@ -65,7 +65,7 @@
             <div class="self-start sm:self-auto">{{ table_label.status_label(node.status, node_status_tone, node_status_icon) }}</div>
         </header>
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail_card('Node identity', 'badge-info', node.role, 'metadata', 'unknown', 'min-h-80') %}
+            {% call detail_card('Node Identity', 'badge-info', node.role, 'metadata', 'unknown', 'min-h-80') %}
                 {{ detail_row('System UUID', node.system_uuid, True) }}
                 {{ detail_row('Cluster', node.cluster_name) }}
                 {{ detail_row('Age', node.age) }}
@@ -83,14 +83,14 @@
                 </div>
                 {{ detail_tip('Internal IP is the cluster address; External IP may be empty on private nodes.', 'network') }}
             {% endcall %}
-            {% call detail_card('Platform & runtime', 'cpu', node.operating_system_display, 'metadata', 'unknown', 'min-h-80') %}
-                {{ detail_row('Operating system', node.os_image or '-') }}
-                {{ detail_row('Kubelet version', node.kubelet_version) }}
-                {{ detail_row('Kube-proxy version', node.kube_proxy_version) }}
+            {% call detail_card('Platform & Runtime', 'cpu', node.operating_system_display, 'metadata', 'unknown', 'min-h-80') %}
+                {{ detail_row('Operating System', node.os_image or '-') }}
+                {{ detail_row('Kubelet Version', node.kubelet_version) }}
+                {{ detail_row('Kube-Proxy Version', node.kube_proxy_version) }}
                 {{ detail_row('Architecture', node.architecture) }}
                 {{ detail_tip('Versions come from node status; missing values were not reported.', 'cpu') }}
             {% endcall %}
-            {% call detail_card('Scheduling & conditions', 'clipboard-check', condition_posture, 'status', condition_tone, 'min-h-96') %}
+            {% call detail_card('Scheduling & Conditions', 'clipboard-check', condition_posture, 'status', condition_tone, 'min-h-96') %}
                 {% set scheduling_tone = 'normal' if node.scheduling_display == 'Schedulable' else ('warning' if node.scheduling_display == 'Cordoned' else 'unknown') %}
                 <div class="flex items-start justify-between gap-3">
                     <span class="text-xs leading-5 text-content-muted">Scheduling</span>
@@ -143,7 +143,7 @@
                 {% else %}
                     <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-4 text-center">
                         <i data-lucide="tags" class="mx-auto h-5 w-5 text-kaori-primary"></i>
-                        <p class="mt-2 text-xs font-semibold text-kaori-primary">No node labels collected</p>
+                        <p class="mt-2 text-xs font-semibold text-kaori-primary">No Node Labels Collected</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Labels will appear after the next inventory collection when provided by the node.</p>
                     </div>
                 {% endif %}

@@ -16,12 +16,12 @@
         <div class="ml-auto flex shrink-0 items-center gap-2">
             <a @click.stop
                href="/analytics/top-consumers"
-               class="hidden text-xs font-semibold text-kaori-primary transition hover:text-kaori-primary-hover sm:inline-flex">View details</a>
+               class="hidden text-xs font-semibold text-kaori-primary transition hover:text-kaori-primary-hover sm:inline-flex">View Details</a>
             <button type="button"
                     class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card"
                     @click.stop="open = !open"
                     :aria-expanded="open.toString()"
-                    aria-label="Toggle top consumers">
+                    aria-label="Toggle Top Consumers">
                 <i data-lucide="chevron-down"
                    class="h-4 w-4 transition-transform duration-200"
                    :class="open ? 'rotate-180' : ''"></i>
@@ -79,7 +79,7 @@
                         {% else %}
                             <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-4 text-center">
                                 <i data-lucide="cpu" class="mx-auto h-5 w-5 text-kaori-primary"></i>
-                                <p class="mt-2 text-xs font-semibold text-kaori-primary">CPU consumer data not available</p>
+                                <p class="mt-2 text-xs font-semibold text-kaori-primary">CPU Consumer Data Not Available</p>
                                 <p class="mt-1 text-xs leading-5 text-content-secondary">{{ dashboard.top_consumers_snapshot.message }}</p>
                             </div>
                         {% endif %}
@@ -126,7 +126,7 @@
                         {% else %}
                             <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-4 text-center">
                                 <i data-lucide="memory-stick" class="mx-auto h-5 w-5 text-kaori-primary"></i>
-                                <p class="mt-2 text-xs font-semibold text-kaori-primary">Memory consumer data not available</p>
+                                <p class="mt-2 text-xs font-semibold text-kaori-primary">Memory Consumer Data Not Available</p>
                                 <p class="mt-1 text-xs leading-5 text-content-secondary">Prometheus memory consumer data is not available yet.</p>
                             </div>
                         {% endif %}

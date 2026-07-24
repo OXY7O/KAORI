@@ -85,7 +85,7 @@
             </div>
             <div class="xl:col-span-2">
                 <label for="topology-scope"
-                       class="mb-2 block text-sm font-semibold text-content-secondary">Resource scope</label>
+                       class="mb-2 block text-sm font-semibold text-content-secondary">Resource Scope</label>
                 <select id="topology-scope"
                         name="scope"
                         class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
@@ -109,14 +109,14 @@
             </div>
             <div class="xl:col-span-4">
                 <label for="topology-search"
-                       class="mb-2 block text-sm font-semibold text-content-secondary">Search resource</label>
+                       class="mb-2 block text-sm font-semibold text-content-secondary">Search Resource</label>
                 <div class="relative">
                     <i data-lucide="search"
                        class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
                     <input id="topology-search"
                            type="search"
                            autocomplete="off"
-                           placeholder="Search node, workload, pod, service..."
+                           placeholder="Search Node, Workload, Pod, Service..."
                            class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                     <div id="topology-search-results"
                          class="absolute left-0 right-0 top-full z-50 mt-2 hidden max-h-80 overflow-y-auto rounded-xl border border-outline-default bg-surface-card shadow-xl">
@@ -168,17 +168,17 @@
                 {% endfor %}
                 <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
                     <label for="topology-layout-mode"
-                           class="block text-xs font-semibold text-content-secondary">Layout mode</label>
+                           class="block text-xs font-semibold text-content-secondary">Layout Mode</label>
                     <select id="topology-layout-mode"
                             class="mt-2 h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-                        <option value="hierarchy">Hierarchy view</option>
-                        <option value="dependency">Dependency view</option>
+                        <option value="hierarchy">Hierarchy View</option>
+                        <option value="dependency">Dependency View</option>
                     </select>
                 </div>
             </div>
             <details open
                      class="mt-5 rounded-xl border border-outline-subtle bg-surface-card p-3">
-                <summary class="cursor-pointer text-sm font-semibold text-content-primary">Resource visibility</summary>
+                <summary class="cursor-pointer text-sm font-semibold text-content-primary">Resource Visibility</summary>
                 <div class="mt-3 grid gap-1.5 text-xs text-content-secondary">
                     {% for value, label, icon in [
                         ('cluster', 'Cluster', 'server-cog'),
@@ -214,7 +214,7 @@
             </details>
             <details open
                      class="mt-4 rounded-xl border border-outline-subtle bg-surface-card p-3">
-                <summary class="cursor-pointer text-sm font-semibold text-content-primary">Relationship visibility</summary>
+                <summary class="cursor-pointer text-sm font-semibold text-content-primary">Relationship Visibility</summary>
                 <div class="mt-3 grid gap-1.5 text-[10px] text-content-secondary">
                     {% for value, label, tone in [
                         ('contains', 'Contains', 'bg-indigo-400'),
@@ -262,7 +262,7 @@
                  class="pointer-events-none absolute inset-0 z-0"></div>
             <div id="topology-canvas"
                  role="application"
-                 aria-label="Interactive Kubernetes topology graph"
+                 aria-label="Interactive Kubernetes Topology Graph"
                  class="absolute inset-0 z-10 h-full w-full"></div>
             <div id="topology-empty-state"
                  class="pointer-events-none absolute inset-0 hidden items-center justify-center p-8">
@@ -291,7 +291,7 @@
                 <div class="rounded-xl border border-dashed border-outline-strong bg-kaori-soft px-4 py-8 text-center">
                     <i data-lucide="mouse-pointer-click"
                        class="mx-auto h-7 w-7 text-kaori-primary"></i>
-                    <p class="mt-3 text-sm font-semibold text-kaori-primary">Nothing selected</p>
+                    <p class="mt-3 text-sm font-semibold text-kaori-primary">Nothing Selected</p>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Click a graph node to inspect identity, status, inventory fields, and related workspace links.</p>
                 </div>
             </div>

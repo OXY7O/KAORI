@@ -70,7 +70,7 @@
             </div>
         </header>
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail_card('Pod identity', 'badge-info', pod.age, 'min-h-96') %}
+            {% call detail_card('Pod Identity', 'badge-info', pod.age, 'min-h-96') %}
                 {{ detail_row('Cluster', pod.cluster_name) }}
                 {{ detail_row('Namespace', pod.namespace) }}
                 {{ detail_row('Owner', (pod.owner_type ~ ' · ' ~ pod.owner_name) if pod.owner_type != 'Standalone' else 'Standalone') }}
@@ -80,13 +80,13 @@
                 {{ detail_row('Collected', pod.collected_at|user_datetime) }}
                 <div class="mt-auto pt-3">{{ info_box('Inventory identity', 'Pod identity and owner from the latest inventory snapshot.', 'lightbulb', 'brand', true) }}</div>
             {% endcall %}
-            {% call detail_card('Placement & network', 'map-pin', pod.host_ip or 'Host IP unavailable', 'min-h-[32rem]') %}
+            {% call detail_card('Placement & Network', 'map-pin', pod.host_ip or 'Host IP unavailable', 'min-h-[32rem]') %}
                 {{ detail_row('Node', pod.node or 'Not scheduled') }}
                 {{ detail_row('Pod IP', pod.ip or '-', true) }}
                 {{ detail_row('Host IP', pod.host_ip or '-', true) }}
                 {{ detail_row('Scheduler', pod.placement.scheduler) }}
-                {{ detail_row('Priority class', pod.placement.priority_class) }}
-                {{ detail_row('Topology spread', pod.placement.topology_spread_count) }}
+                {{ detail_row('Priority Class', pod.placement.priority_class) }}
+                {{ detail_row('Topology Spread', pod.placement.topology_spread_count) }}
                 {{ status_row('Affinity', 'Configured' if pod.placement.affinity_configured else 'Not configured', 'info' if pod.placement.affinity_configured else 'unknown', 'route' if pod.placement.affinity_configured else 'circle-minus') }}
                 {{ status_row('Host network', 'Enabled' if pod.placement.host_network else 'Disabled', 'warning' if pod.placement.host_network else 'disabled', 'network' if pod.placement.host_network else 'circle-minus') }}
                 {% call detail_object.stack() %}
@@ -109,13 +109,13 @@
                     {{ info_box('Network identity', 'Pod IP identifies the Pod; Host IP identifies its node.', 'network', 'brand', true) }}
                 {% endcall %}
             {% endcall %}
-            {% call detail_card('Pod conditions', 'activity', pod.ready, 'min-h-[32rem]') %}
+            {% call detail_card('Pod Conditions', 'activity', pod.ready, 'min-h-[32rem]') %}
                 {{ status_row('Phase', pod.status or 'Unknown', phase_tone, phase_icon) }}
                 {{ status_row('Ready containers', pod.ready, ready_tone, ready_icon) }}
-                {{ detail_row('Regular containers', pod.configuration.container_count) }}
-                {{ detail_row('Init containers', pod.configuration.init_container_count) }}
+                {{ detail_row('Regular Containers', pod.configuration.container_count) }}
+                {{ detail_row('Init Containers', pod.configuration.init_container_count) }}
                 {{ detail_row('Restarts', pod.restarts) }}
-                {{ detail_row('QoS class', pod.qos_class) }}
+                {{ detail_row('QoS Class', pod.qos_class) }}
                 {{ detail_row('Reason', pod.reason or '-') }}
                 {% call detail_object.stack() %}
                     {% if pod.conditions %}
@@ -143,17 +143,17 @@
                     {{ info_box('Snapshot boundary', 'Conditions are snapshot data; history remains in Analytics.', 'info', 'brand', true) }}
                 {% endcall %}
             {% endcall %}
-            {% call detail_card('Pod configuration', 'settings-2', pod.configuration.container_count ~ ' containers', 'min-h-[30rem]') %}
-                {{ detail_row('Service account', pod.configuration.service_account) }}
-                {{ detail_row('Restart policy', pod.configuration.restart_policy) }}
-                {{ detail_row('DNS policy', pod.configuration.dns_policy) }}
-                {{ detail_row('Runtime class', pod.configuration.runtime_class) }}
+            {% call detail_card('Pod Configuration', 'settings-2', pod.configuration.container_count ~ ' containers', 'min-h-[30rem]') %}
+                {{ detail_row('Service Account', pod.configuration.service_account) }}
+                {{ detail_row('Restart Policy', pod.configuration.restart_policy) }}
+                {{ detail_row('DNS Policy', pod.configuration.dns_policy) }}
+                {{ detail_row('Runtime Class', pod.configuration.runtime_class) }}
                 {{ status_row('Security context', 'Configured' if pod.configuration.security_context_configured else 'Not configured', 'info' if pod.configuration.security_context_configured else 'unknown', 'shield-check' if pod.configuration.security_context_configured else 'circle-minus') }}
-                {{ detail_row('Image pull secrets', pod.configuration.image_pull_secret_count) }}
+                {{ detail_row('Image Pull Secrets', pod.configuration.image_pull_secret_count) }}
                 {{ detail_row('Volumes', pod.configuration.volume_count) }}
-                {{ detail_row('Regular containers', pod.configuration.container_count) }}
-                {{ detail_row('Init containers', pod.configuration.init_container_count) }}
-                {{ detail_row('Ephemeral containers', pod.configuration.ephemeral_container_count) }}
+                {{ detail_row('Regular Containers', pod.configuration.container_count) }}
+                {{ detail_row('Init Containers', pod.configuration.init_container_count) }}
+                {{ detail_row('Ephemeral Containers', pod.configuration.ephemeral_container_count) }}
                 <div class="mt-auto pt-3">{{ info_box('Specification boundary', 'Pod specification only; secret values are never shown.', 'shield-check', 'brand', true) }}</div>
             {% endcall %}
         </div>

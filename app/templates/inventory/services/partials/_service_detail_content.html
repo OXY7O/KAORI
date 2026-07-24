@@ -27,7 +27,7 @@
 {% set endpoint_total = service.ready_endpoint_count + service.not_ready_endpoint_count %}
 {% if service.endpoints_reported %}
     {% if service.not_ready_endpoint_count > 0 %}
-        {% set endpoint_posture = "Needs review" %}{% set endpoint_tone = "warning" %}{% set endpoint_icon = "triangle-alert" %}
+        {% set endpoint_posture = "Needs Review" %}{% set endpoint_tone = "warning" %}{% set endpoint_icon = "triangle-alert" %}
     {% else %}
         {% set endpoint_posture = "Ready" %}{% set endpoint_tone = "normal" %}{% set endpoint_icon = "circle-check" %}
     {% endif %}
@@ -54,7 +54,7 @@
             </div>
         </header>
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail_card('Object identity', 'badge-info', service.age, 'min-h-96') %}
+            {% call detail_card('Object Identity', 'badge-info', service.age, 'min-h-96') %}
                 {{ detail_row('Cluster', service.cluster_name) }}
                 {{ detail_row('Namespace', service.namespace) }}
                 {{ detail_row('Type', service.type) }}
@@ -64,37 +64,37 @@
                 {{ detail_row('Collected', service.collected_at|user_datetime) }}
                 <div class="mt-auto pt-3">{{ info_box('Inventory identity', service.type_description, 'lightbulb', 'brand', true) }}</div>
             {% endcall %}
-            {% call detail_card('Network configuration', 'globe-2', service.cluster_ip, 'min-h-[28rem]') %}
+            {% call detail_card('Network Configuration', 'globe-2', service.cluster_ip, 'min-h-[28rem]') %}
                 {{ detail_row('Cluster IP', service.cluster_ip, true) }}
-                {{ detail_row('External addresses', service.external_ips|join(', ') if service.external_ips else '-', true) }}
-                {{ detail_row('External name', service.external_name, true) }}
-                {{ detail_row('IP families', service.ip_families|join(', ') if service.ip_families else '-') }}
-                {{ detail_row('IP family policy', service.ip_family_policy) }}
-                {{ detail_row('Session affinity', service.session_affinity) }}
-                {{ detail_row('Internal traffic', service.internal_traffic_policy) }}
-                {{ detail_row('External traffic', service.external_traffic_policy) }}
+                {{ detail_row('External Addresses', service.external_ips|join(', ') if service.external_ips else '-', true) }}
+                {{ detail_row('External Name', service.external_name, true) }}
+                {{ detail_row('IP Families', service.ip_families|join(', ') if service.ip_families else '-') }}
+                {{ detail_row('IP Family Policy', service.ip_family_policy) }}
+                {{ detail_row('Session Affinity', service.session_affinity) }}
+                {{ detail_row('Internal Traffic', service.internal_traffic_policy) }}
+                {{ detail_row('External Traffic', service.external_traffic_policy) }}
                 <div class="mt-auto pt-3">{{ info_box('Network identity', 'Cluster and external addresses from the current Service specification.', 'network', 'brand', true) }}</div>
             {% endcall %}
-            {% call detail_card('Port mapping', 'plug-zap', service.port_count ~ ' ports', 'min-h-96') %}
-                {{ detail_row('Port definitions', service.port_count) }}
+            {% call detail_card('Port Mapping', 'plug-zap', service.port_count ~ ' ports', 'min-h-96') %}
+                {{ detail_row('Port Definitions', service.port_count) }}
                 {% if service.ports %}
-                    {{ detail_row('Primary port', service.ports[0].port ~ '/' ~ service.ports[0].protocol) }}
-                    {{ detail_row('Primary target', service.ports[0].target_port) }}
+                    {{ detail_row('Primary Port', service.ports[0].port ~ '/' ~ service.ports[0].protocol) }}
+                    {{ detail_row('Primary Target', service.ports[0].target_port) }}
                     {{ detail_row('Primary NodePort', service.ports[0].node_port or '-') }}
-                    {{ detail_row('Application protocol', service.ports[0].app_protocol) }}
+                    {{ detail_row('Application Protocol', service.ports[0].app_protocol) }}
                 {% else %}
-                    {{ detail_row('Primary port', 'Not configured') }}
+                    {{ detail_row('Primary Port', 'Not configured') }}
                 {% endif %}
-                {{ detail_row('Health check NodePort', service.health_check_node_port or '-') }}
+                {{ detail_row('Health Check NodePort', service.health_check_node_port or '-') }}
                 <div class="mt-auto pt-3">{{ info_box('Forwarding boundary', 'Port mappings show Service-to-target forwarding only.', 'route', 'brand', true) }}</div>
             {% endcall %}
-            {% call detail_card('Selection & endpoints', 'scan-search', service.ready_endpoint_count ~ ' ready', 'min-h-[30rem]') %}
-                {{ detail_row('Selector labels', service.selectors|length) }}
+            {% call detail_card('Selection & Endpoints', 'scan-search', service.ready_endpoint_count ~ ' ready', 'min-h-[30rem]') %}
+                {{ detail_row('Selector Labels', service.selectors|length) }}
                 {{ detail_row('Selected Pods', service.pod_count) }}
-                {{ detail_row('Ready endpoints', service.ready_endpoint_count) }}
-                {{ detail_row('Not-ready endpoints', service.not_ready_endpoint_count) }}
-                {{ detail_row('Endpoint metadata', 'Reported' if service.endpoints_reported else 'Not reported') }}
-                {{ detail_row('Publish not-ready', 'Enabled' if service.publish_not_ready_addresses else 'Disabled') }}
+                {{ detail_row('Ready Endpoints', service.ready_endpoint_count) }}
+                {{ detail_row('Not-Ready Endpoints', service.not_ready_endpoint_count) }}
+                {{ detail_row('Endpoint Metadata', 'Reported' if service.endpoints_reported else 'Not reported') }}
+                {{ detail_row('Publish Not-Ready', 'Enabled' if service.publish_not_ready_addresses else 'Disabled') }}
                 {% call detail_object.stack() %}
                     {% if service.selectors %}
                         {% call detail_object.card('Service selectors', service.selectors|length ~ ' labels', 'tags') %}

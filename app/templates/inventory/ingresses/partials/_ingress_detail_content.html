@@ -25,7 +25,7 @@
     </section>
 {%- endmacro %}
 {% if ingress.tls %}
-    {% set tls_label = "TLS enabled" %}{% set tls_tone = "normal" %}{% set tls_icon = "shield-check" %}
+    {% set tls_label = "TLS Enabled" %}{% set tls_tone = "normal" %}{% set tls_icon = "shield-check" %}
 {% else %}
     {% set tls_label = "No TLS" %}{% set tls_tone = "warning" %}{% set tls_icon = "shield-off" %}
 {% endif %}
@@ -49,10 +49,10 @@
             </div>
         </header>
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail_card('Object identity', 'badge-info', ingress.age, 'min-h-[30rem]') %}
+            {% call detail_card('Object Identity', 'badge-info', ingress.age, 'min-h-[30rem]') %}
                 {{ detail_row('Cluster', ingress.cluster_name) }}
                 {{ detail_row('Namespace', ingress.namespace) }}
-                {{ detail_row('Ingress class', ingress.class) }}
+                {{ detail_row('Ingress Class', ingress.class) }}
                 {{ detail_row('Generation', ingress.generation) }}
                 {{ detail_row('Kubernetes UID', ingress.uid, true) }}
                 {{ detail_row('Created', ingress.created_at|user_datetime) }}
@@ -60,12 +60,12 @@
                 <div class="mt-auto pt-3">{{ info_box('Inventory identity', 'Ingress identity from the latest Kubernetes snapshot.', 'badge-info', 'brand', true) }}</div>
             {% endcall %}
             {% call detail_card('Exposure', 'globe-2', ingress.host_count ~ ' hosts', 'min-h-[32rem]') %}
-                {{ detail_row('Load balancer address', ingress.address, true) }}
+                {{ detail_row('Load Balancer Address', ingress.address, true) }}
                 {{ detail_row('Hosts', ingress.host_count) }}
-                {{ detail_row('Routing rules', ingress.rule_count) }}
-                {{ detail_row('Backend paths', ingress.backend_count) }}
-                {{ detail_row('Backend services', ingress.service_count) }}
-                {{ detail_row('Default backend', ingress.default_backend.service_name if ingress.default_backend else '-') }}
+                {{ detail_row('Routing Rules', ingress.rule_count) }}
+                {{ detail_row('Backend Paths', ingress.backend_count) }}
+                {{ detail_row('Backend Services', ingress.service_count) }}
+                {{ detail_row('Default Backend', ingress.default_backend.service_name if ingress.default_backend else '-') }}
                 {% call detail_object.stack() %}
                     {% if ingress.hosts %}
                         <div class="rounded-lg border border-outline-default bg-kaori-soft p-3">
@@ -73,7 +73,7 @@
                                 <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary"><i data-lucide="globe-2" class="h-3.5 w-3.5"></i></span>
                                 <div class="min-w-0 flex-1">
                                     <div class="flex items-center justify-between gap-3">
-                                        <span class="text-xs font-semibold text-content-primary">Published hosts</span>
+                                        <span class="text-xs font-semibold text-content-primary">Published Hosts</span>
                                         {{ table_label.metadata_label(ingress.host_count ~ ' hosts') }}
                                     </div>
                                     <div class="mt-2 space-y-1.5">
@@ -95,10 +95,10 @@
                     {{ info_box('Exposure boundary', 'Addresses appear after the controller publishes status.', 'network', 'brand', true) }}
                 {% endcall %}
             {% endcall %}
-            {% call detail_card('TLS configuration', 'shield-check', ingress.tls_entries|length ~ ' entries', 'min-h-[34rem]') %}
-                {{ detail_row('TLS enabled', 'Yes' if ingress.tls else 'No') }}
-                {{ detail_row('TLS entries', ingress.tls_entries|length) }}
-                {{ detail_row('Secret references', ingress.tls_secrets|length) }}
+            {% call detail_card('TLS Configuration', 'shield-check', ingress.tls_entries|length ~ ' entries', 'min-h-[34rem]') %}
+                {{ detail_row('TLS Enabled', 'Yes' if ingress.tls else 'No') }}
+                {{ detail_row('TLS Entries', ingress.tls_entries|length) }}
+                {{ detail_row('Secret References', ingress.tls_secrets|length) }}
                 {% call detail_object.stack() %}
                     {% if ingress.tls_entries %}
                         <div class="rounded-lg border border-outline-default bg-kaori-soft p-3">
@@ -106,7 +106,7 @@
                                 <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary"><i data-lucide="key-round" class="h-3.5 w-3.5"></i></span>
                                 <div class="min-w-0 flex-1">
                                     <div class="flex items-center justify-between gap-3">
-                                        <span class="text-xs font-semibold text-content-primary">TLS Secret references</span>
+                                        <span class="text-xs font-semibold text-content-primary">TLS Secret References</span>
                                         {{ table_label.metadata_label(ingress.tls_entries|length ~ ' entries') }}
                                     </div>
                                     <div class="mt-2 space-y-2">
@@ -126,7 +126,7 @@
                     {{ info_box('TLS boundary', 'Secret references only; validity remains in TLS Governance.', 'lock-keyhole', 'brand', true) }}
                 {% endcall %}
             {% endcall %}
-            {% call detail_card('Routing summary', 'git-branch', ingress.backend_count ~ ' paths', 'min-h-[30rem]') %}
+            {% call detail_card('Routing Summary', 'git-branch', ingress.backend_count ~ ' paths', 'min-h-[30rem]') %}
                 {{ detail_row('Rules', ingress.rule_count) }}
                 {{ detail_row('Hosts', ingress.host_count) }}
                 {{ detail_row('Paths', ingress.backend_count) }}

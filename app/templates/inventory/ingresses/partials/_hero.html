@@ -26,18 +26,12 @@
                 </div>
             {% endcall %}
         </div>
-        <aside class="{{ page_hero.aside_classes() }}" aria-label="Ingress posture">
-            {% if cluster_onboarding.is_blocked %}
-                {% set cluster_blocked_scope = 'Kubernetes Ingresses' %}
-                {% set cluster_blocked_title = 'Cluster Setup Required' %}
-                {% set cluster_blocked_info = 'Add a Kubernetes cluster to unlock ingresses inventory in KAORI.' %}
-                {% include 'components/cluster/_hero_blocked_context.html' %}
-            {% else %}
+        <aside class="{{ page_hero.aside_classes() }}" aria-label="Ingress Posture">
             <div class="{{ page_hero.context_panel_classes() }}">
                 <div class="flex items-start justify-between gap-4">
                     <div>
-                        <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Ingress posture</p>
-                        <h2 class="mt-1 text-base font-semibold text-brand-foreground">TLS exposure context</h2>
+                        <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Ingress Posture</p>
+                        <h2 class="mt-1 text-base font-semibold text-brand-foreground">TLS Exposure Context</h2>
                     </div>
                     {{ table_label.status_label(posture_label, posture_tone, posture_icon) }}
                 </div>
@@ -45,10 +39,10 @@
                     <div class="{{ page_hero.context_metric_card_classes() }}">
                         <div class="flex items-center gap-2 text-brand-foreground">
                             <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
-                            <p class="text-[11px] font-semibold">TLS enabled</p>
+                            <p class="text-[11px] font-semibold">TLS Enabled</p>
                         </div>
                         <p class="mt-1.5 text-xl font-bold leading-none text-brand-foreground">{{ tls_enabled }}</p>
-                        <p class="{{ page_hero.context_metric_helper_classes() }}">{{ tls_percentage|int }}% of tracked Ingresses</p>
+                        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">{{ tls_percentage|int }}% of tracked Ingresses</p>
                     </div>
                     <div class="{{ page_hero.context_metric_card_classes() }}">
                         <div class="flex items-center gap-2 text-brand-foreground">
@@ -56,7 +50,7 @@
                             <p class="text-[11px] font-semibold">No TLS</p>
                         </div>
                         <p class="mt-1.5 text-xl font-bold leading-none text-brand-foreground">{{ no_tls }}</p>
-                        <p class="{{ page_hero.context_metric_helper_classes() }}">Ingresses requiring review</p>
+                        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Ingresses requiring review</p>
                     </div>
                 </div>
                 <a href="{{ url_for('integrations.kubernetes') }}"
@@ -65,7 +59,6 @@
                     Manage Clusters
                 </a>
             </div>
-        {% endif %}
         </aside>
     </div>
 </section>

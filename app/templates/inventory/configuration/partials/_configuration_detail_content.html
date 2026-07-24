@@ -42,9 +42,9 @@
             </div>
         </header>
         <div class="grid gap-4 p-5 lg:grid-cols-3">
-            {% call detail_card('Object identity','badge-info',item.age,'min-h-[26rem]') %}
+            {% call detail_card('Object Identity','badge-info',item.age,'min-h-[26rem]') %}
                 {{ detail_row('Cluster',item.cluster_name) }}{{ detail_row('Namespace',item.namespace) }}{{ detail_row('Type',item.type) }}
-                {% if item.type == 'Secret' %}{{ detail_row('Secret type',item.secret_type) }}{% endif %}
+                {% if item.type == 'Secret' %}{{ detail_row('Secret Type',item.secret_type) }}{% endif %}
                 {{ detail_row('Immutable','Yes' if item.immutable else 'No') }}{{ detail_row('Age',item.age) }}
                 <div class="mt-auto pt-3">
                     {% if item.type == 'Secret' %}
@@ -54,8 +54,8 @@
                     {% endif %}
                 </div>
             {% endcall %}
-            {% call detail_card('Key metadata','key-round',item.key_count ~ ' keys','min-h-[26rem]') %}
-                {{ detail_row('Recorded keys',item.key_count) }}
+            {% call detail_card('Key Metadata','key-round',item.key_count ~ ' keys','min-h-[26rem]') %}
+                {{ detail_row('Recorded Keys',item.key_count) }}
                 {% call detail_object.stack() %}
                     {% if item.key_names %}
                         {% call detail_object.card('Key names',item.key_count ~ ' keys','key-round') %}
@@ -70,8 +70,8 @@
                     {{ info_box('Metadata boundary', 'Key names are visible; configuration and Secret values are excluded.', 'shield-check') }}
                 {% endcall %}
             {% endcall %}
-            {% call detail_card('Used by Pods','package-check',item.used_by_count ~ ' Pods','min-h-[26rem]') %}
-                {{ detail_row('Pod references',item.used_by_count) }}
+            {% call detail_card('Used By Pods','package-check',item.used_by_count ~ ' Pods','min-h-[26rem]') %}
+                {{ detail_row('Pod References',item.used_by_count) }}
                 {% call detail_object.stack() %}
                     {% if item.used_by %}
                         {% call detail_object.card('Current consumers',item.used_by_count ~ ' Pods','package-check') %}

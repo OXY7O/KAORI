@@ -25,14 +25,13 @@
     <div class="border-b border-outline-subtle px-5 py-4">
         <form id="pods-filter-form"
               hx-get="{{ url_for('inventory.pods') }}"
-              hx-target="#pods-inventory-scope"
+              hx-target="#pods-inventory-card"
               hx-swap="outerHTML"
               hx-trigger="change from:select, keyup changed delay:500ms from:input[name='search']"
               hx-indicator="#pods-table-loading"
               class="grid gap-4 xl:grid-cols-12 xl:items-end">
             <input type="hidden" name="page" value="1" />
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}" />
-            <input type="hidden" name="partial_mode" value="inventory_scope" />
             {% set select_class = "h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20" %}
             <div class="xl:col-span-2">
                 <label class="mb-2 block text-sm font-semibold text-content-secondary">Cluster</label>
@@ -64,7 +63,7 @@
                 </select>
             </div>
             <div class="xl:col-span-2">
-                <label class="mb-2 block text-sm font-semibold text-content-secondary">Owner type</label>
+                <label class="mb-2 block text-sm font-semibold text-content-secondary">Owner Type</label>
                 <select name="owner_type" class="{{ select_class }}">
                     <option value="">All Owners</option>
                     {% for owner_name in inventory.owner_types %}
@@ -91,7 +90,7 @@
                     <input type="text"
                            name="search"
                            value="{{ search }}"
-                           placeholder="Name, IP, owner, node"
+                           placeholder="Name, IP, Owner, Node"
                            class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20" />
                 </div>
             </div>

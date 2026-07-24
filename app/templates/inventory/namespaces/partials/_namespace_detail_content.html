@@ -92,7 +92,7 @@
             <div class="self-start sm:self-auto">{{ table_label.status_label(namespace.status, namespace_status_tone, namespace_status_icon) }}</div>
         </header>
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail_card('Namespace identity', 'badge-info', namespace.age, 'metadata', 'unknown', None, 'min-h-96') %}
+            {% call detail_card('Namespace Identity', 'badge-info', namespace.age, 'metadata', 'unknown', None, 'min-h-96') %}
                 {{ status_row('Status', namespace.status, namespace_status_tone, namespace_status_icon) }}
                 {{ detail_row('Age', namespace.age) }}
                 {{ detail_row('UID', namespace.uid, True) }}
@@ -100,7 +100,7 @@
                 {{ detail_row('Collected', namespace.collected_at|user_datetime) }}
                 {{ detail_tip('Age comes from creation time; Collected is the latest KAORI snapshot.', 'clock-3') }}
             {% endcall %}
-            {% call detail_card('Resource inventory', 'boxes', namespace.object_counts.tracked_total ~ ' tracked', 'metadata', 'unknown', None, 'min-h-[28rem]') %}
+            {% call detail_card('Resource Inventory', 'boxes', namespace.object_counts.tracked_total ~ ' tracked', 'metadata', 'unknown', None, 'min-h-[28rem]') %}
                 {{ detail_row('Pods', namespace.object_counts.pods) }}
                 {{ detail_row('Services', namespace.object_counts.services) }}
                 {{ detail_row('Ingresses', namespace.object_counts.ingresses) }}
@@ -117,7 +117,7 @@
                     {% else %}
                         <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-3 text-center">
                             <i data-lucide="layout-grid" class="mx-auto h-5 w-5 text-kaori-primary"></i>
-                            <p class="mt-2 text-xs font-semibold text-kaori-primary">No workload objects collected</p>
+                            <p class="mt-2 text-xs font-semibold text-kaori-primary">No Workload Objects Collected</p>
                             <p class="mt-1 text-xs leading-5 text-content-muted">No Deployment, StatefulSet, DaemonSet, Job, or CronJob was present in the latest namespace snapshot.</p>
                         </div>
                     {% endif %}
@@ -126,7 +126,7 @@
             {% endcall %}
             {% set quota_badge = 'Configured' if namespace.quota_count > 0 else 'Not configured' %}
             {% set quota_tone = 'normal' if namespace.quota_count > 0 else 'disabled' %}
-            {% call detail_card('Resource controls', 'sliders-horizontal', quota_badge, 'status', quota_tone, 'circle-check' if namespace.quota_count > 0 else 'circle-minus', 'min-h-[28rem]') %}
+            {% call detail_card('Resource Controls', 'sliders-horizontal', quota_badge, 'status', quota_tone, 'circle-check' if namespace.quota_count > 0 else 'circle-minus', 'min-h-[28rem]') %}
                 {{ status_row('ResourceQuota', ('Configured · ' ~ namespace.quota_count) if namespace.quota_count > 0 else 'Not configured', 'normal' if namespace.quota_count > 0 else 'disabled', 'circle-check' if namespace.quota_count > 0 else 'circle-minus') }}
                 {% if namespace.limit_range_count is none %}
                     {{ status_row('LimitRange', 'Not reported', 'unknown', 'circle-help') }}
@@ -153,14 +153,14 @@
                         <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-3 text-center">
                             <i data-lucide="sliders-horizontal"
                                class="mx-auto h-5 w-5 text-kaori-primary"></i>
-                            <p class="mt-2 text-xs font-semibold text-kaori-primary">No ResourceQuota collected</p>
+                            <p class="mt-2 text-xs font-semibold text-kaori-primary">No ResourceQuota Collected</p>
                             <p class="mt-1 text-xs leading-5 text-content-muted">A missing ResourceQuota is inventory context and does not automatically indicate a policy violation.</p>
                         </div>
                     {% endif %}
                     {{ detail_tip('Quota and limit data show configured constraints; usage remains in Analytics.', 'info', False) }}
                 </div>
             {% endcall %}
-            {% call detail_card('Security & access', 'shield-check', psa_configured_count ~ '/3 PSA labels', 'metadata', 'unknown', None, 'min-h-[28rem]') %}
+            {% call detail_card('Security & Access', 'shield-check', psa_configured_count ~ '/3 PSA labels', 'metadata', 'unknown', None, 'min-h-[28rem]') %}
                 {{ detail_row('NetworkPolicies', namespace.network_policy_count if namespace.network_policy_count is not none else 'Not reported') }}
                 {{ detail_row('ServiceAccounts', namespace.service_account_count if namespace.service_account_count is not none else 'Not reported') }}
                 {% set default_sa_tone = 'normal' if namespace.default_service_account == 'Present' else ('critical' if namespace.default_service_account == 'Missing' else 'unknown') %}
@@ -178,7 +178,7 @@
                     {% else %}
                         <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-3 text-center">
                             <i data-lucide="shield-check" class="mx-auto h-5 w-5 text-kaori-primary"></i>
-                            <p class="mt-2 text-xs font-semibold text-kaori-primary">No Pod Security Admission labels configured</p>
+                            <p class="mt-2 text-xs font-semibold text-kaori-primary">No Pod Security Admission Labels Configured</p>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Enforce, audit, and warn behavior currently inherit the cluster admission configuration because no namespace-level PSA labels were collected.</p>
                         </div>
                     {% endif %}
@@ -206,7 +206,7 @@
                 {% else %}
                     <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-4 text-center">
                         <i data-lucide="tags" class="mx-auto h-5 w-5 text-kaori-primary"></i>
-                        <p class="mt-2 text-xs font-semibold text-kaori-primary">No namespace labels collected</p>
+                        <p class="mt-2 text-xs font-semibold text-kaori-primary">No Namespace Labels Collected</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Labels will appear after the next inventory collection when provided by Kubernetes.</p>
                     </div>
                 {% endif %}
@@ -237,7 +237,7 @@
                     <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-4 text-center">
                         <i data-lucide="notebook-text"
                            class="mx-auto h-5 w-5 text-kaori-primary"></i>
-                        <p class="mt-2 text-xs font-semibold text-kaori-primary">No namespace annotations collected</p>
+                        <p class="mt-2 text-xs font-semibold text-kaori-primary">No Namespace Annotations Collected</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Annotations will appear after collection when they are present on the namespace.</p>
                     </div>
                 {% endif %}

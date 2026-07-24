@@ -14,12 +14,12 @@
         <div class="ml-auto flex shrink-0 items-center gap-2">
             <a @click.stop
                href="/reports"
-               class="hidden text-xs font-semibold text-kaori-primary transition hover:text-kaori-primary-hover sm:inline-flex">View reports</a>
+               class="hidden text-xs font-semibold text-kaori-primary transition hover:text-kaori-primary-hover sm:inline-flex">View Reports</a>
             <button type="button"
                     class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card"
                     @click.stop="open = !open"
                     :aria-expanded="open.toString()"
-                    aria-label="Toggle reporting summary">
+                    aria-label="Toggle Reporting Summary">
                 <i data-lucide="chevron-down"
                    class="h-4 w-4 transition-transform duration-200"
                    :class="open ? 'rotate-180' : ''"></i>
@@ -62,7 +62,7 @@
             {% else %}
                 <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-5 text-center">
                     <i data-lucide="file-plus-2" class="mx-auto h-6 w-6 text-kaori-primary"></i>
-                    <p class="mt-2 text-sm font-semibold text-kaori-primary">No reports generated yet</p>
+                    <p class="mt-2 text-sm font-semibold text-kaori-primary">No Reports Generated Yet</p>
                     <a @click.stop
                        href="/reports/generate"
                        class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:text-kaori-primary-hover">

@@ -21,7 +21,7 @@
                     class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card"
                     @click.stop="open = !open"
                     :aria-expanded="open.toString()"
-                    aria-label="Toggle recommended actions">
+                    aria-label="Toggle Recommended Actions">
                 <i data-lucide="chevron-down"
                    class="h-4 w-4 transition-transform duration-200"
                    :class="open ? 'rotate-180' : ''"></i>
@@ -59,7 +59,7 @@
         {% else %}
             <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-5 text-center md:col-span-2 xl:col-span-5">
                 <i data-lucide="sparkles" class="mx-auto h-6 w-6 text-kaori-primary"></i>
-                <p class="mt-2 text-sm font-semibold text-kaori-primary">No active recommendations</p>
+                <p class="mt-2 text-sm font-semibold text-kaori-primary">No Active Recommendations</p>
                 <p class="mt-1 text-xs leading-5 text-content-secondary">No catalog-backed recommendation matches the current dashboard scope.</p>
             </div>
         {% endfor %}

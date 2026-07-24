@@ -55,7 +55,7 @@
             </div>
         </header>
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail_card('Object identity', 'badge-info', workload.age, 'min-h-96') %}
+            {% call detail_card('Object Identity', 'badge-info', workload.age, 'min-h-96') %}
                 {{ detail_row('Cluster', workload.cluster_name) }}
                 {{ detail_row('Namespace', workload.namespace) }}
                 {{ detail_row('Kind', workload.type) }}
@@ -65,22 +65,24 @@
                 {{ detail_row('Collected', workload.collected_at|user_datetime) }}
                 <div class="mt-auto pt-3">{{ info_box('Inventory identity', 'Identifies the workload object and the latest snapshot collected by KAORI.', 'lightbulb', 'brand', true) }}</div>
             {% endcall %}
-            {% call detail_card('Runtime state', 'activity', workload.state_display, 'min-h-80') %}
+            {% call detail_card('Runtime State', 'activity', workload.state_display, 'min-h-80') %}
                 {% for row in workload.runtime_state_rows %}{{ detail_row(row.label, row.value) }}{% endfor %}
                 {{ detail_row('Managed Pods', workload.pod_count) }}
                 <div class="mt-auto pt-3">{{ info_box('Snapshot boundary', 'Current controller state only; history remains in Analytics.', 'info', 'brand', true) }}</div>
             {% endcall %}
-            {% call detail_card('Pod configuration', 'settings-2', workload.container_count ~ ' containers', 'min-h-96') %}
+            {% call detail_card('Pod Configuration', 'settings-2', workload.container_count ~ ' containers', 'min-h-96') %}
                 {% for row in workload.pod_configuration_rows %}{{ detail_row(row.label, row.value) }}{% endfor %}
                 <div class="mt-auto pt-3">
                     {% if workload.pod_configuration_reported %}
                         {{ info_box('Template configuration', 'Pod configuration comes from the workload template. Runtime utilization remains in Analytics.', 'info', 'brand', true) }}
+                    {% elif workload.pod_configuration_source == 'associated-pod-fallback' %}
+                        {{ info_box('Fallback source', 'Configuration is inferred from associated Pods. Sync again to collect the workload template.', 'triangle-alert', 'warning', true) }}
                     {% else %}
                         {{ info_box('Configuration unavailable', 'Pod template metadata is unavailable. Restart the worker and sync this cluster again.', 'triangle-alert', 'warning', true) }}
                     {% endif %}
                 </div>
             {% endcall %}
-            {% call detail_card('Delivery & placement', 'route', workload.update_strategy, 'min-h-[28rem]') %}
+            {% call detail_card('Delivery & Placement', 'route', workload.update_strategy, 'min-h-[28rem]') %}
                 {% for row in workload.delivery_rows %}{{ detail_row(row.label, row.value) }}{% endfor %}
                 {% call detail_object.stack() %}
                     {% if workload.placement_configured %}

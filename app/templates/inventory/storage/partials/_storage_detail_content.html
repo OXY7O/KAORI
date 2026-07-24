@@ -43,14 +43,14 @@
             <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">{{ table_label.metadata_label('PV' if item.type == 'PersistentVolume' else 'PVC' if item.type == 'PersistentVolumeClaim' else item.type, 'layers-3') }}{{ table_label.status_label(item.status, status_tone, status_icon) }}</div>
         </header>
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail_card('Storage identity', 'badge-info', item.age, 'min-h-[30rem]') %}
-                {{ detail_row('Cluster', item.cluster_name) }}{{ detail_row('Namespace scope', item.namespace) }}{{ detail_row('Type', item.type) }}{{ detail_row('Storage class', item.storage_class) }}{{ detail_row('Kubernetes UID', item.uid, true) }}{{ detail_row('Created', item.created_at|user_datetime) }}{{ detail_row('Collected', item.collected_at|user_datetime) }}
+            {% call detail_card('Storage Identity', 'badge-info', item.age, 'min-h-[30rem]') %}
+                {{ detail_row('Cluster', item.cluster_name) }}{{ detail_row('Namespace Scope', item.namespace) }}{{ detail_row('Type', item.type) }}{{ detail_row('Storage Class', item.storage_class) }}{{ detail_row('Kubernetes UID', item.uid, true) }}{{ detail_row('Created', item.created_at|user_datetime) }}{{ detail_row('Collected', item.collected_at|user_datetime) }}
                 <div class="mt-auto pt-3">{{ info_box('Inventory identity', item.type_description, 'lightbulb') }}</div>
             {% endcall %}
-            {% call detail_card('Capacity & mode', 'hard-drive', item.capacity, 'min-h-[30rem]') %}
+            {% call detail_card('Capacity & Mode', 'hard-drive', item.capacity, 'min-h-[30rem]') %}
                 {{ detail_row('Status', item.status) }}{{ detail_row('Capacity', item.capacity) }}
-                {% if item.type == 'PersistentVolumeClaim' %}{{ detail_row('Requested storage', item.requested_storage) }}{% endif %}
-                {{ detail_row('Access modes', item.access_modes|join(', ') if item.access_modes else '-') }}{{ detail_row('Volume mode', item.volume_mode) }}{{ detail_row('Storage class', item.storage_class) }}
+                {% if item.type == 'PersistentVolumeClaim' %}{{ detail_row('Requested Storage', item.requested_storage) }}{% endif %}
+                {{ detail_row('Access Modes', item.access_modes|join(', ') if item.access_modes else '-') }}{{ detail_row('Volume Mode', item.volume_mode) }}{{ detail_row('Storage Class', item.storage_class) }}
                 {% call detail_object.stack() %}
                     {% if item.mount_options %}
                         {% call detail_object.card('Mount options', item.mount_options|length ~ ' options', 'list-checks') %}
@@ -62,8 +62,8 @@
                     {{ info_box('Capacity boundary', 'Declared capacity only; filesystem utilization remains in Storage Analysis.', 'database') }}
                 {% endcall %}
             {% endcall %}
-            {% call detail_card('Binding & lifecycle', 'link-2', item.reclaim_policy, 'min-h-[34rem]') %}
-                {{ detail_row('Binding', item.binding_reference) }}{{ detail_row('Reclaim policy', item.reclaim_policy) }}{{ detail_row('Binding mode', item.binding_mode) }}{{ detail_row('Expansion', 'Allowed' if item.allow_expansion else 'Not enabled') }}{{ detail_row('Default class', 'Yes' if item.is_default else 'No') }}{{ detail_row('Node affinity', 'Configured' if item.node_affinity_configured else 'Not configured') }}{{ detail_row('Finalizers', item.finalizers|length) }}
+            {% call detail_card('Binding & Lifecycle', 'link-2', item.reclaim_policy, 'min-h-[34rem]') %}
+                {{ detail_row('Binding', item.binding_reference) }}{{ detail_row('Reclaim Policy', item.reclaim_policy) }}{{ detail_row('Binding Mode', item.binding_mode) }}{{ detail_row('Expansion', 'Allowed' if item.allow_expansion else 'Not enabled') }}{{ detail_row('Default Class', 'Yes' if item.is_default else 'No') }}{{ detail_row('Node Affinity', 'Configured' if item.node_affinity_configured else 'Not configured') }}{{ detail_row('Finalizers', item.finalizers|length) }}
                 {% call detail_object.stack() %}
                     {% if item.conditions %}
                         {% call detail_object.card('Reported conditions', item.conditions|length ~ ' conditions', 'activity') %}
@@ -78,15 +78,15 @@
                 {% endcall %}
             {% endcall %}
             {% set provisioning_badge = item.provisioner if item.type == 'StorageClass' else item.source.type if item.source else '-' %}
-            {% call detail_card('Provisioning details', 'settings-2', provisioning_badge, 'min-h-[34rem]') %}
+            {% call detail_card('Provisioning Details', 'settings-2', provisioning_badge, 'min-h-[34rem]') %}
                 {% if item.type == 'StorageClass' %}
-                    {{ detail_row('Provisioner', item.provisioner) }}{{ detail_row('Parameters', item.parameters|length) }}{{ detail_row('Allowed topologies', item.allowed_topology_count) }}{{ detail_row('Mount options', item.mount_options|length) }}
+                    {{ detail_row('Provisioner', item.provisioner) }}{{ detail_row('Parameters', item.parameters|length) }}{{ detail_row('Allowed Topologies', item.allowed_topology_count) }}{{ detail_row('Mount Options', item.mount_options|length) }}
                 {% elif item.type == 'PersistentVolume' %}
-                    {{ detail_row('Volume source', item.source.type if item.source else '-') }}{{ detail_row('CSI driver', item.source.driver if item.source and item.source.driver is defined else '-') }}{{ detail_row('Volume handle', item.source.volume_handle if item.source and item.source.volume_handle is defined else '-', true) }}{{ detail_row('Filesystem type', item.source.fs_type if item.source and item.source.fs_type is defined else '-') }}{{ detail_row('Read only', 'Yes' if item.source and item.source.read_only else 'No') }}
+                    {{ detail_row('Volume Source', item.source.type if item.source else '-') }}{{ detail_row('CSI Driver', item.source.driver if item.source and item.source.driver is defined else '-') }}{{ detail_row('Volume Handle', item.source.volume_handle if item.source and item.source.volume_handle is defined else '-', true) }}{{ detail_row('Filesystem Type', item.source.fs_type if item.source and item.source.fs_type is defined else '-') }}{{ detail_row('Read Only', 'Yes' if item.source and item.source.read_only else 'No') }}
                     {% if item.source and item.source.path is defined %}{{ detail_row('Path', item.source.path, true) }}{% endif %}
                     {% if item.source and item.source.server is defined %}{{ detail_row('Server', item.source.server) }}{% endif %}
                 {% else %}
-                    {{ detail_row('Selector labels', item.selector|length) }}{{ detail_row('Data source kind', item.data_source.kind if item.data_source else '-') }}{{ detail_row('Data source name', item.data_source.name if item.data_source else '-') }}
+                    {{ detail_row('Selector Labels', item.selector|length) }}{{ detail_row('Data Source Kind', item.data_source.kind if item.data_source else '-') }}{{ detail_row('Data Source Name', item.data_source.name if item.data_source else '-') }}
                 {% endif %}
                 {% call detail_object.stack() %}
                     {% if item.type == 'PersistentVolumeClaim' and item.selector %}
