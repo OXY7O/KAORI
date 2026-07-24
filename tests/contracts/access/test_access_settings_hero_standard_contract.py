@@ -6,7 +6,6 @@ HERO_TEMPLATES = [
     Path('app/templates/settings/data_lifecycle/index.html'),
     Path('app/templates/settings/general/partials/_hero.html'),
     Path('app/templates/settings/permissions/index.html'),
-    Path('app/templates/settings/reports/partials/_placeholder.html'),
     Path('app/templates/settings/roles/form.html'),
     Path('app/templates/settings/roles/index.html'),
     Path('app/templates/settings/secret_reveal/index.html'),

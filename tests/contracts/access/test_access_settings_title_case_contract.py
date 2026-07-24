@@ -12,10 +12,6 @@ FORBIDDEN_PRESENTATION_COPY = {
         'Role coverage',
         'Adding a permission',
     ),
-    'settings/reports/partials/_placeholder.html': (
-        'Planned configuration surface',
-        'Report settings are being defined',
-    ),
     'settings/roles/index.html': (
         'Default baseline, custom extension',
         'Role registry',

@@ -733,9 +733,3 @@ def permission_catalog():
         total_modules=len(permissions_by_module),
         assignment_count=assignment_count,
     )
-
-
-@bp.route('/reports')
-@permission_required('settings.manage_integrations')
-def reports():
-    return render_template('settings/reports/index.html')

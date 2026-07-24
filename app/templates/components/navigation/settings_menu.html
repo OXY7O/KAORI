@@ -1,14 +1,12 @@
 {% set settings_owned_endpoints = [
     "settings.general",
     "settings.account",
-    "settings.reports",
     "settings.data_lifecycle.index",
     "settings.data_lifecycle.preview",
     "settings.data_lifecycle.save_policy",
     "settings.data_lifecycle.run",
     "settings.data_lifecycle.verify",
     "settings.data_lifecycle.download",
-    "settings.inventory_sync.index"
 ] %}
 {% set settings_active = request.endpoint in settings_owned_endpoints
 or (request.endpoint and request.endpoint.startswith('settings.secret_reveal.')) %}
@@ -46,16 +44,6 @@ or (request.endpoint and request.endpoint.startswith('settings.secret_reveal.'))
             <a href="{{ url_for('settings.secret_reveal.index') }}"
                class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint and request.endpoint.startswith('settings.secret_reveal.') else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
                 <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint and request.endpoint.startswith('settings.secret_reveal.') else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="eye" class="h-3.5 w-3.5"></i><span class="truncate whitespace-nowrap">Secret Reveal</span>
-            </a>
-        {% endif %}
-        {% if current_user.is_authenticated and current_user.has_permission('settings.manage_integrations') %}
-            <a href="{{ url_for('settings.inventory_sync.index') }}"
-               class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'settings.inventory_sync.index' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
-                <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'settings.inventory_sync.index' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="refresh-cw" class="h-3.5 w-3.5"></i><span>Inventory Sync</span>
-            </a>
-            <a href="{{ url_for('settings.reports') }}"
-               class="{{ 'bg-white/[0.08] text-kaori-accent' if request.endpoint == 'settings.reports' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
-                <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if request.endpoint == 'settings.reports' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span><i data-lucide="file-text" class="h-3.5 w-3.5"></i><span>Reports</span>
             </a>
         {% endif %}
     </div>

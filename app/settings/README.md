@@ -61,19 +61,6 @@ Local Database password changes use HTMX and replace `#account-authentication-pa
 Normal POST and redirect remain available only as progressive-enhancement fallback when HTMX is unavailable.
 
 
-## Report Settings contract
-
-`/settings/reports` should own platform-wide reporting defaults and governance policies that are consumed by the operational Reports module. It must not duplicate day-to-day report workflows.
-
-Recommended ownership:
-
-- generation defaults: default timezone, locale, date presentation, report period, and output profile;
-- execution guardrails: maximum report period, concurrency, timeout, retry, and all-cluster eligibility;
-- governance defaults: classification, watermark, masking, naming convention, and audit requirements;
-- delivery and lifecycle defaults: default storage policy, retention period, download expiry, and schedule execution posture.
-
-The operational Reports module remains responsible for Generate, Generated Reports, Templates, Schedules, and Storage operations. A dedicated `reports.manage_settings` permission is recommended before the placeholder becomes an editable configuration surface; `settings.manage_integrations` should remain focused on integration configuration.
-
 ## Data Lifecycle contract
 
 `/settings/data-lifecycle` is the centralized cross-domain control plane for KAORI retention, archive storage, cleanup, verification, and lifecycle execution history. Activity Audit no longer owns a retention tab; it links to this workspace instead.
@@ -91,3 +78,7 @@ Policy changes and manual archive operations require `settings.manage_data_lifec
 ## Inventory Sync Configuration
 
 `/settings/inventory-sync/` is the canonical configuration surface for automatic Kubernetes Inventory synchronization. Access requires `settings.manage_integrations`. Automatic synchronization is enabled by default at 60 minutes and accepts intervals from 5 to 1,440 minutes. Policy changes reset the next due time and are recorded as operational activity. Manual synchronization remains available independently of the automatic policy.
+## Inventory Sync navigation contract
+
+Inventory Sync is an operational scheduler and execution control surface. It is presented under **Platform Operations** beside **Jobs & Executions**, not under Settings. The implementation may remain in the settings package while it owns persisted policy configuration, but its user-facing navigation follows the operational job domain.
+

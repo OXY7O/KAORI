@@ -29,5 +29,7 @@ def test_welcome_hero_and_headings_follow_current_presentation_contract() -> Non
     assert 'page_hero.context_panel_classes()' in template
     assert 'bg-white p-4 text-content-primary' not in template
     assert 'Only workspaces permitted for your current role are displayed.' in template
-    assert 'Open the Capability You Need' in template
+    assert 'Open The Capability You Need' in template
+    assert '{{ shortcut_count }} Workspaces Available' in template
+    assert '<strong>Open Workspace</strong>' in template
     assert 'No Permitted Workspace Matches This Search' in template

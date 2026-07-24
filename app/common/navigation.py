@@ -61,7 +61,7 @@ _ENDPOINT_LABELS: dict[str, str] = {
     # Settings
     'settings.general': 'General',
     'settings.account': 'Account',
-    'settings.reports': 'Report Settings',
+    'settings.inventory_sync.index': 'Inventory Sync',
     'settings.data_lifecycle.index': 'Data Lifecycle',
     'settings.secret_reveal.index': 'Secret Reveal',
     # Access
