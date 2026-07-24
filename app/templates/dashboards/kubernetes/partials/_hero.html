@@ -18,10 +18,6 @@
             {% if cluster_onboarding.is_blocked %}
                 <div class="{{ page_hero.context_panel_classes() }}">
                     {{ page_hero.context_header('Dashboard Readiness', 'Cluster Setup Required', 'lock-keyhole') }}
-                    {{ page_hero.context_info(
-                        'triangle-alert',
-                        'Add a Kubernetes cluster to activate operational signals.'
-                    ) }}
                     <div class="{{ page_hero.context_panel_metrics_classes() }}">
                         {{ page_hero.context_metric(
                             'boxes',
@@ -37,6 +33,10 @@
                             'text-sm font-semibold leading-5'
                         ) }}
                     </div>
+                    {{ page_hero.context_info(
+                        'triangle-alert',
+                        'Add a Kubernetes cluster to activate operational signals.'
+                    ) }}
                 </div>
             {% else %}
                 <div class="{{ page_hero.context_panel_classes() }}">
