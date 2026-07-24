@@ -14,9 +14,10 @@ def test_operational_controls_are_fail_closed_and_audited():
 
 def test_worker_checks_controls_before_lease_and_dispatch():
     source = (ROOT / 'app/resolver/tasks.py').read_text()
-    prepare = source[source.index('def _prepare_execution'): source.index('def _persist_preflight_failure')]
-    execute = source[source.index('def _execute_with_lease'): source.index('@shared_task', source.index('def _execute_with_lease'))]
-    task = source[source.index('def execute_authorized_resolution'): ]
+    prepare = source[source.index('def _prepare_execution') : source.index('def _persist_preflight_failure')]
+    execute_start = source.index('def _execute_with_lease')
+    execute = source[execute_start : source.index('@shared_task', execute_start)]
+    task = source[source.index('def execute_authorized_resolution') :]
 
     assert prepare.index('assert_execution_allowed(journal)') < prepare.index('lease = acquire_execution_lease')
     lease = prepare.index('lease = acquire_execution_lease')
@@ -32,3 +33,13 @@ def test_migration_is_default_safe_and_chained():
     assert "down_revision = '20260723_resolver_registry'" in source
     assert "server_default=sa.false()" in source
     assert "server_default='1'" in source
+
+
+def test_preflight_exception_handlers_keep_specific_runtime_errors_reachable():
+    source = (ROOT / 'app/resolver/tasks.py').read_text()
+    task = source[source.index('def execute_authorized_resolution'):]
+
+    assert 'except (ProductionReadinessError, RuntimeError)' not in task
+    assert task.index('except ProductionReadinessError') < task.index('except RuntimeError')
+    assert task.index('except OrchestrationError') < task.index('except RuntimeError')
+

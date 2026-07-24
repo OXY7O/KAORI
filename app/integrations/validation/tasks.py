@@ -10,8 +10,8 @@ from flask import current_app
 from app.extensions.db import db
 from app.integrations.lifecycle import ensure_canonical_instance, ensure_provider_operational
 from app.integrations.registry import execute_integration_operation, get_integration
-from app.integrations.runtime.service import refresh_and_record
 from app.integrations.runtime.repository import persist_runtime_state
+from app.integrations.runtime.service import refresh_and_record
 from app.integrations.validation.state import (
     claim_validation_job,
     get_active_validation_task_id,

@@ -36,8 +36,8 @@ from app.kubernetes_operations.secrets.reveal_service import (
     get_reveal_request_for_user,
     get_reveal_target_context,
     get_reveal_workspace,
-    reveal_secret_value as execute_secret_value_reveal,
 )
+from app.kubernetes_operations.secrets.reveal_service import reveal_secret_value as execute_secret_value_reveal
 from app.kubernetes_operations.secrets.service import (
     apply_bulk_update,
     apply_certificate_update,

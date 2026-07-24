@@ -302,10 +302,12 @@ def execute_authorized_resolution(
         state = _prepare_execution(execution_journal_id, owner=owner)
     except ResolverOperationalError as exc:
         _raise_retryable_preflight(self, execution, execution_journal_id, exc)
-    except (ProductionReadinessError, RuntimeError) as exc:
+    except ProductionReadinessError as exc:
         _raise_terminal_preflight(execution, execution_journal_id, exc)
     except OrchestrationError as exc:
         _raise_lease_failure(execution, execution_journal_id, exc)
+    except RuntimeError as exc:
+        _raise_terminal_preflight(execution, execution_journal_id, exc)
     except Exception as exc:
         db.session.rollback()
         if execution is not None:
