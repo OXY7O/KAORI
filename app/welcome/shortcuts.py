@@ -20,8 +20,7 @@ WELCOME_WORKSPACE_GROUP_DEFINITIONS: tuple[dict[str, str], ...] = (
         'eyebrow': 'Act',
         'title': 'Infrastructure Operations',
         'description': (
-            'Manage integrations, synchronization, protected configuration changes, '
-            'and other controlled operational workflows.'
+            'Manage integrations, synchronization, protected configuration changes, and other controlled operational workflows.'
         ),
         'icon': 'workflow',
     },
@@ -195,8 +194,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'title': 'Settings',
         'label': 'Personal & System Settings',
         'description': (
-            'Manage account preferences and, when authorized, platform-wide '
-            'configuration and operational settings.'
+            'Manage account preferences and, when authorized, platform-wide configuration and operational settings.'
         ),
         'icon': 'settings-2',
         'scope': 'Platform',

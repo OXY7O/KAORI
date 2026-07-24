@@ -1,0 +1,73 @@
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm" aria-labelledby="automatic-sync-title">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
+            </span>
+            <div class="min-w-0">
+                <h2 id="automatic-sync-title" class="text-base font-semibold text-content-primary">Automatic Sync Policy</h2>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Control whether fleet inventory runs automatically and how frequently it is dispatched.</p>
+            </div>
+        </div>
+    </header>
+    <form method="POST" action="{{ url_for('settings.inventory_sync.index') }}">
+        <div class="space-y-5 p-5 sm:p-6">
+            {{ form.hidden_tag() }}
+            <label class="flex cursor-pointer items-start justify-between gap-4 rounded-lg border border-outline-default bg-surface-elevated p-4 transition hover:border-brand-outline">
+                <span class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="power" class="h-4 w-4"></i></span>
+                    <span class="min-w-0">
+                        <span class="block text-sm font-semibold text-content-primary">Enable Automatic Inventory Sync</span>
+                        <span class="mt-1 block text-xs leading-5 text-content-muted">Celery Beat checks the policy every minute and dispatches only when the configured interval is due.</span>
+                    </span>
+                </span>
+                <span class="relative mt-1 inline-flex h-6 w-11 shrink-0 items-center">
+                    {{ form.enabled(class_="peer sr-only") }}
+                    <span class="absolute inset-0 rounded-full bg-surface-disabled transition peer-checked:bg-kaori-primary peer-focus-visible:ring-2 peer-focus-visible:ring-kaori-primary peer-focus-visible:ring-offset-2"></span>
+                    <span class="absolute left-1 h-4 w-4 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5"></span>
+                </span>
+            </label>
+
+            <div class="grid gap-4 sm:grid-cols-[minmax(0,1fr)_220px] sm:items-start">
+                <div>
+                    {{ form.interval_minutes.label(class_="block text-sm font-semibold text-content-primary") }}
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Set any value from 5 minutes to 24 hours. Changing the interval resets the next scheduled run from the save time.</p>
+                    <div class="relative mt-3">
+                        <i data-lucide="timer" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
+                        {{ form.interval_minutes(class_="h-10 w-full rounded-lg border border-outline-default bg-surface-primary pl-10 pr-20 text-sm font-semibold text-content-primary focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20", min="5", max="1440", list="inventory-sync-interval-presets") }}
+                        <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-content-muted">Minutes</span>
+                    </div>
+                    <datalist id="inventory-sync-interval-presets">
+                        <option value="5">5 Minutes</option>
+                        <option value="15">15 Minutes</option>
+                        <option value="30">30 Minutes</option>
+                        <option value="60">1 Hour</option>
+                        <option value="120">2 Hours</option>
+                        <option value="360">6 Hours</option>
+                        <option value="720">12 Hours</option>
+                        <option value="1440">24 Hours</option>
+                    </datalist>
+                    {% for error in form.interval_minutes.errors %}
+                        <p class="mt-2 text-xs font-medium text-status-critical-text">{{ error }}</p>
+                    {% endfor %}
+                </div>
+                <aside class="rounded-lg border border-brand-outline bg-kaori-soft p-4">
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-kaori-primary">Current Schedule</p>
+                    <p class="mt-2 text-lg font-bold text-content-primary">{{ interval_label }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ 'Automatic dispatch is active.' if policy.enabled else 'Automatic dispatch is paused.' }}</p>
+                    <div class="mt-3 border-t border-brand-outline pt-3">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Next Run</p>
+                        <p class="mt-1 text-xs font-semibold leading-5 text-content-primary">{{ policy.next_run_at|user_datetime if policy.next_run_at else 'Not Scheduled' }}</p>
+                    </div>
+                </aside>
+            </div>
+        </div>
+        <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <p class="max-w-lg text-xs leading-5 text-content-muted">The scheduler configuration is stored in PostgreSQL. No Celery Beat restart is required after saving.</p>
+            <button type="submit" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kaori-primary focus-visible:ring-offset-2">
+                <i data-lucide="save" class="h-4 w-4" aria-hidden="true"></i>
+                Save Configuration
+            </button>
+        </footer>
+    </form>
+</section>

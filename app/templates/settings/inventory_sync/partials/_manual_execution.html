@@ -1,0 +1,90 @@
+{% import "components/progress_bar.html" as progress_bar %}
+{% import "components/table_label.html" as table_label %}
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm" aria-labelledby="manual-sync-title">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex items-start justify-between gap-3">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="mouse-pointer-click" class="h-4 w-4" aria-hidden="true"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 id="manual-sync-title" class="text-base font-semibold text-content-primary">Manual Fleet Sync</h2>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Queue or join one canonical fleet inventory execution.</p>
+                </div>
+            </div>
+            {{ table_label.status_label(execution_state.label, execution_state.tone, execution_state.icon) }}
+        </div>
+    </header>
+    <div class="space-y-4 p-5 sm:p-6">
+        {% if active_job %}
+            <article class="rounded-lg border border-status-info-border bg-status-info-soft p-4">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-status-info-text">Active Job Execution</p>
+                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ active_job.trigger_label }} Fleet Inventory Sync</p>
+                        <p class="mt-1 truncate text-xs leading-5 text-content-secondary" title="{{ active_job.progress_message }}">{{ active_job.progress_message }}</p>
+                    </div>
+                    {{ table_label.status_label(active_job.status_label, active_job.status_tone, active_job.status_icon) }}
+                </div>
+                <div class="mt-4 flex items-center justify-between gap-3 text-xs">
+                    <span class="text-content-muted">{{ active_job.progress_label }}</span>
+                    <span class="font-semibold text-kaori-primary">{{ active_job.progress }}%</span>
+                </div>
+                {{ progress_bar.bar(active_job.progress, track_classes="mt-2 h-1.5 overflow-hidden rounded-full bg-surface-card", fill_classes="h-full rounded-full bg-kaori-primary transition-[width] duration-300", label="Active inventory execution progress") }}
+                <div class="mt-3 grid gap-2 border-t border-status-info-border pt-3 text-xs sm:grid-cols-2">
+                    <p class="text-content-muted">Queued <strong class="font-semibold text-content-primary">{{ active_job.queued_at }}</strong></p>
+                    <p class="text-content-muted sm:text-right">Requested By <strong class="font-semibold text-content-primary">{{ active_job.requester }}</strong></p>
+                </div>
+            </article>
+        {% else %}
+            <article class="rounded-lg border border-brand-outline bg-kaori-soft p-4">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary"><i data-lucide="database-zap" class="h-4 w-4"></i></span>
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-content-primary">Ready For On-Demand Refresh</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">The run snapshots every eligible cluster at dispatch time and records the operation in Job Executions.</p>
+                    </div>
+                </div>
+            </article>
+        {% endif %}
+
+        <div class="grid gap-3 sm:grid-cols-2">
+            <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Eligible Fleet</p>
+                <p class="mt-2 text-xl font-bold text-content-primary">{{ eligible_cluster_count }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Clusters included in the next dispatch.</p>
+            </div>
+            <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Execution Queue</p>
+                <p class="mt-2 text-sm font-semibold text-content-primary">inventory</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Handled by the dedicated inventory worker.</p>
+            </div>
+        </div>
+
+        {% if current_user.has_permission('clusters.sync') %}
+            <form method="POST" action="{{ url_for('settings.inventory_sync.run_now') }}">
+                {{ manual_form.hidden_tag() }}
+                <button type="submit"
+                        {% if not eligible_cluster_count %}disabled{% endif %}
+                        class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kaori-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-surface-disabled disabled:text-content-disabled">
+                    <i data-lucide="{{ 'user-plus' if active_job else 'refresh-cw' }}" class="h-4 w-4" aria-hidden="true"></i>
+                    {{ 'Join Active Execution' if active_job else 'Sync All Inventory' }}
+                </button>
+            </form>
+        {% else %}
+            <div class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3 text-xs leading-5 text-content-muted">
+                Manual synchronization requires the <strong class="font-semibold text-content-primary">clusters.sync</strong> permission.
+            </div>
+        {% endif %}
+        {% if not eligible_cluster_count %}
+            <p class="flex items-start gap-2 text-xs leading-5 text-status-warning-text">
+                <i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 shrink-0"></i>
+                Enable at least one canonical Kubernetes cluster binding before running inventory sync.
+            </p>
+        {% endif %}
+        <a href="{{ jobs_url }}" class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary">
+            <i data-lucide="list-checks" class="h-4 w-4" aria-hidden="true"></i>
+            Review Job Executions
+        </a>
+    </div>
+</section>

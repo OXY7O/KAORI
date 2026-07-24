@@ -323,10 +323,14 @@ def build_topology_page_context(
     )
 
     clusters = Cluster.query.order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
-    namespace_rows = filter_current_generation(NamespaceInventory.query, NamespaceInventory).order_by(
-        NamespaceInventory.cluster_id.asc(),
-        NamespaceInventory.namespace.asc(),
-    ).all()
+    namespace_rows = (
+        filter_current_generation(NamespaceInventory.query, NamespaceInventory)
+        .order_by(
+            NamespaceInventory.cluster_id.asc(),
+            NamespaceInventory.namespace.asc(),
+        )
+        .all()
+    )
 
     namespace_map: dict[str, list[str]] = defaultdict(list)
     for row in namespace_rows:

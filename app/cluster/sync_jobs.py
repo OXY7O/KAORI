@@ -20,22 +20,27 @@ logger = logging.getLogger(__name__)
 INVENTORY_QUEUE = 'inventory'
 
 
+class NoEligibleInventoryTargets(RuntimeError):
+    """Raised when no cluster has an enabled canonical Kubernetes binding."""
+
+
 def _now_iso() -> str:
     return datetime.now(UTC).isoformat()
 
 
-def _fleet_target_snapshot() -> list[dict[str, str]]:
+def build_fleet_inventory_targets(*, log_skipped: bool = True) -> list[dict[str, str]]:
     targets: list[dict[str, str]] = []
     clusters = Cluster.query.order_by(Cluster.name.asc(), Cluster.id.asc()).all()
     for cluster in clusters:
         try:
             connection_for_cluster(cluster)
         except RuntimeError:
-            logger.warning(
-                'Skipping cluster %s from fleet inventory sync because no enabled canonical '
-                'Kubernetes binding is available.',
-                cluster.id,
-            )
+            if log_skipped:
+                logger.warning(
+                    'Skipping cluster %s from fleet inventory sync because no enabled canonical '
+                    'Kubernetes binding is available.',
+                    cluster.id,
+                )
             continue
         targets.append({'cluster_id': str(cluster.id), 'cluster_name': cluster.name})
     return targets
@@ -46,8 +51,12 @@ def enqueue_all_cluster_inventory_sync(
     requested_by_user_id: int | None,
     trigger_type: str = 'manual',
 ) -> tuple[JobExecution, bool]:
-    targets = _fleet_target_snapshot()
+    targets = build_fleet_inventory_targets()
     total_count = len(targets)
+    if not targets:
+        raise NoEligibleInventoryTargets(
+            'No registered cluster has an enabled canonical Kubernetes binding.'
+        )
     job, created = enqueue_canonical_job(
         task=sync_all_clusters_task,
         task_kwargs={'requested_by_user_id': requested_by_user_id, 'targets': targets},
@@ -61,12 +70,7 @@ def enqueue_all_cluster_inventory_sync(
         scope_type='kubernetes_fleet',
         scope_key='all',
         resource_group='kubernetes-inventory:global',
-        parameters={
-            'scope': 'all',
-            'cluster_count': total_count,
-            'targets': targets,
-            'trigger_type': trigger_type,
-        },
+        parameters={'scope': 'all'},
         payload={'total_count': total_count, 'targets': targets, 'trigger_type': trigger_type},
         max_attempts=3,
     )
@@ -80,10 +84,11 @@ def enqueue_all_cluster_inventory_sync(
         'current_cluster_name': None,
         'job_execution_id': job.id,
     }
-    try:
-        store_cluster_sync_metadata(task_id=str(job.celery_task_id), metadata=metadata)
-    except Exception:
-        logger.exception('Could not persist supplemental global inventory-sync metadata.')
+    if created:
+        try:
+            store_cluster_sync_metadata(task_id=str(job.celery_task_id), metadata=metadata)
+        except Exception:
+            logger.exception('Could not persist supplemental global inventory-sync metadata.')
     return job, created
 
 

@@ -1,58 +1,19 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
-{% block title %}Inventory Sync Configuration{% endblock %}
+{% block title %}Inventory Sync{% endblock %}
 {% block content %}
-<div class="mx-auto max-w-5xl space-y-6">
-  <section class="{{ page_hero.shell_classes() }}">
-    <div class="{{ page_hero.layout_classes() }}">
-      <div class="{{ page_hero.content_classes() }}">
-        {% call page_hero.intro('refresh-cw', 'Platform Operations', 'database-zap') %}
-          <h1 class="{{ page_hero.title_classes() }}">Inventory Sync Configuration</h1>
-          <p class="mt-2 {{ page_hero.description_classes() }}">
-            Control the automatic fleet inventory refresh interval. Manual synchronization remains available from Quick Actions and each Kubernetes integration.
-          </p>
-          <div class="{{ page_hero.metadata_row_classes() }}">
-            {{ page_hero.meta_label('clock-3', policy.interval_minutes ~ ' Minute Interval') }}
-            {{ page_hero.meta_label('layers-3', 'All Inventory Resources') }}
-          </div>
-        {% endcall %}
-      </div>
-      <aside class="{{ page_hero.aside_classes() }}" aria-label="Inventory synchronization posture">
-        <div class="{{ page_hero.context_panel_classes() }}">
-          {{ page_hero.context_header('Synchronization Posture', 'Fleet Inventory Refresh', 'rotate-cw') }}
-          <div class="{{ page_hero.context_panel_metrics_classes() }}">
-            {{ page_hero.context_metric('power', 'Automatic Sync', 'Enabled' if policy.enabled else 'Disabled', 'Scheduled fleet refresh policy', value_classes='text-sm font-semibold leading-5') }}
-            {{ page_hero.context_metric('timer', 'Interval', policy.interval_minutes ~ ' Minutes', 'Time between automatic dispatches', value_classes='text-sm font-semibold leading-5') }}
-          </div>
+<div class="mx-auto max-w-7xl space-y-6">
+    {% include "settings/inventory_sync/partials/_hero.html" %}
+    {% include "settings/inventory_sync/partials/_overview.html" %}
+    <div class="grid gap-6 xl:grid-cols-12 xl:items-start">
+        <div class="xl:col-span-7">
+            {% include "settings/inventory_sync/partials/_configuration.html" %}
         </div>
-      </aside>
+        <div class="xl:col-span-5">
+            {% include "settings/inventory_sync/partials/_manual_execution.html" %}
+        </div>
     </div>
-  </section>
-
-  <section class="rounded-xl border border-outline-default bg-surface-elevated p-6 shadow-sm">
-    <div class="mb-6">
-      <h2 class="text-base font-semibold text-content-primary">Automatic Fleet Sync</h2>
-      <p class="mt-1 text-sm text-content-secondary">Each scheduled run refreshes all inventory for every registered cluster with a canonical Kubernetes connection.</p>
-    </div>
-    <form method="POST" class="space-y-6">
-      {{ form.hidden_tag() }}
-      <label class="flex items-start gap-3 rounded-lg border border-outline-subtle p-4">
-        {{ form.enabled(class_="mt-1 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary") }}
-        <span><span class="block text-sm font-semibold text-content-primary">Enable Automatic Inventory Sync</span><span class="mt-1 block text-xs text-content-muted">Enabled by default. Celery Beat checks the schedule every minute and dispatches only when due.</span></span>
-      </label>
-      <div>
-        {{ form.interval_minutes.label(class_="block text-sm font-semibold text-content-primary") }}
-        {{ form.interval_minutes(class_="mt-2 w-full max-w-xs rounded-lg border border-outline-default bg-surface-primary px-3 py-2 text-sm text-content-primary", min="5", max="1440") }}
-        <p class="mt-2 text-xs text-content-muted">Allowed range: 5–1,440 minutes. Default: 60 minutes.</p>
-        {% for error in form.interval_minutes.errors %}<p class="mt-1 text-xs font-medium text-status-critical">{{ error }}</p>{% endfor %}
-      </div>
-      <div class="grid gap-3 sm:grid-cols-3">
-        <div class="rounded-lg border border-outline-subtle p-4"><p class="text-xs text-content-muted">Next Scheduled Run</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ policy.next_run_at|user_datetime if policy.next_run_at else 'Not Scheduled' }}</p></div>
-        <div class="rounded-lg border border-outline-subtle p-4"><p class="text-xs text-content-muted">Last Dispatch</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ policy.last_dispatched_at|user_datetime if policy.last_dispatched_at else 'Not Run Yet' }}</p></div>
-        <div class="rounded-lg border border-outline-subtle p-4"><p class="text-xs text-content-muted">Manual Sync</p><p class="mt-1 text-sm font-semibold text-content-primary">Always Available</p></div>
-      </div>
-      {{ form.submit(class_="inline-flex min-h-10 items-center rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary-dark") }}
-    </form>
-  </section>
+    {% include "settings/inventory_sync/partials/_recent_executions.html" %}
+    {% include "settings/inventory_sync/partials/_execution_boundary.html" %}
 </div>
 {% endblock %}

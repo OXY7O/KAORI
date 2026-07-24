@@ -4,7 +4,7 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 
-from app.cluster.sync_jobs import enqueue_all_cluster_inventory_sync
+from app.cluster.sync_jobs import NoEligibleInventoryTargets, enqueue_all_cluster_inventory_sync
 from app.extensions.db import db
 from app.models.inventory_sync import InventorySyncPolicy
 
@@ -68,11 +68,18 @@ def dispatch_due_inventory_sync() -> dict[str, object]:
         db.session.rollback()
         return {'dispatched': False, 'reason': 'not_due'}
 
-    policy.last_dispatched_at = now
     policy.next_run_at = now + timedelta(minutes=policy.interval_minutes)
     db.session.commit()
 
-    job, created = enqueue_all_cluster_inventory_sync(requested_by_user_id=None, trigger_type='scheduled')
+    try:
+        job, created = enqueue_all_cluster_inventory_sync(requested_by_user_id=None, trigger_type='scheduled')
+    except NoEligibleInventoryTargets:
+        return {'dispatched': False, 'reason': 'no_eligible_clusters'}
+
+    policy = db.session.get(InventorySyncPolicy, POLICY_ID)
+    if policy is not None:
+        policy.last_dispatched_at = now
+        db.session.commit()
     return {
         'dispatched': created,
         'reason': 'queued' if created else 'active_job_reused',

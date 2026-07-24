@@ -77,7 +77,19 @@ Policy changes and manual archive operations require `settings.manage_data_lifec
 
 ## Inventory Sync Configuration
 
-`/settings/inventory-sync/` is the canonical configuration surface for automatic Kubernetes Inventory synchronization. Access requires `settings.manage_integrations`. Automatic synchronization is enabled by default at 60 minutes and accepts intervals from 5 to 1,440 minutes. Policy changes reset the next due time and are recorded as operational activity. Manual synchronization remains available independently of the automatic policy.
+`/settings/inventory-sync/` is the canonical control surface for Kubernetes Inventory synchronization. Access requires `settings.manage_integrations`; manual execution additionally requires `clusters.sync`.
+
+The workspace exposes:
+
+- automatic policy enable/disable and a configurable 5–1,440 minute interval;
+- registered, eligible, and skipped cluster coverage;
+- next scheduled run, latest dispatch, and active execution posture;
+- a CSRF-protected **Sync All Inventory** action;
+- the five most recent fleet `JobExecution` records;
+- a direct link to the filtered Jobs & Executions registry.
+
+Automatic synchronization is enabled by default at 60 minutes. Policy changes reset the next due time and are recorded as operational activity. The manual action always uses `enqueue_all_cluster_inventory_sync`, so it creates or attaches to the same canonical fleet `JobExecution` used by scheduled runs. No empty job is created when no cluster has an enabled canonical Kubernetes binding.
+
 ## Inventory Sync navigation contract
 
 Inventory Sync is an operational scheduler and execution control surface. It is presented under **Platform Operations** beside **Jobs & Executions**, not under Settings. The implementation may remain in the settings package while it owns persisted policy configuration, but its user-facing navigation follows the operational job domain.

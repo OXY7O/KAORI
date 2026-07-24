@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import BooleanField, IntegerField, SubmitField
+from wtforms import BooleanField, IntegerField
 from wtforms.validators import InputRequired, NumberRange
 
 
@@ -9,4 +9,7 @@ class InventorySyncPolicyForm(FlaskForm):
         'Sync Interval (Minutes)',
         validators=[InputRequired(), NumberRange(min=5, max=1440)],
     )
-    submit = SubmitField('Save Sync Configuration')
+
+
+class ManualInventorySyncForm(FlaskForm):
+    """CSRF-protected manual fleet synchronization request."""

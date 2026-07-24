@@ -1,0 +1,41 @@
+<section class="{{ page_hero.shell_classes() }}">
+    <div class="{{ page_hero.layout_classes() }}">
+        <div class="{{ page_hero.content_classes() }}">
+            {% call page_hero.intro('refresh-cw', 'Platform Operations', 'database-zap') %}
+                <h1 class="{{ page_hero.title_classes() }}">Inventory Sync</h1>
+                <p class="mt-2 {{ page_hero.description_classes() }}">
+                    Configure automatic fleet refresh, run inventory synchronization on demand, and track every execution through the canonical KAORI job lifecycle.
+                </p>
+                <div class="{{ page_hero.metadata_row_classes() }}">
+                    {{ page_hero.meta_label('clock-3', interval_label ~ ' Interval') }}
+                    {{ page_hero.meta_label('layers-3', 'All Inventory Resources') }}
+                    {{ page_hero.meta_label('workflow', 'Inventory Queue') }}
+                </div>
+                <div class="mt-5 flex flex-wrap items-center gap-2">
+                    <a href="{{ jobs_url }}" class="{{ page_hero.primary_action_classes() }}">
+                        <i data-lucide="list-checks" class="h-4 w-4" aria-hidden="true"></i>
+                        Jobs &amp; Executions
+                    </a>
+                    <a href="{{ url_for('integrations.kubernetes') }}" class="{{ page_hero.secondary_action_classes() }}">
+                        <i data-lucide="server-cog" class="h-4 w-4" aria-hidden="true"></i>
+                        Kubernetes Integrations
+                    </a>
+                </div>
+            {% endcall %}
+        </div>
+        <aside class="{{ page_hero.aside_classes() }}" aria-label="Inventory synchronization posture">
+            <div class="{{ page_hero.context_panel_classes() }}">
+                {{ page_hero.context_header('Synchronization Posture', 'Fleet Inventory Refresh', 'rotate-cw') }}
+                <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                    {{ page_hero.context_metric(scheduler_state.icon, 'Automatic Sync', scheduler_state.label, scheduler_state.description, value_classes='text-sm font-semibold leading-5') }}
+                    {{ page_hero.context_metric('server', 'Eligible Clusters', eligible_cluster_count, (blocked_cluster_count ~ ' cluster bindings require attention') if blocked_cluster_count else 'Canonical Kubernetes bindings ready') }}
+                </div>
+                {% if active_job %}
+                    {{ page_hero.context_info('loader-circle', 'A fleet inventory execution is active and recorded in Job Executions.') }}
+                {% else %}
+                    {{ page_hero.context_info('shield-check', 'Scheduled and manual runs use the same atomic inventory job pipeline.') }}
+                {% endif %}
+            </div>
+        </aside>
+    </div>
+</section>

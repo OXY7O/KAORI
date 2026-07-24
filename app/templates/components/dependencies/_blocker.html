@@ -1,64 +1,73 @@
 {% if dependency_blocker %}
+    {% import "components/table_label.html" as table_label %}
     {% set blocker_tone = 'warning' if dependency_blocker.kind in ['cluster_required', 'prometheus_setup', 'alert_source_setup'] else 'critical' %}
     {% set blocked_state_icon = dependency_blocker.icon %}
     {% set blocked_state_label = 'Setup Required' if blocker_tone == 'warning' else 'Unavailable' %}
     {% set blocked_state_title = dependency_blocker.title %}
     {% set blocked_state_description = dependency_blocker.description %}
-    {% set blocked_state_stage = dependency_blocker.stage %}
-    {% set blocked_state_tone = blocker_tone %}
     {% set blocked_step = dependency_blocker.stage|int %}
     {% set analytics_steps = [
-        {'label': 'Kubernetes', 'icon': 'server-cog'},
-        {'label': 'Prometheus', 'icon': 'activity'},
-        {'label': 'Alertmanager', 'icon': 'bell-ring'}
+        {'label': 'Kubernetes', 'icon': 'server-cog', 'description': 'Cluster access and canonical binding'},
+        {'label': 'Prometheus', 'icon': 'activity', 'description': 'Metrics source and analytics capability'},
+        {'label': 'Alertmanager', 'icon': 'bell-ring', 'description': 'Alert source and scoped signal access'}
     ] %}
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+    <section class="overflow-hidden rounded-xl border border-brand-outline bg-kaori-soft shadow-sm"
              data-kaori-blocked-state>
-        <div class="border-b border-outline-default bg-kaori-soft/60 px-5 py-4">
-            <div class="flex min-w-0 items-start gap-4">
-                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-kaori-border bg-surface-card text-kaori-primary shadow-sm"
+        <div class="flex flex-col gap-4 px-5 py-5 lg:flex-row lg:items-start lg:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary shadow-sm"
                       aria-hidden="true">
                     <i data-lucide="{{ blocked_state_icon }}" class="h-5 w-5"></i>
                 </span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                        <h2 class="text-base font-semibold text-content-primary">{{ blocked_state_title }}</h2>
-                        {% import "components/table_label.html" as table_label %}
-                        {{ table_label.status_label(blocked_state_label, blocked_state_tone, blocked_state_icon) }}
-                        {{ table_label.metadata_label('Blocked At Step ' ~ blocked_step, 'list-ordered') }}
+                        <h2 class="text-base font-semibold text-content-primary">Analytics Readiness</h2>
+                        {{ table_label.status_label(blocked_state_label, blocker_tone, blocked_state_icon) }}
+                        {{ table_label.metadata_label('Step ' ~ blocked_step ~ ' of 3', 'list-ordered') }}
                     </div>
+                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ blocked_state_title }}</p>
                     <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">{{ blocked_state_description }}</p>
                 </div>
             </div>
+            <div class="inline-flex min-h-8 shrink-0 items-center gap-2 rounded-md border border-brand-outline bg-surface-card px-3 py-1.5 text-xs font-semibold text-kaori-primary">
+                <i data-lucide="route" class="h-4 w-4" aria-hidden="true"></i>
+                Kubernetes → Prometheus → Alertmanager
+            </div>
         </div>
-        <div class="grid gap-3 p-5 md:grid-cols-3">
-            {% for step in analytics_steps %}
-                {% set step_number = loop.index %}
-                {% set is_complete = step_number < blocked_step %}
-                {% set is_current = step_number == blocked_step %}
-                <div class="rounded-lg border p-4 {{ 'border-normal-border bg-normal-soft' if is_complete else ('border-warning-border bg-warning-soft' if is_current else 'border-outline-default bg-surface-subtle') }}">
-                    <div class="flex items-center justify-between gap-3">
-                        <span class="flex h-9 w-9 items-center justify-center rounded-md border {{ 'border-normal-border bg-surface-card text-normal' if is_complete else ('border-warning-border bg-surface-card text-warning' if is_current else 'border-outline-default bg-surface-card text-content-muted') }}"
-                              aria-hidden="true">
-                            <i data-lucide="{{ step.icon }}" class="h-4 w-4"></i>
-                        </span>
-                        <span class="text-[10px] font-bold uppercase tracking-[0.12em] {{ 'text-normal' if is_complete else ('text-warning' if is_current else 'text-content-muted') }}">
-                            {{ 'Complete' if is_complete else ('Current Blocker' if is_current else 'Pending') }}
-                        </span>
-                    </div>
-                    <p class="mt-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Step {{ step_number }}</p>
-                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ step.label }}</p>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">
-                        {% if is_complete %}
-                            Dependency validated and available.
-                        {% elif is_current %}
-                            Complete this dependency before Analytics can continue.
-                        {% else %}
-                            Validation begins after the previous step is ready.
-                        {% endif %}
-                    </p>
-                </div>
-            {% endfor %}
+        <div class="border-t border-brand-outline bg-surface-card/70 p-4">
+            <div class="grid gap-3 lg:grid-cols-3">
+                {% for step in analytics_steps %}
+                    {% set step_number = loop.index %}
+                    {% set is_complete = step_number < blocked_step %}
+                    {% set is_current = step_number == blocked_step %}
+                    {% set status_text = 'Complete' if is_complete else ('Current Blocker' if is_current else 'Pending') %}
+                    {% set status_tone = 'normal' if is_complete else ('warning' if is_current else 'unknown') %}
+                    {% set status_icon = 'check' if is_complete else ('triangle-alert' if is_current else 'clock-3') %}
+                    <article class="rounded-lg border bg-surface-card p-4 shadow-sm {{ 'border-status-normal/30' if is_complete else ('border-status-warning/40 ring-1 ring-status-warning/10' if is_current else 'border-outline-default') }}">
+                        <div class="flex items-start justify-between gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border {{ 'border-status-normal/30 bg-status-normal-soft text-status-normal' if is_complete else ('border-status-warning/30 bg-status-warning-soft text-status-warning' if is_current else 'border-outline-default bg-surface-subtle text-content-muted') }}"
+                                  aria-hidden="true">
+                                <i data-lucide="{{ step.icon }}" class="h-4 w-4"></i>
+                            </span>
+                            {{ table_label.status_label(status_text, status_tone, status_icon) }}
+                        </div>
+                        <div class="mt-3 flex items-center gap-2">
+                            <span class="inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-kaori-soft px-1.5 text-[10px] font-bold text-kaori-primary">{{ step_number }}</span>
+                            <h3 class="text-sm font-semibold text-content-primary">{{ step.label }}</h3>
+                        </div>
+                        <p class="mt-2 text-xs leading-5 text-content-secondary">{{ step.description }}</p>
+                        <p class="mt-2 text-[11px] font-medium leading-4 {{ 'text-status-normal-text' if is_complete else ('text-status-warning-text' if is_current else 'text-content-muted') }}">
+                            {% if is_complete %}
+                                Validated and available.
+                            {% elif is_current %}
+                                Complete this dependency to continue.
+                            {% else %}
+                                Checked after the previous step is ready.
+                            {% endif %}
+                        </p>
+                    </article>
+                {% endfor %}
+            </div>
         </div>
     </section>
 {% endif %}
