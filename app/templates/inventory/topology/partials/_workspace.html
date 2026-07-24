@@ -15,13 +15,13 @@
                         id="topology-fit-button"
                         class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                     <i data-lucide="maximize-2" class="h-4 w-4 text-kaori-primary"></i>
-                    Fit graph
+                    Fit Graph
                 </button>
                 <button type="button"
                         id="topology-reset-button"
                         class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
                     <i data-lucide="rotate-ccw" class="h-4 w-4 text-kaori-primary"></i>
-                    Reset view
+                    Reset View
                 </button>
                 <button type="button"
                         id="topology-export-png-button"
@@ -116,7 +116,7 @@
                     <input id="topology-search"
                            type="search"
                            autocomplete="off"
-                           placeholder="Search Node, Workload, Pod, Service..."
+                           placeholder="Search node, workload, pod, service..."
                            class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                     <div id="topology-search-results"
                          class="absolute left-0 right-0 top-full z-50 mt-2 hidden max-h-80 overflow-y-auto rounded-xl border border-outline-default bg-surface-card shadow-xl">
@@ -217,19 +217,18 @@
                 <summary class="cursor-pointer text-sm font-semibold text-content-primary">Relationship Visibility</summary>
                 <div class="mt-3 grid gap-1.5 text-[10px] text-content-secondary">
                     {% for value, label, tone in [
-                        ('contains', 'Contains', 'bg-indigo-400'),
-                        ('owns', 'Owns', 'bg-violet-500'),
-                        ('scheduled_on', 'Scheduled on', 'bg-slate-500'),
-                        ('selects', 'Selects', 'bg-emerald-500'),
-                        ('routes_to', 'Routes to', 'bg-teal-500'),
-                        ('uses', 'Uses configuration', 'bg-sky-500'),
-                        ('mounts', 'Mounts claim', 'bg-orange-500'),
-                        ('binds', 'Binds volume', 'bg-lime-600')
+                        ('contains', 'Contains', 'border-status-info-border bg-status-info-soft text-status-info-text'),
+                        ('owns', 'Owns', 'border-brand-outline bg-kaori-soft text-kaori-primary'),
+                        ('scheduled_on', 'Scheduled On', 'border-status-unknown-border bg-status-unknown-soft text-status-unknown-text'),
+                        ('selects', 'Selects', 'border-status-normal-border bg-status-normal-soft text-status-normal-text'),
+                        ('routes_to', 'Routes To', 'border-status-normal-border bg-status-normal-soft text-status-normal-text'),
+                        ('uses', 'Uses Configuration', 'border-status-info-border bg-status-info-soft text-status-info-text'),
+                        ('mounts', 'Mounts Claim', 'border-status-warning-border bg-status-warning-soft text-status-warning-text'),
+                        ('binds', 'Binds Volume', 'border-status-normal-border bg-status-normal-soft text-status-normal-text')
                         ] %}
                         <label class="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-1.5 transition hover:bg-surface-hover">
                             <span class="inline-flex min-w-0 items-center gap-2">
-                                <span class="h-0.5 w-5 shrink-0 rounded-full {{ tone }}"></span>
-                                <span class="truncate">{{ label }}</span>
+                                <span class="inline-flex min-h-6 items-center rounded-md border px-2 py-1 text-[10px] font-semibold {{ tone }}">{{ label }}</span>
                             </span>
                             <input type="checkbox"
                                    checked
@@ -243,14 +242,13 @@
                 <h3 class="text-sm font-semibold text-content-primary">Status Legend</h3>
                 <div class="mt-3 grid gap-1.5 text-[10px] text-content-secondary">
                     {% for label, tone in [
-                        ('Healthy', 'bg-status-normal'),
-                        ('Warning', 'bg-status-warning'),
-                        ('Critical', 'bg-status-critical'),
-                        ('Unknown / informational', 'bg-status-unknown')
+                        ('Healthy', 'border-status-normal-border bg-status-normal-soft text-status-normal-text'),
+                        ('Warning', 'border-status-warning-border bg-status-warning-soft text-status-warning-text'),
+                        ('Critical', 'border-status-critical-border bg-status-critical-soft text-status-critical-text'),
+                        ('Unknown / Informational', 'border-status-unknown-border bg-status-unknown-soft text-status-unknown-text')
                         ] %}
-                        <div class="flex items-center gap-2 rounded-lg px-2 py-1.5">
-                            <span class="h-2.5 w-2.5 rounded-full {{ tone }}"></span>
-                            <span>{{ label }}</span>
+                        <div>
+                            <span class="inline-flex min-h-6 items-center rounded-md border px-2 py-1 text-[10px] font-semibold {{ tone }}">{{ label }}</span>
                         </div>
                     {% endfor %}
                 </div>
@@ -262,7 +260,7 @@
                  class="pointer-events-none absolute inset-0 z-0"></div>
             <div id="topology-canvas"
                  role="application"
-                 aria-label="Interactive Kubernetes Topology Graph"
+                 aria-label="Interactive Kubernetes topology graph"
                  class="absolute inset-0 z-10 h-full w-full"></div>
             <div id="topology-empty-state"
                  class="pointer-events-none absolute inset-0 hidden items-center justify-center p-8">
