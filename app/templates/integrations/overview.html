@@ -2,7 +2,18 @@
 {% block title %}Integrations · KAORI{% endblock %}
 {% block dashboard_content %}
     <div class="kaori-integration-semantic space-y-6"
-         x-data="{ activeTab: '{{ active_tab }}', activateTab(tab) { this.activeTab = tab const url = new URL(window.location.href) url.searchParams.set('tab', tab) window.history.replaceState({}, '', url) this.$nextTick(() => { if (window.lucide) window.lucide.createIcons() }) } }">
+         x-data="{
+             activeTab: '{{ active_tab }}',
+             activateTab(tab) {
+                 this.activeTab = tab;
+                 const url = new URL(window.location.href);
+                 url.searchParams.set('tab', tab);
+                 window.history.replaceState({}, '', url);
+                 this.$nextTick(() => {
+                     if (window.lucide) window.lucide.createIcons();
+                 });
+             }
+         }">
         {% set badge = "Integrations" %}
         {% set title = "Infrastructure Integrations" %}
         {% set description = "Connect infrastructure providers to KAORI through reusable connection, compatibility, runtime, and binding contracts." %}
