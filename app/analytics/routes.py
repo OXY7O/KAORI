@@ -1,601 +1,473 @@
-from __future__ import annotations
+# ruff: noqa: E402
 
-from typing import Any, cast
+from hashlib import sha256
 
-from flask import current_app, render_template, request
+from flask import Blueprint, redirect, render_template, request, session, url_for
+from flask_login import current_user
 
+analytics_bp = Blueprint(
+    'analytics',
+    __name__,
+    url_prefix='/analytics',
+)
+
+
+from app.analytics.alerts.routes import (
+    alerts,
+    alerts_table,
+    anomalies_table,
+)
+from app.analytics.capacity.routes import capacity
 from app.analytics.common.context import build_analysis_utilization_context
-from app.analytics.utilization.service import UtilizationService, get_selected_cluster, get_utilization_clusters
-from app.common.dependencies import (
-    DependencyBlocker,
-    cluster_required_blocker,
-    prometheus_capability_blocker,
-    prometheus_connection_blocker,
-    prometheus_setup_blocker,
-    render_dependency_blocker,
+from app.analytics.forecast.routes import (
+    forecast,
+    forecast_section,
 )
-from app.integrations.prometheus.exceptions import PrometheusError
-from app.intelligence.recommendation_engine import (
-    build_utilization_actionable_recommendations,
-    count_actionable_recommendations,
-    format_recommendation_cards,
+from app.analytics.overview.service import get_analytics_overview, get_analytics_overview_section
+from app.analytics.storage.routes import (
+    storage,
+    storage_filesystem_summary,
+    storage_persistent_summary,
 )
-from app.prometheus.repository import resolve_instance_for_cluster
-from app.prometheus.service import PrometheusService
+from app.analytics.top_consumers.routes import (
+    top_consumers,
+    top_consumers_section,
+    top_consumers_table,
+)
+from app.analytics.utilization.routes import (
+    utilization,
+    utilization_node_detail,
+    utilization_trend,
+)
+from app.analytics.workload.routes import (
+    workload,
+    workload_resource_mapping,
+    workload_tenant_quota,
+)
+from app.common.dependencies import render_dependency_blocker
+from app.common.integration_errors import describe_integration_failure
+from app.notifications.service import (
+    get_navigation_notification_context,
+    record_operational_activity,
+)
 from app.rbac.decorators import permission_required
 
-ALLOWED_TREND_HOURS = [
-    1,
-    6,
-    12,
-    24,
-    168,
-    720,
-    1440,
-]
-
-TREND_STEP_MAP = {
-    1: '5m',
-    6: '15m',
-    12: '30m',
-    24: '1h',
-    168: '6h',
-    720: '12h',
-    1440: '1d',
+VALID_ANALYTICS_TIME_RANGES = {
+    '1h',
+    '6h',
+    '12h',
+    '24h',
+    '7d',
+    '30d',
+    '60d',
 }
 
 
-def _empty_recommendation_context() -> dict[str, Any]:
-    return {
-        'actionable_recommendations': [],
-        'recommendation_cards': [],
-        'recommendation_count': 0,
-        'top_cpu_consumers': [],
-        'top_memory_consumers': [],
-    }
+PROMETHEUS_FAILURE_SESSION_KEY = 'analytics_overview_prometheus_failures'
+PROMETHEUS_FAILURE_SESSION_LIMIT = 32
 
 
-def _build_recommendation_context(
-    risk_assessment: dict[str, dict[str, int | float | str]],
-    top_cpu_consumers: list[dict[str, str | float]],
-    top_memory_consumers: list[dict[str, str | float]],
-) -> dict[str, Any]:
-    recommendation_payload = {
-        'risk_assessment': risk_assessment,
-        'top_cpu_consumers': top_cpu_consumers,
-        'top_memory_consumers': top_memory_consumers,
-    }
-
-    actionable_recommendations = build_utilization_actionable_recommendations(
-        recommendation_payload,
+def _render_operational_toast(feedback: dict) -> str:
+    return render_template(
+        'components/navigation/_quick_sync_result.html',
+        **feedback,
+        toast_oob=True,
+        notification_context=get_navigation_notification_context(
+            user_id=current_user.id,
+        ),
     )
 
-    return {
-        'actionable_recommendations': actionable_recommendations,
-        'recommendation_cards': format_recommendation_cards(
-            actionable_recommendations,
-            default_title='Continue utilization monitoring',
-            default_description=(
-                'No actionable utilization recommendation was generated from the current risk signals. '
-                'Continue monitoring CPU, memory, storage, pods, and recurring hotspots.'
-            ),
-            default_source='utilization',
-            default_action_type='utilization_review',
-        ),
-        'recommendation_count': count_actionable_recommendations(
-            actionable_recommendations,
-        ),
-        'top_cpu_consumers': top_cpu_consumers,
-        'top_memory_consumers': top_memory_consumers,
-    }
 
-
-def _get_trend_hours(query_args=None) -> int:
-    args = query_args if query_args is not None else request.args
-    try:
-        trend_hours = int(
-            args.get(
-                'trend_hours',
-                1,
-            )
-        )
-    except ValueError:
-        return 1
-
-    if trend_hours not in ALLOWED_TREND_HOURS:
-        return 1
-
-    return trend_hours
-
-
-@permission_required('analytics.view')
-def utilization_trend() -> str:
-    from app.analytics.materialization.presentation import pending_page_context, snapshot_meta
-    from app.analytics.materialization.requests import resolve_materialized_request
-
-    parameters = request.args.to_dict(flat=True)
-    parameters.setdefault('trend_hours', '24')
-    materialized = resolve_materialized_request(
-        dataset_key='analytics.utilization.trend',
-        job_key='analytics.materialize',
-        parameters=parameters,
-    )
-    if not materialized.result.available:
-        pending = pending_page_context(
-            materialized=materialized,
-            dataset_key='analytics.utilization.trend',
-            title='Utilization Trend',
-            description='Long-range utilization series are generated by the analytics worker.',
-            icon='chart-no-axes-combined',
-        )
-        return render_template('analytics/materialization/_pending.html', **pending)
-    context = materialized.result.context or {}
-    dependency_blocker = context.get('dependency_blocker')
-    if dependency_blocker:
-        return render_dependency_blocker(dependency_blocker)
-    context['analytics_materialization'] = snapshot_meta(materialized)
-    return render_template('analytics/utilization/partials/_trend.html', **context)
-
-
-def _empty_summary() -> dict[str, int | float]:
-    return {
-        'cpu_capacity': 0,
-        'cpu_usage': 0,
-        'cpu_utilization': 0,
-        'memory_capacity': 0,
-        'memory_usage': 0,
-        'memory_utilization': 0,
-        'storage_capacity': 0,
-        'storage_usage': 0,
-        'storage_available': 0,
-        'storage_utilization': 0,
-        'storage_capacity_gib': 0,
-        'storage_usage_gib': 0,
-        'storage_available_gib': 0,
-        'pod_count': 0,
-        'pod_capacity': 0,
-        'pod_utilization': 0,
-    }
-
-
-def _empty_cluster_info() -> dict[str, int | float | str]:
-    return {
-        'kubernetes_version': '-',
-        'total_nodes': 0,
-        'ready_nodes': 0,
-        'not_ready_nodes': 0,
-        'worker_nodes': 0,
-        'master_nodes': 0,
-        'cpu_capacity': 0,
-        'memory_capacity': 0,
-        'pod_capacity': 0,
-    }
-
-
-def _empty_risk_assessment() -> dict[str, dict[str, int | float | str]]:
-    return {
-        'cpu': {
-            'status': 'Normal',
-            'reason': 'No utilization data available',
-            'pressure_nodes': 0,
-            'utilization': 0,
-        },
-        'memory': {
-            'status': 'Normal',
-            'reason': 'No utilization data available',
-            'pressure_nodes': 0,
-            'utilization': 0,
-        },
-        'storage': {
-            'status': 'Normal',
-            'reason': 'No utilization data available',
-            'pressure_nodes': 0,
-            'utilization': 0,
-        },
-        'pods': {
-            'status': 'Normal',
-            'reason': 'No utilization data available',
-            'pressure_nodes': 0,
-            'utilization': 0,
-        },
-    }
-
-
-def _empty_prometheus_status() -> dict[str, bool | int | str | None]:
-    return {
-        'connected': False,
-        'response_time_ms': None,
-        'label': 'Prometheus Disconnected',
-        'description': 'No successful Prometheus response.',
-    }
-
-
-def _resolve_utilization_trends(
+def _update_prometheus_failure_state(
     *,
     cluster_id: str,
-    trend_hours: int,
-    trend_step: str,
-    selected_trend_node: str,
-    service: UtilizationService,
-    fallback: dict[str, list[dict[str, float]]],
-) -> tuple[dict[str, list[dict[str, float]]], bool, dict[str, Any] | None]:
-    if trend_hours < 24:
-        trends = service.get_trends(
-            hours=trend_hours,
-            step=trend_step,
-            node_name=selected_trend_node or None,
+    fingerprint: str | None,
+) -> bool:
+    state = dict(
+        session.get(
+            PROMETHEUS_FAILURE_SESSION_KEY,
+            {},
         )
-        return trends, False, None
+    )
 
-    from app.analytics.materialization.presentation import snapshot_meta
-    from app.analytics.materialization.requests import resolve_materialized_request
+    if fingerprint is None:
+        if cluster_id in state:
+            state.pop(cluster_id, None)
+            session[PROMETHEUS_FAILURE_SESSION_KEY] = state
+            session.modified = True
+        return False
 
-    materialized = resolve_materialized_request(
-        dataset_key='analytics.utilization.trend',
-        job_key='analytics.materialize',
-        parameters={
-            'cluster_id': str(cluster_id),
-            'trend_hours': str(trend_hours),
-            'trend_node': selected_trend_node,
+    if state.get(cluster_id) == fingerprint:
+        return False
+
+    state[cluster_id] = fingerprint
+    if len(state) > PROMETHEUS_FAILURE_SESSION_LIMIT:
+        oldest_cluster_id = next(iter(state))
+        state.pop(oldest_cluster_id, None)
+
+    session[PROMETHEUS_FAILURE_SESSION_KEY] = state
+    session.modified = True
+    return True
+
+
+def _build_prometheus_failure_feedback(payload: dict) -> str:
+    prometheus = payload.get('prometheus') or {}
+    selected_cluster = payload.get('selected_cluster') or {}
+    cluster_id = str(selected_cluster.get('id') or payload.get('selected_cluster_id') or '')
+
+    if not cluster_id:
+        return ''
+
+    if prometheus.get('connected') or not prometheus.get('configured'):
+        _update_prometheus_failure_state(
+            cluster_id=cluster_id,
+            fingerprint=None,
+        )
+        return ''
+
+    endpoint = str(prometheus.get('endpoint') or '').strip()
+    diagnostic_detail = str(
+        prometheus.get('diagnostic_detail') or 'The Prometheus health check did not complete successfully.'
+    ).strip()
+    fingerprint = sha256(
+        f'{endpoint}|{diagnostic_detail}'.encode(),
+    ).hexdigest()
+
+    if not _update_prometheus_failure_state(
+        cluster_id=cluster_id,
+        fingerprint=fingerprint,
+    ):
+        return ''
+
+    failure = describe_integration_failure(
+        RuntimeError(diagnostic_detail),
+        service_name='Prometheus',
+        endpoint=endpoint,
+        request_path='/api/v1/query',
+    )
+    cluster_name = str(selected_cluster.get('name') or 'Selected cluster')
+    environment = str(selected_cluster.get('environment') or '')
+
+    feedback = record_operational_activity(
+        user_id=current_user.id,
+        event_type='prometheus_health_check_failed',
+        status='error',
+        title='Prometheus connection failed',
+        message=f'Prometheus is unreachable for {cluster_name}.',
+        detail=str(failure['detail']),
+        metadata={
+            'cluster_id': cluster_id,
+            'cluster_name': cluster_name,
+            'environment': environment,
+            'endpoint': endpoint,
+            'failure_code': failure['code'],
+            'reason': failure['reason'],
+            'endpoint_host': failure['endpoint_host'],
+            'endpoint_port': failure['endpoint_port'],
+            'request_path': failure['request_path'],
         },
     )
-    if not materialized.result.available:
-        return fallback, True, None
 
-    trend_context = materialized.result.context or {}
-    return trend_context.get('trends') or fallback, False, snapshot_meta(materialized)
+    return _render_operational_toast(feedback)
 
 
+@analytics_bp.get('/materialization/status')
 @permission_required('analytics.view')
-def utilization() -> str:
-    clusters = get_utilization_clusters()
-    cluster_id = request.args.get(
-        'cluster_id',
-    )
-    cluster = get_selected_cluster(
-        cluster_id,
-    )
-    trend_hours = _get_trend_hours()
-    trend_step = TREND_STEP_MAP[trend_hours]
-    selected_node = request.args.get(
-        'node',
-        '',
-        type=str,
-    )
-    selected_trend_node = request.args.get(
-        'trend_node',
-        '',
-        type=str,
-    )
+def materialization_status():
+    from flask import make_response
 
-    summary = _empty_summary()
-    detail_summary = _empty_summary()
-    cluster_info = _empty_cluster_info()
-    summary_table: list[dict[str, str | float]] = []
-    trends: dict[str, list[dict[str, float]]] = {
-        'cpu': [],
-        'memory': [],
-        'pods': [],
+    from app.analytics.materialization.service import read_snapshot
+
+    dataset_key = request.args.get('dataset_key', '').strip()
+    cluster_id = request.args.get('cluster_id', '').strip()
+    parameters = {
+        key: value for key, value in request.args.items() if key not in {'dataset_key', 'return_url'} and value != ''
     }
-    trend_materialization_pending = False
-    analytics_materialization = None
-    available_nodes: list[str] = []
-    available_worker_nodes: list[str] = []
-    risk_assessment = _empty_risk_assessment()
-    detail_risk_assessment = _empty_risk_assessment()
-    prometheus_status = _empty_prometheus_status()
-    recommendation_context = _empty_recommendation_context()
-    error = None
-    dependency_blocker: DependencyBlocker | None = None
+    if not dataset_key or not cluster_id:
+        return '', 400
+    result = read_snapshot(
+        cluster_id=cluster_id,
+        dataset_key=dataset_key,
+        parameters=parameters,
+    )
+    if result.available:
+        response = make_response('', 204)
+        response.headers['HX-Refresh'] = 'true'
+        return response
+    snapshot = result.snapshot
+    return render_template(
+        'analytics/materialization/_pending.html',
+        materialization_status_url=request.full_path,
+        materialization_return_url=request.args.get('return_url', '').strip() or url_for('analytics.overview'),
+        materialization_error=snapshot.last_error if snapshot else None,
+    )
 
-    if not cluster:
-        return render_template(
-            'analytics/utilization/index.html',
-            cluster=None,
-            clusters=[],
-            summary=summary,
-            summary_table=summary_table,
-            detail_summary=detail_summary,
-            trends=trends,
-            error=None,
-            dependency_blocker=cluster_required_blocker(),
-            prometheus_status={
-                'connected': False,
-                'response_time_ms': None,
-                'label': 'Waiting for Cluster',
-                'description': 'Prometheus checks start after a Kubernetes cluster is added.',
-            },
-            cluster_info=cluster_info,
-            risk_assessment=risk_assessment,
-            detail_risk_assessment=detail_risk_assessment,
-            trend_hours=trend_hours,
-            allowed_trend_hours=ALLOWED_TREND_HOURS,
-            available_nodes=[],
-            available_worker_nodes=[],
-            selected_node='',
-            selected_trend_node='',
-            cluster_query_endpoint='analytics.utilization',
-            cluster_query_hidden_params={},
-            **_empty_recommendation_context(),
-        )
 
-    prometheus_config = resolve_instance_for_cluster(cluster.id)
+@analytics_bp.route(
+    '/',
+    methods=[
+        'GET',
+    ],
+)
+@permission_required('analytics.view')
+def overview():
+    selected_cluster_id = request.args.get('cluster_id')
+    selected_time_range = request.args.get(
+        'time_range',
+        '24h',
+    )
 
-    if prometheus_config is None or not prometheus_config.endpoint.strip():
-        dependency_blocker = prometheus_setup_blocker(cluster)
+    if selected_time_range not in VALID_ANALYTICS_TIME_RANGES:
+        selected_time_range = '24h'
 
-        return render_template(
-            'analytics/utilization/index.html',
-            cluster=cluster,
-            clusters=clusters,
-            summary=summary,
-            summary_table=summary_table,
-            detail_summary=detail_summary,
-            trends=trends,
-            error=None,
-            dependency_blocker=dependency_blocker,
-            prometheus_status={
-                'connected': False,
-                'response_time_ms': None,
-                'label': 'Prometheus Not Configured',
-                'description': 'Configure Prometheus after the cluster is available.',
-            },
-            cluster_info=cluster_info,
-            risk_assessment=risk_assessment,
-            detail_risk_assessment=detail_risk_assessment,
-            trend_hours=trend_hours,
-            allowed_trend_hours=ALLOWED_TREND_HOURS,
-            available_nodes=[],
-            available_worker_nodes=[],
-            selected_node='',
-            selected_trend_node='',
-            cluster_query_endpoint='analytics.utilization',
-            cluster_query_hidden_params={},
-            **_empty_recommendation_context(),
-        )
-
-    try:
-        prometheus = PrometheusService(
-            cluster,
-        )
-
-        service = UtilizationService(
-            prometheus,
-        )
-
-        requirements = service.requirements()
-        if not requirements.ok:
-            missing = list((requirements.payload or {}).get('missing_capabilities', []))
-            dependency_blocker = prometheus_capability_blocker(
-                cluster,
-                feature_label='Utilization Analytics',
-                missing_capabilities=missing,
-            )
-            return render_template(
-                'analytics/utilization/index.html',
-                cluster=cluster,
-                clusters=clusters,
-                summary=summary,
-                summary_table=summary_table,
-                detail_summary=detail_summary,
-                trends=trends,
-                error=None,
-                dependency_blocker=dependency_blocker,
-                prometheus_status=prometheus_status,
-                cluster_info=cluster_info,
-                risk_assessment=risk_assessment,
-                detail_risk_assessment=detail_risk_assessment,
-                trend_hours=trend_hours,
-                allowed_trend_hours=ALLOWED_TREND_HOURS,
-                available_nodes=[],
-                available_worker_nodes=[],
-                selected_node='',
-                selected_trend_node='',
-                cluster_query_endpoint='analytics.utilization',
-                cluster_query_hidden_params={},
-                **_empty_recommendation_context(),
-            )
-
-        prometheus_status = service.get_prometheus_status()
-
-        if not prometheus_status.get('connected', False):
-            raise PrometheusError(
-                str(
-                    prometheus_status.get('error')
-                    or prometheus_status.get('description')
-                    or 'Prometheus did not report a healthy connection.'
-                )
-            )
-
-        available_nodes = service.get_node_names()
-        available_worker_nodes = service.get_worker_node_names()
-
-        if selected_node not in available_nodes:
-            selected_node = ''
-
-        if selected_trend_node not in available_worker_nodes:
-            selected_trend_node = ''
-
-        summary = service.get_summary()
-
-        cluster_info = service.get_cluster_info(
-            summary,
-        )
-
-        summary_table = service.get_summary_table(
-            summary,
-        )
-
-        detail_summary = service.get_detail_summary(
-            node_name=selected_node or None,
-        )
-
-        trends, trend_materialization_pending, analytics_materialization = _resolve_utilization_trends(
-            cluster_id=cluster.id,
-            trend_hours=trend_hours,
-            trend_step=trend_step,
-            selected_trend_node=selected_trend_node,
-            service=service,
-            fallback=trends,
-        )
-
-        risk_assessment = service.get_capacity_pressure_risk(
-            cast(
-                dict[str, int | float],
-                summary,
-            ),
-        )
-
-        detail_risk_assessment = service.get_capacity_pressure_risk(
-            cast(
-                dict[str, int | float],
-                detail_summary,
-            ),
-            selected_node or None,
-        )
-
-        top_cpu_consumers = service.get_top_cpu_consumers()[:5]
-        top_memory_consumers = service.get_top_memory_consumers()[:5]
-
-        recommendation_context = _build_recommendation_context(
-            risk_assessment=risk_assessment,
-            top_cpu_consumers=top_cpu_consumers,
-            top_memory_consumers=top_memory_consumers,
-        )
-
-    except PrometheusError as exc:
-        message = str(exc) or 'Prometheus is not configured for the selected cluster.'
-        prometheus_status = {
-            'connected': False,
-            'response_time_ms': None,
-            'label': 'Prometheus Unavailable',
-            'description': message,
-        }
-        dependency_blocker = prometheus_connection_blocker(
-            cluster,
-            detail=message,
-        )
-    except (LookupError, OSError, RuntimeError, TypeError, ValueError) as exc:
-        current_app.logger.exception(
-            exc,
-        )
-
-        dependency_blocker = prometheus_connection_blocker(
-            cluster,
-            detail=str(exc),
-        )
+    payload = get_analytics_overview(
+        selected_cluster_id=selected_cluster_id,
+        time_range=selected_time_range,
+        hydrate_live_sections=False,
+    )
+    _, _, _, dependency_context = build_analysis_utilization_context(
+        request.args,
+        check_prometheus_connection=False,
+    )
 
     return render_template(
-        'analytics/utilization/index.html',
-        cluster=cluster,
-        clusters=clusters,
-        summary=summary,
-        summary_table=summary_table,
-        detail_summary=detail_summary,
-        trends=trends,
-        error=error,
-        dependency_blocker=dependency_blocker,
-        prometheus_status=prometheus_status,
-        cluster_info=cluster_info,
-        risk_assessment=risk_assessment,
-        detail_risk_assessment=detail_risk_assessment,
-        trend_hours=trend_hours,
-        allowed_trend_hours=ALLOWED_TREND_HOURS,
-        available_nodes=available_nodes,
-        available_worker_nodes=available_worker_nodes,
-        selected_node=selected_node,
-        selected_trend_node=selected_trend_node,
-        trend_materialization_pending=trend_materialization_pending,
-        analytics_materialization=analytics_materialization,
-        cluster_query_endpoint='analytics.utilization',
-        cluster_query_hidden_params={
-            'trend_hours': trend_hours,
-            'trend_node': selected_trend_node,
-            'node': selected_node,
-        },
-        **recommendation_context,
+        'analytics/overview/index.html',
+        payload=payload,
+        dependency_blocker=dependency_context['dependency_blocker'],
     )
 
 
+@analytics_bp.route(
+    '/overview/section/<string:section>',
+    methods=[
+        'GET',
+    ],
+)
 @permission_required('analytics.view')
-def utilization_node_detail() -> str:
-    _, cluster, service, dependency_context = build_analysis_utilization_context(
-        request.args,
+def overview_section(section: str):
+    allowed_sections = {
+        'health-summary': 'analytics/overview/partials/_health_summary.html',
+        'hero-posture': 'analytics/overview/partials/_hero_posture.html',
+        'prometheus-status': 'analytics/overview/partials/_prometheus_status.html',
+        'resource-snapshot': 'analytics/overview/partials/_resource_snapshot.html',
+        'capacity-snapshot': 'analytics/overview/partials/_capacity_snapshot.html',
+        'actionable-recommendations': 'analytics/overview/partials/_actionable_recommendation_summary.html',
+        'storage-snapshot': 'analytics/overview/partials/_storage_snapshot.html',
+        'workload-snapshot': 'analytics/overview/partials/_workload_snapshot.html',
+        'top-consumers': 'analytics/overview/partials/_top_consumers_snapshot.html',
+        'forecast-snapshot': 'analytics/overview/partials/_forecast_snapshot.html',
+        'alerts-snapshot': 'analytics/overview/partials/_alerts_snapshot.html',
+        'recommendations': 'analytics/overview/partials/_recommendations.html',
+    }
+
+    template_name = allowed_sections.get(section)
+
+    if not template_name:
+        return '', 404
+
+    selected_time_range = request.args.get(
+        'time_range',
+        '24h',
     )
-    dependency_blocker = dependency_context.get('dependency_blocker')
+
+    if selected_time_range not in VALID_ANALYTICS_TIME_RANGES:
+        selected_time_range = '24h'
+
+    if request.headers.get('HX-Request') != 'true':
+        return redirect(
+            url_for(
+                'analytics.overview',
+                cluster_id=request.args.get('cluster_id'),
+                time_range=selected_time_range,
+            )
+        )
+
+    _, _, _, dependency_context = build_analysis_utilization_context(
+        request.args,
+        check_prometheus_connection=False,
+    )
+    dependency_blocker = dependency_context['dependency_blocker']
 
     if dependency_blocker:
         return render_dependency_blocker(
             dependency_blocker,
         )
 
-    if cluster is None or service is None:
-        return render_dependency_blocker(
-            cluster_required_blocker(),
-        )
-
-    requirements = service.requirements()
-    if not requirements.ok:
-        missing = list((requirements.payload or {}).get('missing_capabilities', []))
-        return render_dependency_blocker(
-            prometheus_capability_blocker(
-                cluster,
-                feature_label='Utilization Analytics',
-                missing_capabilities=missing,
-            )
-        )
-
-    selected_node = request.args.get(
-        'node',
-        '',
-        type=str,
+    payload = get_analytics_overview_section(
+        section=section,
+        selected_cluster_id=request.args.get('cluster_id'),
+        time_range=selected_time_range,
     )
 
-    detail_summary = _empty_summary()
-    detail_risk_assessment = _empty_risk_assessment()
-
-    try:
-        available_nodes = service.get_node_names()
-
-        if selected_node not in available_nodes:
-            selected_node = ''
-
-        detail_summary = service.get_detail_summary(
-            node_name=selected_node or None,
-        )
-
-        detail_risk_assessment = service.get_capacity_pressure_risk(
-            cast(
-                dict[str, int | float],
-                detail_summary,
-            ),
-            selected_node or None,
-        )
-    except PrometheusError as exc:
-        return render_dependency_blocker(
-            prometheus_connection_blocker(
-                cluster,
-                detail=str(exc),
-            )
-        )
-    except Exception as exc:
-        current_app.logger.exception(
-            'Unable to retrieve utilization node detail for cluster %s.',
-            cluster.name,
-        )
-        return render_dependency_blocker(
-            prometheus_connection_blocker(
-                cluster,
-                detail=str(exc),
-            )
-        )
-
-    return render_template(
-        'analytics/utilization/partials/_node_detail.html',
-        cluster=cluster,
-        detail_summary=detail_summary,
-        detail_risk_assessment=detail_risk_assessment,
-        available_nodes=available_nodes,
-        selected_node=selected_node,
-        error=None,
+    section_html = render_template(
+        template_name,
+        payload=payload,
     )
+
+    if section == 'prometheus-status':
+        return f'{section_html}{_build_prometheus_failure_feedback(payload)}'
+
+    return section_html
+
+
+analytics_bp.add_url_rule(
+    '/utilization',
+    endpoint='utilization',
+    view_func=utilization,
+)
+
+analytics_bp.add_url_rule(
+    '/utilization/node-detail',
+    endpoint='utilization_node_detail',
+    view_func=utilization_node_detail,
+)
+
+analytics_bp.add_url_rule(
+    '/utilization/trend',
+    endpoint='utilization_trend',
+    view_func=utilization_trend,
+)
+
+analytics_bp.add_url_rule(
+    '/capacity',
+    endpoint='capacity',
+    view_func=capacity,
+    methods=[
+        'GET',
+    ],
+)
+
+analytics_bp.add_url_rule(
+    '/storage',
+    endpoint='storage',
+    view_func=storage,
+    methods=[
+        'GET',
+    ],
+)
+
+analytics_bp.add_url_rule(
+    '/storage/filesystem-summary',
+    endpoint='storage_filesystem_summary',
+    view_func=storage_filesystem_summary,
+    methods=[
+        'GET',
+    ],
+)
+
+analytics_bp.add_url_rule(
+    '/storage/persistent-summary',
+    endpoint='storage_persistent_summary',
+    view_func=storage_persistent_summary,
+    methods=[
+        'GET',
+    ],
+)
+
+analytics_bp.add_url_rule(
+    '/workload',
+    endpoint='workload',
+    view_func=workload,
+    methods=[
+        'GET',
+    ],
+)
+
+analytics_bp.add_url_rule(
+    '/workload/tenant-quota',
+    endpoint='workload_tenant_quota',
+    view_func=workload_tenant_quota,
+    methods=[
+        'GET',
+    ],
+)
+
+analytics_bp.add_url_rule(
+    '/workload/resource-mapping',
+    endpoint='workload_resource_mapping',
+    view_func=workload_resource_mapping,
+    methods=[
+        'GET',
+    ],
+)
+
+analytics_bp.add_url_rule(
+    '/forecast',
+    endpoint='forecast',
+    view_func=forecast,
+    methods=[
+        'GET',
+    ],
+)
+
+analytics_bp.add_url_rule(
+    '/forecast/section',
+    endpoint='forecast_section',
+    view_func=forecast_section,
+    methods=[
+        'GET',
+    ],
+)
+
+analytics_bp.add_url_rule(
+    '/top-consumers',
+    endpoint='top_consumers',
+    view_func=top_consumers,
+    methods=[
+        'GET',
+    ],
+)
+
+analytics_bp.add_url_rule(
+    '/top-consumers/section',
+    endpoint='top_consumers_section',
+    view_func=top_consumers_section,
+    methods=[
+        'GET',
+    ],
+)
+
+analytics_bp.add_url_rule(
+    '/top-consumers/table',
+    endpoint='top_consumers_table',
+    view_func=top_consumers_table,
+    methods=[
+        'GET',
+    ],
+)
+
+analytics_bp.add_url_rule(
+    '/alerts',
+    endpoint='alerts',
+    view_func=alerts,
+    methods=[
+        'GET',
+    ],
+)
+
+analytics_bp.add_url_rule(
+    '/alerts-anomalies',
+    endpoint='alerts_anomalies',
+    view_func=alerts,
+    methods=[
+        'GET',
+    ],
+)
+
+analytics_bp.add_url_rule(
+    '/alerts/table',
+    endpoint='alerts_table',
+    view_func=alerts_table,
+    methods=[
+        'GET',
+    ],
+)
+
+analytics_bp.add_url_rule(
+    '/alerts/anomalies',
+    endpoint='alerts_anomalies_table',
+    view_func=anomalies_table,
+    methods=[
+        'GET',
+    ],
+)
