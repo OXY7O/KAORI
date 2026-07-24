@@ -61,7 +61,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
     },
     {
         'title': 'Kubernetes Inventory',
-        'label': 'Asset visibility',
+        'label': 'Asset Visibility',
         'description': (
             'Gain visibility into Kubernetes resources, their status, configuration, and relationships across connected clusters.'
         ),
@@ -72,7 +72,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
     },
     {
         'title': 'Kubernetes Analytics',
-        'label': 'Operational analytics',
+        'label': 'Operational Analytics',
         'description': (
             'Explore utilization, capacity, workload efficiency, storage, forecast risks, top consumers, alerts, and anomalies.'
         ),
@@ -83,7 +83,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
     },
     {
         'title': 'Intelligence',
-        'label': 'Decision support',
+        'label': 'Decision Support',
         'description': (
             'Identify operational findings, understand affected assets, and follow prioritized remediation guidance.'
         ),
@@ -94,7 +94,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
     },
     {
         'title': 'Kubernetes Cluster',
-        'label': 'Integration & sync',
+        'label': 'Integration & Sync',
         'description': (
             'Manage registered environments, connection readiness, inventory synchronization, and integration status.'
         ),
@@ -105,7 +105,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
     },
     {
         'title': 'Kubernetes Operations',
-        'label': 'Controlled workflows',
+        'label': 'Controlled Workflows',
         'description': (
             'Run permission-aware configuration and protected infrastructure '
             'operations with validation, safeguards, and audit context.'
@@ -130,7 +130,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
     },
     {
         'title': 'Governance',
-        'label': 'Policy & lifecycle',
+        'label': 'Policy & Lifecycle',
         'description': (
             'Review infrastructure governance posture, lifecycle exposure, policy '
             'context, and controlled remediation workflows.'
@@ -145,7 +145,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
     },
     {
         'title': 'Reports',
-        'label': 'History & management output',
+        'label': 'History & Management Output',
         'description': (
             'Open operational history, generated reports, templates, schedules, '
             'storage, retention, and management-ready outputs available to your role.'
@@ -163,7 +163,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
     },
     {
         'title': 'Access Management',
-        'label': 'Identity, access & audit',
+        'label': 'Identity, Access & Audit',
         'description': (
             'Manage users, roles, permissions, authentication events, and operational '
             'audit records according to assigned authority.'
@@ -179,7 +179,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
     },
     {
         'title': 'Account & Settings',
-        'label': 'Personal & system settings',
+        'label': 'Personal & System Settings',
         'description': (
             'Manage your account and preferences; authorized roles can also configure '
             'integrations and platform-level settings.'

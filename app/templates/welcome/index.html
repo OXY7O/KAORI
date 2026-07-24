@@ -21,13 +21,30 @@
                 </div>
                 <aside class="{{ page_hero.aside_classes() }}"
                        aria-label="Current access scope">
-                    <div class="{{ page_hero.context_panel_classes() }}">
-                        {{ page_hero.context_header('Access Scope', 'Role-Aware Workspace', 'key-round') }}
-                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                            {{ page_hero.context_metric('panels-top-left', 'Workspaces', shortcut_count, 'Available for the current role') }}
-                            {{ page_hero.context_metric('layers-3', 'Capability Areas', workspace_group_count, 'Grouped operational domains') }}
+                    <div class="rounded-xl border border-white/20 bg-white p-4 text-content-primary shadow-lg shadow-black/10">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="key-round" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-[10px] font-extrabold uppercase tracking-[0.12em] text-kaori-primary">Access Scope</p>
+                                <h2 class="mt-1 text-sm font-extrabold text-content-primary">Role-Aware Workspace</h2>
+                                <p class="mt-1.5 text-[11px] font-medium leading-5 text-content-muted">
+                                    Only workspaces permitted for your current role are displayed.
+                                </p>
+                            </div>
                         </div>
-                        {{ page_hero.context_note("KAORI renders only permitted workspaces. Protected routes and actions remain enforced server-side.") }}
+                        <div class="mt-4 grid grid-cols-2 gap-2 border-t border-outline-subtle pt-3">
+                            <div>
+                                <strong class="block text-lg font-extrabold text-content-primary">{{ shortcut_count }}</strong>
+                                <span class="text-[10px] font-semibold text-content-muted">Workspaces</span>
+                            </div>
+                            <div>
+                                <strong class="block text-lg font-extrabold text-content-primary">{{ workspace_group_count }}</strong>
+                                <span class="text-[10px] font-semibold text-content-muted">Capability Areas</span>
+                            </div>
+                        </div>
                     </div>
                 </aside>
             </div>
@@ -39,7 +56,7 @@
                         <i data-lucide="layout-grid" class="h-4 w-4" aria-hidden="true"></i>
                         Available Workspaces
                     </div>
-                    <h2 class="mt-3 text-2xl font-extrabold tracking-[-0.035em] text-content-primary">Open the capability you need</h2>
+                    <h2 class="mt-3 text-2xl font-extrabold tracking-[-0.035em] text-content-primary">Open the Capability You Need</h2>
                     <p class="mt-1.5 max-w-3xl text-[12px] font-medium leading-5 text-content-muted">
                         Workspaces are grouped by operational purpose and automatically filtered by your assigned permissions.
                     </p>
@@ -132,7 +149,7 @@
                       aria-hidden="true">
                     <i data-lucide="search-x" class="h-6 w-6"></i>
                 </span>
-                <h3 class="mt-4 text-base font-extrabold text-content-primary">No permitted workspace matches this search</h3>
+                <h3 class="mt-4 text-base font-extrabold text-content-primary">No Permitted Workspace Matches This Search</h3>
                 <p class="mt-1 text-[11px] font-medium text-content-muted">Try a different capability, function, or infrastructure scope.</p>
             </div>
         </section>
