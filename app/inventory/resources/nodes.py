@@ -139,6 +139,7 @@ def get_node_inventory(
                 'node_name': node.node_name,
                 'role': node.role,
                 'status': node_status,
+                'status_display': 'Not Ready' if node_status == 'NotReady' else node_status,
                 'internal_ip': node.internal_ip,
                 'external_ip': node.external_ip,
                 'hostname_address': node.hostname_address,
@@ -220,9 +221,16 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
         network_availability = 'Available'
 
     ready_condition = {
-        'Ready': 'True',
-        'NotReady': 'False',
+        'Ready': 'Ready',
+        'NotReady': 'Not Ready',
     }.get(node.status or '', 'Unknown')
+
+    def pressure_display(value: str | None) -> str:
+        if value == 'True':
+            return 'Pressure Detected'
+        if value == 'False':
+            return 'Normal'
+        return 'Not Reported'
 
     node_labels = node.labels or {}
     operating_system = node.operating_system or node_labels.get('kubernetes.io/os') or 'Unknown'
@@ -243,6 +251,7 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
             'Provides Kubernetes node capacity. Its exact function depends on the labels and workloads assigned to it.',
         ),
         'status': node.status or 'Unknown',
+        'status_display': 'Not Ready' if node.status == 'NotReady' else (node.status or 'Unknown'),
         'internal_ip': node.internal_ip,
         'external_ip': node.external_ip,
         'hostname_address': node.hostname_address,
@@ -250,9 +259,9 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
         'network_availability': network_availability,
         'scheduling_display': scheduling_display,
         'ready_condition': ready_condition,
-        'memory_pressure': node.memory_pressure or 'Not reported',
-        'disk_pressure': node.disk_pressure or 'Not reported',
-        'pid_pressure': node.pid_pressure or 'Not reported',
+        'memory_pressure': pressure_display(node.memory_pressure),
+        'disk_pressure': pressure_display(node.disk_pressure),
+        'pid_pressure': pressure_display(node.pid_pressure),
         'taints': node.taints or [],
         'labels': dict(
             sorted(
