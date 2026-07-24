@@ -84,7 +84,7 @@
       :class="activeTab === 'queues' ? 'text-white' : 'bg-kaori-soft text-kaori-primary'">{{ job_stats.queues }}</span></button>
         </div>
     </section>
-    <div x-show="activeTab === 'active'" x-cloak>{% include 'integrations/jobs/partials/_active_jobs.html' %}</div>
-    <div x-show="activeTab === 'registry'" x-cloak>{% include 'integrations/jobs/partials/_registry.html' %}</div>
-    <div x-show="activeTab === 'queues'" x-cloak>{% include 'integrations/jobs/partials/_queue_activity.html' %}</div>
+    <div x-show="activeTab === 'active'" x-cloak>{% include 'jobs/executions/partials/_active_jobs.html' %}</div>
+    <div x-show="activeTab === 'registry'" x-cloak>{% include 'jobs/executions/partials/_registry.html' %}</div>
+    <div x-show="activeTab === 'queues'" x-cloak>{% include 'jobs/executions/partials/_queue_activity.html' %}</div>
 </section>

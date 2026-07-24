@@ -15,7 +15,7 @@ ROLE_SLUG_PATTERN = re.compile(r'[^a-z0-9_]+')
 # inconsistent state such as users.manage without users.view.
 PERMISSION_DEPENDENCIES: dict[str, set[str]] = {
     'clusters.manage': {'clusters.view'},
-    'clusters.sync': {'clusters.view'},
+    'clusters.sync': {'clusters.view', 'jobs.execute'},
     'kubernetes_configmaps.create': {'kubernetes_configmaps.view'},
     'kubernetes_configmaps.update': {'kubernetes_configmaps.view'},
     'kubernetes_configmaps.delete': {'kubernetes_configmaps.view'},
@@ -35,6 +35,8 @@ PERMISSION_DEPENDENCIES: dict[str, set[str]] = {
     'reports.manage_schedules': {'reports.view'},
     'reports.manage_storage': {'reports.view'},
     'jobs.cancel': {'jobs.view'},
+    'jobs.execute': {'jobs.view'},
+    'jobs.configure': {'jobs.view'},
     'knowledge.runbooks.manage': {'knowledge.runbooks.view'},
     'knowledge.runbooks.publish': {'knowledge.runbooks.view', 'knowledge.runbooks.manage'},
     'intelligence.decisions.create': {'intelligence.decisions.view'},

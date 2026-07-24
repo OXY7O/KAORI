@@ -15,6 +15,7 @@ def register_blueprints(app: Flask) -> None:
     from app.health import health_bp
     from app.integrations.routes import integrations_bp
     from app.intelligence.routes import intelligence_bp
+    from app.jobs.routes import bp as jobs_bp
     from app.inventory.routes import inventory_bp
     from app.kubernetes_operations.routes import kubernetes_operations_bp
     from app.notifications.routes import notifications_bp
@@ -38,6 +39,7 @@ def register_blueprints(app: Flask) -> None:
         intelligence_bp,
         automation_control_bp,
         integrations_bp,
+        jobs_bp,
         reports_bp,
         prometheus_bp,
         settings_bp,

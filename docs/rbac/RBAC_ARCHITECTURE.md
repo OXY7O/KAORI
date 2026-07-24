@@ -45,6 +45,10 @@ Examples:
 
 - `clusters.view`
 - `clusters.sync`
+- `jobs.view`
+- `jobs.execute`
+- `jobs.configure`
+- `jobs.cancel`
 - `users.reset_password`
 - `settings.view_operational_activity`
 - `kubernetes_secrets.approve_reveal`
@@ -128,13 +132,28 @@ Examples:
 ```text
 users.manage -> users.view
 roles.manage -> roles.view
-clusters.sync -> clusters.view
+clusters.sync -> clusters.view + jobs.execute
+jobs.execute -> jobs.view
+jobs.configure -> jobs.view
+jobs.cancel -> jobs.view
 reports.generate -> reports.view
 kubernetes_configmaps.update -> kubernetes_configmaps.view
 settings.export_operational_activity -> settings.view_operational_activity
 ```
 
 Dependency expansion is performed in `app/rbac/service.py` before replacing a custom role's assignments. It is a consistency rule, not a substitute for route guards.
+
+
+### 6.1 Job orchestration permissions
+
+The Jobs control plane separates lifecycle visibility from manual execution, policy configuration, and cancellation:
+
+- `jobs.view` opens Platform Operations and the execution/configuration workspaces;
+- `jobs.execute` permits manual dispatch through a registered job definition;
+- `jobs.configure` permits automatic policy changes;
+- `jobs.cancel` permits cancellation where the execution type supports it.
+
+A registered job may require an additional owning-domain permission. Kubernetes Inventory Sync requires both `jobs.execute` and `clusters.sync`; the route and dispatcher must not infer domain authority from `jobs.execute` alone. Existing custom roles with `clusters.sync` or `settings.manage_integrations` receive the corresponding job permission during migration.
 
 ## 7. Current scope boundary
 

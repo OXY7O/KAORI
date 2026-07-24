@@ -1,0 +1,95 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% block title %}Jobs &amp; Executions · KAORI{% endblock %}
+{% block dashboard_content %}
+    <div class="space-y-6"
+         x-data="{ activeTab: '{{ active_jobs_section }}' }">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('activity', 'Platform Operations', 'list-checks') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Jobs &amp; Executions</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
+                            Monitor canonical background executions and configure automatic policies from one operational workspace.
+                        </p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('workflow', configuration_stats.registered ~ ' Registered Jobs') }}
+                            {{ page_hero.meta_label('calendar-clock', configuration_stats.enabled ~ ' Schedules Enabled') }}
+                            {{ page_hero.meta_label('activity', job_stats.active ~ ' Active Executions') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="Platform job posture">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        {{ page_hero.context_header(
+                            'Job Control Plane',
+                            'Configuration & Execution',
+                            'workflow'
+                        ) }}
+                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                            {{ page_hero.context_metric(
+                                'loader-circle',
+                                'Active',
+                                job_stats.active,
+                                'Queued, running, and retrying jobs'
+                            ) }}
+                            {{ page_hero.context_metric(
+                                'triangle-alert',
+                                'Needs Attention',
+                                configuration_stats.attention,
+                                'Configured jobs requiring review'
+                            ) }}
+                        </div>
+                        {{ page_hero.context_info(
+                            'shield-check',
+                            'Every manual and scheduled run is recorded through the canonical JobExecution lifecycle.'
+                        ) }}
+                    </div>
+                </aside>
+            </div>
+        </section>
+
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+            <nav class="border-b border-outline-default bg-kaori-soft/50 px-5 pt-4"
+                 aria-label="Jobs and executions workspaces">
+                <div class="flex gap-2 overflow-x-auto" role="tablist">
+                    <button type="button"
+                            role="tab"
+                            :aria-selected="activeTab === 'executions'"
+                            aria-controls="jobs-executions-workspace"
+                            @click="activeTab='executions'; history.replaceState(null, '', '{{ url_for('jobs.executions') }}')"
+                            class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition"
+                            :class="activeTab === 'executions' ? '-mb-px border-kaori-primary bg-kaori-primary text-white' : 'border-kaori-primary/25 bg-white text-kaori-primary hover:bg-kaori-soft'">
+                        <i data-lucide="list-checks" class="h-4 w-4"></i>
+                        Executions
+                    </button>
+                    <button type="button"
+                            role="tab"
+                            :aria-selected="activeTab === 'configuration'"
+                            aria-controls="jobs-configuration-tabpanel"
+                            @click="activeTab='configuration'; history.replaceState(null, '', '{{ url_for('jobs.configuration') }}?job_key={{ selected_job_key }}')"
+                            class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition"
+                            :class="activeTab === 'configuration' ? '-mb-px border-kaori-primary bg-kaori-primary text-white' : 'border-kaori-primary/25 bg-white text-kaori-primary hover:bg-kaori-soft'">
+                        <i data-lucide="sliders-horizontal" class="h-4 w-4"></i>
+                        Job Configuration
+                    </button>
+                </div>
+            </nav>
+            <div class="p-5 lg:p-6">
+                <div id="jobs-executions-workspace"
+                     role="tabpanel"
+                     x-show="activeTab === 'executions'"
+                     x-cloak>
+                    {% include "jobs/executions/_workspace.html" %}
+                </div>
+                <div id="jobs-configuration-tabpanel"
+                     role="tabpanel"
+                     x-show="activeTab === 'configuration'"
+                     x-cloak>
+                    {% include "jobs/configuration/_workspace.html" %}
+                </div>
+            </div>
+        </section>
+    </div>
+{% endblock %}

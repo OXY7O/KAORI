@@ -19,7 +19,6 @@ from app.integrations.service import (
 from app.integrations.validation.state import (
     build_validation_snapshot,
     get_active_validation_task_id,
-    release_validation_job,
 )
 from app.integrations.validation.web import (
     enqueue_instance_validation,
@@ -27,9 +26,6 @@ from app.integrations.validation.web import (
     snapshot_feedback_for_user,
     validate_snapshot_access,
 )
-from app.jobs.presentation import build_job_execution_context
-from app.jobs.service import JobCancellationNotAllowed, cancel_job_execution
-from app.models.job import JobExecution
 from app.notifications.service import get_navigation_notification_context, record_operational_activity
 from app.rbac.decorators import permission_required
 
@@ -50,142 +46,6 @@ def overview() -> ResponseReturnValue:
     if request.headers.get('HX-Request') == 'true':
         return render_template('integrations/partials/_runtime_overview.html', **context)
     return render_template('integrations/overview.html', **context)
-
-
-@integrations_bp.get('/jobs')
-@permission_required('jobs.view')
-def jobs() -> ResponseReturnValue:
-    context = build_job_execution_context(
-        page=request.args.get('page', 1, type=int) or 1,
-        per_page=request.args.get('per_page', 5, type=int) or 5,
-        status=request.args.get('status', '').strip(),
-        workload=request.args.get('workload', '').strip(),
-        queue=request.args.get('queue', '').strip(),
-        search=request.args.get('search', '').strip(),
-        tab=request.args.get('tab', 'active').strip(),
-    )
-    if request.headers.get('HX-Request') == 'true':
-        fragment = request.args.get('fragment', 'workspace').strip()
-        if fragment == 'registry':
-            return render_template('integrations/jobs/partials/_registry.html', **context)
-        if fragment == 'active':
-            return render_template('integrations/jobs/partials/_active_jobs.html', **context)
-        if fragment == 'status':
-            return render_template('integrations/jobs/partials/_status_refresh.html', **context)
-        return render_template('integrations/jobs/partials/_workspace.html', **context)
-    return render_template('integrations/jobs.html', **context)
-
-
-@integrations_bp.post('/jobs/<string:public_id>/cancel')
-@permission_required('jobs.cancel')
-def cancel_job(public_id: str) -> ResponseReturnValue:
-    job = JobExecution.query.filter_by(public_id=public_id).first_or_404()
-    is_htmx = request.headers.get('HX-Request') == 'true'
-    if job.is_active:
-        previous_status = job.status
-        try:
-            cancel_job_execution(job, terminate=False)
-        except JobCancellationNotAllowed as exc:
-            feedback = record_operational_activity(
-                user_id=int(current_user.id),
-                event_type='job_cancellation_rejected',
-                status='warning',
-                title='Job cancellation unavailable',
-                message='KAORI did not interrupt the active provider operation.',
-                detail=str(exc),
-                action_url=url_for('integrations.jobs'),
-                action_label='Review jobs',
-                action_icon='list-checks',
-                metadata={
-                    'job_execution_id': job.id,
-                    'job_public_id': job.public_id,
-                    'task_id': job.celery_task_id,
-                    'queue': job.queue_name,
-                    'workload_class': job.workload_class,
-                },
-                queue_feedback=not is_htmx,
-            )
-        else:
-            canceled_before_start = previous_status == 'queued' and job.status == 'canceled'
-            if canceled_before_start and job.job_type == 'integration_operation' and job.celery_task_id:
-                payload = job.payload_json or {}
-                try:
-                    release_validation_job(
-                        task_id=job.celery_task_id,
-                        provider_type=str(job.provider_type or payload.get('provider_type') or ''),
-                        operation=job.operation,
-                        instance_id=int(job.provider_instance_id or payload.get('instance_id') or 0),
-                        binding_id=payload.get('binding_id'),
-                    )
-                except Exception:
-                    current_app.logger.exception(
-                        'Could not release integration lock for canceled job %s.',
-                        job.public_id,
-                    )
-            feedback = record_operational_activity(
-                user_id=int(current_user.id),
-                event_type='job_canceled' if canceled_before_start else 'job_cancellation_requested',
-                status='warning',
-                title='Job canceled' if canceled_before_start else 'Job cancellation requested',
-                message=(
-                    f'KAORI canceled {job.operation.replace("_", " ").title()} before worker execution.'
-                    if canceled_before_start
-                    else f'KAORI requested cancellation for {job.operation.replace("_", " ").title()}.'
-                ),
-                detail=(
-                    'The queued task was revoked and its active deduplication slot was released.'
-                    if canceled_before_start
-                    else 'Running analytics and forecasting tasks stop at their next cooperative checkpoint.'
-                ),
-                action_url=url_for('integrations.jobs'),
-                action_label='Review jobs',
-                action_icon='list-checks',
-                metadata={
-                    'job_execution_id': job.id,
-                    'job_public_id': job.public_id,
-                    'task_id': job.celery_task_id,
-                    'queue': job.queue_name,
-                    'workload_class': job.workload_class,
-                    'previous_status': previous_status,
-                    'current_status': job.status,
-                },
-                queue_feedback=not is_htmx,
-            )
-    else:
-        feedback = record_operational_activity(
-            user_id=int(current_user.id),
-            event_type='job_cancellation_ignored',
-            status='info',
-            title='Job already completed',
-            message='KAORI did not request cancellation because the job is already terminal.',
-            detail=f'Current status: {job.status.replace("_", " ").title()}.',
-            action_url=url_for('integrations.jobs'),
-            action_label='Review jobs',
-            action_icon='list-checks',
-            metadata={'job_execution_id': job.id, 'job_public_id': job.public_id},
-            queue_feedback=not is_htmx,
-        )
-    if is_htmx:
-        context = build_job_execution_context(
-            page=request.form.get('page', 1, type=int) or 1,
-            per_page=request.form.get('per_page', 5, type=int) or 5,
-            status=request.form.get('status', '').strip(),
-            workload=request.form.get('workload', '').strip(),
-            queue=request.form.get('queue', '').strip(),
-            search=request.form.get('search', '').strip(),
-            tab=request.form.get('tab', 'active').strip(),
-        )
-        context['operation_feedback'] = feedback
-        context['notification_context'] = get_navigation_notification_context(user_id=int(current_user.id))
-        fragment = request.form.get('fragment', 'workspace').strip()
-        if fragment == 'registry':
-            return render_template('integrations/jobs/partials/_registry.html', **context)
-        if fragment == 'active':
-            return render_template('integrations/jobs/partials/_active_jobs.html', **context)
-        if fragment == 'status':
-            return render_template('integrations/jobs/partials/_status_refresh.html', **context)
-        return render_template('integrations/jobs/partials/_workspace.html', **context)
-    return redirect(url_for('integrations.jobs'))
 
 
 @integrations_bp.get('/kubernetes')

@@ -886,7 +886,7 @@ def delete_instance(instance_id: int) -> ResponseReturnValue:
             title='Prometheus instance deletion blocked',
             message=f'{instance_name} still has active operational dependencies.',
             detail=str(exc),
-            action_url=url_for('integrations.jobs', search=instance_name),
+            action_url=url_for('jobs.executions', search=instance_name),
             action_label='Review active jobs',
             action_icon='list-checks',
             metadata={

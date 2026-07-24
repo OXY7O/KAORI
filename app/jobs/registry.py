@@ -1,0 +1,17 @@
+from __future__ import annotations
+
+from app.jobs.definitions import INVENTORY_SYNC_DEFINITION, JobDefinition
+
+_JOB_DEFINITIONS: tuple[JobDefinition, ...] = (INVENTORY_SYNC_DEFINITION,)
+_JOB_DEFINITION_BY_KEY = {definition.key: definition for definition in _JOB_DEFINITIONS}
+
+
+def list_job_definitions() -> tuple[JobDefinition, ...]:
+    return _JOB_DEFINITIONS
+
+
+def get_job_definition(job_key: str) -> JobDefinition:
+    try:
+        return _JOB_DEFINITION_BY_KEY[job_key]
+    except KeyError as exc:
+        raise LookupError(f'Unknown registered job: {job_key}') from exc

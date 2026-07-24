@@ -64,7 +64,7 @@ access can resolve to the mapping method and produce a runtime iterable error.
 
 Kubernetes Inventory supports two canonical dispatch paths:
 
-- **Automatic fleet sync** is enabled by default with a 60-minute interval. Celery Beat runs the lightweight `app.inventory.tasks.dispatch_scheduled_inventory_sync` checker every minute. The database-backed singleton policy determines whether a run is due, so changing the interval does not require restarting Beat.
+- **Automatic fleet sync** is registered as `kubernetes.inventory.sync` in the Jobs control plane. Celery Beat runs `app.jobs.tasks.dispatch_scheduled_jobs` every minute, while the generic `job_policies` row controls the actual interval without requiring a Beat restart.
 - **Manual sync** remains available per cluster and through Quick Actions as **Sync All Inventory**. Both automatic and manual fleet sync use the same canonical job dispatcher, inventory queue, resource-group admission lock, Kubernetes resolver, and transactional generation commit.
 
 The scheduler claims the policy row with `SELECT ... FOR UPDATE` and advances `next_run_at` before dispatch. Scheduled and manual fleet requests use the same stable admission parameters while target and trigger details remain in the job payload, so a changed target snapshot or trigger type cannot create a second active all-inventory job. Fleet targets are resolved through enabled canonical Kubernetes bindings; disabled or unbound integrations are skipped before job admission, and no empty `JobExecution` is created when the eligible fleet is empty.

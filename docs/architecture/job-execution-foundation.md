@@ -5,7 +5,9 @@
 The Job Execution Foundation is the canonical control plane for asynchronous work in KAORI. It prevents Flask requests from owning heavy provider operations and prepares Kubernetes Analytics, forecasting, reports, validation, and maintenance jobs to share one lifecycle contract.
 
 ```text
-User / Scheduler
+Manual action / generic policy scheduler
+      ↓
+Registered JobDefinition and domain permission resolution
       ↓
 Canonical JobExecution record in PostgreSQL
       ↓
@@ -27,12 +29,15 @@ All SQLAlchemy models remain centralized in `app/models/`:
 ```text
 app/models/job.py
 ├── JobExecution
-└── JobExecutionSubscriber
+├── JobExecutionSubscriber
+└── JobPolicy
 ```
 
 `JobExecution` records job type, operation, workload class, queue, priority, requester, provider/scope identity, deduplication key, parameter fingerprint, Celery task ID, progress, heartbeat, attempts, error, result reference, and lifecycle timestamps.
 
 `JobExecutionSubscriber` records every user observing one shared execution. If two users request the same active validation or analytics job, KAORI dispatches one Celery task and subscribes both users to the same job.
+
+`JobPolicy` stores the database-backed automatic execution policy for one registered job and scope. The first policy is `kubernetes.inventory.sync` for the all-cluster Kubernetes inventory fleet. Policy edits do not restart Celery Beat.
 
 ## Multi-user deduplication
 
@@ -124,20 +129,31 @@ Small summaries may be stored in `result_summary_json`. Large outputs must use `
 
 ## Operational visibility
 
-`Integrations → Review Jobs` opens the Job Execution Registry. It provides status, queue, scope, requester, progress, duration, filters, and safe cancellation controls. Pagination follows the KAORI default of 5 with 5/10/25/50 choices.
+`Platform Operations → Jobs & Executions` owns two top-level workspaces:
+
+- **Executions** provides active work, the server-paginated registry, queue demand, progress, requester, timing, result, and safe cancellation controls.
+- **Job Configuration** provides the registered job catalog, automatic policy controls, manual execution, recent execution history, and domain safety boundaries.
+
+Inventory Sync is the first registered configuration. Future report, analytics, forecasting, retention, and reconciliation jobs must register here rather than introducing a new Settings page or parallel scheduler.
 
 ## Implementation boundaries
 
 ```text
 app/jobs/
+├── routes.py            # Executions and Job Configuration workspaces
+├── registry.py          # static registered-job catalog
+├── configuration.py     # generic catalog and selected-job presentation
+├── definitions/         # metadata-only adapters to owning domains
+├── policies/            # generic policy form, persistence, and presentation
+├── scheduler.py         # database claim and registered dispatch
 ├── dispatcher.py        # canonical create/deduplicate/dispatch entry point
 ├── execution.py         # cooperative worker lifecycle helper
 ├── fingerprint.py       # deterministic parameter fingerprints
 ├── service.py           # PostgreSQL lifecycle, quota, subscriber, recovery
-└── tasks.py             # maintenance/recovery tasks
+└── tasks.py             # policy dispatch and maintenance/recovery tasks
 ```
 
-Provider code owns provider-specific queries. The Job Execution Foundation owns lifecycle, dispatch, deduplication, quotas, progress, cancellation, and recovery.
+Provider and feature domains own their collectors, report builders, analytics processors, and retention adapters. `app.jobs` owns registration, policy, lifecycle, dispatch, deduplication, quotas, progress, cancellation, and recovery. Definitions may resolve a domain adapter dynamically, but business logic must not move into the jobs package.
 
 
 ## Celery priority contract

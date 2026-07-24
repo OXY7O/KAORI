@@ -1,70 +1,65 @@
-# KAORI Job Execution Foundation
+# Jobs & Executions
 
-## Purpose
+`app/jobs` is KAORI's canonical orchestration domain for background work. It owns job registration, scheduling policy, admission, `JobExecution` lifecycle, configuration UI, and worker/queue visibility. It does not own domain business logic.
 
-`app/jobs` provides the canonical execution lifecycle for validation, runtime, analytics, forecasting, maintenance, and other background workloads. PostgreSQL is the source of truth for job state. Redis remains the broker, distributed-lock service, resource-slot coordinator, and transient progress channel.
+## Canonical Flow
 
-## Multi-user contract
+```text
+Manual action / generic scheduler
+→ registered JobDefinition
+→ domain permission and scope resolution
+→ canonical JobExecution create-or-attach
+→ Celery queue
+→ domain executor
+→ progress, result, and terminal lifecycle
+```
 
-Identical active requests attach to one `JobExecution` through the active deduplication key. Each requesting user is recorded as a `JobExecutionSubscriber`; KAORI must not enqueue duplicate work merely because several users click the same action.
+Every supported manual or scheduled operation must create or attach to a canonical `JobExecution`. Routes and scheduler code must never call a Celery domain task directly.
 
-## Job records and Activity Audit records are different
+## Structure
 
-`JobExecution` records are operational execution state. They contain queue ownership, progress, attempts, worker state, result references, and cancellation state.
+- `registry.py` exposes the static job catalog.
+- `definitions/` adapts registered jobs to their owning domains.
+- `policies/` owns generic interval policy persistence and validation. Cron support requires an explicit scheduler extension before any definition may select it.
+- `scheduler.py` claims due `JobPolicy` rows with database locks.
+- `dispatcher.py` provides canonical dispatch and create-or-attach behavior.
+- `routes.py` owns `/jobs/executions` and `/jobs/configuration`.
+- `presentation.py` builds execution registry and queue views.
+- `configuration.py` builds the job catalog and selected definition workspace.
 
-Activity Audit records answer who requested, changed, canceled, completed, or failed an operation. They are an immutable administrative trail and must remain independently reviewable after the hot job row is removed.
+## Ownership Boundary
 
-For that reason, Job Execution records must never be cleaned by deleting matching Activity Audit records, and Activity Audit retention must not be treated as Job Registry retention.
+The job domain may import a public domain dispatcher, but domain execution remains in its owner:
 
-## Retention direction
+- Kubernetes inventory collection: `app.inventory` / `app.cluster`
+- report generation: `app.reports`
+- analytics materialization: `app.analytics`
+- lifecycle archive: `app.retention`
 
-KAORI should use the existing archive-first retention engine with a separate `job_execution` domain. It may be presented inside the same **Retention & Archive** workspace as Operational Activity, but each domain needs its own policy, preview, archive manifest, cleanup boundary, and execution history.
+Do not move collectors, report builders, analytics processors, or retention adapters into `app.jobs`.
 
-Recommended initial policy:
+## Registered Jobs
 
-- active jobs: never eligible;
-- terminal runtime and validation jobs: retain in PostgreSQL for 30 days;
-- terminal analytics and forecasting jobs: retain for 90 days or until their result reference expires, whichever is later;
-- failed jobs: retain for at least 90 days;
-- archive artifacts: retain for 365 days;
-- result artifacts and datasets: governed by their owning analytics/report/storage policy, not by deleting the JobExecution row;
-- subscribers: archived with the job and removed through the JobExecution cascade only after archive verification.
+The first registered definition is `kubernetes.inventory.sync`:
 
-Until the `job_execution` archive domain and its UI are implemented, deployments should monitor `job_executions` growth and must not enable ad-hoc database deletion scripts.
+- queue: `inventory`
+- scope: `kubernetes_fleet:all`
+- schedule: enabled by default every 60 minutes
+- manual execution: supported
+- domain execution permission: `clusters.sync`
+- deduplication group: `kubernetes-inventory:global`
 
-## Registry refresh contract
+Additional jobs must be added through a new definition rather than a parallel scheduler or settings page.
 
-The Job Execution Registry provides an explicit HTMX `Refresh` action in its block header. Refresh preserves the active page, page size, and filters, swaps only `#job-execution-registry`, and uses the standard loading bar directly below the title header. The action does not reload the full Jobs & Executions page.
+## RBAC
 
-## Navigation and Workspace Contract
+- `jobs.view`: view executions, queues, and configuration catalog.
+- `jobs.execute`: manually dispatch registered jobs.
+- `jobs.configure`: update automatic job policies.
+- `jobs.cancel`: request cancellation for eligible executions.
 
-Jobs & Executions is a cross-domain KAORI operational workspace. It is presented under **Platform Operations**, not inside the Integrations submenu, because the registry covers validation, runtime, analytics, forecasting, reporting, lifecycle, and future background workloads.
+A definition may require an additional domain permission. Inventory Sync requires both `jobs.execute` and `clusters.sync` for manual execution.
 
-The `/integrations/jobs` URL is retained as a compatibility path for existing bookmarks, notifications, and audit action links. Information architecture is controlled by sidebar placement rather than forcing a breaking URL migration.
+## Scheduler
 
-The workspace has three views:
-
-- **Active Work** for live progress and cancellation boundaries.
-- **Execution Registry** for searchable historical execution records.
-- **Queue Activity** for database-backed workload demand by queue. Queue Activity does not claim worker process liveness.
-
-The overview must distinguish canonical job state from actual worker health. Worker liveness belongs to deployment monitoring or Celery inspection, while this workspace remains the source of truth for execution lifecycle, ownership, progress, and results.
-
-## Progress and cancellation contract
-
-Active Work uses a determinate bar only when the worker publishes `progress_current` and `progress_total`. A running job without a trustworthy total uses an indeterminate animation and the label `In Progress`; KAORI must not display a decorative `0%` as if it were measured progress. Integration validation and runtime workers publish phase-level progress while analytics and forecasting workers publish chunk/model-phase progress.
-
-Queued jobs can be canceled before provider execution. Running analytics and forecasting jobs use cooperative checkpoints. Running validation and runtime provider calls are shown as **Protected Run** because KAORI does not force-terminate a network/API request mid-flight; this boundary is provider-neutral and applies equally to Kubernetes, Prometheus, and Alertmanager.
-
-## RBAC contract
-
-Jobs & Executions uses dedicated cross-domain permissions:
-
-- `jobs.view` opens Platform Operations and the execution workspace.
-- `jobs.cancel` requests cancellation for eligible jobs and depends on `jobs.view`.
-
-The jobs workspace must not reuse `settings.manage_integrations`. The migration preserves existing access for custom roles that previously reached the page through integration, Data Lifecycle, or Activity Audit permissions, after which administrators can review the narrower contracts in Roles & Access.
-
-## Status Refresh Contract
-
-The manual **Refresh Status** action is HTMX-only and refreshes the execution workspace plus hero counters through out-of-band swaps. A user must not need a full page reload to see changes in Active, Running, Attention, or the Execution Overview metrics.
+Celery Beat runs `app.jobs.tasks.dispatch_scheduled_jobs` every minute on the maintenance queue. The task claims due `job_policies` rows with `FOR UPDATE SKIP LOCKED`, advances the next due time, and dispatches through the registry. Policy changes do not require a Beat restart.

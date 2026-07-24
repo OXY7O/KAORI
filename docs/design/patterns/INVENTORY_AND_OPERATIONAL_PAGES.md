@@ -108,10 +108,12 @@ Required hierarchy:
 
 1. Standard KAORI hero with compact execution posture.
 2. Execution Overview with Active, Running, Needs Attention, and Completed-in-24-hours metrics.
-3. Violet workspace tabs: Active Work, Execution Registry, Queue Activity.
-4. Active jobs use responsive cards with progress, queue, requester, timing, and cancellation boundary.
-5. Execution Registry uses a compact six-column table: Job, Execution Context, Status, Progress, Timing, Action.
-6. Queue Activity describes canonical database-backed execution demand and must not claim worker process liveness.
+3. Top-level tabs separate **Executions** from **Job Configuration**.
+4. Executions retains violet inner tabs for Active Work, Execution Registry, and Queue Activity.
+5. Active jobs use responsive cards with progress, queue, requester, timing, and cancellation boundary.
+6. Execution Registry uses a compact six-column table: Job, Execution Context, Status, Progress, Timing, Action.
+7. Queue Activity describes canonical database-backed execution demand and must not claim worker process liveness.
+8. Job Configuration uses a searchable registered-job catalog and one selected definition workspace. It must show policy, scope, queue, last/next run, manual execution, recent executions, and the domain safety boundary without moving domain business logic into `app.jobs`.
 
 The registry remains server-paginated with default 5 and options 5/10/25/50. The visible page-size control is numeric only. Refresh, filters, pagination, and cancellation use HTMX without reloading the hero.
 

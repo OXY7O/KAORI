@@ -15,7 +15,7 @@
                     <p class="{{ table_ui.block_description_classes() }}">Search execution history, ownership, progress, timing, and outcomes.</p>
                 </div>
             </div>
-            {% set refresh_url = url_for('integrations.jobs', fragment='registry', tab='registry', page=job_pagination.page, per_page=job_pagination.per_page, status=selected_job_status, workload=selected_job_workload, queue=selected_job_queue, search=job_search) %}
+            {% set refresh_url = url_for('jobs.executions', fragment='registry', tab='registry', page=job_pagination.page, per_page=job_pagination.per_page, status=selected_job_status, workload=selected_job_workload, queue=selected_job_queue, search=job_search) %}
             <button type="button"
                     hx-get="{{ refresh_url }}"
                     hx-target="#job-execution-registry"
@@ -30,7 +30,7 @@
         {{ loading_bar.render('job-execution-loading', label='Refreshing Job Execution Registry') }}
     </header>
     <form class="grid gap-3 border-b border-outline-subtle bg-surface-card px-5 py-4 sm:grid-cols-2 lg:grid-cols-4 sm:px-6"
-          hx-get="{{ url_for('integrations.jobs') }}"
+          hx-get="{{ url_for('jobs.executions') }}"
           hx-target="#job-execution-registry"
           hx-swap="outerHTML"
           hx-push-url="true"
@@ -72,7 +72,7 @@
             {% endfor %}
         </select>
         <input type="hidden" name="fragment" value="registry">
-        <input type="hidden" name="tab" value="registry">
+        <input type="hidden" name="execution_tab" value="registry">
         <input type="hidden" name="page" value="1">
         <input type="hidden" name="per_page" value="{{ job_pagination.per_page }}">
     </form>
@@ -156,15 +156,15 @@
                         <td class="px-3 py-4 text-right">
                             {% if current_user.has_permission('jobs.cancel') and row.can_cancel %}
                                 <form method="post"
-                                      action="{{ url_for('integrations.cancel_job', public_id=row.public_id) }}"
-                                      hx-post="{{ url_for('integrations.cancel_job', public_id=row.public_id) }}"
+                                      action="{{ url_for('jobs.cancel_execution', public_id=row.public_id) }}"
+                                      hx-post="{{ url_for('jobs.cancel_execution', public_id=row.public_id) }}"
                                       hx-target="#job-execution-registry"
                                       hx-swap="outerHTML"
                                       hx-indicator="#job-execution-loading"
                                       class="inline-flex">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="fragment" value="registry">
-                                    <input type="hidden" name="tab" value="registry">
+                                    <input type="hidden" name="execution_tab" value="registry">
                                     <input type="hidden" name="page" value="{{ job_pagination.page }}">
                                     <input type="hidden" name="per_page" value="{{ job_pagination.per_page }}">
                                     <input type="hidden" name="status" value="{{ selected_job_status }}">
@@ -203,13 +203,13 @@
         <div class="flex flex-wrap items-center gap-3">
             <p>Showing <strong class="text-content-primary">{{ job_pagination.start_item }}–{{ job_pagination.end_item }}</strong> of <strong class="text-content-primary">{{ job_pagination.total_items }}</strong> jobs</p>
             <form class="inline-flex items-center"
-                  hx-get="{{ url_for('integrations.jobs') }}"
+                  hx-get="{{ url_for('jobs.executions') }}"
                   hx-target="#job-execution-registry"
                   hx-swap="outerHTML"
                   hx-push-url="true"
                   hx-indicator="#job-execution-loading">
                 <input type="hidden" name="fragment" value="registry">
-                <input type="hidden" name="tab" value="registry">
+                <input type="hidden" name="execution_tab" value="registry">
                 <input type="hidden" name="page" value="1">
                 <input type="hidden" name="status" value="{{ selected_job_status }}">
                 <input type="hidden" name="workload" value="{{ selected_job_workload }}">
@@ -230,8 +230,8 @@
         <div class="flex flex-wrap items-center gap-1">
             {% set base = {'fragment': 'registry', 'tab': 'registry', 'status': selected_job_status, 'workload': selected_job_workload, 'queue': selected_job_queue, 'search': job_search, 'per_page': job_pagination.per_page} %}
             {% if job_pagination.has_prev %}
-                <a href="{{ url_for('integrations.jobs', page=job_pagination.prev_page, **base) }}"
-                   hx-get="{{ url_for('integrations.jobs', page=job_pagination.prev_page, **base) }}"
+                <a href="{{ url_for('jobs.executions', page=job_pagination.prev_page, **base) }}"
+                   hx-get="{{ url_for('jobs.executions', page=job_pagination.prev_page, **base) }}"
                    hx-target="#job-execution-registry"
                    hx-swap="outerHTML"
                    hx-push-url="true"
@@ -243,8 +243,8 @@
             {% endif %}
             {{ pagination_ui.numeric_pages(job_pagination.page, job_pagination.total_pages) }}
             {% if job_pagination.has_next %}
-                <a href="{{ url_for('integrations.jobs', page=job_pagination.next_page, **base) }}"
-                   hx-get="{{ url_for('integrations.jobs', page=job_pagination.next_page, **base) }}"
+                <a href="{{ url_for('jobs.executions', page=job_pagination.next_page, **base) }}"
+                   hx-get="{{ url_for('jobs.executions', page=job_pagination.next_page, **base) }}"
                    hx-target="#job-execution-registry"
                    hx-swap="outerHTML"
                    hx-push-url="true"

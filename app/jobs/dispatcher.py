@@ -4,6 +4,7 @@ from typing import Any, cast
 
 from celery import Task
 
+from app.jobs.definitions.base import RegisteredJobDispatchResult
 from app.jobs.service import create_or_attach_job, mark_job_failed
 from app.models.job import JobExecution
 
@@ -64,3 +65,25 @@ def enqueue_canonical_job(
         mark_job_failed(job.celery_task_id, error=exc, error_code='dispatch_failed')
         raise
     return job, True
+
+
+def dispatch_registered_job(
+    *,
+    job_key: str,
+    trigger_type: str,
+    requested_by_user_id: int | None,
+    parameters: dict[str, Any] | None = None,
+) -> RegisteredJobDispatchResult:
+    """Resolve one static job definition and dispatch it through its domain adapter."""
+    from app.jobs.registry import get_job_definition
+
+    definition = get_job_definition(job_key)
+    if trigger_type == 'manual' and not definition.manual_execution_supported:
+        raise ValueError(f'{definition.name} does not support manual execution.')
+    if trigger_type == 'scheduled' and not definition.schedule_supported:
+        raise ValueError(f'{definition.name} does not support scheduled execution.')
+    return definition.dispatch(
+        requested_by_user_id=requested_by_user_id,
+        trigger_type=trigger_type,
+        parameters=parameters,
+    )

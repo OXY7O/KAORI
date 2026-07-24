@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
-from sqlalchemy import Index, UniqueConstraint
+from sqlalchemy import CheckConstraint, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.extensions.db import db
@@ -128,3 +128,57 @@ class JobExecutionSubscriber(db.Model):
 
     job: Mapped[JobExecution] = relationship('JobExecution', back_populates='subscribers')
     user: Mapped[User] = relationship('User')
+
+
+class JobPolicy(db.Model):
+    """Database-backed schedule and execution policy for one registered KAORI job."""
+
+    __tablename__ = 'job_policies'
+    __table_args__ = (
+        UniqueConstraint('job_key', 'scope_type', 'scope_key', name='uq_job_policy_scope'),
+        CheckConstraint(
+            "trigger_type = 'interval'",
+            name='ck_job_policy_trigger_type',
+        ),
+        CheckConstraint(
+            'interval_minutes IS NULL OR (interval_minutes >= 5 AND interval_minutes <= 1440)',
+            name='ck_job_policy_interval',
+        ),
+        Index('ix_job_policies_due', 'enabled', 'next_run_at'),
+        Index('ix_job_policies_job_key', 'job_key'),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    job_key: Mapped[str] = mapped_column(db.String(120), nullable=False)
+    enabled: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=True)
+    trigger_type: Mapped[str] = mapped_column(db.String(30), nullable=False, default='interval')
+    interval_minutes: Mapped[int | None] = mapped_column(db.Integer, nullable=True)
+    timezone: Mapped[str] = mapped_column(db.String(64), nullable=False, default='UTC')
+    scope_type: Mapped[str] = mapped_column(db.String(80), nullable=False, default='global')
+    scope_key: Mapped[str] = mapped_column(db.String(255), nullable=False, default='all')
+    configuration_json: Mapped[dict[str, Any] | None] = mapped_column(db.JSON, nullable=True)
+
+    next_run_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True, index=True)
+    last_dispatched_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
+    last_dispatch_status: Mapped[str | None] = mapped_column(db.String(40), nullable=True)
+    last_dispatch_message: Mapped[str | None] = mapped_column(db.String(255), nullable=True)
+    last_job_execution_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey('job_executions.id', ondelete='SET NULL'), nullable=True, index=True
+    )
+    updated_by_user_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
+
+    last_job_execution: Mapped[JobExecution | None] = relationship(
+        'JobExecution', foreign_keys=[last_job_execution_id]
+    )
+    updated_by: Mapped[User | None] = relationship('User', foreign_keys=[updated_by_user_id])

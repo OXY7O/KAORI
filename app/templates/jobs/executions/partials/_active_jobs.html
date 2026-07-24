@@ -2,7 +2,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
-{% set active_refresh_url = url_for('integrations.jobs', fragment='active', tab='active') %}
+{% set active_refresh_url = url_for('jobs.executions', fragment='active', tab='active') %}
 <section id="active-job-workspace"
          class="{{ table_ui.block_classes() }}"
          aria-labelledby="active-job-workspace-title"
@@ -107,15 +107,15 @@
                     <div class="flex shrink-0 justify-start xl:justify-end">
                         {% if current_user.has_permission('jobs.cancel') and row.can_cancel %}
                             <form method="post"
-                                  action="{{ url_for('integrations.cancel_job', public_id=row.public_id) }}"
-                                  hx-post="{{ url_for('integrations.cancel_job', public_id=row.public_id) }}"
+                                  action="{{ url_for('jobs.cancel_execution', public_id=row.public_id) }}"
+                                  hx-post="{{ url_for('jobs.cancel_execution', public_id=row.public_id) }}"
                                   hx-target="#active-job-workspace"
                                   hx-swap="outerHTML"
                                   hx-indicator="#active-job-loading"
                                   class="inline-flex">
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                 <input type="hidden" name="fragment" value="active">
-                                <input type="hidden" name="tab" value="active">
+                                <input type="hidden" name="execution_tab" value="active">
                                 <button type="submit"
                                         class="{{ table_ui.action_classes(destructive=true) }}"
                                         title="{{ row.action_help }}">

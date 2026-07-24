@@ -23,8 +23,7 @@ from app.models.inventory import (
     StorageInventory,
     WorkloadInventory,
 )
-from app.models.inventory_sync import InventorySyncPolicy
-from app.models.job import JobExecution, JobExecutionSubscriber
+from app.models.job import JobExecution, JobExecutionSubscriber, JobPolicy
 from app.models.knowledge import KnowledgeRunbook, KnowledgeRunbookAlertBinding, KnowledgeRunbookRevision
 from app.models.kubernetes import KubernetesConnection
 from app.models.lifecycle import DataLifecyclePolicy
@@ -42,13 +41,13 @@ from app.models.secret_reveal import SecretRevealNamespacePolicy, SecretRevealRe
 from app.models.user import User
 
 __all__ = [
-    'InventorySyncPolicy',
     'ArchiveArtifact',
     'AuditEvent',
     'IdentityProvider',
     'IntegrationRuntimeObservation',
     'JobExecution',
     'JobExecutionSubscriber',
+    'JobPolicy',
     'DataLifecyclePolicy',
     'IntegrationInstance',
     'IntegrationBinding',

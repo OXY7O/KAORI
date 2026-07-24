@@ -105,7 +105,7 @@
       "inline_scripts": 0,
       "inline_styles": 0
     },
-    "app/templates/integrations/jobs/partials/_registry.html": {
+    "app/templates/jobs/executions/partials/_registry.html": {
       "inline_event_handlers": 4,
       "inline_scripts": 0,
       "inline_styles": 0

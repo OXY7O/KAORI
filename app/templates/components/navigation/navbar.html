@@ -92,7 +92,7 @@
                         </div>
                     </div>
                     <div class="p-2.5">
-                        {% if current_user.has_permission('clusters.sync') %}
+                        {% if current_user.has_permission('clusters.sync') and current_user.has_permission('jobs.execute') %}
                             {% if cluster_onboarding.has_clusters %}
                                 <form id="quick-sync-form"
                                       method="POST"
@@ -108,18 +108,18 @@
                                             hx-include="#quick-sync-form"
                                             hx-disabled-elt="this"
                                             @click="quickOpen = false; document.getElementById('quick-sync-feedback')?.replaceChildren()"
-                                            class="group relative flex w-full items-start gap-3 overflow-hidden rounded-xl border border-kaori-primary/15 bg-kaori-soft p-3 text-left transition hover:border-kaori-primary/30 hover:bg-kaori-soft disabled:cursor-wait disabled:opacity-75  cursor-pointer disabled:cursor-not-allowed">
+                                            class="group relative flex w-full items-start gap-3 overflow-hidden rounded-xl border border-kaori-primary/15 bg-kaori-soft p-3 text-left transition hover:border-kaori-primary/30 hover:bg-kaori-soft cursor-pointer disabled:cursor-wait disabled:opacity-75">
                                         <span class="relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-kaori-primary text-white shadow-sm shadow-kaori-primary/20">
                                             <i data-lucide="refresh-cw"
                                                class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
                                         </span>
                                         <span class="relative z-10 min-w-0 flex-1">
                                             <span class="flex items-center justify-between gap-2">
-                                                <span class="text-xs font-semibold text-content-primary">Sync all clusters</span>
+                                                <span class="text-xs font-semibold text-content-primary">Sync All Inventory</span>
                                                 <span class="rounded-lg bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-kaori-primary shadow-sm">Inventory</span>
                                             </span>
                                             <span class="mt-1 block text-xs leading-4 text-content-secondary">
-                                                Queue a persistent inventory refresh for every registered cluster.
+                                                Queue a complete inventory refresh for every eligible Kubernetes cluster.
                                             </span>
                                             <span class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] font-medium text-content-muted">
                                                 <span class="inline-flex items-center gap-1"><i data-lucide="box" class="h-3 w-3"></i> Workloads</span>

@@ -1,0 +1,470 @@
+{% import "components/table_label.html" as table_label %}
+{% import "components/progress_bar.html" as progress_bar %}
+{% set definition = selected_job.definition %}
+{% set policy = selected_job.policy %}
+{% set can_configure = current_user.has_permission('jobs.configure') %}
+{% set can_execute = current_user.has_permission('jobs.execute') and current_user.has_permission(definition.domain_execute_permission) %}
+<div class="space-y-5">
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+        <header class="border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="{{ definition.icon }}" class="h-5 w-5"></i>
+                    </span>
+                    <div>
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-kaori-primary">
+                            {{ definition.domain }}
+                        </p>
+                        <h2 class="mt-1 text-lg font-semibold text-content-primary">{{ definition.name }}</h2>
+                        <p class="mt-1 max-w-2xl text-xs leading-5 text-content-muted">
+                            {{ definition.description }}
+                        </p>
+                    </div>
+                </div>
+                {{ table_label.status_label(
+                    selected_job.scheduler_state.label,
+                    selected_job.scheduler_state.tone,
+                    selected_job.scheduler_state.icon
+                ) }}
+            </div>
+        </header>
+
+        <div class="grid gap-3 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-4">
+            <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="calendar-clock" class="h-4 w-4"></i>
+                    </span>
+                    {{ table_label.status_label(
+                        selected_job.scheduler_state.label,
+                        selected_job.scheduler_state.tone,
+                        selected_job.scheduler_state.icon
+                    ) }}
+                </div>
+                <p class="mt-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">
+                    Automatic Policy
+                </p>
+                <p class="mt-1 text-lg font-bold text-content-primary">{{ selected_job.interval_label }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">
+                    Database-backed interval applied without restarting Celery Beat.
+                </p>
+            </article>
+
+            <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="server" class="h-4 w-4"></i>
+                    </span>
+                    {{ table_label.status_label(
+                        selected_job.eligible_cluster_count ~ ' Eligible',
+                        'normal' if selected_job.eligible_cluster_count else 'warning',
+                        'circle-check' if selected_job.eligible_cluster_count else 'triangle-alert'
+                    ) }}
+                </div>
+                <p class="mt-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">
+                    Fleet Coverage
+                </p>
+                <p class="mt-1 text-lg font-bold text-content-primary">
+                    {{ selected_job.eligible_cluster_count }} of {{ selected_job.registered_cluster_count }}
+                </p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">
+                    Clusters with enabled canonical Kubernetes bindings.
+                </p>
+            </article>
+
+            <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="clock-3" class="h-4 w-4"></i>
+                    </span>
+                    {{ table_label.status_label(
+                        'Scheduled' if policy.next_run_at else 'Not Scheduled',
+                        'pending' if policy.next_run_at else 'disabled',
+                        'clock-3'
+                    ) }}
+                </div>
+                <p class="mt-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">
+                    Next Automatic Run
+                </p>
+                <p class="mt-1 text-sm font-semibold leading-6 text-content-primary">
+                    {{ policy.next_run_at|user_datetime if policy.next_run_at else 'Automatic Execution Disabled' }}
+                </p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">
+                    Due policies are claimed once per minute by the maintenance worker.
+                </p>
+            </article>
+
+            <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="history" class="h-4 w-4"></i>
+                    </span>
+                    {{ table_label.status_label(
+                        selected_job.latest_job.status_label if selected_job.latest_job else 'No History',
+                        selected_job.latest_job.status_tone if selected_job.latest_job else 'unknown',
+                        selected_job.latest_job.status_icon if selected_job.latest_job else 'history'
+                    ) }}
+                </div>
+                <p class="mt-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">
+                    Latest Execution
+                </p>
+                <p class="mt-1 text-sm font-semibold leading-6 text-content-primary">
+                    {{ selected_job.latest_job.queued_at if selected_job.latest_job else 'No Execution Recorded' }}
+                </p>
+                <p class="mt-1 truncate text-xs leading-5 text-content-muted"
+                   title="{{ selected_job.latest_job.trigger_label ~ ' · ' ~ selected_job.latest_job.requester if selected_job.latest_job else 'The first eligible run will appear here.' }}">
+                    {{ selected_job.latest_job.trigger_label ~ ' · ' ~ selected_job.latest_job.requester if selected_job.latest_job else 'The first eligible run will appear here.' }}
+                </p>
+            </article>
+        </div>
+
+        {% if selected_job.blocked_cluster_count %}
+            <div class="border-t border-brand-outline bg-kaori-soft px-5 py-3 sm:px-6">
+                <p class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                    <i data-lucide="shield-alert" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                    <span>
+                        <strong class="font-semibold text-content-primary">
+                            {{ selected_job.blocked_cluster_count }}
+                            cluster{{ '' if selected_job.blocked_cluster_count == 1 else 's' }} will be skipped.
+                        </strong>
+                        Enable the canonical Kubernetes instance and cluster binding before the next run.
+                    </span>
+                </p>
+            </div>
+        {% endif %}
+    </section>
+
+    <div class="grid gap-5 lg:grid-cols-2 lg:items-start">
+        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+            <header class="border-b border-outline-subtle px-5 py-4">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="settings-2" class="h-4 w-4"></i>
+                    </span>
+                    <div>
+                        <h3 class="text-base font-semibold text-content-primary">Automatic Execution Policy</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">
+                            Configure the reusable schedule fields shared by registered jobs.
+                        </p>
+                    </div>
+                </div>
+            </header>
+
+            <form method="post" action="{{ url_for('jobs.update_policy', job_key=definition.key) }}">
+                <div class="space-y-5 p-5">
+                    {{ policy_form.hidden_tag() }}
+                    <label class="flex cursor-pointer items-start justify-between gap-4 rounded-lg border border-outline-default bg-surface-elevated p-4 transition hover:border-brand-outline">
+                        <span class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                <i data-lucide="power" class="h-4 w-4"></i>
+                            </span>
+                            <span>
+                                <span class="block text-sm font-semibold text-content-primary">
+                                    Enable Automatic Inventory Sync
+                                </span>
+                                <span class="mt-1 block text-xs leading-5 text-content-muted">
+                                    The generic scheduler checks due policies every minute.
+                                </span>
+                            </span>
+                        </span>
+                        <span class="relative mt-1 inline-flex h-6 w-11 shrink-0 items-center">
+                            {{ policy_form.enabled(
+                                class_="peer sr-only",
+                                disabled=not can_configure
+                            ) }}
+                            <span class="absolute inset-0 rounded-full bg-surface-disabled transition peer-checked:bg-kaori-primary"></span>
+                            <span class="absolute left-1 h-4 w-4 rounded-full bg-white shadow-sm transition peer-checked:translate-x-5"></span>
+                        </span>
+                    </label>
+
+                    <div>
+                        {{ policy_form.interval_minutes.label(
+                            class_="block text-sm font-semibold text-content-primary"
+                        ) }}
+                        <p class="mt-1 text-xs leading-5 text-content-muted">
+                            Accepted range: 5 minutes to 24 hours. Saving resets the next due time.
+                        </p>
+                        <div class="relative mt-3">
+                            <i data-lucide="timer"
+                               class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
+                            {{ policy_form.interval_minutes(
+                                class_="h-10 w-full rounded-lg border border-outline-default bg-surface-primary pl-10 pr-20 text-sm font-semibold text-content-primary focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-surface-disabled",
+                                min="5",
+                                max="1440",
+                                list="job-interval-presets",
+                                disabled=not can_configure
+                            ) }}
+                            <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium text-content-muted">
+                                Minutes
+                            </span>
+                        </div>
+                        <datalist id="job-interval-presets">
+                            {% for value, label in [
+                                (5, '5 Minutes'),
+                                (15, '15 Minutes'),
+                                (30, '30 Minutes'),
+                                (60, '1 Hour'),
+                                (120, '2 Hours'),
+                                (360, '6 Hours'),
+                                (720, '12 Hours'),
+                                (1440, '24 Hours')
+                            ] %}
+                                <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </datalist>
+                        {% for error in policy_form.interval_minutes.errors %}
+                            <p class="mt-2 text-xs font-medium text-status-critical-text">{{ error }}</p>
+                        {% endfor %}
+                        {% if policy_error %}
+                            <p class="mt-2 text-xs font-medium text-status-critical-text">{{ policy_error }}</p>
+                        {% endif %}
+                    </div>
+
+                    <dl class="grid gap-3 text-xs sm:grid-cols-2">
+                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                            <dt class="font-semibold text-content-muted">Last Dispatch</dt>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ policy.last_dispatched_at|user_datetime if policy.last_dispatched_at else 'Never Dispatched' }}
+                            </dd>
+                        </div>
+                        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                            <dt class="font-semibold text-content-muted">Last Policy Update</dt>
+                            <dd class="mt-1 font-semibold text-content-primary">
+                                {{ policy.updated_at|user_datetime }}
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+                <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <p class="text-xs leading-5 text-content-muted">
+                        Stored in <code>job_policies</code>; no Beat restart is required.
+                    </p>
+                    {% if can_configure %}
+                        <button type="submit"
+                                class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark">
+                            <i data-lucide="save" class="h-4 w-4"></i>
+                            Save Configuration
+                        </button>
+                    {% else %}
+                        {{ table_label.status_label('View Only', 'unknown', 'lock-keyhole') }}
+                    {% endif %}
+                </footer>
+            </form>
+        </section>
+
+        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+            <header class="border-b border-outline-subtle px-5 py-4">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="play" class="h-4 w-4"></i>
+                    </span>
+                    <div>
+                        <h3 class="text-base font-semibold text-content-primary">Manual Execution</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">
+                            Run the same registered definition immediately without changing its schedule.
+                        </p>
+                    </div>
+                </div>
+            </header>
+
+            <div class="space-y-4 p-5">
+                <div class="rounded-lg border border-outline-default bg-surface-elevated p-4">
+                    <div class="flex items-center justify-between gap-3">
+                        {{ table_label.status_label(
+                            selected_job.execution_state.label,
+                            selected_job.execution_state.tone,
+                            selected_job.execution_state.icon
+                        ) }}
+                        <span class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">
+                            Queue · {{ definition.queue_name }}
+                        </span>
+                    </div>
+                    <p class="mt-3 text-xs leading-5 text-content-secondary">
+                        {{ selected_job.execution_state.description }}
+                    </p>
+                </div>
+
+                {% if selected_job.active_job %}
+                    <div class="rounded-lg border border-brand-outline bg-kaori-soft p-4">
+                        <div class="flex items-center justify-between gap-3">
+                            <p class="text-sm font-semibold text-content-primary">Active Fleet Execution</p>
+                            <span class="text-xs font-semibold text-kaori-primary">
+                                {{ selected_job.active_job.progress }}%
+                            </span>
+                        </div>
+                        {{ progress_bar.bar(
+                            selected_job.active_job.progress,
+                            track_classes="mt-3 h-1.5 overflow-hidden rounded-full bg-white",
+                            fill_classes="h-full rounded-full bg-kaori-primary",
+                            label="Active inventory sync progress"
+                        ) }}
+                        <p class="mt-2 text-xs text-content-muted">
+                            {{ selected_job.active_job.progress_label }} · {{ selected_job.active_job.requester }}
+                        </p>
+                    </div>
+                {% endif %}
+
+                <dl class="grid grid-cols-2 gap-3 text-xs">
+                    <div class="rounded-lg border border-outline-subtle p-3">
+                        <dt class="font-semibold text-content-muted">Execution Scope</dt>
+                        <dd class="mt-1 font-semibold text-content-primary">All Eligible Clusters</dd>
+                    </div>
+                    <div class="rounded-lg border border-outline-subtle p-3">
+                        <dt class="font-semibold text-content-muted">Canonical Record</dt>
+                        <dd class="mt-1 font-semibold text-content-primary">JobExecution</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <a href="{{ url_for('jobs.executions', execution_tab='registry', queue=definition.queue_name, search=definition.operation) }}"
+                   class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary">
+                    <i data-lucide="list-checks" class="h-4 w-4"></i>
+                    Review Executions
+                </a>
+                {% if can_execute %}
+                    <form method="post" action="{{ url_for('jobs.run_now', job_key=definition.key) }}">
+                        {{ manual_form.hidden_tag() }}
+                        <button type="submit"
+                                {% if not selected_job.eligible_cluster_count or selected_job.active_job %}disabled{% endif %}
+                                class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark disabled:cursor-not-allowed disabled:opacity-50">
+                            <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                            Sync All Inventory
+                        </button>
+                    </form>
+                {% else %}
+                    {{ table_label.status_label('Execution Restricted', 'unknown', 'lock-keyhole') }}
+                {% endif %}
+            </footer>
+        </section>
+    </div>
+
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+        <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex items-start gap-3">
+                <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="history" class="h-4 w-4"></i>
+                </span>
+                <div>
+                    <h3 class="text-base font-semibold text-content-primary">Recent Executions</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">
+                        Scheduled and manual runs recorded by the canonical lifecycle.
+                    </p>
+                </div>
+            </div>
+            <a href="{{ url_for('jobs.executions', execution_tab='registry', queue=definition.queue_name, search=definition.operation) }}"
+               class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary">
+                View All
+                <i data-lucide="arrow-up-right" class="h-3.5 w-3.5"></i>
+            </a>
+        </header>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-outline-subtle text-left">
+                <thead class="bg-surface-hover">
+                    <tr class="text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">
+                        <th class="px-5 py-3">Trigger</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">Fleet Scope</th>
+                        <th class="px-4 py-3">Progress</th>
+                        <th class="px-4 py-3">Timing</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-outline-subtle bg-surface-card">
+                    {% for job in selected_job.recent_jobs %}
+                        <tr class="align-top hover:bg-surface-hover">
+                            <td class="px-5 py-4">
+                                <div class="flex items-start gap-3">
+                                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                        <i data-lucide="{{ job.trigger_icon }}" class="h-3.5 w-3.5"></i>
+                                    </span>
+                                    <div>
+                                        <p class="text-sm font-semibold text-content-primary">{{ job.trigger_label }}</p>
+                                        <p class="mt-1 text-xs text-content-muted">{{ job.requester }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-4">
+                                {{ table_label.status_label(job.status_label, job.status_tone, job.status_icon) }}
+                            </td>
+                            <td class="px-4 py-4">
+                                <p class="text-sm font-semibold text-content-primary">
+                                    {{ job.target_count }} Cluster{{ '' if job.target_count == 1 else 's' }}
+                                </p>
+                                <p class="mt-1 text-xs text-content-muted">All Inventory Resources</p>
+                            </td>
+                            <td class="min-w-44 px-4 py-4">
+                                <div class="flex justify-between gap-3 text-xs">
+                                    <span class="text-content-muted">{{ job.progress_label }}</span>
+                                    <span class="font-semibold text-kaori-primary">{{ job.progress }}%</span>
+                                </div>
+                                {{ progress_bar.bar(
+                                    job.progress,
+                                    track_classes="mt-2 h-1.5 overflow-hidden rounded-full bg-kaori-soft",
+                                    fill_classes="h-full rounded-full bg-kaori-primary",
+                                    label="Inventory execution progress"
+                                ) }}
+                            </td>
+                            <td class="px-4 py-4">
+                                <p class="text-xs font-semibold text-content-primary">{{ job.queued_at }}</p>
+                                <p class="mt-1 text-xs text-content-muted">{{ job.completed_at }}</p>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center">
+                                <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                                    <i data-lucide="history" class="h-5 w-5"></i>
+                                </span>
+                                <p class="mt-4 text-sm font-semibold text-content-primary">No Execution Recorded</p>
+                                <p class="mt-1 text-xs text-content-muted">
+                                    The first scheduled or manual run will appear here.
+                                </p>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <details class="group overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 transition hover:bg-surface-hover">
+            <span class="flex items-start gap-3">
+                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="shield-check" class="h-4 w-4"></i>
+                </span>
+                <span>
+                    <span class="block text-sm font-semibold text-content-primary">
+                        Execution &amp; Data Safety Boundary
+                    </span>
+                    <span class="mt-1 block text-xs leading-5 text-content-muted">
+                        How the job registry, fleet resolver, and inventory transaction protect every run.
+                    </span>
+                </span>
+            </span>
+            <span class="flex h-8 w-8 items-center justify-center rounded-lg border border-outline-default bg-surface-elevated text-content-muted transition group-open:rotate-180 group-open:bg-kaori-soft group-open:text-kaori-primary">
+                <i data-lucide="chevron-down" class="h-4 w-4"></i>
+            </span>
+        </summary>
+        <div class="border-t border-outline-subtle bg-surface-hover p-5">
+            <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                {% for icon, title, text in [
+                    ('calendar-clock', '1. Scheduler Claim', 'A due policy is claimed with a database row lock.'),
+                    ('list-checks', '2. JobExecution', 'Manual and scheduled requests create or attach to one canonical execution.'),
+                    ('server-cog', '3. Eligible Fleet', 'Only clusters with enabled canonical Kubernetes bindings enter the target snapshot.'),
+                    ('database-zap', '4. Atomic Commit', 'Each cluster promotes inventory only after the complete generation commits.')
+                ] %}
+                    <article class="rounded-lg border border-outline-subtle bg-surface-card p-4">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                            <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                        </span>
+                        <h4 class="mt-3 text-sm font-semibold text-content-primary">{{ title }}</h4>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ text }}</p>
+                    </article>
+                {% endfor %}
+            </div>
+        </div>
+    </details>
+</div>

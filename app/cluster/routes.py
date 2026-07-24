@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import json
 import logging
-from time import perf_counter
 
 from flask import Blueprint, abort, flash, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
@@ -16,6 +15,11 @@ from app.cluster.individual_sync_state import (
     get_tracked_individual_sync_task_ids,
     is_individual_sync_result_dismissed,
 )
+from app.cluster.quick_sync import (
+    render_enqueue_error as _render_enqueue_error,
+    render_sync_snapshot as _render_sync_snapshot,
+    run_global_inventory_sync,
+)
 from app.cluster.registration import issue_cluster_registration_proof, verify_cluster_registration_proof
 from app.cluster.service import (
     create_cluster,
@@ -24,7 +28,6 @@ from app.cluster.service import (
     test_cluster_draft_connection,
     update_cluster,
 )
-from app.cluster.sync_jobs import enqueue_all_cluster_inventory_sync
 from app.cluster.sync_state import (
     build_cluster_sync_snapshot,
     dismiss_cluster_sync_result,
@@ -34,11 +37,7 @@ from app.cluster.sync_state import (
 from app.extensions.db import db
 from app.integrations.deletion import DeletionBlocked
 from app.models import Cluster
-from app.notifications.service import (
-    create_notification,
-    get_navigation_notification_context,
-    record_operational_activity,
-)
+from app.notifications.service import record_operational_activity
 from app.rbac.decorators import permission_required
 
 logger = logging.getLogger(__name__)
@@ -50,160 +49,14 @@ cluster_bp = Blueprint(
 )
 
 
-def _render_operational_toast(
-    feedback: dict,
-    *,
-    toast_oob: bool = False,
-) -> str:
-    return render_template(
-        'components/navigation/_quick_sync_result.html',
-        **feedback,
-        toast_oob=toast_oob,
-        notification_context=get_navigation_notification_context(
-            user_id=current_user.id,
-        ),
-    )
-
-
-def _render_sync_snapshot(
-    snapshot: dict,
-    *,
-    response_status: int = 200,
-) -> ResponseReturnValue:
-    if snapshot['is_active']:
-        return (
-            render_template(
-                'components/navigation/_quick_sync_status.html',
-                sync=snapshot,
-            ),
-            response_status,
-        )
-
-    notification_context = get_navigation_notification_context(
-        user_id=current_user.id,
-    )
-
-    return (
-        render_template(
-            'components/navigation/_quick_sync_result.html',
-            task_id=snapshot.get('task_id'),
-            status=snapshot.get('status') or 'info',
-            title=snapshot.get('title') or 'Kubernetes sync finished',
-            message=snapshot.get('message') or 'The background synchronization task has finished.',
-            detail=snapshot.get('detail'),
-            view_url=url_for('integrations.kubernetes'),
-            total_count=snapshot.get('total_count', 0),
-            synced_count=snapshot.get('synced_count', 0),
-            failed_count=snapshot.get('failed_count', 0),
-            duration_seconds=snapshot.get('duration_seconds'),
-            completed_label='Completed just now',
-            notification_context=notification_context,
-            notification_saved=(snapshot.get('requested_by_user_id') == current_user.id),
-        ),
-        response_status,
-    )
-
-
-def _render_enqueue_error(
-    *,
-    message: str,
-    detail: str,
-    response_status: int,
-) -> ResponseReturnValue:
-    return (
-        render_template(
-            'components/navigation/_quick_sync_result.html',
-            status='error',
-            title='Kubernetes sync could not start',
-            message=message,
-            detail=detail,
-            view_url=url_for('integrations.kubernetes'),
-            total_count=None,
-            synced_count=0,
-            failed_count=0,
-            duration_seconds=None,
-            completed_label='Not started',
-            notification_saved=False,
-        ),
-        response_status,
-    )
-
-
 @cluster_bp.route(
     '/sync-all',
     methods=['POST'],
 )
 @permission_required('clusters.sync')
+@permission_required('jobs.execute')
 def sync_all_clusters() -> ResponseReturnValue:
-    started_at = perf_counter()
-    is_htmx = request.headers.get('HX-Request') == 'true'
-    view_url = url_for('integrations.kubernetes')
-    total_count = Cluster.query.count()
-
-    if total_count == 0:
-        status = 'warning'
-        title = 'Sync skipped'
-        message = 'No Kubernetes clusters are registered yet.'
-        detail = 'Add a Kubernetes cluster before running global inventory sync.'
-        duration_seconds = round(perf_counter() - started_at, 1)
-        create_notification(
-            user_id=current_user.id,
-            event_type='kubernetes_inventory_sync',
-            status=status,
-            title=title,
-            message=message,
-            detail=detail,
-            action_url=view_url,
-            metadata={
-                'total_count': 0,
-                'synced_count': 0,
-                'failed_count': 0,
-                'duration_seconds': duration_seconds,
-            },
-        )
-        if is_htmx:
-            return render_template(
-                'components/navigation/_quick_sync_result.html',
-                status=status,
-                title=title,
-                message=message,
-                detail=detail,
-                view_url=view_url,
-                total_count=0,
-                synced_count=0,
-                failed_count=0,
-                duration_seconds=duration_seconds,
-                completed_label='Completed just now',
-                notification_context=get_navigation_notification_context(user_id=current_user.id),
-                notification_saved=True,
-            )
-        flash(message, status)
-        return redirect(request.referrer or view_url)
-
-    try:
-        job, created = enqueue_all_cluster_inventory_sync(
-            requested_by_user_id=int(current_user.id),
-        )
-        snapshot = build_cluster_sync_snapshot(str(job.celery_task_id))
-        if is_htmx:
-            return _render_sync_snapshot(snapshot, response_status=202)
-        flash(
-            'Kubernetes inventory synchronization started in the inventory worker.'
-            if created
-            else 'The existing Kubernetes inventory synchronization is already serving this request.',
-            'success' if created else 'info',
-        )
-        return redirect(request.referrer or view_url)
-    except Exception:
-        logger.exception('KAORI could not enqueue the canonical Kubernetes inventory job.')
-        if is_htmx:
-            return _render_enqueue_error(
-                message='The inventory job could not be added to the canonical job registry.',
-                detail='Verify PostgreSQL, Redis, and the Celery inventory worker before retrying.',
-                response_status=503,
-            )
-        flash('KAORI could not start the Kubernetes inventory job.', 'danger')
-        return redirect(request.referrer or view_url)
+    return run_global_inventory_sync()
 
 
 @cluster_bp.route('/sync-all/status')

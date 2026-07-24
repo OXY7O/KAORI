@@ -133,11 +133,15 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
                 'queue': _retention_queue_name(),
             },
         }
-    if _env_bool('INVENTORY_SYNC_SCHEDULER_ENABLED', True):
-        schedule['kubernetes-inventory-scheduler'] = {
-            'task': 'app.inventory.tasks.dispatch_scheduled_inventory_sync',
+    if _env_bool('JOB_POLICY_SCHEDULER_ENABLED', True):
+        schedule['job-policy-dispatcher'] = {
+            'task': 'app.jobs.tasks.dispatch_scheduled_jobs',
             'schedule': crontab(minute='*'),
-            'options': {'queue': _env_str('INVENTORY_SCHEDULER_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'},
+            'options': {
+                'queue': (
+                    _env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'
+                ),
+            },
         }
     if _env_bool('INTEGRATION_RUNTIME_MONITORING_ENABLED', True):
         schedule['integration-runtime-monitoring'] = {
@@ -154,7 +158,11 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
         schedule['job-execution-recovery'] = {
             'task': 'app.jobs.tasks.reconcile_stale_jobs',
             'schedule': crontab(minute=f'*/{_bounded_env_int("JOB_RECOVERY_INTERVAL_MINUTES", 5, 1, 60)}'),
-            'options': {'queue': _env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'},
+            'options': {
+                'queue': (
+                    _env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'
+                ),
+            },
         }
     if _env_bool('RESOLVER_MAINTENANCE_ENABLED', True):
         schedule['resolver-lease-recovery'] = {
@@ -344,7 +352,6 @@ class Config:
         'enable_utc': True,
         'imports': (
             'app.cluster.tasks',
-            'app.inventory.tasks',
             'app.retention.tasks',
             'app.integrations.runtime.tasks',
             'app.integrations.validation.tasks',
@@ -364,8 +371,8 @@ class Config:
             'app.retention.tasks.run_scheduled_retention': {
                 'queue': _retention_queue_name(),
             },
-            'app.inventory.tasks.dispatch_scheduled_inventory_sync': {
-                'queue': 'maintenance',
+            'app.jobs.tasks.dispatch_scheduled_jobs': {
+                'queue': JOB_MAINTENANCE_CELERY_QUEUE,
             },
             'app.integrations.runtime.tasks.refresh_integration_runtime': {
                 'queue': INTEGRATION_RUNTIME_CELERY_QUEUE,

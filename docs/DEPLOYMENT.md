@@ -14,3 +14,38 @@ Production principles:
 - Use dedicated Redis logical databases for Celery broker, rate limiting, and task results.
 - Bootstrap the first administrator only during initial installation.
 - Place Gunicorn behind a trusted HTTPS reverse proxy.
+
+## Job Orchestration Services
+
+The Jobs control plane requires three production components for automatic Kubernetes Inventory Sync:
+
+```text
+Celery Beat
+→ maintenance queue worker
+→ inventory queue worker
+```
+
+- Celery Beat publishes `app.jobs.tasks.dispatch_scheduled_jobs` once per minute.
+- The maintenance worker claims due `job_policies` rows and dispatches registered jobs.
+- The inventory worker executes the Kubernetes inventory task recorded by `JobExecution`.
+- Set `JOB_POLICY_SCHEDULER_ENABLED=true` on the Beat deployment. Policy intervals remain database-backed and do not require a Beat restart.
+- Keep one logical Beat scheduler active. PostgreSQL row locking prevents duplicate policy claims, but a single Beat owner remains the operational standard.
+
+After deploying this change:
+
+```bash
+flask db upgrade
+bash scripts/quality_gate.sh --all
+```
+
+Verify **Platform Operations → Jobs & Executions → Job Configuration** shows Inventory Sync, the expected eligible fleet, and a future next-run time. Run one manual sync and confirm the same operation appears in the Executions registry with queue `inventory` and operation `inventory_sync_all`.
+
+## Migration Rollback Boundary
+
+Revision `20260724_job_orchestration` migrates the singleton `inventory_sync_policies` row into the generic `job_policies` table and adds `jobs.execute` and `jobs.configure` permissions. Before migration, back up PostgreSQL. If rollback is required before newer job definitions are introduced:
+
+```bash
+flask db downgrade 20260724_inventory_sync
+```
+
+The downgrade restores the Inventory Sync singleton policy and removes the two new permissions. Do not downgrade after adding additional registered job policies unless their configuration has been exported first, because the legacy table can retain only Inventory Sync.

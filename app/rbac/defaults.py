@@ -171,6 +171,18 @@ DEFAULT_PERMISSIONS = [
         'cancel_jobs',
         'Request cancellation for eligible queued, analytics, and forecasting jobs.',
     ),
+    (
+        'jobs.execute',
+        'operations',
+        'execute_jobs',
+        'Run supported KAORI jobs manually within the permissions of their owning domain.',
+    ),
+    (
+        'jobs.configure',
+        'operations',
+        'configure_jobs',
+        'Configure automatic schedules and execution policies for registered KAORI jobs.',
+    ),
     ('settings.view', 'settings', 'view', 'View settings pages.'),
     (
         'settings.manage_integrations',
@@ -275,6 +287,7 @@ DEFAULT_ROLE_PERMISSIONS = {
         'reports.view',
         'reports.generate',
         'jobs.view',
+        'jobs.execute',
         'settings.view',
     },
     'editor': {
@@ -311,6 +324,8 @@ DEFAULT_ROLE_PERMISSIONS = {
         'reports.manage_storage',
         'jobs.view',
         'jobs.cancel',
+        'jobs.execute',
+        'jobs.configure',
         'settings.view',
         'settings.manage_integrations',
     },

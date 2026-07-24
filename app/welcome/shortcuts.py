@@ -11,7 +11,7 @@ WELCOME_WORKSPACE_GROUP_DEFINITIONS: tuple[dict[str, str], ...] = (
         'eyebrow': 'Understand',
         'title': 'Visibility & Operational Insight',
         'description': (
-            'Understand infrastructure posture, resource relationships, operational trends, and prioritized signals from one place.'
+            'Explore infrastructure posture, inventory, relationships, analytics, and prioritized operational insights.'
         ),
         'icon': 'scan-search',
     },
@@ -20,7 +20,8 @@ WELCOME_WORKSPACE_GROUP_DEFINITIONS: tuple[dict[str, str], ...] = (
         'eyebrow': 'Act',
         'title': 'Infrastructure Operations',
         'description': (
-            'Manage integrations, synchronization, protected configuration changes, and other controlled operational workflows.'
+            'Open controlled workflows for integration management, synchronization, '
+            'configuration, and infrastructure-changing activities.'
         ),
         'icon': 'workflow',
     },
@@ -29,7 +30,7 @@ WELCOME_WORKSPACE_GROUP_DEFINITIONS: tuple[dict[str, str], ...] = (
         'eyebrow': 'Assure',
         'title': 'Governance & Reporting',
         'description': (
-            'Review governance posture, lifecycle exposure, operational evidence, history, and management-ready reporting.'
+            'Review lifecycle controls, operational evidence, historical context, and management-ready outputs.'
         ),
         'icon': 'shield-check',
     },
@@ -38,8 +39,8 @@ WELCOME_WORKSPACE_GROUP_DEFINITIONS: tuple[dict[str, str], ...] = (
         'eyebrow': 'Administer',
         'title': 'Platform Administration',
         'description': (
-            'Administer identity, access, audit visibility, personal preferences, and '
-            'platform configuration within assigned authority.'
+            'Manage personal settings, access control, audit visibility, integrations, '
+            'and platform configuration within assigned authority.'
         ),
         'icon': 'settings-2',
     },
@@ -48,10 +49,10 @@ WELCOME_WORKSPACE_GROUP_DEFINITIONS: tuple[dict[str, str], ...] = (
 WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {
         'title': 'Dashboards',
-        'label': 'Kubernetes Operations',
+        'label': 'Operational Overview',
         'description': (
-            'Review cluster health, capacity risk, active alerts, top consumers, '
-            'readiness, and prioritized operational actions.'
+            'Review cluster posture, capacity risk, alerts, top consumers, '
+            'reporting readiness, and prioritized actions.'
         ),
         'icon': 'layout-dashboard',
         'scope': 'Compute',
@@ -62,7 +63,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'title': 'K8s Inventory',
         'label': 'Asset Visibility',
         'description': (
-            'Explore Kubernetes resources, status, configuration, ownership, and relationships across connected clusters.'
+            'Gain visibility into Kubernetes resources, their status, configuration, and relationships across connected clusters.'
         ),
         'icon': 'boxes',
         'scope': 'Compute',
@@ -73,7 +74,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'title': 'K8s Analytics',
         'label': 'Operational Analytics',
         'description': (
-            'Analyze utilization, capacity, workload efficiency, storage pressure, forecast risk, top consumers, alerts, and anomalies.'
+            'Explore utilization, capacity, workload efficiency, storage, forecast risks, top consumers, alerts, and anomalies.'
         ),
         'icon': 'chart-column',
         'scope': 'Compute',
@@ -84,7 +85,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'title': 'Intelligence',
         'label': 'Decision Support',
         'description': (
-            'Review operational findings, affected assets, confidence context, and prioritized remediation guidance.'
+            'Identify operational findings, understand affected assets, and follow prioritized remediation guidance.'
         ),
         'icon': 'brain-circuit',
         'scope': 'Cross-domain',
@@ -93,21 +94,35 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
     },
     {
         'title': 'Integrations',
-        'label': 'Provider Connectivity',
+        'label': 'Integration & Sync',
         'description': (
-            'Manage Kubernetes, Prometheus, and Alertmanager connections, bindings, compatibility, readiness, and runtime health.'
+            'Manage Kubernetes, Prometheus, and Alertmanager integrations, connection readiness, bindings, and runtime status.'
         ),
-        'icon': 'plug',
+        'icon': 'server-cog',
+        'scope': 'Compute',
+        'group': 'operations',
+        'targets': (('clusters.view', 'integrations.kubernetes'),),
+    },
+    {
+        'title': 'Platform Operations',
+        'label': 'Execution & Scheduling',
+        'description': (
+            'Monitor background executions and manage automatic or manual job policies across operational domains.'
+        ),
+        'icon': 'workflow',
         'scope': 'Platform',
         'group': 'operations',
-        'targets': (('settings.manage_integrations', 'integrations.overview'),),
+        'targets': (
+            ('jobs.view', 'jobs.executions'),
+            ('jobs.configure', 'jobs.configuration'),
+        ),
     },
     {
         'title': 'K8s Operations',
         'label': 'Controlled Workflows',
         'description': (
-            'Execute permission-aware infrastructure changes with validation, '
-            'safeguards, approval boundaries, and audit context.'
+            'Run permission-aware configuration and protected infrastructure '
+            'operations with validation, safeguards, and audit context.'
         ),
         'icon': 'wrench',
         'scope': 'Compute',
@@ -128,25 +143,11 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         ),
     },
     {
-        'title': 'Platform Operations',
-        'label': 'Jobs & Inventory Sync',
-        'description': (
-            'Review asynchronous execution history and control scheduled or on-demand inventory synchronization across eligible clusters.'
-        ),
-        'icon': 'workflow',
-        'scope': 'Platform',
-        'group': 'operations',
-        'targets': (
-            ('jobs.view', 'integrations.jobs'),
-            ('settings.manage_integrations', 'settings.inventory_sync.index'),
-        ),
-    },
-    {
         'title': 'K8s Governance',
         'label': 'Policy & Lifecycle',
         'description': (
-            'Review governance posture, lifecycle exposure, policy context, '
-            'certificate risk, and controlled remediation workflows.'
+            'Review infrastructure governance posture, lifecycle exposure, policy '
+            'context, and controlled remediation workflows.'
         ),
         'icon': 'shield-check',
         'scope': 'Cross-domain',
@@ -160,8 +161,8 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'title': 'Reports',
         'label': 'History & Management Output',
         'description': (
-            'Access operational reports, generation history, templates, schedules, '
-            'storage, retention, and management-ready outputs.'
+            'Open operational history, generated reports, templates, schedules, '
+            'storage, retention, and management-ready outputs available to your role.'
         ),
         'icon': 'file-text',
         'scope': 'Cross-domain',
@@ -178,8 +179,8 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'title': 'Access',
         'label': 'Identity, Access & Audit',
         'description': (
-            'Manage users, roles, permissions, authentication activity, and '
-            'operational audit records within assigned authority.'
+            'Manage users, roles, permissions, authentication events, and operational '
+            'audit records according to assigned authority.'
         ),
         'icon': 'users-round',
         'scope': 'Platform',
@@ -194,7 +195,8 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'title': 'Settings',
         'label': 'Personal & System Settings',
         'description': (
-            'Manage account preferences and, when authorized, platform-wide configuration and operational settings.'
+            'Manage your account and preferences; authorized roles can also configure '
+            'integrations and platform-level settings.'
         ),
         'icon': 'settings-2',
         'scope': 'Platform',

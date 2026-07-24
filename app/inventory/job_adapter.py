@@ -2,12 +2,17 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.cluster.sync_jobs import build_fleet_inventory_targets
+from app.cluster.sync_jobs import (
+    NoEligibleInventoryTargets,
+    build_fleet_inventory_targets,
+    enqueue_all_cluster_inventory_sync,
+)
 from app.common.presentation import present_user_datetime
 from app.jobs.constants import ACTIVE_JOB_STATUSES
+from app.jobs.definitions.base import RegisteredJobDispatchResult
+from app.jobs.policies.presentation import present_interval
 from app.models.cluster import Cluster
-from app.models.inventory_sync import InventorySyncPolicy
-from app.models.job import JobExecution
+from app.models.job import JobExecution, JobPolicy
 
 _STATUS_PRESENTATION = {
     'queued': ('Queued', 'pending', 'clock-3'),
@@ -22,15 +27,6 @@ _STATUS_PRESENTATION = {
 }
 
 
-def _interval_label(minutes: int) -> str:
-    if minutes < 60:
-        return f'{minutes} Minutes'
-    hours, remainder = divmod(minutes, 60)
-    if remainder == 0:
-        return f'{hours} Hour' if hours == 1 else f'{hours} Hours'
-    return f'{hours}h {remainder}m'
-
-
 def _job_progress(job: JobExecution) -> tuple[int, str]:
     total = max(job.progress_total, 0)
     current = max(job.progress_current, 0)
@@ -42,7 +38,7 @@ def _job_progress(job: JobExecution) -> tuple[int, str]:
     return 0, 'Waiting For Worker'
 
 
-def _present_job(job: JobExecution) -> dict[str, Any]:
+def present_inventory_job(job: JobExecution) -> dict[str, Any]:
     payload = job.payload_json or {}
     status_label, status_tone, status_icon = _STATUS_PRESENTATION.get(
         job.status,
@@ -50,7 +46,9 @@ def _present_job(job: JobExecution) -> dict[str, Any]:
     )
     progress, progress_label = _job_progress(job)
     requester = job.requested_by.display_label if job.requested_by is not None else 'KAORI Scheduler'
-    trigger_type = str(payload.get('trigger_type') or ('scheduled' if job.requested_by_user_id is None else 'manual'))
+    trigger_type = str(
+        payload.get('trigger_type') or ('scheduled' if job.requested_by_user_id is None else 'manual')
+    )
     target_count = int(payload.get('total_count') or job.progress_total or 0)
     return {
         'public_id': job.public_id,
@@ -75,7 +73,36 @@ def _present_job(job: JobExecution) -> dict[str, Any]:
     }
 
 
-def build_inventory_sync_page_context(policy: InventorySyncPolicy) -> dict[str, Any]:
+def dispatch_inventory_sync(
+    *,
+    requested_by_user_id: int | None,
+    trigger_type: str,
+    parameters: dict[str, Any] | None = None,
+) -> RegisteredJobDispatchResult:
+    del parameters
+    try:
+        job, created = enqueue_all_cluster_inventory_sync(
+            requested_by_user_id=requested_by_user_id,
+            trigger_type=trigger_type,
+        )
+    except NoEligibleInventoryTargets:
+        return RegisteredJobDispatchResult(
+            status='blocked',
+            message='No eligible Kubernetes cluster has an enabled canonical binding.',
+        )
+    return RegisteredJobDispatchResult(
+        status='queued' if created else 'reused',
+        message=(
+            'A canonical fleet inventory execution was queued.'
+            if created
+            else 'The request joined the active fleet inventory execution.'
+        ),
+        job=job,
+        created=created,
+    )
+
+
+def build_inventory_sync_context(policy: JobPolicy) -> dict[str, Any]:
     registered_cluster_count = Cluster.query.count()
     eligible_targets = build_fleet_inventory_targets(log_skipped=False)
     eligible_cluster_count = len(eligible_targets)
@@ -134,7 +161,7 @@ def build_inventory_sync_page_context(policy: InventorySyncPolicy) -> dict[str, 
             'label': 'Blocked',
             'tone': 'warning',
             'icon': 'shield-alert',
-            'description': 'Register and enable a canonical Kubernetes binding before synchronizing.',
+            'description': 'Enable a canonical Kubernetes binding before synchronizing.',
         }
 
     return {
@@ -144,8 +171,8 @@ def build_inventory_sync_page_context(policy: InventorySyncPolicy) -> dict[str, 
         'eligible_targets': eligible_targets,
         'scheduler_state': scheduler_state,
         'execution_state': execution_state,
-        'interval_label': _interval_label(policy.interval_minutes),
-        'active_job': _present_job(active_job) if active_job is not None else None,
-        'latest_job': _present_job(latest_job) if latest_job is not None else None,
-        'recent_jobs': [_present_job(job) for job in recent_jobs],
+        'interval_label': present_interval(policy.interval_minutes),
+        'active_job': present_inventory_job(active_job) if active_job is not None else None,
+        'latest_job': present_inventory_job(latest_job) if latest_job is not None else None,
+        'recent_jobs': [present_inventory_job(job) for job in recent_jobs],
     }
