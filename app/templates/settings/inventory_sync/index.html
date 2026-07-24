@@ -1,0 +1,42 @@
+{% extends "layouts/app.html" %}
+{% block title %}Inventory Sync Configuration{% endblock %}
+{% block content %}
+<div class="mx-auto max-w-5xl space-y-6">
+  <section class="rounded-2xl bg-kaori-primary p-6 text-white shadow-lg shadow-kaori-primary/15">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div class="max-w-2xl">
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">Kubernetes Inventory</p>
+        <h1 class="mt-2 text-2xl font-bold">Inventory Sync Configuration</h1>
+        <p class="mt-2 text-sm leading-6 text-white/80">Control the automatic fleet inventory refresh interval. Manual synchronization remains available from Quick Actions and each Kubernetes integration.</p>
+      </div>
+      <span class="rounded-md border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold">{{ 'Automatic Enabled' if policy.enabled else 'Manual Only' }}</span>
+    </div>
+  </section>
+
+  <section class="rounded-xl border border-outline-default bg-surface-elevated p-6 shadow-sm">
+    <div class="mb-6">
+      <h2 class="text-base font-semibold text-content-primary">Automatic Fleet Sync</h2>
+      <p class="mt-1 text-sm text-content-secondary">Each scheduled run refreshes all inventory for every registered cluster with a canonical Kubernetes connection.</p>
+    </div>
+    <form method="POST" class="space-y-6">
+      {{ form.hidden_tag() }}
+      <label class="flex items-start gap-3 rounded-lg border border-outline-subtle p-4">
+        {{ form.enabled(class_="mt-1 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary") }}
+        <span><span class="block text-sm font-semibold text-content-primary">Enable Automatic Inventory Sync</span><span class="mt-1 block text-xs text-content-muted">Enabled by default. Celery Beat checks the schedule every minute and dispatches only when due.</span></span>
+      </label>
+      <div>
+        {{ form.interval_minutes.label(class_="block text-sm font-semibold text-content-primary") }}
+        {{ form.interval_minutes(class_="mt-2 w-full max-w-xs rounded-lg border border-outline-default bg-surface-primary px-3 py-2 text-sm text-content-primary", min="5", max="1440") }}
+        <p class="mt-2 text-xs text-content-muted">Allowed range: 5–1,440 minutes. Default: 60 minutes.</p>
+        {% for error in form.interval_minutes.errors %}<p class="mt-1 text-xs font-medium text-status-critical">{{ error }}</p>{% endfor %}
+      </div>
+      <div class="grid gap-3 sm:grid-cols-3">
+        <div class="rounded-lg border border-outline-subtle p-4"><p class="text-xs text-content-muted">Next Scheduled Run</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ policy.next_run_at|user_datetime if policy.next_run_at else 'Not Scheduled' }}</p></div>
+        <div class="rounded-lg border border-outline-subtle p-4"><p class="text-xs text-content-muted">Last Dispatch</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ policy.last_dispatched_at|user_datetime if policy.last_dispatched_at else 'Not Run Yet' }}</p></div>
+        <div class="rounded-lg border border-outline-subtle p-4"><p class="text-xs text-content-muted">Manual Sync</p><p class="mt-1 text-sm font-semibold text-content-primary">Always Available</p></div>
+      </div>
+      {{ form.submit(class_="inline-flex min-h-10 items-center rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white hover:bg-kaori-primary-dark") }}
+    </form>
+  </section>
+</div>
+{% endblock %}

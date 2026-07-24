@@ -45,6 +45,9 @@ def sync_inventory(
 ) -> None:
     if connection.cluster_id != cluster.id:
         raise ValueError('The canonical Kubernetes connection does not belong to the selected cluster.')
+    instance = connection.integration_instance
+    if not instance.enabled or instance.lifecycle_status != 'active':
+        raise RuntimeError('The canonical Kubernetes integration is not active for inventory synchronization.')
     allow_weak_tls = bool(connection.allow_weak_tls)
     collected_at = datetime.now(UTC)
 

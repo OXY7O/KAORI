@@ -133,6 +133,12 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
                 'queue': _retention_queue_name(),
             },
         }
+    if _env_bool('INVENTORY_SYNC_SCHEDULER_ENABLED', True):
+        schedule['kubernetes-inventory-scheduler'] = {
+            'task': 'app.inventory.tasks.dispatch_scheduled_inventory_sync',
+            'schedule': crontab(minute='*'),
+            'options': {'queue': _env_str('INVENTORY_SCHEDULER_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'},
+        }
     if _env_bool('INTEGRATION_RUNTIME_MONITORING_ENABLED', True):
         schedule['integration-runtime-monitoring'] = {
             'task': 'app.integrations.runtime.tasks.refresh_integration_runtime',
@@ -338,6 +344,7 @@ class Config:
         'enable_utc': True,
         'imports': (
             'app.cluster.tasks',
+            'app.inventory.tasks',
             'app.retention.tasks',
             'app.integrations.runtime.tasks',
             'app.integrations.validation.tasks',
@@ -356,6 +363,9 @@ class Config:
             },
             'app.retention.tasks.run_scheduled_retention': {
                 'queue': _retention_queue_name(),
+            },
+            'app.inventory.tasks.dispatch_scheduled_inventory_sync': {
+                'queue': 'maintenance',
             },
             'app.integrations.runtime.tasks.refresh_integration_runtime': {
                 'queue': INTEGRATION_RUNTIME_CELERY_QUEUE,

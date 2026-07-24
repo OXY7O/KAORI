@@ -39,7 +39,7 @@ def _store_single(task_id: str, payload: dict[str, Any]) -> None:
 
 def _build_result(
     *,
-    requested_by_user_id: int,
+    requested_by_user_id: int | None,
     total_count: int,
     synced_count: int,
     failed_clusters: list[str],
@@ -95,7 +95,7 @@ def _build_result(
 def sync_all_clusters_task(
     self,
     *,
-    requested_by_user_id: int,
+    requested_by_user_id: int | None,
     targets: list[dict[str, str]] | None = None,
     job_execution_id: int | None = None,
 ) -> dict[str, Any]:
@@ -166,25 +166,26 @@ def sync_all_clusters_task(
             duration_seconds=round(perf_counter() - started_timer, 1),
         )
         result['failure_evidence'] = failure_evidence
-        create_notification(
-            user_id=requested_by_user_id,
-            event_type='kubernetes_inventory_sync',
-            status=result['status'],
-            title=result['title'],
-            message=result['message'],
-            detail=result['detail'],
-            action_url='/integrations/kubernetes',
-            metadata={
-                'task_id': task_id,
-                'job_execution_id': job_execution_id,
-                'total_count': total_count,
-                'synced_count': synced_count,
-                'failed_count': len(failed_clusters),
-                'failed_clusters': failed_clusters,
-                'failure_evidence': failure_evidence,
-                'duration_seconds': result['duration_seconds'],
-            },
-        )
+        if requested_by_user_id is not None:
+            create_notification(
+                user_id=requested_by_user_id,
+                event_type='kubernetes_inventory_sync',
+                status=result['status'],
+                title=result['title'],
+                message=result['message'],
+                detail=result['detail'],
+                action_url='/integrations/kubernetes',
+                metadata={
+                    'task_id': task_id,
+                    'job_execution_id': job_execution_id,
+                    'total_count': total_count,
+                    'synced_count': synced_count,
+                    'failed_count': len(failed_clusters),
+                    'failed_clusters': failed_clusters,
+                    'failure_evidence': failure_evidence,
+                    'duration_seconds': result['duration_seconds'],
+                },
+            )
         context.succeed(
             result_summary=result,
             result_type='kubernetes_inventory_sync',

@@ -87,3 +87,7 @@ The page is deliberately domain-driven so growth does not create one menu per ta
 - future domains appear only after their lifecycle adapter and safety boundaries exist.
 
 Policy changes and manual archive operations require `settings.manage_data_lifecycle`. Read-only users see disabled policy controls. Verified archive downloads require `settings.export_data_lifecycle`. Every change, request, completion, failure, and verification produces persistent KAORI operational feedback and Activity Audit evidence.
+
+## Inventory Sync Configuration
+
+`/settings/inventory-sync/` is the canonical configuration surface for automatic Kubernetes Inventory synchronization. Access requires `settings.manage_integrations`. Automatic synchronization is enabled by default at 60 minutes and accepts intervals from 5 to 1,440 minutes. Policy changes reset the next due time and are recorded as operational activity. Manual synchronization remains available independently of the automatic policy.

@@ -11,6 +11,7 @@ from app.models.intelligence import (
     IntelligenceDecisionCandidate,
     IntelligenceExecutionJournal,
 )
+from app.models.inventory_sync import InventorySyncPolicy
 from app.models.inventory import (
     ClusterInventory,
     ConfigurationInventory,
@@ -41,6 +42,7 @@ from app.models.secret_reveal import SecretRevealNamespacePolicy, SecretRevealRe
 from app.models.user import User
 
 __all__ = [
+    'InventorySyncPolicy',
     'ArchiveArtifact',
     'AuditEvent',
     'IdentityProvider',

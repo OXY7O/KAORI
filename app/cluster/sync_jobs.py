@@ -25,11 +25,27 @@ def _now_iso() -> str:
 
 
 def _fleet_target_snapshot() -> list[dict[str, str]]:
+    targets: list[dict[str, str]] = []
     clusters = Cluster.query.order_by(Cluster.name.asc(), Cluster.id.asc()).all()
-    return [{'cluster_id': str(cluster.id), 'cluster_name': cluster.name} for cluster in clusters]
+    for cluster in clusters:
+        try:
+            connection_for_cluster(cluster)
+        except RuntimeError:
+            logger.warning(
+                'Skipping cluster %s from fleet inventory sync because no enabled canonical '
+                'Kubernetes binding is available.',
+                cluster.id,
+            )
+            continue
+        targets.append({'cluster_id': str(cluster.id), 'cluster_name': cluster.name})
+    return targets
 
 
-def enqueue_all_cluster_inventory_sync(*, requested_by_user_id: int) -> tuple[JobExecution, bool]:
+def enqueue_all_cluster_inventory_sync(
+    *,
+    requested_by_user_id: int | None,
+    trigger_type: str = 'manual',
+) -> tuple[JobExecution, bool]:
     targets = _fleet_target_snapshot()
     total_count = len(targets)
     job, created = enqueue_canonical_job(
@@ -45,8 +61,13 @@ def enqueue_all_cluster_inventory_sync(*, requested_by_user_id: int) -> tuple[Jo
         scope_type='kubernetes_fleet',
         scope_key='all',
         resource_group='kubernetes-inventory:global',
-        parameters={'scope': 'all', 'cluster_count': total_count, 'targets': targets},
-        payload={'total_count': total_count, 'targets': targets},
+        parameters={
+            'scope': 'all',
+            'cluster_count': total_count,
+            'targets': targets,
+            'trigger_type': trigger_type,
+        },
+        payload={'total_count': total_count, 'targets': targets, 'trigger_type': trigger_type},
         max_attempts=3,
     )
     metadata = {
