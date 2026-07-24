@@ -117,6 +117,7 @@ def _render_configuration_job(
     *,
     policy_form: JobPolicyForm | None = None,
     policy_error: str | None = None,
+    operation_feedback: dict[str, object] | None = None,
     status_code: int = 200,
 ) -> ResponseReturnValue:
     context = _configuration_context(
@@ -124,6 +125,11 @@ def _render_configuration_job(
         policy_form=policy_form,
         policy_error=policy_error,
     )
+    context['operation_feedback'] = operation_feedback
+    if operation_feedback is not None:
+        context['notification_context'] = get_navigation_notification_context(
+            user_id=int(current_user.id)
+        )
     return render_template('jobs/configuration/_job_workspace.html', **context), status_code
 
 def _jobs_execution_url(*, search: str = '', queue: str = '') -> str:
@@ -214,7 +220,8 @@ def update_policy(job_key: str) -> ResponseReturnValue:
         )
         return render_template('jobs/index.html', **context), 422
 
-    record_operational_activity(
+    is_htmx = _is_htmx()
+    feedback = record_operational_activity(
         user_id=int(current_user.id),
         event_type='job_policy_updated',
         status='success',
@@ -235,10 +242,10 @@ def update_policy(job_key: str) -> ResponseReturnValue:
             'scope_type': policy.scope_type,
             'scope_key': policy.scope_key,
         },
-        queue_feedback=True,
+        queue_feedback=not is_htmx,
     )
-    if _is_htmx():
-        return _render_configuration_job(job_key)
+    if is_htmx:
+        return _render_configuration_job(job_key, operation_feedback=feedback)
     return redirect(url_for('jobs.configuration', job_key=job_key))
 
 
@@ -250,8 +257,9 @@ def run_now(job_key: str) -> ResponseReturnValue:
     if domain_permission and not current_user.has_permission(domain_permission):
         abort(403)
     form = ManualJobRunForm()
+    is_htmx = _is_htmx()
     if not form.validate_on_submit():
-        if _is_htmx():
+        if is_htmx:
             return _render_configuration_job(job_key)
         return redirect(url_for('jobs.configuration', job_key=job_key))
 
@@ -264,7 +272,7 @@ def run_now(job_key: str) -> ResponseReturnValue:
     except (CeleryError, JobQuotaExceeded, KombuOperationalError, OSError, RuntimeError, SQLAlchemyError):
         db.session.rollback()
         logger.exception('Could not dispatch registered job %s.', job_key)
-        record_operational_activity(
+        feedback = record_operational_activity(
             user_id=int(current_user.id),
             event_type='job_manual_dispatch',
             status='error',
@@ -275,14 +283,14 @@ def run_now(job_key: str) -> ResponseReturnValue:
             action_label='Review Job Executions',
             action_icon='list-checks',
             metadata={'job_key': job_key, 'trigger_type': 'manual'},
-            queue_feedback=True,
+            queue_feedback=not is_htmx,
         )
-        if _is_htmx():
-            return _render_configuration_job(job_key)
+        if is_htmx:
+            return _render_configuration_job(job_key, operation_feedback=feedback)
         return redirect(url_for('jobs.configuration', job_key=job_key))
 
     if not outcome.accepted:
-        record_operational_activity(
+        feedback = record_operational_activity(
             user_id=int(current_user.id),
             event_type='job_manual_dispatch',
             status='warning',
@@ -293,15 +301,15 @@ def run_now(job_key: str) -> ResponseReturnValue:
             action_label='Review Job Configuration',
             action_icon='shield-alert',
             metadata={'job_key': job_key, 'trigger_type': 'manual', 'dispatch_status': outcome.status},
-            queue_feedback=True,
+            queue_feedback=not is_htmx,
         )
-        if _is_htmx():
-            return _render_configuration_job(job_key)
+        if is_htmx:
+            return _render_configuration_job(job_key, operation_feedback=feedback)
         return redirect(url_for('jobs.configuration', job_key=job_key))
 
     job = outcome.job
     assert job is not None
-    record_operational_activity(
+    feedback = record_operational_activity(
         user_id=int(current_user.id),
         event_type='job_manual_dispatch',
         status='success' if outcome.created else 'info',
@@ -319,10 +327,10 @@ def run_now(job_key: str) -> ResponseReturnValue:
             'trigger_type': 'manual',
             'created': outcome.created,
         },
-        queue_feedback=True,
+        queue_feedback=not is_htmx,
     )
-    if _is_htmx():
-        return _render_configuration_job(job_key)
+    if is_htmx:
+        return _render_configuration_job(job_key, operation_feedback=feedback)
     return redirect(url_for('jobs.configuration', job_key=job_key))
 
 
