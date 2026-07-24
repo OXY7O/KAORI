@@ -27,7 +27,10 @@
                             {{ page_hero.context_metric('panels-top-left', 'Workspaces', shortcut_count, 'Available for the current role') }}
                             {{ page_hero.context_metric('layers-3', 'Capability Areas', workspace_group_count, 'Grouped operational domains') }}
                         </div>
-                        {{ page_hero.context_info('shield-check', 'Access is limited to workspaces assigned to your role.') }}
+                        <div class="mt-3 flex items-center gap-2 rounded-lg border border-white/80 bg-white px-3 py-2 text-[11px] font-medium leading-4 text-slate-600 shadow-sm">
+                            <i data-lucide="shield-check" class="h-3.5 w-3.5 shrink-0 text-violet-700" aria-hidden="true"></i>
+                            <p>Access is limited to workspaces assigned to your role.</p>
+                        </div>
                     </div>
                 </aside>
             </div>
