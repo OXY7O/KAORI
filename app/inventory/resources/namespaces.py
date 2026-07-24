@@ -122,9 +122,6 @@ def get_namespace_inventory(
             )
         }
 
-    workload_counts = _namespace_count_map(WorkloadInventory)
-    pod_counts = _namespace_count_map(PodInventory)
-    service_counts = _namespace_count_map(ServiceInventory)
     quota_counts = _namespace_count_map(ResourceQuotaInventory)
 
     status_counts = {
@@ -150,9 +147,6 @@ def get_namespace_inventory(
                 'namespace': namespace.namespace,
                 'status': namespace_status,
                 'age': format_age(namespace.created_at),
-                'workload_count': workload_counts.get(key, 0),
-                'pod_count': pod_counts.get(key, 0),
-                'service_count': service_counts.get(key, 0),
                 'quota_count': quota_count,
                 'limit_range_count': limit_range_count,
                 'network_policy_count': network_policy_count,

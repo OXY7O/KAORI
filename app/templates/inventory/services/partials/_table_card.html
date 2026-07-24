@@ -1,8 +1,9 @@
-<section id="services-inventory-card"
-         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+{% import "components/table.html" as table_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
+<section id="services-inventory-card" class="{{ table_ui.block_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4">
         <div class="flex items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
                 <i data-lucide="route" class="h-5 w-5"></i>
             </span>
             <div>
@@ -10,25 +11,23 @@
                 <p class="mt-1 text-sm leading-6 text-content-muted">Service identity, exposure type, cluster addressing, ports, and endpoint readiness.</p>
             </div>
         </div>
-        <div id="services-table-loading"
-             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
-            <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
-        </div>
+        {{ loading_bar.render('services-table-loading', label='Refreshing Services Inventory') }}
     </header>
-    <div class="border-b border-outline-subtle px-5 py-4">
+    <div class="border-b border-outline-subtle bg-surface-hover px-5 py-4">
         <form id="services-filter-form"
               hx-get="{{ url_for('inventory.services') }}"
-              hx-target="#services-inventory-card"
+              hx-target="#services-inventory-scope"
               hx-swap="outerHTML"
               hx-trigger="change, keyup changed delay:500ms"
               hx-indicator="#services-table-loading"
               class="grid gap-4 xl:grid-cols-12 xl:items-end">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
+            <input type="hidden" name="partial_mode" value="inventory_scope">
             <div class="xl:col-span-3">
                 <label class="mb-2 block text-sm font-semibold text-content-secondary">Cluster</label>
                 <select name="cluster_id"
-                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Clusters</option>
                     {% for cluster in clusters %}
                         <option value="{{ cluster.id }}"
@@ -39,7 +38,7 @@
             <div class="xl:col-span-3">
                 <label class="mb-2 block text-sm font-semibold text-content-secondary">Namespace</label>
                 <select name="namespace"
-                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Namespaces</option>
                     {% for ns in inventory.namespaces %}
                         <option value="{{ ns }}" {% if selected_namespace == ns %}selected{% endif %}>{{ ns }}</option>
@@ -49,7 +48,7 @@
             <div class="xl:col-span-2">
                 <label class="mb-2 block text-sm font-semibold text-content-secondary">Service Type</label>
                 <select name="type"
-                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Types</option>
                     {% for type_name in inventory.service_filter_types %}
                         <option value="{{ type_name }}"
@@ -66,7 +65,7 @@
                            name="search"
                            value="{{ search }}"
                            placeholder="Name, IP, Or Port"
-                           class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                           class="{{ table_ui.filter_input_classes() }} pl-10">
                 </div>
             </div>
         </form>

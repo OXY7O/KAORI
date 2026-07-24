@@ -5,7 +5,7 @@
     <header class="border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
                     <i data-lucide="gauge" class="h-5 w-5"></i>
                 </span>
                 <div>
@@ -36,7 +36,7 @@
                         <p class="mt-2 text-2xl font-semibold tracking-tight text-content-primary">{{ value }}</p>
                         <p class="mt-2 text-xs leading-5 text-content-muted">{{ description }}</p>
                     </div>
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
                         <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                     </span>
                 </div>
@@ -55,7 +55,7 @@
                     </div>
                     {{ progress_bar.bar(ready_percentage, track_classes="mt-4 h-2 overflow-hidden rounded-full bg-kaori-soft", fill_classes="h-full rounded-full bg-kaori-primary", label="Node readiness coverage") }}
                 </div>
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-brand-outline bg-kaori-soft text-kaori-primary">
                     <i data-lucide="badge-check" class="h-4 w-4"></i>
                 </span>
             </div>
@@ -68,7 +68,7 @@
                     <p class="mt-2 text-2xl font-semibold text-content-primary">{{ inventory.ready_nodes }}</p>
                     <p class="mt-2 text-xs leading-5 text-content-muted">Available for workload scheduling.</p>
                 </div>
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-status-normal-border bg-status-normal-soft text-status-normal-text">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-status-normal-border bg-status-normal-soft text-status-normal-text">
                     <i data-lucide="circle-check-big" class="h-4 w-4"></i>
                 </span>
             </div>
@@ -81,7 +81,7 @@
                     <p class="mt-2 text-2xl font-semibold text-content-primary">{{ inventory.not_ready_nodes }}</p>
                     <p class="mt-2 text-xs leading-5 text-content-muted">{{ not_ready_percentage | int }}% of nodes require attention.</p>
                 </div>
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-status-warning-border bg-status-warning-soft text-status-warning-text">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-status-warning-border bg-status-warning-soft text-status-warning-text">
                     <i data-lucide="triangle-alert" class="h-4 w-4"></i>
                 </span>
             </div>

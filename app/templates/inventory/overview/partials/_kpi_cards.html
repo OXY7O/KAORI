@@ -13,7 +13,7 @@
 <section class="space-y-4" aria-labelledby="inventory-footprint-title">
     <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-            <div class="inline-flex items-center gap-2 rounded-lg border border-outline-default bg-kaori-soft px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-kaori-primary">
+            <div class="inline-flex items-center gap-2 rounded-md border border-outline-default bg-kaori-soft px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-kaori-primary">
                 <i data-lucide="layout-grid" class="h-4 w-4"></i>
                 Inventory footprint
             </div>
@@ -40,7 +40,7 @@
                         <p class="text-xs font-semibold uppercase tracking-[0.08em] text-kaori-primary">{{ card.title }}</p>
                         <p class="mt-2 text-2xl font-semibold tracking-tight text-content-primary">{{ card.value }}</p>
                     </div>
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
                           aria-hidden="true">
                         <i data-lucide="{{ card.icon }}" class="h-5 w-5"></i>
                     </span>
@@ -55,7 +55,7 @@
     <div class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
                       aria-hidden="true">
                     <i data-lucide="database" class="h-5 w-5"></i>
                 </span>
@@ -65,22 +65,22 @@
                 </div>
             </div>
             <div class="grid gap-2 sm:grid-cols-2 lg:min-w-[540px] lg:grid-cols-4">
-                <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5">
+                <div class="rounded-md border border-outline-subtle bg-surface-elevated px-3 py-2.5">
                     <p class="text-[10px] font-semibold uppercase tracking-wide text-kaori-primary">Registered</p>
                     <p class="mt-1 text-lg font-semibold text-content-primary">{{ overview.total_clusters }}</p>
                     <p class="text-xs text-content-muted">clusters</p>
                 </div>
-                <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5">
+                <div class="rounded-md border border-outline-subtle bg-surface-elevated px-3 py-2.5">
                     <p class="text-[10px] font-semibold uppercase tracking-wide text-kaori-primary">Coverage</p>
                     <p class="mt-1 text-lg font-semibold text-content-primary">{{ overview.health.coverage_score or 0 }}%</p>
                     <p class="text-xs text-content-muted">collection</p>
                 </div>
-                <div class="rounded-lg border px-3 py-2.5 {% if (overview.health.healthy_clusters or 0) == overview.total_clusters and overview.total_clusters > 0 %}border-status-normal-border bg-status-normal-soft{% elif overview.total_clusters > 0 %}border-status-warning-border bg-status-warning-soft{% else %}border-status-unknown-border bg-status-unknown-soft{% endif %}">
+                <div class="rounded-md border px-3 py-2.5 {% if (overview.health.healthy_clusters or 0) == overview.total_clusters and overview.total_clusters > 0 %}border-status-normal-border bg-status-normal-soft{% elif overview.total_clusters > 0 %}border-status-warning-border bg-status-warning-soft{% else %}border-status-unknown-border bg-status-unknown-soft{% endif %}">
                     <p class="text-[10px] font-semibold uppercase tracking-wide {% if (overview.health.healthy_clusters or 0) == overview.total_clusters and overview.total_clusters > 0 %}text-status-normal-text{% elif overview.total_clusters > 0 %}text-status-warning-text{% else %}text-status-unknown-text{% endif %}">Healthy</p>
                     <p class="mt-1 text-lg font-semibold text-content-primary">{{ overview.health.healthy_clusters or 0 }}/{{ overview.total_clusters }}</p>
                     <p class="text-xs text-content-muted">targets</p>
                 </div>
-                <div class="rounded-lg border px-3 py-2.5 {% if (overview.health.fresh_synced or 0) == overview.total_clusters and overview.total_clusters > 0 %}border-status-normal-border bg-status-normal-soft{% elif overview.total_clusters > 0 %}border-status-warning-border bg-status-warning-soft{% else %}border-status-unknown-border bg-status-unknown-soft{% endif %}">
+                <div class="rounded-md border px-3 py-2.5 {% if (overview.health.fresh_synced or 0) == overview.total_clusters and overview.total_clusters > 0 %}border-status-normal-border bg-status-normal-soft{% elif overview.total_clusters > 0 %}border-status-warning-border bg-status-warning-soft{% else %}border-status-unknown-border bg-status-unknown-soft{% endif %}">
                     <p class="text-[10px] font-semibold uppercase tracking-wide {% if (overview.health.fresh_synced or 0) == overview.total_clusters and overview.total_clusters > 0 %}text-status-normal-text{% elif overview.total_clusters > 0 %}text-status-warning-text{% else %}text-status-unknown-text{% endif %}">Fresh</p>
                     <p class="mt-1 text-lg font-semibold text-content-primary">{{ overview.health.fresh_synced or 0 }}/{{ overview.total_clusters }}</p>
                     <p class="text-xs text-content-muted">within {{ overview.health.freshness_window_hours or 24 }}h</p>

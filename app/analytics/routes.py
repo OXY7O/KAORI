@@ -5,13 +5,6 @@ from hashlib import sha256
 from flask import Blueprint, redirect, render_template, request, session, url_for
 from flask_login import current_user
 
-analytics_bp = Blueprint(
-    'analytics',
-    __name__,
-    url_prefix='/analytics',
-)
-
-
 from app.analytics.alerts.routes import (
     alerts,
     alerts_table,
@@ -51,6 +44,13 @@ from app.notifications.service import (
     record_operational_activity,
 )
 from app.rbac.decorators import permission_required
+
+analytics_bp = Blueprint(
+    'analytics',
+    __name__,
+    url_prefix='/analytics',
+)
+
 
 VALID_ANALYTICS_TIME_RANGES = {
     '1h',

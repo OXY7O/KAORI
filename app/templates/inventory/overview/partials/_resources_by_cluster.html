@@ -1,10 +1,12 @@
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table.html" as table_ui %}
 <section id="resources-by-cluster"
          class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
          aria-labelledby="resources-by-cluster-title">
     <header class="border-b border-outline-subtle px-5 py-4">
         <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
                       aria-hidden="true">
                     <i data-lucide="table-properties" class="h-5 w-5"></i>
                 </span>
@@ -15,15 +17,12 @@
                 </div>
             </div>
             <a href="{{ url_for('integrations.kubernetes') }}"
-               class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3.5 py-2 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card">
+               class="{{ table_ui.action_classes() }}">
                 <i data-lucide="external-link" class="h-4 w-4"></i>
                 Open Cluster List
             </a>
         </div>
-        <div id="resources-by-cluster-loading"
-             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
-            <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
-        </div>
+        {{ loading_bar.render('resources-by-cluster-loading', label='Refreshing Resources By Cluster') }}
     </header>
     <div id="resources-by-cluster-content">
         {% include "inventory/overview/partials/_resources_by_cluster_content.html" %}

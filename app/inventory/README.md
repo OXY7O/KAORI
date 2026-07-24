@@ -60,17 +60,14 @@ When a template receives a dictionary key whose name overlaps a Python mapping m
 such as `items`, `keys`, or `values`, use bracket access (`payload['items']`). Dot
 access can resolve to the mapping method and produce a runtime iterable error.
 
-## Automatic and Manual Synchronization
+## Inventory Presentation Consistency
 
-Kubernetes Inventory supports two canonical dispatch paths:
+All resource inventory pages use the shared KAORI table block, loading bar, filter controls, and row-action components. Filter changes replace the complete inventory scope so summary metrics, dependent filter options, and table rows remain synchronized. Pagination replaces table content only. Resource detail actions remain compact neutral actions, while semantic labels use the global status-label mapping.
 
-- **Automatic fleet sync** is registered as `kubernetes.inventory.sync` in the Jobs control plane. Celery Beat runs `app.jobs.tasks.dispatch_scheduled_jobs` every minute, while the generic `job_policies` row controls the actual interval without requiring a Beat restart.
-- **Manual sync** remains available per cluster and through Quick Actions as **Sync All Inventory**. Both automatic and manual fleet sync use the same canonical job dispatcher, inventory queue, resource-group admission lock, Kubernetes resolver, and transactional generation commit.
+### Cross-Resource Visual Contract
 
-The scheduler claims the policy row with `SELECT ... FOR UPDATE` and advances `next_run_at` before dispatch. Scheduled and manual fleet requests use the same stable admission parameters while target and trigger details remain in the job payload, so a changed target snapshot or trigger type cannot create a second active all-inventory job. Fleet targets are resolved through enabled canonical Kubernetes bindings; disabled or unbound integrations are skipped before job admission, and no empty `JobExecution` is created when the eligible fleet is empty.
-
-The end-to-end safety boundary is:
-
-`IntegrationInstance + enabled binding -> KubernetesConnection resolver -> canonical JobExecution -> inventory worker -> per-cluster database lock -> API discovery and collection -> atomic commit -> committed-generation reads`
-
-A failed collection rolls back the entire cluster transaction. The previously committed generation remains visible, and partial rows from a failed run are never promoted to Inventory readers. The Inventory Sync workspace reads the same target resolver and canonical `JobExecution` records, so UI coverage, scheduler admission, manual admission, and execution history describe the same fleet boundary.
+- Overview and resource summaries use one bordered data block with internal metric cells; do not reintroduce independent decorative cards.
+- Resource-name columns use `text-sm`, semibold primary text, optional muted supporting text, and a `rounded-md` icon tile.
+- Table row actions use `components/table.html`; semantic labels are compact `rounded-md` labels, never pills.
+- Inventory loading indicators use `components/loading_bar.html` and sit directly beneath the block header.
+- List services must not compute related-object counts that are not rendered in the current table. Related composition belongs in the detail endpoint.

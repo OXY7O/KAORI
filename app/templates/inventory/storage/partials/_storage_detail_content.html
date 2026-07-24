@@ -12,7 +12,7 @@
 {% macro detail_card(title, icon, badge=None, class_name='') -%}
     <section class="flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-4 {{ class_name }}">
         <div class="mb-4 flex items-center justify-between gap-3">
-            <div class="flex items-center gap-2 text-sm font-semibold text-content-primary"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>{{ title }}</div>
+            <div class="flex items-center gap-2 text-sm font-semibold text-content-primary"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>{{ title }}</div>
             {% if badge %}{{ table_label.metadata_label(badge) }}{% endif %}
         </div>
         <div class="flex min-h-0 flex-1 flex-col gap-2.5">{{ caller() }}</div>
@@ -31,7 +31,7 @@
     <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-sm">
         <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="database" class="h-4 w-4"></i></span>
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="database" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h3 class="truncate text-sm font-semibold text-content-primary">{{ item.name }}</h3>
@@ -105,7 +105,7 @@
                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
                     <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-4">
                         <div class="flex items-center gap-3">
-                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="sliders-horizontal" class="h-4 w-4"></i></span>
+                            <span class="flex h-8 w-8 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="sliders-horizontal" class="h-4 w-4"></i></span>
                             <div>
                                 <h4 class="text-sm font-semibold text-content-primary">StorageClass Parameters</h4>
                                 <p class="mt-0.5 text-xs text-content-muted">Provisioner options captured from the StorageClass specification.</p>
@@ -133,7 +133,7 @@
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
                 <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div class="flex items-center gap-3">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="workflow" class="h-4 w-4"></i></span>
+                        <span class="flex h-8 w-8 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="workflow" class="h-4 w-4"></i></span>
                         <div>
                             <h4 class="text-sm font-semibold text-content-primary">Associated Resources</h4>
                             <p class="mt-0.5 text-xs text-content-muted">Claims and Pods resolved from current storage bindings.</p>
@@ -150,7 +150,7 @@
                         {% if item.claims %}
                             <div class="space-y-2">
                                 {% for claim in item.claims %}
-                                    <div class="flex items-center gap-2.5 rounded-lg border border-outline-subtle bg-surface-card p-2.5"><span class="flex h-7 w-7 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="folder" class="h-3.5 w-3.5"></i></span><span class="min-w-0 truncate text-xs font-medium text-content-primary"
+                                    <div class="flex items-center gap-2.5 rounded-lg border border-outline-subtle bg-surface-card p-2.5"><span class="flex h-7 w-7 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="folder" class="h-3.5 w-3.5"></i></span><span class="min-w-0 truncate text-xs font-medium text-content-primary"
       title="{{ claim.namespace }}/{{ claim.name }}">{{ claim.namespace }}/{{ claim.name }}</span></div>
                                 {% endfor %}
                             </div>
@@ -195,7 +195,7 @@
             <section class="rounded-xl border border-outline-default bg-surface-card p-4">
                 <div class="mb-3 flex items-center justify-between gap-3">
                     <div class="flex items-center gap-3">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="tags" class="h-4 w-4"></i></span>
+                        <span class="flex h-8 w-8 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="tags" class="h-4 w-4"></i></span>
                         <div>
                             <h4 class="text-sm font-semibold text-content-primary">Storage Labels</h4>
                             <p class="mt-0.5 text-xs text-content-muted">Metadata labels attached to this storage object.</p>
@@ -220,7 +220,7 @@
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
                 <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-4">
                     <div class="flex items-center gap-3">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="notebook-tabs" class="h-4 w-4"></i></span>
+                        <span class="flex h-8 w-8 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="notebook-tabs" class="h-4 w-4"></i></span>
                         <div>
                             <h4 class="text-sm font-semibold text-content-primary">Storage Annotations</h4>
                             <p class="mt-0.5 text-xs text-content-muted">Annotation keys and values attached to this storage object.</p>

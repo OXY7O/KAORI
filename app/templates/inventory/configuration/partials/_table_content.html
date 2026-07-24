@@ -1,3 +1,4 @@
+{% import "components/table.html" as table_ui %}
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
 <div class="overflow-x-auto">
@@ -20,8 +21,8 @@
                     <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(item.cluster_name, 'server') }}</td>
                     <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(item.namespace, 'folder-tree') }}</td>
                     <td class="max-w-[320px] px-3 py-3.5 align-top">
-                        <div class="flex min-w-0 items-center gap-2"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ 'key-round' if item.type == 'Secret' else 'file-json-2' }}"
-   class="h-4 w-4"></i></span><span class="truncate text-xs font-semibold text-content-primary"
+                        <div class="flex min-w-0 items-center gap-2"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="{{ 'key-round' if item.type == 'Secret' else 'file-json-2' }}"
+   class="h-4 w-4"></i></span><span class="truncate text-sm font-semibold leading-5 text-content-primary"
       title="{{ item.name }}">{{ item.name }}</span></div>
                     </td>
                     <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(item.type, 'key-round' if item.type == 'Secret' else 'file-json-2') }}</td>
@@ -42,7 +43,7 @@
                                 hx-swap="innerHTML"
                                 onclick="const target=document.getElementById('configuration-detail-content-{{ item.id }}');const row=document.getElementById('configuration-detail-row-{{ item.id }}');const open=target.dataset.open==='true';document.querySelectorAll('[id^=&quot;configuration-detail-row-&quot;]').forEach((entry)=>entry.classList.add('hidden'));document.querySelectorAll('[id^=&quot;configuration-detail-content-&quot;]').forEach((entry)=>{if(entry.id!==target.id){entry.innerHTML='';entry.dataset.open='false';}});document.querySelectorAll('[data-configuration-toggle=&quot;true&quot;]').forEach((button)=>{const label=button.querySelector('[data-configuration-toggle-label]');const icon=button.querySelector('[data-lucide]');if(label)label.textContent='View More';if(icon)icon.setAttribute('data-lucide','chevron-down');});if(open){target.innerHTML='';target.dataset.open='false';if(row)row.classList.add('hidden');const icon=this.querySelector('[data-lucide]');if(icon)icon.setAttribute('data-lucide','chevron-down');if(window.lucide)window.lucide.createIcons();event.preventDefault();return false;}row.classList.remove('hidden');target.dataset.open='true';const label=this.querySelector('[data-configuration-toggle-label]');const icon=this.querySelector('[data-lucide]');if(label)label.textContent='Hide Details';if(icon)icon.setAttribute('data-lucide','chevron-up');"
                                 hx-on::after-swap="if(window.lucide)window.lucide.createIcons();"
-                                class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"><i data-lucide="chevron-down" class="h-3.5 w-3.5"></i><span data-configuration-toggle-label>View More</span></button>
+                                class="{{ table_ui.action_classes() }}"><i data-lucide="chevron-down" class="h-3.5 w-3.5"></i><span data-configuration-toggle-label>View More</span></button>
                     </td>
                 </tr>
                 <tr id="configuration-detail-row-{{ item.id }}" class="hidden border-0">

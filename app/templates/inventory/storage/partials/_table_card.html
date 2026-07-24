@@ -1,36 +1,35 @@
-<section id="storage-inventory-card"
-         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+{% import "components/table.html" as table_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
+<section id="storage-inventory-card" class="{{ table_ui.block_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4">
         <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
             <div class="flex items-center gap-3">
-                <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="hard-drive" class="h-5 w-5"></i></span>
+                <span class="flex h-10 w-10 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="hard-drive" class="h-5 w-5"></i></span>
                 <div>
                     <h2 class="text-lg font-semibold text-content-primary">Storage Inventory</h2>
                     <p class="mt-1 text-sm leading-6 text-content-muted">StorageClass, PersistentVolume, and PersistentVolumeClaim metadata and bindings.</p>
                 </div>
             </div>
             <a href="{{ url_for('integrations.kubernetes') }}"
-               class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary"><i data-lucide="external-link" class="h-4 w-4"></i>Open Cluster List</a>
+               class="{{ table_ui.action_classes() }}"><i data-lucide="external-link" class="h-4 w-4"></i>Open Cluster List</a>
         </div>
-        <div id="storage-table-loading"
-             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
-            <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
-        </div>
+        {{ loading_bar.render('storage-table-loading', label='Refreshing Storage Inventory') }}
     </header>
-    <div class="border-b border-outline-subtle px-5 py-4">
+    <div class="border-b border-outline-subtle bg-surface-hover px-5 py-4">
         <form id="storage-filter-form"
               hx-get="{{ url_for('inventory.storage') }}"
-              hx-target="#storage-inventory-card"
+              hx-target="#storage-inventory-scope"
               hx-swap="outerHTML"
               hx-trigger="change, keyup changed delay:500ms"
               hx-indicator="#storage-table-loading"
               class="grid gap-4 xl:grid-cols-12 xl:items-end">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
+            <input type="hidden" name="partial_mode" value="inventory_scope">
             <div class="xl:col-span-2">
                 <label class="mb-2 block text-sm font-semibold text-content-primary">Cluster</label>
                 <select name="cluster_id"
-                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Clusters</option>
                     {% for cluster in clusters %}
                         <option value="{{ cluster.id }}"
@@ -41,7 +40,7 @@
             <div class="xl:col-span-2">
                 <label class="mb-2 block text-sm font-semibold text-content-primary">Namespace</label>
                 <select name="namespace"
-                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Namespaces</option>
                     {% for ns in inventory.namespaces %}
                         <option value="{{ ns }}" {% if selected_namespace == ns %}selected{% endif %}>{{ ns }}</option>
@@ -51,7 +50,7 @@
             <div class="xl:col-span-2">
                 <label class="mb-2 block text-sm font-semibold text-content-primary">Type</label>
                 <select name="type"
-                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Types</option>
                     {% for type_name in inventory.storage_filter_types %}
                         <option value="{{ type_name }}"
@@ -62,7 +61,7 @@
             <div class="xl:col-span-2">
                 <label class="mb-2 block text-sm font-semibold text-content-primary">Status</label>
                 <select name="status"
-                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Statuses</option>
                     {% for status_name in inventory.storage_filter_statuses %}
                         <option value="{{ status_name }}"
@@ -79,7 +78,7 @@
                            name="search"
                            value="{{ search }}"
                            placeholder="Name, Class, Or Status"
-                           class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                           class="{{ table_ui.filter_input_classes() }} pl-10">
                 </div>
             </div>
         </form>

@@ -1,6 +1,6 @@
 """Add persistent analytics materialization snapshots.
 
-Revision ID: 20260724_analytics_materialization
+Revision ID: 20260724_analytics_snapshot
 Revises: 20260724_job_orchestration
 Create Date: 2026-07-24
 """
@@ -8,7 +8,7 @@ Create Date: 2026-07-24
 from alembic import op
 import sqlalchemy as sa
 
-revision = '20260724_analytics_materialization'
+revision = '20260724_analytics_snapshot'
 down_revision = '20260724_job_orchestration'
 branch_labels = None
 depends_on = None

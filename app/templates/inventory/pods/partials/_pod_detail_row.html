@@ -26,7 +26,7 @@
                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
                     <div class="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">Pod IP</div>
                     {% if pod.ip %}
-                        <span class="inline-flex items-center gap-1 rounded-full bg-cyan-100 px-2.5 py-1 text-xs font-medium text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300">
+                        <span class="inline-flex items-center gap-1 min-h-6 rounded-md border border-cyan-200 bg-cyan-100 px-2 py-1 text-[10px] font-semibold text-cyan-700 dark:bg-cyan-500/10 dark:text-cyan-300">
                             <i data-lucide="network" class="h-3 w-3"></i>
                             {{ pod.ip }}
                         </span>
@@ -36,7 +36,7 @@
                 </div>
                 <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/70">
                     <div class="mb-1 text-xs font-medium text-slate-500 dark:text-slate-400">Age</div>
-                    <span class="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">
+                    <span class="inline-flex items-center gap-1 min-h-6 rounded-md border border-violet-200 bg-violet-100 px-2 py-1 text-[10px] font-semibold text-violet-700 dark:bg-violet-500/10 dark:text-violet-300">
                         <i data-lucide="clock-3" class="h-3 w-3"></i>
                         {{ pod.age }}
                     </span>
@@ -61,14 +61,14 @@
                             <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Container Images</h4>
                             <p class="text-xs text-slate-500 dark:text-slate-400">Main container image references.</p>
                         </div>
-                        <span class="rounded-full bg-fuchsia-100 px-2.5 py-1 text-xs font-medium text-fuchsia-700 dark:bg-fuchsia-500/10 dark:text-fuchsia-300">
+                        <span class="min-h-6 rounded-md border border-fuchsia-200 bg-fuchsia-100 px-2 py-1 text-[10px] font-semibold text-fuchsia-700 dark:bg-fuchsia-500/10 dark:text-fuchsia-300">
                             {{ pod.container_images|length }}
                         </span>
                     </div>
                     {% if pod.container_images %}
                         <div class="flex flex-wrap gap-2">
                             {% for image in pod.container_images %}
-                                <span class="inline-flex max-w-full items-center gap-1 rounded-full bg-fuchsia-100 px-2.5 py-1 text-xs font-medium text-fuchsia-700 dark:bg-fuchsia-500/10 dark:text-fuchsia-300"
+                                <span class="inline-flex max-w-full items-center gap-1 min-h-6 rounded-md border border-fuchsia-200 bg-fuchsia-100 px-2 py-1 text-[10px] font-semibold text-fuchsia-700 dark:bg-fuchsia-500/10 dark:text-fuchsia-300"
                                       title="{{ image }}">
                                     <i data-lucide="image" class="h-3 w-3 shrink-0"></i>
                                     <span class="break-all">{{ image }}</span>
@@ -85,14 +85,14 @@
                             <h4 class="text-sm font-semibold text-slate-900 dark:text-white">Init Container Images</h4>
                             <p class="text-xs text-slate-500 dark:text-slate-400">Init container image references.</p>
                         </div>
-                        <span class="rounded-full bg-rose-100 px-2.5 py-1 text-xs font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
+                        <span class="min-h-6 rounded-md border border-rose-200 bg-rose-100 px-2 py-1 text-[10px] font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
                             {{ pod.init_container_images|length }}
                         </span>
                     </div>
                     {% if pod.init_container_images %}
                         <div class="flex flex-wrap gap-2">
                             {% for image in pod.init_container_images %}
-                                <span class="inline-flex max-w-full items-center gap-1 rounded-full bg-rose-100 px-2.5 py-1 text-xs font-medium text-rose-700 dark:bg-rose-500/10 dark:text-rose-300"
+                                <span class="inline-flex max-w-full items-center gap-1 min-h-6 rounded-md border border-rose-200 bg-rose-100 px-2 py-1 text-[10px] font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300"
                                       title="{{ image }}">
                                     <i data-lucide="image-plus" class="h-3 w-3 shrink-0"></i>
                                     <span class="break-all">{{ image }}</span>

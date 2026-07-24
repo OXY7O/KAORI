@@ -16,7 +16,7 @@
     <section class="flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-4 {{ class_name }}">
         <div class="mb-4 flex items-center justify-between gap-3">
             <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
                 {{ title }}
             </div>
             {% if badge %}{{ table_label.metadata_label(badge) }}{% endif %}
@@ -39,7 +39,7 @@
     <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-sm">
         <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="boxes" class="h-4 w-4"></i></span>
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="boxes" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h3 class="truncate text-sm font-semibold text-content-primary">{{ workload.name }}</h3>
@@ -105,7 +105,7 @@
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
                 <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3">
                     <div class="flex items-center gap-2">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="container" class="h-4 w-4"></i></span>
+                        <span class="flex h-8 w-8 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="container" class="h-4 w-4"></i></span>
                         <div>
                             <h4 class="text-sm font-semibold text-content-primary">Container Images</h4>
                             <p class="text-xs leading-5 text-content-muted">Images declared by regular and init containers.</p>
@@ -144,7 +144,7 @@
             <section class="rounded-xl border border-outline-default bg-surface-card p-4">
                 <div class="mb-4 flex items-center justify-between gap-3">
                     <div class="flex items-center gap-2">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="git-branch" class="h-4 w-4"></i></span>
+                        <span class="flex h-8 w-8 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="git-branch" class="h-4 w-4"></i></span>
                         <div>
                             <h4 class="text-sm font-semibold text-content-primary">Associated Pods</h4>
                             <p class="text-xs leading-5 text-content-muted">Pods currently mapped to this workload snapshot.</p>
@@ -191,7 +191,7 @@
             <section class="rounded-xl border border-outline-default bg-surface-card p-4">
                 <div class="mb-4 flex items-center justify-between gap-3">
                     <div class="flex items-center gap-2">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="tags" class="h-4 w-4"></i></span>
+                        <span class="flex h-8 w-8 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="tags" class="h-4 w-4"></i></span>
                         <div>
                             <h4 class="text-sm font-semibold text-content-primary">Workload Labels</h4>
                             <p class="text-xs leading-5 text-content-muted">Kubernetes labels stored with this workload object.</p>
@@ -213,7 +213,7 @@
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
                 <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3">
                     <div class="flex items-center gap-2">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="notebook-tabs" class="h-4 w-4"></i></span>
+                        <span class="flex h-8 w-8 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="notebook-tabs" class="h-4 w-4"></i></span>
                         <div>
                             <h4 class="text-sm font-semibold text-content-primary">Workload Annotations</h4>
                             <p class="text-xs leading-5 text-content-muted">Long metadata is shown as rows instead of labels.</p>

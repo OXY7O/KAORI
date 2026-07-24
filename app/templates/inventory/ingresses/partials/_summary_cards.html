@@ -7,7 +7,7 @@
     <header class="border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
                     <i data-lucide="gauge" class="h-5 w-5"></i>
                 </span>
                 <div>
@@ -38,7 +38,7 @@
                         <p class="mt-2 text-2xl font-semibold tracking-tight text-content-primary">{{ value }}</p>
                         <p class="mt-2 text-xs leading-5 text-content-muted">{{ description }}</p>
                     </div>
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
                         <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                     </span>
                 </div>
@@ -47,8 +47,8 @@
     </div>
 
     <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-[1.15fr_0.85fr_0.85fr]">
-        <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-4"><div class="min-w-0 flex-1"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">TLS Coverage</p><div class="mt-2 flex items-end gap-3"><p class="text-2xl font-semibold text-content-primary">{{ tls_percentage | int }}%</p><p class="pb-0.5 text-xs font-medium text-content-muted">{{ tls_enabled }} of {{ total_ingresses }} TLS Enabled</p></div>{{ progress_bar.bar(tls_percentage, track_classes="mt-4 h-2 overflow-hidden rounded-full bg-kaori-soft", fill_classes="h-full rounded-full bg-kaori-primary", label="Ingress TLS coverage") }}</div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary"><i data-lucide="badge-check" class="h-4 w-4"></i></span></div></article>
-        <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-3"><div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Published Hosts</p><p class="mt-2 text-2xl font-semibold text-content-primary">{{ inventory.total_hosts }}</p><p class="mt-2 text-xs leading-5 text-content-muted">Unique hostnames in the current scope.</p></div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-status-info-border bg-status-info-soft text-status-info-text"><i data-lucide="globe-2" class="h-4 w-4"></i></span></div></article>
-        <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-3"><div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Without TLS</p><p class="mt-2 text-2xl font-semibold text-content-primary">{{ no_tls }}</p><p class="mt-2 text-xs leading-5 text-content-muted">Ingresses requiring encryption review.</p></div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-status-warning-border bg-status-warning-soft text-status-warning-text"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span></div></article>
+        <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-4"><div class="min-w-0 flex-1"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">TLS Coverage</p><div class="mt-2 flex items-end gap-3"><p class="text-2xl font-semibold text-content-primary">{{ tls_percentage | int }}%</p><p class="pb-0.5 text-xs font-medium text-content-muted">{{ tls_enabled }} of {{ total_ingresses }} TLS Enabled</p></div>{{ progress_bar.bar(tls_percentage, track_classes="mt-4 h-2 overflow-hidden rounded-full bg-kaori-soft", fill_classes="h-full rounded-full bg-kaori-primary", label="Ingress TLS coverage") }}</div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-brand-outline bg-kaori-soft text-kaori-primary"><i data-lucide="badge-check" class="h-4 w-4"></i></span></div></article>
+        <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-3"><div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Published Hosts</p><p class="mt-2 text-2xl font-semibold text-content-primary">{{ inventory.total_hosts }}</p><p class="mt-2 text-xs leading-5 text-content-muted">Unique hostnames in the current scope.</p></div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-status-info-border bg-status-info-soft text-status-info-text"><i data-lucide="globe-2" class="h-4 w-4"></i></span></div></article>
+        <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-3"><div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Without TLS</p><p class="mt-2 text-2xl font-semibold text-content-primary">{{ no_tls }}</p><p class="mt-2 text-xs leading-5 text-content-muted">Ingresses requiring encryption review.</p></div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-status-warning-border bg-status-warning-soft text-status-warning-text"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span></div></article>
     </div>
 </section>

@@ -1,3 +1,4 @@
+{% import "components/table.html" as table_ui %}
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
 <div class="overflow-x-auto">
@@ -32,8 +33,8 @@
                     <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(workload.namespace, 'folder-tree') }}</td>
                     <td class="max-w-[260px] px-3 py-3.5 align-top">
                         <div class="flex items-center gap-2">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="boxes" class="h-4 w-4"></i></span>
-                            <span class="truncate text-xs font-semibold text-content-primary"
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="boxes" class="h-4 w-4"></i></span>
+                            <span class="truncate text-sm font-semibold leading-5 text-content-primary"
                                   title="{{ workload.name }}">{{ workload.name }}</span>
                         </div>
                     </td>
@@ -49,7 +50,7 @@
                                 hx-target="#workload-detail-content-{{ workload.id }}"
                                 hx-swap="innerHTML"
                                 hx-on::before-request="const target = document.getElementById('workload-detail-content-{{ workload.id }}'); const detailRow = document.getElementById('workload-detail-row-{{ workload.id }}'); const isOpen = target.dataset.open === 'true'; document.querySelectorAll('[id^=&quot;workload-detail-content-&quot;]').forEach((item) => { if (item.id !== target.id) { item.innerHTML = ''; item.dataset.open = 'false'; } }); document.querySelectorAll('[id^=&quot;workload-detail-row-&quot;]').forEach((row) => { if (row.id !== 'workload-detail-row-{{ workload.id }}') { row.classList.add('hidden'); } }); document.querySelectorAll('[data-workload-toggle=&quot;true&quot;]').forEach((button) => { if (button.dataset.workloadId !== '{{ workload.id }}') { const label = button.querySelector('[data-workload-toggle-label]'); const icon = button.querySelector('[data-lucide]'); if (label) label.textContent = 'View More'; if (icon) icon.setAttribute('data-lucide', 'chevron-down'); } }); if (isOpen) { target.innerHTML = ''; target.dataset.open = 'false'; if (detailRow) detailRow.classList.add('hidden'); const label = this.querySelector('[data-workload-toggle-label]'); const icon = this.querySelector('[data-lucide]'); if (label) label.textContent = 'View More'; if (icon) icon.setAttribute('data-lucide', 'chevron-down'); if (window.lucide) window.lucide.createIcons(); event.preventDefault(); } else { if (detailRow) detailRow.classList.remove('hidden'); target.dataset.open = 'true'; const label = this.querySelector('[data-workload-toggle-label]'); const icon = this.querySelector('[data-lucide]'); if (label) label.textContent = 'Hide Details'; if (icon) icon.setAttribute('data-lucide', 'chevron-up'); }"
-                                class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                class="{{ table_ui.action_classes() }}">
                             <i data-lucide="chevron-down" class="h-3.5 w-3.5"></i>
                             <span data-workload-toggle-label>View More</span>
                         </button>

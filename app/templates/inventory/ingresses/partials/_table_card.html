@@ -1,8 +1,9 @@
-<section id="ingresses-inventory-card"
-         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+{% import "components/table.html" as table_ui %}
+{% import "components/loading_bar.html" as loading_bar %}
+<section id="ingresses-inventory-card" class="{{ table_ui.block_classes() }}">
     <header class="border-b border-outline-subtle px-5 py-4">
         <div class="flex items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
                 <i data-lucide="route" class="h-5 w-5"></i>
             </span>
             <div>
@@ -10,25 +11,23 @@
                 <p class="mt-1 text-sm leading-6 text-content-muted">Ingress identity, class, published hosts, TLS configuration, addresses, and backend routing context.</p>
             </div>
         </div>
-        <div id="ingresses-table-loading"
-             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
-            <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
-        </div>
+        {{ loading_bar.render('ingresses-table-loading', label='Refreshing Ingresses Inventory') }}
     </header>
-    <div class="border-b border-outline-subtle px-5 py-4">
+    <div class="border-b border-outline-subtle bg-surface-hover px-5 py-4">
         <form id="ingresses-filter-form"
               hx-get="{{ url_for('inventory.ingresses') }}"
-              hx-target="#ingresses-inventory-card"
+              hx-target="#ingresses-inventory-scope"
               hx-swap="outerHTML"
               hx-trigger="change, keyup changed delay:500ms"
               hx-indicator="#ingresses-table-loading"
               class="grid gap-4 xl:grid-cols-12 xl:items-end">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
+            <input type="hidden" name="partial_mode" value="inventory_scope">
             <div class="xl:col-span-2">
                 <label class="mb-2 block text-sm font-semibold text-content-secondary">Cluster</label>
                 <select name="cluster_id"
-                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Clusters</option>
                     {% for cluster in clusters %}
                         <option value="{{ cluster.id }}"
@@ -39,7 +38,7 @@
             <div class="xl:col-span-2">
                 <label class="mb-2 block text-sm font-semibold text-content-secondary">Namespace</label>
                 <select name="namespace"
-                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Namespaces</option>
                     {% for ns in inventory.namespaces %}
                         <option value="{{ ns }}" {% if selected_namespace == ns %}selected{% endif %}>{{ ns }}</option>
@@ -49,7 +48,7 @@
             <div class="xl:col-span-2">
                 <label class="mb-2 block text-sm font-semibold text-content-secondary">Ingress Class</label>
                 <select name="class"
-                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Classes</option>
                     {% for class_name in inventory.classes %}
                         <option value="{{ class_name }}"
@@ -60,7 +59,7 @@
             <div class="xl:col-span-2">
                 <label class="mb-2 block text-sm font-semibold text-content-secondary">TLS State</label>
                 <select name="tls"
-                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                        class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All TLS States</option>
                     <option value="enabled" {% if selected_tls == 'enabled' %}selected{% endif %}>TLS Enabled</option>
                     <option value="disabled"
@@ -76,7 +75,7 @@
                            name="search"
                            value="{{ search }}"
                            placeholder="Name, Host, Address, Or Class"
-                           class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                           class="{{ table_ui.filter_input_classes() }} pl-10">
                 </div>
             </div>
         </form>
