@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import func
+from sqlalchemy import func, tuple_
 
 from app.common.inventory_generation import filter_current_generation
+from app.common.pagination import paginate_query
 from app.extensions.db import db
 from app.inventory.resources.common import _display_boolean, _pod_summary, format_age
 from app.inventory.resources.descriptions import WORKLOAD_TYPE_DESCRIPTIONS
@@ -50,112 +51,12 @@ def _compact_runtime_state_rows(
     return compact or fallback
 
 
-def _fallback_pod_template_from_associated_pods(
-    related_pods: list[PodInventory],
-) -> dict[str, Any]:
-    """Provide a safe partial view for snapshots created by an older worker."""
-    if not related_pods:
-        return {}
-
-    reference_pod = max(
-        related_pods,
-        key=lambda pod: len(pod.container_names or []) + len(pod.init_container_images or []),
-    )
-    container_names = list(reference_pod.container_names or [])
-    container_images = list(reference_pod.container_images or [])
-    init_images = list(reference_pod.init_container_images or [])
-    containers: list[dict[str, str]] = []
-
-    regular_count = max(len(container_names), len(container_images))
-    for index in range(regular_count):
-        containers.append(
-            {
-                'name': container_names[index] if index < len(container_names) else f'container-{index + 1}',
-                'image': container_images[index] if index < len(container_images) else '-',
-                'pull_policy': '-',
-                'kind': 'Container',
-            }
-        )
-
-    for index, image in enumerate(init_images):
-        containers.append(
-            {
-                'name': f'init-container-{index + 1}',
-                'image': image,
-                'pull_policy': '-',
-                'kind': 'Init container',
-            }
-        )
-
-    return {
-        'reported': False,
-        'schema_version': 1,
-        'source': 'associated-pod-fallback',
-        'containers': containers,
-        'container_count': regular_count,
-        'init_container_count': len(init_images),
-        'service_account': '-',
-        'restart_policy': '-',
-        'priority_class': '-',
-        'scheduler': '-',
-        'host_network': False,
-        'dns_policy': '-',
-        'volume_count': 0,
-        'node_selector': {},
-        'affinity_configured': False,
-        'tolerations': [],
-        'topology_spread_count': 0,
-        'runtime_class': '-',
-    }
-
-
-def _pod_template_has_inventory_data(
-    pod_template: dict[str, Any],
-) -> bool:
-    if pod_template.get('containers'):
-        return True
-
-    if int(pod_template.get('container_count') or 0) > 0:
-        return True
-
-    if int(pod_template.get('init_container_count') or 0) > 0:
-        return True
-
-    for key in (
-        'service_account',
-        'restart_policy',
-        'priority_class',
-        'scheduler',
-        'dns_policy',
-        'runtime_class',
-    ):
-        if pod_template.get(key) not in (None, '', '-'):
-            return True
-
-    return bool(
-        pod_template.get('volume_count')
-        or pod_template.get('node_selector')
-        or pod_template.get('affinity_configured')
-        or pod_template.get('tolerations')
-        or pod_template.get('topology_spread_count')
-    )
-
-
-def _resolve_workload_pod_template(
-    details: dict[str, Any],
-    related_pods: list[PodInventory],
-) -> tuple[dict[str, Any], str]:
+def _workload_pod_template(details: dict[str, Any]) -> dict[str, Any]:
     pod_template = details.get('pod_template')
-    if isinstance(pod_template, dict) and (
-        pod_template.get('reported') is True or _pod_template_has_inventory_data(pod_template)
-    ):
-        return pod_template, 'workload-template'
+    if isinstance(pod_template, dict) and pod_template.get('reported') is True:
+        return pod_template
 
-    fallback = _fallback_pod_template_from_associated_pods(related_pods)
-    if fallback:
-        return fallback, 'associated-pod-fallback'
-
-    return {}, 'not-reported'
+    return {}
 
 
 def _pod_configuration_rows(
@@ -205,15 +106,12 @@ def _placement_rows(
 
 
 def get_workload_detail(workload_id: int) -> dict[str, Any] | None:
-    result = (
-        db.session.query(
-            WorkloadInventory,
-            Cluster.name.label('cluster_name'),
-        )
-        .join(Cluster, Cluster.id == WorkloadInventory.cluster_id)
-        .filter(WorkloadInventory.id == workload_id)
-        .first()
-    )
+    query = db.session.query(
+        WorkloadInventory,
+        Cluster.name.label('cluster_name'),
+    ).join(Cluster, Cluster.id == WorkloadInventory.cluster_id)
+    query = filter_current_generation(query, WorkloadInventory)
+    result = query.filter(WorkloadInventory.id == workload_id).first()
 
     if result is None:
         return None
@@ -223,7 +121,8 @@ def get_workload_detail(workload_id: int) -> dict[str, Any] | None:
     details = workload.details or {}
 
     related_pods = (
-        PodInventory.query.filter_by(
+        filter_current_generation(PodInventory.query, PodInventory)
+        .filter_by(
             cluster_id=workload.cluster_id,
             namespace=workload.namespace,
             workload_type=workload_type,
@@ -233,10 +132,7 @@ def get_workload_detail(workload_id: int) -> dict[str, Any] | None:
         .all()
     )
 
-    pod_template, pod_configuration_source = _resolve_workload_pod_template(
-        details,
-        related_pods,
-    )
+    pod_template = _workload_pod_template(details)
 
     labels = details.get('labels') or {}
     annotations = details.get('annotations') or {}
@@ -279,8 +175,7 @@ def get_workload_detail(workload_id: int) -> dict[str, Any] | None:
         'state_rows': state_rows,
         'runtime_state_rows': _compact_runtime_state_rows(workload_type, state_rows),
         'pod_configuration_rows': _pod_configuration_rows(pod_template),
-        'pod_configuration_reported': pod_configuration_source == 'workload-template',
-        'pod_configuration_source': pod_configuration_source,
+        'pod_configuration_reported': bool(pod_template),
         'delivery_rows': delivery_rows,
         'placement_rows': placement_rows,
         'placement_summary_rows': placement_summary_rows,
@@ -315,6 +210,7 @@ def get_workload_filter_namespaces(
     query = db.session.query(
         WorkloadInventory.namespace,
     )
+    query = filter_current_generation(query, WorkloadInventory)
 
     if cluster_id:
         query = query.filter(
@@ -339,6 +235,7 @@ def get_workload_filter_types(
     query = db.session.query(
         WorkloadInventory.workload_type,
     )
+    query = filter_current_generation(query, WorkloadInventory)
 
     if cluster_id:
         query = query.filter(
@@ -368,6 +265,7 @@ def get_workload_filter_statuses(
     query = db.session.query(
         WorkloadInventory.status,
     )
+    query = filter_current_generation(query, WorkloadInventory)
 
     if cluster_id:
         query = query.filter(
@@ -388,6 +286,17 @@ def get_workload_filter_statuses(
     )
 
     return [row[0] for row in rows if row[0]]
+
+
+def _workload_pod_count_query():
+    query = db.session.query(
+        PodInventory.cluster_id,
+        PodInventory.namespace,
+        PodInventory.workload_type,
+        PodInventory.workload_name,
+        func.count(PodInventory.id),
+    )
+    return filter_current_generation(query, PodInventory)
 
 
 def _workload_update_strategy(
@@ -432,6 +341,8 @@ def get_workload_inventory(
     workload_type=None,
     status=None,
     search=None,
+    page: int = 1,
+    per_page: int = 5,
 ):
     query = db.session.query(
         WorkloadInventory,
@@ -459,28 +370,37 @@ def get_workload_inventory(
     if search:
         query = query.filter(WorkloadInventory.name.ilike(f'%{search}%'))
 
-    workloads = query.order_by(
-        Cluster.name,
-        WorkloadInventory.namespace,
-        WorkloadInventory.name,
+    summary_rows = query.with_entities(
+        WorkloadInventory.workload_type,
+        WorkloadInventory.status,
     ).all()
+    workloads, pagination = paginate_query(
+        query.order_by(
+            Cluster.name,
+            WorkloadInventory.namespace,
+            WorkloadInventory.name,
+        ),
+        page=page,
+        per_page=per_page,
+    )
 
+    workload_keys = [
+        (workload.cluster_id, workload.namespace, workload.workload_type, workload.name)
+        for workload, _ in workloads
+        if workload.workload_type
+    ]
     pod_count_map: dict[tuple[str, str, str, str], int] = {}
-
-    if workloads:
-        cluster_ids = sorted({workload.cluster_id for workload, _ in workloads})
-
+    if workload_keys:
         pod_counts = (
-            db.session.query(
-                PodInventory.cluster_id,
-                PodInventory.namespace,
-                PodInventory.workload_type,
-                PodInventory.workload_name,
-                func.count(PodInventory.id),
+            _workload_pod_count_query()
+            .filter(
+                tuple_(
+                    PodInventory.cluster_id,
+                    PodInventory.namespace,
+                    PodInventory.workload_type,
+                    PodInventory.workload_name,
+                ).in_(workload_keys)
             )
-            .filter(PodInventory.cluster_id.in_(cluster_ids))
-            .filter(PodInventory.workload_type.is_not(None))
-            .filter(PodInventory.workload_name.is_not(None))
             .group_by(
                 PodInventory.cluster_id,
                 PodInventory.namespace,
@@ -489,42 +409,25 @@ def get_workload_inventory(
             )
             .all()
         )
-
         pod_count_map = {
-            (cluster_key, namespace, pod_workload_type, pod_workload_name): count
-            for cluster_key, namespace, pod_workload_type, pod_workload_name, count in pod_counts
+            (cluster_key, pod_namespace, pod_workload_type, pod_workload_name): count
+            for cluster_key, pod_namespace, pod_workload_type, pod_workload_name, count in pod_counts
         }
 
     type_counts: dict[str, int] = {}
     status_counts: dict[str, int] = {}
-
-    deployments = 0
-    statefulsets = 0
-    daemonsets = 0
-    jobs = 0
-    cronjobs = 0
+    for summary_type, summary_status in summary_rows:
+        normalized_type = summary_type or 'Unknown'
+        normalized_status = summary_status or 'Unknown'
+        type_counts[normalized_type] = type_counts.get(normalized_type, 0) + 1
+        status_counts[normalized_status] = status_counts.get(normalized_status, 0) + 1
 
     workloads_data = []
-
     for workload, cluster_name in workloads:
         current_type = workload.workload_type or 'Unknown'
         status_name = workload.status or 'Unknown'
         details = workload.details or {}
-        pod_template = details.get('pod_template') or {}
-
-        type_counts[current_type] = type_counts.get(current_type, 0) + 1
-        status_counts[status_name] = status_counts.get(status_name, 0) + 1
-
-        if current_type == 'Deployment':
-            deployments += 1
-        elif current_type == 'StatefulSet':
-            statefulsets += 1
-        elif current_type == 'DaemonSet':
-            daemonsets += 1
-        elif current_type == 'Job':
-            jobs += 1
-        elif current_type == 'CronJob':
-            cronjobs += 1
+        pod_template = _workload_pod_template(details)
 
         pod_count = pod_count_map.get(
             (
@@ -565,24 +468,14 @@ def get_workload_inventory(
         )
 
     return {
-        'total_workloads': len(workloads),
-        'deployments': deployments,
-        'statefulsets': statefulsets,
-        'daemonsets': daemonsets,
-        'jobs': jobs,
-        'cronjobs': cronjobs,
+        'total_workloads': pagination['total_items'],
+        'deployments': type_counts.get('Deployment', 0),
+        'statefulsets': type_counts.get('StatefulSet', 0),
+        'daemonsets': type_counts.get('DaemonSet', 0),
+        'jobs': type_counts.get('Job', 0),
+        'cronjobs': type_counts.get('CronJob', 0),
         'type_counts': type_counts,
         'status_counts': status_counts,
-        'namespaces': get_workload_filter_namespaces(
-            cluster_id=cluster_id,
-        ),
-        'workload_types': get_workload_filter_types(
-            cluster_id=cluster_id,
-            namespace=namespace,
-        ),
-        'workload_statuses': get_workload_filter_statuses(
-            cluster_id=cluster_id,
-            namespace=namespace,
-        ),
         'workloads': workloads_data,
+        'pagination': pagination,
     }

@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass
-from typing import Any
+from typing import Any, TypeVar
 
 DEFAULT_PER_PAGE = 5
 PER_PAGE_OPTIONS: tuple[int, ...] = (5, 10, 25, 50)
+
+_ItemT = TypeVar('_ItemT')
 
 
 def positive_int(value: Any, default: int = 1) -> int:
@@ -79,4 +82,59 @@ def build_pagination_window(
         has_next=normalized_page < total_pages,
         prev_page=max(normalized_page - 1, 1),
         next_page=min(normalized_page + 1, total_pages),
+    )
+
+
+def pagination_payload(
+    window: PaginationWindow,
+    *,
+    allowed_per_page: tuple[int, ...] = PER_PAGE_OPTIONS,
+) -> dict[str, Any]:
+    """Expose one normalized window to Jinja and JSON-compatible callers."""
+    return {
+        **window.as_dict(),
+        'allowed_per_page': list(allowed_per_page),
+    }
+
+
+def paginate_sequence(
+    items: Sequence[_ItemT],
+    *,
+    page: Any = 1,
+    per_page: Any = DEFAULT_PER_PAGE,
+    allowed_per_page: tuple[int, ...] = PER_PAGE_OPTIONS,
+) -> tuple[list[_ItemT], dict[str, Any]]:
+    """Paginate an in-memory sequence through the canonical KAORI contract."""
+    window = build_pagination_window(
+        total_items=len(items),
+        page=page,
+        per_page=per_page,
+        allowed_per_page=allowed_per_page,
+    )
+    end = window.offset + window.per_page
+    return (
+        list(items[window.offset:end]),
+        pagination_payload(window, allowed_per_page=allowed_per_page),
+    )
+
+
+def paginate_query(
+    query: Any,
+    *,
+    page: Any = 1,
+    per_page: Any = DEFAULT_PER_PAGE,
+    allowed_per_page: tuple[int, ...] = PER_PAGE_OPTIONS,
+) -> tuple[list[Any], dict[str, Any]]:
+    """Fetch only one SQLAlchemy query page and return canonical metadata."""
+    total_items = query.order_by(None).count()
+    window = build_pagination_window(
+        total_items=total_items,
+        page=page,
+        per_page=per_page,
+        allowed_per_page=allowed_per_page,
+    )
+    rows = query.offset(window.offset).limit(window.per_page).all()
+    return (
+        list(rows),
+        pagination_payload(window, allowed_per_page=allowed_per_page),
     )

@@ -5,6 +5,7 @@ from typing import Any
 
 from sqlalchemy import func
 
+from app.common.inventory_generation import filter_current_generation
 from app.extensions.db import db
 from app.models import (
     Cluster,
@@ -129,13 +130,15 @@ def get_inventory_cluster_summary() -> tuple[
             inventory.cluster_id: inventory
             for inventory in ClusterInventory.query.filter(ClusterInventory.cluster_id.in_(cluster_ids)).all()
         }
+        namespace_count_query = db.session.query(
+            NamespaceInventory.cluster_id,
+            func.count(NamespaceInventory.id),
+        )
+        namespace_count_query = filter_current_generation(namespace_count_query, NamespaceInventory)
         namespace_counts = {
             cluster_id: count
             for cluster_id, count in (
-                db.session.query(
-                    NamespaceInventory.cluster_id,
-                    func.count(NamespaceInventory.id),
-                )
+                namespace_count_query
                 .filter(NamespaceInventory.cluster_id.in_(cluster_ids))
                 .group_by(NamespaceInventory.cluster_id)
                 .all()
@@ -155,13 +158,17 @@ def get_inventory_cluster_summary() -> tuple[
 
 
 def _cluster_resource_counts(cluster_id: str) -> dict[str, int]:
+    def current_count(model: Any) -> int:
+        query = filter_current_generation(model.query, model)
+        return query.filter_by(cluster_id=cluster_id).count()
+
     return {
-        'node_count': NodeInventory.query.filter_by(cluster_id=cluster_id).count(),
-        'workload_count': WorkloadInventory.query.filter_by(cluster_id=cluster_id).count(),
-        'pod_count': PodInventory.query.filter_by(cluster_id=cluster_id).count(),
-        'service_count': ServiceInventory.query.filter_by(cluster_id=cluster_id).count(),
-        'ingress_count': IngressInventory.query.filter_by(cluster_id=cluster_id).count(),
-        'storage_count': StorageInventory.query.filter_by(cluster_id=cluster_id).count(),
+        'node_count': current_count(NodeInventory),
+        'workload_count': current_count(WorkloadInventory),
+        'pod_count': current_count(PodInventory),
+        'service_count': current_count(ServiceInventory),
+        'ingress_count': current_count(IngressInventory),
+        'storage_count': current_count(StorageInventory),
     }
 
 
@@ -235,8 +242,11 @@ def get_inventory_overview() -> dict[str, Any]:
     }
 
 
-def _count_rows(model: type) -> int:
-    return db.session.query(func.count(model.id)).scalar() or 0
+def _count_rows(model: Any) -> int:
+    query = db.session.query(func.count(model.id))
+    if model is not Cluster:
+        query = filter_current_generation(query, model)
+    return query.scalar() or 0
 
 
 def get_inventory_health() -> dict[str, Any]:

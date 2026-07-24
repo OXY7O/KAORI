@@ -1,6 +1,8 @@
 from contextlib import nullcontext
 from types import SimpleNamespace
 
+import pytest
+
 from app.inventory import synchronization
 
 
@@ -87,3 +89,34 @@ def test_one_refresh_passes_one_generation_to_every_inventory_family(monkeypatch
     assert len({id(value) for value in seen}) == 1
     assert session.commits == 1
     assert session.rollbacks == 0
+
+
+def test_failed_refresh_rolls_back_logs_the_stage_and_reraises(monkeypatch) -> None:
+    session = _Session()
+    cluster = SimpleNamespace(id='cluster-1')
+    connection = SimpleNamespace(cluster_id='cluster-1', allow_weak_tls=False)
+    logged: list[tuple[str, tuple[object, ...]]] = []
+
+    monkeypatch.setattr(synchronization.db, 'session', session)
+
+    def fail_cluster_lock(cluster_id: str) -> None:
+        raise RuntimeError(f'lock failed for {cluster_id}')
+
+    monkeypatch.setattr(synchronization, '_lock_cluster_inventory_sync', fail_cluster_lock)
+    monkeypatch.setattr(
+        synchronization.logger,
+        'exception',
+        lambda message, *args: logged.append((message, args)),
+    )
+
+    with pytest.raises(RuntimeError, match='lock failed for cluster-1'):
+        synchronization.sync_inventory(cluster, connection)
+
+    assert session.commits == 0
+    assert session.rollbacks == 1
+    assert logged == [
+        (
+            'Kubernetes inventory synchronization failed for cluster %s during %s.',
+            ('cluster-1', 'cluster lock'),
+        )
+    ]

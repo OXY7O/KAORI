@@ -24,14 +24,14 @@
     </header>
     <div class="border-b border-outline-subtle px-5 py-4">
         <form hx-get="{{ url_for('inventory.workloads') }}"
-              hx-target="#workloads-table-card"
+              hx-target="#workloads-inventory-scope"
               hx-swap="outerHTML"
               hx-trigger="change from:select, keyup changed delay:500ms from:input[name='search']"
               hx-indicator="#workloads-table-loading"
               class="grid gap-4 xl:grid-cols-12 xl:items-end">
             <input type="hidden" name="page" value="1" />
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}" />
-            <input type="hidden" name="partial_mode" value="table_card" />
+            <input type="hidden" name="partial_mode" value="inventory_scope" />
             {% set select_class = "h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20" %}
             <div class="xl:col-span-2">
                 <label class="mb-2 block text-sm font-semibold text-content-secondary">Cluster</label>

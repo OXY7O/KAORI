@@ -91,8 +91,8 @@
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ 'pod' if pagination.total_items == 1 else 'pods' }}</p>
         <form hx-get="{{ url_for('inventory.pods') }}"
-              hx-target="#pods-inventory-card"
-              hx-swap="outerHTML"
+              hx-target="#pods-table-content"
+              hx-swap="innerHTML"
               hx-indicator="#pods-table-loading"
               class="flex items-center">
             <input type="hidden" name="page" value="1">

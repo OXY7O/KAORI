@@ -5,6 +5,7 @@ from typing import Any
 from sqlalchemy import or_
 
 from app.common.inventory_generation import filter_current_generation
+from app.common.pagination import paginate_query
 from app.extensions.db import db
 from app.inventory.formatting import format_kubernetes_size
 from app.inventory.resources.common import _pod_summary, format_age
@@ -29,7 +30,7 @@ def _storage_bound_pods(
 
     elif item.storage_type == 'StorageClass':
         pvc_rows = (
-            StorageInventory.query.filter_by(
+            filter_current_generation(StorageInventory.query, StorageInventory).filter_by(
                 cluster_id=item.cluster_id,
                 storage_type='PersistentVolumeClaim',
                 storage_class=item.name,
@@ -50,14 +51,16 @@ def _storage_bound_pods(
         return [], []
 
     claim_lookup = {(claim['namespace'], claim['name']) for claim in claims}
-    pods = (
-        PodInventory.query.filter_by(cluster_id=item.cluster_id)
-        .order_by(
-            PodInventory.namespace,
-            PodInventory.pod_name,
-        )
-        .all()
+    claim_namespaces = sorted({claim['namespace'] for claim in claims if claim['namespace'] != '-'})
+    pod_query = filter_current_generation(PodInventory.query, PodInventory).filter_by(
+        cluster_id=item.cluster_id,
     )
+    if claim_namespaces:
+        pod_query = pod_query.filter(PodInventory.namespace.in_(claim_namespaces))
+    pods = pod_query.order_by(
+        PodInventory.namespace,
+        PodInventory.pod_name,
+    ).all()
 
     matched = [
         pod
@@ -69,15 +72,12 @@ def _storage_bound_pods(
 
 
 def get_storage_detail(storage_id: int) -> dict[str, Any] | None:
-    result = (
-        db.session.query(
-            StorageInventory,
-            Cluster.name.label('cluster_name'),
-        )
-        .join(Cluster, Cluster.id == StorageInventory.cluster_id)
-        .filter(StorageInventory.id == storage_id)
-        .first()
-    )
+    query = db.session.query(
+        StorageInventory,
+        Cluster.name.label('cluster_name'),
+    ).join(Cluster, Cluster.id == StorageInventory.cluster_id)
+    query = filter_current_generation(query, StorageInventory)
+    result = query.filter(StorageInventory.id == storage_id).first()
 
     if result is None:
         return None
@@ -155,11 +155,27 @@ def get_storage_detail(storage_id: int) -> dict[str, Any] | None:
     }
 
 
+def get_storage_filter_namespaces(
+    cluster_id: str | None = None,
+) -> list[str]:
+    query = db.session.query(StorageInventory.namespace).filter(
+        StorageInventory.namespace.is_not(None),
+        StorageInventory.namespace != '',
+    )
+    query = filter_current_generation(query, StorageInventory)
+    if cluster_id:
+        query = query.filter(StorageInventory.cluster_id == cluster_id)
+
+    rows = query.distinct().order_by(StorageInventory.namespace).all()
+    return [row[0] for row in rows if row[0]]
+
+
 def get_storage_filter_types(
     cluster_id: str | None = None,
     namespace: str | None = None,
 ) -> list[str]:
     query = db.session.query(StorageInventory.storage_type)
+    query = filter_current_generation(query, StorageInventory)
     if cluster_id:
         query = query.filter(StorageInventory.cluster_id == cluster_id)
     if namespace:
@@ -174,6 +190,7 @@ def get_storage_filter_statuses(
     storage_type: str | None = None,
 ) -> list[str]:
     query = db.session.query(StorageInventory.status)
+    query = filter_current_generation(query, StorageInventory)
     if cluster_id:
         query = query.filter(StorageInventory.cluster_id == cluster_id)
     if namespace:
@@ -190,6 +207,8 @@ def get_storage_inventory_view(
     storage_type=None,
     status=None,
     search=None,
+    page: int = 1,
+    per_page: int = 5,
 ):
     query = db.session.query(
         StorageInventory,
@@ -215,37 +234,28 @@ def get_storage_inventory_view(
             )
         )
 
-    items = query.order_by(
-        Cluster.name,
-        StorageInventory.storage_type,
-        StorageInventory.name,
-    ).all()
+    summary_rows = query.with_entities(StorageInventory.storage_type).all()
+    items, pagination = paginate_query(
+        query.order_by(
+            Cluster.name,
+            StorageInventory.storage_type,
+            StorageInventory.name,
+        ),
+        page=page,
+        per_page=per_page,
+    )
 
-    namespace_query = db.session.query(StorageInventory.namespace).distinct()
-    if cluster_id:
-        namespace_query = namespace_query.filter(StorageInventory.cluster_id == cluster_id)
-    namespaces = sorted([ns for (ns,) in namespace_query.all() if ns])
-
-    data: list[dict[str, Any]] = []
-    storage_classes = 0
-    persistent_volumes = 0
-    persistent_volume_claims = 0
     storage_types: dict[str, int] = {
         'StorageClass': 0,
         'PersistentVolume': 0,
         'PersistentVolumeClaim': 0,
     }
+    for (summary_type,) in summary_rows:
+        if summary_type in storage_types:
+            storage_types[summary_type] += 1
 
+    data: list[dict[str, Any]] = []
     for item, cluster_name in items:
-        if item.storage_type in storage_types:
-            storage_types[item.storage_type] += 1
-        if item.storage_type == 'StorageClass':
-            storage_classes += 1
-        elif item.storage_type == 'PersistentVolume':
-            persistent_volumes += 1
-        elif item.storage_type == 'PersistentVolumeClaim':
-            persistent_volume_claims += 1
-
         namespace_display = item.namespace
         if item.storage_type in {'StorageClass', 'PersistentVolume'}:
             namespace_display = 'Cluster-wide'
@@ -286,20 +296,11 @@ def get_storage_inventory_view(
         )
 
     return {
-        'total_storage': len(items),
-        'storage_classes': storage_classes,
-        'persistent_volumes': persistent_volumes,
-        'persistent_volume_claims': persistent_volume_claims,
-        'namespaces': namespaces,
-        'storage_filter_types': get_storage_filter_types(
-            cluster_id=cluster_id,
-            namespace=namespace,
-        ),
-        'storage_filter_statuses': get_storage_filter_statuses(
-            cluster_id=cluster_id,
-            namespace=namespace,
-            storage_type=storage_type,
-        ),
+        'total_storage': pagination['total_items'],
+        'storage_classes': storage_types['StorageClass'],
+        'persistent_volumes': storage_types['PersistentVolume'],
+        'persistent_volume_claims': storage_types['PersistentVolumeClaim'],
         'storage_types': storage_types,
         'storage_items': data,
+        'pagination': pagination,
     }

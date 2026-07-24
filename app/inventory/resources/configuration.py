@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.common.inventory_generation import filter_current_generation
+from app.common.pagination import paginate_query
 from app.extensions.db import db
 from app.inventory.formatting import format_byte_count
 from app.inventory.resources.common import _pod_summary, format_age
@@ -13,6 +14,7 @@ def get_configuration_filter_namespaces(
     cluster_id: str | None = None,
 ) -> list[str]:
     query = db.session.query(ConfigurationInventory.namespace)
+    query = filter_current_generation(query, ConfigurationInventory)
     if cluster_id:
         query = query.filter(ConfigurationInventory.cluster_id == cluster_id)
 
@@ -26,6 +28,8 @@ def get_configuration_inventory_view(
     namespace: str | None = None,
     object_type: str | None = None,
     search: str | None = None,
+    page: int = 1,
+    per_page: int = 5,
 ) -> dict[str, Any]:
     query = db.session.query(
         ConfigurationInventory,
@@ -42,12 +46,20 @@ def get_configuration_inventory_view(
     if search:
         query = query.filter(ConfigurationInventory.name.ilike(f'%{search}%'))
 
-    rows = query.order_by(
-        Cluster.name,
-        ConfigurationInventory.namespace,
+    summary_rows = query.with_entities(
         ConfigurationInventory.object_type,
-        ConfigurationInventory.name,
+        ConfigurationInventory.immutable,
     ).all()
+    rows, pagination = paginate_query(
+        query.order_by(
+            Cluster.name,
+            ConfigurationInventory.namespace,
+            ConfigurationInventory.object_type,
+            ConfigurationInventory.name,
+        ),
+        page=page,
+        per_page=per_page,
+    )
 
     items = [
         {
@@ -66,35 +78,32 @@ def get_configuration_inventory_view(
     ]
 
     return {
+        'total_items': pagination['total_items'],
+        'config_maps': sum(1 for item_type, _ in summary_rows if item_type == 'ConfigMap'),
+        'secrets': sum(1 for item_type, _ in summary_rows if item_type == 'Secret'),
+        'immutable_items': sum(1 for _, immutable in summary_rows if immutable),
         'items': items,
-        'total_items': len(items),
-        'config_maps': sum(1 for item in items if item['type'] == 'ConfigMap'),
-        'secrets': sum(1 for item in items if item['type'] == 'Secret'),
-        'immutable_items': sum(1 for item in items if item['immutable']),
-        'namespaces': get_configuration_filter_namespaces(cluster_id),
-        'types': ['ConfigMap', 'Secret'],
+        'pagination': pagination,
     }
 
 
 def get_configuration_detail(
     configuration_id: int,
 ) -> dict[str, Any] | None:
-    result = (
-        db.session.query(
-            ConfigurationInventory,
-            Cluster.name.label('cluster_name'),
-        )
-        .join(Cluster, Cluster.id == ConfigurationInventory.cluster_id)
-        .filter(ConfigurationInventory.id == configuration_id)
-        .first()
-    )
+    query = db.session.query(
+        ConfigurationInventory,
+        Cluster.name.label('cluster_name'),
+    ).join(Cluster, Cluster.id == ConfigurationInventory.cluster_id)
+    query = filter_current_generation(query, ConfigurationInventory)
+    result = query.filter(ConfigurationInventory.id == configuration_id).first()
 
     if result is None:
         return None
 
     item, cluster_name = result
+    pod_query = filter_current_generation(PodInventory.query, PodInventory)
     candidate_pods = (
-        PodInventory.query.filter_by(
+        pod_query.filter_by(
             cluster_id=item.cluster_id,
             namespace=item.namespace,
         )

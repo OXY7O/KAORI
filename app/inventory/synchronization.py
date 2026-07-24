@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime
 
 from kubernetes.client import BatchV1Api
@@ -21,6 +22,8 @@ from app.inventory.persistence import (
 )
 from app.models import Cluster
 from app.models.kubernetes import KubernetesConnection
+
+logger = logging.getLogger(__name__)
 
 
 def _lock_cluster_inventory_sync(
@@ -180,11 +183,11 @@ def sync_inventory(
         current_stage = 'commit'
         db.session.commit()
 
-    except Exception as exc:
-        print('=== INVENTORY SYNC EXCEPTION ===')
-        print(f'Stage: {current_stage}')
-        print(type(exc).__name__)
-        print(str(exc))
-
+    except Exception:
+        logger.exception(
+            'Kubernetes inventory synchronization failed for cluster %s during %s.',
+            cluster.id,
+            current_stage,
+        )
         db.session.rollback()
         raise

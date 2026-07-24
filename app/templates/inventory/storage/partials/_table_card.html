@@ -20,13 +20,14 @@
     <div class="border-b border-outline-subtle px-5 py-4">
         <form id="storage-filter-form"
               hx-get="{{ url_for('inventory.storage') }}"
-              hx-target="#storage-inventory-card"
+              hx-target="#storage-inventory-scope"
               hx-swap="outerHTML"
-              hx-trigger="change, keyup changed delay:500ms"
+              hx-trigger="change from:select, keyup changed delay:500ms from:input[name='search']"
               hx-indicator="#storage-table-loading"
               class="grid gap-4 xl:grid-cols-12 xl:items-end">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
+            <input type="hidden" name="partial_mode" value="inventory_scope" />
             <div class="xl:col-span-2">
                 <label class="mb-2 block text-sm font-semibold text-content-primary">Cluster</label>
                 <select name="cluster_id"

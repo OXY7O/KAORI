@@ -5,6 +5,7 @@ from typing import Any
 from sqlalchemy import or_
 
 from app.common.inventory_generation import filter_current_generation
+from app.common.pagination import paginate_query
 from app.extensions.db import db
 from app.inventory.resources.common import (
     _pod_summary,
@@ -17,11 +18,24 @@ from app.inventory.resources.descriptions import SERVICE_TYPE_DESCRIPTIONS
 from app.models import Cluster, PodInventory, ServiceInventory
 
 
+def get_service_filter_namespaces(
+    cluster_id: str | None = None,
+) -> list[str]:
+    query = db.session.query(ServiceInventory.namespace)
+    query = filter_current_generation(query, ServiceInventory)
+    if cluster_id:
+        query = query.filter(ServiceInventory.cluster_id == cluster_id)
+
+    rows = query.distinct().order_by(ServiceInventory.namespace).all()
+    return [row[0] for row in rows if row[0]]
+
+
 def get_service_filter_types(
     cluster_id: str | None = None,
     namespace: str | None = None,
 ) -> list[str]:
     query = db.session.query(ServiceInventory.service_type)
+    query = filter_current_generation(query, ServiceInventory)
 
     if cluster_id:
         query = query.filter(ServiceInventory.cluster_id == cluster_id)
@@ -37,6 +51,7 @@ def get_service_filter_types(
         ServiceInventory.service_type == 'ClusterIP',
         ServiceInventory.cluster_ip == 'None',
     )
+    headless_query = filter_current_generation(headless_query, ServiceInventory)
     if cluster_id:
         headless_query = headless_query.filter(
             ServiceInventory.cluster_id == cluster_id,
@@ -57,6 +72,8 @@ def get_service_inventory(
     namespace=None,
     service_type=None,
     search=None,
+    page: int = 1,
+    per_page: int = 5,
 ):
     query = db.session.query(
         ServiceInventory,
@@ -92,41 +109,30 @@ def get_service_inventory(
             )
         )
 
-    services = query.order_by(
-        Cluster.name,
-        ServiceInventory.namespace,
-        ServiceInventory.service_name,
+    summary_rows = query.with_entities(
+        ServiceInventory.service_type,
+        ServiceInventory.cluster_ip,
     ).all()
+    services, pagination = paginate_query(
+        query.order_by(
+            Cluster.name,
+            ServiceInventory.namespace,
+            ServiceInventory.service_name,
+        ),
+        page=page,
+        per_page=per_page,
+    )
 
-    namespace_query = db.session.query(ServiceInventory.namespace).distinct()
-    if cluster_id:
-        namespace_query = namespace_query.filter(ServiceInventory.cluster_id == cluster_id)
-    namespaces = sorted([ns for (ns,) in namespace_query.all() if ns])
+    service_types: dict[str, int] = {}
+    for raw_type, cluster_ip in summary_rows:
+        normalized_type = raw_type or 'Unknown'
+        effective_type = 'Headless' if normalized_type == 'ClusterIP' and cluster_ip == 'None' else normalized_type
+        service_types[effective_type] = service_types.get(effective_type, 0) + 1
 
     services_data: list[dict[str, Any]] = []
-    cluster_ip_count = 0
-    node_port_count = 0
-    load_balancer_count = 0
-    external_name_count = 0
-    headless_count = 0
-    service_types: dict[str, int] = {}
-
     for service, cluster_name in services:
         raw_type = service.service_type or 'Unknown'
         effective_type = 'Headless' if raw_type == 'ClusterIP' and service.cluster_ip == 'None' else raw_type
-        service_types[effective_type] = service_types.get(effective_type, 0) + 1
-
-        if effective_type == 'ClusterIP':
-            cluster_ip_count += 1
-        elif effective_type == 'NodePort':
-            node_port_count += 1
-        elif effective_type == 'LoadBalancer':
-            load_balancer_count += 1
-        elif effective_type == 'ExternalName':
-            external_name_count += 1
-        elif effective_type == 'Headless':
-            headless_count += 1
-
         details = service.details or {}
         endpoints = details.get('endpoints') or {}
         ready_endpoint_count = len(endpoints.get('ready_addresses') or [])
@@ -161,32 +167,25 @@ def get_service_inventory(
         )
 
     return {
-        'total_services': len(services),
-        'cluster_ip': cluster_ip_count,
-        'node_port': node_port_count,
-        'load_balancer': load_balancer_count,
-        'external_name': external_name_count,
-        'headless': headless_count,
-        'namespaces': namespaces,
-        'service_filter_types': get_service_filter_types(
-            cluster_id=cluster_id,
-            namespace=namespace,
-        ),
+        'total_services': pagination['total_items'],
+        'cluster_ip': service_types.get('ClusterIP', 0),
+        'node_port': service_types.get('NodePort', 0),
+        'load_balancer': service_types.get('LoadBalancer', 0),
+        'external_name': service_types.get('ExternalName', 0),
+        'headless': service_types.get('Headless', 0),
         'service_types': service_types,
         'services': services_data,
+        'pagination': pagination,
     }
 
 
 def get_service_detail(service_id: int) -> dict[str, Any] | None:
-    result = (
-        db.session.query(
-            ServiceInventory,
-            Cluster.name.label('cluster_name'),
-        )
-        .join(Cluster, Cluster.id == ServiceInventory.cluster_id)
-        .filter(ServiceInventory.id == service_id)
-        .first()
-    )
+    query = db.session.query(
+        ServiceInventory,
+        Cluster.name.label('cluster_name'),
+    ).join(Cluster, Cluster.id == ServiceInventory.cluster_id)
+    query = filter_current_generation(query, ServiceInventory)
+    result = query.filter(ServiceInventory.id == service_id).first()
 
     if result is None:
         return None
@@ -199,8 +198,9 @@ def get_service_detail(service_id: int) -> dict[str, Any] | None:
     ready_endpoints = [item for item in endpoints.get('ready_addresses') or [] if isinstance(item, dict)]
     not_ready_endpoints = [item for item in endpoints.get('not_ready_addresses') or [] if isinstance(item, dict)]
 
+    pod_query = filter_current_generation(PodInventory.query, PodInventory)
     candidate_pods = (
-        PodInventory.query.filter_by(
+        pod_query.filter_by(
             cluster_id=service.cluster_id,
             namespace=service.namespace,
         )
@@ -210,6 +210,7 @@ def get_service_detail(service_id: int) -> dict[str, Any] | None:
     matched_pods = [pod for pod in candidate_pods if _selector_matches(selector, pod.labels or {})]
 
     effective_type = 'Headless' if service_type == 'ClusterIP' and service.cluster_ip == 'None' else service_type
+    ports = _service_port_rows(service)
     labels = details.get('labels') or {}
     annotations = details.get('annotations') or {}
     cluster_ips = details.get('cluster_ips') or []
@@ -241,8 +242,8 @@ def get_service_detail(service_id: int) -> dict[str, Any] | None:
         'health_check_node_port': int(details.get('health_check_node_port') or 0),
         'load_balancer_class': details.get('load_balancer_class') or '-',
         'allocate_load_balancer_node_ports': details.get('allocate_load_balancer_node_ports'),
-        'ports': _service_port_rows(service),
-        'port_count': len(_service_port_rows(service)),
+        'ports': ports,
+        'port_count': len(ports),
         'selector': selector,
         'selectors': [f'{key}={value}' for key, value in sorted(selector.items())],
         'age': format_age(service.created_at),

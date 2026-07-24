@@ -5,6 +5,7 @@ from typing import Any
 from sqlalchemy import func
 
 from app.common.inventory_generation import filter_current_generation
+from app.common.pagination import paginate_query
 from app.extensions.db import db
 from app.inventory.formatting import convert_ki_to_gib, convert_storage_to_gib, format_kubernetes_size
 from app.inventory.resources.common import format_age
@@ -18,6 +19,7 @@ def get_node_filter_roles(
     query = db.session.query(
         NodeInventory.role,
     )
+    query = filter_current_generation(query, NodeInventory)
 
     if cluster_id:
         query = query.filter(
@@ -41,6 +43,7 @@ def get_node_filter_statuses(
     query = db.session.query(
         NodeInventory.status,
     )
+    query = filter_current_generation(query, NodeInventory)
 
     if cluster_id:
         query = query.filter(
@@ -63,6 +66,8 @@ def get_node_inventory(
     role=None,
     status=None,
     search=None,
+    page: int = 1,
+    per_page: int = 5,
 ):
     query = db.session.query(
         NodeInventory,
@@ -103,10 +108,20 @@ def get_node_inventory(
             )
         )
 
-    nodes = query.order_by(
-        Cluster.name,
-        NodeInventory.node_name,
+    summary_rows = query.with_entities(
+        NodeInventory.cpu,
+        NodeInventory.memory,
+        NodeInventory.ephemeral_storage,
+        NodeInventory.status,
     ).all()
+    nodes, pagination = paginate_query(
+        query.order_by(
+            Cluster.name,
+            NodeInventory.node_name,
+        ),
+        page=page,
+        per_page=per_page,
+    )
 
     nodes_data = []
 
@@ -146,54 +161,34 @@ def get_node_inventory(
             }
         )
 
-    total_cpu = sum(node.cpu or 0 for node, _ in nodes)
-
-    total_memory = round(
-        sum(convert_ki_to_gib(node.memory) for node, _ in nodes),
-        1,
-    )
-
+    total_cpu = sum(cpu or 0 for cpu, _, _, _ in summary_rows)
+    total_memory = round(sum(convert_ki_to_gib(memory) for _, memory, _, _ in summary_rows), 1)
     total_ephemeral_storage = round(
-        sum(
-            convert_storage_to_gib(
-                node.ephemeral_storage,
-            )
-            for node, _ in nodes
-        ),
+        sum(convert_storage_to_gib(storage) for _, _, storage, _ in summary_rows),
         1,
     )
-
-    ready_nodes = sum(1 for node, _ in nodes if node.status == 'Ready')
-
-    not_ready_nodes = sum(1 for node, _ in nodes if node.status == 'NotReady')
+    ready_nodes = sum(1 for _, _, _, node_status in summary_rows if node_status == 'Ready')
+    not_ready_nodes = sum(1 for _, _, _, node_status in summary_rows if node_status == 'NotReady')
 
     return {
-        'total_nodes': len(nodes),
+        'total_nodes': pagination['total_items'],
         'ready_nodes': ready_nodes,
         'not_ready_nodes': not_ready_nodes,
         'total_cpu': total_cpu,
         'total_memory': total_memory,
         'total_ephemeral_storage': total_ephemeral_storage,
-        'node_roles': get_node_filter_roles(
-            cluster_id=cluster_id,
-        ),
-        'node_statuses': get_node_filter_statuses(
-            cluster_id=cluster_id,
-        ),
         'nodes': nodes_data,
+        'pagination': pagination,
     }
 
 
 def get_node_detail(node_id: int) -> dict[str, Any] | None:
-    result = (
-        db.session.query(
-            NodeInventory,
-            Cluster.name.label('cluster_name'),
-        )
-        .join(Cluster, Cluster.id == NodeInventory.cluster_id)
-        .filter(NodeInventory.id == node_id)
-        .first()
-    )
+    query = db.session.query(
+        NodeInventory,
+        Cluster.name.label('cluster_name'),
+    ).join(Cluster, Cluster.id == NodeInventory.cluster_id)
+    query = filter_current_generation(query, NodeInventory)
+    result = query.filter(NodeInventory.id == node_id).first()
 
     if result is None:
         return None
@@ -207,7 +202,9 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
         PodInventory.cluster_id == node.cluster_id,
         PodInventory.node_name == node.node_name,
     )
-    scheduled_pod_count = db.session.query(func.count(PodInventory.id)).filter(*pod_scope).scalar() or 0
+    pod_count_query = db.session.query(func.count(PodInventory.id))
+    pod_count_query = filter_current_generation(pod_count_query, PodInventory)
+    scheduled_pod_count = pod_count_query.filter(*pod_scope).scalar() or 0
 
     if node.unschedulable is True:
         scheduling_display = 'Cordoned'

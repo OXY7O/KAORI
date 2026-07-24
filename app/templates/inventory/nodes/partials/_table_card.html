@@ -1,4 +1,5 @@
-<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+<section id="nodes-inventory-card"
+         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
     <header class="border-b border-outline-subtle px-5 py-4">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex items-center gap-3">
@@ -23,13 +24,14 @@
     </header>
     <div class="border-b border-outline-subtle bg-surface-hover px-5 py-4">
         <form hx-get="{{ url_for('inventory.nodes') }}"
-              hx-target="#nodes-table-content"
-              hx-swap="innerHTML"
+              hx-target="#nodes-inventory-scope"
+              hx-swap="outerHTML"
               hx-trigger="change from:select, keyup changed delay:500ms from:input[name='search']"
               hx-indicator="#nodes-table-loading"
               class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(16rem,1.35fr)] lg:items-end">
             <input type="hidden" name="page" value="1" />
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}" />
+            <input type="hidden" name="partial_mode" value="inventory_scope" />
             <div>
                 <label class="mb-2 block text-sm font-semibold text-content-secondary">Cluster</label>
                 <select name="cluster_id"

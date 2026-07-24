@@ -8,6 +8,7 @@ from flask import url_for
 from sqlalchemy import false
 
 from app.cluster.constants import get_environment_label
+from app.common.inventory_generation import filter_current_generation
 from app.integrations.kubernetes.resolver import server_for_cluster
 from app.models import (
     Cluster,
@@ -201,7 +202,7 @@ def _edge_element(
 
 
 def _apply_cluster_filter(query, model, cluster_ids: list[str]):
-    return query.filter(model.cluster_id.in_(cluster_ids))
+    return filter_current_generation(query, model).filter(model.cluster_id.in_(cluster_ids))
 
 
 def _apply_namespace_filter(query, model, namespace: str):
@@ -286,10 +287,12 @@ def normalize_topology_filters(
 
     if normalized_namespace and normalized_cluster_id:
         namespace_exists = (
-            NamespaceInventory.query.filter(
+            filter_current_generation(NamespaceInventory.query, NamespaceInventory)
+            .filter(
                 NamespaceInventory.cluster_id == normalized_cluster_id,
                 NamespaceInventory.namespace == normalized_namespace,
-            ).first()
+            )
+            .first()
             is not None
         )
         if not namespace_exists:
@@ -320,7 +323,7 @@ def build_topology_page_context(
     )
 
     clusters = Cluster.query.order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
-    namespace_rows = NamespaceInventory.query.order_by(
+    namespace_rows = filter_current_generation(NamespaceInventory.query, NamespaceInventory).order_by(
         NamespaceInventory.cluster_id.asc(),
         NamespaceInventory.namespace.asc(),
     ).all()
@@ -386,11 +389,7 @@ def build_topology_graph(
 
     cluster_by_id = {cluster.id: cluster for cluster in clusters}
 
-    namespace_query = _apply_cluster_filter(
-        NamespaceInventory.query,
-        NamespaceInventory,
-        cluster_ids,
-    )
+    namespace_query = _apply_cluster_filter(NamespaceInventory.query, NamespaceInventory, cluster_ids)
     if namespace:
         namespace_query = namespace_query.filter(NamespaceInventory.namespace == namespace)
     namespaces = namespace_query.order_by(

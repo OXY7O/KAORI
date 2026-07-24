@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import func
+from sqlalchemy import func, tuple_
 
 from app.common.inventory_generation import filter_current_generation
+from app.common.pagination import paginate_query
 from app.extensions.db import db
 from app.inventory.formatting import format_quota_value
 from app.inventory.resources.common import format_age
@@ -27,6 +28,7 @@ def get_namespace_filter_statuses(
     query = db.session.query(
         NamespaceInventory.status,
     )
+    query = filter_current_generation(query, NamespaceInventory)
 
     if cluster_id:
         query = query.filter(
@@ -48,6 +50,8 @@ def get_namespace_inventory(
     cluster_id: str | None = None,
     status: str | None = None,
     search: str | None = None,
+    page: int = 1,
+    per_page: int = 5,
 ) -> dict[str, Any]:
     query = db.session.query(
         NamespaceInventory,
@@ -69,20 +73,32 @@ def get_namespace_inventory(
     if search:
         query = query.filter(NamespaceInventory.namespace.ilike(f'%{search}%'))
 
-    namespace_records = query.order_by(
-        Cluster.name,
-        NamespaceInventory.namespace,
+    summary_rows = query.with_entities(
+        NamespaceInventory.cluster_id,
+        NamespaceInventory.status,
     ).all()
+    namespace_records, pagination = paginate_query(
+        query.order_by(
+            Cluster.name,
+            NamespaceInventory.namespace,
+        ),
+        page=page,
+        per_page=per_page,
+    )
+    namespace_keys = [(row.cluster_id, row.namespace) for row, _ in namespace_records]
 
     def _namespace_count_map(model) -> dict[tuple[str, str], int]:
+        if not namespace_keys:
+            return {}
+
         count_query = db.session.query(
             model.cluster_id,
             model.namespace,
             func.count(model.id),
         )
+        count_query = filter_current_generation(count_query, model)
 
-        if cluster_id:
-            count_query = count_query.filter(model.cluster_id == cluster_id)
+        count_query = count_query.filter(tuple_(model.cluster_id, model.namespace).in_(namespace_keys))
 
         return {
             (row_cluster_id, row_namespace): count
@@ -100,12 +116,13 @@ def get_namespace_inventory(
     quota_counts = _namespace_count_map(ResourceQuotaInventory)
 
     status_counts: dict[str, int] = {}
-    inventory_rows: list[dict[str, Any]] = []
+    for _, namespace_status in summary_rows:
+        normalized_status = namespace_status or 'Unknown'
+        status_counts[normalized_status] = status_counts.get(normalized_status, 0) + 1
 
+    inventory_rows: list[dict[str, Any]] = []
     for namespace, cluster_name in namespace_records:
         namespace_status = namespace.status or 'Unknown'
-        status_counts[namespace_status] = status_counts.get(namespace_status, 0) + 1
-
         key = (
             namespace.cluster_id,
             namespace.namespace,
@@ -131,45 +148,42 @@ def get_namespace_inventory(
             }
         )
 
-    cluster_count = len({cluster_name for _, cluster_name in namespace_records})
+    cluster_count = len({row_cluster_id for row_cluster_id, _ in summary_rows})
 
     return {
-        'total_namespaces': len(namespace_records),
+        'total_namespaces': pagination['total_items'],
         'total_clusters': cluster_count,
         'active_namespaces': status_counts.get('Active', 0),
         'status_counts': status_counts,
-        'namespace_statuses': get_namespace_filter_statuses(
-            cluster_id=cluster_id,
-        ),
         'namespaces': inventory_rows,
+        'pagination': pagination,
     }
 
 
 def get_namespace_detail(
     namespace_id: int,
 ) -> dict[str, Any] | None:
-    result = (
-        db.session.query(
-            NamespaceInventory,
-            Cluster.name.label('cluster_name'),
-        )
-        .join(Cluster, Cluster.id == NamespaceInventory.cluster_id)
-        .filter(NamespaceInventory.id == namespace_id)
-        .first()
-    )
+    query = db.session.query(
+        NamespaceInventory,
+        Cluster.name.label('cluster_name'),
+    ).join(Cluster, Cluster.id == NamespaceInventory.cluster_id)
+    query = filter_current_generation(query, NamespaceInventory)
+    result = query.filter(NamespaceInventory.id == namespace_id).first()
 
     if result is None:
         return None
 
     namespace, cluster_name = result
 
+    workload_count_query = db.session.query(
+        WorkloadInventory.workload_type,
+        func.count(WorkloadInventory.id),
+    )
+    workload_count_query = filter_current_generation(workload_count_query, WorkloadInventory)
     workload_counts = {
         workload_type or 'Unknown': count
         for workload_type, count in (
-            db.session.query(
-                WorkloadInventory.workload_type,
-                func.count(WorkloadInventory.id),
-            )
+            workload_count_query
             .filter(
                 WorkloadInventory.cluster_id == namespace.cluster_id,
                 WorkloadInventory.namespace == namespace.namespace,
@@ -179,42 +193,35 @@ def get_namespace_detail(
         )
     }
 
+    def _current_namespace_count(model, **filters: Any) -> int:
+        query = filter_current_generation(model.query, model)
+        return query.filter_by(**filters).count()
+
+    namespace_scope = {
+        'cluster_id': namespace.cluster_id,
+        'namespace': namespace.namespace,
+    }
     object_counts = {
-        'workloads': WorkloadInventory.query.filter_by(
-            cluster_id=namespace.cluster_id,
-            namespace=namespace.namespace,
-        ).count(),
-        'pods': PodInventory.query.filter_by(
-            cluster_id=namespace.cluster_id,
-            namespace=namespace.namespace,
-        ).count(),
-        'services': ServiceInventory.query.filter_by(
-            cluster_id=namespace.cluster_id,
-            namespace=namespace.namespace,
-        ).count(),
-        'ingresses': IngressInventory.query.filter_by(
-            cluster_id=namespace.cluster_id,
-            namespace=namespace.namespace,
-        ).count(),
-        'persistent_volume_claims': StorageInventory.query.filter_by(
-            cluster_id=namespace.cluster_id,
-            namespace=namespace.namespace,
+        'workloads': _current_namespace_count(WorkloadInventory, **namespace_scope),
+        'pods': _current_namespace_count(PodInventory, **namespace_scope),
+        'services': _current_namespace_count(ServiceInventory, **namespace_scope),
+        'ingresses': _current_namespace_count(IngressInventory, **namespace_scope),
+        'persistent_volume_claims': _current_namespace_count(
+            StorageInventory,
+            **namespace_scope,
             storage_type='PersistentVolumeClaim',
-        ).count(),
-        'config_maps': ConfigurationInventory.query.filter_by(
-            cluster_id=namespace.cluster_id,
-            namespace=namespace.namespace,
+        ),
+        'config_maps': _current_namespace_count(
+            ConfigurationInventory,
+            **namespace_scope,
             object_type='ConfigMap',
-        ).count(),
-        'secrets': ConfigurationInventory.query.filter_by(
-            cluster_id=namespace.cluster_id,
-            namespace=namespace.namespace,
+        ),
+        'secrets': _current_namespace_count(
+            ConfigurationInventory,
+            **namespace_scope,
             object_type='Secret',
-        ).count(),
-        'resource_quotas': ResourceQuotaInventory.query.filter_by(
-            cluster_id=namespace.cluster_id,
-            namespace=namespace.namespace,
-        ).count(),
+        ),
+        'resource_quotas': _current_namespace_count(ResourceQuotaInventory, **namespace_scope),
     }
 
     object_counts['tracked_total'] = sum(
@@ -231,7 +238,8 @@ def get_namespace_detail(
     )
 
     quota_rows = (
-        ResourceQuotaInventory.query.filter_by(
+        filter_current_generation(ResourceQuotaInventory.query, ResourceQuotaInventory)
+        .filter_by(
             cluster_id=namespace.cluster_id,
             namespace=namespace.namespace,
         )

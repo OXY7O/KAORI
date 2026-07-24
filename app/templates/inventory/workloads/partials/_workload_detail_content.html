@@ -75,8 +75,6 @@
                 <div class="mt-auto pt-3">
                     {% if workload.pod_configuration_reported %}
                         {{ info_box('Template configuration', 'Pod configuration comes from the workload template. Runtime utilization remains in Analytics.', 'info', 'brand', true) }}
-                    {% elif workload.pod_configuration_source == 'associated-pod-fallback' %}
-                        {{ info_box('Fallback source', 'Configuration is inferred from associated Pods. Sync again to collect the workload template.', 'triangle-alert', 'warning', true) }}
                     {% else %}
                         {{ info_box('Configuration unavailable', 'Pod template metadata is unavailable. Restart the worker and sync this cluster again.', 'triangle-alert', 'warning', true) }}
                     {% endif %}

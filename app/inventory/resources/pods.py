@@ -6,6 +6,7 @@ from typing import Any
 from sqlalchemy import or_
 
 from app.common.inventory_generation import filter_current_generation
+from app.common.pagination import paginate_query
 from app.extensions.db import db
 from app.inventory.resources.common import format_age
 from app.models import Cluster, PodInventory
@@ -17,6 +18,7 @@ def get_pod_filter_namespaces(
     query = db.session.query(
         PodInventory.namespace,
     )
+    query = filter_current_generation(query, PodInventory)
 
     if cluster_id:
         query = query.filter(
@@ -41,6 +43,7 @@ def get_pod_filter_statuses(
     query = db.session.query(
         PodInventory.phase,
     )
+    query = filter_current_generation(query, PodInventory)
 
     if cluster_id:
         query = query.filter(
@@ -70,6 +73,7 @@ def get_pod_filter_owner_types(
     query = db.session.query(
         PodInventory.workload_type,
     )
+    query = filter_current_generation(query, PodInventory)
 
     if cluster_id:
         query = query.filter(
@@ -93,6 +97,7 @@ def get_pod_filter_owner_types(
     standalone_exists = db.session.query(PodInventory.id).filter(
         PodInventory.workload_type.is_(None),
     )
+    standalone_exists = filter_current_generation(standalone_exists, PodInventory)
     if cluster_id:
         standalone_exists = standalone_exists.filter(
             PodInventory.cluster_id == cluster_id,
@@ -117,6 +122,7 @@ def get_pod_filter_nodes(
         PodInventory.node_name.is_not(None),
         PodInventory.node_name != '',
     )
+    query = filter_current_generation(query, PodInventory)
 
     if cluster_id:
         query = query.filter(
@@ -192,6 +198,8 @@ def get_pod_inventory(
     owner_type=None,
     node=None,
     search=None,
+    page: int = 1,
+    per_page: int = 5,
 ):
     query = db.session.query(
         PodInventory,
@@ -232,34 +240,47 @@ def get_pod_inventory(
             )
         )
 
-    pods = query.order_by(
-        Cluster.name,
-        PodInventory.namespace,
-        PodInventory.pod_name,
+    summary_rows = query.with_entities(
+        PodInventory.phase,
+        PodInventory.image_count,
+        PodInventory.container_images,
+        PodInventory.init_container_images,
     ).all()
+    pods, pagination = paginate_query(
+        query.order_by(
+            Cluster.name,
+            PodInventory.namespace,
+            PodInventory.pod_name,
+        ),
+        page=page,
+        per_page=per_page,
+    )
 
     status_counts: dict[str, int] = {}
-    pod_data = []
-
     running = 0
     pending = 0
     failed = 0
+    total_image_references = 0
+    unique_images: set[str] = set()
 
+    for phase, image_count, container_images, init_container_images in summary_rows:
+        normalized_phase = phase or 'Unknown'
+        status_counts[normalized_phase] = status_counts.get(normalized_phase, 0) + 1
+        running += int(normalized_phase == 'Running')
+        pending += int(normalized_phase == 'Pending')
+        failed += int(normalized_phase == 'Failed')
+
+        reported_images = list(container_images or []) + list(init_container_images or [])
+        total_image_references += image_count if image_count is not None else len(reported_images)
+        unique_images.update(reported_images)
+
+    pod_data = []
     for pod, cluster_name in pods:
         phase = pod.phase or 'Unknown'
-        status_counts[phase] = status_counts.get(phase, 0) + 1
-
-        if phase == 'Running':
-            running += 1
-        elif phase == 'Pending':
-            pending += 1
-        elif phase == 'Failed':
-            failed += 1
-
         container_images = pod.container_images or []
         init_container_images = pod.init_container_images or []
         all_images = container_images + init_container_images
-        image_count = pod.image_count or len(all_images)
+        image_count = pod.image_count if pod.image_count is not None else len(all_images)
         ready_count, total_count = _pod_ready_values(pod.ready)
         container_count = _pod_container_count(pod)
 
@@ -287,49 +308,32 @@ def get_pod_inventory(
         )
 
     return {
-        'total_pods': len(pods),
+        'total_pods': pagination['total_items'],
         'running': running,
         'pending': pending,
         'failed': failed,
-        'total_image_references': sum(pod.get('image_count', 0) for pod in pod_data),
-        'unique_image_count': len({image for pod in pod_data for image in pod.get('all_images', [])}),
+        'total_image_references': total_image_references,
+        'unique_image_count': len(unique_images),
         'status_counts': status_counts,
-        'pod_statuses': get_pod_filter_statuses(
-            cluster_id=cluster_id,
-            namespace=namespace,
-        ),
-        'owner_types': get_pod_filter_owner_types(
-            cluster_id=cluster_id,
-            namespace=namespace,
-        ),
-        'nodes': get_pod_filter_nodes(
-            cluster_id=cluster_id,
-            namespace=namespace,
-        ),
-        'namespaces': get_pod_filter_namespaces(cluster_id),
         'pods': pod_data,
+        'pagination': pagination,
     }
 
 
 def get_pod_detail(
     pod_id: int,
 ) -> dict[str, Any] | None:
-    result = (
-        db.session.query(
-            PodInventory,
-            Cluster.name.label(
-                'cluster_name',
-            ),
-        )
-        .join(
-            Cluster,
-            Cluster.id == PodInventory.cluster_id,
-        )
-        .filter(
-            PodInventory.id == pod_id,
-        )
-        .first()
+    query = db.session.query(
+        PodInventory,
+        Cluster.name.label(
+            'cluster_name',
+        ),
+    ).join(
+        Cluster,
+        Cluster.id == PodInventory.cluster_id,
     )
+    query = filter_current_generation(query, PodInventory)
+    result = query.filter(PodInventory.id == pod_id).first()
 
     if result is None:
         return None
