@@ -4,12 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
-from typing import Any, TypeVar
+from typing import Any
 
 DEFAULT_PER_PAGE = 5
 PER_PAGE_OPTIONS: tuple[int, ...] = (5, 10, 25, 50)
-
-_ItemT = TypeVar('_ItemT')
 
 
 def positive_int(value: Any, default: int = 1) -> int:
@@ -97,7 +95,7 @@ def pagination_payload(
     }
 
 
-def paginate_sequence(
+def paginate_sequence[_ItemT](
     items: Sequence[_ItemT],
     *,
     page: Any = 1,
