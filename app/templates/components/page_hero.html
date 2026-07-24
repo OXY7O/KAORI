@@ -70,6 +70,10 @@
             <p class="{{ context_metric_label_classes() }}">{{ label }}</p>
         </div>
         <p class="mt-1.5 {{ value_classes }} text-brand-foreground">{{ value }}</p>
+        {% if description %}
+            <p class="mt-1 truncate text-[10px] font-medium leading-4 text-brand-foreground-muted"
+               title="{{ description }}">{{ description }}</p>
+        {% endif %}
     </div>
 {%- endmacro %}
 {% macro title_classes() -%}
