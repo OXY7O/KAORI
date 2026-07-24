@@ -199,6 +199,7 @@ def kubernetes_capability_validation_status(cluster_id: str, task_id: str) -> Re
             'capability_validation_job': snapshot,
             'operation_feedback': snapshot_feedback_for_user(snapshot, user_id=int(current_user.id)),
             'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
+            'runtime_history_oob': True,
         }
     )
     return render_template('integrations/kubernetes/partials/_capability_workspace.html', **context)
@@ -266,6 +267,7 @@ def kubernetes_runtime_refresh(cluster_id: str) -> ResponseReturnValue:
                 'runtime_validation_job': validation_job,
                 'operation_feedback': feedback,
                 'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
+                'runtime_history_oob': True,
             }
         )
         return render_template('integrations/kubernetes/partials/_runtime_workspace.html', **context)
