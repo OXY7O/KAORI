@@ -28,7 +28,7 @@ ANALYTICS_REFRESH_DEFINITION = JobDefinition(
     maximum_interval_minutes=1440,
     safety_summary='Long-range results are generated once per cluster and parameter set, then shared by every user.',
     default_configuration={
-        'time_ranges': ['24h', '7d', '30d', '60d'],
+        'time_ranges': ['1h', '6h', '12h', '24h', '7d', '30d', '60d'],
         'freshness_minutes': 20,
         'stale_grace_minutes': 1440,
     },

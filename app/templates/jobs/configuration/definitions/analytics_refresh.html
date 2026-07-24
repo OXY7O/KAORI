@@ -2,7 +2,7 @@
 {% block materialization_options %}
 <div>
     <p class="text-xs font-semibold text-content-secondary">Precomputed Time Ranges</p>
-    <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+    <div class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7">
         {% for value, label in policy_form.analytics_time_ranges.choices %}
             <label class="flex items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary">
                 <input type="checkbox" name="analytics_time_ranges" value="{{ value }}" {% if value in (policy_form.analytics_time_ranges.data or []) %}checked{% endif %} class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
@@ -10,6 +10,6 @@
             </label>
         {% endfor %}
     </div>
-    <p class="mt-2 text-xs leading-5 text-content-muted">24h, 7d, 30d, and 60d requests are warmed before users open the page. Custom filters are generated once on demand.</p>
+    <p class="mt-2 text-xs leading-5 text-content-muted">Standard 1h, 6h, 12h, 24h, 7d, 30d, and 60d ranges are shared across users. A missing or stale snapshot is prepared once by the Analytics Worker.</p>
 </div>
 {% endblock materialization_options %}

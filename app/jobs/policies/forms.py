@@ -12,6 +12,9 @@ class JobPolicyForm(FlaskForm):
     analytics_time_ranges = SelectMultipleField(
         'Materialized Time Ranges',
         choices=[
+            ('1h', '1 Hour'),
+            ('6h', '6 Hours'),
+            ('12h', '12 Hours'),
             ('24h', '24 Hours'),
             ('7d', '7 Days'),
             ('30d', '30 Days'),
