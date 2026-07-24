@@ -37,7 +37,4 @@ def refresh_integration_runtime_command(json_output: bool) -> None:
 
     for provider, raw_detail in providers.items():
         detail: Mapping[str, Any] = raw_detail if isinstance(raw_detail, Mapping) else {}
-        click.echo(
-            f'- {provider}: {detail.get("queued", 0)} queued, '
-            f'{detail.get("skipped", 0)} skipped'
-        )
+        click.echo(f'- {provider}: {detail.get("queued", 0)} queued, {detail.get("skipped", 0)} skipped')
