@@ -64,64 +64,62 @@
                 </span>
                 <strong data-workspace-result-count>{{ shortcut_count }} Workspaces Available</strong>
             </div>
-            <div class="grid gap-5">
+            <div class="grid gap-3">
                 {% for group in workspace_groups %}
-                    <section class="grid gap-4 rounded-2xl border border-outline-subtle bg-surface-card p-4 shadow-sm xl:grid-cols-[260px_minmax(0,1fr)]"
+                    <details class="group overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
                              data-workspace-group>
-                        <header class="relative isolate flex min-h-[250px] flex-col overflow-hidden rounded-xl bg-kaori-primary-dark p-5 text-white shadow-lg shadow-kaori-primary/15">
-                            <div class="pointer-events-none absolute -bottom-20 -right-20 h-48 w-48 rounded-full border border-white/10"
-                                 aria-hidden="true"></div>
-                            <div class="pointer-events-none absolute -bottom-12 -right-12 h-36 w-36 rounded-full border border-white/10"
-                                 aria-hidden="true"></div>
-                            <div class="relative z-10 flex items-start justify-between gap-3">
-                                <span class="flex h-12 w-12 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface-strong text-white"
-                                      aria-hidden="true">
-                                    <i data-lucide="{{ group.icon }}" class="h-5 w-5"></i>
-                                </span>
-                                <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-brand-outline bg-brand-surface text-brand-foreground-muted"
-                                      aria-hidden="true">
-                                    <i data-lucide="star" class="h-4 w-4"></i>
-                                </span>
-                            </div>
-                            <p class="relative z-10 mt-5 text-[10px] font-extrabold uppercase tracking-[0.14em] text-kaori-accent">{{ group.eyebrow }}</p>
-                            <h3 class="relative z-10 mt-2 text-xl font-extrabold leading-7 tracking-[-0.025em]">{{ group.title }}</h3>
-                            <div class="relative z-10 mt-4 h-0.5 w-8 rounded-full bg-kaori-accent"></div>
-                            <span class="relative z-10 mt-4 inline-flex items-end gap-1.5 text-brand-foreground-muted">
-                                <strong class="text-2xl font-extrabold leading-none text-white"
-                                        data-group-result-count>{{ group.shortcut_count }}</strong>
-                                <span class="text-[10px] font-bold">Available</span>
+                        <summary class="flex cursor-pointer list-none items-center gap-4 px-4 py-4 transition hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-kaori-primary/15 [&::-webkit-details-marker]:hidden">
+                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/10 bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="{{ group.icon }}" class="h-5 w-5"></i>
                             </span>
-                            <p class="relative z-10 mt-4 text-[11px] font-medium leading-5 text-brand-foreground-muted">{{ group.description }}</p>
-                        </header>
-                        <div class="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
-                            {% for shortcut in group.shortcuts %}
-                                <a href="{{ shortcut.href }}"
-                                   class="group flex min-h-[250px] flex-col rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-kaori-primary/35 hover:shadow-xl hover:shadow-kaori-primary/10 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-kaori-primary/15"
-                                   data-workspace-card
-                                   data-search-text="{{ shortcut.search_text }}">
-                                    <div class="flex items-start justify-between gap-3">
-                                        <span class="flex h-12 w-12 items-center justify-center rounded-lg border border-kaori-primary/10 bg-kaori-soft text-kaori-primary transition group-hover:bg-kaori-primary group-hover:text-white"
-                                              aria-hidden="true">
-                                            <i data-lucide="{{ shortcut.icon }}" class="h-5 w-5"></i>
-                                        </span>
-                                        <span class="rounded-full bg-surface-hover px-2.5 py-1.5 text-[9px] font-extrabold uppercase tracking-[0.12em] text-content-muted">{{ shortcut.scope }}</span>
-                                    </div>
-                                    <div class="mt-5 flex-1">
-                                        <p class="text-[9px] font-extrabold uppercase tracking-[0.12em] text-kaori-primary">{{ shortcut.label }}</p>
-                                        <h4 class="mt-2 text-base font-extrabold leading-6 tracking-[-0.02em] text-content-primary">{{ shortcut.title }}</h4>
-                                        <span class="mt-2 block text-[11px] font-medium leading-5 text-content-muted">{{ shortcut.description }}</span>
-                                    </div>
-                                    <div class="mt-5 flex items-center justify-between gap-3 border-t border-outline-subtle pt-4 text-[10px] font-extrabold text-kaori-primary">
-                                        <strong>Open Workspace</strong>
-                                        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft transition group-hover:bg-kaori-primary group-hover:text-white"
-                                              aria-hidden="true">
-                                            <i data-lucide="arrow-up-right" class="h-4 w-4"></i>
-                                        </span>
-                                    </div>
-                                </a>
-                            {% endfor %}
+                            <span class="min-w-0 flex-1">
+                                <span class="block text-[9px] font-extrabold uppercase tracking-[0.12em] text-kaori-primary">{{ group.eyebrow }}</span>
+                                <span class="mt-1 block text-sm font-extrabold text-content-primary">{{ group.title }}</span>
+                                <span class="mt-1 block text-[11px] font-medium leading-5 text-content-muted">{{ group.description }}</span>
+                            </span>
+                            <span class="inline-flex shrink-0 items-center gap-3">
+                                <span class="rounded-md border border-outline-default bg-surface-hover px-2.5 py-1.5 text-[10px] font-extrabold text-content-muted">
+                                    <strong data-group-result-count>{{ group.shortcut_count }}</strong>
+                                    Available
+                                </span>
+                                <span class="flex h-8 w-8 items-center justify-center rounded-lg text-content-muted transition group-open:rotate-180 group-open:text-kaori-primary"
+                                      aria-hidden="true">
+                                    <i data-lucide="chevron-down" class="h-4 w-4"></i>
+                                </span>
+                            </span>
+                        </summary>
+                        <div class="border-t border-outline-subtle bg-surface-subtle p-4">
+                            <div class="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
+                                {% for shortcut in group.shortcuts %}
+                                    <a href="{{ shortcut.href }}"
+                                       class="group/card flex min-h-[220px] flex-col rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-kaori-primary/35 hover:shadow-xl hover:shadow-kaori-primary/10 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-kaori-primary/15"
+                                       data-workspace-card
+                                       data-search-text="{{ shortcut.search_text }}">
+                                        <div class="flex items-start justify-between gap-3">
+                                            <span class="flex h-12 w-12 items-center justify-center rounded-lg border border-kaori-primary/10 bg-kaori-soft text-kaori-primary transition group-hover/card:bg-kaori-primary group-hover/card:text-white"
+                                                  aria-hidden="true">
+                                                <i data-lucide="{{ shortcut.icon }}" class="h-5 w-5"></i>
+                                            </span>
+                                            <span class="rounded-full bg-surface-hover px-2.5 py-1.5 text-[9px] font-extrabold uppercase tracking-[0.12em] text-content-muted">{{ shortcut.scope }}</span>
+                                        </div>
+                                        <div class="mt-5 flex-1">
+                                            <p class="text-[9px] font-extrabold uppercase tracking-[0.12em] text-kaori-primary">{{ shortcut.label }}</p>
+                                            <h4 class="mt-2 text-base font-extrabold leading-6 tracking-[-0.02em] text-content-primary">{{ shortcut.title }}</h4>
+                                            <span class="mt-2 block text-[11px] font-medium leading-5 text-content-muted">{{ shortcut.description }}</span>
+                                        </div>
+                                        <div class="mt-5 flex items-center justify-between gap-3 border-t border-outline-subtle pt-4 text-[10px] font-extrabold text-kaori-primary">
+                                            <strong>Open Workspace</strong>
+                                            <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft transition group-hover/card:bg-kaori-primary group-hover/card:text-white"
+                                                  aria-hidden="true">
+                                                <i data-lucide="arrow-up-right" class="h-4 w-4"></i>
+                                            </span>
+                                        </div>
+                                    </a>
+                                {% endfor %}
+                            </div>
                         </div>
-                    </section>
+                    </details>
                 {% endfor %}
             </div>
             <div class="rounded-xl border border-dashed border-outline-strong bg-surface-card p-8 text-center"
