@@ -83,82 +83,86 @@
                 </div>
             </div>
 
-            <div class="grid gap-4">
+            <div class="grid gap-5">
                 {% for group in workspace_groups %}
-                    {% set category_tone = loop.cycle(
-                        'from-kaori-soft/90 via-kaori-soft/55 to-surface-card',
-                        'from-blue-50/90 via-blue-50/45 to-surface-card',
-                        'from-emerald-50/80 via-emerald-50/35 to-surface-card',
-                        'from-amber-50/80 via-amber-50/35 to-surface-card'
+                    {% set band_tone = loop.cycle(
+                        'from-violet-700 via-kaori-primary to-violet-500',
+                        'from-slate-900 via-slate-800 to-slate-700',
+                        'from-indigo-800 via-indigo-700 to-indigo-600',
+                        'from-violet-900 via-violet-800 to-kaori-dark'
                     ) %}
-                    <details class="group relative overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-md transition duration-200 open:border-kaori-primary/30 open:shadow-xl open:shadow-kaori-primary/10"
+                    {% set glow_tone = loop.cycle(
+                        'bg-fuchsia-300/25',
+                        'bg-blue-300/20',
+                        'bg-cyan-300/20',
+                        'bg-violet-300/25'
+                    ) %}
+                    <details class="group overflow-hidden rounded-[22px] border border-outline-subtle bg-surface-card shadow-lg shadow-black/5 transition duration-300 open:border-kaori-primary/30 open:shadow-2xl open:shadow-kaori-primary/10"
                              data-workspace-group>
-                        <summary class="relative cursor-pointer list-none overflow-hidden focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-kaori-primary/15 [&::-webkit-details-marker]:hidden">
-                            <div class="pointer-events-none absolute inset-0 bg-gradient-to-r {{ category_tone }}"></div>
-                            <div class="pointer-events-none absolute -right-10 -top-16 h-40 w-40 rounded-full bg-white/70 blur-3xl"></div>
-                            <div class="pointer-events-none absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-kaori-primary/20 to-transparent"></div>
-                            <div class="relative grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 px-5 py-5 lg:px-7">
-                                <span class="relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/80 bg-white/85 text-kaori-primary shadow-lg shadow-kaori-primary/10 backdrop-blur"
-                                      aria-hidden="true">
-                                    <span class="absolute inset-1 rounded-xl border border-kaori-primary/10 bg-gradient-to-br from-kaori-soft/90 to-white"></span>
-                                    <i data-lucide="{{ group.icon }}" class="relative h-5 w-5"></i>
-                                    <span class="absolute -right-1.5 -top-1.5 flex h-5 min-w-5 items-center justify-center rounded-md border border-white bg-kaori-primary px-1 text-[9px] font-extrabold text-white shadow-sm">0{{ loop.index }}</span>
-                                </span>
-                                <span class="min-w-0">
-                                    <span class="flex flex-wrap items-center gap-2">
-                                        <span class="rounded-md border border-kaori-primary/15 bg-white/70 px-2 py-1 text-[9px] font-extrabold uppercase tracking-[0.15em] text-kaori-primary backdrop-blur">{{ group.eyebrow }}</span>
-                                        <span class="text-[10px] font-bold text-content-muted">{{ group.shortcut_count }} Workspaces</span>
+                        <summary class="relative cursor-pointer list-none overflow-hidden focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-kaori-primary/20 [&::-webkit-details-marker]:hidden">
+                            <div class="absolute inset-0 bg-gradient-to-r {{ band_tone }}"></div>
+                            <div class="absolute -right-10 -top-20 h-56 w-56 rounded-full {{ glow_tone }} blur-3xl"></div>
+                            <div class="absolute inset-y-0 right-[23%] hidden w-px bg-white/10 lg:block"></div>
+                            <div class="relative grid min-h-[148px] gap-5 px-5 py-5 text-white sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center lg:px-7">
+                                <div class="flex items-center gap-4 sm:contents">
+                                    <span class="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-white shadow-xl backdrop-blur-md"
+                                          aria-hidden="true">
+                                        <span class="absolute inset-1.5 rounded-xl border border-white/10 bg-white/5"></span>
+                                        <i data-lucide="{{ group.icon }}" class="relative h-6 w-6"></i>
                                     </span>
-                                    <span class="mt-2 block text-[16px] font-extrabold tracking-[-0.02em] text-content-primary">{{ group.title }}</span>
-                                    <span class="mt-1 block max-w-4xl text-[11px] font-medium leading-5 text-content-muted">{{ group.description }}</span>
-                                </span>
-                                <span class="inline-flex shrink-0 items-center gap-3">
-                                    <span class="hidden min-w-[104px] rounded-xl border border-white/80 bg-white/75 px-4 py-2.5 text-center shadow-sm backdrop-blur sm:block">
-                                        <strong class="block text-base font-extrabold text-content-primary" data-group-result-count>{{ group.shortcut_count }}</strong>
-                                        <span class="mt-0.5 block text-[9px] font-bold uppercase tracking-[0.1em] text-content-muted">Available</span>
+                                    <span class="min-w-0">
+                                        <span class="flex flex-wrap items-center gap-2.5">
+                                            <span class="rounded-md border border-white/20 bg-white/10 px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/90 backdrop-blur">{{ group.eyebrow }}</span>
+                                            <span class="text-[10px] font-bold text-white/65">Operational Area 0{{ loop.index }}</span>
+                                        </span>
+                                        <span class="mt-3 block text-[20px] font-extrabold tracking-[-0.035em] text-white lg:text-[22px]">{{ group.title }}</span>
+                                        <span class="mt-1.5 block max-w-3xl text-[11px] font-medium leading-5 text-white/70">{{ group.description }}</span>
                                     </span>
-                                    <span class="flex h-11 w-11 items-center justify-center rounded-xl border border-white/80 bg-white/80 text-content-muted shadow-sm backdrop-blur transition duration-200 group-open:rotate-180 group-open:border-kaori-primary group-open:bg-kaori-primary group-open:text-white"
+                                </div>
+                                <span class="flex items-center justify-between gap-4 sm:justify-end">
+                                    <span class="min-w-[106px] rounded-xl border border-white/15 bg-black/10 px-4 py-3 text-left backdrop-blur-md sm:text-center">
+                                        <strong class="block text-xl font-extrabold leading-none text-white" data-group-result-count>{{ group.shortcut_count }}</strong>
+                                        <span class="mt-1.5 block text-[9px] font-bold uppercase tracking-[0.12em] text-white/60">Workspaces</span>
+                                    </span>
+                                    <span class="flex h-11 w-11 items-center justify-center rounded-xl border border-white/20 bg-white/10 text-white shadow-lg backdrop-blur-md transition duration-300 group-hover:bg-white/15 group-open:rotate-180 group-open:bg-white group-open:text-kaori-primary"
                                           aria-hidden="true">
                                         <i data-lucide="chevron-down" class="h-4 w-4"></i>
                                     </span>
                                 </span>
                             </div>
                         </summary>
-                        <div class="relative bg-surface-subtle/70 p-3 lg:p-4">
-                            <div class="rounded-2xl border border-outline-subtle bg-surface-card/95 p-4 shadow-inner lg:p-5">
-                                <div class="grid gap-4 md:grid-cols-2 2xl:grid-cols-3">
-                                    {% for shortcut in group.shortcuts %}
-                                        <a href="{{ shortcut.href }}"
-                                           class="group/card relative flex min-h-[205px] flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card p-5 shadow-md transition duration-200 hover:-translate-y-1 hover:border-kaori-primary/35 hover:shadow-xl hover:shadow-kaori-primary/10 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-kaori-primary/15"
-                                           data-workspace-card
-                                           data-search-text="{{ shortcut.search_text }}">
-                                            <div class="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-kaori-primary/80 via-kaori-accent/70 to-transparent"></div>
-                                            <div class="pointer-events-none absolute -right-10 -top-10 h-24 w-24 rounded-full bg-kaori-soft/70 blur-2xl transition group-hover/card:bg-kaori-accent/20"></div>
-                                            <div class="relative flex items-start justify-between gap-3">
-                                                <span class="flex h-11 w-11 items-center justify-center rounded-xl border border-kaori-primary/15 bg-gradient-to-br from-kaori-soft to-surface-card text-kaori-primary shadow-sm transition group-hover/card:border-kaori-primary group-hover/card:bg-kaori-primary group-hover/card:text-white"
-                                                      aria-hidden="true">
-                                                    <i data-lucide="{{ shortcut.icon }}" class="h-5 w-5"></i>
-                                                </span>
-                                                <span class="rounded-md border border-outline-subtle bg-surface-subtle px-2.5 py-1.5 text-[9px] font-extrabold uppercase tracking-[0.1em] text-content-muted shadow-sm">{{ shortcut.scope }}</span>
-                                            </div>
-                                            <div class="relative mt-5 flex-1">
-                                                <p class="text-[9px] font-extrabold uppercase tracking-[0.14em] text-kaori-primary">{{ shortcut.label }}</p>
-                                                <h3 class="mt-1.5 text-[17px] font-extrabold leading-6 tracking-[-0.025em] text-content-primary">{{ shortcut.title }}</h3>
-                                                <p class="mt-2.5 text-[11px] font-medium leading-5 text-content-muted">{{ shortcut.description }}</p>
-                                            </div>
-                                            <div class="relative mt-5 flex items-center justify-between gap-3 border-t border-outline-subtle pt-3.5 text-[10px] font-extrabold text-kaori-primary">
-                                                <span class="inline-flex items-center gap-2">
-                                                    <span class="h-1.5 w-1.5 rounded-full bg-kaori-primary" aria-hidden="true"></span>
-                                                    Open Workspace
-                                                </span>
-                                                <span class="flex h-8 w-8 items-center justify-center rounded-lg border border-kaori-primary/15 bg-kaori-soft transition group-hover/card:border-kaori-primary group-hover/card:bg-kaori-primary group-hover/card:text-white"
-                                                      aria-hidden="true">
-                                                    <i data-lucide="arrow-up-right" class="h-3.5 w-3.5"></i>
-                                                </span>
-                                            </div>
-                                        </a>
-                                    {% endfor %}
-                                </div>
+
+                        <div class="relative overflow-hidden bg-gradient-to-b from-surface-subtle to-surface-card px-4 pb-5 pt-4 lg:px-5 lg:pb-6">
+                            <div class="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-kaori-soft/40 to-transparent"></div>
+                            <div class="relative grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                {% for shortcut in group.shortcuts %}
+                                    <a href="{{ shortcut.href }}"
+                                       class="group/card relative flex min-h-[196px] flex-col overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:border-kaori-primary/30 hover:shadow-xl hover:shadow-kaori-primary/10 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-kaori-primary/15"
+                                       data-workspace-card
+                                       data-search-text="{{ shortcut.search_text }}">
+                                        <div class="pointer-events-none absolute inset-x-0 top-0 h-[3px] origin-left scale-x-0 bg-gradient-to-r from-kaori-primary via-kaori-accent to-transparent transition duration-300 group-hover/card:scale-x-100"></div>
+                                        <div class="pointer-events-none absolute -right-12 -top-12 h-28 w-28 rounded-full bg-kaori-soft/70 blur-2xl transition duration-300 group-hover/card:bg-kaori-accent/25"></div>
+                                        <div class="relative flex items-start justify-between gap-3">
+                                            <span class="flex h-11 w-11 items-center justify-center rounded-xl border border-kaori-primary/15 bg-kaori-soft text-kaori-primary shadow-sm transition duration-300 group-hover/card:border-kaori-primary group-hover/card:bg-kaori-primary group-hover/card:text-white"
+                                                  aria-hidden="true">
+                                                <i data-lucide="{{ shortcut.icon }}" class="h-5 w-5"></i>
+                                            </span>
+                                            <span class="rounded-md border border-outline-subtle bg-surface-subtle px-2.5 py-1.5 text-[9px] font-extrabold uppercase tracking-[0.1em] text-content-muted">{{ shortcut.scope }}</span>
+                                        </div>
+                                        <div class="relative mt-5 flex-1">
+                                            <p class="text-[9px] font-extrabold uppercase tracking-[0.15em] text-kaori-primary">{{ shortcut.label }}</p>
+                                            <h3 class="mt-1.5 text-[17px] font-extrabold leading-6 tracking-[-0.025em] text-content-primary">{{ shortcut.title }}</h3>
+                                            <p class="mt-2.5 line-clamp-3 text-[11px] font-medium leading-5 text-content-muted">{{ shortcut.description }}</p>
+                                        </div>
+                                        <div class="relative mt-5 flex items-center justify-between gap-3 border-t border-outline-subtle pt-3.5">
+                                            <span class="text-[10px] font-extrabold text-kaori-primary">Open Workspace</span>
+                                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary transition duration-300 group-hover/card:bg-kaori-primary group-hover/card:text-white"
+                                                  aria-hidden="true">
+                                                <i data-lucide="arrow-up-right" class="h-3.5 w-3.5"></i>
+                                            </span>
+                                        </div>
+                                    </a>
+                                {% endfor %}
                             </div>
                         </div>
                     </details>
