@@ -48,7 +48,7 @@ WELCOME_WORKSPACE_GROUP_DEFINITIONS: tuple[dict[str, str], ...] = (
 
 WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
     {
-        'title': 'Kubernetes Operations Dashboard',
+        'title': 'Dashboards',
         'label': 'Operational Overview',
         'description': (
             'Review cluster posture, capacity risk, alerts, top consumers, '
@@ -60,7 +60,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'targets': (('dashboard.view', 'kubernetes_dashboard.index'),),
     },
     {
-        'title': 'Kubernetes Inventory',
+        'title': 'K8s Inventory',
         'label': 'Asset Visibility',
         'description': (
             'Gain visibility into Kubernetes resources, their status, configuration, and relationships across connected clusters.'
@@ -71,7 +71,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'targets': (('inventory.view', 'inventory.overview'),),
     },
     {
-        'title': 'Kubernetes Analytics',
+        'title': 'K8s Analytics',
         'label': 'Operational Analytics',
         'description': (
             'Explore utilization, capacity, workload efficiency, storage, forecast risks, top consumers, alerts, and anomalies.'
@@ -93,10 +93,10 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'targets': (('intelligence.view', 'intelligence.recommendations'),),
     },
     {
-        'title': 'Kubernetes Cluster',
+        'title': 'Integrations',
         'label': 'Integration & Sync',
         'description': (
-            'Manage registered environments, connection readiness, inventory synchronization, and integration status.'
+            'Manage Kubernetes, Prometheus, and Alertmanager integrations, connection readiness, bindings, and runtime status.'
         ),
         'icon': 'server-cog',
         'scope': 'Compute',
@@ -104,7 +104,21 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         'targets': (('clusters.view', 'integrations.kubernetes'),),
     },
     {
-        'title': 'Kubernetes Operations',
+        'title': 'Platform Operations',
+        'label': 'Jobs & Inventory Sync',
+        'description': (
+            'Review background jobs and executions, then manage automatic or manual inventory synchronization across connected clusters.'
+        ),
+        'icon': 'workflow',
+        'scope': 'Platform',
+        'group': 'operations',
+        'targets': (
+            ('jobs.view', 'integrations.jobs'),
+            ('settings.manage_integrations', 'settings.inventory_sync.index'),
+        ),
+    },
+    {
+        'title': 'K8s Operations',
         'label': 'Controlled Workflows',
         'description': (
             'Run permission-aware configuration and protected infrastructure '
@@ -129,7 +143,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         ),
     },
     {
-        'title': 'Governance',
+        'title': 'K8s Governance',
         'label': 'Policy & Lifecycle',
         'description': (
             'Review infrastructure governance posture, lifecycle exposure, policy '
@@ -162,7 +176,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         ),
     },
     {
-        'title': 'Access Management',
+        'title': 'Access',
         'label': 'Identity, Access & Audit',
         'description': (
             'Manage users, roles, permissions, authentication events, and operational '
@@ -178,7 +192,7 @@ WELCOME_SHORTCUT_DEFINITIONS: tuple[dict[str, Any], ...] = (
         ),
     },
     {
-        'title': 'Account & Settings',
+        'title': 'Settings',
         'label': 'Personal & System Settings',
         'description': (
             'Manage your account and preferences; authorized roles can also configure '

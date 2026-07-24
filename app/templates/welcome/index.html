@@ -51,7 +51,7 @@
                        aria-hidden="true"></i>
                     <input type="search"
                            class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-11 pr-12 text-[11px] font-semibold text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10"
-                           placeholder="Search workspaces"
+                           placeholder="Search Workspace"
                            autocomplete="off"
                            data-workspace-search />
                     <kbd class="absolute right-3 inline-flex h-6 w-6 items-center justify-center rounded-lg border border-outline-default bg-surface-hover text-[10px] font-bold text-content-muted shadow-sm">/</kbd>
@@ -61,7 +61,7 @@
                  aria-live="polite">
                 <span class="inline-flex items-center gap-2">
                     <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
-                    {{ current_user.role_display_name }} access
+                    {{ current_user.role_display_name }} Access
                 </span>
                 <strong data-workspace-result-count>{{ shortcut_count }} Workspaces Available</strong>
             </div>
@@ -90,7 +90,7 @@
                             <span class="relative z-10 mt-4 inline-flex items-end gap-1.5 text-brand-foreground-muted">
                                 <strong class="text-2xl font-extrabold leading-none text-white"
                                         data-group-result-count>{{ group.shortcut_count }}</strong>
-                                <span class="text-[10px] font-bold">available</span>
+                                <span class="text-[10px] font-bold">Available</span>
                             </span>
                             <p class="relative z-10 mt-4 text-[11px] font-medium leading-5 text-brand-foreground-muted">{{ group.description }}</p>
                         </header>
