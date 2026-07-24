@@ -50,7 +50,7 @@ class SnapshotResult:
 
 def get_snapshot(
     *,
-    cluster_id: int,
+    cluster_id: str,
     dataset_key: str,
     parameters: dict[str, Any] | None,
 ) -> AnalyticsSnapshot | None:
@@ -63,7 +63,7 @@ def get_snapshot(
 
 def read_snapshot(
     *,
-    cluster_id: int,
+    cluster_id: str,
     dataset_key: str,
     parameters: dict[str, Any] | None,
 ) -> SnapshotResult:
@@ -96,7 +96,7 @@ def read_snapshot(
 
 def mark_snapshot_pending(
     *,
-    cluster_id: int,
+    cluster_id: str,
     dataset_key: str,
     parameters: dict[str, Any] | None,
     job_execution_id: int | None,
@@ -133,7 +133,7 @@ def mark_snapshot_pending(
 
 def store_snapshot(
     *,
-    cluster_id: int,
+    cluster_id: str,
     dataset_key: str,
     parameters: dict[str, Any] | None,
     context: dict[str, Any],
@@ -164,7 +164,7 @@ def store_snapshot(
 
 def fail_snapshot(
     *,
-    cluster_id: int,
+    cluster_id: str,
     dataset_key: str,
     parameters: dict[str, Any] | None,
     error: Exception | str,

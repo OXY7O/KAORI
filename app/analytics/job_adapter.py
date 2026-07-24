@@ -39,7 +39,7 @@ def _forecast_freshness_minutes(history_window: str, base_minutes: int) -> int:
     return max(base_minutes, minimum_by_history.get(history_window, base_minutes))
 
 
-def _snapshot_due(*, cluster_id: int, dataset_key: str, parameters: dict[str, Any]) -> bool:
+def _snapshot_due(*, cluster_id: str, dataset_key: str, parameters: dict[str, Any]) -> bool:
     snapshot = get_snapshot(
         cluster_id=cluster_id,
         dataset_key=dataset_key,
@@ -75,7 +75,7 @@ def _analytics_work_items(
     if parameters and parameters.get('dataset_key') and parameters.get('cluster_id'):
         return [
             {
-                'cluster_id': int(parameters['cluster_id']),
+                'cluster_id': str(parameters['cluster_id']),
                 'dataset_key': str(parameters['dataset_key']),
                 'parameters': normalize_parameters(parameters.get('snapshot_parameters')),
                 'freshness_minutes': freshness_minutes,
@@ -129,7 +129,7 @@ def _forecast_work_items(
     if parameters and parameters.get('dataset_key') and parameters.get('cluster_id'):
         return [
             {
-                'cluster_id': int(parameters['cluster_id']),
+                'cluster_id': str(parameters['cluster_id']),
                 'dataset_key': FORECAST_DATASET.key,
                 'parameters': normalize_parameters(parameters.get('snapshot_parameters')),
                 'freshness_minutes': freshness_minutes,
@@ -296,7 +296,7 @@ def _context(policy: JobPolicy, *, forecasting: bool) -> dict[str, Any]:
         .first()
     )
     snapshot_count = AnalyticsSnapshot.query.filter(
-        AnalyticsSnapshot.cluster_id.in_([cluster.id for cluster in clusters] or [-1]),
+        AnalyticsSnapshot.cluster_id.in_([cluster.id for cluster in clusters] or ['']),
         AnalyticsSnapshot.dataset_key.in_([dataset.key for dataset in datasets]),
         AnalyticsSnapshot.payload_json.isnot(None),
     ).count()

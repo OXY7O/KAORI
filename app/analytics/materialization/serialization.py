@@ -49,5 +49,5 @@ def decode_value(value: Any) -> Any:
     if value_type == 'decimal':
         return Decimal(str(value['value']))
     if value_type == 'cluster':
-        return Cluster.query.get(int(value['id']))
+        return Cluster.query.get(str(value['id']))
     return {key: decode_value(item) for key, item in value.items()}

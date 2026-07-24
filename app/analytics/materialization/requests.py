@@ -26,8 +26,8 @@ class MaterializedRequest:
 
 def selected_cluster_from_request() -> Cluster | None:
     raw_cluster_id = request.args.get('cluster_id', '').strip()
-    if raw_cluster_id.isdigit():
-        cluster = Cluster.query.get(int(raw_cluster_id))
+    if raw_cluster_id:
+        cluster = Cluster.query.get(raw_cluster_id)
         if cluster is not None:
             return cluster
     return Cluster.query.order_by(Cluster.created_at.asc(), Cluster.id.asc()).first()

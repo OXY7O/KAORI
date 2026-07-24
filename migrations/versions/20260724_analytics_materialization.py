@@ -18,7 +18,7 @@ def upgrade() -> None:
     op.create_table(
         'analytics_snapshots',
         sa.Column('id', sa.Integer(), nullable=False),
-        sa.Column('cluster_id', sa.Integer(), nullable=False),
+        sa.Column('cluster_id', sa.String(length=36), nullable=False),
         sa.Column('dataset_key', sa.String(length=120), nullable=False),
         sa.Column('parameter_fingerprint', sa.String(length=64), nullable=False),
         sa.Column('parameters_json', sa.JSON(), nullable=False),

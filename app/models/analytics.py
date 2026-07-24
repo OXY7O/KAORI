@@ -30,7 +30,8 @@ class AnalyticsSnapshot(db.Model):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    cluster_id: Mapped[int] = mapped_column(
+    cluster_id: Mapped[str] = mapped_column(
+        db.String(36),
         db.ForeignKey('clusters.id', ondelete='CASCADE'),
         nullable=False,
         index=True,

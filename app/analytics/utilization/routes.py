@@ -212,7 +212,7 @@ def _empty_prometheus_status() -> dict[str, bool | int | str | None]:
 
 def _resolve_utilization_trends(
     *,
-    cluster_id: int,
+    cluster_id: str,
     trend_hours: int,
     trend_step: str,
     selected_trend_node: str,

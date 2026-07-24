@@ -34,7 +34,7 @@ def _materialize(
 
     try:
         for index, item in enumerate(work_items, start=1):
-            cluster_id = int(item['cluster_id'])
+            cluster_id = str(item['cluster_id'])
             dataset_key = str(item['dataset_key'])
             parameters = normalize_parameters(item.get('parameters'))
             parameters['cluster_id'] = str(cluster_id)
