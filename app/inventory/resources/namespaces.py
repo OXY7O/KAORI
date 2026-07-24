@@ -73,10 +73,22 @@ def get_namespace_inventory(
     if search:
         query = query.filter(NamespaceInventory.namespace.ilike(f'%{search}%'))
 
-    summary_rows = query.with_entities(
-        NamespaceInventory.cluster_id,
-        NamespaceInventory.status,
-    ).all()
+    summary_query = query.order_by(None)
+    status_rows = (
+        summary_query.with_entities(
+            NamespaceInventory.status,
+            func.count(NamespaceInventory.id),
+        )
+        .group_by(NamespaceInventory.status)
+        .all()
+    )
+    cluster_count = (
+        summary_query.with_entities(
+            func.count(func.distinct(NamespaceInventory.cluster_id)),
+        )
+        .scalar()
+        or 0
+    )
     namespace_records, pagination = paginate_query(
         query.order_by(
             Cluster.name,
@@ -115,10 +127,10 @@ def get_namespace_inventory(
     service_counts = _namespace_count_map(ServiceInventory)
     quota_counts = _namespace_count_map(ResourceQuotaInventory)
 
-    status_counts: dict[str, int] = {}
-    for _, namespace_status in summary_rows:
-        normalized_status = namespace_status or 'Unknown'
-        status_counts[normalized_status] = status_counts.get(normalized_status, 0) + 1
+    status_counts = {
+        (namespace_status or 'Unknown'): count
+        for namespace_status, count in status_rows
+    }
 
     inventory_rows: list[dict[str, Any]] = []
     for namespace, cluster_name in namespace_records:
@@ -145,10 +157,11 @@ def get_namespace_inventory(
                 'limit_range_count': limit_range_count,
                 'network_policy_count': network_policy_count,
                 'controls_reported': (limit_range_count is not None and network_policy_count is not None),
+                'pod_security_enforce': (namespace.labels or {}).get('pod-security.kubernetes.io/enforce'),
+                'pod_security_audit': (namespace.labels or {}).get('pod-security.kubernetes.io/audit'),
+                'pod_security_warn': (namespace.labels or {}).get('pod-security.kubernetes.io/warn'),
             }
         )
-
-    cluster_count = len({row_cluster_id for row_cluster_id, _ in summary_rows})
 
     return {
         'total_namespaces': pagination['total_items'],
@@ -183,7 +196,8 @@ def get_namespace_detail(
     workload_counts = {
         workload_type or 'Unknown': count
         for workload_type, count in (
-            workload_count_query.filter(
+            workload_count_query
+            .filter(
                 WorkloadInventory.cluster_id == namespace.cluster_id,
                 WorkloadInventory.namespace == namespace.namespace,
             )

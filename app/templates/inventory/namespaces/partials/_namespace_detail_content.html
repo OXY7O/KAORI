@@ -2,12 +2,12 @@
 {% import "components/detail_tip.html" as inventory_tip %}
 {% set namespace_status_tone = 'normal' if namespace.status == 'Active' else ('warning' if namespace.status == 'Terminating' else 'unknown') %}
 {% set namespace_status_icon = 'circle-check' if namespace.status == 'Active' else ('triangle-alert' if namespace.status == 'Terminating' else 'circle-help') %}
-{% set psa_enforce_display = 'No namespace policy' if namespace.pod_security_enforce in [None, '', 'Not configured'] else namespace.pod_security_enforce %}
-{% set psa_audit_display = 'No namespace policy' if namespace.pod_security_audit in [None, '', 'Not configured'] else namespace.pod_security_audit %}
-{% set psa_warn_display = 'No namespace policy' if namespace.pod_security_warn in [None, '', 'Not configured'] else namespace.pod_security_warn %}
-{% set psa_configured_count = (1 if psa_enforce_display != 'No namespace policy' else 0)
-    + (1 if psa_audit_display != 'No namespace policy' else 0)
-+ (1 if psa_warn_display != 'No namespace policy' else 0) %}
+{% set psa_enforce_display = 'No Namespace Policy' if namespace.pod_security_enforce in [None, '', 'Not configured', 'Not Configured'] else namespace.pod_security_enforce %}
+{% set psa_audit_display = 'No Namespace Policy' if namespace.pod_security_audit in [None, '', 'Not configured', 'Not Configured'] else namespace.pod_security_audit %}
+{% set psa_warn_display = 'No Namespace Policy' if namespace.pod_security_warn in [None, '', 'Not configured', 'Not Configured'] else namespace.pod_security_warn %}
+{% set psa_configured_count = (1 if psa_enforce_display != 'No Namespace Policy' else 0)
+    + (1 if psa_audit_display != 'No Namespace Policy' else 0)
++ (1 if psa_warn_display != 'No Namespace Policy' else 0) %}
 {% macro detail_row(label, value='-', break_all=False) -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
     <div class="flex items-start justify-between gap-3">
@@ -107,7 +107,7 @@
                 {{ detail_row('PVCs', namespace.object_counts.persistent_volume_claims) }}
                 <div class="mt-auto space-y-3 pt-3">
                     {% if namespace.object_counts.workloads > 0 %}
-                        {% call namespace_object_card('Workload composition', namespace.object_counts.workloads ~ ' workloads', 'layout-grid') %}
+                        {% call namespace_object_card('Workload Composition', namespace.object_counts.workloads ~ ' workloads', 'layout-grid') %}
                             {% if namespace.workload_breakdown.deployments %}{{ namespace_object_row('Deployments', namespace.workload_breakdown.deployments) }}{% endif %}
                             {% if namespace.workload_breakdown.statefulsets %}{{ namespace_object_row('StatefulSets', namespace.workload_breakdown.statefulsets) }}{% endif %}
                             {% if namespace.workload_breakdown.daemonsets %}{{ namespace_object_row('DaemonSets', namespace.workload_breakdown.daemonsets) }}{% endif %}
@@ -124,16 +124,16 @@
                     {{ detail_tip('Only non-zero workload kinds are shown; utilization remains in Analytics.', 'boxes', False) }}
                 </div>
             {% endcall %}
-            {% set quota_badge = 'Configured' if namespace.quota_count > 0 else 'Not configured' %}
+            {% set quota_badge = 'Configured' if namespace.quota_count > 0 else 'Not Configured' %}
             {% set quota_tone = 'normal' if namespace.quota_count > 0 else 'disabled' %}
             {% call detail_card('Resource Controls', 'sliders-horizontal', quota_badge, 'status', quota_tone, 'circle-check' if namespace.quota_count > 0 else 'circle-minus', 'min-h-[28rem]') %}
-                {{ status_row('ResourceQuota', ('Configured · ' ~ namespace.quota_count) if namespace.quota_count > 0 else 'Not configured', 'normal' if namespace.quota_count > 0 else 'disabled', 'circle-check' if namespace.quota_count > 0 else 'circle-minus') }}
+                {{ status_row('ResourceQuota', ('Configured · ' ~ namespace.quota_count) if namespace.quota_count > 0 else 'Not Configured', 'normal' if namespace.quota_count > 0 else 'disabled', 'circle-check' if namespace.quota_count > 0 else 'circle-minus') }}
                 {% if namespace.limit_range_count is none %}
-                    {{ status_row('LimitRange', 'Not reported', 'unknown', 'circle-help') }}
+                    {{ status_row('LimitRange', 'Not Reported', 'unknown', 'circle-help') }}
                 {% elif namespace.limit_range_count > 0 %}
                     {{ status_row('LimitRange', 'Configured · ' ~ namespace.limit_range_count, 'normal', 'circle-check') }}
                 {% else %}
-                    {{ status_row('LimitRange', 'Not configured', 'disabled', 'circle-minus') }}
+                    {{ status_row('LimitRange', 'Not Configured', 'disabled', 'circle-minus') }}
                 {% endif %}
                 <div class="mt-auto space-y-3 pt-3">
                     {% if namespace.quotas %}
@@ -161,8 +161,8 @@
                 </div>
             {% endcall %}
             {% call detail_card('Security & Access', 'shield-check', psa_configured_count ~ '/3 PSA labels', 'metadata', 'unknown', None, 'min-h-[28rem]') %}
-                {{ detail_row('NetworkPolicies', namespace.network_policy_count if namespace.network_policy_count is not none else 'Not reported') }}
-                {{ detail_row('ServiceAccounts', namespace.service_account_count if namespace.service_account_count is not none else 'Not reported') }}
+                {{ detail_row('NetworkPolicies', namespace.network_policy_count if namespace.network_policy_count is not none else 'Not Reported') }}
+                {{ detail_row('ServiceAccounts', namespace.service_account_count if namespace.service_account_count is not none else 'Not Reported') }}
                 {% set default_sa_tone = 'normal' if namespace.default_service_account == 'Present' else ('critical' if namespace.default_service_account == 'Missing' else 'unknown') %}
                 {% set default_sa_icon = 'circle-check' if namespace.default_service_account == 'Present' else ('octagon-alert' if namespace.default_service_account == 'Missing' else 'circle-help') %}
                 {{ status_row('Default ServiceAccount', namespace.default_service_account, default_sa_tone, default_sa_icon) }}
@@ -191,7 +191,7 @@
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                             <i data-lucide="tags" class="h-4 w-4"></i>
                         </span>
-                        Namespace labels
+                        Namespace Labels
                     </div>
                     {{ table_label.metadata_label(namespace.labels|length ~ ' ' ~ ('label' if namespace.labels|length == 1 else 'labels') ) }}
                 </div>
@@ -220,7 +220,7 @@
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                             <i data-lucide="notebook-text" class="h-4 w-4"></i>
                         </span>
-                        Namespace annotations
+                        Namespace Annotations
                     </div>
                     {{ table_label.metadata_label(namespace.annotations|length ~ ' ' ~ ('annotation' if namespace.annotations|length == 1 else 'annotations') ) }}
                 </div>

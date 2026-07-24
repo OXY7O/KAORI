@@ -1,16 +1,19 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/table.html" as table_ui %}
 <div class="overflow-x-auto overscroll-x-contain">
-    <table class="w-full min-w-[1040px] table-fixed text-xs text-content-primary">
+    <table class="w-full min-w-[1180px] table-fixed text-xs text-content-primary">
         <thead>
             <tr class="border-b border-outline-subtle bg-surface-hover text-[10px] font-semibold uppercase tracking-[0.08em] text-kaori-primary">
-                <th class="w-[16%] px-4 py-3 text-left">Cluster</th>
-                <th class="w-[25%] px-4 py-3 text-left">Namespace</th>
-                <th class="w-[10%] px-3 py-3 text-left">Status</th>
-                <th class="w-[10%] px-3 py-3 text-left">Workloads</th>
-                <th class="w-[14%] px-3 py-3 text-left">Resource Quota</th>
-                <th class="w-[15%] px-3 py-3 text-left">Additional Controls</th>
-                <th class="w-[10%] px-3 py-3 text-right">Details</th>
+                <th class="w-[14%] px-4 py-3 text-left">Cluster</th>
+                <th class="w-[20%] px-4 py-3 text-left">Namespace</th>
+                <th class="w-[9%] px-3 py-3 text-left">Status</th>
+                <th class="w-[13%] px-3 py-3 text-left">Resource Quota</th>
+                <th class="w-[16%] px-3 py-3 text-left">Pod Security</th>
+                <th class="w-[9%] px-3 py-3 text-left">Workloads</th>
+                <th class="w-[8%] px-3 py-3 text-left">Pods</th>
+                <th class="w-[8%] px-3 py-3 text-left">Services</th>
+                <th class="w-[9%] px-3 py-3 text-right">Details</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-outline-subtle">
@@ -31,31 +34,26 @@
                         </div>
                     </td>
                     <td class="px-3 py-3.5 align-top">{{ table_label.status_label(namespace.status, status_tone, status_icon) }}</td>
-                    <td class="px-3 py-3.5 align-top font-semibold tabular-nums text-content-primary">{{ namespace.workload_count }}</td>
                     <td class="px-3 py-3.5 align-top">
                         {% if namespace.quota_count > 0 %}
-                            {{ table_label.status_label('Configured' ~ (' · ' ~ namespace.quota_count if namespace.quota_count > 1 else '') , 'normal', 'circle-check') }}
+                            {{ table_label.status_label('Configured' ~ (' · ' ~ namespace.quota_count if namespace.quota_count > 1 else ''), 'normal', 'circle-check') }}
                         {% else %}
-                            {{ table_label.status_label('Not configured', 'disabled', 'circle-minus') }}
+                            {{ table_label.status_label('Not Configured', 'disabled', 'circle-minus') }}
                         {% endif %}
                     </td>
                     <td class="px-3 py-3.5 align-top">
                         <div class="flex max-w-full flex-wrap gap-1.5">
-                            {% if namespace.limit_range_count is not none and namespace.limit_range_count > 0 %}
-                                {{ table_label.metadata_label('LimitRange ' ~ namespace.limit_range_count, 'sliders-horizontal') }}
-                            {% endif %}
-                            {% if namespace.network_policy_count is not none and namespace.network_policy_count > 0 %}
-                                {{ table_label.metadata_label('NetworkPolicy ' ~ namespace.network_policy_count, 'shield-check') }}
-                            {% endif %}
-                            {% if (namespace.limit_range_count is none or namespace.limit_range_count == 0) and (namespace.network_policy_count is none or namespace.network_policy_count == 0) %}
-                                {% if namespace.controls_reported %}
-                                    {{ table_label.metadata_label('No additional controls', 'circle-minus') }}
-                                {% else %}
-                                    {{ table_label.status_label('Not reported', 'unknown', 'circle-help') }}
-                                {% endif %}
+                            {% if namespace.pod_security_enforce %}{{ table_label.metadata_label('Enforce ' ~ namespace.pod_security_enforce, 'shield') }}{% endif %}
+                            {% if namespace.pod_security_audit %}{{ table_label.metadata_label('Audit ' ~ namespace.pod_security_audit, 'file-search') }}{% endif %}
+                            {% if namespace.pod_security_warn %}{{ table_label.metadata_label('Warn ' ~ namespace.pod_security_warn, 'triangle-alert') }}{% endif %}
+                            {% if not namespace.pod_security_enforce and not namespace.pod_security_audit and not namespace.pod_security_warn %}
+                                {{ table_label.status_label('Not Configured', 'disabled', 'circle-minus') }}
                             {% endif %}
                         </div>
                     </td>
+                    <td class="px-3 py-3.5 align-top font-semibold tabular-nums text-content-primary">{{ namespace.workload_count }}</td>
+                    <td class="px-3 py-3.5 align-top font-semibold tabular-nums text-content-primary">{{ namespace.pod_count }}</td>
+                    <td class="px-3 py-3.5 align-top font-semibold tabular-nums text-content-primary">{{ namespace.service_count }}</td>
                     <td class="px-3 py-3.5 text-right align-top">
                         <button type="button"
                                 data-namespace-toggle="true"
@@ -64,14 +62,14 @@
                                 hx-target="#namespace-detail-content-{{ namespace.id }}"
                                 hx-swap="innerHTML"
                                 hx-on::before-request="const target = document.getElementById('namespace-detail-content-{{ namespace.id }}'); const detailRow = document.getElementById('namespace-detail-row-{{ namespace.id }}'); const isOpen = target.dataset.open === 'true'; document.querySelectorAll('[id^=&quot;namespace-detail-content-&quot;]').forEach((item) => { if (item.id !== target.id) { item.innerHTML = ''; item.dataset.open = 'false'; } }); document.querySelectorAll('[id^=&quot;namespace-detail-row-&quot;]').forEach((row) => { if (row.id !== 'namespace-detail-row-{{ namespace.id }}') { row.classList.add('hidden'); } }); document.querySelectorAll('[data-namespace-toggle=&quot;true&quot;]').forEach((button) => { if (button.dataset.namespaceId !== '{{ namespace.id }}') { const label = button.querySelector('[data-namespace-toggle-label]'); const icon = button.querySelector('[data-lucide]'); if (label) label.textContent = 'View More'; if (icon) icon.setAttribute('data-lucide', 'chevron-down'); } }); if (isOpen) { target.innerHTML = ''; target.dataset.open = 'false'; if (detailRow) detailRow.classList.add('hidden'); const label = this.querySelector('[data-namespace-toggle-label]'); const icon = this.querySelector('[data-lucide]'); if (label) label.textContent = 'View More'; if (icon) icon.setAttribute('data-lucide', 'chevron-down'); if (window.lucide) window.lucide.createIcons(); event.preventDefault(); } else { if (detailRow) detailRow.classList.remove('hidden'); target.dataset.open = 'true'; const label = this.querySelector('[data-namespace-toggle-label]'); const icon = this.querySelector('[data-lucide]'); if (label) label.textContent = 'Hide Details'; if (icon) icon.setAttribute('data-lucide', 'chevron-up'); }"
-                                class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                                class="{{ table_ui.action_classes() }}">
                             <i data-lucide="chevron-down" class="h-3.5 w-3.5"></i>
                             <span data-namespace-toggle-label>View More</span>
                         </button>
                     </td>
                 </tr>
                 <tr id="namespace-detail-row-{{ namespace.id }}" class="hidden border-0">
-                    <td colspan="7" class="w-full p-0 leading-none align-top">
+                    <td colspan="9" class="w-full p-0 leading-none align-top">
                         <div class="w-full min-w-0 overflow-x-auto"
                              id="namespace-detail-content-{{ namespace.id }}"
                              data-open="false"></div>
@@ -79,7 +77,7 @@
                 </tr>
             {% else %}
                 <tr>
-                    <td colspan="7" class="p-0">
+                    <td colspan="9" class="p-0">
                         {% set empty_state_icon = "folder-x" %}
                         {% set empty_state_title = "No Namespace Inventory Found" %}
                         {% set empty_state_description = "Adjust the active filters or sync cluster inventory to collect Kubernetes namespace data." %}
