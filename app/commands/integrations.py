@@ -14,7 +14,7 @@ from typing import Any
 import click
 from flask.cli import with_appcontext
 
-from app.integrations.runtime.monitoring import dispatch_integration_runtime_refresh
+import app.integrations.runtime.monitoring as runtime_monitoring
 
 
 @click.command('refresh-integration-runtime')
@@ -22,7 +22,7 @@ from app.integrations.runtime.monitoring import dispatch_integration_runtime_ref
 @with_appcontext
 def refresh_integration_runtime_command(json_output: bool) -> None:
     """Queue Kubernetes, Prometheus, and Alertmanager runtime health refreshes."""
-    result = dispatch_integration_runtime_refresh()
+    result = runtime_monitoring.dispatch_integration_runtime_refresh()
     if json_output:
         click.echo(json.dumps(result, indent=2, sort_keys=True, default=str))
         return
@@ -37,4 +37,7 @@ def refresh_integration_runtime_command(json_output: bool) -> None:
 
     for provider, raw_detail in providers.items():
         detail: Mapping[str, Any] = raw_detail if isinstance(raw_detail, Mapping) else {}
-        click.echo(f'- {provider}: {detail.get("queued", 0)} queued, {detail.get("skipped", 0)} skipped')
+        click.echo(
+            f'- {provider}: {detail.get("queued", 0)} queued, '
+            f'{detail.get("skipped", 0)} skipped'
+        )
