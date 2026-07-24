@@ -4,16 +4,7 @@
     {% if cluster_onboarding.is_blocked %}
         {% include "components/cluster/_onboarding_banner.html" %}
     {% else %}
-        <div id="dashboard-kpi-cards"
-             hx-get="{{ url_for('kubernetes_dashboard.section', section='kpi_cards') }}?{{ dashboard_cluster_query }}"
-             hx-trigger="load"
-             hx-target="this"
-             hx-swap="outerHTML"
-             hx-indicator="#dashboard-loading-bar">
-            {% with title="Dashboard KPIs", description="Preparing inventory KPIs and selected-cluster live signal cards.", icon="layout-dashboard" %}
-                {% include "dashboards/kubernetes/partials/_section_loading.html" %}
-            {% endwith %}
-        </div>
+        {% include "dashboards/kubernetes/partials/_signal_overview.html" %}
         <div id="dashboard-cluster-health-section"
              hx-get="{{ url_for('kubernetes_dashboard.section', section='cluster_health') }}?{{ dashboard_cluster_query }}"
              hx-trigger="load"
