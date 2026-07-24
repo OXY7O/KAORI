@@ -51,6 +51,15 @@
 {% macro context_actions_classes(columns=2) -%}
     mt-auto grid gap-2 pt-3 {{ 'grid-cols-2' if columns == 2 else 'grid-cols-1' }}
 {%- endmacro %}
+{% macro context_info_classes() -%}
+    mt-3 flex items-center gap-2 rounded-lg border border-brand-outline bg-brand-surface px-3 py-2 text-[11px] font-medium leading-4 text-brand-foreground-muted
+{%- endmacro %}
+{% macro context_info(icon, text) -%}
+    <div class="{{ context_info_classes() }}">
+        <i data-lucide="{{ icon }}" class="h-3.5 w-3.5 shrink-0 text-brand-foreground" aria-hidden="true"></i>
+        <p>{{ text }}</p>
+    </div>
+{%- endmacro %}
 {% macro context_panel_metrics_classes() -%}
     mt-3 grid grid-cols-2 gap-2
 {%- endmacro %}

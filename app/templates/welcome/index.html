@@ -23,6 +23,7 @@
                        aria-label="Current access scope">
                     <div class="{{ page_hero.context_panel_classes() }}">
                         {{ page_hero.context_header('Access Scope', 'Role-Aware Workspace', 'key-round') }}
+                        {{ page_hero.context_info('shield-check', 'Access is limited to the workspaces assigned to your role.') }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
                             {{ page_hero.context_metric('panels-top-left', 'Workspaces', shortcut_count, 'Available to your assigned role.') }}
                             {{ page_hero.context_metric('layout-grid', 'Capability Areas', workspace_group_count, 'Grouped by operational purpose.') }}
