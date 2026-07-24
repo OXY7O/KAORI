@@ -35,7 +35,11 @@
                         {{ page_hero.context_metric('scan-search', 'Active Scope', 'Selected Cluster' if dashboard.selected_cluster_id else 'All Clusters', 'Applied across dashboard signals', 'text-sm font-semibold leading-5') }}
                         {{ page_hero.context_metric('radio-tower', 'Signal Sources', '3 Sources', 'Inventory, metrics, and alerts', 'text-sm font-semibold leading-5') }}
                     </div>
-                    {{ page_hero.context_info('shield-check', 'Operational signals are scoped by the dashboard filter below.') }}
+                    <a href="{{ url_for('integrations.kubernetes') }}"
+                       class="{{ page_hero.context_single_action_classes() }}">
+                        <i data-lucide="plug-zap" class="h-4 w-4" aria-hidden="true"></i>
+                        <span>Kubernetes Integrations</span>
+                    </a>
                 {% endif %}
             </div>
         </div>
