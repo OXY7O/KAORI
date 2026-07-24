@@ -4,7 +4,7 @@ import re
 from collections import defaultdict
 from collections.abc import Iterable
 
-from app.extensions import db
+from app.extensions.db import db
 from app.models import IdentityProvider, Permission, Role, RolePermission, User
 from app.rbac.defaults import DEFAULT_PERMISSIONS, DEFAULT_ROLE_DEFINITIONS, DEFAULT_ROLE_PERMISSIONS
 

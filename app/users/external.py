@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy.exc import IntegrityError
 
 from app.auth.providers.ldap import ExternalIdentity
-from app.extensions import db
+from app.extensions.db import db
 from app.models import ExternalIdentityLink, IdentityProvider, Role, User
 
 if TYPE_CHECKING:

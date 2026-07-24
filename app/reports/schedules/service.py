@@ -10,7 +10,7 @@ from flask import current_app
 from sqlalchemy import select
 from werkzeug.datastructures import ImmutableMultiDict, MultiDict
 
-from app.extensions import db
+from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.report import Report, ReportSchedule, ReportScheduleRun
 from app.models.user import User

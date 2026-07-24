@@ -22,7 +22,7 @@ from app.auth.results import (
     USER_INACTIVE_MESSAGE,
     AuthResult,
 )
-from app.extensions import db
+from app.extensions.db import db
 from app.models import ExternalIdentityLink, IdentityProvider, User
 
 

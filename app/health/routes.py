@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from flask import jsonify
+from flask import Blueprint, jsonify
 
-from app.health import health_bp
 from app.health.service import build_readiness_status
+
+health_bp = Blueprint('health', __name__, url_prefix='/health')
 
 
 @health_bp.get('/live')

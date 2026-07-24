@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import JSON, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.extensions import db
+from app.extensions.db import db
 
 if TYPE_CHECKING:
     from app.models.cluster import Cluster

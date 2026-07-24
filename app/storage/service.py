@@ -100,16 +100,10 @@ def build_artifact_storage_for_backend(
 
     bucket = locator['s3_bucket'] if 's3_bucket' in locator else profile.s3_bucket
     region = locator['s3_region'] if 's3_region' in locator else profile.s3_region
-    endpoint_url = (
-        locator['s3_endpoint_url']
-        if 's3_endpoint_url' in locator
-        else profile.s3_endpoint_url
-    )
+    endpoint_url = locator['s3_endpoint_url'] if 's3_endpoint_url' in locator else profile.s3_endpoint_url
     s3_prefix = locator['s3_prefix'] if 's3_prefix' in locator else profile.s3_prefix
     force_path_style = (
-        locator['s3_force_path_style']
-        if 's3_force_path_style' in locator
-        else profile.s3_force_path_style
+        locator['s3_force_path_style'] if 's3_force_path_style' in locator else profile.s3_force_path_style
     )
 
     return S3ArtifactStorage(

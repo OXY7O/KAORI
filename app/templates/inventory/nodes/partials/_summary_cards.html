@@ -1,3 +1,4 @@
+{% import "components/progress_bar.html" as progress_bar %}
 {% set ready_percentage = ((inventory.ready_nodes / inventory.total_nodes) * 100) | round(0) if inventory.total_nodes > 0 else 0 %}
 {% set not_ready_percentage = ((inventory.not_ready_nodes / inventory.total_nodes) * 100) | round(0) if inventory.total_nodes > 0 else 0 %}
 <section class="space-y-4">
@@ -51,9 +52,7 @@
                     <i data-lucide="badge-check" class="h-6 w-6"></i>
                 </span>
             </div>
-            <div class="mt-5 h-2 overflow-hidden rounded-full bg-white/15">
-                <div class="h-full rounded-full bg-white" style="width: {{ ready_percentage }}%"></div>
-            </div>
+            {{ progress_bar.bar(ready_percentage, track_classes="mt-5 h-2 overflow-hidden rounded-full bg-white/15", fill_classes="h-full rounded-full bg-white", label="Coverage progress") }}
         </article>
 
         <div class="grid gap-4 sm:grid-cols-2">

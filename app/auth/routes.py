@@ -25,7 +25,8 @@ from app.auth.services import (
 )
 from app.auth.session import clear_authenticated_session, establish_authenticated_session
 from app.auth.sso import SsoProviderStoreError, enabled_sso_providers, find_enabled_sso_provider, resolve_sso_identity
-from app.extensions import db, limiter
+from app.extensions.db import db
+from app.extensions.limiter import limiter
 from app.models import User
 from app.notifications.service import queue_transient_feedback
 

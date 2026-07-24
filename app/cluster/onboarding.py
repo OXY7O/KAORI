@@ -7,7 +7,7 @@ from flask_login import current_user
 from sqlalchemy import func, select
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.extensions import db
+from app.extensions.db import db
 from app.models.cluster import Cluster
 
 _KUBERNETES_SCOPE_BLUEPRINTS = {

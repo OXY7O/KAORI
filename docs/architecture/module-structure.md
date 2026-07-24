@@ -63,3 +63,46 @@ Do not create README files for trivial route-only folders. General rules belong 
 - Database migrations are required for schema changes; runtime fallbacks must not
   silently conceal missing migrations.
 - New files and public use cases must pass Ruff and Python compile checks.
+
+## Reachability and dormant-code rule
+
+Every application module must have at least one concrete consumer:
+
+- an internal application import;
+- a configured runtime entrypoint such as a Celery task module;
+- a permanent behavior test;
+- or an operational script consumer.
+
+Do not pre-create worker, query-planning, repository, adapter, wrapper, or compatibility modules for a future feature. Introduce the module with the first real use case and its behavior tests. `scripts/verify_module_reachability.py` enforces this rule.
+
+## Import initialization rule
+
+Application modules should import extension objects from their owning module, for example:
+
+```python
+from app.extensions.db import db
+from app.extensions.limiter import limiter
+```
+
+Domain code must not import the aggregate `app.extensions` bootstrap package. Aggregate imports are reserved for application startup. This prevents extension initialization from pulling unrelated model, authentication, and notification graphs into ordinary domain imports.
+
+The runtime import graph must remain acyclic. Imports used only for annotations belong under `if TYPE_CHECKING`.
+
+## Size and decomposition rule
+
+The default debt ceilings are recorded in `docs/architecture/code-health-debt-baseline.json`. They are not design targets. New or substantially changed code should normally stay below:
+
+- 800 physical lines per module;
+- 160 physical lines per function;
+- 30 branch points per function;
+- 8 arguments per function.
+
+When a listed legacy module is changed for a new feature, prefer extracting a real application use case, query, presentation, or resource module rather than increasing its exception ceiling.
+
+## UI component rule
+
+Reusable UI behavior belongs in `app/templates/components/` or a static frontend module. Dynamic progress widths must use `components/progress_bar.html`; templates outside that component may not define inline styles. Page-specific scripts and inline event handlers are existing burn-down debt and may not increase.
+
+## Test ownership rule
+
+Permanent behavior tests live in `tests/<domain>/`. Architecture contracts, migration behavior, and temporary diagnostics live in their dedicated folders. A contract test may protect a boundary, but it does not replace a feature test that executes the actual decision, normalization, persistence, or failure behavior.

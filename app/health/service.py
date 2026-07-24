@@ -8,7 +8,7 @@ from redis.exceptions import RedisError
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.extensions import db
+from app.extensions.db import db
 
 
 def check_database() -> tuple[bool, str]:

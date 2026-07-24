@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.common.integration_errors import describe_integration_failure
-from app.extensions import db
+from app.extensions.db import db
 from app.integrations.alertmanager.client_factory import build_client
 from app.integrations.alertmanager.contracts import ValidationResult, ValidationStep
 from app.integrations.alertmanager.exceptions import AlertmanagerError

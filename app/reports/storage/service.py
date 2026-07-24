@@ -8,7 +8,7 @@ from typing import Any
 from flask import current_app
 from sqlalchemy import select
 
-from app.extensions import db
+from app.extensions.db import db
 from app.models.report import Report
 from app.reports.storage.health import (
     build_local_storage_health,

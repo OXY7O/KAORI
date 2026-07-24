@@ -8,7 +8,6 @@ if TYPE_CHECKING:
     from app.models.prometheus import PrometheusInstance
 
 
-
 class PrometheusConfigForm(FlaskForm):
     _existing_instance: 'PrometheusInstance | None' = None
 

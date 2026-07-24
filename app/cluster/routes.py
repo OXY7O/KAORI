@@ -31,7 +31,7 @@ from app.cluster.sync_state import (
     get_active_cluster_sync_task_id,
     is_cluster_sync_result_dismissed,
 )
-from app.extensions import db
+from app.extensions.db import db
 from app.integrations.deletion import DeletionBlocked
 from app.models import Cluster
 from app.notifications.service import (

@@ -1,3 +1,4 @@
+{% import "components/progress_bar.html" as progress_bar %}
 <section id="dashboard-capacity-snapshot" x-data="{ open: false }" class="h-full rounded-xl border border-outline-default bg-surface-card shadow-sm">
     <div @click="open = !open" class="flex cursor-pointer select-none items-center gap-3 border-b border-outline-subtle px-5 py-4">
         <div class="flex min-w-0 flex-1 items-center gap-3">
@@ -47,10 +48,13 @@
                                 {% if item.used_percent is not none %}{{ item.used_percent|round(0) }}% used{% else %}No metrics{% endif %}
                             </span>
                         </div>
-                        <div class="mt-3 h-2 overflow-hidden rounded-full bg-surface-hover">
-                            <div class="h-full rounded-full {% if 'CPU' in item.label %}bg-kaori-primary{% elif 'Memory' in item.label %}bg-status-info{% else %}bg-status-pending{% endif %}"
-                                 style="width: {{ item.used_percent if item.used_percent is not none else 0 }}%"></div>
-                        </div>
+                        {% set capacity_bar_class = 'bg-kaori-primary' if 'CPU' in item.label else ('bg-status-info' if 'Memory' in item.label else 'bg-status-pending') %}
+                        {{ progress_bar.bar(
+                            item.used_percent if item.used_percent is not none else 0,
+                            track_classes="mt-3 h-2 overflow-hidden rounded-full bg-surface-hover",
+                            fill_classes="h-full rounded-full " ~ capacity_bar_class,
+                            label=item.label ~ " capacity usage",
+                        ) }}
                         <div class="mt-2 flex items-start justify-between gap-4 text-xs leading-4 text-content-muted">
                             <span>{{ item.description }}</span>
                             <span class="shrink-0 font-semibold text-content-secondary">

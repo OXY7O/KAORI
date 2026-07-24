@@ -9,7 +9,7 @@ from flask import current_app
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
-from app.extensions import db
+from app.extensions.db import db
 from app.jobs.constants import ACTIVE_JOB_STATUSES, DEFAULT_PRIORITIES, HEAVY_WORKLOAD_CLASSES
 from app.jobs.fingerprint import build_deduplication_key, payload_fingerprint
 from app.models.job import JobExecution, JobExecutionSubscriber

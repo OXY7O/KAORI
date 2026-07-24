@@ -1,4 +1,5 @@
 {% extends "layouts/app.html" %}
+{% import "components/progress_bar.html" as progress_bar %}
 {% block title %}Capacity Analysis{% endblock title %}
 {% block dashboard_content %}
  {% macro capacity_width(value) %}
@@ -308,10 +309,12 @@
  <span>Headroom</span>
  <span>{{ item.headroom_display }}</span>
  </div>
- <div class="h-2.5 overflow-hidden rounded-full bg-surface-hover ">
- <div class="h-full rounded-full {{ progress_class }}"
- style="width: {{ item['headroom'] }}%"></div>
- </div>
+ {{ progress_bar.bar(
+ item['headroom'],
+ track_classes="h-2.5 overflow-hidden rounded-full bg-surface-hover",
+ fill_classes="h-full rounded-full " ~ progress_class,
+ label=item['label'] ~ " headroom",
+ ) }}
  </div>
  </div>
  </article>

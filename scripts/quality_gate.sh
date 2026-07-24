@@ -7,13 +7,22 @@ cd "$ROOT"
 phase="${1:---all}"
 
 run_static() {
-    python -m compileall -q app migrations tests scripts
+    bash scripts/verify_source_hygiene.sh
+    python scripts/verify_python_syntax.py
     python -m ruff check app migrations tests scripts
+    python -m ruff format --check app migrations tests scripts
+    python -m djlint app/templates --check
+    python -m pyright --project pyrightconfig.json
     python scripts/verify_architecture_boundaries.py
+    python scripts/verify_internal_import_symbols.py
+    python scripts/verify_import_cycles.py
+    python scripts/verify_module_reachability.py
     python scripts/verify_celery_topology.py
     python scripts/verify_code_health.py
     python scripts/verify_migration_graph.py
-    bash scripts/verify_source_hygiene.sh
+    python scripts/verify_test_taxonomy.py
+    python scripts/verify_feature_test_coverage.py
+    python scripts/verify_ui_reuse.py
     pytest -q tests/contracts tests/migrations -m 'contract or migration'
 }
 
@@ -23,13 +32,12 @@ run_tests() {
     # Domain characterization tests are explicit release gates. This protects
     # them from environment-level PYTEST_ADDOPTS or marker filtering that may
     # otherwise deselect unmarked behavioral tests.
-    pytest -q \
-      tests/analytics/test_alerts_characterization.py \
-      tests/analytics/test_alerts_source_fallback_characterization.py
+    pytest -q tests/analytics tests/inventory tests/kubernetes -m functional
 }
 
 run_frontend() {
     npm ci --no-audit --no-fund
+    npm run check-format
     npm run build-frontend
     npm run verify-frontend
 }

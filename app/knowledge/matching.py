@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any
 
-from app.extensions import db
+from app.extensions.db import db
 from app.models.audit import AuditEvent
 from app.models.knowledge import KnowledgeRunbookAlertBinding, KnowledgeRunbookRevision
 

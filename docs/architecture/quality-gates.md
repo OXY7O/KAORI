@@ -2,7 +2,7 @@
 
 ## Purpose
 
-KAORI uses mandatory quality gates to stop architecture debt, migration drift, generated artifacts, and broken frontend assets before a production image can be published.
+KAORI uses mandatory release gates to prevent behavior regressions, import-cycle failures, architecture drift, migration divergence, generated artifacts, and duplicated UI implementation before a production image is published.
 
 The canonical local entrypoint is:
 
@@ -10,7 +10,7 @@ The canonical local entrypoint is:
 bash scripts/quality_gate.sh --all
 ```
 
-The release workflow calls the same gates through `.github/workflows/quality.yml`. A tagged production image cannot be published until every quality job succeeds.
+The release workflow calls the same gate through `.github/workflows/quality.yml`. A production image must not be published until every phase succeeds.
 
 ## Gate Structure
 
@@ -20,15 +20,25 @@ The release workflow calls the same gates through `.github/workflows/quality.yml
 bash scripts/quality_gate.sh --static
 ```
 
-This gate performs:
+This gate performs, in order:
 
-1. Python bytecode compilation for application, migrations, tests, and scripts.
-2. Strict Ruff linting across application, migration, test, and script source.
-3. Python dependency-boundary validation.
-4. Alembic revision-graph validation without requiring a database.
-5. Git tracked-source hygiene validation.
-6. Architecture contract tests.
-7. Migration contract tests.
+1. Source hygiene validation, including source archives that do not contain `.git` metadata.
+2. In-memory Python syntax compilation without generating `__pycache__` or `.pyc` files.
+3. Strict Ruff linting.
+4. Ruff formatting verification.
+5. djLint validation for Jinja templates.
+6. Pyright type and import analysis.
+7. Architecture dependency-boundary validation.
+8. Internal module and imported-symbol resolution.
+9. Runtime import-cycle detection, excluding imports guarded by `TYPE_CHECKING`.
+10. Application-module reachability validation.
+11. Celery task, route, queue, worker, and Beat topology validation.
+12. Code-health debt-ceiling validation.
+13. Alembic revision-graph validation.
+14. Test location and marker-taxonomy validation.
+15. Inventory and Analytics characterization-test coverage validation.
+16. Jinja syntax, reusable UI boundary, and inline-debt validation.
+17. Architecture and migration contract tests.
 
 ### Functional Gate
 
@@ -36,9 +46,19 @@ This gate performs:
 bash scripts/quality_gate.sh --tests
 ```
 
-This runs all permanent tests except the temporary `debug` category. CI provides PostgreSQL and Redis so integration behavior does not silently fall back to an unsupported local environment.
+The broad test run executes every permanent test except the temporary `debug` category:
 
-Critical domain characterization suites are also invoked by explicit path after the broad test run. This prevents external marker configuration or `PYTEST_ADDOPTS` from silently deselecting behavior-preservation tests. Analytics Alerts currently uses `tests/analytics/test_alerts_characterization.py` as an explicit release gate.
+```bash
+pytest -q -m 'not debug'
+```
+
+Inventory and Analytics foundations are then invoked explicitly:
+
+```bash
+pytest -q tests/analytics tests/inventory tests/kubernetes -m functional
+```
+
+The explicit invocation prevents environment-level marker configuration or `PYTEST_ADDOPTS` from silently deselecting behavior-preservation suites.
 
 ### Frontend Gate
 
@@ -46,54 +66,68 @@ Critical domain characterization suites are also invoked by explicit path after 
 bash scripts/quality_gate.sh --frontend
 ```
 
-This performs a clean `npm ci`, rebuilds local runtime assets and Tailwind CSS, and verifies the generated asset manifest. Runtime CDN dependencies remain prohibited.
+This performs a clean dependency installation, Prettier verification, local runtime-asset generation, Tailwind CSS compilation, and generated-asset verification:
 
-### Production Image Gate
+```bash
+npm ci --no-audit --no-fund
+npm run check-format
+npm run build-frontend
+npm run verify-frontend
+```
 
-CI builds the `production` Docker target only after static, functional, and frontend gates succeed.
+Runtime CDN dependencies remain prohibited.
 
+## Test Taxonomy
+
+One hook in `tests/conftest.py` owns path-based marker assignment:
+
+| Location | Marker | Release role |
+| --- | --- | --- |
+| `tests/<domain>/` | `functional` | User-visible, operational, security, and failure behavior |
+| `tests/contracts/` | `contract` | Architecture ownership and retired boundaries |
+| `tests/migrations/` | `migration` | Upgrade, downgrade, data backfill, and graph behavior |
+| `tests/debug/` | `debug` | Temporary reproduction only; excluded from release |
+
+Nested `conftest.py` marker hooks are prohibited. A defect may begin with a debug reproduction, but it must finish with a permanent regression test in the owning domain before the debug test is removed.
+
+## Import and Initialization Safety
+
+KAORI validates three separate import properties:
+
+1. Every internal module exists.
+2. Every explicitly imported top-level symbol is defined or re-exported by its target module.
+3. The runtime import graph is acyclic.
+
+This is designed to detect missing implementation files, stale re-exports, partially initialized modules, and circular imports before pytest collection or application startup.
 
 ## Ruff Zero-Debt Policy
 
-KAORI no longer uses a Ruff diagnostic baseline. The temporary rollout ledger was removed after the post-Batch-2 cleanup reached zero configured diagnostics.
-
-The canonical check is:
+KAORI does not use a Ruff diagnostic baseline. The canonical checks are:
 
 ```bash
 python -m ruff check app migrations tests scripts
+python -m ruff format --check app migrations tests scripts
 ```
 
 Rules:
 
 1. Every configured Ruff diagnostic blocks the static gate.
-2. New files and changed files receive the same enforcement as existing source.
+2. New and existing files receive the same enforcement.
 3. Unused imports must be removed rather than retained as compatibility hints.
-4. Import blocks must remain deterministic and grouped by standard library, third-party, first-party, and local imports.
-5. Historical Alembic revisions retain narrow per-file exemptions for import-order and annotation-modernization rules only; correctness diagnostics remain mandatory.
-6. Ruff suppression comments require a specific rule code and a documented operational reason.
+4. Import blocks must remain deterministic and grouped by standard library, third-party, and first-party imports.
+5. Historical Alembic revisions retain only narrow per-file exemptions for import ordering and annotation modernization.
+6. Suppression comments require a specific rule code and an operational reason.
 
-## Architecture Debt Baseline
+## Architecture and Code-Health Debt
 
-The machine-readable debt ledger is:
+The machine-readable ledgers are:
 
 ```text
 docs/architecture/architecture-debt-baseline.json
+docs/architecture/code-health-debt-baseline.json
 ```
 
-It does not grant permission to add more debt. It records only known temporary exceptions:
-
-- existing top-level package cycle envelopes;
-- existing service-to-WTForms dependencies.
-
-Rules:
-
-1. A cycle may shrink or disappear.
-2. No new domain may join an existing cycle envelope.
-3. No new service-to-form import may be added.
-4. When a listed dependency is removed, its baseline entry must be removed in the same commit.
-5. Every baseline entry requires an exit plan.
-
-## Canonical Dependency Direction
+They are ceilings, not quality targets. A listed cycle, form dependency, broad exception, large module, or large function may shrink or disappear, but it may not expand. A resolved entry must be removed from the baseline in the same change.
 
 New code should follow:
 
@@ -109,13 +143,26 @@ Provider or Repository Adapter
 
 The following are enforced:
 
-- models cannot depend on Flask request globals, routes, or forms;
+- models cannot depend on request globals, routes, or forms;
 - task modules cannot import routes or forms;
-- service modules cannot import routes;
+- services cannot import routes;
 - wildcard imports are prohibited;
-- retired compatibility and empty placeholder files cannot return;
-- imports targeting retired Python compatibility modules are rejected even after the files are deleted;
-- route modules may only be imported by application/package bootstrap modules.
+- retired compatibility, shim, and empty placeholder modules cannot return;
+- imports targeting retired modules remain prohibited after deletion;
+- application modules must have an importer, configured runtime entrypoint, test consumer, or script consumer;
+- route modules may only be imported by application or package bootstrap modules.
+
+## Reusable UI Boundary
+
+Dynamic progress widths are centralized in:
+
+```text
+app/templates/components/progress_bar.html
+```
+
+Templates outside that component may not use inline `style=` attributes. `scripts/verify_ui_reuse.py` also parses every Jinja template, rejects local `<style>` blocks, and prevents inline scripts or event handlers from increasing beyond the recorded burn-down baseline.
+
+The remaining inline-script and event-handler baseline records existing debt only. New UI work must prefer shared Jinja components, Alpine behavior, HTMX attributes, and static frontend modules.
 
 ## Migration Governance
 
@@ -128,7 +175,7 @@ The following are enforced:
 - the graph has exactly one head;
 - the graph contains no cycle.
 
-This static gate complements, but does not replace, database upgrade tests.
+This static gate complements database upgrade and downgrade tests; it does not replace them.
 
 ## Source Archive Policy
 
@@ -138,13 +185,7 @@ Do not ZIP a working directory. Use:
 bash scripts/build_source_archive.sh
 ```
 
-The script requires:
-
-- a Git checkout;
-- a clean working tree;
-- tracked-source hygiene to pass.
-
-It creates the archive with `git archive`, ensuring cache, runtime data, local secrets, and untracked generated files are not distributed.
+The script requires a clean Git checkout and creates the archive with `git archive`. Cache directories, compiled bytecode, local runtime data, secrets, generated reports, and nested ZIP files are rejected. When a source archive is audited without `.git`, the hygiene gate scans the entire archive rather than skipping validation.
 
 ## Development Completion Checklist
 
@@ -152,9 +193,10 @@ Every logical change must finish with:
 
 ```text
 code
-→ permanent tests
-→ relevant documentation
-→ quality gate
+→ permanent functional tests
+→ relevant contract or migration tests
+→ documentation
+→ static, functional, and frontend gates
 → git diff review
 → dedicated Git commit
 ```

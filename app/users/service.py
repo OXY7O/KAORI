@@ -13,7 +13,7 @@ from app.common.pagination import (
     normalize_per_page,
     positive_int,
 )
-from app.extensions import db
+from app.extensions.db import db
 from app.models import AuditEvent, Role, User
 
 if TYPE_CHECKING:

@@ -8,7 +8,7 @@ from uuid import uuid4
 
 from flask import current_app, has_app_context
 
-from app.extensions import db
+from app.extensions.db import db
 from app.jobs.dispatcher import enqueue_canonical_job
 from app.models.audit import AuditEvent
 from app.models.intelligence import IntelligenceExecutionJournal

@@ -6,10 +6,17 @@ import argparse
 import json
 import sys
 from collections.abc import Mapping, Sequence
+from importlib import import_module
 from pathlib import Path
 from typing import TextIO
 
-from app.resolver.production_readiness import ProductionReadinessError, assess_readiness
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+_readiness = import_module('app.resolver.production_readiness')
+ProductionReadinessError = _readiness.ProductionReadinessError
+assess_readiness = _readiness.assess_readiness
 
 
 def build_parser() -> argparse.ArgumentParser:

@@ -1,15 +1,24 @@
-# KAORI test taxonomy
+# KAORI Test Taxonomy
 
-KAORI separates test evidence by purpose so domain behavior is not confused with migration, cleanup, UI, or diagnostic checks.
+KAORI separates evidence by purpose so behavior tests are not confused with migration, cleanup, architecture, UI, or temporary diagnostic checks.
 
 | Location | Marker | Purpose | Release evidence |
 | --- | --- | --- | --- |
-| `tests/<domain>/` | `functional` | Permanent behavior tests for domain functions and failure modes | Yes |
-| `tests/contracts/` | `contract` | Dependency direction, ownership, canonical paths, and retired boundaries | Supporting only |
+| `tests/<domain>/` | `functional` | Permanent domain behavior, failure modes, security controls, and operational outcomes | Primary |
+| `tests/contracts/` | `contract` | Dependency direction, ownership, canonical paths, and retired boundaries | Supporting |
 | `tests/migrations/` | `migration` | Alembic upgrade/downgrade, data backfill, and migration graph behavior | Separate gate |
-| `tests/debug/` | `debug` | Temporary reproduction and diagnostics | No |
+| `tests/debug/` | `debug` | Temporary reproduction and diagnostics | Excluded |
 
-A fixed defect must end with a permanent functional regression test in the owning domain. Debug tests should then be deleted. UI tests may supplement a domain gate but must never be the only evidence for business or security behavior.
+`tests/conftest.py` is the only marker-assignment hook. It assigns markers from the first directory below `tests/`. Nested marker hooks are prohibited because they can silently change release selection.
+
+A fixed defect must end with a permanent functional regression test in the owning domain. A debug test should then be removed or rewritten as that permanent test. UI or source-contract tests may supplement behavior evidence, but must never be the only validation for business, security, persistence, or worker logic.
+
+Inventory and Analytics currently have an explicit characterization gate:
+
+```bash
+python scripts/verify_feature_test_coverage.py
+pytest -q tests/analytics tests/inventory tests/kubernetes -m functional
+```
 
 Primary commands:
 
@@ -17,5 +26,6 @@ Primary commands:
 pytest -q tests/auth -m functional
 pytest -q tests/contracts -m contract
 pytest -q tests/migrations -m migration
-pytest -q -m "not debug"
+pytest -q tests/debug -m debug
+pytest -q -m 'not debug'
 ```

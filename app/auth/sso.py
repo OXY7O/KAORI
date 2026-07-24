@@ -10,7 +10,7 @@ from app.auth.providers.browser import SsoIdentity
 from app.auth.providers.catalog import AuthProviderType
 from app.auth.providers.registry import registered_browser_sso_provider_types
 from app.auth.results import DATABASE_UNAVAILABLE_MESSAGE, USER_INACTIVE_MESSAGE, AuthResult
-from app.extensions import db
+from app.extensions.db import db
 from app.models import ExternalIdentityLink, IdentityProvider, Role, User
 
 

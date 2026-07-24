@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy import func, select
 
-from app.extensions import db
+from app.extensions.db import db
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
 

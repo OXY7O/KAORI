@@ -1,3 +1,4 @@
+{% import "components/progress_bar.html" as progress_bar %}
 <section class="rounded-xl border border-outline-default bg-surface-card shadow-sm ">
  <details class="group">
  <summary class="flex cursor-pointer list-none flex-col gap-4 px-6 py-5 lg:flex-row lg:items-start lg:justify-between">
@@ -69,10 +70,12 @@
  <span class="truncate font-medium text-content-secondary ">{{ owner.label }}</span>
  <span class="font-semibold text-content-primary ">{{ owner.count }}</span>
  </div>
- <div class="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-hover ">
- <div class="h-full rounded-full bg-kaori-primary"
- style="width: {{ owner.percent }}%"></div>
- </div>
+ {{ progress_bar.bar(
+ owner.percent,
+ track_classes="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-hover",
+ fill_classes="h-full rounded-full bg-kaori-primary",
+ label="Owner alert coverage",
+ ) }}
  </div>
  {% else %}
  <p class="text-sm text-content-muted ">No owner metadata detected.</p>

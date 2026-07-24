@@ -1,3 +1,4 @@
+{% import "components/progress_bar.html" as progress_bar %}
 {% set total = payload.summary.total if payload.summary.total else 0 %}
 {% set healthy_percent = ((payload.summary.healthy / total) * 100) | round(0) if total else 0 %}
 {% set risk_total = (payload.summary.warning or 0) + (payload.summary.critical or 0) + (payload.summary.expired or 0) + (payload.summary.invalid or 0) %}
@@ -45,7 +46,7 @@
                 <span class="flex h-10 w-10 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface text-kaori-accent"><i data-lucide="gauge" class="h-5 w-5"></i></span>
             </div>
             <p class="mt-3 text-xs leading-5 text-brand-foreground-muted">{{ payload.summary.healthy }} healthy from {{ payload.summary.total }} tracked TLS Secrets.</p>
-            <div class="mt-4 h-2 overflow-hidden rounded-full bg-brand-surface"><div class="h-full rounded-full bg-kaori-accent" style="width: {{ healthy_percent }}%"></div></div>
+            {{ progress_bar.bar(healthy_percent, track_classes="mt-4 h-2 overflow-hidden rounded-full bg-brand-surface", fill_classes="h-full rounded-full bg-kaori-accent", label="Coverage progress") }}
         </article>
     </div>
 </section>

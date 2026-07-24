@@ -7,7 +7,7 @@ from typing import Any
 from flask import abort
 from sqlalchemy import Select, func, or_, select
 
-from app.extensions import db
+from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.report import Report
 from app.models.user import User

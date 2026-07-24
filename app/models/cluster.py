@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 from sqlalchemy import Boolean, DateTime, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.extensions import db
+from app.extensions.db import db
 
 if TYPE_CHECKING:
     from app.models.kubernetes import KubernetesConnection

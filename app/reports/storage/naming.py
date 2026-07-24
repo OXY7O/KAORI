@@ -4,7 +4,7 @@ import re
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from app.extensions import db
+from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.report import Report
 

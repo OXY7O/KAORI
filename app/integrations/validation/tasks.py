@@ -7,7 +7,7 @@ from typing import Any, cast
 from celery import Task, shared_task
 from flask import current_app
 
-from app.extensions import db
+from app.extensions.db import db
 from app.integrations.lifecycle import ensure_canonical_instance, ensure_provider_operational
 from app.integrations.registry import execute_integration_operation, get_integration
 from app.integrations.runtime.service import refresh_and_record

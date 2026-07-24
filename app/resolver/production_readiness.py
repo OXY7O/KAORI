@@ -6,7 +6,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from app.extensions import db
+from app.extensions.db import db
 from app.models.audit import AuditEvent
 from app.models.resolver import ResolverDeploymentPolicy, ResolverOperationalControl, ResolverProductionReadinessRecord
 

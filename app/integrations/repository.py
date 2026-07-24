@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.extensions import db
+from app.extensions.db import db
 from app.models import Cluster
 from app.models.integration import IntegrationInstance
 from app.models.kubernetes import KubernetesConnection

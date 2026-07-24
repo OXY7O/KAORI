@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from app.extensions import db
+from app.extensions.db import db
 from app.models.alertmanager import AlertmanagerInstance
 
 

@@ -1,3 +1,4 @@
+{% import "components/progress_bar.html" as progress_bar %}
 {% extends "layouts/app.html" %}
 {% block title %}Resource Utilization{% endblock title %}
 {% block dashboard_content %}
@@ -25,9 +26,7 @@
             'maintenance': 'bg-status-maintenance',
             'info': 'bg-status-info'
         }.get(tone, 'bg-kaori-primary') %}
-        <div class="mt-4 h-2 overflow-hidden rounded-full bg-surface-hover">
-            <div class="h-full rounded-full transition-all duration-500 {{ bar_class }}" style="width: {{ percentage }}%"></div>
-        </div>
+        {{ progress_bar.bar(percentage, track_classes="mt-4 h-2 overflow-hidden rounded-full bg-surface-hover", fill_classes="h-full rounded-full transition-all duration-500 {{ bar_class }}", label="Coverage progress") }}
     {% endmacro %}
 
     <div id="utilization-page"
@@ -107,9 +106,7 @@
                             <p class="mt-1 text-3xl font-semibold">{{ "%.0f"|format(ready_ratio) }}%</p>
                             <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">{{ cluster_info.ready_nodes }} ready · {{ cluster_info.not_ready_nodes }} NotReady</p>
                             <div class="mt-auto pt-4">
-                                <div class="h-2 overflow-hidden rounded-full bg-brand-surface">
-                                    <div class="h-full rounded-full bg-brand-foreground" style="width: {{ ready_ratio }}%"></div>
-                                </div>
+                                {{ progress_bar.bar(ready_ratio, track_classes="h-2 overflow-hidden rounded-full bg-brand-surface", fill_classes="h-full rounded-full bg-brand-foreground", label="Coverage progress") }}
                             </div>
                         </article>
 

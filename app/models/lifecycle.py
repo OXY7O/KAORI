@@ -6,7 +6,7 @@ from typing import Any
 from sqlalchemy import Index
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.extensions import db
+from app.extensions.db import db
 
 
 class DataLifecyclePolicy(db.Model):

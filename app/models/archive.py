@@ -7,7 +7,7 @@ from uuid import uuid4
 from sqlalchemy import Index
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.extensions import db
+from app.extensions.db import db
 
 ARCHIVE_STATUS_PENDING = 'pending'
 ARCHIVE_STATUS_ARCHIVING = 'archiving'

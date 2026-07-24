@@ -8,7 +8,7 @@ from typing import Any
 
 from sqlalchemy.exc import IntegrityError
 
-from app.extensions import db
+from app.extensions.db import db
 from app.intelligence.decision import PolicyOutcome, compute_evidence_hash, create_decision_snapshot
 from app.intelligence.workflow import persist_decision
 from app.knowledge.matching import DecisionCandidate

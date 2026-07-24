@@ -1,3 +1,4 @@
+{% import "components/progress_bar.html" as progress_bar %}
 {% set payload = consumer_payload %}
 {% set summary = payload.summary %}
 {% set overview = payload.overview %}
@@ -129,10 +130,12 @@
  </div>
  </div>
  <div class="min-w-0">
- <div class="h-2.5 rounded-full bg-surface-hover ">
- <div class="h-2.5 rounded-full bg-kaori-primary"
- style="width: {{ row.bar_percent }}%"></div>
- </div>
+ {{ progress_bar.bar(
+ row.bar_percent,
+ track_classes="h-2.5 overflow-hidden rounded-full bg-surface-hover",
+ fill_classes="h-full rounded-full bg-kaori-primary",
+ label=row.primary_name ~ " contribution",
+ ) }}
  </div>
  <div class="text-right text-sm font-semibold tabular-nums text-content-primary ">{{ row.value }}</div>
  <div class="text-right">
@@ -182,10 +185,12 @@
  </div>
  </div>
  <div class="min-w-0">
- <div class="h-2.5 rounded-full bg-surface-hover ">
- <div class="h-2.5 rounded-full bg-kaori-primary"
- style="width: {{ row.bar_percent }}%"></div>
- </div>
+ {{ progress_bar.bar(
+ row.bar_percent,
+ track_classes="h-2.5 overflow-hidden rounded-full bg-surface-hover",
+ fill_classes="h-full rounded-full bg-kaori-primary",
+ label=row.primary_name ~ " contribution",
+ ) }}
  </div>
  <div class="text-right text-sm font-semibold tabular-nums text-content-primary ">{{ row.value }}</div>
  <div class="text-right">

@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from kubernetes.client import BatchV1Api
 from sqlalchemy import select
 
-from app.extensions import db
+from app.extensions.db import db
 from app.integrations.kubernetes.compatibility import KubernetesDiscovery, list_cluster_resource
 from app.integrations.kubernetes.tls import weak_tls_context
 from app.integrations.registry import get_integration

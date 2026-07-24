@@ -7,7 +7,7 @@ from app.alertmanager.repository import count_bindings_by_scope_type, list_bindi
 from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_alertmanager_sources
 from app.alertmanager.sanitization import safe_endpoint
 from app.common.presentation import present_user_datetime
-from app.extensions import db
+from app.extensions.db import db
 from app.integrations.alertmanager.capabilities import CAPABILITIES, CAPABILITY_BY_KEY
 from app.integrations.alertmanager.requirements import evaluate_module_readiness
 from app.integrations.binding_selectors import selector_form_values, selector_is_configured, selector_summary

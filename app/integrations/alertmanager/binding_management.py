@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from app.extensions import db
+from app.extensions.db import db
 from app.integrations.alertmanager.capabilities import BINDING_CAPABILITY_KEYS
 from app.integrations.binding_selectors import build_selector
 from app.integrations.lifecycle import ensure_canonical_instance

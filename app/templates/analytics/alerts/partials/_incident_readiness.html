@@ -1,3 +1,4 @@
+{% import "components/progress_bar.html" as progress_bar %}
 <section class="rounded-xl border border-outline-default bg-surface-card shadow-sm ">
  <details class="group">
  <summary class="flex cursor-pointer list-none flex-col gap-4 px-6 py-5 lg:flex-row lg:items-start lg:justify-between">
@@ -62,9 +63,7 @@
  <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 ">
  <p class="text-xs font-semibold uppercase tracking-wide text-content-muted ">{{ label }}</p>
  <p class="mt-2 text-2xl font-semibold text-content-primary ">{{ value }}</p>
- <div class="mt-3 h-2.5 overflow-hidden rounded-full bg-outline-default ">
- <div class="h-full rounded-full bg-kaori-primary" style="width: {{ width }}%"></div>
- </div>
+ {{ progress_bar.bar(width, track_classes="mt-3 h-2.5 overflow-hidden rounded-full bg-outline-default", fill_classes="h-full rounded-full bg-kaori-primary", label="Coverage progress") }}
  </div>
  {% endfor %}
  </div>

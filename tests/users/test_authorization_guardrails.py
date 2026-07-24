@@ -72,3 +72,21 @@ def test_user_lifecycle_service_rejects_actor_without_required_permissions() -> 
         requested_is_active=True,
         requested_is_super_admin=False,
     )[0] is False
+
+
+def test_user_without_persisted_role_fails_closed() -> None:
+    user = User(username='orphan', email='orphan@example.com')
+
+    assert user.role_record is None
+    assert user.has_permission('inventory.view') is False
+
+
+def test_super_admin_remains_break_glass_without_role_assignment() -> None:
+    user = User(
+        username='break-glass',
+        email='break-glass@example.com',
+        is_super_admin=True,
+    )
+
+    assert user.role_record is None
+    assert user.has_permission('inventory.view') is True

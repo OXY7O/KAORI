@@ -7,7 +7,7 @@ from flask import current_app, request
 
 from app.auth.providers.catalog import provider_label
 from app.auth.user_agent import parse_user_agent
-from app.extensions import db
+from app.extensions.db import db
 from app.models.notification import Notification
 from app.models.user import User
 

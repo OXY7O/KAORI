@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from flask import current_app
 
-from app.extensions import db
+from app.extensions.db import db
 from app.models.lifecycle import DataLifecyclePolicy
 from app.retention.types import RetentionPolicy
 

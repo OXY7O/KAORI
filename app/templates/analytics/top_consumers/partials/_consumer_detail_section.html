@@ -1,3 +1,4 @@
+{% import "components/progress_bar.html" as progress_bar %}
 {% set payload = consumer_payload %}
 {% set rows = payload.rows %}
 {% set pagination = payload.pagination %}
@@ -167,10 +168,13 @@
  <td class="whitespace-nowrap px-2 py-3">
  <div class="grid min-w-[170px] grid-cols-[86px_1fr] items-center gap-3">
  <span class="text-right tabular-nums">{{ row.current_display }}</span>
- <div class="h-2 w-20 rounded-full bg-surface-hover ">
- <div class="h-2 rounded-full {% if row.resource_type == 'cpu' %}bg-kaori-primary{% elif row.resource_type == 'memory' %}bg-kaori-primary{% elif row.resource_type == 'pods' %}bg-cyan-500{% else %}bg-sky-500{% endif %}"
- style="width: {{ row.usage_bar_percent }}%"></div>
- </div>
+ {% set resource_bar_class = 'bg-kaori-primary' if row.resource_type in ['cpu', 'memory'] else ('bg-cyan-500' if row.resource_type == 'pods' else 'bg-sky-500') %}
+ {{ progress_bar.bar(
+ row.usage_bar_percent,
+ track_classes="h-2 w-20 overflow-hidden rounded-full bg-surface-hover",
+ fill_classes="h-full rounded-full " ~ resource_bar_class,
+ label=row.resource_label ~ " usage",
+ ) }}
  </div>
  </td>
  <td class="whitespace-nowrap px-2 py-3 tabular-nums">{{ row.request_display }}</td>
@@ -178,10 +182,13 @@
  <td class="whitespace-nowrap px-2 py-3">
  <div class="grid min-w-[150px] grid-cols-[58px_1fr] items-center gap-3">
  <span class="text-right tabular-nums">{{ row.usage_percent }}%</span>
- <div class="h-2 w-20 rounded-full bg-surface-hover ">
- <div class="h-2 rounded-md {% if row.risk.key == 'critical' %}bg-red-500{% elif row.risk.key == 'warning' %}bg-amber-500{% else %}bg-emerald-500{% endif %}"
- style="width: {{ row.usage_bar_percent }}%"></div>
- </div>
+ {% set risk_bar_class = 'bg-red-500' if row.risk.key == 'critical' else ('bg-amber-500' if row.risk.key == 'warning' else 'bg-emerald-500') %}
+ {{ progress_bar.bar(
+ row.usage_bar_percent,
+ track_classes="h-2 w-20 overflow-hidden rounded-full bg-surface-hover",
+ fill_classes="h-full rounded-md " ~ risk_bar_class,
+ label="Usage risk",
+ ) }}
  </div>
  </td>
  <td class="whitespace-nowrap px-2 py-3">
@@ -279,10 +286,13 @@
  <span>Usage ratio</span>
  <span>{{ row.usage_percent }}%</span>
  </div>
- <div class="mt-2 h-3 rounded-full bg-surface-hover ">
- <div class="h-3 rounded-md {% if row.risk.key == 'critical' %}bg-red-500{% elif row.risk.key == 'warning' %}bg-amber-500{% else %}bg-emerald-500{% endif %}"
- style="width: {{ row.usage_bar_percent }}%"></div>
- </div>
+ {% set risk_bar_class = 'bg-red-500' if row.risk.key == 'critical' else ('bg-amber-500' if row.risk.key == 'warning' else 'bg-emerald-500') %}
+ {{ progress_bar.bar(
+ row.usage_bar_percent,
+ track_classes="mt-2 h-3 overflow-hidden rounded-full bg-surface-hover",
+ fill_classes="h-full rounded-md " ~ risk_bar_class,
+ label="Usage ratio",
+ ) }}
  </div>
  </div>
  <div class="rounded-xl border border-outline-default bg-surface-card p-4 ">

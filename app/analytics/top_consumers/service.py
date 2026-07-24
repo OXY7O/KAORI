@@ -6,7 +6,8 @@ from collections.abc import Mapping
 from typing import Any, TypedDict
 
 from app.analytics.common.base_service import AnalyticsBaseService, raw_percent, safe_round
-from app.analytics.common.coercion import safe_float as _safe_float, safe_int as _safe_int
+from app.analytics.common.coercion import safe_float as _safe_float
+from app.analytics.common.coercion import safe_int as _safe_int
 from app.analytics.common.context import build_analysis_utilization_context
 from app.analytics.common.params import (
     ALLOWED_PER_PAGE_VALUES,
@@ -2182,6 +2183,3 @@ def _raw_percent(
         100.0,
         value / total * 100,
     )
-
-
-

@@ -1,3 +1,4 @@
+{% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
 {% set total_storage = inventory.total_storage or 0 %}
 {% set pv_total = inventory.persistent_volumes or 0 %}
@@ -51,7 +52,7 @@
                 </div>
                 <span class="flex h-12 w-12 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-white"><i data-lucide="hard-drive" class="h-6 w-6"></i></span>
             </div>
-            <div class="mt-5 h-2 overflow-hidden rounded-full bg-white/20"><div class="h-full rounded-full bg-white" style="width: {{ pv_ratio }}%"></div></div>
+            {{ progress_bar.bar(pv_ratio, track_classes="mt-5 h-2 overflow-hidden rounded-full bg-white/20", fill_classes="h-full rounded-full bg-white", label="Coverage progress") }}
         </article>
 
         <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">

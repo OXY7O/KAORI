@@ -1,3 +1,4 @@
+{% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
 {% set total_ingresses = inventory.total_ingresses or 0 %}
 {% set tls_enabled = inventory.tls_enabled or 0 %}
@@ -55,9 +56,7 @@
                     <i data-lucide="shield-check" class="h-6 w-6"></i>
                 </span>
             </div>
-            <div class="mt-5 h-2 overflow-hidden rounded-full bg-white/20">
-                <div class="h-full rounded-full bg-white" style="width: {{ tls_percentage }}%"></div>
-            </div>
+            {{ progress_bar.bar(tls_percentage, track_classes="mt-5 h-2 overflow-hidden rounded-full bg-white/20", fill_classes="h-full rounded-full bg-white", label="Coverage progress") }}
         </article>
 
         <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">

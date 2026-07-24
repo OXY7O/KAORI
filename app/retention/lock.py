@@ -6,7 +6,7 @@ from threading import Lock
 
 from sqlalchemy import text
 
-from app.extensions import db
+from app.extensions.db import db
 
 
 class RetentionLockUnavailable(RuntimeError):

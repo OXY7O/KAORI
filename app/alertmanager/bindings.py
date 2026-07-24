@@ -3,7 +3,7 @@ from __future__ import annotations
 from app.alertmanager.forms import AlertmanagerBindingForm
 from app.alertmanager.repository import get_binding
 from app.alertmanager.resolver import resolve_alertmanager_sources
-from app.extensions import db
+from app.extensions.db import db
 from app.integrations.registry import get_integration
 from app.models.alertmanager import AlertmanagerInstance
 from app.models.integration import IntegrationBinding

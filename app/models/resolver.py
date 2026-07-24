@@ -3,20 +3,20 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     CheckConstraint,
     DateTime,
     ForeignKey,
     Index,
     Integer,
-    JSON,
     String,
     UniqueConstraint,
     func,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.extensions import db
+from app.extensions.db import db
 
 
 class ResolverDeploymentPolicy(db.Model):
@@ -34,8 +34,12 @@ class ResolverDeploymentPolicy(db.Model):
     required_registry_fingerprint: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_by_user_id: Mapped[int | None] = mapped_column(ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
     updated_by_user_id: Mapped[int | None] = mapped_column(ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
+    )
 
 
 class ResolverOperationalControl(db.Model):
@@ -47,7 +51,9 @@ class ResolverOperationalControl(db.Model):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    cluster_id: Mapped[str | None] = mapped_column(ForeignKey('clusters.id', ondelete='CASCADE'), nullable=True, index=True)
+    cluster_id: Mapped[str | None] = mapped_column(
+        ForeignKey('clusters.id', ondelete='CASCADE'), nullable=True, index=True
+    )
     global_kill_switch: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     maintenance_mode: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     concurrency_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
@@ -57,8 +63,12 @@ class ResolverOperationalControl(db.Model):
     consecutive_failures: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     circuit_open_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     updated_by_user_id: Mapped[int | None] = mapped_column(ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
+    )
 
 
 Index(
@@ -88,5 +98,9 @@ class ResolverProductionReadinessRecord(db.Model):
     validated_by_user_id: Mapped[int | None] = mapped_column(ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     approved_by_user_id: Mapped[int | None] = mapped_column(ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC))
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
+    )

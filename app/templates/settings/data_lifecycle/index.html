@@ -90,10 +90,10 @@
                     </main>
                 </div>
             </div>
-            <div x-show="activeTab === 'storage'" style="display:none;">
+            <div x-show="activeTab === 'storage'" x-cloak>
                 {% include "settings/data_lifecycle/partials/_storage.html" %}
             </div>
-            <div x-show="activeTab === 'history'" style="display:none;">
+            <div x-show="activeTab === 'history'" x-cloak>
                 {% include "settings/data_lifecycle/partials/_history.html" %}
             </div>
         </div>

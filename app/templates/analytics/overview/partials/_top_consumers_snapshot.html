@@ -1,3 +1,4 @@
+{% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
 <section class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
     <div class="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -73,9 +74,7 @@
                                         <span class="truncate font-semibold text-content-secondary" title="{{ item.name }}">{{ loop.index }}. {{ item.name }}</span>
                                         <span class="shrink-0 font-semibold text-content-muted">{{ item.display_value }}</span>
                                     </div>
-                                    <div class="h-2 overflow-hidden rounded-full bg-surface-hover">
-                                        <div class="h-full rounded-full {{ bar_class }}" style="width: {{ item.percent }}%"></div>
-                                    </div>
+                                    {{ progress_bar.bar(item.percent, track_classes="h-2 overflow-hidden rounded-full bg-surface-hover", fill_classes="h-full rounded-full {{ bar_class }}", label="Coverage progress") }}
                                     {% if item.namespace %}
                                         <div class="mt-2">{{ table_label.metadata_label('Namespace: ' ~ item.namespace, 'boxes') }}</div>
                                     {% endif %}

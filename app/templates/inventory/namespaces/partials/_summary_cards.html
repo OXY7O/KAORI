@@ -1,3 +1,4 @@
+{% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
 {% set active_percentage = ((inventory.active_namespaces / inventory.total_namespaces) * 100) | round(0) if inventory.total_namespaces > 0 else 0 %}
 {% set inactive_namespaces = inventory.total_namespaces - inventory.active_namespaces %}
@@ -83,9 +84,7 @@
                     <i data-lucide="shield-check" class="h-6 w-6"></i>
                 </span>
             </div>
-            <div class="mt-5 h-2 overflow-hidden rounded-full bg-white/15">
-                <div class="h-full rounded-full bg-white" style="width: {{ active_percentage }}%"></div>
-            </div>
+            {{ progress_bar.bar(active_percentage, track_classes="mt-5 h-2 overflow-hidden rounded-full bg-white/15", fill_classes="h-full rounded-full bg-white", label="Coverage progress") }}
         </article>
 
         <article class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">

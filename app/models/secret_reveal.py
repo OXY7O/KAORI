@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 from sqlalchemy import UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.extensions import db
+from app.extensions.db import db
 
 
 class SecretRevealNamespacePolicy(db.Model):

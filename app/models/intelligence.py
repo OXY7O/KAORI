@@ -7,7 +7,7 @@ from uuid import uuid4
 from sqlalchemy import CheckConstraint, Index, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.extensions import db
+from app.extensions.db import db
 
 if TYPE_CHECKING:
     from app.models.user import User

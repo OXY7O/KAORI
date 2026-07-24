@@ -167,11 +167,6 @@ def main() -> int:
         ('JOB_MAX_ACTIVE_PER_RESOURCE', 1),
         ('JOB_QUEUED_STALE_SECONDS', 300),
         ('JOB_RUNNING_STALE_SECONDS', 300),
-        ('ANALYTICS_QUERY_MAXIMUM_RANGE_DAYS', 1),
-        ('ANALYTICS_QUERY_CHUNK_DAYS', 1),
-        ('ANALYTICS_QUERY_MINIMUM_STEP_SECONDS', 1),
-        ('ANALYTICS_QUERY_MAXIMUM_SAMPLES_PER_SERIES', 1),
-        ('ANALYTICS_QUERY_MAX_CONCURRENT_PER_SOURCE', 1),
     ):
         raw = _value(name)
         try:

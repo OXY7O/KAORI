@@ -15,7 +15,7 @@ from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
 from wtforms.validators import ValidationError
 
-from app.extensions import db
+from app.extensions.db import db
 from app.kubernetes_operations.secrets.reveal_policy import (
     set_namespace_reveal_policy,
     update_cluster_reveal_readiness,

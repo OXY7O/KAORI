@@ -1,3 +1,4 @@
+{% import "components/progress_bar.html" as progress_bar %}
 <div id="quick-sync-task-{{ sync.task_id }}"
      data-cluster-sync-task="{{ sync.task_id }}"
      hx-get="{{ url_for('cluster.sync_all_status', task_id=sync.task_id) }}"
@@ -57,9 +58,11 @@
                 </div>
             </div>
         </div>
-        <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-kaori-soft/70" aria-hidden="true">
-            <div class="h-full rounded-full bg-kaori-primary transition-all duration-500"
-                 style="width: {{ sync.progress_percent }}%"></div>
-        </div>
+        {{ progress_bar.bar(
+            sync.progress_percent,
+            track_classes="mt-4 h-1.5 overflow-hidden rounded-full bg-kaori-soft/70",
+            fill_classes="h-full rounded-full bg-kaori-primary transition-all duration-500",
+            label="Cluster synchronization progress",
+        ) }}
     </div>
 </div>

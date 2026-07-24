@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from sqlalchemy import func
 
-from app.extensions import db
+from app.extensions.db import db
 from app.governance.tls_certificates.service import (
     apply_bulk_update,
     apply_certificate_update,

@@ -7,8 +7,7 @@ from flask_login import UserMixin
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from app.extensions import db
-from app.rbac.defaults import DEFAULT_ROLE_PERMISSIONS
+from app.extensions.db import db
 
 if TYPE_CHECKING:
     from app.models.rbac import Role
@@ -153,7 +152,7 @@ class User(UserMixin, db.Model):
                 return False
             return permission_key in self.role_record.permission_keys()
 
-        # Compatibility fallback for legacy/bootstrap records that have not yet
-        # been attached to a persisted role. Keep this path isolated from normal
-        # role lifecycle enforcement.
-        return permission_key in DEFAULT_ROLE_PERMISSIONS.get(self.role_name, set())
+        # Missing role assignments fail closed. The migration path backfills
+        # existing users, while the super-admin flag remains the explicit
+        # break-glass authority above.
+        return False

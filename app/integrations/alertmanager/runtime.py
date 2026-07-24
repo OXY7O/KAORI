@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.extensions import db
+from app.extensions.db import db
 from app.integrations.alertmanager.client_factory import build_client
 from app.integrations.alertmanager.status import mark_status
 from app.models.alertmanager import AlertmanagerInstance

@@ -8,7 +8,7 @@ from flask import current_app
 
 from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window
 from app.common.presentation import present_key_label, present_user_datetime
-from app.extensions import db
+from app.extensions.db import db
 from app.integrations.resolver_bootstrap import get_resolver_registry
 from app.models.audit import AuditEvent
 from app.models.cluster import Cluster

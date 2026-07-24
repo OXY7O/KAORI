@@ -1,3 +1,4 @@
+{% import "components/progress_bar.html" as progress_bar %}
 <section id="dashboard-top-consumers" x-data="{ open: false }" class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
     <div @click="open = !open" class="flex cursor-pointer select-none items-center gap-3 border-b border-outline-subtle px-5 py-4">
         <div class="flex min-w-0 flex-1 items-center gap-3">
@@ -54,14 +55,19 @@
                                                 <span class="truncate">{{ item.namespace }}</span>
                                                 <span class="shrink-0">{{ item.signal_label }}</span>
                                             </div>
-                                            <div class="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover">
-                                                {% if item.percent is not none %}
-                                                    <div class="h-full rounded-full {% if item.signal_state == 'critical' %}bg-status-critical{% elif item.signal_state == 'warning' %}bg-status-warning{% elif item.signal_state == 'normal' %}bg-kaori-primary{% else %}bg-status-unknown{% endif %}"
-                                                         style="width: {{ item.percent if item.percent <= 100 else 100 }}%"></div>
-                                                {% else %}
+                                            {% if item.percent is not none %}
+                                                {% set signal_bar_class = 'bg-status-critical' if item.signal_state == 'critical' else ('bg-status-warning' if item.signal_state == 'warning' else ('bg-kaori-primary' if item.signal_state == 'normal' else 'bg-status-unknown')) %}
+                                                {{ progress_bar.bar(
+                                                    item.percent if item.percent <= 100 else 100,
+                                                    track_classes="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover",
+                                                    fill_classes="h-full rounded-full " ~ signal_bar_class,
+                                                    label=item.name ~ " utilization",
+                                                ) }}
+                                            {% else %}
+                                                <div class="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover">
                                                     <div class="h-full w-1/3 rounded-full bg-status-unknown"></div>
-                                                {% endif %}
-                                            </div>
+                                                </div>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>
@@ -99,14 +105,19 @@
                                                 <span class="truncate">{{ item.namespace }}</span>
                                                 <span class="shrink-0">{{ item.signal_label }}</span>
                                             </div>
-                                            <div class="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover">
-                                                {% if item.percent is not none %}
-                                                    <div class="h-full rounded-full {% if item.signal_state == 'critical' %}bg-status-critical{% elif item.signal_state == 'warning' %}bg-status-warning{% elif item.signal_state == 'normal' %}bg-status-info{% else %}bg-status-unknown{% endif %}"
-                                                         style="width: {{ item.percent if item.percent <= 100 else 100 }}%"></div>
-                                                {% else %}
+                                            {% if item.percent is not none %}
+                                                {% set signal_bar_class = 'bg-status-critical' if item.signal_state == 'critical' else ('bg-status-warning' if item.signal_state == 'warning' else ('bg-status-info' if item.signal_state == 'normal' else 'bg-status-unknown')) %}
+                                                {{ progress_bar.bar(
+                                                    item.percent if item.percent <= 100 else 100,
+                                                    track_classes="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover",
+                                                    fill_classes="h-full rounded-full " ~ signal_bar_class,
+                                                    label=item.name ~ " utilization",
+                                                ) }}
+                                            {% else %}
+                                                <div class="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover">
                                                     <div class="h-full w-1/3 rounded-full bg-status-unknown"></div>
-                                                {% endif %}
-                                            </div>
+                                                </div>
+                                            {% endif %}
                                         </div>
                                     </div>
                                 </div>

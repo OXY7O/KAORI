@@ -24,7 +24,7 @@ from app.alertmanager.repository import (
 )
 from app.alertmanager.resolver import AlertmanagerSourceResolution, resolve_alertmanager_sources
 from app.common.integration_errors import describe_integration_failure
-from app.extensions import db
+from app.extensions.db import db
 from app.integrations.alertmanager.exceptions import AlertmanagerError
 from app.integrations.deletion import DeletionBlocked, provider_deletion_guard
 from app.integrations.lifecycle import ensure_canonical_instance, invalidate_bindings

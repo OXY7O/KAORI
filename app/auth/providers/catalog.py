@@ -99,9 +99,7 @@ def provider_label(provider_type: str | AuthProviderType | None) -> str:
 def provider_types_for_family(family: str | AuthProviderFamily) -> tuple[str, ...]:
     normalized = AuthProviderFamily(str(family).strip().lower())
     return tuple(
-        definition.provider_type.value
-        for definition in _PROVIDER_DEFINITIONS
-        if definition.family == normalized
+        definition.provider_type.value for definition in _PROVIDER_DEFINITIONS if definition.family == normalized
     )
 
 
@@ -115,9 +113,7 @@ def configurable_provider_choices() -> list[tuple[str, str]]:
 
 def browser_sso_provider_types() -> tuple[str, ...]:
     return tuple(
-        definition.provider_type.value
-        for definition in _PROVIDER_DEFINITIONS
-        if definition.flow == AuthFlow.BROWSER
+        definition.provider_type.value for definition in _PROVIDER_DEFINITIONS if definition.flow == AuthFlow.BROWSER
     )
 
 

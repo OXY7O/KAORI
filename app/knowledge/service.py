@@ -6,7 +6,7 @@ from collections.abc import Collection, Mapping, Sequence
 from datetime import UTC, datetime
 from typing import Any
 
-from app.extensions import db
+from app.extensions.db import db
 from app.knowledge.validation import validate_publication
 from app.models.audit import AuditEvent
 from app.models.knowledge import KnowledgeRunbook, KnowledgeRunbookRevision

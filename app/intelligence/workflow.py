@@ -7,7 +7,7 @@ from typing import Any
 
 from sqlalchemy.exc import IntegrityError
 
-from app.extensions import db
+from app.extensions.db import db
 from app.intelligence.decision import (
     DecisionError,
     DecisionPolicy,

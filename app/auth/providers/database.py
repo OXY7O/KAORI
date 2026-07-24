@@ -10,7 +10,7 @@ from app.auth.results import (
     USER_INACTIVE_MESSAGE,
     AuthResult,
 )
-from app.extensions import db
+from app.extensions.db import db
 from app.models import User
 
 _DUMMY_PASSWORD_HASH = generate_password_hash('kaori-auth-timing-placeholder')

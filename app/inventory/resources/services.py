@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy import or_
 
 from app.common.inventory_generation import filter_current_generation
-from app.extensions import db
+from app.extensions.db import db
 from app.inventory.resources.common import (
     _pod_summary,
     _selector_matches,

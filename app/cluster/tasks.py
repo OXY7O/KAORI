@@ -9,7 +9,7 @@ from celery import shared_task
 
 from app.cluster.individual_sync_state import store_individual_sync_metadata
 from app.cluster.sync_state import mark_cluster_sync_completed, store_cluster_sync_metadata
-from app.extensions import db
+from app.extensions.db import db
 from app.integrations.kubernetes.resolver import connection_for_cluster
 from app.integrations.registry import get_integration
 from app.jobs.execution import JobExecutionContext

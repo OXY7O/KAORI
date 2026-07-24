@@ -8,7 +8,7 @@ from uuid import uuid4
 from celery import shared_task
 from flask import current_app
 
-from app.extensions import db
+from app.extensions.db import db
 from app.jobs.execution import JobExecutionContext
 from app.models.cluster import Cluster
 from app.models.intelligence import IntelligenceExecutionJournal

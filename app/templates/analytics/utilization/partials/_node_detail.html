@@ -1,3 +1,4 @@
+{% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
 {% macro risk_status(status) %}
     {% set tone = {'Critical': 'critical', 'Warning': 'warning', 'Normal': 'normal'}.get(status, 'unknown') %}
@@ -19,9 +20,7 @@
             <span>Usage</span>
             <span>{{ "%.2f"|format(value|default(0)|float) }}%</span>
         </div>
-        <div class="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover">
-            <div class="h-full rounded-full transition-all duration-500 {{ bar_class }}" style="width: {{ percentage }}%"></div>
-        </div>
+        {{ progress_bar.bar(percentage, track_classes="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover", fill_classes="h-full rounded-full transition-all duration-500 {{ bar_class }}", label="Coverage progress") }}
     </div>
 {% endmacro %}
 
@@ -106,9 +105,7 @@
         </div>
         <p class="mt-5 text-4xl font-semibold">{{ detail_summary.storage_utilization_display }}</p>
         <p class="mt-2 text-sm leading-6 text-brand-foreground-muted">{{ detail_summary.storage_usage_summary }}</p>
-        <div class="mt-5 h-2 overflow-hidden rounded-full bg-brand-surface">
-            <div class="h-full rounded-full bg-brand-foreground" style="width: {{ detail_summary.storage_utilization_width }}%"></div>
-        </div>
+        {{ progress_bar.bar(detail_summary.storage_utilization_width, track_classes="mt-5 h-2 overflow-hidden rounded-full bg-brand-surface", fill_classes="h-full rounded-full bg-brand-foreground", label="Coverage progress") }}
         <div class="mt-auto space-y-3 pt-5">
             <div class="rounded-lg border border-brand-outline bg-brand-surface p-3">
                 <p class="font-semibold text-brand-foreground">{{ detail_summary.storage_scope }}</p>

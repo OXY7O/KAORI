@@ -5,7 +5,7 @@ from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import func
 
-from app.extensions import db
+from app.extensions.db import db
 from app.models.audit import AuditEvent
 from app.models.intelligence import IntelligenceExecutionJournal
 from app.models.resolver import ResolverOperationalControl

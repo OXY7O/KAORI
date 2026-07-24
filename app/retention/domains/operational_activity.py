@@ -7,7 +7,7 @@ from typing import Any
 from flask import current_app
 from sqlalchemy import and_, func, or_
 
-from app.extensions import db
+from app.extensions.db import db
 from app.models.notification import Notification
 from app.models.user import User
 from app.retention.policy_service import resolve_policy

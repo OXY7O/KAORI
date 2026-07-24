@@ -6,7 +6,7 @@ from typing import Any
 from celery import shared_task
 from flask import current_app
 
-from app.extensions import db
+from app.extensions.db import db
 from app.jobs.dispatcher import enqueue_canonical_job
 from app.jobs.execution import JobCancellationRequested, JobExecutionContext
 from app.models.user import User

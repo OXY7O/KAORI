@@ -1202,7 +1202,6 @@ def _empty_capacity_snapshot() -> dict[str, Any]:
     }
 
 
-
 def _safe_int(
     value: Any,
 ) -> int:

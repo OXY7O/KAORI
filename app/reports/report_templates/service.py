@@ -9,7 +9,7 @@ from sqlalchemy import select
 from werkzeug.datastructures import ImmutableMultiDict, MultiDict
 
 from app.common.pagination import PER_PAGE_OPTIONS, build_pagination_window
-from app.extensions import db
+from app.extensions.db import db
 from app.models.report import ReportTemplate
 from app.models.user import User
 from app.reports.export.constants import (

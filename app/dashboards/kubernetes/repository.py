@@ -4,7 +4,7 @@ from importlib import import_module
 from typing import Any
 
 try:
-    from app.extensions import db
+    from app.extensions.db import db
 except Exception:  # pragma: no cover
     try:
         from app.extensions.db import db  # type: ignore[no-redef]

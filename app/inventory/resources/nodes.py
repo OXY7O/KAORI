@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy import func
 
 from app.common.inventory_generation import filter_current_generation
-from app.extensions import db
+from app.extensions.db import db
 from app.inventory.formatting import convert_ki_to_gib, convert_storage_to_gib, format_kubernetes_size
 from app.inventory.resources.common import format_age
 from app.inventory.resources.descriptions import NODE_ROLE_DESCRIPTIONS

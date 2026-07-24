@@ -13,7 +13,7 @@ from app.analytics.overview.schema import (
     classify_count_risk,
     classify_percent,
 )
-from app.extensions import db
+from app.extensions.db import db
 from app.intelligence.recommendation_engine import (
     build_operational_recommendations,
     build_utilization_actionable_recommendations,

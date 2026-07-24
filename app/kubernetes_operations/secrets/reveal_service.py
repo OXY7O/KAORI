@@ -12,7 +12,7 @@ from kubernetes.config.config_exception import ConfigException
 from sqlalchemy import or_, text
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
-from app.extensions import db
+from app.extensions.db import db
 from app.integrations.kubernetes.resolver import tls_policy_for_cluster
 from app.integrations.kubernetes.tls import weak_tls_context
 from app.kubernetes_operations.secrets.live_service import (

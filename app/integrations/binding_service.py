@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from app.extensions import db
+from app.extensions.db import db
 from app.integrations.registry import get_integration
 from app.integrations.repository import get_cluster, get_provider_record
 

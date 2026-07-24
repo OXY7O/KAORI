@@ -6,7 +6,7 @@ from typing import Any
 from flask import url_for
 from sqlalchemy import func, select
 
-from app.extensions import db
+from app.extensions.db import db
 from app.models.report import Report, ReportSchedule, ReportTemplate
 from app.reports.export.constants import (
     DEFAULT_REPORT_DOMAIN,

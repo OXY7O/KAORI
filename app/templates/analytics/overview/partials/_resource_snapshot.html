@@ -1,3 +1,4 @@
+{% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
 <section class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
     <div class="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -52,9 +53,7 @@
                         <p class="text-3xl font-semibold tracking-tight text-content-primary">{{ item.value }}{{ item.unit }}</p>
                         <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Current usage</p>
                     </div>
-                    <div class="mt-3 h-2 overflow-hidden rounded-full bg-surface-hover">
-                        <div class="h-full rounded-full {{ bar_class }}" style="width: {{ percent }}%"></div>
-                    </div>
+                    {{ progress_bar.bar(percent, track_classes="mt-3 h-2 overflow-hidden rounded-full bg-surface-hover", fill_classes="h-full rounded-full {{ bar_class }}", label="Coverage progress") }}
                 </div>
             </article>
         {% endfor %}

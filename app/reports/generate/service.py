@@ -5,7 +5,7 @@ from typing import Any
 from sqlalchemy import func, select
 from werkzeug.datastructures import ImmutableMultiDict, MultiDict
 
-from app.extensions import db
+from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.report import Report
 from app.models.user import User

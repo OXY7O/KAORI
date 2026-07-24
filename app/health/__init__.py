@@ -1,5 +1,3 @@
-from flask import Blueprint
+from app.health.routes import health_bp
 
-health_bp = Blueprint('health', __name__, url_prefix='/health')
-
-from app.health import routes  # noqa: E402, F401
+__all__ = ['health_bp']

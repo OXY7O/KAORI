@@ -12,7 +12,7 @@ from app.automation_control.presentation import (
     build_automation_control_context,
     upsert_deployment_policy,
 )
-from app.extensions import db
+from app.extensions.db import db
 from app.integrations.resolver_bootstrap import get_resolver_registry
 from app.intelligence.workflow import approve_decision, reject_decision
 from app.knowledge.candidate_review import dismiss_candidate, promote_candidate

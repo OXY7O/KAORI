@@ -5,7 +5,7 @@ from typing import Any
 
 from sqlalchemy import func
 
-from app.extensions import db
+from app.extensions.db import db
 from app.models import (
     Cluster,
     ClusterInventory,

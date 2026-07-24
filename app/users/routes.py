@@ -10,7 +10,7 @@ from app.auth.provider_configuration import apply_identity_provider_configuratio
 from app.auth.providers.browser import SsoProviderError
 from app.auth.providers.ldap import ExternalIdentity, ExternalProviderError, LdapDirectoryClient
 from app.auth.sso import SsoAdmissionError
-from app.extensions import db
+from app.extensions.db import db
 from app.models import IdentityProvider, Role, User
 from app.rbac.decorators import permission_required
 from app.rbac.service import seed_default_rbac

@@ -18,7 +18,7 @@ from reportlab.platypus import (
     Table,
 )
 
-from app.extensions import db
+from app.extensions.db import db
 from app.models.report import Report
 from app.reports.export.constants import (
     DEFAULT_RECOMMENDATIONS,

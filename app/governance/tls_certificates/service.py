@@ -12,7 +12,7 @@ from flask_login import current_user
 from sqlalchemy import or_
 
 from app.common.integration_errors import describe_integration_failure
-from app.extensions import db
+from app.extensions.db import db
 from app.governance.tls_certificates.certificate import find_uncovered_hosts, validate_certificate_pair
 from app.governance.tls_certificates.collector import build_kubernetes_client, collect_tls_certificates
 from app.governance.tls_certificates.constants import (

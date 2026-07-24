@@ -385,6 +385,15 @@ span.inline-flex[class*='bg-kaori-soft'] {
     line-height: 1.125rem;
 }
 
+.kaori-activity-grid {
+    grid-template-columns: minmax(6.75rem, 0.72fr) minmax(12rem, 1.12fr) minmax(16rem, 1.85fr)
+        minmax(6.5rem, 0.62fr) minmax(6.5rem, 0.62fr) 6.25rem;
+}
+
+.kaori-change-grid {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
 .htmx-indicator {
     visibility: hidden;
     opacity: 0;

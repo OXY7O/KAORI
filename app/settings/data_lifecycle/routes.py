@@ -4,7 +4,7 @@ from flask import Blueprint, current_app, render_template, request, send_file, u
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
-from app.extensions import db
+from app.extensions.db import db
 from app.jobs.dispatcher import enqueue_canonical_job
 from app.notifications.service import record_operational_activity
 from app.rbac.decorators import permission_required

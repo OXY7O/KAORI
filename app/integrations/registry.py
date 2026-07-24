@@ -6,7 +6,7 @@ from importlib import import_module
 from threading import RLock
 from typing import Any
 
-from app.extensions import db
+from app.extensions.db import db
 from app.integrations.contracts import (
     IntegrationInstanceNotFound,
     IntegrationNotRegistered,

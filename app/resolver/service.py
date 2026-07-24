@@ -4,7 +4,7 @@ from collections.abc import Collection, Mapping
 from datetime import UTC, datetime
 from typing import Any
 
-from app.extensions import db
+from app.extensions.db import db
 from app.intelligence.workflow import (
     EXECUTE_PERMISSION,
     DecisionWorkflowError,

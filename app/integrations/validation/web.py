@@ -6,7 +6,7 @@ from typing import Any
 
 from flask import current_app
 
-from app.extensions import db
+from app.extensions.db import db
 from app.integrations.validation.state import (
     build_validation_snapshot,
     claim_validation_job,

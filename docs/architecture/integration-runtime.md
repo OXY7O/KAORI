@@ -181,9 +181,8 @@ app/integrations/validation/
 
 app/jobs/
 ├── service.py               # PostgreSQL lifecycle, deduplication, quotas, subscribers
-├── dispatcher.py            # provider-neutral future analytics dispatch
+├── dispatcher.py            # provider-neutral job dispatch
 ├── execution.py             # cooperative progress and cancellation
-├── query_planning.py        # large query chunk/sample guardrails
 └── tasks.py                 # stale-job recovery
 
 app/integrations/runtime/kubernetes_adapter.py

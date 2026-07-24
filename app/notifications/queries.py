@@ -5,7 +5,7 @@ from typing import Any
 
 from sqlalchemy import or_
 
-from app.extensions import db
+from app.extensions.db import db
 from app.models.notification import Notification
 from app.models.user import User
 from app.notifications.constants import ACTIVITY_PER_PAGE_OPTIONS, ALLOWED_STATUSES, NAVIGATION_NOTIFICATION_LIMIT

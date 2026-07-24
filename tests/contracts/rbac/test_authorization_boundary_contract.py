@@ -16,3 +16,11 @@ def test_user_lifecycle_service_has_permission_defense_in_depth() -> None:
 
     for permission in ('users.manage', 'users.activate'):
         assert f"actor.has_permission('{permission}')" in source
+
+
+def test_missing_persisted_role_fails_closed_without_legacy_permission_fallback() -> None:
+    source = Path('app/models/user.py').read_text(encoding='utf-8')
+
+    assert 'DEFAULT_ROLE_PERMISSIONS' not in source
+    assert 'Compatibility fallback' not in source
+    assert 'Missing role assignments fail closed.' in source

@@ -1,3 +1,4 @@
+{% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table.html" as table_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
@@ -62,15 +63,22 @@
                             <span class="line-clamp-1 font-medium text-content-secondary" title="{{ row.progress_message }}">{{ row.progress_message }}</span>
                             <span class="shrink-0 font-semibold text-kaori-primary">{{ row.progress_label }}</span>
                         </div>
-                        <div class="mt-2 h-1.5 overflow-hidden bg-kaori-soft">
-                            {% if row.progress_mode == 'determinate' %}
-                                <div class="h-full bg-kaori-primary transition-[width] duration-300" style="width: {{ row.progress }}%"></div>
-                            {% elif row.progress_mode == 'indeterminate' %}
-                                <div class="notification-progress-indeterminate h-full bg-kaori-primary"></div>
-                            {% else %}
-                                <div class="h-full w-0 bg-kaori-primary"></div>
-                            {% endif %}
-                        </div>
+                        {% if row.progress_mode == 'determinate' %}
+                            {{ progress_bar.bar(
+                                row.progress,
+                                track_classes="mt-2 h-1.5 overflow-hidden bg-kaori-soft",
+                                fill_classes="h-full bg-kaori-primary transition-[width] duration-300",
+                                label="Job execution progress",
+                            ) }}
+                        {% else %}
+                            <div class="mt-2 h-1.5 overflow-hidden bg-kaori-soft">
+                                {% if row.progress_mode == 'indeterminate' %}
+                                    <div class="notification-progress-indeterminate h-full bg-kaori-primary"></div>
+                                {% else %}
+                                    <div class="h-full w-0 bg-kaori-primary"></div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
                         <p class="mt-2 text-[10px] text-content-muted">Attempt {{ row.attempt_count }}/{{ row.max_attempts }}</p>
                     </div>
 

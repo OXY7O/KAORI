@@ -58,10 +58,7 @@ def block_clusterless_operations():
     if has_registered_clusters() is not False:
         return None
 
-    is_partial = (
-        request.headers.get('HX-Request') == 'true'
-        or request.args.get('partial_mode')
-    )
+    is_partial = request.headers.get('HX-Request') == 'true' or request.args.get('partial_mode')
     if is_partial:
         return render_template('components/cluster/_onboarding_banner.html'), 409
 
@@ -85,7 +82,6 @@ def _requested_operation_label() -> str:
     return 'Kubernetes Operations'
 
 
-
 kubernetes_operations_bp.add_url_rule(
     '/configmaps', endpoint='configmap_management', view_func=configmap_management_index, methods=['GET']
 )
@@ -93,7 +89,10 @@ kubernetes_operations_bp.add_url_rule(
     '/configmaps/create', endpoint='create_configmap', view_func=create_configmap_page, methods=['GET', 'POST']
 )
 kubernetes_operations_bp.add_url_rule(
-    '/configmaps/namespaces', endpoint='configmap_namespace_options', view_func=configmap_namespace_options, methods=['GET']
+    '/configmaps/namespaces',
+    endpoint='configmap_namespace_options',
+    view_func=configmap_namespace_options,
+    methods=['GET'],
 )
 kubernetes_operations_bp.add_url_rule(
     '/configmaps/workspace', endpoint='configmap_workspace', view_func=configmap_workspace, methods=['GET']

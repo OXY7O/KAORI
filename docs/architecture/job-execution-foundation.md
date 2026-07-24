@@ -105,27 +105,17 @@ Provider validation may not always be interruptible during one remote API call. 
 
 ## Large query planning
 
-Annual or long-range Prometheus/Thanos requests must use `app.jobs.query_planning`.
+Large-range Prometheus or Thanos execution is intentionally not preimplemented. The first Analytics worker that requires historical chunking must introduce its query-plan contract, provider concurrency guard, persistence model, and functional tests in the same domain change. KAORI must not carry dormant worker infrastructure that is not invoked by a production task.
 
-Default policy:
-
-```text
-maximum range               366 days
-chunk size                   30 days
-minimum step                  1 hour
-maximum samples per series   10,000
-concurrent queries/source     2
-```
-
-A one-year request is split into bounded chunks. The effective step is raised when required to stay under the sample budget. `app.jobs.query_execution` reserves a Redis-backed per-source query slot and provides a mandatory heartbeat/cancellation checkpoint for every chunk. Workers should persist intermediate datasets or object-storage references and update progress after each chunk.
+The required execution shape remains:
 
 ```text
 Historical source
-→ 30-day bounded queries
-→ hourly/downsampled analytical dataset
+→ bounded provider queries
+→ downsampled analytical dataset
 → local model execution
-→ persisted forecast result
-→ UI reads result, not raw one-year query
+→ persisted result
+→ UI reads the persisted result
 ```
 
 ## Result storage
@@ -143,9 +133,6 @@ app/jobs/
 ├── dispatcher.py        # canonical create/deduplicate/dispatch entry point
 ├── execution.py         # cooperative worker lifecycle helper
 ├── fingerprint.py       # deterministic parameter fingerprints
-├── query_planning.py    # large-range chunk and sample guardrails
-├── query_execution.py   # per-source slots and chunk checkpoints
-├── resource_limits.py   # Redis-backed per-source execution slots
 ├── service.py           # PostgreSQL lifecycle, quota, subscriber, recovery
 └── tasks.py             # maintenance/recovery tasks
 ```

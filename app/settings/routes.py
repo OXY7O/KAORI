@@ -29,7 +29,7 @@ from app.common.timezone import (
     normalize_timezone_name,
     timezone_choice_groups,
 )
-from app.extensions import db
+from app.extensions.db import db
 from app.models import Notification, Permission, Role, User
 from app.notifications.service import record_operational_activity
 from app.rbac.decorators import permission_required
