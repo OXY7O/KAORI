@@ -10,7 +10,7 @@
                     {% call page_hero.intro('orbit', 'Infrastructure Operations Workspace', 'sparkles') %}
                         <h1 class="{{ page_hero.title_classes() }}">Welcome to KAORI</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">
-                            Operate and govern infrastructure through one extensible workspace for visibility, controlled workflows, analytics, reporting, and administration.
+                            Operate, govern, and understand infrastructure from one permission-aware workspace built for reliable daily operations.
                         </p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('user-round', current_user.display_label) }}
@@ -23,7 +23,7 @@
                        aria-label="Current access scope">
                     <div class="{{ page_hero.context_panel_classes() }}">
                         {{ page_hero.context_header('Access Scope', 'Role-Aware Workspace', 'key-round') }}
-                        {{ page_hero.context_info('shield-check', 'Access is limited to the workspaces assigned to your role.') }}
+                        {{ page_hero.context_info('shield-check', 'Your workspace catalog reflects the permissions assigned to your current role.') }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
                             {{ page_hero.context_metric('panels-top-left', 'Workspaces', shortcut_count, 'Available to your assigned role.') }}
                             {{ page_hero.context_metric('layout-grid', 'Capability Areas', workspace_group_count, 'Grouped by operational purpose.') }}
@@ -32,88 +32,98 @@
                 </aside>
             </div>
         </section>
+
         <section class="grid gap-4" data-workspace-catalog>
-            <header class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                    <div class="inline-flex items-center gap-2 rounded-full border border-kaori-primary/15 bg-kaori-soft px-3 py-2 text-[10px] font-extrabold uppercase tracking-[0.12em] text-kaori-primary">
-                        <i data-lucide="layout-grid" class="h-4 w-4" aria-hidden="true"></i>
-                        Available Workspaces
+            <div class="overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm">
+                <div class="grid gap-5 border-b border-outline-subtle px-5 py-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-end lg:px-6">
+                    <div class="min-w-0">
+                        <div class="inline-flex items-center gap-2 rounded-md border border-kaori-primary/15 bg-kaori-soft px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-kaori-primary">
+                            <i data-lucide="layout-grid" class="h-4 w-4" aria-hidden="true"></i>
+                            Workspace Directory
+                        </div>
+                        <h2 class="mt-3 text-2xl font-extrabold tracking-[-0.035em] text-content-primary">Open The Capability You Need</h2>
+                        <p class="mt-1.5 max-w-3xl text-[12px] font-medium leading-5 text-content-muted">
+                            Browse role-aware workspaces by operational purpose, then open the area that matches the task you need to complete.
+                        </p>
                     </div>
-                    <h2 class="mt-3 text-2xl font-extrabold tracking-[-0.035em] text-content-primary">Open The Capability You Need</h2>
-                    <p class="mt-1.5 max-w-3xl text-[12px] font-medium leading-5 text-content-muted">
-                        Workspaces are grouped by operational purpose and automatically filtered by your assigned permissions.
-                    </p>
+                    <label class="relative flex w-full items-center">
+                        <span class="sr-only">Search Workspace</span>
+                        <i data-lucide="search"
+                           class="pointer-events-none absolute left-4 h-4 w-4 text-content-muted"
+                           aria-hidden="true"></i>
+                        <input type="search"
+                               class="h-11 w-full rounded-lg border border-outline-default bg-surface-subtle pl-11 pr-12 text-[11px] font-semibold text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-kaori-primary focus:bg-surface-card focus:ring-4 focus:ring-kaori-primary/10"
+                               placeholder="Search Workspace"
+                               autocomplete="off"
+                               data-workspace-search />
+                        <kbd class="absolute right-3 inline-flex h-6 min-w-6 items-center justify-center rounded-md border border-outline-default bg-surface-card px-1.5 text-[10px] font-bold text-content-muted shadow-sm">/</kbd>
+                    </label>
                 </div>
-                <label class="relative flex w-full items-center lg:w-[340px]">
-                    <span class="sr-only">Search Workspace</span>
-                    <i data-lucide="search"
-                       class="pointer-events-none absolute left-4 h-4 w-4 text-content-muted"
-                       aria-hidden="true"></i>
-                    <input type="search"
-                           class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-11 pr-12 text-[11px] font-semibold text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10"
-                           placeholder="Search Workspace"
-                           autocomplete="off"
-                           data-workspace-search />
-                    <kbd class="absolute right-3 inline-flex h-6 w-6 items-center justify-center rounded-lg border border-outline-default bg-surface-hover text-[10px] font-bold text-content-muted shadow-sm">/</kbd>
-                </label>
-            </header>
-            <div class="flex min-h-10 items-center justify-between gap-4 rounded-lg border border-kaori-primary/15 bg-kaori-soft px-4 py-2.5 text-[10px] font-bold text-kaori-primary"
-                 aria-live="polite">
-                <span class="inline-flex items-center gap-2">
-                    <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
-                    {{ current_user.role_display_name }} Access
-                </span>
-                <strong data-workspace-result-count>{{ shortcut_count }} Workspaces Available</strong>
+                <div class="flex flex-col gap-2 bg-surface-subtle px-5 py-3 text-[10px] font-bold sm:flex-row sm:items-center sm:justify-between lg:px-6"
+                     aria-live="polite">
+                    <span class="inline-flex items-center gap-2 text-content-muted">
+                        <span class="flex h-7 w-7 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                            <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
+                        </span>
+                        {{ current_user.role_display_name }} Access
+                    </span>
+                    <strong class="text-kaori-primary" data-workspace-result-count>{{ shortcut_count }} Workspaces Available</strong>
+                </div>
             </div>
+
             <div class="grid gap-3">
                 {% for group in workspace_groups %}
-                    <details class="group overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm"
+                    <details class="group overflow-hidden rounded-2xl border border-outline-subtle bg-surface-card shadow-sm transition open:border-kaori-primary/20 open:shadow-md"
                              data-workspace-group>
-                        <summary class="flex cursor-pointer list-none items-center gap-4 px-4 py-4 transition hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-kaori-primary/15 [&::-webkit-details-marker]:hidden">
-                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/10 bg-kaori-soft text-kaori-primary"
+                        <summary class="grid cursor-pointer list-none grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 px-5 py-4 transition hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-inset focus-visible:ring-kaori-primary/15 [&::-webkit-details-marker]:hidden lg:px-6">
+                            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-kaori-primary/10 bg-kaori-soft text-kaori-primary"
                                   aria-hidden="true">
                                 <i data-lucide="{{ group.icon }}" class="h-5 w-5"></i>
                             </span>
-                            <span class="min-w-0 flex-1">
-                                <span class="block text-[9px] font-extrabold uppercase tracking-[0.12em] text-kaori-primary">{{ group.eyebrow }}</span>
-                                <span class="mt-1 block text-sm font-extrabold text-content-primary">{{ group.title }}</span>
-                                <span class="mt-1 block text-[11px] font-medium leading-5 text-content-muted">{{ group.description }}</span>
-                            </span>
-                            <span class="inline-flex shrink-0 items-center gap-3">
-                                <span class="rounded-md border border-outline-default bg-surface-hover px-2.5 py-1.5 text-[10px] font-extrabold text-content-muted">
-                                    <strong data-group-result-count>{{ group.shortcut_count }}</strong>
-                                    Available
+                            <span class="min-w-0">
+                                <span class="flex flex-wrap items-center gap-x-3 gap-y-1">
+                                    <span class="text-[9px] font-extrabold uppercase tracking-[0.14em] text-kaori-primary">{{ group.eyebrow }}</span>
+                                    <span class="hidden h-1 w-1 rounded-full bg-outline-strong sm:block" aria-hidden="true"></span>
+                                    <span class="text-[10px] font-bold text-content-muted">{{ group.shortcut_count }} Workspaces</span>
                                 </span>
-                                <span class="flex h-8 w-8 items-center justify-center rounded-lg text-content-muted transition group-open:rotate-180 group-open:text-kaori-primary"
+                                <span class="mt-1 block text-sm font-extrabold text-content-primary">{{ group.title }}</span>
+                                <span class="mt-1 block max-w-4xl text-[11px] font-medium leading-5 text-content-muted">{{ group.description }}</span>
+                            </span>
+                            <span class="inline-flex shrink-0 items-center gap-2">
+                                <span class="hidden rounded-md border border-outline-default bg-surface-subtle px-2.5 py-1.5 text-[10px] font-extrabold text-content-muted sm:inline-flex">
+                                    <strong data-group-result-count>{{ group.shortcut_count }}</strong>
+                                    <span class="ml-1">Available</span>
+                                </span>
+                                <span class="flex h-9 w-9 items-center justify-center rounded-lg border border-outline-subtle bg-surface-subtle text-content-muted transition group-open:rotate-180 group-open:border-kaori-primary/20 group-open:bg-kaori-soft group-open:text-kaori-primary"
                                       aria-hidden="true">
                                     <i data-lucide="chevron-down" class="h-4 w-4"></i>
                                 </span>
                             </span>
                         </summary>
-                        <div class="border-t border-outline-subtle bg-surface-subtle p-4">
-                            <div class="grid gap-3 sm:grid-cols-2 2xl:grid-cols-3">
+                        <div class="border-t border-outline-subtle bg-surface-subtle p-4 lg:p-5">
+                            <div class="grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
                                 {% for shortcut in group.shortcuts %}
                                     <a href="{{ shortcut.href }}"
-                                       class="group/card flex min-h-[220px] flex-col rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-kaori-primary/35 hover:shadow-xl hover:shadow-kaori-primary/10 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-kaori-primary/15"
+                                       class="group/card flex min-h-[190px] flex-col rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-kaori-primary/35 hover:shadow-lg hover:shadow-kaori-primary/10 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-kaori-primary/15 lg:p-5"
                                        data-workspace-card
                                        data-search-text="{{ shortcut.search_text }}">
                                         <div class="flex items-start justify-between gap-3">
-                                            <span class="flex h-12 w-12 items-center justify-center rounded-lg border border-kaori-primary/10 bg-kaori-soft text-kaori-primary transition group-hover/card:bg-kaori-primary group-hover/card:text-white"
+                                            <span class="flex h-10 w-10 items-center justify-center rounded-lg border border-kaori-primary/10 bg-kaori-soft text-kaori-primary transition group-hover/card:bg-kaori-primary group-hover/card:text-white"
                                                   aria-hidden="true">
-                                                <i data-lucide="{{ shortcut.icon }}" class="h-5 w-5"></i>
+                                                <i data-lucide="{{ shortcut.icon }}" class="h-4.5 w-4.5"></i>
                                             </span>
-                                            <span class="rounded-full bg-surface-hover px-2.5 py-1.5 text-[9px] font-extrabold uppercase tracking-[0.12em] text-content-muted">{{ shortcut.scope }}</span>
+                                            <span class="rounded-md border border-outline-subtle bg-surface-subtle px-2 py-1 text-[9px] font-extrabold uppercase tracking-[0.1em] text-content-muted">{{ shortcut.scope }}</span>
                                         </div>
-                                        <div class="mt-5 flex-1">
+                                        <div class="mt-4 flex-1">
                                             <p class="text-[9px] font-extrabold uppercase tracking-[0.12em] text-kaori-primary">{{ shortcut.label }}</p>
-                                            <h4 class="mt-2 text-base font-extrabold leading-6 tracking-[-0.02em] text-content-primary">{{ shortcut.title }}</h4>
-                                            <span class="mt-2 block text-[11px] font-medium leading-5 text-content-muted">{{ shortcut.description }}</span>
+                                            <h3 class="mt-1.5 text-base font-extrabold leading-6 tracking-[-0.02em] text-content-primary">{{ shortcut.title }}</h3>
+                                            <p class="mt-2 text-[11px] font-medium leading-5 text-content-muted">{{ shortcut.description }}</p>
                                         </div>
-                                        <div class="mt-5 flex items-center justify-between gap-3 border-t border-outline-subtle pt-4 text-[10px] font-extrabold text-kaori-primary">
-                                            <strong>Open Workspace</strong>
-                                            <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft transition group-hover/card:bg-kaori-primary group-hover/card:text-white"
+                                        <div class="mt-4 flex items-center justify-between gap-3 border-t border-outline-subtle pt-3 text-[10px] font-extrabold text-kaori-primary">
+                                            <span>Open Workspace</span>
+                                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft transition group-hover/card:bg-kaori-primary group-hover/card:text-white"
                                                   aria-hidden="true">
-                                                <i data-lucide="arrow-up-right" class="h-4 w-4"></i>
+                                                <i data-lucide="arrow-up-right" class="h-3.5 w-3.5"></i>
                                             </span>
                                         </div>
                                     </a>
@@ -123,15 +133,16 @@
                     </details>
                 {% endfor %}
             </div>
-            <div class="rounded-xl border border-dashed border-outline-strong bg-surface-card p-8 text-center"
+
+            <div class="rounded-2xl border border-dashed border-outline-strong bg-surface-card p-8 text-center"
                  data-workspace-empty
                  hidden>
-                <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
                       aria-hidden="true">
                     <i data-lucide="search-x" class="h-6 w-6"></i>
                 </span>
                 <h3 class="mt-4 text-base font-extrabold text-content-primary">No Permitted Workspace Matches This Search</h3>
-                <p class="mt-1 text-[11px] font-medium text-content-muted">Try a different capability, function, or infrastructure scope.</p>
+                <p class="mt-1 text-[11px] font-medium text-content-muted">Try another capability, operational function, or infrastructure scope.</p>
             </div>
         </section>
     </div>
