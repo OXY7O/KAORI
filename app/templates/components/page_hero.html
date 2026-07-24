@@ -31,9 +31,6 @@
 {% macro context_metric_value_classes(compact=false) -%}
     {{ 'text-sm font-semibold leading-5' if compact else 'text-xl font-bold leading-none' }} text-brand-foreground
 {%- endmacro %}
-{% macro context_metric_description_classes() -%}
-    mt-1 text-[10px] leading-4 text-brand-foreground-muted
-{%- endmacro %}
 {% macro context_action_classes() -%}
     w-full {{ primary_action_classes() }} disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-white disabled:hover:text-kaori-primary
 {%- endmacro %}
@@ -51,23 +48,19 @@
         </span>
     </div>
 {%- endmacro %}
-{% macro context_note(text) -%}
-    <p class="{{ context_metric_description_classes() }}">{{ text }}</p>
-{%- endmacro %}
 {% macro context_actions_classes(columns=2) -%}
     mt-auto grid gap-2 pt-3 {{ 'grid-cols-2' if columns == 2 else 'grid-cols-1' }}
 {%- endmacro %}
 {% macro context_panel_metrics_classes() -%}
     mt-3 grid grid-cols-2 gap-2
 {%- endmacro %}
-{% macro context_metric(icon, label, value, description, value_classes='text-xl font-bold leading-none') -%}
+{% macro context_metric(icon, label, value, description=None, value_classes='text-xl font-bold leading-none') -%}
     <div class="{{ context_metric_card_classes() }}">
         <div class="flex items-center gap-2 text-brand-foreground">
             <i data-lucide="{{ icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
             <p class="{{ context_metric_label_classes() }}">{{ label }}</p>
         </div>
         <p class="mt-1.5 {{ value_classes }} text-brand-foreground">{{ value }}</p>
-        <p class="{{ context_metric_description_classes() }}">{{ description }}</p>
     </div>
 {%- endmacro %}
 {% macro title_classes() -%}

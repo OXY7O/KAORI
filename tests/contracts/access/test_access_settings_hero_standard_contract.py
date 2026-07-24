@@ -49,7 +49,6 @@ def test_shared_hero_component_exposes_standard_context_primitives() -> None:
         'context_panel_metrics_classes',
         'context_metric',
         'context_header',
-        'context_note',
         'context_actions_classes',
     ):
         assert f'macro {macro}' in text

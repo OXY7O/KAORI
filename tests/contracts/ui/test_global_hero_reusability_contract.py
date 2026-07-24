@@ -38,7 +38,6 @@ def test_shared_hero_component_owns_all_visual_primitives() -> None:
         'context_metric_card_classes',
         'context_metric_label_classes',
         'context_metric_value_classes',
-        'context_metric_description_classes',
         'context_actions_classes',
         'context_action_classes',
         'context_single_action_classes',
@@ -178,5 +177,20 @@ def test_right_side_hero_actions_use_shared_white_context_action() -> None:
                     or 'page_hero.context_single_action_classes()' in classes
                 ):
                     failures.append(f'{path.relative_to(ROOT)}: hero context action bypasses shared white style')
+
+    assert not failures, '\n'.join(failures)
+
+def test_right_side_hero_context_has_no_descriptive_copy() -> None:
+    component = _text(PAGE_HERO)
+    assert 'macro context_note(' not in component
+    assert 'context_metric_description_classes' not in component
+
+    failures: list[str] = []
+    for path in TEMPLATES.rglob('*.html'):
+        source = _text(path)
+        if 'page_hero.context_note(' in source:
+            failures.append(f'{path.relative_to(ROOT)}: uses context_note')
+        if 'page_hero.context_metric_description_classes()' in source:
+            failures.append(f'{path.relative_to(ROOT)}: renders context metric description')
 
     assert not failures, '\n'.join(failures)

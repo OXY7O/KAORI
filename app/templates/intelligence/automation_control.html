@@ -32,7 +32,6 @@
                        aria-label="Automation posture">
                     <div class="{{ page_hero.context_panel_classes() }}">
                         {{ page_hero.context_header('Automation posture', 'Human-governed by default', 'user-check') }}
-                        {{ page_hero.context_note("Production mutation is not enabled by this page alone. Resolver registry, deployment policy, operational controls, decision authorization, and readiness stage must all agree.") }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
                             {{ page_hero.context_metric('book-open-check', 'Published', payload.counts.published_revisions, 'Immutable revisions') }}
                             {{ page_hero.context_metric('clipboard-clock', 'Pending Review', payload.counts.pending_candidates, 'Decision candidates') }}

@@ -1,15 +1,31 @@
 {% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
 {% block title %}Inventory Sync Configuration{% endblock %}
 {% block content %}
 <div class="mx-auto max-w-5xl space-y-6">
-  <section class="rounded-2xl bg-kaori-primary p-6 text-white shadow-lg shadow-kaori-primary/15">
-    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-      <div class="max-w-2xl">
-        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-white/70">Kubernetes Inventory</p>
-        <h1 class="mt-2 text-2xl font-bold">Inventory Sync Configuration</h1>
-        <p class="mt-2 text-sm leading-6 text-white/80">Control the automatic fleet inventory refresh interval. Manual synchronization remains available from Quick Actions and each Kubernetes integration.</p>
+  <section class="{{ page_hero.shell_classes() }}">
+    <div class="{{ page_hero.layout_classes() }}">
+      <div class="{{ page_hero.content_classes() }}">
+        {% call page_hero.intro('refresh-cw', 'Platform Operations', 'database-zap') %}
+          <h1 class="{{ page_hero.title_classes() }}">Inventory Sync Configuration</h1>
+          <p class="mt-2 {{ page_hero.description_classes() }}">
+            Control the automatic fleet inventory refresh interval. Manual synchronization remains available from Quick Actions and each Kubernetes integration.
+          </p>
+          <div class="{{ page_hero.metadata_row_classes() }}">
+            {{ page_hero.meta_label('clock-3', policy.interval_minutes ~ ' Minute Interval') }}
+            {{ page_hero.meta_label('layers-3', 'All Inventory Resources') }}
+          </div>
+        {% endcall %}
       </div>
-      <span class="rounded-md border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold">{{ 'Automatic Enabled' if policy.enabled else 'Manual Only' }}</span>
+      <aside class="{{ page_hero.aside_classes() }}" aria-label="Inventory synchronization posture">
+        <div class="{{ page_hero.context_panel_classes() }}">
+          {{ page_hero.context_header('Synchronization Posture', 'Fleet Inventory Refresh', 'rotate-cw') }}
+          <div class="{{ page_hero.context_panel_metrics_classes() }}">
+            {{ page_hero.context_metric('power', 'Automatic Sync', 'Enabled' if policy.enabled else 'Disabled', value_classes='text-sm font-semibold leading-5') }}
+            {{ page_hero.context_metric('timer', 'Interval', policy.interval_minutes ~ ' Minutes', value_classes='text-sm font-semibold leading-5') }}
+          </div>
+        </div>
+      </aside>
     </div>
   </section>
 
