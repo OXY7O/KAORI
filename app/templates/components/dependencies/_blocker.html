@@ -6,8 +6,59 @@
     {% set blocked_state_description = dependency_blocker.description %}
     {% set blocked_state_stage = dependency_blocker.stage %}
     {% set blocked_state_tone = blocker_tone %}
-    {% set blocked_state_action_url = dependency_blocker.action_url %}
-    {% set blocked_state_action_label = dependency_blocker.action_label %}
-    {% set blocked_state_permission = dependency_blocker.permission %}
-    {% include 'components/states/_blocked_state.html' %}
+    {% set blocked_step = dependency_blocker.stage|int %}
+    {% set analytics_steps = [
+        {'label': 'Kubernetes', 'icon': 'server-cog'},
+        {'label': 'Prometheus', 'icon': 'activity'},
+        {'label': 'Alertmanager', 'icon': 'bell-ring'}
+    ] %}
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+             data-kaori-blocked-state>
+        <div class="border-b border-outline-default bg-kaori-soft/60 px-5 py-4">
+            <div class="flex min-w-0 items-start gap-4">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-kaori-border bg-surface-card text-kaori-primary shadow-sm"
+                      aria-hidden="true">
+                    <i data-lucide="{{ blocked_state_icon }}" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">{{ blocked_state_title }}</h2>
+                        {% import "components/table_label.html" as table_label %}
+                        {{ table_label.status_label(blocked_state_label, blocked_state_tone, blocked_state_icon) }}
+                        {{ table_label.metadata_label('Blocked At Step ' ~ blocked_step, 'list-ordered') }}
+                    </div>
+                    <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">{{ blocked_state_description }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="grid gap-3 p-5 md:grid-cols-3">
+            {% for step in analytics_steps %}
+                {% set step_number = loop.index %}
+                {% set is_complete = step_number < blocked_step %}
+                {% set is_current = step_number == blocked_step %}
+                <div class="rounded-lg border p-4 {{ 'border-normal-border bg-normal-soft' if is_complete else ('border-warning-border bg-warning-soft' if is_current else 'border-outline-default bg-surface-subtle') }}">
+                    <div class="flex items-center justify-between gap-3">
+                        <span class="flex h-9 w-9 items-center justify-center rounded-md border {{ 'border-normal-border bg-surface-card text-normal' if is_complete else ('border-warning-border bg-surface-card text-warning' if is_current else 'border-outline-default bg-surface-card text-content-muted') }}"
+                              aria-hidden="true">
+                            <i data-lucide="{{ step.icon }}" class="h-4 w-4"></i>
+                        </span>
+                        <span class="text-[10px] font-bold uppercase tracking-[0.12em] {{ 'text-normal' if is_complete else ('text-warning' if is_current else 'text-content-muted') }}">
+                            {{ 'Complete' if is_complete else ('Current Blocker' if is_current else 'Pending') }}
+                        </span>
+                    </div>
+                    <p class="mt-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Step {{ step_number }}</p>
+                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ step.label }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">
+                        {% if is_complete %}
+                            Dependency validated and available.
+                        {% elif is_current %}
+                            Complete this dependency before Analytics can continue.
+                        {% else %}
+                            Validation begins after the previous step is ready.
+                        {% endif %}
+                    </p>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
 {% endif %}

@@ -68,7 +68,7 @@ def prometheus_connection_blocker(
 ) -> DependencyBlocker:
     return {
         'kind': 'prometheus_connection',
-        'stage': 3,
+        'stage': 2,
         'badge': 'Prometheus Unavailable',
         'title': 'Prometheus Connection Unavailable',
         'description': (
@@ -93,7 +93,7 @@ def prometheus_capability_blocker(
     labels = ', '.join(selected or []) if selected else 'required capabilities'
     return {
         'kind': 'prometheus_capability',
-        'stage': 3,
+        'stage': 2,
         'badge': f'{feature_label} Capability Incomplete',
         'title': f'{feature_label} Integration Contract Not Ready',
         'description': (
@@ -134,7 +134,7 @@ def alert_source_setup_blocker(
 
     return {
         'kind': 'alert_source_setup',
-        'stage': 2,
+        'stage': 3,
         'badge': badge,
         'title': title,
         'description': description,
