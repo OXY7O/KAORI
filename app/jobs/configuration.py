@@ -39,7 +39,11 @@ def _catalog_row(
         'queue_name': definition.queue_name,
         'scope_type': definition.scope_type,
         'scope_key': definition.scope_key,
-        'status': _policy_status(policy),
+        'status': (
+            {'label': 'Execution Active', 'tone': 'pending', 'icon': 'loader-circle'}
+            if (definition.job_type, definition.operation) in active_job_keys
+            else _policy_status(policy)
+        ),
         'enabled': policy.enabled,
         'interval_label': present_interval(policy.interval_minutes),
         'next_run_at': present_user_datetime(policy.next_run_at, empty='Not Scheduled'),

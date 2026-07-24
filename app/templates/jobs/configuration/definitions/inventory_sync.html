@@ -23,9 +23,9 @@
                     </div>
                 </div>
                 {{ table_label.status_label(
-                    selected_job.scheduler_state.label,
-                    selected_job.scheduler_state.tone,
-                    selected_job.scheduler_state.icon
+                    selected_job.configuration_state.label,
+                    selected_job.configuration_state.tone,
+                    selected_job.configuration_state.icon
                 ) }}
             </div>
         </header>
@@ -57,19 +57,19 @@
                         <i data-lucide="server" class="h-4 w-4"></i>
                     </span>
                     {{ table_label.status_label(
-                        selected_job.eligible_cluster_count ~ ' Eligible',
-                        'normal' if selected_job.eligible_cluster_count else 'warning',
-                        'circle-check' if selected_job.eligible_cluster_count else 'triangle-alert'
+                        selected_job.readiness_state.label,
+                        selected_job.readiness_state.tone,
+                        selected_job.readiness_state.icon
                     ) }}
                 </div>
                 <p class="mt-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">
-                    Fleet Coverage
+                    Inventory Readiness
                 </p>
                 <p class="mt-1 text-lg font-bold text-content-primary">
                     {{ selected_job.eligible_cluster_count }} of {{ selected_job.registered_cluster_count }}
                 </p>
                 <p class="mt-1 text-xs leading-5 text-content-muted">
-                    Clusters with enabled canonical Kubernetes bindings.
+                    {{ selected_job.readiness_state.description }}
                 </p>
             </article>
 
@@ -113,8 +113,8 @@
                     {{ selected_job.latest_job.queued_at if selected_job.latest_job else 'No Execution Recorded' }}
                 </p>
                 <p class="mt-1 truncate text-xs leading-5 text-content-muted"
-                   title="{{ selected_job.latest_job.trigger_label ~ ' · ' ~ selected_job.latest_job.requester if selected_job.latest_job else 'The first eligible run will appear here.' }}">
-                    {{ selected_job.latest_job.trigger_label ~ ' · ' ~ selected_job.latest_job.requester if selected_job.latest_job else 'The first eligible run will appear here.' }}
+                   title="{{ selected_job.latest_job.progress_message if selected_job.latest_job else 'The first eligible run will appear here.' }}">
+                    {{ selected_job.latest_job.progress_message if selected_job.latest_job else 'The first eligible run will appear here.' }}
                 </p>
             </article>
         </div>
@@ -133,6 +133,16 @@
                 </p>
             </div>
         {% endif %}
+
+        <div class="border-t border-brand-outline bg-kaori-soft px-5 py-3 sm:px-6">
+            <p class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                <i data-lucide="badge-check" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                <span>
+                    A successful sync provides runtime evidence for Kubernetes connectivity and inventory read access,
+                    but it does not replace full capability validation.
+                </span>
+            </p>
+        </div>
     </section>
 
     <div class="grid gap-5 lg:grid-cols-2 lg:items-start">
@@ -300,7 +310,10 @@
                             label="Active inventory sync progress"
                         ) }}
                         <p class="mt-2 text-xs text-content-muted">
-                            {{ selected_job.active_job.progress_label }} · {{ selected_job.active_job.requester }}
+                            {{ selected_job.active_job.progress_label }}
+                        </p>
+                        <p class="mt-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">
+                            Requested By · {{ selected_job.active_job.requester }}
                         </p>
                     </div>
                 {% endif %}

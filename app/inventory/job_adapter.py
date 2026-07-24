@@ -35,7 +35,9 @@ def _job_progress(job: JobExecution) -> tuple[int, str]:
         return percent, f'{current} of {total} Clusters'
     if job.is_terminal:
         return 100, 'Execution Completed'
-    return 0, 'Waiting For Worker'
+    if job.status == 'queued':
+        return 0, 'Waiting For Inventory Worker'
+    return 0, 'Preparing Inventory Execution'
 
 
 def present_inventory_job(job: JobExecution) -> dict[str, Any]:
@@ -142,6 +144,50 @@ def build_inventory_sync_context(policy: JobPolicy) -> dict[str, Any]:
             'description': 'Only manual inventory synchronization is available.',
         }
 
+
+    if eligible_cluster_count:
+        readiness_state = {
+            'label': 'Sync Eligible',
+            'tone': 'normal',
+            'icon': 'link-2',
+            'description': (
+                'Canonical Kubernetes bindings are available. The sync itself verifies live API '
+                'access and inventory read permissions.'
+            ),
+        }
+    else:
+        readiness_state = {
+            'label': 'Blocked',
+            'tone': 'warning',
+            'icon': 'shield-alert',
+            'description': 'No canonical Kubernetes binding is eligible for inventory synchronization.',
+        }
+
+    if active_job is not None:
+        configuration_state = {
+            'label': 'Execution Active',
+            'tone': 'pending',
+            'icon': 'loader-circle',
+        }
+    elif not eligible_cluster_count:
+        configuration_state = {
+            'label': 'Blocked',
+            'tone': 'warning',
+            'icon': 'shield-alert',
+        }
+    elif policy.enabled:
+        configuration_state = {
+            'label': 'Enabled',
+            'tone': 'normal',
+            'icon': 'circle-check',
+        }
+    else:
+        configuration_state = {
+            'label': 'Manual Only',
+            'tone': 'unknown',
+            'icon': 'mouse-pointer-click',
+        }
+
     if active_job is not None:
         execution_state = {
             'label': 'Execution Active',
@@ -170,6 +216,8 @@ def build_inventory_sync_context(policy: JobPolicy) -> dict[str, Any]:
         'blocked_cluster_count': blocked_cluster_count,
         'eligible_targets': eligible_targets,
         'scheduler_state': scheduler_state,
+        'readiness_state': readiness_state,
+        'configuration_state': configuration_state,
         'execution_state': execution_state,
         'interval_label': present_interval(policy.interval_minutes),
         'active_job': present_inventory_job(active_job) if active_job is not None else None,
