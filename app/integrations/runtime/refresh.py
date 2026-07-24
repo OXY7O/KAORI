@@ -6,6 +6,8 @@ from app.integrations.contracts import RuntimeAdapter, RuntimeState
 from app.integrations.runtime.repository import persist_runtime_state
 from app.models.runtime import IntegrationRuntimeObservation
 
+__all__ = ['get_runtime_state', 'refresh_and_record', 'refresh_runtime']
+
 
 def refresh_runtime(adapter: RuntimeAdapter, instance: Any) -> tuple[Any, RuntimeState]:
     result = adapter.refresh(instance)

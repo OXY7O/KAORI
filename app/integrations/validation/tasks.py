@@ -7,10 +7,10 @@ from typing import Any, cast
 from celery import Task, shared_task
 from flask import current_app
 
-from app.extensions import db
+import app.integrations.runtime.refresh as runtime_refresh
+from app.extensions.db import db
 from app.integrations.lifecycle import ensure_canonical_instance, ensure_provider_operational
 from app.integrations.registry import execute_integration_operation, get_integration
-from app.integrations.runtime.refresh import refresh_and_record
 from app.integrations.runtime.repository import persist_runtime_state
 from app.integrations.validation.state import (
     claim_validation_job,
@@ -351,7 +351,7 @@ def validate_integration_instance(
             if instance is None:
                 raise LookupError('Prometheus instance no longer exists.')
             ensure_provider_operational(instance, provider_type='prometheus')
-            validation_result, state, _ = refresh_and_record(
+            validation_result, state, _ = runtime_refresh.refresh_and_record(
                 get_integration('prometheus').adapter,
                 instance,
                 trigger_type=trigger_type,
@@ -383,7 +383,7 @@ def validate_integration_instance(
             if instance is None:
                 raise LookupError('Alertmanager instance no longer exists.')
             ensure_provider_operational(instance, provider_type='alertmanager')
-            validation_result, state, _ = refresh_and_record(
+            validation_result, state, _ = runtime_refresh.refresh_and_record(
                 get_integration('alertmanager').adapter,
                 instance,
                 trigger_type=trigger_type,
@@ -419,7 +419,7 @@ def validate_integration_instance(
             connection = db.session.get(KubernetesConnection, instance_id)
             if connection is None:
                 raise LookupError('Kubernetes connection no longer exists.')
-            validation_result, state, _ = refresh_and_record(
+            validation_result, state, _ = runtime_refresh.refresh_and_record(
                 get_integration('kubernetes').adapter,
                 connection,
                 trigger_type=trigger_type,
