@@ -161,7 +161,11 @@
                 </div>
             </header>
 
-            <form method="post" action="{{ url_for('jobs.update_policy', job_key=definition.key) }}">
+            <form method="post"
+                  action="{{ url_for('jobs.update_policy', job_key=definition.key) }}"
+                  hx-post="{{ url_for('jobs.update_policy', job_key=definition.key) }}"
+                  hx-target="#job-configuration-workspace"
+                  hx-swap="outerHTML">
                 <div class="space-y-5 p-5">
                     {{ policy_form.hidden_tag() }}
                     <label class="flex cursor-pointer items-start justify-between gap-4 rounded-lg border border-outline-default bg-surface-elevated p-4 transition hover:border-brand-outline">
@@ -337,7 +341,11 @@
                     Review Executions
                 </a>
                 {% if can_execute %}
-                    <form method="post" action="{{ url_for('jobs.run_now', job_key=definition.key) }}">
+                    <form method="post"
+                          action="{{ url_for('jobs.run_now', job_key=definition.key) }}"
+                          hx-post="{{ url_for('jobs.run_now', job_key=definition.key) }}"
+                          hx-target="#job-configuration-workspace"
+                          hx-swap="outerHTML">
                         {{ manual_form.hidden_tag() }}
                         <button type="submit"
                                 {% if not selected_job.eligible_cluster_count or selected_job.active_job %}disabled{% endif %}

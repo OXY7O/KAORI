@@ -1,13 +1,21 @@
-{% if selected_job %}
-    {% include selected_job.definition.configuration_template %}
-{% else %}
-    <section class="rounded-xl border border-outline-default bg-surface-card p-8 text-center shadow-sm">
-        <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-            <i data-lucide="workflow" class="h-5 w-5"></i>
-        </span>
-        <h2 class="mt-4 text-base font-semibold text-content-primary">Select A Registered Job</h2>
-        <p class="mt-1 text-sm text-content-muted">
-            Select a registered job definition to review its policy and execution controls.
-        </p>
-    </section>
-{% endif %}
+<div id="job-configuration-workspace"
+     {% if selected_job and selected_job.active_job %}
+         hx-get="{{ url_for('jobs.configuration', job_key=selected_job.definition.key, fragment='job') }}"
+         hx-trigger="every 2s"
+         hx-target="this"
+         hx-swap="outerHTML"
+     {% endif %}>
+    {% if selected_job %}
+        {% include selected_job.definition.configuration_template %}
+    {% else %}
+        <section class="rounded-xl border border-outline-default bg-surface-card p-8 text-center shadow-sm">
+            <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                <i data-lucide="workflow" class="h-5 w-5"></i>
+            </span>
+            <h2 class="mt-4 text-base font-semibold text-content-primary">Select A Registered Job</h2>
+            <p class="mt-1 text-sm text-content-muted">
+                Select a registered job definition to review its policy and execution controls.
+            </p>
+        </section>
+    {% endif %}
+</div>

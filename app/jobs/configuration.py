@@ -11,7 +11,7 @@ from app.jobs.policies.service import ensure_registered_job_policies
 from app.jobs.registry import list_job_definitions
 from app.models.job import JobExecution, JobPolicy
 
-_ATTENTION_DISPATCH_STATUSES = {'blocked', 'failed', 'partially_succeeded'}
+_ATTENTION_DISPATCH_STATUSES = {'failed', 'partially_succeeded'}
 
 
 def _policy_status(policy: JobPolicy) -> dict[str, str]:
@@ -19,8 +19,6 @@ def _policy_status(policy: JobPolicy) -> dict[str, str]:
         return {'label': 'Disabled', 'tone': 'disabled', 'icon': 'circle-pause'}
     if policy.last_dispatch_status == 'failed':
         return {'label': 'Dispatch Failed', 'tone': 'critical', 'icon': 'circle-x'}
-    if policy.last_dispatch_status == 'blocked':
-        return {'label': 'Blocked', 'tone': 'warning', 'icon': 'shield-alert'}
     return {'label': 'Enabled', 'tone': 'normal', 'icon': 'circle-check'}
 
 

@@ -106,6 +106,26 @@ def _render_execution_fragment(context: dict[str, object], fragment: str) -> str
     )
 
 
+
+
+def _is_htmx() -> bool:
+    return request.headers.get('HX-Request') == 'true'
+
+
+def _render_configuration_job(
+    job_key: str,
+    *,
+    policy_form: JobPolicyForm | None = None,
+    policy_error: str | None = None,
+    status_code: int = 200,
+) -> ResponseReturnValue:
+    context = _configuration_context(
+        selected_job_key=job_key,
+        policy_form=policy_form,
+        policy_error=policy_error,
+    )
+    return render_template('jobs/configuration/_job_workspace.html', **context), status_code
+
 def _jobs_execution_url(*, search: str = '', queue: str = '') -> str:
     return url_for(
         'jobs.executions',
@@ -124,7 +144,7 @@ def index() -> ResponseReturnValue:
 @bp.get('/executions')
 @permission_required('jobs.view')
 def executions() -> ResponseReturnValue:
-    if request.headers.get('HX-Request') == 'true':
+    if _is_htmx():
         return _render_execution_fragment(
             _execution_context(),
             request.args.get('fragment', 'page').strip(),
@@ -139,7 +159,7 @@ def executions() -> ResponseReturnValue:
 @permission_required('jobs.view')
 def configuration() -> ResponseReturnValue:
     selected_job_key = request.args.get('job_key', '').strip() or None
-    if request.headers.get('HX-Request') == 'true':
+    if _is_htmx():
         context = _configuration_context(selected_job_key=selected_job_key)
         fragment = request.args.get('fragment', 'page').strip()
         template = (
@@ -163,6 +183,8 @@ def update_policy(job_key: str) -> ResponseReturnValue:
     definition = _get_job_definition_or_404(job_key)
     form = JobPolicyForm()
     if not form.validate_on_submit():
+        if _is_htmx():
+            return _render_configuration_job(job_key, policy_form=form)
         context = _page_context(
             active_section='configuration',
             selected_job_key=job_key,
@@ -178,6 +200,12 @@ def update_policy(job_key: str) -> ResponseReturnValue:
             user_id=int(current_user.id),
         )
     except ValueError as exc:
+        if _is_htmx():
+            return _render_configuration_job(
+                job_key,
+                policy_form=form,
+                policy_error=str(exc),
+            )
         context = _page_context(
             active_section='configuration',
             selected_job_key=job_key,
@@ -209,6 +237,8 @@ def update_policy(job_key: str) -> ResponseReturnValue:
         },
         queue_feedback=True,
     )
+    if _is_htmx():
+        return _render_configuration_job(job_key)
     return redirect(url_for('jobs.configuration', job_key=job_key))
 
 
@@ -221,6 +251,8 @@ def run_now(job_key: str) -> ResponseReturnValue:
         abort(403)
     form = ManualJobRunForm()
     if not form.validate_on_submit():
+        if _is_htmx():
+            return _render_configuration_job(job_key)
         return redirect(url_for('jobs.configuration', job_key=job_key))
 
     try:
@@ -245,6 +277,8 @@ def run_now(job_key: str) -> ResponseReturnValue:
             metadata={'job_key': job_key, 'trigger_type': 'manual'},
             queue_feedback=True,
         )
+        if _is_htmx():
+            return _render_configuration_job(job_key)
         return redirect(url_for('jobs.configuration', job_key=job_key))
 
     if not outcome.accepted:
@@ -261,6 +295,8 @@ def run_now(job_key: str) -> ResponseReturnValue:
             metadata={'job_key': job_key, 'trigger_type': 'manual', 'dispatch_status': outcome.status},
             queue_feedback=True,
         )
+        if _is_htmx():
+            return _render_configuration_job(job_key)
         return redirect(url_for('jobs.configuration', job_key=job_key))
 
     job = outcome.job
@@ -285,6 +321,8 @@ def run_now(job_key: str) -> ResponseReturnValue:
         },
         queue_feedback=True,
     )
+    if _is_htmx():
+        return _render_configuration_job(job_key)
     return redirect(url_for('jobs.configuration', job_key=job_key))
 
 

@@ -100,7 +100,7 @@ def sync_all_clusters_task(
     job_execution_id: int | None = None,
 ) -> dict[str, Any]:
     task_id = str(self.request.id)
-    context = JobExecutionContext(task_id)
+    context = JobExecutionContext(task_id, job_execution_id)
     started_timer = perf_counter()
     started_at = _now_iso()
     if targets is None:
@@ -156,6 +156,16 @@ def sync_all_clusters_task(
                     }
                 )
                 logger.exception('Cluster inventory synchronization failed for %s.', cluster_name)
+
+            context.checkpoint(
+                current=index,
+                total=total_count,
+                message=(
+                    f'Synchronized {cluster_name}.'
+                    if cluster_name not in failed_clusters
+                    else f'Finished {cluster_name} with an error.'
+                ),
+            )
 
         result = _build_result(
             requested_by_user_id=requested_by_user_id,
@@ -237,7 +247,7 @@ def sync_single_cluster_task(
     job_execution_id: int | None = None,
 ) -> dict[str, Any]:
     task_id = str(self.request.id)
-    context = JobExecutionContext(task_id)
+    context = JobExecutionContext(task_id, job_execution_id)
     started_timer = perf_counter()
     started_at = _now_iso()
     cluster = db.session.get(Cluster, cluster_id)

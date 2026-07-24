@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from app.extensions.db import db
 from app.jobs.service import (
     is_cancel_requested,
     mark_job_canceled,
@@ -28,9 +29,20 @@ class JobExecutionContext:
     """
 
     task_id: str
+    job_execution_id: int | None = None
+
+    def _task_id(self) -> str:
+        if self.job_execution_id is None:
+            return self.task_id
+        from app.models.job import JobExecution
+
+        job = db.session.get(JobExecution, self.job_execution_id)
+        if job is None or not job.celery_task_id:
+            return self.task_id
+        return str(job.celery_task_id)
 
     def start(self, *, message: str, total: int = 0) -> None:
-        mark_job_running(self.task_id, message=message, total=total)
+        mark_job_running(self._task_id(), message=message, total=total)
 
     def checkpoint(
         self,
@@ -39,10 +51,10 @@ class JobExecutionContext:
         total: int | None = None,
         message: str | None = None,
     ) -> None:
-        if is_cancel_requested(self.task_id):
+        if is_cancel_requested(self._task_id()):
             raise JobCancellationRequested('The job was canceled by an operator.')
         update_job_progress(
-            self.task_id,
+            self._task_id(),
             current=current,
             total=total,
             message=message,
@@ -57,7 +69,7 @@ class JobExecutionContext:
         partial: bool = False,
     ) -> None:
         mark_job_succeeded(
-            self.task_id,
+            self._task_id(),
             result_summary=result_summary,
             result_type=result_type,
             result_reference=result_reference,
@@ -65,10 +77,10 @@ class JobExecutionContext:
         )
 
     def fail(self, error: Exception | str, *, error_code: str | None = None) -> None:
-        mark_job_failed(self.task_id, error=error, error_code=error_code)
+        mark_job_failed(self._task_id(), error=error, error_code=error_code)
 
     def retrying(self, *, message: str, error: Exception | str | None = None) -> None:
-        mark_job_retrying(self.task_id, message=message, error=error)
+        mark_job_retrying(self._task_id(), message=message, error=error)
 
     def canceled(self, *, message: str = 'Canceled at a cooperative checkpoint') -> None:
-        mark_job_canceled(self.task_id, message=message)
+        mark_job_canceled(self._task_id(), message=message)
