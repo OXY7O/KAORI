@@ -58,10 +58,12 @@
                         <div class="{{ page_hero.context_metric_card_classes() }}">
                             <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">CPU used</p>
                             <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ overview_summary.total_cpu_percent|default(0) }}%</p>
+                            <p class="{{ page_hero.context_metric_helper_classes() }}">Aggregate CPU utilization</p>
                         </div>
                         <div class="{{ page_hero.context_metric_card_classes() }}">
                             <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Memory used</p>
                             <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ overview_summary.total_memory_percent|default(0) }}%</p>
+                            <p class="{{ page_hero.context_metric_helper_classes() }}">Aggregate memory utilization</p>
                         </div>
                     </div>
                 </div>

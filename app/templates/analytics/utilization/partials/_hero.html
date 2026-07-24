@@ -64,10 +64,12 @@
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Highest usage</p>
                                 <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ highest_util }}%</p>
+                                <p class="{{ page_hero.context_metric_helper_classes() }}">Highest observed resource usage</p>
                             </div>
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Pod utilization</p>
                                 <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ pod_util }}%</p>
+                                <p class="{{ page_hero.context_metric_helper_classes() }}">Pods with recorded utilization</p>
                             </div>
                         </div>
                     </div>

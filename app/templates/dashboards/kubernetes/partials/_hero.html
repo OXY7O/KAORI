@@ -31,10 +31,12 @@
                         <div class="{{ page_hero.context_metric_card_classes() }}">
                             <p class="text-[10px] font-medium uppercase tracking-wide text-brand-foreground-muted">Connected clusters</p>
                             <p class="mt-1 text-xl font-semibold text-brand-foreground">0</p>
+                            <p class="{{ page_hero.context_metric_helper_classes() }}">No Kubernetes connection available</p>
                         </div>
                         <div class="{{ page_hero.context_metric_card_classes() }}">
                             <p class="text-[10px] font-medium uppercase tracking-wide text-brand-foreground-muted">Required action</p>
                             <p class="mt-1 text-xs font-semibold text-brand-foreground">Add cluster access</p>
+                            <p class="{{ page_hero.context_metric_helper_classes() }}">Register a cluster to continue</p>
                         </div>
                     </div>
                 </div>
@@ -86,6 +88,7 @@
                                     All Clusters
                                 {% endif %}
                             </p>
+                            <p class="{{ page_hero.context_metric_helper_classes() }}">Cluster selection applied to signals</p>
                         </div>
                         <div class="{{ page_hero.context_metric_card_classes() }}">
                             <div class="flex items-center gap-2 text-brand-foreground">
@@ -93,7 +96,7 @@
                                 <p class="text-[10px] font-semibold uppercase tracking-wide">Sources</p>
                             </div>
                             <p class="mt-1 text-xs font-semibold text-brand-foreground">Inventory · Metrics · Alerts</p>
-                            <p class="mt-0.5 text-[10px] leading-4 text-brand-foreground-muted">Freshness is shown per source.</p>
+                            <p class="{{ page_hero.context_metric_helper_classes() }}">Freshness is shown per source</p>
                         </div>
                     </div>
                 </div>

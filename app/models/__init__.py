@@ -11,7 +11,6 @@ from app.models.intelligence import (
     IntelligenceDecisionCandidate,
     IntelligenceExecutionJournal,
 )
-from app.models.inventory_sync import InventorySyncPolicy
 from app.models.inventory import (
     ClusterInventory,
     ConfigurationInventory,
@@ -24,6 +23,7 @@ from app.models.inventory import (
     StorageInventory,
     WorkloadInventory,
 )
+from app.models.inventory_sync import InventorySyncPolicy
 from app.models.job import JobExecution, JobExecutionSubscriber
 from app.models.knowledge import KnowledgeRunbook, KnowledgeRunbookAlertBinding, KnowledgeRunbookRevision
 from app.models.kubernetes import KubernetesConnection

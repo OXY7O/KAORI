@@ -31,8 +31,8 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('id'),
     )
     op.execute(
-        "INSERT INTO inventory_sync_policies "
-        "(id, enabled, interval_minutes, next_run_at, updated_at) "
+        'INSERT INTO inventory_sync_policies '
+        '(id, enabled, interval_minutes, next_run_at, updated_at) '
         "VALUES (1, TRUE, 60, CURRENT_TIMESTAMP + INTERVAL '60 minutes', CURRENT_TIMESTAMP)"
     )
 

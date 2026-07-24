@@ -183,8 +183,7 @@ def get_namespace_detail(
     workload_counts = {
         workload_type or 'Unknown': count
         for workload_type, count in (
-            workload_count_query
-            .filter(
+            workload_count_query.filter(
                 WorkloadInventory.cluster_id == namespace.cluster_id,
                 WorkloadInventory.namespace == namespace.namespace,
             )

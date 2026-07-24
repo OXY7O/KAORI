@@ -30,7 +30,8 @@ def _storage_bound_pods(
 
     elif item.storage_type == 'StorageClass':
         pvc_rows = (
-            filter_current_generation(StorageInventory.query, StorageInventory).filter_by(
+            filter_current_generation(StorageInventory.query, StorageInventory)
+            .filter_by(
                 cluster_id=item.cluster_id,
                 storage_type='PersistentVolumeClaim',
                 storage_class=item.name,

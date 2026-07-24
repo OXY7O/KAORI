@@ -95,13 +95,13 @@ def pagination_payload(
     }
 
 
-def paginate_sequence[_ItemT](
-    items: Sequence[_ItemT],
+def paginate_sequence[ItemT](
+    items: Sequence[ItemT],
     *,
     page: Any = 1,
     per_page: Any = DEFAULT_PER_PAGE,
     allowed_per_page: tuple[int, ...] = PER_PAGE_OPTIONS,
-) -> tuple[list[_ItemT], dict[str, Any]]:
+) -> tuple[list[ItemT], dict[str, Any]]:
     """Paginate an in-memory sequence through the canonical KAORI contract."""
     window = build_pagination_window(
         total_items=len(items),
@@ -111,7 +111,7 @@ def paginate_sequence[_ItemT](
     )
     end = window.offset + window.per_page
     return (
-        list(items[window.offset:end]),
+        list(items[window.offset : end]),
         pagination_payload(window, allowed_per_page=allowed_per_page),
     )
 

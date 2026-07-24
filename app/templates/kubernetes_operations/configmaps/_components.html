@@ -75,6 +75,7 @@
                         <p class="{{ page_hero.context_metric_label_classes() }}">{{ first_label }}</p>
                     </div>
                     <p class="mt-1.5 {{ page_hero.context_metric_value_classes(true) }}">{{ first_value }}</p>
+                    <p class="{{ page_hero.context_metric_helper_classes() }}">{{ first_supporting }}</p>
                 </div>
                 <div class="{{ page_hero.context_metric_card_classes() }}">
                     <div class="flex items-center gap-2 text-brand-foreground">
@@ -84,6 +85,7 @@
                         <p class="{{ page_hero.context_metric_label_classes() }}">{{ second_label }}</p>
                     </div>
                     <p class="mt-1.5 {{ page_hero.context_metric_value_classes(true) }}">{{ second_value }}</p>
+                    <p class="{{ page_hero.context_metric_helper_classes() }}">{{ second_supporting }}</p>
                 </div>
             </div>
             <a href="{{ action_url }}"

@@ -42,7 +42,7 @@
                             <p class="text-[11px] font-semibold">Internal</p>
                         </div>
                         <p class="mt-1.5 text-xl font-bold leading-none text-brand-foreground">{{ internal_services }}</p>
-                        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">{{ internal_percentage|int }}% ClusterIP coverage</p>
+                        <p class="{{ page_hero.context_metric_helper_classes() }}">{{ internal_percentage|int }}% ClusterIP coverage</p>
                     </div>
                     <div class="{{ page_hero.context_metric_card_classes() }}">
                         <div class="flex items-center gap-2 text-brand-foreground">
@@ -50,7 +50,7 @@
                             <p class="text-[11px] font-semibold">External</p>
                         </div>
                         <p class="mt-1.5 text-xl font-bold leading-none text-brand-foreground">{{ external_services }}</p>
-                        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">NodePort and LoadBalancer</p>
+                        <p class="{{ page_hero.context_metric_helper_classes() }}">NodePort and LoadBalancer</p>
                     </div>
                 </div>
                 <a href="{{ url_for('integrations.kubernetes') }}"

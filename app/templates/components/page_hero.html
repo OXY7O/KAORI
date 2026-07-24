@@ -31,6 +31,9 @@
 {% macro context_metric_value_classes(compact=false) -%}
     {{ 'text-sm font-semibold leading-5' if compact else 'text-xl font-bold leading-none' }} text-brand-foreground
 {%- endmacro %}
+{% macro context_metric_helper_classes() -%}
+    mt-1 truncate text-[10px] font-medium leading-4 text-brand-foreground-muted
+{%- endmacro %}
 {% macro context_action_classes() -%}
     w-full {{ primary_action_classes() }} disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-white disabled:hover:text-kaori-primary
 {%- endmacro %}
@@ -71,7 +74,7 @@
         </div>
         <p class="mt-1.5 {{ value_classes }} text-brand-foreground">{{ value }}</p>
         {% if description %}
-            <p class="mt-1 truncate text-[10px] font-medium leading-4 text-brand-foreground-muted"
+            <p class="{{ context_metric_helper_classes() }}"
                title="{{ description }}">{{ description }}</p>
         {% endif %}
     </div>

@@ -48,7 +48,7 @@
                             <p class="text-[11px] font-semibold">Active</p>
                         </div>
                         <p class="mt-1.5 text-xl font-bold leading-none text-brand-foreground">{{ active_namespaces }}</p>
-                        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Available namespace scopes</p>
+                        <p class="{{ page_hero.context_metric_helper_classes() }}">Available namespace scopes</p>
                     </div>
                     <div class="{{ page_hero.context_metric_card_classes() }}">
                         <div class="flex items-center gap-2 text-brand-foreground">
@@ -56,7 +56,7 @@
                             <p class="text-[11px] font-semibold">Other status</p>
                         </div>
                         <p class="mt-1.5 text-xl font-bold leading-none text-brand-foreground">{{ other_namespaces }}</p>
-                        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Require lifecycle review</p>
+                        <p class="{{ page_hero.context_metric_helper_classes() }}">Require lifecycle review</p>
                     </div>
                 </div>
                 <a href="{{ url_for('integrations.kubernetes') }}"

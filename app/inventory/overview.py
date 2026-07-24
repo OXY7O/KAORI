@@ -138,8 +138,7 @@ def get_inventory_cluster_summary() -> tuple[
         namespace_counts = {
             cluster_id: count
             for cluster_id, count in (
-                namespace_count_query
-                .filter(NamespaceInventory.cluster_id.in_(cluster_ids))
+                namespace_count_query.filter(NamespaceInventory.cluster_id.in_(cluster_ids))
                 .group_by(NamespaceInventory.cluster_id)
                 .all()
             )

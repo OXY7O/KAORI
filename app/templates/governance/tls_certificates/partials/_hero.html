@@ -46,7 +46,7 @@
                             <p class="text-[11px] font-semibold">Healthy</p>
                         </div>
                         <p class="mt-1.5 text-sm font-semibold leading-5 text-brand-foreground">{{ healthy_total }}</p>
-                        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">TLS Secrets without current risk signals</p>
+                        <p class="{{ page_hero.context_metric_helper_classes() }}">TLS Secrets without current risk signals</p>
                     </div>
                     <div class="{{ page_hero.context_metric_card_classes() }}">
                         <div class="flex items-center gap-2 text-brand-foreground">
@@ -54,7 +54,7 @@
                             <p class="text-[11px] font-semibold">Needs review</p>
                         </div>
                         <p class="mt-1.5 text-sm font-semibold leading-5 text-brand-foreground">{{ risk_total }}</p>
-                        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Expiring, invalid, critical, or expired</p>
+                        <p class="{{ page_hero.context_metric_helper_classes() }}">Expiring, invalid, critical, or expired</p>
                     </div>
                 </div>
                 {% if cluster_onboarding.is_blocked %}

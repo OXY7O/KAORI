@@ -63,10 +63,12 @@
                         <div class="{{ page_hero.context_metric_card_classes() }}">
                             <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Critical alerts</p>
                             <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ critical_alerts }}</p>
+                                <p class="{{ page_hero.context_metric_helper_classes() }}">Critical alerts in scope</p>
                         </div>
                         <div class="{{ page_hero.context_metric_card_classes() }}">
                             <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Confidence</p>
                             <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ source_health.score }}/100</p>
+                                <p class="{{ page_hero.context_metric_helper_classes() }}">Signal source confidence score</p>
                         </div>
                     </div>
                 </div>

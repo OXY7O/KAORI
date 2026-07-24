@@ -42,7 +42,7 @@
                             <p class="text-[11px] font-semibold">TLS enabled</p>
                         </div>
                         <p class="mt-1.5 text-xl font-bold leading-none text-brand-foreground">{{ tls_enabled }}</p>
-                        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">{{ tls_percentage|int }}% of tracked Ingresses</p>
+                        <p class="{{ page_hero.context_metric_helper_classes() }}">{{ tls_percentage|int }}% of tracked Ingresses</p>
                     </div>
                     <div class="{{ page_hero.context_metric_card_classes() }}">
                         <div class="flex items-center gap-2 text-brand-foreground">
@@ -50,7 +50,7 @@
                             <p class="text-[11px] font-semibold">No TLS</p>
                         </div>
                         <p class="mt-1.5 text-xl font-bold leading-none text-brand-foreground">{{ no_tls }}</p>
-                        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Ingresses requiring review</p>
+                        <p class="{{ page_hero.context_metric_helper_classes() }}">Ingresses requiring review</p>
                     </div>
                 </div>
                 <a href="{{ url_for('integrations.kubernetes') }}"

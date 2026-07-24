@@ -41,7 +41,7 @@
                             <p class="text-[11px] font-semibold">ConfigMaps</p>
                         </div>
                         <p class="mt-1.5 text-xl font-bold leading-none text-brand-foreground">{{ config_maps }}</p>
-                        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">{{ config_ratio|int }}% of tracked objects</p>
+                        <p class="{{ page_hero.context_metric_helper_classes() }}">{{ config_ratio|int }}% of tracked objects</p>
                     </div>
                     <div class="{{ page_hero.context_metric_card_classes() }}">
                         <div class="flex items-center gap-2 text-brand-foreground">
@@ -49,7 +49,7 @@
                             <p class="text-[11px] font-semibold">Secrets</p>
                         </div>
                         <p class="mt-1.5 text-xl font-bold leading-none text-brand-foreground">{{ secrets }}</p>
-                        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">{{ secret_ratio|int }}% of tracked objects</p>
+                        <p class="{{ page_hero.context_metric_helper_classes() }}">{{ secret_ratio|int }}% of tracked objects</p>
                     </div>
                 </div>
                 <a href="{{ url_for('integrations.kubernetes') }}"

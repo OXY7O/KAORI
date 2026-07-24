@@ -35,10 +35,12 @@
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Connected</p>
                                 <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ connected_clusters }}</p>
+                                <p class="{{ page_hero.context_metric_helper_classes() }}">Kubernetes connections available</p>
                             </div>
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Inventory Synced</p>
                                 <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ synced_clusters }}</p>
+                                <p class="{{ page_hero.context_metric_helper_classes() }}">Clusters with committed inventory</p>
                             </div>
                         </div>
                         {% if not cluster_onboarding.is_blocked and current_user.has_permission('clusters.manage') %}

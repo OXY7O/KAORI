@@ -41,7 +41,7 @@
                             <p class="text-[11px] font-semibold">Coverage</p>
                         </div>
                         <p class="mt-1.5 text-xl font-bold leading-none text-brand-foreground">{{ coverage_score|int }}%</p>
-                        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">{{ total_clusters - (overview.health.never_synced or 0) }}/{{ total_clusters }} clusters collected</p>
+                        <p class="{{ page_hero.context_metric_helper_classes() }}">{{ total_clusters - (overview.health.never_synced or 0) }}/{{ total_clusters }} clusters collected</p>
                     </div>
                     <div class="{{ page_hero.context_metric_card_classes() }}">
                         <div class="flex items-center gap-2 text-brand-foreground">
@@ -49,7 +49,7 @@
                             <p class="text-[11px] font-semibold">Freshness</p>
                         </div>
                         <p class="mt-1.5 text-xl font-bold leading-none text-brand-foreground">{{ freshness_score|int }}%</p>
-                        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">{{ overview.health.fresh_synced or 0 }}/{{ total_clusters }} within {{ overview.health.freshness_window_hours or 24 }}h</p>
+                        <p class="{{ page_hero.context_metric_helper_classes() }}">{{ overview.health.fresh_synced or 0 }}/{{ total_clusters }} within {{ overview.health.freshness_window_hours or 24 }}h</p>
                     </div>
                 </div>
                 <a href="{{ url_for('integrations.kubernetes') }}"

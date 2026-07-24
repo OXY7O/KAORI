@@ -21,8 +21,8 @@
         <div class="{{ page_hero.context_panel_classes() }}">
           {{ page_hero.context_header('Synchronization Posture', 'Fleet Inventory Refresh', 'rotate-cw') }}
           <div class="{{ page_hero.context_panel_metrics_classes() }}">
-            {{ page_hero.context_metric('power', 'Automatic Sync', 'Enabled' if policy.enabled else 'Disabled', value_classes='text-sm font-semibold leading-5') }}
-            {{ page_hero.context_metric('timer', 'Interval', policy.interval_minutes ~ ' Minutes', value_classes='text-sm font-semibold leading-5') }}
+            {{ page_hero.context_metric('power', 'Automatic Sync', 'Enabled' if policy.enabled else 'Disabled', 'Scheduled fleet refresh policy', value_classes='text-sm font-semibold leading-5') }}
+            {{ page_hero.context_metric('timer', 'Interval', policy.interval_minutes ~ ' Minutes', 'Time between automatic dispatches', value_classes='text-sm font-semibold leading-5') }}
           </div>
         </div>
       </aside>

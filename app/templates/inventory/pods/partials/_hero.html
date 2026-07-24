@@ -42,7 +42,7 @@
                             <p class="text-[11px] font-semibold">Running</p>
                         </div>
                         <p class="mt-1.5 text-xl font-bold leading-none text-brand-foreground">{{ running_count }}</p>
-                        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">{{ running_percentage|int }}% of tracked Pods</p>
+                        <p class="{{ page_hero.context_metric_helper_classes() }}">{{ running_percentage|int }}% of tracked Pods</p>
                     </div>
                     <div class="{{ page_hero.context_metric_card_classes() }}">
                         <div class="flex items-center gap-2 text-brand-foreground">
@@ -50,7 +50,7 @@
                             <p class="text-[11px] font-semibold">Needs review</p>
                         </div>
                         <p class="mt-1.5 text-xl font-bold leading-none text-brand-foreground">{{ attention_count }}</p>
-                        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Pending or failed Pods</p>
+                        <p class="{{ page_hero.context_metric_helper_classes() }}">Pending or failed Pods</p>
                     </div>
                 </div>
                 <a href="{{ url_for('integrations.kubernetes') }}"

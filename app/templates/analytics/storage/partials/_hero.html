@@ -64,10 +64,12 @@
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Filesystem used</p>
                                 <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ usage_percent }}%</p>
+                                <p class="{{ page_hero.context_metric_helper_classes() }}">Highest filesystem utilization</p>
                             </div>
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">PVC used</p>
                                 <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ pvc_used_percent }}%</p>
+                                <p class="{{ page_hero.context_metric_helper_classes() }}">Persistent claim capacity used</p>
                             </div>
                         </div>
                     </div>

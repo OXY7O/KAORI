@@ -39,10 +39,12 @@
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Governance findings</p>
                                 <p class="mt-1 text-2xl font-semibold text-brand-foreground">{{ finding_count_display }}</p>
+                                <p class="{{ page_hero.context_metric_helper_classes() }}">Workload findings in scope</p>
                             </div>
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Time range</p>
                                 <p class="mt-1 text-2xl font-semibold text-brand-foreground">{{ selected_time_range }}</p>
+                                <p class="{{ page_hero.context_metric_helper_classes() }}">Observation window in use</p>
                             </div>
                         </div>
                     </div>

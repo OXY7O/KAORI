@@ -52,7 +52,7 @@
                             <p class="text-[11px] font-semibold">Running</p>
                         </div>
                         <p class="mt-1.5 text-xl font-bold leading-none text-brand-foreground">{{ running_count }}</p>
-                        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Ready workload resources</p>
+                        <p class="{{ page_hero.context_metric_helper_classes() }}">Ready workload resources</p>
                     </div>
                     <div class="{{ page_hero.context_metric_card_classes() }}">
                         <div class="flex items-center gap-2 text-brand-foreground">
@@ -60,7 +60,7 @@
                             <p class="text-[11px] font-semibold">Needs review</p>
                         </div>
                         <p class="mt-1.5 text-xl font-bold leading-none text-brand-foreground">{{ progressing_count + review_count }}</p>
-                        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Progressing or non-running</p>
+                        <p class="{{ page_hero.context_metric_helper_classes() }}">Progressing or non-running</p>
                     </div>
                 </div>
                 <a href="{{ url_for('integrations.kubernetes') }}"

@@ -61,10 +61,12 @@
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Lowest headroom</p>
                                 <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ lowest_headroom_display }}</p>
+                                <p class="{{ page_hero.context_metric_helper_classes() }}">Lowest available resource margin</p>
                             </div>
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Time range</p>
                                 <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ selected_time_range }}</p>
+                                <p class="{{ page_hero.context_metric_helper_classes() }}">Observation window in use</p>
                             </div>
                         </div>
                     </div>

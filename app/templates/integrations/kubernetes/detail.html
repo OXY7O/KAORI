@@ -38,7 +38,7 @@
                                     <p class="text-[11px] font-semibold">Kubernetes API</p>
                                 </div>
                                 <p class="mt-1.5 truncate text-sm font-semibold text-brand-foreground">{{ readiness|replace('_', ' ') |title }}</p>
-                                <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Produced by worker validation</p>
+                                <p class="{{ page_hero.context_metric_helper_classes() }}">Produced by worker validation</p>
                             </div>
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <div class="flex items-center gap-2 text-brand-foreground">
@@ -46,7 +46,7 @@
                                     <p class="text-[11px] font-semibold">Capabilities</p>
                                 </div>
                                 <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ runtime_state.capability_count }}</p>
-                                <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Served APIs and access evidence</p>
+                                <p class="{{ page_hero.context_metric_helper_classes() }}">Served APIs and access evidence</p>
                             </div>
                         </div>
                         <div class="{{ page_hero.context_actions_classes() }}">

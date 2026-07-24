@@ -27,10 +27,12 @@
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Eligible</p>
                                 <p class="mt-1 text-xl font-bold text-brand-foreground">{{ lifecycle.eligible_total if lifecycle.eligible_total is not none else 'Preview' }}</p>
+                                <p class="{{ page_hero.context_metric_helper_classes() }}">Records eligible under policy</p>
                             </div>
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Storage</p>
                                 <p class="mt-1 text-sm font-bold text-brand-foreground">{{ lifecycle.storage.status_label }}</p>
+                                <p class="{{ page_hero.context_metric_helper_classes() }}">Archive destination readiness</p>
                             </div>
                         </div>
                         <p class="mt-auto pt-4 text-xs leading-5 text-brand-foreground-muted">Archive-first verification blocks cleanup until both data and manifest checksums pass.</p>
