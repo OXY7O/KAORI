@@ -1,8 +1,24 @@
 {% macro status_label(text, tone='info', icon=None) -%}
-    <span class="kaori-semantic-label inline-flex min-h-6 items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold leading-4 {% if tone == 'normal' %}bg-status-normal-soft text-status-normal-text {% elif tone == 'warning' %}bg-status-warning-soft text-status-warning-text {% elif tone == 'critical' %}bg-status-critical-soft text-status-critical-text {% elif tone == 'unknown' %}bg-status-unknown-soft text-status-unknown-text {% elif tone == 'disabled' %}bg-status-disabled-soft text-status-disabled-text {% elif tone == 'maintenance' %}bg-status-warning-soft text-status-warning-text {% elif tone == 'pending' %}bg-status-info-soft text-status-info-text {% else %}bg-status-info-soft text-status-info-text{% endif %}">
+    {% set normalized_tone = tone|default('info', true)|lower|replace(' ', '_') %}
+    {% if normalized_tone in ['ready', 'healthy', 'normal', 'success', 'succeeded', 'operational'] %}
+        {% set semantic_tone = 'normal' %}
+    {% elif normalized_tone in ['degraded', 'warning', 'attention', 'partial', 'partially_succeeded'] %}
+        {% set semantic_tone = 'warning' %}
+    {% elif normalized_tone in ['blocked', 'critical', 'failed', 'unhealthy', 'error'] %}
+        {% set semantic_tone = 'critical' %}
+    {% elif normalized_tone in ['not_configured', 'validation_required', 'unknown', 'draft', 'disabled', 'inactive'] %}
+        {% set semantic_tone = 'unknown' %}
+    {% elif normalized_tone in ['pending', 'queued', 'running', 'in_progress', 'info'] %}
+        {% set semantic_tone = 'info' %}
+    {% elif normalized_tone == 'maintenance' %}
+        {% set semantic_tone = 'maintenance' %}
+    {% else %}
+        {% set semantic_tone = 'unknown' %}
+    {% endif %}
+    <span class="kaori-semantic-label inline-flex min-h-6 items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold leading-4 {% if semantic_tone == 'normal' %}bg-status-normal-soft text-status-normal-text {% elif semantic_tone == 'warning' %}bg-status-warning-soft text-status-warning-text {% elif semantic_tone == 'critical' %}bg-status-critical-soft text-status-critical-text {% elif semantic_tone == 'unknown' %}bg-status-unknown-soft text-status-unknown-text {% elif semantic_tone == 'maintenance' %}bg-kaori-soft text-kaori-primary {% else %}bg-status-info-soft text-status-info-text{% endif %}">
         {% if icon %}
             <i data-lucide="{{ icon }}"
-               class="h-3 w-3 shrink-0 {% if tone == 'normal' %}text-status-normal{% elif tone == 'warning' %}text-status-warning{% elif tone == 'critical' %}text-status-critical{% elif tone == 'unknown' %}text-status-unknown{% elif tone == 'disabled' %}text-status-disabled{% elif tone == 'maintenance' %}text-status-warning{% elif tone == 'pending' %}text-status-info{% else %}text-status-info{% endif %}"
+               class="h-3 w-3 shrink-0 {% if semantic_tone == 'normal' %}text-status-normal{% elif semantic_tone == 'warning' %}text-status-warning{% elif semantic_tone == 'critical' %}text-status-critical{% elif semantic_tone == 'unknown' %}text-status-unknown{% elif semantic_tone == 'maintenance' %}text-kaori-primary{% else %}text-status-info{% endif %}"
                aria-hidden="true"></i>
         {% endif %}
         <span>{{ text }}</span>

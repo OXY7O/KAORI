@@ -205,22 +205,22 @@ def _build_kubernetes_registry_row(connection: KubernetesConnection) -> dict[str
     if readiness == 'ready':
         inventory_coverage = {'status': 'ready', 'label': 'Ready'}
     elif readiness == 'degraded':
-        inventory_coverage = {'status': 'degraded', 'label': 'Kubernetes Degraded'}
+        inventory_coverage = {'status': 'degraded', 'label': 'Degraded'}
     elif readiness == 'blocked':
-        inventory_coverage = {'status': 'blocked', 'label': 'Kubernetes Blocked'}
+        inventory_coverage = {'status': 'blocked', 'label': 'Blocked'}
     else:
         inventory_coverage = {
             'status': 'validation_required',
-            'label': 'Kubernetes Validation Required',
+            'label': 'Validation Required',
         }
 
     coverage_items = (inventory_coverage, metrics_coverage, alerts_coverage)
     coverage_ready_count = sum(1 for item in coverage_items if item['status'] == 'ready')
 
     if readiness == 'blocked':
-        coverage_summary = {'status': 'blocked', 'label': 'Kubernetes Blocked'}
+        coverage_summary = {'status': 'blocked', 'label': 'Blocked'}
     elif readiness == 'degraded':
-        coverage_summary = {'status': 'degraded', 'label': 'Kubernetes Degraded'}
+        coverage_summary = {'status': 'degraded', 'label': 'Degraded'}
     elif readiness != 'ready':
         coverage_summary = {
             'status': 'validation_required',
