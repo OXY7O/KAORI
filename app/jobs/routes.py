@@ -10,6 +10,7 @@ from flask_login import current_user
 from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy.exc import SQLAlchemyError
 
+from app.cluster.sync_state import build_cluster_sync_snapshot
 from app.extensions.db import db
 from app.jobs.configuration import build_job_configuration_context
 from app.jobs.definitions.base import JobDefinition
@@ -118,6 +119,7 @@ def _render_configuration_job(
     policy_form: JobPolicyForm | None = None,
     policy_error: str | None = None,
     operation_feedback: dict[str, object] | None = None,
+    sync_progress: dict[str, object] | None = None,
     status_code: int = 200,
 ) -> ResponseReturnValue:
     context = _configuration_context(
@@ -126,6 +128,7 @@ def _render_configuration_job(
         policy_error=policy_error,
     )
     context['operation_feedback'] = operation_feedback
+    context['sync_progress'] = sync_progress
     if operation_feedback is not None:
         context['notification_context'] = get_navigation_notification_context(
             user_id=int(current_user.id)
@@ -330,7 +333,20 @@ def run_now(job_key: str) -> ResponseReturnValue:
         queue_feedback=not is_htmx,
     )
     if is_htmx:
-        return _render_configuration_job(job_key, operation_feedback=feedback)
+        sync_progress = None
+        if outcome.created and job.celery_task_id:
+            try:
+                sync_progress = build_cluster_sync_snapshot(str(job.celery_task_id))
+            except (RuntimeError, KeyError):
+                logger.exception(
+                    'Could not build immediate inventory sync progress for job %s.',
+                    job.public_id,
+                )
+        return _render_configuration_job(
+            job_key,
+            operation_feedback=feedback,
+            sync_progress=sync_progress,
+        )
     return redirect(url_for('jobs.configuration', job_key=job_key))
 
 

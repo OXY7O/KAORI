@@ -112,7 +112,7 @@
                class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">Cancel</a>
             <button type="submit"
                     data-operation-submit
-                    data-loading-label="{{ 'Registering cluster...' if form_mode == 'add' else 'Updating cluster...' }}"
+                    data-loading-label="{{ 'Registering Cluster...' if form_mode == 'add' else 'Updating cluster...' }}"
                     {% if form_mode == 'add' %}disabled x-bind:disabled="!connectionVerified" x-bind:title="connectionVerified ? 'Save this tested Kubernetes connection' : 'Run Test Connection successfully before saving'"{% endif %}
                     class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card disabled:cursor-not-allowed disabled:bg-content-disabled disabled:opacity-70">
                 <i data-lucide="save" class="h-4 w-4"></i><span data-operation-submit-label>{{ submit_label }}</span>

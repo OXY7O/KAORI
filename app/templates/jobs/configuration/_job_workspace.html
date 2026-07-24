@@ -23,3 +23,11 @@
 {% if operation_feedback %}
     {% include 'components/operation_feedback_oob.html' %}
 {% endif %}
+
+{% if sync_progress and sync_progress.is_active %}
+    <div hx-swap-oob="beforeend:#operational-action-feedback">
+        {% with sync=sync_progress %}
+            {% include 'components/navigation/_quick_sync_status.html' %}
+        {% endwith %}
+    </div>
+{% endif %}
