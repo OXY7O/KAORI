@@ -1,17 +1,18 @@
 {% macro navigation_classes(disabled=false) -%}
-{%- if disabled -%}inline-flex min-h-9 cursor-not-allowed items-center justify-center gap-1.5 rounded-md border border-outline-default bg-surface-subtle px-3 py-2 text-xs font-semibold text-content-muted opacity-70{%- else -%}inline-flex min-h-9 cursor-pointer items-center justify-center gap-1.5 rounded-md border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary transition-colors duration-150 hover:border-kaori-primary/40 hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kaori-accent/60{%- endif -%}
+    {%- if disabled -%}inline-flex min-h-9 cursor-not-allowed items-center justify-center gap-1.5 rounded-md border border-outline-default bg-surface-subtle px-3 py-2 text-xs font-semibold text-content-muted opacity-70{%- else -%}inline-flex min-h-9 cursor-pointer items-center justify-center gap-1.5 rounded-md border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary transition-colors duration-150 hover:border-kaori-primary/40 hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kaori-accent/60{%- endif -%}
 {%- endmacro %}
-
 {% macro current_page_classes() -%}
-inline-flex min-h-9 min-w-9 items-center justify-center rounded-md border border-kaori-primary/30 bg-kaori-soft px-3 py-2 text-xs font-semibold text-kaori-primary
+    inline-flex min-h-9 min-w-9 items-center justify-center rounded-md border border-kaori-primary/30 bg-kaori-soft px-3 py-2 text-xs font-semibold text-kaori-primary
 {%- endmacro %}
-
 {% macro page_size_classes() -%}
-min-h-9 cursor-pointer rounded-md border border-outline-strong bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary transition-colors outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-accent/40
+    min-h-9 cursor-pointer rounded-md border border-outline-strong bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary transition-colors outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-accent/40
 {%- endmacro %}
-
 {% macro numeric_pages(current_page, total_pages) -%}
-<span class="inline-flex items-center gap-1" data-kaori-numeric-pagination data-current-page="{{ current_page }}" data-total-pages="{{ total_pages }}" aria-label="Pagination pages">
-    <span class="{{ current_page_classes() }}" aria-current="page">{{ current_page }}</span>
-</span>
+    <span class="inline-flex items-center gap-1"
+          data-kaori-numeric-pagination
+          data-current-page="{{ current_page }}"
+          data-total-pages="{{ total_pages }}"
+          aria-label="Pagination pages">
+        <span class="{{ current_page_classes() }}" aria-current="page">{{ current_page }}</span>
+    </span>
 {%- endmacro %}

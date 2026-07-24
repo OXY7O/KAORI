@@ -17,38 +17,42 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ configmap_ui.hero_context(
-                    'Update boundary',
-                    'Read before write',
-                    'Validated',
-                    'info',
-                    'shield-check',
-                    'radio-tower',
-                    'Source',
-                    'Live object',
-                    'Current values loaded first',
-                    'lock-keyhole',
-                    'Guardrail',
-                    'Immutable blocked',
-                    'Dry-run before apply',
-                    url_for('kubernetes_operations.configmap_management'),
-                    'ConfigMap Management',
-                    'arrow-left'
+                {{ configmap_ui.hero_context('Update boundary',
+                                'Read before write',
+                                'Validated',
+                                'info',
+                                'shield-check',
+                                'radio-tower',
+                                'Source',
+                                'Live object',
+                                'Current values loaded first',
+                                'lock-keyhole',
+                                'Guardrail',
+                                'Immutable blocked',
+                                'Dry-run before apply',
+                                url_for('kubernetes_operations.configmap_management') ,
+                'ConfigMap Management',
+                'arrow-left'
                 ) }}
             </div>
         </section>
-
         <div id="configmap-operation-feedback" class="hidden" aria-hidden="true"></div>
-        <form method="post" hx-post="{{ url_for('kubernetes_operations.update_configmap') }}" hx-target="#configmap-operation-feedback" hx-swap="innerHTML" class="space-y-6">
+        <form method="post"
+              hx-post="{{ url_for('kubernetes_operations.update_configmap') }}"
+              hx-target="#configmap-operation-feedback"
+              hx-swap="innerHTML"
+              class="space-y-6">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
                 <section class="h-full overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-1 xl:row-start-1">
                     {{ configmap_ui.section_header('search', 'Select ConfigMap', 'Choose the cluster, namespace, and live ConfigMap to load current state.') }}
                     <div class="p-5 sm:p-6">
-                        <div id="configmap-workspace">{% set workspace_mode = "update" %}{% set namespaces = selected_namespaces %}{% set configmaps = selected_configmaps %}{% include 'kubernetes_operations/configmaps/_workspace.html' %}</div>
+                        <div id="configmap-workspace">
+                            {% set workspace_mode = "update" %}{% set namespaces = selected_namespaces %}{% set configmaps = selected_configmaps %}
+                            {% include 'kubernetes_operations/configmaps/_workspace.html' %}
+                        </div>
                     </div>
                 </section>
-
                 <section class="h-full overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-2 xl:row-start-1">
                     {{ configmap_ui.section_header('shield-check', 'Update guardrails', 'Controls applied before the selected object can be changed.') }}
                     <div class="grid gap-4 p-5">
@@ -57,7 +61,6 @@
                         {{ configmap_ui.guardrail('lock-keyhole', 'Immutable protection', 'Immutable ConfigMaps cannot be modified.') }}
                     </div>
                 </section>
-
                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-1 xl:row-start-2">
                     {{ configmap_ui.section_header('diff', 'Current values & proposed changes', 'Edit entries, select merge or replacement behavior, and review workload impact.') }}
                     <div id="configmap-editor" class="p-5 sm:p-6">
@@ -68,7 +71,6 @@
                         {% endif %}
                     </div>
                 </section>
-
                 <aside class="self-start xl:sticky xl:top-6 xl:col-start-2 xl:row-start-2">
                     <section class="rounded-xl border border-brand-outline bg-kaori-primary-dark p-5 text-brand-foreground shadow-sm">
                         <div class="flex items-start justify-between gap-4">
@@ -86,15 +88,18 @@
                         </div>
                     </section>
                 </aside>
-
                 <section class="flex flex-col gap-4 rounded-xl border border-outline-default bg-surface-card px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:px-6 xl:col-start-1 xl:row-start-3">
                     <div>
                         <p class="text-sm font-semibold text-content-primary">Review the effective change before applying</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Preview validates the request without modifying the selected ConfigMap.</p>
                     </div>
                     <div class="flex flex-wrap gap-3 sm:justify-end">
-                        <button name="operation" value="validate" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-kaori-primary/25 bg-kaori-soft px-5 text-sm font-semibold text-kaori-primary transition hover:border-kaori-primary/40 hover:bg-kaori-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus cursor-pointer disabled:cursor-not-allowed"><i data-lucide="scan-search" class="h-4 w-4"></i>Preview &amp; Validate</button>
-                        <button name="operation" value="update" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus cursor-pointer disabled:cursor-not-allowed"><i data-lucide="save" class="h-4 w-4"></i>Apply Update</button>
+                        <button name="operation"
+                                value="validate"
+                                class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-kaori-primary/25 bg-kaori-soft px-5 text-sm font-semibold text-kaori-primary transition hover:border-kaori-primary/40 hover:bg-kaori-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus cursor-pointer disabled:cursor-not-allowed"><i data-lucide="scan-search" class="h-4 w-4"></i>Preview &amp; Validate</button>
+                        <button name="operation"
+                                value="update"
+                                class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus cursor-pointer disabled:cursor-not-allowed"><i data-lucide="save" class="h-4 w-4"></i>Apply Update</button>
                     </div>
                 </section>
             </div>

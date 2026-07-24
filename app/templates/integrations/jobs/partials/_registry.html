@@ -2,56 +2,80 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table.html" as table_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
-<section id="job-execution-registry" class="{{ table_ui.block_classes() }}" aria-labelledby="job-execution-registry-title">
+<section id="job-execution-registry"
+         class="{{ table_ui.block_classes() }}"
+         aria-labelledby="job-execution-registry-title">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div class="flex items-start gap-3">
-            <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="list-checks" class="h-5 w-5"></i></span>
-            <div>
-                <h2 id="job-execution-registry-title" class="{{ table_ui.block_title_classes() }}">Execution Registry</h2>
-                <p class="{{ table_ui.block_description_classes() }}">Search execution history, ownership, progress, timing, and outcomes.</p>
+            <div class="flex items-start gap-3">
+                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="list-checks" class="h-5 w-5"></i></span>
+                <div>
+                    <h2 id="job-execution-registry-title"
+                        class="{{ table_ui.block_title_classes() }}">Execution Registry</h2>
+                    <p class="{{ table_ui.block_description_classes() }}">Search execution history, ownership, progress, timing, and outcomes.</p>
+                </div>
             </div>
-        </div>
-        {% set refresh_url = url_for('integrations.jobs', fragment='registry', tab='registry', page=job_pagination.page, per_page=job_pagination.per_page, status=selected_job_status, workload=selected_job_workload, queue=selected_job_queue, search=job_search) %}
-        <button type="button"
-                hx-get="{{ refresh_url }}"
-                hx-target="#job-execution-registry"
-                hx-swap="outerHTML"
-                hx-indicator="#job-execution-loading"
-                hx-disabled-elt="this"
-                class="{{ table_ui.action_classes() }}">
-            <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
-            Refresh
-        </button>
+            {% set refresh_url = url_for('integrations.jobs', fragment='registry', tab='registry', page=job_pagination.page, per_page=job_pagination.per_page, status=selected_job_status, workload=selected_job_workload, queue=selected_job_queue, search=job_search) %}
+            <button type="button"
+                    hx-get="{{ refresh_url }}"
+                    hx-target="#job-execution-registry"
+                    hx-swap="outerHTML"
+                    hx-indicator="#job-execution-loading"
+                    hx-disabled-elt="this"
+                    class="{{ table_ui.action_classes() }}">
+                <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+                Refresh
+            </button>
         </div>
         {{ loading_bar.render('job-execution-loading', label='Refreshing Job Execution Registry') }}
     </header>
-
     <form class="grid gap-3 border-b border-outline-subtle bg-surface-card px-5 py-4 sm:grid-cols-2 lg:grid-cols-4 sm:px-6"
           hx-get="{{ url_for('integrations.jobs') }}"
           hx-target="#job-execution-registry"
           hx-swap="outerHTML"
           hx-push-url="true"
           hx-indicator="#job-execution-loading">
-        <input type="search" name="search" value="{{ job_search }}" placeholder="Search job, scope, queue, or ID" aria-label="Search job executions" class="{{ table_ui.filter_input_classes() }}">
-        <select name="status" aria-label="Filter by status" onchange="this.form.requestSubmit()" class="{{ table_ui.filter_select_classes() }}">
+        <input type="search"
+               name="search"
+               value="{{ job_search }}"
+               placeholder="Search job, scope, queue, or ID"
+               aria-label="Search job executions"
+               class="{{ table_ui.filter_input_classes() }}">
+        <select name="status"
+                aria-label="Filter by status"
+                onchange="this.form.requestSubmit()"
+                class="{{ table_ui.filter_select_classes() }}">
             <option value="">All Statuses</option>
-            {% for value, label in job_status_options %}<option value="{{ value }}" {% if selected_job_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            {% for value, label in job_status_options %}
+                <option value="{{ value }}"
+                        {% if selected_job_status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
         </select>
-        <select name="workload" aria-label="Filter by workload" onchange="this.form.requestSubmit()" class="{{ table_ui.filter_select_classes() }}">
+        <select name="workload"
+                aria-label="Filter by workload"
+                onchange="this.form.requestSubmit()"
+                class="{{ table_ui.filter_select_classes() }}">
             <option value="">All Workloads</option>
-            {% for value, label in job_workload_options %}<option value="{{ value }}" {% if selected_job_workload == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            {% for value, label in job_workload_options %}
+                <option value="{{ value }}"
+                        {% if selected_job_workload == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
         </select>
-        <select name="queue" aria-label="Filter by queue" onchange="this.form.requestSubmit()" class="{{ table_ui.filter_select_classes() }}">
+        <select name="queue"
+                aria-label="Filter by queue"
+                onchange="this.form.requestSubmit()"
+                class="{{ table_ui.filter_select_classes() }}">
             <option value="">All Queues</option>
-            {% for value in job_queue_options %}<option value="{{ value }}" {% if selected_job_queue == value %}selected{% endif %}>{{ value }}</option>{% endfor %}
+            {% for value in job_queue_options %}
+                <option value="{{ value }}"
+                        {% if selected_job_queue == value %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
         </select>
         <input type="hidden" name="fragment" value="registry">
         <input type="hidden" name="tab" value="registry">
         <input type="hidden" name="page" value="1">
         <input type="hidden" name="per_page" value="{{ job_pagination.per_page }}">
     </form>
-
     <div class="overflow-x-auto">
         <table class="w-full min-w-[940px] table-fixed text-left text-sm">
             <colgroup>
@@ -77,16 +101,20 @@
                     <tr class="align-top transition-colors hover:bg-kaori-mist">
                         <td class="px-5 py-4">
                             <div class="flex items-start gap-3">
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="{{ row.icon }}" class="h-4 w-4"></i></span>
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary"
+                                      aria-hidden="true"><i data-lucide="{{ row.icon }}" class="h-4 w-4"></i></span>
                                 <div class="min-w-0">
-                                    <p class="truncate text-sm font-semibold text-content-primary" title="{{ row.operation_label }}">{{ row.operation_label }}</p>
-                                    <p class="mt-1 truncate text-xs text-content-muted" title="{{ row.workload_label }} · {{ row.public_id }}">{{ row.workload_label }} · {{ row.public_id[:8] }}</p>
+                                    <p class="truncate text-sm font-semibold text-content-primary"
+                                       title="{{ row.operation_label }}">{{ row.operation_label }}</p>
+                                    <p class="mt-1 truncate text-xs text-content-muted"
+                                       title="{{ row.workload_label }} · {{ row.public_id }}">{{ row.workload_label }} · {{ row.public_id[:8] }}</p>
                                 </div>
                             </div>
                         </td>
                         <td class="px-4 py-4">
                             <p class="text-sm font-medium text-content-primary">{{ row.provider_label }}</p>
-                            <p class="mt-1 line-clamp-2 text-xs leading-5 text-content-muted" title="{{ row.scope }}">{{ row.scope }}</p>
+                            <p class="mt-1 line-clamp-2 text-xs leading-5 text-content-muted"
+                               title="{{ row.scope }}">{{ row.scope }}</p>
                             <div class="mt-2 flex flex-wrap gap-1.5">
                                 <span class="rounded-md border border-outline-subtle bg-surface-card px-2 py-1 text-[10px] font-semibold text-content-secondary">{{ row.queue_name }}</span>
                                 <span class="rounded-md border border-outline-subtle bg-surface-card px-2 py-1 text-[10px] font-semibold text-content-secondary">{{ row.requester }}</span>
@@ -95,20 +123,22 @@
                         <td class="px-4 py-4">
                             {% set semantic = 'normal' if row.status == 'succeeded' else ('critical' if row.status in ['failed', 'expired'] else ('warning' if row.status in ['partially_succeeded', 'retrying', 'cancel_requested'] else ('info' if row.status in ['queued', 'running'] else 'unknown'))) %}
                             <span class="inline-flex min-h-6 items-center rounded-md border border-status-{{ semantic }}-border bg-status-{{ semantic }}-soft px-2 text-[10px] font-semibold text-status-{{ semantic }}-text">{{ row.status_label }}</span>
-                            {% if row.error_message %}<p class="mt-2 line-clamp-2 text-xs leading-5 text-status-critical-text" title="{{ row.error_message }}">{{ row.error_message }}</p>{% endif %}
+                            {% if row.error_message %}
+                                <p class="mt-2 line-clamp-2 text-xs leading-5 text-status-critical-text"
+                                   title="{{ row.error_message }}">{{ row.error_message }}</p>
+                            {% endif %}
                         </td>
                         <td class="px-4 py-4">
                             <div class="flex items-center justify-between gap-2 text-xs">
-                                <span class="line-clamp-1 text-content-secondary" title="{{ row.progress_message }}">{{ row.progress_message }}</span>
+                                <span class="line-clamp-1 text-content-secondary"
+                                      title="{{ row.progress_message }}">{{ row.progress_message }}</span>
                                 <span class="shrink-0 font-semibold text-kaori-primary">{{ row.progress_label }}</span>
                             </div>
                             {% if row.progress_mode == 'determinate' %}
-                                {{ progress_bar.bar(
-                                    row.progress,
-                                    track_classes="mt-2 h-1.5 overflow-hidden bg-kaori-soft",
-                                    fill_classes="h-full bg-kaori-primary transition-[width] duration-300",
-                                    label="Job execution progress",
-                                ) }}
+                                {{ progress_bar.bar(row.progress,
+                                                                track_classes="mt-2 h-1.5 overflow-hidden bg-kaori-soft",
+                                                                fill_classes="h-full bg-kaori-primary transition-[width] duration-300",
+                                                                label="Job execution progress",) }}
                             {% else %}
                                 <div class="mt-2 h-1.5 overflow-hidden bg-kaori-soft">
                                     {% if row.progress_mode == 'indeterminate' %}
@@ -125,7 +155,13 @@
                         </td>
                         <td class="px-3 py-4 text-right">
                             {% if current_user.has_permission('jobs.cancel') and row.can_cancel %}
-                                <form method="post" action="{{ url_for('integrations.cancel_job', public_id=row.public_id) }}" hx-post="{{ url_for('integrations.cancel_job', public_id=row.public_id) }}" hx-target="#job-execution-registry" hx-swap="outerHTML" hx-indicator="#job-execution-loading" class="inline-flex">
+                                <form method="post"
+                                      action="{{ url_for('integrations.cancel_job', public_id=row.public_id) }}"
+                                      hx-post="{{ url_for('integrations.cancel_job', public_id=row.public_id) }}"
+                                      hx-target="#job-execution-registry"
+                                      hx-swap="outerHTML"
+                                      hx-indicator="#job-execution-loading"
+                                      class="inline-flex">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     <input type="hidden" name="fragment" value="registry">
                                     <input type="hidden" name="tab" value="registry">
@@ -135,38 +171,92 @@
                                     <input type="hidden" name="workload" value="{{ selected_job_workload }}">
                                     <input type="hidden" name="queue" value="{{ selected_job_queue }}">
                                     <input type="hidden" name="search" value="{{ job_search }}">
-                                    <button type="submit" class="{{ table_ui.action_classes(destructive=true) }}" title="{{ row.action_help }}"><i data-lucide="{{ row.action_icon }}" class="h-4 w-4"></i>{{ row.action_label }}</button>
+                                    <button type="submit"
+                                            class="{{ table_ui.action_classes(destructive=true) }}"
+                                            title="{{ row.action_help }}"><i data-lucide="{{ row.action_icon }}" class="h-4 w-4"></i>{{ row.action_label }}</button>
                                 </form>
                             {% elif row.action_state == 'protected' %}
-                                <span class="inline-flex min-h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-brand-outline bg-kaori-soft px-2.5 text-xs font-medium text-kaori-primary" title="{{ row.action_help }}"><i data-lucide="shield-check" class="h-4 w-4"></i>Protected</span>
+                                <span class="inline-flex min-h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-brand-outline bg-kaori-soft px-2.5 text-xs font-medium text-kaori-primary"
+                                      title="{{ row.action_help }}"><i data-lucide="shield-check" class="h-4 w-4"></i>Protected</span>
                             {% elif row.can_cancel %}
-                                <span class="inline-flex min-h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-outline-subtle bg-surface-hover px-2.5 text-xs font-medium text-content-muted" title="Cancellation requires the Jobs Cancel permission."><i data-lucide="lock-keyhole" class="h-4 w-4"></i>View Only</span>
+                                <span class="inline-flex min-h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-outline-subtle bg-surface-hover px-2.5 text-xs font-medium text-content-muted"
+                                      title="Cancellation requires the Jobs Cancel permission."><i data-lucide="lock-keyhole" class="h-4 w-4"></i>View Only</span>
                             {% else %}
-                                <span class="inline-flex min-h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-outline-subtle bg-surface-hover px-2.5 text-xs font-medium text-content-muted" title="{{ row.action_help }}"><i data-lucide="minus" class="h-4 w-4"></i>No Action</span>
+                                <span class="inline-flex min-h-8 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-outline-subtle bg-surface-hover px-2.5 text-xs font-medium text-content-muted"
+                                      title="{{ row.action_help }}"><i data-lucide="minus" class="h-4 w-4"></i>No Action</span>
                             {% endif %}
                         </td>
                     </tr>
                 {% else %}
-                    <tr><td colspan="6" class="px-6 py-12 text-center"><span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="list-checks" class="h-5 w-5"></i></span><p class="mt-4 font-semibold text-content-primary">No Job Executions</p><p class="mt-1 text-sm text-content-muted">KAORI has not recorded a job matching the selected filters.</p></td></tr>
+                    <tr>
+                        <td colspan="6" class="px-6 py-12 text-center">
+                            <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="list-checks" class="h-5 w-5"></i></span>
+                            <p class="mt-4 font-semibold text-content-primary">No Job Executions</p>
+                            <p class="mt-1 text-sm text-content-muted">KAORI has not recorded a job matching the selected filters.</p>
+                        </td>
+                    </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-
     <footer class="flex flex-col gap-3 border-t border-outline-subtle px-5 py-4 text-xs text-content-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div class="flex flex-wrap items-center gap-3">
             <p>Showing <strong class="text-content-primary">{{ job_pagination.start_item }}–{{ job_pagination.end_item }}</strong> of <strong class="text-content-primary">{{ job_pagination.total_items }}</strong> jobs</p>
-            <form class="inline-flex items-center" hx-get="{{ url_for('integrations.jobs') }}" hx-target="#job-execution-registry" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#job-execution-loading">
-                <input type="hidden" name="fragment" value="registry"><input type="hidden" name="tab" value="registry"><input type="hidden" name="page" value="1"><input type="hidden" name="status" value="{{ selected_job_status }}"><input type="hidden" name="workload" value="{{ selected_job_workload }}"><input type="hidden" name="queue" value="{{ selected_job_queue }}"><input type="hidden" name="search" value="{{ job_search }}">
-                <select name="per_page" aria-label="Jobs per page" title="Jobs per page" class="{{ pagination_ui.page_size_classes() }}" onchange="this.form.requestSubmit()"><option value="5" {% if job_pagination.per_page == 5 %}selected{% endif %}>5</option><option value="10" {% if job_pagination.per_page == 10 %}selected{% endif %}>10</option><option value="25" {% if job_pagination.per_page == 25 %}selected{% endif %}>25</option><option value="50" {% if job_pagination.per_page == 50 %}selected{% endif %}>50</option></select>
+            <form class="inline-flex items-center"
+                  hx-get="{{ url_for('integrations.jobs') }}"
+                  hx-target="#job-execution-registry"
+                  hx-swap="outerHTML"
+                  hx-push-url="true"
+                  hx-indicator="#job-execution-loading">
+                <input type="hidden" name="fragment" value="registry">
+                <input type="hidden" name="tab" value="registry">
+                <input type="hidden" name="page" value="1">
+                <input type="hidden" name="status" value="{{ selected_job_status }}">
+                <input type="hidden" name="workload" value="{{ selected_job_workload }}">
+                <input type="hidden" name="queue" value="{{ selected_job_queue }}">
+                <input type="hidden" name="search" value="{{ job_search }}">
+                <select name="per_page"
+                        aria-label="Jobs per page"
+                        title="Jobs per page"
+                        class="{{ pagination_ui.page_size_classes() }}"
+                        onchange="this.form.requestSubmit()">
+                    <option value="5" {% if job_pagination.per_page == 5 %}selected{% endif %}>5</option>
+                    <option value="10" {% if job_pagination.per_page == 10 %}selected{% endif %}>10</option>
+                    <option value="25" {% if job_pagination.per_page == 25 %}selected{% endif %}>25</option>
+                    <option value="50" {% if job_pagination.per_page == 50 %}selected{% endif %}>50</option>
+                </select>
             </form>
         </div>
         <div class="flex flex-wrap items-center gap-1">
             {% set base = {'fragment': 'registry', 'tab': 'registry', 'status': selected_job_status, 'workload': selected_job_workload, 'queue': selected_job_queue, 'search': job_search, 'per_page': job_pagination.per_page} %}
-            {% if job_pagination.has_prev %}<a href="{{ url_for('integrations.jobs', page=job_pagination.prev_page, **base) }}" hx-get="{{ url_for('integrations.jobs', page=job_pagination.prev_page, **base) }}" hx-target="#job-execution-registry" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#job-execution-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>{% else %}<span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>{% endif %}
+            {% if job_pagination.has_prev %}
+                <a href="{{ url_for('integrations.jobs', page=job_pagination.prev_page, **base) }}"
+                   hx-get="{{ url_for('integrations.jobs', page=job_pagination.prev_page, **base) }}"
+                   hx-target="#job-execution-registry"
+                   hx-swap="outerHTML"
+                   hx-push-url="true"
+                   hx-indicator="#job-execution-loading"
+                   class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
+                      aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+            {% endif %}
             {{ pagination_ui.numeric_pages(job_pagination.page, job_pagination.total_pages) }}
-            {% if job_pagination.has_next %}<a href="{{ url_for('integrations.jobs', page=job_pagination.next_page, **base) }}" hx-get="{{ url_for('integrations.jobs', page=job_pagination.next_page, **base) }}" hx-target="#job-execution-registry" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#job-execution-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>{% else %}<span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>{% endif %}
+            {% if job_pagination.has_next %}
+                <a href="{{ url_for('integrations.jobs', page=job_pagination.next_page, **base) }}"
+                   hx-get="{{ url_for('integrations.jobs', page=job_pagination.next_page, **base) }}"
+                   hx-target="#job-execution-registry"
+                   hx-swap="outerHTML"
+                   hx-push-url="true"
+                   hx-indicator="#job-execution-loading"
+                   class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
+                      aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+            {% endif %}
         </div>
     </footer>
-    {% if operation_feedback %}{% include 'components/operation_feedback_oob.html' %}{% endif %}
+    {% if operation_feedback %}
+        {% include 'components/operation_feedback_oob.html' %}
+    {% endif %}
 </section>

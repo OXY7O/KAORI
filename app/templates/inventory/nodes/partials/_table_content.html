@@ -20,18 +20,18 @@
                 {% set status_tone = 'normal' if node.status == 'Ready' else ('critical' if node.status == 'NotReady' else 'warning') %}
                 {% set status_icon = 'circle-check' if node.status == 'Ready' else ('octagon-alert' if node.status == 'NotReady' else 'triangle-alert') %}
                 <tr class="transition hover:bg-surface-hover">
-                    <td class="px-4 py-3.5 align-top">
-                        {{ table_label.metadata_label(node.cluster_name, 'building-2') }}
-                    </td>
+                    <td class="px-4 py-3.5 align-top">{{ table_label.metadata_label(node.cluster_name, 'building-2') }}</td>
                     <td class="px-4 py-3.5 align-top">
                         <div class="flex max-w-[260px] items-start gap-2.5">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                                 <i data-lucide="server" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
-                                <div class="truncate font-semibold text-content-primary" title="{{ node.node_name }}">{{ node.node_name }}</div>
+                                <div class="truncate font-semibold text-content-primary"
+                                     title="{{ node.node_name }}">{{ node.node_name }}</div>
                                 {% if node.hostname_address and node.hostname_address != node.node_name %}
-                                    <div class="mt-0.5 truncate text-xs text-content-muted" title="{{ node.hostname_address }}">{{ node.hostname_address }}</div>
+                                    <div class="mt-0.5 truncate text-xs text-content-muted"
+                                         title="{{ node.hostname_address }}">{{ node.hostname_address }}</div>
                                 {% endif %}
                             </div>
                         </div>
@@ -75,22 +75,29 @@
         </tbody>
     </table>
 </div>
-
 <footer class="flex flex-col gap-4 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs text-content-muted lg:flex-row lg:items-center lg:justify-between">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <p>
             Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span>
             of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ 'node' if pagination.total_items == 1 else 'nodes' }}
         </p>
-        <form hx-get="{{ url_for('inventory.nodes') }}" hx-target="#nodes-table-content" hx-swap="innerHTML" hx-indicator="#nodes-table-loading" class="flex items-center">
+        <form hx-get="{{ url_for('inventory.nodes') }}"
+              hx-target="#nodes-table-content"
+              hx-swap="innerHTML"
+              hx-indicator="#nodes-table-loading"
+              class="flex items-center">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}">
             <input type="hidden" name="role" value="{{ selected_role }}">
             <input type="hidden" name="status" value="{{ selected_status }}">
             <input type="hidden" name="search" value="{{ search }}">
-            <select name="per_page" aria-label="Rows per page" onchange="this.form.requestSubmit()" class="{{ pagination_ui.page_size_classes() }}">
+            <select name="per_page"
+                    aria-label="Rows per page"
+                    onchange="this.form.requestSubmit()"
+                    class="{{ pagination_ui.page_size_classes() }}">
                 {% for option in pagination.allowed_per_page %}
-                    <option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                    <option value="{{ option }}"
+                            {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
                 {% endfor %}
             </select>
         </form>
@@ -98,7 +105,12 @@
     <div class="flex flex-wrap items-center gap-2">
         {% if pagination.has_prev %}
             {% set prev_url = url_for('inventory.nodes', cluster_id=selected_cluster_id, role=selected_role, status=selected_status, search=search, page=pagination.prev_page, per_page=pagination.per_page) %}
-            <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#nodes-table-content" hx-swap="innerHTML" hx-indicator="#nodes-table-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}">
+            <a href="{{ prev_url }}"
+               hx-get="{{ prev_url }}"
+               hx-target="#nodes-table-content"
+               hx-swap="innerHTML"
+               hx-indicator="#nodes-table-loading"
+               class="{{ pagination_ui.navigation_classes(disabled=false) }}">
                 <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
             </a>
         {% else %}
@@ -107,7 +119,12 @@
         {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages) }}
         {% if pagination.has_next %}
             {% set next_url = url_for('inventory.nodes', cluster_id=selected_cluster_id, role=selected_role, status=selected_status, search=search, page=pagination.next_page, per_page=pagination.per_page) %}
-            <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#nodes-table-content" hx-swap="innerHTML" hx-indicator="#nodes-table-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}">
+            <a href="{{ next_url }}"
+               hx-get="{{ next_url }}"
+               hx-target="#nodes-table-content"
+               hx-swap="innerHTML"
+               hx-indicator="#nodes-table-loading"
+               class="{{ pagination_ui.navigation_classes(disabled=false) }}">
                 Next<i data-lucide="chevron-right" class="h-4 w-4"></i>
             </a>
         {% else %}

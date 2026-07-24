@@ -29,12 +29,12 @@
 ) %}
 {% set can_integrations = current_user.is_authenticated and current_user.has_permission('settings.manage_integrations') %}
 {% set can_platform_operations = current_user.is_authenticated and current_user.has_permission('jobs.view') %}
-
 <aside id="app-sidebar"
        class="kaori-sidebar relative flex h-full min-h-0 w-[250px] shrink-0 flex-col overflow-hidden rounded-2xl border border-brand-outline bg-surface-sidebar text-white shadow-2xl shadow-black/25 transition-[width] duration-200 [.sidebar-collapsed_&]:w-[78px]">
-    <div class="pointer-events-none absolute -left-24 -top-32 h-72 w-72 rounded-full bg-kaori-primary/20 blur-3xl" aria-hidden="true"></div>
-    <div class="pointer-events-none absolute -bottom-36 -right-28 h-72 w-72 rounded-full bg-kaori-accent/10 blur-3xl" aria-hidden="true"></div>
-
+    <div class="pointer-events-none absolute -left-24 -top-32 h-72 w-72 rounded-full bg-kaori-primary/20 blur-3xl"
+         aria-hidden="true"></div>
+    <div class="pointer-events-none absolute -bottom-36 -right-28 h-72 w-72 rounded-full bg-kaori-accent/10 blur-3xl"
+         aria-hidden="true"></div>
     <div class="relative z-10 p-3 pb-2">
         <div class="sidebar-brand-card flex items-center gap-3 rounded-xl border border-brand-outline bg-white/5 p-2.5 shadow-sm backdrop-blur-xl [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:gap-0 [.sidebar-collapsed_&]:p-2">
             <div class="sidebar-brand-icon flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg border border-white/10 bg-white/5 shadow-lg shadow-kaori-primary/20">
@@ -49,7 +49,6 @@
             </div>
         </div>
     </div>
-
     <nav class="relative z-10 flex-1 space-y-4 overflow-y-auto overscroll-contain px-3 py-3 [scrollbar-gutter:stable]">
         {% if current_user.is_authenticated %}
             <div class="sidebar-nav-section">
@@ -64,47 +63,56 @@
                         </span>
                         <span class="sidebar-expanded-only truncate whitespace-nowrap">Welcome</span>
                     </a>
-                    {% if can_dashboard %}{% include "components/navigation/dashboards_menu.html" %}{% endif %}
+                    {% if can_dashboard %}
+                        {% include "components/navigation/dashboards_menu.html" %}
+                    {% endif %}
                 </div>
             </div>
         {% endif %}
-
         {% if can_inventory or can_operations or can_governance %}
             <div class="sidebar-nav-section">
                 <div class="sidebar-expanded-only mb-1.5 px-3 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/40">Kubernetes</div>
                 <div class="space-y-1">
-                    {% if can_inventory %}{% include "components/navigation/inventory_menu.html" %}{% endif %}
-                    {% if can_operations %}{% include "components/navigation/kubernetes_operations_menu.html" %}{% endif %}
-                    {% if can_governance %}{% include "components/navigation/governance_menu.html" %}{% endif %}
+                    {% if can_inventory %}
+                        {% include "components/navigation/inventory_menu.html" %}
+                    {% endif %}
+                    {% if can_operations %}
+                        {% include "components/navigation/kubernetes_operations_menu.html" %}
+                    {% endif %}
+                    {% if can_governance %}
+                        {% include "components/navigation/governance_menu.html" %}
+                    {% endif %}
                 </div>
             </div>
         {% endif %}
-
         {% if can_analytics or can_intelligence or can_reports %}
             <div class="sidebar-nav-section">
                 <div class="sidebar-expanded-only mb-1.5 px-3 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/40">Insights &amp; Reporting</div>
                 <div class="space-y-1">
-                    {% if can_analytics %}{% include "components/navigation/analytics_menu.html" %}{% endif %}
-                    {% if can_intelligence %}{% include "components/navigation/intelligence_menu.html" %}{% endif %}
-                    {% if can_reports %}{% include "components/navigation/reports_menu.html" %}{% endif %}
+                    {% if can_analytics %}
+                        {% include "components/navigation/analytics_menu.html" %}
+                    {% endif %}
+                    {% if can_intelligence %}
+                        {% include "components/navigation/intelligence_menu.html" %}
+                    {% endif %}
+                    {% if can_reports %}
+                        {% include "components/navigation/reports_menu.html" %}
+                    {% endif %}
                 </div>
             </div>
         {% endif %}
-
         {% if can_integrations %}
             <div class="sidebar-nav-section">
                 <div class="sidebar-expanded-only mb-1.5 px-3 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/40">Platform Extensions</div>
                 <div class="space-y-1">{% include "components/navigation/integrations_menu.html" %}</div>
             </div>
         {% endif %}
-
         {% if can_platform_operations %}
             <div class="sidebar-nav-section">
                 <div class="sidebar-expanded-only mb-1.5 px-3 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/40">Platform Operations</div>
                 <div class="space-y-1">{% include "components/navigation/platform_operations_menu.html" %}</div>
             </div>
         {% endif %}
-
         <div class="sidebar-nav-section">
             <div class="sidebar-expanded-only mb-1.5 px-3 text-[9px] font-extrabold uppercase tracking-[0.18em] text-white/40">Administration</div>
             <div class="space-y-1">
@@ -113,5 +121,4 @@
             </div>
         </div>
     </nav>
-
 </aside>

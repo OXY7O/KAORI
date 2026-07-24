@@ -2,14 +2,25 @@
 <div id="configmap-namespace-field">
     <label class="block min-w-0" for="namespace">
         <span class="text-sm font-semibold text-content-primary">Namespace</span>
-        <select id="namespace" name="namespace" required onchange="const field=document.getElementById('configmap-name'); if(field){field.disabled=!this.value; field.placeholder=this.value ? 'application-config' : 'Select namespace first'; if(!this.value){field.value='';}}" class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20 disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-disabled" {% if not namespaces %}disabled{% endif %}>
+        <select id="namespace"
+                name="namespace"
+                required
+                onchange="const field=document.getElementById('configmap-name'); if(field){field.disabled=!this.value; field.placeholder=this.value ? 'application-config' : 'Select namespace first'; if(!this.value){field.value='';}}"
+                class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20 disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-disabled"
+                {% if not namespaces %}disabled{% endif %}>
             <option value="">
-                {% if not cluster_selected %}Select cluster first
-                {% elif namespaces %}Select namespace
-                {% else %}No live namespaces available{% endif %}
+                {% if not cluster_selected %}
+                    Select cluster first
+                {% elif namespaces %}
+                    Select namespace
+                {% else %}
+                    No live namespaces available
+                {% endif %}
             </option>
             {% for namespace in namespaces %}
-                <option value="{{ namespace }}" {{ 'selected' if namespace == selected_namespace else '' }}>{{ namespace }}</option>
+                <option value="{{ namespace }}"
+                        {{ 'selected' if namespace == selected_namespace else '' }}>{{ namespace }}
+                </option>
             {% endfor %}
         </select>
         {% if cluster_selected and not namespace_error and not namespaces %}
@@ -20,7 +31,9 @@
     </label>
 </div>
 {% if request.headers.get('HX-Request') == 'true' %}
-    <div id="configmap-live-lookup-notice" hx-swap-oob="outerHTML" class="mt-4">
+    <div id="configmap-live-lookup-notice"
+         hx-swap-oob="outerHTML"
+         class="mt-4">
         {% if namespace_error %}{{ live_lookup.warning('Live namespace lookup failed', namespace_error) }}{% endif %}
     </div>
 {% endif %}

@@ -9,7 +9,6 @@
                 No clusters to display
             {% endif %}
         </p>
-
         <form id="cluster-per-page-form"
               hx-get="{{ url_for('cluster.cluster_table') }}"
               hx-target="#cluster-table-container"
@@ -19,7 +18,8 @@
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="search" value="{{ selected_search }}">
             <input type="hidden" name="environment" value="{{ selected_environment }}">
-            <label class="text-xs font-semibold text-content-secondary" for="cluster-per-page">Rows</label>
+            <label class="text-xs font-semibold text-content-secondary"
+                   for="cluster-per-page">Rows</label>
             <select id="cluster-per-page"
                     name="per_page"
                     hx-get="{{ url_for('cluster.cluster_table') }}"
@@ -30,12 +30,12 @@
                     hx-indicator="#cluster-table-loading"
                     class="{{ pagination_ui.page_size_classes() }}">
                 {% for option in per_page_options %}
-                    <option value="{{ option }}" {% if selected_per_page == option %}selected{% endif %}>{{ option }}</option>
+                    <option value="{{ option }}"
+                            {% if selected_per_page == option %}selected{% endif %}>{{ option }}</option>
                 {% endfor %}
             </select>
         </form>
     </div>
-
     <div class="flex items-center justify-end gap-2">
         {% if pagination.has_prev %}
             <a href="{{ url_for('cluster.list_clusters', page=pagination.prev_page, per_page=pagination.per_page, search=selected_search, environment=selected_environment) }}"
@@ -53,9 +53,7 @@
                 Previous
             </span>
         {% endif %}
-
         {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages) }}
-
         {% if pagination.has_next %}
             <a href="{{ url_for('cluster.list_clusters', page=pagination.next_page, per_page=pagination.per_page, search=selected_search, environment=selected_environment) }}"
                hx-get="{{ url_for('cluster.cluster_table', page=pagination.next_page, per_page=pagination.per_page, search=selected_search, environment=selected_environment) }}"

@@ -2,50 +2,229 @@
 {% import "components/table_label.html" as table_label %}
 {% set selected = lifecycle.domains|selectattr('name','equalto',lifecycle.selected_domain)|first %}
 {% set can_manage = current_user.has_permission('settings.manage_data_lifecycle') %}
-<section id="data-lifecycle-domain-workspace" class="{{ table_ui.block_classes() }}" {% if lifecycle.active_lifecycle_jobs %}hx-get="{{ url_for('settings.data_lifecycle.index', tab='policies', domain=lifecycle.selected_domain) }}" hx-trigger="every 4s" hx-target="this" hx-swap="outerHTML"{% endif %}>
+<section id="data-lifecycle-domain-workspace"
+         class="{{ table_ui.block_classes() }}"
+         {% if lifecycle.active_lifecycle_jobs %}hx-get="{{ url_for('settings.data_lifecycle.index', tab='policies', domain=lifecycle.selected_domain) }}" hx-trigger="every 4s" hx-target="this" hx-swap="outerHTML"{% endif %}>
     <div class="{{ table_ui.block_header_classes() }}">
-        <div class="flex min-w-0 items-start gap-3"><span class="{{ table_ui.block_icon_classes() }}"><i data-lucide="{{ selected.icon }}" class="h-5 w-5"></i></span><div><h2 class="{{ table_ui.block_title_classes() }}">{{ selected.label }} Policy</h2><p class="{{ table_ui.block_description_classes() }}">{{ selected.description }}</p></div></div>
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ table_ui.block_icon_classes() }}"><i data-lucide="{{ selected.icon }}" class="h-5 w-5"></i></span>
+            <div>
+                <h2 class="{{ table_ui.block_title_classes() }}">{{ selected.label }} Policy</h2>
+                <p class="{{ table_ui.block_description_classes() }}">{{ selected.description }}</p>
+            </div>
+        </div>
         <div class="flex flex-wrap gap-2">{{ table_label.status_label((selected.eligible_count ~ ' Eligible') if selected.eligible_count is not none else 'Preview Required', 'warning' if selected.eligible_count else 'info', 'database') }}{{ table_label.status_label((lifecycle.active_lifecycle_jobs or selected.active_count) ~ ' Active', 'pending' if (lifecycle.active_lifecycle_jobs or selected.active_count) else 'disabled', 'loader-circle') }}</div>
     </div>
-    <div id="data-lifecycle-policy-loading" class="{{ table_ui.loading_bar_classes() }}"><div class="notification-progress-indeterminate h-full bg-kaori-primary"></div></div>
+    <div id="data-lifecycle-policy-loading"
+         class="{{ table_ui.loading_bar_classes() }}">
+        <div class="notification-progress-indeterminate h-full bg-kaori-primary"></div>
+    </div>
     <div class="space-y-5 p-5 lg:p-6">
         <div class="grid gap-3 sm:grid-cols-3">
-            <div class="rounded-lg border border-outline-default bg-surface-subtle p-4"><p class="text-xs font-semibold text-content-muted">Hot Retention</p><p class="mt-2 text-2xl font-bold text-content-primary">{{ selected.hot_retention_days }}<span class="ml-1 text-xs font-semibold text-content-muted">days</span></p></div>
-            <div class="rounded-lg border border-outline-default bg-surface-subtle p-4"><p class="text-xs font-semibold text-content-muted">Archive Retention</p><p class="mt-2 text-2xl font-bold text-content-primary">{{ selected.archive_retention_days }}<span class="ml-1 text-xs font-semibold text-content-muted">days</span></p></div>
-            <div class="rounded-lg border border-outline-default bg-surface-subtle p-4"><p class="text-xs font-semibold text-content-muted">Batch Size</p><p class="mt-2 text-2xl font-bold text-content-primary">{{ selected.batch_size }}</p></div>
-        </div>
-
-        {% if lifecycle.preview %}
-        <div class="rounded-xl border border-kaori-primary/25 bg-kaori-soft p-4"><div class="flex items-start gap-3"><i data-lucide="scan-search" class="mt-0.5 h-5 w-5 text-kaori-primary"></i><div><p class="text-sm font-semibold text-content-primary">Read-only Preview</p><p class="mt-1 text-sm leading-6 text-content-secondary">{{ lifecycle.preview.record_count }} records match the current boundary, covering {{ lifecycle.preview.range_start|user_datetime }} to {{ lifecycle.preview.range_end|user_datetime }}. Estimated uncompressed payload: {{ lifecycle.preview.estimated_size_label }}.</p>{% if lifecycle.preview.protected_record_count %}<p class="mt-1 text-xs text-content-muted">{{ lifecycle.preview.protected_record_count }} protected records remain in hot storage.</p>{% endif %}</div></div></div>
-        {% endif %}
-
-        <form method="post" action="{{ url_for('settings.data_lifecycle.save_policy') }}" hx-post="{{ url_for('settings.data_lifecycle.save_policy') }}" hx-target="#data-lifecycle-domain-workspace" hx-swap="outerHTML" hx-indicator="#data-lifecycle-policy-loading" class="space-y-4">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="domain" value="{{ selected.name }}"><input type="hidden" name="tab" value="policies">
-            <fieldset class="space-y-4" {% if not can_manage %}disabled{% endif %}>
-            <div class="grid gap-4 sm:grid-cols-2">
-                <label class="text-xs font-semibold text-content-secondary">Hot retention days<input class="mt-1.5 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm" type="number" min="1" name="hot_retention_days" value="{{ selected.hot_retention_days }}"></label>
-                <label class="text-xs font-semibold text-content-secondary">Archive retention days<input class="mt-1.5 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm" type="number" min="1" name="archive_retention_days" value="{{ selected.archive_retention_days }}"></label>
-                <label class="text-xs font-semibold text-content-secondary">Batch size<input class="mt-1.5 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm" type="number" min="100" max="25000" name="batch_size" value="{{ selected.batch_size }}"></label>
-                <label class="text-xs font-semibold text-content-secondary">Default Operation<select class="mt-1.5 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm" name="operation_mode"><option value="archive_and_cleanup" {% if selected.operation_mode == 'archive_and_cleanup' %}selected{% endif %}>Archive Then Cleanup</option><option value="archive_only" {% if selected.operation_mode == 'archive_only' %}selected{% endif %}>Archive Only</option></select></label>
+            <div class="rounded-lg border border-outline-default bg-surface-subtle p-4">
+                <p class="text-xs font-semibold text-content-muted">Hot Retention</p>
+                <p class="mt-2 text-2xl font-bold text-content-primary">{{ selected.hot_retention_days }}<span class="ml-1 text-xs font-semibold text-content-muted">days</span></p>
             </div>
-            {% if selected.name == 'job_execution' %}
-            {% set workloads = selected.settings.workload_retention_days|default({}) %}
-            <div class="rounded-xl border border-outline-default bg-surface-subtle p-4"><p class="text-sm font-semibold text-content-primary">Workload-specific hot retention</p><p class="mt-1 text-xs leading-5 text-content-muted">Heavy analytical jobs remain available longer than lightweight runtime checks. Failed executions use their own troubleshooting window.</p><div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{% for key,label,default in [('runtime','Runtime',30),('validation','Validation',30),('analytics','Analytics',90),('forecasting','Forecasting',180)] %}<label class="text-xs font-semibold text-content-secondary">{{ label }}<input class="mt-1 h-9 w-full rounded-md border border-outline-default bg-surface-card px-3" type="number" min="1" name="{{ key }}_retention_days" value="{{ workloads.get(key,default) }}"></label>{% endfor %}<label class="text-xs font-semibold text-content-secondary">Failed jobs<input class="mt-1 h-9 w-full rounded-md border border-outline-default bg-surface-card px-3" type="number" min="1" name="failed_retention_days" value="{{ selected.settings.failed_retention_days|default(90) }}"></label></div><p class="mt-3 text-xs leading-5 text-content-muted">Result references are preserved as metadata only. Forecast datasets, analytics results, and reports follow their own future domain policies.</p></div>
-            {% endif %}
-            {% if selected.name == 'operational_activity' %}
-            <div class="grid gap-4 sm:grid-cols-2"><label class="flex items-start gap-3 rounded-lg border border-outline-default p-3"><input type="checkbox" name="protect_unreviewed" class="mt-1" {% if lifecycle.protect_unreviewed %}checked{% endif %}><span><span class="block text-sm font-semibold text-content-primary">Protect unread records</span><span class="mt-1 block text-xs text-content-muted">Keep unread activity in hot storage until the protected maximum age.</span></span></label><label class="text-xs font-semibold text-content-secondary">Protected maximum days<input class="mt-1.5 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm" type="number" min="1" name="protected_max_days" value="{{ lifecycle.protected_max_days|default(selected.hot_retention_days) }}"></label></div>
-            {% endif %}
-            <div class="grid gap-4 sm:grid-cols-2"><label class="text-xs font-semibold text-content-secondary">Schedule hour<input class="mt-1.5 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm" type="number" min="0" max="23" name="schedule_hour" value="{{ selected.schedule_hour }}"></label><label class="text-xs font-semibold text-content-secondary">Schedule minute<input class="mt-1.5 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm" type="number" min="0" max="59" name="schedule_minute" value="{{ selected.schedule_minute }}"></label></div><p class="text-xs leading-5 text-content-muted">Schedule uses {{ lifecycle.schedule_timezone }}. The lightweight dispatcher checks due policies every 15 minutes and fans domains out as separate maintenance jobs.</p><div class="flex flex-wrap items-center justify-between gap-3 border-t border-outline-subtle pt-4"><div class="flex flex-wrap gap-4"><label class="inline-flex items-center gap-2 text-sm font-medium text-content-secondary"><input type="checkbox" name="enabled" {% if selected.enabled %}checked{% endif %}>Policy enabled</label><label class="inline-flex items-center gap-2 text-sm font-medium text-content-secondary"><input type="checkbox" name="schedule_enabled" {% if selected.schedule_enabled %}checked{% endif %}>Scheduled execution</label></div>{% if can_manage %}<button class="inline-flex min-h-10 items-center gap-2 rounded-md bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="save" class="h-4 w-4"></i>Save Policy</button>{% else %}<span class="text-xs font-medium text-content-muted">Read-only policy access</span>{% endif %}</div>
+            <div class="rounded-lg border border-outline-default bg-surface-subtle p-4">
+                <p class="text-xs font-semibold text-content-muted">Archive Retention</p>
+                <p class="mt-2 text-2xl font-bold text-content-primary">{{ selected.archive_retention_days }}<span class="ml-1 text-xs font-semibold text-content-muted">days</span></p>
+            </div>
+            <div class="rounded-lg border border-outline-default bg-surface-subtle p-4">
+                <p class="text-xs font-semibold text-content-muted">Batch Size</p>
+                <p class="mt-2 text-2xl font-bold text-content-primary">{{ selected.batch_size }}</p>
+            </div>
+        </div>
+        {% if lifecycle.preview %}
+            <div class="rounded-xl border border-kaori-primary/25 bg-kaori-soft p-4">
+                <div class="flex items-start gap-3">
+                    <i data-lucide="scan-search" class="mt-0.5 h-5 w-5 text-kaori-primary"></i>
+                    <div>
+                        <p class="text-sm font-semibold text-content-primary">Read-only Preview</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">{{ lifecycle.preview.record_count }} records match the current boundary, covering {{ lifecycle.preview.range_start|user_datetime }} to {{ lifecycle.preview.range_end|user_datetime }}. Estimated uncompressed payload: {{ lifecycle.preview.estimated_size_label }}.</p>
+                        {% if lifecycle.preview.protected_record_count %}
+                            <p class="mt-1 text-xs text-content-muted">{{ lifecycle.preview.protected_record_count }} protected records remain in hot storage.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+        <form method="post"
+              action="{{ url_for('settings.data_lifecycle.save_policy') }}"
+              hx-post="{{ url_for('settings.data_lifecycle.save_policy') }}"
+              hx-target="#data-lifecycle-domain-workspace"
+              hx-swap="outerHTML"
+              hx-indicator="#data-lifecycle-policy-loading"
+              class="space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="domain" value="{{ selected.name }}">
+            <input type="hidden" name="tab" value="policies">
+            <fieldset class="space-y-4" {% if not can_manage %}disabled{% endif %}>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <label class="text-xs font-semibold text-content-secondary">
+                        Hot retention days
+                        <input class="mt-1.5 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm"
+                               type="number"
+                               min="1"
+                               name="hot_retention_days"
+                               value="{{ selected.hot_retention_days }}">
+                    </label>
+                    <label class="text-xs font-semibold text-content-secondary">
+                        Archive retention days
+                        <input class="mt-1.5 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm"
+                               type="number"
+                               min="1"
+                               name="archive_retention_days"
+                               value="{{ selected.archive_retention_days }}">
+                    </label>
+                    <label class="text-xs font-semibold text-content-secondary">
+                        Batch size
+                        <input class="mt-1.5 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm"
+                               type="number"
+                               min="100"
+                               max="25000"
+                               name="batch_size"
+                               value="{{ selected.batch_size }}">
+                    </label>
+                    <label class="text-xs font-semibold text-content-secondary">
+                        Default Operation
+                        <select class="mt-1.5 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm"
+                                name="operation_mode">
+                            <option value="archive_and_cleanup"
+                                    {% if selected.operation_mode == 'archive_and_cleanup' %}selected{% endif %}>Archive Then Cleanup</option>
+                            <option value="archive_only"
+                                    {% if selected.operation_mode == 'archive_only' %}selected{% endif %}>Archive Only</option>
+                        </select>
+                    </label>
+                </div>
+                {% if selected.name == 'job_execution' %}
+                    {% set workloads = selected.settings.workload_retention_days|default({}) %}
+                    <div class="rounded-xl border border-outline-default bg-surface-subtle p-4">
+                        <p class="text-sm font-semibold text-content-primary">Workload-specific hot retention</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Heavy analytical jobs remain available longer than lightweight runtime checks. Failed executions use their own troubleshooting window.</p>
+                        <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            {% for key,label,default in [('runtime','Runtime',30),('validation','Validation',30),('analytics','Analytics',90),('forecasting','Forecasting',180)] %}
+                                <label class="text-xs font-semibold text-content-secondary">
+                                    {{ label }}
+                                    <input class="mt-1 h-9 w-full rounded-md border border-outline-default bg-surface-card px-3"
+                                           type="number"
+                                           min="1"
+                                           name="{{ key }}_retention_days"
+                                           value="{{ workloads.get(key,default) }}">
+                                </label>
+                            {% endfor %}
+                            <label class="text-xs font-semibold text-content-secondary">
+                                Failed jobs
+                                <input class="mt-1 h-9 w-full rounded-md border border-outline-default bg-surface-card px-3"
+                                       type="number"
+                                       min="1"
+                                       name="failed_retention_days"
+                                       value="{{ selected.settings.failed_retention_days|default(90) }}">
+                            </label>
+                        </div>
+                        <p class="mt-3 text-xs leading-5 text-content-muted">Result references are preserved as metadata only. Forecast datasets, analytics results, and reports follow their own future domain policies.</p>
+                    </div>
+                {% endif %}
+                {% if selected.name == 'operational_activity' %}
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <label class="flex items-start gap-3 rounded-lg border border-outline-default p-3">
+                            <input type="checkbox"
+                                   name="protect_unreviewed"
+                                   class="mt-1"
+                                   {% if lifecycle.protect_unreviewed %}checked{% endif %}>
+                            <span><span class="block text-sm font-semibold text-content-primary">Protect unread records</span><span class="mt-1 block text-xs text-content-muted">Keep unread activity in hot storage until the protected maximum age.</span></span>
+                        </label>
+                        <label class="text-xs font-semibold text-content-secondary">
+                            Protected maximum days
+                            <input class="mt-1.5 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm"
+                                   type="number"
+                                   min="1"
+                                   name="protected_max_days"
+                                   value="{{ lifecycle.protected_max_days|default(selected.hot_retention_days) }}">
+                        </label>
+                    </div>
+                {% endif %}
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <label class="text-xs font-semibold text-content-secondary">
+                        Schedule hour
+                        <input class="mt-1.5 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm"
+                               type="number"
+                               min="0"
+                               max="23"
+                               name="schedule_hour"
+                               value="{{ selected.schedule_hour }}">
+                    </label>
+                    <label class="text-xs font-semibold text-content-secondary">
+                        Schedule minute
+                        <input class="mt-1.5 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm"
+                               type="number"
+                               min="0"
+                               max="59"
+                               name="schedule_minute"
+                               value="{{ selected.schedule_minute }}">
+                    </label>
+                </div>
+                <p class="text-xs leading-5 text-content-muted">Schedule uses {{ lifecycle.schedule_timezone }}. The lightweight dispatcher checks due policies every 15 minutes and fans domains out as separate maintenance jobs.</p>
+                <div class="flex flex-wrap items-center justify-between gap-3 border-t border-outline-subtle pt-4">
+                    <div class="flex flex-wrap gap-4">
+                        <label class="inline-flex items-center gap-2 text-sm font-medium text-content-secondary">
+                            <input type="checkbox"
+                                   name="enabled"
+                                   {% if selected.enabled %}checked{% endif %}>
+                            Policy enabled
+                        </label>
+                        <label class="inline-flex items-center gap-2 text-sm font-medium text-content-secondary">
+                            <input type="checkbox"
+                                   name="schedule_enabled"
+                                   {% if selected.schedule_enabled %}checked{% endif %}>
+                            Scheduled execution
+                        </label>
+                    </div>
+                    {% if can_manage %}
+                        <button class="inline-flex min-h-10 items-center gap-2 rounded-md bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="save" class="h-4 w-4"></i>Save Policy</button>
+                    {% else %}
+                        <span class="text-xs font-medium text-content-muted">Read-only policy access</span>
+                    {% endif %}
+                </div>
             </fieldset>
         </form>
-
         <div class="flex flex-wrap items-center gap-2 border-t border-outline-subtle pt-5">
-            <a href="{{ url_for('settings.data_lifecycle.preview', domain=selected.name, tab='policies') }}" hx-get="{{ url_for('settings.data_lifecycle.preview', domain=selected.name, tab='policies') }}" hx-target="#data-lifecycle-domain-workspace" hx-swap="outerHTML" hx-indicator="#data-lifecycle-policy-loading" class="{{ table_ui.action_classes() }}"><i data-lucide="scan-search" class="h-4 w-4"></i>Preview</a>
+            <a href="{{ url_for('settings.data_lifecycle.preview', domain=selected.name, tab='policies') }}"
+               hx-get="{{ url_for('settings.data_lifecycle.preview', domain=selected.name, tab='policies') }}"
+               hx-target="#data-lifecycle-domain-workspace"
+               hx-swap="outerHTML"
+               hx-indicator="#data-lifecycle-policy-loading"
+               class="{{ table_ui.action_classes() }}"><i data-lucide="scan-search" class="h-4 w-4"></i>Preview</a>
             {% if can_manage %}
-            <form method="post" action="{{ url_for('settings.data_lifecycle.run') }}" hx-post="{{ url_for('settings.data_lifecycle.run') }}" hx-target="#data-lifecycle-domain-workspace" hx-swap="outerHTML" hx-indicator="#data-lifecycle-policy-loading"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="domain" value="{{ selected.name }}"><input type="hidden" name="tab" value="policies"><input type="hidden" name="mode" value="archive_only"><button class="{{ table_ui.action_classes() }}"><i data-lucide="archive" class="h-4 w-4"></i>Archive Only</button></form>
-            <form method="post" action="{{ url_for('settings.data_lifecycle.run') }}" hx-post="{{ url_for('settings.data_lifecycle.run') }}" hx-target="#data-lifecycle-domain-workspace" hx-swap="outerHTML" hx-indicator="#data-lifecycle-policy-loading"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><input type="hidden" name="domain" value="{{ selected.name }}"><input type="hidden" name="tab" value="policies"><input type="hidden" name="mode" value="archive_and_cleanup"><button class="inline-flex min-h-8 items-center gap-1.5 rounded-md bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="archive-restore" class="h-4 w-4"></i>Archive & Cleanup</button></form>
+                <form method="post"
+                      action="{{ url_for('settings.data_lifecycle.run') }}"
+                      hx-post="{{ url_for('settings.data_lifecycle.run') }}"
+                      hx-target="#data-lifecycle-domain-workspace"
+                      hx-swap="outerHTML"
+                      hx-indicator="#data-lifecycle-policy-loading">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="domain" value="{{ selected.name }}">
+                    <input type="hidden" name="tab" value="policies">
+                    <input type="hidden" name="mode" value="archive_only">
+                    <button class="{{ table_ui.action_classes() }}"><i data-lucide="archive" class="h-4 w-4"></i>Archive Only</button>
+                </form>
+                <form method="post"
+                      action="{{ url_for('settings.data_lifecycle.run') }}"
+                      hx-post="{{ url_for('settings.data_lifecycle.run') }}"
+                      hx-target="#data-lifecycle-domain-workspace"
+                      hx-swap="outerHTML"
+                      hx-indicator="#data-lifecycle-policy-loading">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="domain" value="{{ selected.name }}">
+                    <input type="hidden" name="tab" value="policies">
+                    <input type="hidden" name="mode" value="archive_and_cleanup">
+                    <button class="inline-flex min-h-8 items-center gap-1.5 rounded-md bg-kaori-primary px-3 text-xs font-semibold text-white hover:bg-kaori-primary-hover"><i data-lucide="archive-restore" class="h-4 w-4"></i>Archive & Cleanup</button>
+                </form>
             {% endif %}
         </div>
     </div>
 </section>
-{% if lifecycle.feedback %}{% with operation_feedback=lifecycle.feedback %}{% include 'components/operation_feedback_oob.html' %}{% endwith %}{% endif %}
+{% if lifecycle.feedback %}
+    {% with operation_feedback=lifecycle.feedback %}
+        {% include 'components/operation_feedback_oob.html' %}
+    {% endwith %}
+{% endif %}

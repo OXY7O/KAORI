@@ -8,10 +8,11 @@
             {{ configmap_ui.neutral_metric('key-round', 'Current data', (live.data|length + live.binary_data|length) ~ ' keys', 'Read directly from Kubernetes') }}
             {{ configmap_ui.neutral_metric('network', 'Impact context', impacts|length ~ ' workload references', 'Best effort from inventory snapshot') }}
         </div>
-        <input type="hidden" name="target_cluster_id" value="{{ target.cluster.id }}">
+        <input type="hidden"
+               name="target_cluster_id"
+               value="{{ target.cluster.id }}">
         <input type="hidden" name="target_namespace" value="{{ target.namespace }}">
         <input type="hidden" name="target_configmap_name" value="{{ target.name }}">
-
         {% if live.immutable %}
             <div class="flex items-start gap-3 rounded-lg border border-status-warning-border bg-status-warning-soft p-4 text-status-warning-text">
                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card/50"><i data-lucide="lock" class="h-4 w-4"></i></span>
@@ -27,22 +28,29 @@
                         <h3 class="text-sm font-semibold text-content-primary">Update Mode</h3>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Merge preserves unsubmitted keys. Replace removes keys omitted from this form.</p>
                     </div>
-                    <select name="update_mode" class="h-10 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                    <select name="update_mode"
+                            class="h-10 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                         <option value="merge">Merge selected keys</option>
                         <option value="replace">Replace all data</option>
                     </select>
                 </div>
             </div>
             {% set entries = [] %}
-            {% for key,value in live.data.items() %}{% set _ = entries.append((key, {'kind':'text','value':value})) %}{% endfor %}
-            {% for key,value in live.binary_data.items() %}{% set _ = entries.append((key, {'kind':'binary','value':value})) %}{% endfor %}
+            {% for key,value in live.data.items() %}
+                {% set _ = entries.append((key, {'kind':'text','value':value})) %}
+            {% endfor %}
+            {% for key,value in live.binary_data.items() %}
+                {% set _ = entries.append((key, {'kind':'binary','value':value})) %}
+            {% endfor %}
             {% include 'kubernetes_operations/configmaps/_entries_editor.html' %}
             <label class="flex items-start gap-3 rounded-lg border border-status-critical-border bg-status-critical-soft p-4 text-status-critical-text">
-                <input type="checkbox" name="confirm_replace" value="yes" class="mt-0.5 rounded border-status-critical-border text-status-critical focus:ring-status-critical">
+                <input type="checkbox"
+                       name="confirm_replace"
+                       value="yes"
+                       class="mt-0.5 rounded border-status-critical-border text-status-critical focus:ring-status-critical">
                 <span class="text-xs leading-5"><strong class="block text-sm">Confirm full replacement</strong>Required only when <strong>Replace all data</strong> is selected. Omitted keys will be deleted.</span>
             </label>
         {% endif %}
-
         <div class="rounded-lg border border-outline-default bg-surface-card p-4">
             <div class="flex flex-wrap items-start justify-between gap-3">
                 <div>
@@ -62,5 +70,9 @@
         </div>
     </div>
 {% else %}
-    {% if target_error %}{{ live_lookup.warning('Live ConfigMap lookup failed', target_error) }}{% else %}{{ configmap_ui.empty_state('file-search', 'Select a ConfigMap', 'Live values and impact context will appear here.') }}{% endif %}
+    {% if target_error %}
+        {{ live_lookup.warning('Live ConfigMap lookup failed', target_error) }}
+    {% else %}
+        {{ configmap_ui.empty_state('file-search', 'Select a ConfigMap', 'Live values and impact context will appear here.') }}
+    {% endif %}
 {% endif %}

@@ -1,78 +1,76 @@
 {% extends "layouts/app.html" %}
 {% block title %}Alerts & Anomalies{% endblock title %}
 {% block dashboard_content %}
- <div id="alerts-page-content"
- class="space-y-6"
- data-analytics-page-request-tracking="false">
- {% set prometheus_status = integration_status.prometheus %}
- {% set alertmanager_status = integration_status.alertmanager %}
- {% set selected_cluster_name = selected_cluster.name if selected_cluster else 'No cluster selected' %}
- {% set active_alerts = summary.active_alerts|default(0) %}
- {% set critical_alerts = summary.critical_alerts|default(0) %}
- {% set warning_alerts = summary.warning_alerts|default(0) %}
- {% set anomaly_count = summary.detected_anomalies|default(0) %}
- <form id="alerts-control-form"
- method="GET"
- action="{{ url_for('analytics.alerts') }}"
- hx-get="{{ url_for('analytics.alerts') }}"
- hx-trigger="change[event.target.name !== 'alerts_per_page' && event.target.name !== 'anomalies_per_page'] from:select, keyup changed delay:500ms from:input[name='search']"
- hx-target="#alerts-page-content"
- hx-select="#alerts-page-content"
- hx-swap="outerHTML settle:150ms"
- hx-indicator="#alerts-refresh-indicator"
- hx-sync="#alerts-control-form:replace"
- class="space-y-6">
- <input type="hidden" name="page" value="1">
- {% include "analytics/alerts/partials/_hero.html" %}
- {% if dependency_blocker %}
- {% include "components/dependencies/_blocker.html" %}
- {% endif %}
- {% if not dependency_blocker %}
- {% include "analytics/alerts/partials/_filters.html" %}
- {% endif %}
- </form>
- {% if not dependency_blocker %}
- {% include "analytics/alerts/partials/_source_status.html" %}
- {% include "analytics/alerts/partials/_cluster_signal_overview.html" %}
- <div x-data="{ activeTab: 'alerts' }"
- class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm ">
- <div class="flex flex-col gap-4 border-b border-outline-default px-6 py-4 sm:flex-row sm:items-center sm:justify-between ">
- <div>
- <h2 class="text-lg font-semibold text-content-primary">Alert &amp; Anomaly Details</h2>
- <p class="mt-1 text-sm text-content-muted ">
- Switch between active alert signals and anomaly candidates.
- </p>
- </div>
- <div class="inline-flex rounded-xl bg-surface-hover p-1 ">
- <button type="button"
- @click="activeTab = 'alerts'"
- :class="activeTab === 'alerts' ? 'bg-surface-card text-kaori-primary shadow-sm ' : 'text-content-muted hover:text-content-secondary dark:hover:text-content-primary'"
- class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition">
- <i data-lucide="bell-ring" class="h-4 w-4"></i>
- Alerts
- </button>
- <button type="button"
- @click="activeTab = 'anomalies'"
- :class="activeTab === 'anomalies' ? 'bg-surface-card text-kaori-primary shadow-sm ' : 'text-content-muted hover:text-content-secondary dark:hover:text-content-primary'"
- class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition">
- <i data-lucide="radar" class="h-4 w-4"></i>
- Anomalies
- </button>
- </div>
- </div>
- <div x-show="activeTab === 'alerts'" x-cloak>{% include "analytics/alerts/partials/_alerts_table.html" %}</div>
- <div x-show="activeTab === 'anomalies'" x-cloak>{% include "analytics/alerts/partials/_anomalies_table.html" %}</div>
- </div>
- {% include "analytics/alerts/partials/_routing_summary.html" %}
- {% include "analytics/alerts/partials/_silence_inhibition_summary.html" %}
- {% include "analytics/alerts/partials/_ownership_summary.html" %}
- {% include "analytics/alerts/partials/_incident_readiness.html" %}
- {% include "analytics/alerts/partials/_recommendations.html" %}
- {% endif %}
- </div>
+    <div id="alerts-page-content"
+         class="space-y-6"
+         data-analytics-page-request-tracking="false">
+        {% set prometheus_status = integration_status.prometheus %}
+        {% set alertmanager_status = integration_status.alertmanager %}
+        {% set selected_cluster_name = selected_cluster.name if selected_cluster else 'No cluster selected' %}
+        {% set active_alerts = summary.active_alerts|default(0) %}
+        {% set critical_alerts = summary.critical_alerts|default(0) %}
+        {% set warning_alerts = summary.warning_alerts|default(0) %}
+        {% set anomaly_count = summary.detected_anomalies|default(0) %}
+        <form id="alerts-control-form"
+              method="GET"
+              action="{{ url_for('analytics.alerts') }}"
+              hx-get="{{ url_for('analytics.alerts') }}"
+              hx-trigger="change[event.target.name !== 'alerts_per_page' && event.target.name !== 'anomalies_per_page'] from:select, keyup changed delay:500ms from:input[name='search']"
+              hx-target="#alerts-page-content"
+              hx-select="#alerts-page-content"
+              hx-swap="outerHTML settle:150ms"
+              hx-indicator="#alerts-refresh-indicator"
+              hx-sync="#alerts-control-form:replace"
+              class="space-y-6">
+            <input type="hidden" name="page" value="1">
+            {% include "analytics/alerts/partials/_hero.html" %}
+            {% if dependency_blocker %}
+                {% include "components/dependencies/_blocker.html" %}
+            {% endif %}
+            {% if not dependency_blocker %}
+                {% include "analytics/alerts/partials/_filters.html" %}
+            {% endif %}
+        </form>
+        {% if not dependency_blocker %}
+            {% include "analytics/alerts/partials/_source_status.html" %}
+            {% include "analytics/alerts/partials/_cluster_signal_overview.html" %}
+            <div x-data="{ activeTab: 'alerts' }"
+                 class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm ">
+                <div class="flex flex-col gap-4 border-b border-outline-default px-6 py-4 sm:flex-row sm:items-center sm:justify-between ">
+                    <div>
+                        <h2 class="text-lg font-semibold text-content-primary">Alert &amp; Anomaly Details</h2>
+                        <p class="mt-1 text-sm text-content-muted ">Switch between active alert signals and anomaly candidates.</p>
+                    </div>
+                    <div class="inline-flex rounded-xl bg-surface-hover p-1 ">
+                        <button type="button"
+                                @click="activeTab = 'alerts'"
+                                :class="activeTab === 'alerts' ? 'bg-surface-card text-kaori-primary shadow-sm ' : 'text-content-muted hover:text-content-secondary dark:hover:text-content-primary'"
+                                class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition">
+                            <i data-lucide="bell-ring" class="h-4 w-4"></i>
+                            Alerts
+                        </button>
+                        <button type="button"
+                                @click="activeTab = 'anomalies'"
+                                :class="activeTab === 'anomalies' ? 'bg-surface-card text-kaori-primary shadow-sm ' : 'text-content-muted hover:text-content-secondary dark:hover:text-content-primary'"
+                                class="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition">
+                            <i data-lucide="radar" class="h-4 w-4"></i>
+                            Anomalies
+                        </button>
+                    </div>
+                </div>
+                <div x-show="activeTab === 'alerts'" x-cloak>{% include "analytics/alerts/partials/_alerts_table.html" %}</div>
+                <div x-show="activeTab === 'anomalies'" x-cloak>{% include "analytics/alerts/partials/_anomalies_table.html" %}</div>
+            </div>
+            {% include "analytics/alerts/partials/_routing_summary.html" %}
+            {% include "analytics/alerts/partials/_silence_inhibition_summary.html" %}
+            {% include "analytics/alerts/partials/_ownership_summary.html" %}
+            {% include "analytics/alerts/partials/_incident_readiness.html" %}
+            {% include "analytics/alerts/partials/_recommendations.html" %}
+        {% endif %}
+    </div>
 {% endblock dashboard_content %}
 {% block scripts %}
- <script>
+    <script>
  document.addEventListener('htmx:afterSwap', function () {
  if (window.lucide) {
  window.lucide.createIcons()
@@ -84,5 +82,5 @@
  window.lucide.createIcons()
  }
  })
- </script>
+    </script>
 {% endblock scripts %}

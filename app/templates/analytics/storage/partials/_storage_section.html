@@ -1,103 +1,103 @@
 <section class="rounded-xl border border-outline-default bg-surface-card shadow-sm ">
- <div class="border-b border-outline-default px-6 py-4 ">
- <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
- <div>
- <div class="flex items-center gap-2">
- <h2 class="text-lg font-semibold text-content-primary">Storage Capacity &amp; Utilization</h2>
- <i data-lucide="info" class="h-4 w-4 text-content-muted"></i>
- </div>
- <p class="mt-1 text-sm text-content-muted ">
- Review node filesystem usage, persistent volume capacity, PVC requests, and storage health signals.
- </p>
- </div>
- <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
- <label class="block">
- <span class="text-xs font-medium text-content-muted ">Node Filesystem</span>
- <select name="storage_node"
- class="mt-1 w-full rounded-xl border border-outline-strong bg-surface-card px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/10 sm:w-64"
- hx-get="{{ url_for('analytics.storage_filesystem_summary') }}"
- hx-trigger="change"
- hx-target="#storage-filesystem-panel"
- hx-swap="outerHTML"
- hx-include="#storage-analysis-filter-form, [name='storage_node']"
- hx-indicator="#storage-refresh-indicator">
- <option value="" {% if not selected_storage_node %}selected{% endif %}>All Nodes</option>
- {% for node in storage_summary.node_filesystem.available_nodes %}
- <option value="{{ node }}"
- {% if selected_storage_node == node %}selected{% endif %}>{{ node }}</option>
- {% endfor %}
- </select>
- </label>
- </div>
- </div>
- </div>
- <div class="space-y-6 p-6">
- {% include "analytics/storage/partials/_filesystem_panel.html" %}
- {% include "analytics/storage/partials/_persistent_storage_panel.html" %}
- <section class="rounded-xl border border-outline-default bg-surface-card shadow-sm ">
- <details class="group">
- <summary class="flex cursor-pointer list-none flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
- <div class="flex min-w-0 items-start gap-3">
- <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary ring-1 ring-brand-outline bg-kaori-soft ">
- <i data-lucide="list-checks" class="h-5 w-5"></i>
- </div>
- <div class="min-w-0">
- <div class="flex flex-wrap items-center gap-2">
- <h3 class="font-semibold text-content-primary">Storage Recommendations</h3>
- <span class="inline-flex w-fit items-center gap-2 rounded-md px-3 py-1 text-xs font-semibold {% if recommendation_count > 0 %}bg-amber-50 text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900{% else %}bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900{% endif %}">
- {{ recommendation_count }} actionable
- </span>
- </div>
- <p class="mt-1 text-xs text-content-muted ">
- Actionable storage findings generated from filesystem, PV, and PVC risk signals.
- </p>
- </div>
- </div>
- <span class="inline-flex w-fit items-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-3 py-2 text-xs font-semibold text-content-secondary transition group-open:bg-kaori-soft group-open:text-kaori-primary group-open:bg-kaori-soft dark:group-open:text-kaori-primary">
- <i data-lucide="chevron-down"
- class="h-4 w-4 transition group-open:rotate-180"></i>
- Details
- </span>
- </summary>
- <div class="border-t border-outline-default p-5 ">
- {% if recommendation_cards %}
- <div class="grid gap-4 lg:grid-cols-2">
- {% for item in recommendation_cards %}
- <a href="{{ item.href if item.href else url_for('analytics.storage', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, time_range=selected_time_range) }}"
- class="group/card flex h-full flex-col justify-between gap-4 rounded-xl border border-outline-default p-4 transition hover:border-brand-outline hover:bg-kaori-soft dark:hover:border-brand-outline hover:bg-kaori-soft">
- <div class="flex items-start gap-4">
- <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl {{ item.icon_class }}">
- <i data-lucide="{{ item.icon }}" class="h-5 w-5"></i>
- </div>
- <div class="min-w-0 flex-1">
- <div class="mb-2 flex flex-wrap items-center gap-2">
- <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ item.priority_class }}">{{ item.priority }}</span>
- <span class="rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary ">
- {{ item.source_label }}
- </span>
- </div>
- <h4 class="text-sm font-semibold text-content-primary">{{ item.title }}</h4>
- <p class="mt-1 text-sm leading-6 text-content-muted ">{{ item.description }}</p>
- </div>
- </div>
- <span class="inline-flex items-center gap-2 text-sm font-semibold text-kaori-primary group-hover/card:text-kaori-primary ">
- Review storage
- <i data-lucide="arrow-right" class="h-4 w-4"></i>
- </span>
- </a>
- {% endfor %}
- </div>
- {% else %}
- <div class="rounded-xl border border-dashed border-outline-strong bg-surface-subtle px-4 py-8 text-center /40">
- <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300">
- <i data-lucide="check-circle-2" class="h-6 w-6"></i>
- </div>
- <h3 class="mt-4 font-semibold text-content-primary">No Actionable Storage Recommendation</h3>
- <p class="mt-1 text-sm text-content-muted ">Current storage signals do not require immediate action.</p>
- </div>
- {% endif %}
- </div>
- </details>
- </section>
- </div>
+    <div class="border-b border-outline-default px-6 py-4 ">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <div class="flex items-center gap-2">
+                    <h2 class="text-lg font-semibold text-content-primary">Storage Capacity &amp; Utilization</h2>
+                    <i data-lucide="info" class="h-4 w-4 text-content-muted"></i>
+                </div>
+                <p class="mt-1 text-sm text-content-muted ">
+                    Review node filesystem usage, persistent volume capacity, PVC requests, and storage health signals.
+                </p>
+            </div>
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
+                <label class="block">
+                    <span class="text-xs font-medium text-content-muted ">Node Filesystem</span>
+                    <select name="storage_node"
+                            class="mt-1 w-full rounded-xl border border-outline-strong bg-surface-card px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/10 sm:w-64"
+                            hx-get="{{ url_for('analytics.storage_filesystem_summary') }}"
+                            hx-trigger="change"
+                            hx-target="#storage-filesystem-panel"
+                            hx-swap="outerHTML"
+                            hx-include="#storage-analysis-filter-form, [name='storage_node']"
+                            hx-indicator="#storage-refresh-indicator">
+                        <option value="" {% if not selected_storage_node %}selected{% endif %}>All Nodes</option>
+                        {% for node in storage_summary.node_filesystem.available_nodes %}
+                            <option value="{{ node }}"
+                                    {% if selected_storage_node == node %}selected{% endif %}>{{ node }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+            </div>
+        </div>
+    </div>
+    <div class="space-y-6 p-6">
+        {% include "analytics/storage/partials/_filesystem_panel.html" %}
+        {% include "analytics/storage/partials/_persistent_storage_panel.html" %}
+        <section class="rounded-xl border border-outline-default bg-surface-card shadow-sm ">
+            <details class="group">
+                <summary class="flex cursor-pointer list-none flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary ring-1 ring-brand-outline bg-kaori-soft ">
+                            <i data-lucide="list-checks" class="h-5 w-5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h3 class="font-semibold text-content-primary">Storage Recommendations</h3>
+                                <span class="inline-flex w-fit items-center gap-2 rounded-md px-3 py-1 text-xs font-semibold {% if recommendation_count > 0 %}bg-amber-50 text-amber-700 ring-1 ring-amber-100 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-900{% else %}bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-900{% endif %}">
+                                    {{ recommendation_count }} actionable
+                                </span>
+                            </div>
+                            <p class="mt-1 text-xs text-content-muted ">
+                                Actionable storage findings generated from filesystem, PV, and PVC risk signals.
+                            </p>
+                        </div>
+                    </div>
+                    <span class="inline-flex w-fit items-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-3 py-2 text-xs font-semibold text-content-secondary transition group-open:bg-kaori-soft group-open:text-kaori-primary group-open:bg-kaori-soft dark:group-open:text-kaori-primary">
+                        <i data-lucide="chevron-down"
+                           class="h-4 w-4 transition group-open:rotate-180"></i>
+                        Details
+                    </span>
+                </summary>
+                <div class="border-t border-outline-default p-5 ">
+                    {% if recommendation_cards %}
+                        <div class="grid gap-4 lg:grid-cols-2">
+                            {% for item in recommendation_cards %}
+                                <a href="{{ item.href if item.href else url_for('analytics.storage', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, time_range=selected_time_range) }}"
+                                   class="group/card flex h-full flex-col justify-between gap-4 rounded-xl border border-outline-default p-4 transition hover:border-brand-outline hover:bg-kaori-soft dark:hover:border-brand-outline hover:bg-kaori-soft">
+                                    <div class="flex items-start gap-4">
+                                        <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl {{ item.icon_class }}">
+                                            <i data-lucide="{{ item.icon }}" class="h-5 w-5"></i>
+                                        </div>
+                                        <div class="min-w-0 flex-1">
+                                            <div class="mb-2 flex flex-wrap items-center gap-2">
+                                                <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ item.priority_class }}">{{ item.priority }}</span>
+                                                <span class="rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary ">
+                                                    {{ item.source_label }}
+                                                </span>
+                                            </div>
+                                            <h4 class="text-sm font-semibold text-content-primary">{{ item.title }}</h4>
+                                            <p class="mt-1 text-sm leading-6 text-content-muted ">{{ item.description }}</p>
+                                        </div>
+                                    </div>
+                                    <span class="inline-flex items-center gap-2 text-sm font-semibold text-kaori-primary group-hover/card:text-kaori-primary ">
+                                        Review storage
+                                        <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                                    </span>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="rounded-xl border border-dashed border-outline-strong bg-surface-subtle px-4 py-8 text-center /40">
+                            <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300">
+                                <i data-lucide="check-circle-2" class="h-6 w-6"></i>
+                            </div>
+                            <h3 class="mt-4 font-semibold text-content-primary">No Actionable Storage Recommendation</h3>
+                            <p class="mt-1 text-sm text-content-muted ">Current storage signals do not require immediate action.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </details>
+        </section>
+    </div>
 </section>

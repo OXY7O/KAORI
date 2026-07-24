@@ -1,47 +1,44 @@
 {% import "components/table_label.html" as table_label %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
-<div id="prometheus-scope-workspace" class="space-y-4"
-     {% if binding_validation_job and binding_validation_job.is_active %}
-     hx-get="{{ url_for('prometheus.binding_validation_status', instance_id=instance.id, binding_id=binding_validation_job.binding_id, task_id=binding_validation_job.task_id) }}"
-     hx-trigger="load delay:1500ms"
-     hx-target="this"
-     hx-swap="outerHTML"
-     {% endif %}>
+<div id="prometheus-scope-workspace"
+     class="space-y-4"
+     {% if binding_validation_job and binding_validation_job.is_active %} hx-get="{{ url_for('prometheus.binding_validation_status', instance_id=instance.id, binding_id=binding_validation_job.binding_id, task_id=binding_validation_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML" {% endif %}>
     <div class="space-y-4">
         <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-        <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="route" class="h-5 w-5"></i>
-                </span>
-                <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <h2 class="text-base font-semibold text-content-primary">Scope &amp; Resolution</h2>
-                        {{ table_label.metadata_label(binding_rows|length ~ (' Binding' if binding_rows|length == 1 else ' Bindings'), 'link-2') }}
+            <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="route" class="h-5 w-5"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 class="text-base font-semibold text-content-primary">Scope &amp; Resolution</h2>
+                            {{ table_label.metadata_label(binding_rows|length ~ (' Binding' if binding_rows|length == 1 else ' Bindings') , 'link-2') }}
+                        </div>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Create governed cluster mappings and inspect how each analytics consumer resolves an eligible metrics source.</p>
                     </div>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Create governed cluster mappings and inspect how each analytics consumer resolves an eligible metrics source.</p>
                 </div>
-            </div>
-            <div class="flex flex-wrap items-center gap-2 text-xs text-content-secondary">
-                <span class="kaori-semantic-label inline-flex items-center gap-1.5 rounded-md border border-outline-subtle bg-surface-hover px-2.5 py-1.5">
-                    <i data-lucide="git-branch" class="h-3.5 w-3.5 text-kaori-primary"></i>
-                    Role and priority set preference
-                </span>
-                <span class="kaori-semantic-label inline-flex items-center gap-1.5 rounded-md border border-outline-subtle bg-surface-hover px-2.5 py-1.5">
-                    <i data-lucide="shield-check" class="h-3.5 w-3.5 text-kaori-primary"></i>
-                    Readiness, capabilities, and health gate eligibility
-                </span>
-            </div>
-        </header>
-        {% if binding_validation_job and binding_validation_job.is_active %}
-            <div class="h-1 w-full overflow-hidden bg-kaori-soft"><div class="notification-progress-indeterminate h-full bg-kaori-primary"></div></div>
-            <div class="flex flex-col gap-2 border-b border-brand-outline bg-kaori-soft px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
-                <span class="inline-flex items-center gap-2 font-semibold text-kaori-primary"><i data-lucide="loader-circle" class="h-3.5 w-3.5 animate-spin"></i>{{ binding_validation_job.title or 'Binding validation running' }}</span>
-                <span>Task {{ binding_validation_job.task_id[:8] }} · {{ binding_validation_job.elapsed_seconds }}s</span>
-            </div>
-        {% endif %}
+                <div class="flex flex-wrap items-center gap-2 text-xs text-content-secondary">
+                    <span class="kaori-semantic-label inline-flex items-center gap-1.5 rounded-md border border-outline-subtle bg-surface-hover px-2.5 py-1.5">
+                        <i data-lucide="git-branch" class="h-3.5 w-3.5 text-kaori-primary"></i>
+                        Role and priority set preference
+                    </span>
+                    <span class="kaori-semantic-label inline-flex items-center gap-1.5 rounded-md border border-outline-subtle bg-surface-hover px-2.5 py-1.5">
+                        <i data-lucide="shield-check" class="h-3.5 w-3.5 text-kaori-primary"></i>
+                        Readiness, capabilities, and health gate eligibility
+                    </span>
+                </div>
+            </header>
+            {% if binding_validation_job and binding_validation_job.is_active %}
+                <div class="h-1 w-full overflow-hidden bg-kaori-soft">
+                    <div class="notification-progress-indeterminate h-full bg-kaori-primary"></div>
+                </div>
+                <div class="flex flex-col gap-2 border-b border-brand-outline bg-kaori-soft px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
+                    <span class="inline-flex items-center gap-2 font-semibold text-kaori-primary"><i data-lucide="loader-circle" class="h-3.5 w-3.5 animate-spin"></i>{{ binding_validation_job.title or 'Binding validation running' }}</span>
+                    <span>Task {{ binding_validation_job.task_id[:8] }} · {{ binding_validation_job.elapsed_seconds }}s</span>
+                </div>
+            {% endif %}
         </section>
-
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card shadow-sm">
             <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <div class="flex min-w-0 items-start gap-3">
@@ -51,15 +48,15 @@
                     <div class="min-w-0">
                         <div class="flex flex-wrap items-center gap-2">
                             <h3 class="text-base font-semibold text-content-primary">Scope Bindings</h3>
-                            {{ table_label.metadata_label(binding_rows|length ~ (' Binding' if binding_rows|length == 1 else ' Bindings'), 'link-2') }}
+                            {{ table_label.metadata_label(binding_rows|length ~ (' Binding' if binding_rows|length == 1 else ' Bindings') , 'link-2') }}
                         </div>
                         <p class="mt-1 text-sm leading-5 text-content-secondary">Each binding authorizes this connection for one managed Kubernetes cluster.</p>
                     </div>
                 </div>
                 <p class="max-w-xl text-xs font-medium leading-5 text-content-muted">Duplicate mappings and conflicting primary sources are rejected.</p>
             </header>
-
-            <div x-data="{ selectorEditor: null }" class="divide-y divide-outline-subtle">
+            <div x-data="{ selectorEditor: null }"
+                 class="divide-y divide-outline-subtle">
                 {% for row in binding_rows %}
                     <article class="p-4 sm:p-5">
                         <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -72,19 +69,29 @@
                                         <h4 class="break-words text-sm font-semibold text-content-primary">{{ row.scope_label }}</h4>
                                         {{ status_badge(row.operational_status, row.operational_label) }}
                                     </div>
-                                    <p class="mt-1 break-all text-xs leading-5 text-content-muted" title="{{ row.binding.asset_key }}">{{ row.binding.asset_key }}</p>
+                                    <p class="mt-1 break-all text-xs leading-5 text-content-muted"
+                                       title="{{ row.binding.asset_key }}">{{ row.binding.asset_key }}</p>
                                 </div>
                             </div>
                             <div class="flex flex-wrap items-center gap-2 xl:justify-end">
-                                <button type="button" @click="selectorEditor = selectorEditor === {{ row.binding.id }} ? null : {{ row.binding.id }}" class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary">
+                                <button type="button"
+                                        @click="selectorEditor = selectorEditor === {{ row.binding.id }} ? null : {{ row.binding.id }}"
+                                        class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary">
                                     <i data-lucide="scan-line" class="h-3.5 w-3.5"></i>Configure
                                 </button>
-                                <form method="post" action="{{ url_for('prometheus.validate_instance_binding', instance_id=instance.id, binding_id=row.binding.id) }}" hx-post="{{ url_for('prometheus.validate_instance_binding', instance_id=instance.id, binding_id=row.binding.id) }}" hx-target="#prometheus-scope-workspace" hx-swap="outerHTML">
-                                    {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                                <form method="post"
+                                      action="{{ url_for('prometheus.validate_instance_binding', instance_id=instance.id, binding_id=row.binding.id) }}"
+                                      hx-post="{{ url_for('prometheus.validate_instance_binding', instance_id=instance.id, binding_id=row.binding.id) }}"
+                                      hx-target="#prometheus-scope-workspace"
+                                      hx-swap="outerHTML">
+                                    {% if csrf_token is defined %}
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    {% endif %}
                                     <button type="submit"
                                             {% if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id %}disabled{% endif %}
                                             class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary disabled:cursor-wait disabled:opacity-60">
-                                        <i data-lucide="{{ 'loader-circle' if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id else 'scan-search' }}" class="h-3.5 w-3.5{% if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id %} animate-spin{% endif %}"></i>
+                                        <i data-lucide="{{ 'loader-circle' if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id else 'scan-search' }}"
+                                           class="h-3.5 w-3.5{% if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id %} animate-spin{% endif %}"></i>
                                         {{ 'Validating' if binding_validation_job and binding_validation_job.is_active and binding_validation_job.binding_id == row.binding.id else ('Revalidate Binding' if row.validation_status == 'ready' else 'Validate Binding') }}
                                     </button>
                                 </form>
@@ -100,9 +107,7 @@
                                 </button>
                             </div>
                         </div>
-
                         {% include 'integrations/partials/_binding_readiness.html' %}
-
                         <div class="mt-4 grid gap-3 lg:grid-cols-3">
                             <section class="rounded-lg border border-outline-subtle bg-surface-hover p-3.5">
                                 <p class="text-xs font-semibold text-content-muted">Scope Type</p>
@@ -117,29 +122,50 @@
                             </section>
                             <section class="rounded-lg border border-brand-outline bg-kaori-soft p-3.5">
                                 <p class="text-xs font-semibold text-content-muted">Metrics Identity</p>
-                                <p class="mt-1 break-words text-sm font-medium leading-5 text-content-primary" title="{{ row.selector_summary }}">{{ row.selector_summary }}</p>
+                                <p class="mt-1 break-words text-sm font-medium leading-5 text-content-primary"
+                                   title="{{ row.selector_summary }}">{{ row.selector_summary }}</p>
                                 <p class="mt-1 text-xs leading-5 text-content-secondary">{{ 'Scoped query isolation' if row.selector_configured else 'Dedicated source identity' }}</p>
                             </section>
                         </div>
-
-                        <div x-cloak x-show="selectorEditor === {{ row.binding.id }}" class="mt-4 rounded-lg border border-brand-outline bg-kaori-soft/50 p-4">
-                            <form method="post" action="{{ url_for('prometheus.update_instance_binding_selector', instance_id=instance.id, binding_id=row.binding.id) }}" hx-post="{{ url_for('prometheus.update_instance_binding_selector', instance_id=instance.id, binding_id=row.binding.id) }}" hx-target="#prometheus-scope-workspace" hx-swap="outerHTML" class="grid gap-3 md:grid-cols-2 xl:grid-cols-4 xl:items-end">
+                        <div x-cloak
+                             x-show="selectorEditor === {{ row.binding.id }}"
+                             class="mt-4 rounded-lg border border-brand-outline bg-kaori-soft/50 p-4">
+                            <form method="post"
+                                  action="{{ url_for('prometheus.update_instance_binding_selector', instance_id=instance.id, binding_id=row.binding.id) }}"
+                                  hx-post="{{ url_for('prometheus.update_instance_binding_selector', instance_id=instance.id, binding_id=row.binding.id) }}"
+                                  hx-target="#prometheus-scope-workspace"
+                                  hx-swap="outerHTML"
+                                  class="grid gap-3 md:grid-cols-2 xl:grid-cols-4 xl:items-end">
                                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                 <div>
                                     <label class="mb-1.5 block text-xs font-semibold text-content-primary">Metrics label</label>
-                                    <input name="selector_label" value="{{ row.selector_label or 'cluster' }}" required maxlength="100" class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                    <input name="selector_label"
+                                           value="{{ row.selector_label or 'cluster' }}"
+                                           required
+                                           maxlength="100"
+                                           class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                                 </div>
                                 <div>
                                     <label class="mb-1.5 block text-xs font-semibold text-content-primary">Operator</label>
-                                    <select name="selector_operator" class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-                                        {% for operator in ['=', '=~', '!=', '!~'] %}<option value="{{ operator }}"{% if row.selector_operator == operator %} selected{% endif %}>{{ operator }}</option>{% endfor %}
+                                    <select name="selector_operator"
+                                            class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                        {% for operator in ['=', '=~', '!=', '!~'] %}
+                                            <option value="{{ operator }}"
+                                                    {% if row.selector_operator == operator %}selected{% endif %}>{{ operator }}</option>
+                                        {% endfor %}
                                     </select>
                                 </div>
                                 <div>
                                     <label class="mb-1.5 block text-xs font-semibold text-content-primary">Metrics value</label>
-                                    <input name="selector_value" value="{{ row.selector_value }}" required maxlength="255" placeholder="Actual Prometheus cluster label value" class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                    <input name="selector_value"
+                                           value="{{ row.selector_value }}"
+                                           required
+                                           maxlength="255"
+                                           placeholder="Actual Prometheus cluster label value"
+                                           class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                                 </div>
-                                <button type="submit" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover">
+                                <button type="submit"
+                                        class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover">
                                     <i data-lucide="save" class="h-3.5 w-3.5"></i>Save Identity
                                 </button>
                             </form>
@@ -157,7 +183,6 @@
                 {% endfor %}
             </div>
         </section>
-
         <div class="grid items-start gap-4 xl:grid-cols-12">
             <div class="space-y-4 xl:col-span-8">
                 <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
@@ -171,9 +196,8 @@
                                 <p class="mt-1 text-xs leading-5 text-content-secondary">Each analytics domain evaluates binding preference and its own required technical capabilities.</p>
                             </div>
                         </div>
-                        {{ table_label.metadata_label(source_resolution_rows|length ~ (' Scope' if source_resolution_rows|length == 1 else ' Scopes'), 'route') }}
+                        {{ table_label.metadata_label(source_resolution_rows|length ~ (' Scope' if source_resolution_rows|length == 1 else ' Scopes') , 'route') }}
                     </header>
-
                     <div class="divide-y divide-outline-subtle">
                         {% for scope in source_resolution_rows %}
                             <article class="p-4">
@@ -183,11 +207,11 @@
                                             <h4 class="text-sm font-semibold text-content-primary">{{ scope.scope_label }}</h4>
                                             {{ table_label.metadata_label(scope.scope_type_label, 'boxes') }}
                                         </div>
-                                        <p class="mt-1 max-w-2xl truncate text-xs text-content-muted" title="{{ scope.scope_key }}">{{ scope.scope_key }}</p>
+                                        <p class="mt-1 max-w-2xl truncate text-xs text-content-muted"
+                                           title="{{ scope.scope_key }}">{{ scope.scope_key }}</p>
                                     </div>
                                     <span class="text-xs font-medium text-content-muted">{{ scope.consumers|length }} Consumer Domains</span>
                                 </div>
-
                                 <div class="mt-4 grid gap-3 md:grid-cols-2">
                                     {% for consumer in scope.consumers.values() %}
                                         {% set consumer_status = 'ready' if consumer.selected_instance_id else 'blocked' %}
@@ -200,7 +224,8 @@
                                                     <div class="min-w-0">
                                                         <p class="text-xs font-semibold text-content-primary">{{ consumer.label }}</p>
                                                         {% if consumer.selected_instance_name %}
-                                                            <p class="mt-1 truncate text-xs text-content-secondary" title="{{ consumer.selected_instance_name }}">Selected: {{ consumer.selected_instance_name }}</p>
+                                                            <p class="mt-1 truncate text-xs text-content-secondary"
+                                                               title="{{ consumer.selected_instance_name }}">Selected: {{ consumer.selected_instance_name }}</p>
                                                         {% else %}
                                                             <p class="mt-1 text-xs text-status-critical-text">No eligible source</p>
                                                         {% endif %}
@@ -208,13 +233,14 @@
                                                 </div>
                                                 <div class="flex shrink-0 items-center gap-2">
                                                     {{ status_badge(consumer_status, 'Selected' if consumer.selected_instance_id else 'Unavailable') }}
-                                                    <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition group-open:rotate-180"></i>
+                                                    <i data-lucide="chevron-down"
+                                                       class="h-4 w-4 text-content-muted transition group-open:rotate-180"></i>
                                                 </div>
                                             </summary>
                                             <div class="border-t border-outline-subtle bg-surface-hover p-3.5">
                                                 <div class="rounded-lg border border-brand-outline bg-kaori-soft p-3">
                                                     <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-kaori-primary">Required Technical Capabilities</p>
-                                                    <p class="mt-1.5 text-xs leading-5 text-content-secondary">{{ consumer.required_capabilities|join(', ') }}</p>
+                                                    <p class="mt-1.5 text-xs leading-5 text-content-secondary">{{ consumer.required_capabilities|join(", ") }}</p>
                                                 </div>
                                                 <div class="mt-3 space-y-2">
                                                     {% for candidate in consumer.candidates %}
@@ -224,14 +250,14 @@
                                                                     <p class="text-xs font-semibold text-content-primary">{{ candidate.instance_name }}</p>
                                                                     <p class="mt-1 text-[11px] text-content-muted">{{ candidate.binding_role|title }} · Priority {{ candidate.priority }}</p>
                                                                 </div>
-                                                                {{ status_badge('ready' if candidate.is_selected else ('degraded' if candidate.eligible else 'blocked'), 'Selected' if candidate.is_selected else ('Eligible' if candidate.eligible else 'Skipped')) }}
+                                                                {{ status_badge('ready' if candidate.is_selected else ('degraded' if candidate.eligible else 'blocked') , 'Selected' if candidate.is_selected else ('Eligible' if candidate.eligible else 'Skipped')) }}
                                                             </div>
                                                             <p class="mt-2 text-xs leading-5 text-content-secondary">{{ candidate.decision_reason }}</p>
                                                             {% if candidate.missing_capability_labels %}
-                                                                <p class="mt-2 text-xs font-semibold text-status-critical-text">Missing Technical Capabilities: {{ candidate.missing_capability_labels|join(', ') }}</p>
+                                                                <p class="mt-2 text-xs font-semibold text-status-critical-text">Missing Technical Capabilities: {{ candidate.missing_capability_labels|join(", ") }}</p>
                                                             {% endif %}
                                                             {% if candidate.missing_binding_capabilities %}
-                                                                <p class="mt-1 text-xs font-semibold text-status-warning-text">Binding Coverage Missing: {{ candidate.missing_binding_capabilities|join(', ') }}</p>
+                                                                <p class="mt-1 text-xs font-semibold text-status-warning-text">Binding Coverage Missing: {{ candidate.missing_binding_capabilities|join(", ") }}</p>
                                                             {% endif %}
                                                         </div>
                                                     {% else %}
@@ -247,7 +273,8 @@
                             <div class="p-5">
                                 <div class="rounded-lg border border-brand-outline bg-kaori-soft p-4">
                                     <div class="flex items-start gap-3">
-                                        <i data-lucide="route-off" class="mt-0.5 h-5 w-5 shrink-0 text-kaori-primary"></i>
+                                        <i data-lucide="route-off"
+                                           class="mt-0.5 h-5 w-5 shrink-0 text-kaori-primary"></i>
                                         <div>
                                             <p class="text-sm font-semibold text-content-primary">No Resolution Context Yet</p>
                                             <p class="mt-1 text-xs leading-5 text-content-secondary">Create a scope binding to inspect consumer-specific metrics-source selection.</p>
@@ -259,7 +286,6 @@
                     </div>
                 </section>
             </div>
-
             <form method="post"
                   action="{{ url_for('prometheus.add_instance_binding', instance_id=instance.id) }}"
                   hx-post="{{ url_for('prometheus.add_instance_binding', instance_id=instance.id) }}"
@@ -267,7 +293,9 @@
                   hx-swap="outerHTML"
                   hx-indicator="#prometheus-binding-loading"
                   class="relative overflow-hidden rounded-xl border border-outline-subtle bg-surface-card xl:col-span-4">
-                {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                {% if csrf_token is defined %}
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                {% endif %}
                 <header class="border-b border-outline-subtle bg-surface-hover px-4 py-3.5">
                     <h3 class="text-sm font-semibold text-content-primary">Create Binding</h3>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Authorize this source for one managed cluster and define resolver preference.</p>
@@ -277,10 +305,16 @@
                         <div class="rounded-lg border border-status-critical-border bg-status-critical-soft p-3 text-xs leading-5 text-status-critical-text">{{ binding_error }}</div>
                     {% endif %}
                     <div>
-                        <label for="prometheus-binding-cluster" class="mb-1.5 block text-sm font-semibold text-content-primary">Managed Cluster</label>
-                        <select id="prometheus-binding-cluster" name="cluster_id" required class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                        <label for="prometheus-binding-cluster"
+                               class="mb-1.5 block text-sm font-semibold text-content-primary">Managed Cluster</label>
+                        <select id="prometheus-binding-cluster"
+                                name="cluster_id"
+                                required
+                                class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                             <option value="">Select Managed Cluster</option>
-                            {% for cluster in clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}
+                            {% for cluster in clusters %}
+                                <option value="{{ cluster.id }}">{{ cluster.name }}</option>
+                            {% endfor %}
                         </select>
                         <p class="mt-1.5 text-xs leading-5 text-content-muted">The selected cluster becomes the canonical resolver scope.</p>
                     </div>
@@ -292,25 +326,48 @@
                         <p class="mt-1.5 text-xs leading-5 text-content-secondary">This selector is injected into every PromQL query made through this binding. Use the label that uniquely identifies the selected cluster in the shared metrics source.</p>
                         <div class="mt-3 grid gap-3 sm:grid-cols-[1fr_92px_1fr] xl:grid-cols-1">
                             <div>
-                                <label for="prometheus-selector-label" class="mb-1.5 block text-xs font-semibold text-content-primary">Label</label>
-                                <input id="prometheus-selector-label" name="selector_label" value="cluster" required maxlength="100" placeholder="cluster" class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                <label for="prometheus-selector-label"
+                                       class="mb-1.5 block text-xs font-semibold text-content-primary">Label</label>
+                                <input id="prometheus-selector-label"
+                                       name="selector_label"
+                                       value="cluster"
+                                       required
+                                       maxlength="100"
+                                       placeholder="cluster"
+                                       class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                             </div>
                             <div>
-                                <label for="prometheus-selector-operator" class="mb-1.5 block text-xs font-semibold text-content-primary">Operator</label>
-                                <select id="prometheus-selector-operator" name="selector_operator" class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-                                    <option value="=">=</option><option value="=~">=~</option><option value="!=">!=</option><option value="!~">!~</option>
+                                <label for="prometheus-selector-operator"
+                                       class="mb-1.5 block text-xs font-semibold text-content-primary">Operator</label>
+                                <select id="prometheus-selector-operator"
+                                        name="selector_operator"
+                                        class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                    <option value="=">=</option>
+                                    <option value="=~">=~</option>
+                                    <option value="!=">!=</option>
+                                    <option value="!~">!~</option>
                                 </select>
                             </div>
                             <div>
-                                <label for="prometheus-selector-value" class="mb-1.5 block text-xs font-semibold text-content-primary">Value</label>
-                                <input id="prometheus-selector-value" name="selector_value" required maxlength="255" placeholder="k8s-vm-dev" class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                                <label for="prometheus-selector-value"
+                                       class="mb-1.5 block text-xs font-semibold text-content-primary">Value</label>
+                                <input id="prometheus-selector-value"
+                                       name="selector_value"
+                                       required
+                                       maxlength="255"
+                                       placeholder="k8s-vm-dev"
+                                       class="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                             </div>
                         </div>
                     </div>
                     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
                         <div>
-                            <label for="prometheus-binding-role" class="mb-1.5 block text-sm font-semibold text-content-primary">Source Role</label>
-                            <select id="prometheus-binding-role" name="binding_role" required class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                            <label for="prometheus-binding-role"
+                                   class="mb-1.5 block text-sm font-semibold text-content-primary">Source Role</label>
+                            <select id="prometheus-binding-role"
+                                    name="binding_role"
+                                    required
+                                    class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                                 <option value="primary">Primary</option>
                                 <option value="secondary">Secondary</option>
                                 <option value="fallback">Fallback</option>
@@ -318,8 +375,16 @@
                             <p class="mt-1.5 text-xs leading-5 text-content-muted">Sets the resolver preference group.</p>
                         </div>
                         <div>
-                            <label for="prometheus-binding-priority" class="mb-1.5 block text-sm font-semibold text-content-primary">Priority</label>
-                            <input id="prometheus-binding-priority" type="number" name="priority" min="1" max="1000" value="100" required class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                            <label for="prometheus-binding-priority"
+                                   class="mb-1.5 block text-sm font-semibold text-content-primary">Priority</label>
+                            <input id="prometheus-binding-priority"
+                                   type="number"
+                                   name="priority"
+                                   min="1"
+                                   max="1000"
+                                   value="100"
+                                   required
+                                   class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                             <p class="mt-1.5 text-xs leading-5 text-content-muted">Lower values resolve first.</p>
                         </div>
                     </div>
@@ -329,40 +394,52 @@
                                 <i data-lucide="shield-check" class="h-4 w-4 text-kaori-primary"></i>
                                 <span class="text-sm font-semibold text-content-primary">Pre-save Validation</span>
                             </div>
-                            <i data-lucide="chevron-down" class="h-4 w-4 text-kaori-primary transition group-open:rotate-180"></i>
+                            <i data-lucide="chevron-down"
+                               class="h-4 w-4 text-kaori-primary transition group-open:rotate-180"></i>
                         </summary>
                         <ul class="space-y-1 border-t border-brand-outline px-3.5 py-3 text-xs leading-5 text-content-secondary">
-                            <li class="flex items-start gap-2"><i data-lucide="check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i><span>The managed cluster must exist in KAORI.</span></li>
-                            <li class="flex items-start gap-2"><i data-lucide="check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i><span>Duplicate connection-to-cluster mappings are rejected.</span></li>
-                            <li class="flex items-start gap-2"><i data-lucide="check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i><span>A conflicting enabled primary must be removed or assigned another role.</span></li>
-                            <li class="flex items-start gap-2"><i data-lucide="check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i><span>The metrics identity selector is required and will be validated against source labels.</span></li>
+                            <li class="flex items-start gap-2"><i data-lucide="check"
+   class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i><span>The managed cluster must exist in KAORI.</span></li>
+                            <li class="flex items-start gap-2"><i data-lucide="check"
+   class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i><span>Duplicate connection-to-cluster mappings are rejected.</span></li>
+                            <li class="flex items-start gap-2"><i data-lucide="check"
+   class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i><span>A conflicting enabled primary must be removed or assigned another role.</span></li>
+                            <li class="flex items-start gap-2"><i data-lucide="check"
+   class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i><span>The metrics identity selector is required and will be validated against source labels.</span></li>
                         </ul>
                     </details>
-                    <button type="submit" class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70">
+                    <button type="submit"
+                            class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70">
                         <i data-lucide="link" class="h-4 w-4"></i>
                         Create Binding
                     </button>
                 </div>
-                <div id="prometheus-binding-loading" class="htmx-indicator pointer-events-none absolute bottom-2 left-4 right-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
+                <div id="prometheus-binding-loading"
+                     class="htmx-indicator pointer-events-none absolute bottom-2 left-4 right-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
                     <div class="notification-progress-indeterminate h-full rounded-full bg-kaori-primary"></div>
                 </div>
             </form>
         </div>
     </div>
-
     <details class="group overflow-hidden rounded-xl border border-status-critical-border bg-surface-card shadow-sm">
         <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 [&::-webkit-details-marker]:hidden">
             <div>
                 <p class="text-sm font-semibold text-content-primary">Instance Lifecycle &amp; Deletion</p>
                 <p class="mt-1 text-xs leading-5 text-content-secondary">Resolve scope bindings and active provider jobs before deleting the connection identity and stored credentials.</p>
             </div>
-            <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted transition group-open:rotate-180"></i>
+            <i data-lucide="chevron-down"
+               class="h-4 w-4 text-content-muted transition group-open:rotate-180"></i>
         </summary>
         <div class="flex flex-col gap-4 border-t border-status-critical-border bg-status-critical-soft p-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
                 <p class="text-sm font-semibold text-status-critical-text">Governed Deletion Boundary</p>
                 <p class="mt-1 text-xs leading-5 text-content-secondary">Bindings and active provider jobs block deletion. Historical runtime observations, JobExecution records, and Activity Audit remain available.</p>
-                {% if deletion_guard and deletion_guard.active_jobs %}<p class="mt-2 inline-flex items-center gap-1.5 rounded-md border border-status-warning-border bg-status-warning-soft px-2 py-1 text-[11px] font-semibold text-status-warning-text"><i data-lucide="loader-circle" class="h-3.5 w-3.5"></i>{{ deletion_guard.active_jobs }} Active Job{% if deletion_guard.active_jobs != 1 %}s{% endif %}</p>{% endif %}
+                {% if deletion_guard and deletion_guard.active_jobs %}
+                    <p class="mt-2 inline-flex items-center gap-1.5 rounded-md border border-status-warning-border bg-status-warning-soft px-2 py-1 text-[11px] font-semibold text-status-warning-text">
+                        <i data-lucide="loader-circle" class="h-3.5 w-3.5"></i>{{ deletion_guard.active_jobs }} Active Job
+                        {% if deletion_guard.active_jobs != 1 %}s{% endif %}
+                    </p>
+                {% endif %}
             </div>
             <button type="button"
                     data-prometheus-delete-button
@@ -379,5 +456,4 @@
         </div>
     </details>
 </div>
-
 {% include 'components/operation_feedback_oob.html' %}

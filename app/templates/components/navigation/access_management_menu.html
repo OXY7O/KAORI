@@ -21,9 +21,9 @@ or request.endpoint.startswith('settings.roles')
     <details class="sidebar-menu space-y-1"
              {% if access_management_active %}open{% endif %}>
         <summary class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if access_management_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-[12px] font-semibold transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2"
-             title="Access"
-             aria-label="Access"
-             @click="if (!sidebarExpanded) { $event.preventDefault(); toggleSidebar(); $el.parentElement.open = true }">
+                 title="Access"
+                 aria-label="Access"
+                 @click="if (!sidebarExpanded) { $event.preventDefault(); toggleSidebar(); $el.parentElement.open = true }">
             <div class="flex min-w-0 items-center gap-2.5">
                 <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg {{ 'bg-white/15 text-white' if access_management_active else 'bg-white/5 text-brand-foreground-muted group-hover:bg-white/10 group-hover:text-white' }} transition">
                     <i data-lucide="shield-check" class="h-4 w-4"></i>

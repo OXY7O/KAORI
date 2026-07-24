@@ -3,36 +3,124 @@
 <div class="overflow-x-auto">
     <table class="min-w-[1080px] w-full text-left text-xs text-content-secondary">
         <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted">
-            <tr><th class="px-3 py-2.5">Cluster</th><th class="px-3 py-2.5">Namespace</th><th class="px-3 py-2.5">Storage object</th><th class="px-3 py-2.5">Type</th><th class="px-3 py-2.5">Status</th><th class="px-3 py-2.5">Storage class</th><th class="px-3 py-2.5">Capacity</th><th class="px-3 py-2.5 text-right">Details</th></tr>
+            <tr>
+                <th class="px-3 py-2.5">Cluster</th>
+                <th class="px-3 py-2.5">Namespace</th>
+                <th class="px-3 py-2.5">Storage object</th>
+                <th class="px-3 py-2.5">Type</th>
+                <th class="px-3 py-2.5">Status</th>
+                <th class="px-3 py-2.5">Storage class</th>
+                <th class="px-3 py-2.5">Capacity</th>
+                <th class="px-3 py-2.5 text-right">Details</th>
+            </tr>
         </thead>
         <tbody class="divide-y divide-outline-subtle">
             {% for item in inventory.storage_items %}
-                {% if item.status in ['Bound', 'Available', 'Active'] %}{% set status_tone='normal' %}{% set status_icon='circle-check' %}
-                {% elif item.status in ['Pending', 'Released'] %}{% set status_tone='warning' %}{% set status_icon='triangle-alert' %}
-                {% elif item.status in ['Failed', 'Lost'] %}{% set status_tone='critical' %}{% set status_icon='circle-x' %}
-                {% else %}{% set status_tone='unknown' %}{% set status_icon='circle-help' %}{% endif %}
-                <tr id="storage-row-{{ item.id }}" class="transition hover:bg-surface-hover">
+                {% if item.status in ['Bound', 'Available', 'Active'] %}
+                    {% set status_tone = "normal" %}{% set status_icon = "circle-check" %}
+                {% elif item.status in ['Pending', 'Released'] %}
+                    {% set status_tone = "warning" %}{% set status_icon = "triangle-alert" %}
+                {% elif item.status in ['Failed', 'Lost'] %}
+                    {% set status_tone = "critical" %}{% set status_icon = "circle-x" %}
+                {% else %}
+                    {% set status_tone = "unknown" %}{% set status_icon = "circle-help" %}
+                {% endif %}
+                <tr id="storage-row-{{ item.id }}"
+                    class="transition hover:bg-surface-hover">
                     <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(item.cluster_name, 'server') }}</td>
                     <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(item.namespace, 'globe-2' if item.namespace == 'Cluster-wide' else 'folder-tree') }}</td>
-                    <td class="max-w-[300px] px-3 py-3.5 align-top"><div class="flex min-w-0 items-center gap-2"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="database" class="h-4 w-4"></i></span><div class="min-w-0"><div class="flex items-center gap-2"><span class="truncate text-xs font-semibold text-content-primary" title="{{ item.name }}">{{ item.name }}</span>{% if item.is_default %}{{ table_label.metadata_label('Default', 'star') }}{% endif %}</div></div></div></td>
+                    <td class="max-w-[300px] px-3 py-3.5 align-top">
+                        <div class="flex min-w-0 items-center gap-2">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="database" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <div class="flex items-center gap-2">
+                                    <span class="truncate text-xs font-semibold text-content-primary"
+                                          title="{{ item.name }}">{{ item.name }}</span>
+                                    {% if item.is_default %}{{ table_label.metadata_label('Default', 'star') }}{% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </td>
                     <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label('PV' if item.type == 'PersistentVolume' else 'PVC' if item.type == 'PersistentVolumeClaim' else item.type, 'layers-3') }}</td>
                     <td class="px-3 py-3.5 align-top">{{ table_label.status_label(item.status, status_tone, status_icon) }}</td>
-                    <td class="max-w-[220px] px-3 py-3.5 align-top"><span class="block truncate font-medium text-content-primary" title="{{ item.storage_class }}">{{ item.storage_class }}</span></td>
+                    <td class="max-w-[220px] px-3 py-3.5 align-top"><span class="block truncate font-medium text-content-primary"
+      title="{{ item.storage_class }}">{{ item.storage_class }}</span></td>
                     <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(item.capacity, 'database') }}</td>
-                    <td class="px-3 py-3.5 text-right align-top"><button type="button" data-inventory-detail-kind="storage" class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus" hx-get="{{ url_for('inventory.storage_details', storage_id=item.id) }}" hx-target="#storage-detail-content-{{ item.id }}" hx-swap="innerHTML" hx-on::before-request="if (!window.prepareInventoryDetail('storage', '{{ item.id }}', this)) event.preventDefault()" hx-on::after-swap="if (window.lucide) window.lucide.createIcons();"><i data-lucide="chevron-down" class="h-3.5 w-3.5"></i><span data-inventory-detail-label>View More</span></button></td>
+                    <td class="px-3 py-3.5 text-right align-top">
+                        <button type="button"
+                                data-inventory-detail-kind="storage"
+                                class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
+                                hx-get="{{ url_for('inventory.storage_details', storage_id=item.id) }}"
+                                hx-target="#storage-detail-content-{{ item.id }}"
+                                hx-swap="innerHTML"
+                                hx-on::before-request="if (!window.prepareInventoryDetail('storage', '{{ item.id }}', this)) event.preventDefault()"
+                                hx-on::after-swap="if (window.lucide) window.lucide.createIcons();"><i data-lucide="chevron-down" class="h-3.5 w-3.5"></i><span data-inventory-detail-label>View More</span></button>
+                    </td>
                 </tr>
-                <tr id="storage-detail-row-{{ item.id }}" class="hidden border-0"><td colspan="8" class="w-full p-0 leading-none align-top"><div class="w-full min-w-0 overflow-x-auto" id="storage-detail-content-{{ item.id }}" data-open="false"></div></td></tr>
+                <tr id="storage-detail-row-{{ item.id }}" class="hidden border-0">
+                    <td colspan="8" class="w-full p-0 leading-none align-top">
+                        <div class="w-full min-w-0 overflow-x-auto"
+                             id="storage-detail-content-{{ item.id }}"
+                             data-open="false"></div>
+                    </td>
+                </tr>
             {% else %}
-                <tr><td colspan="8" class="p-0">{% set empty_state_icon='hard-drive' %}{% set empty_state_title='No Storage Inventory Found' %}{% set empty_state_description='Adjust filters or sync cluster inventory to collect Kubernetes storage data.' %}{% set empty_state_min_height='min-h-[190px]' %}{% include 'components/states/_empty_state.html' %}</td></tr>
+                <tr>
+                    <td colspan="8" class="p-0">
+                        {% set empty_state_icon = "hard-drive" %}{% set empty_state_title = "No Storage Inventory Found" %}{% set empty_state_description = "Adjust filters or sync cluster inventory to collect Kubernetes storage data." %}{% set empty_state_min_height = "min-h-[190px]" %}
+                        {% include 'components/states/_empty_state.html' %}
+                    </td>
+                </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
 <footer class="flex flex-col gap-4 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs text-content-muted lg:flex-row lg:items-center lg:justify-between">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4"><p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ 'storage object' if pagination.total_items == 1 else 'storage objects' }}</p><form hx-get="{{ url_for('inventory.storage') }}" hx-target="#storage-inventory-card" hx-swap="outerHTML" hx-indicator="#storage-table-loading" class="flex items-center"><input type="hidden" name="page" value="1"><input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}"><input type="hidden" name="namespace" value="{{ selected_namespace }}"><input type="hidden" name="type" value="{{ selected_type }}"><input type="hidden" name="status" value="{{ selected_status }}"><input type="hidden" name="search" value="{{ search }}"><select name="per_page" aria-label="Rows per page" onchange="this.form.requestSubmit()" class="{{ pagination_ui.page_size_classes() }}">{% for size in pagination.allowed_per_page %}<option value="{{ size }}" {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}</select></form></div>
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ 'storage object' if pagination.total_items == 1 else 'storage objects' }}</p>
+        <form hx-get="{{ url_for('inventory.storage') }}"
+              hx-target="#storage-inventory-card"
+              hx-swap="outerHTML"
+              hx-indicator="#storage-table-loading"
+              class="flex items-center">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}">
+            <input type="hidden" name="namespace" value="{{ selected_namespace }}">
+            <input type="hidden" name="type" value="{{ selected_type }}">
+            <input type="hidden" name="status" value="{{ selected_status }}">
+            <input type="hidden" name="search" value="{{ search }}">
+            <select name="per_page"
+                    aria-label="Rows per page"
+                    onchange="this.form.requestSubmit()"
+                    class="{{ pagination_ui.page_size_classes() }}">
+                {% for size in pagination.allowed_per_page %}
+                    <option value="{{ size }}"
+                            {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
     <div class="flex flex-wrap items-center gap-2">
-        {% if pagination.has_prev %}{% set prev_url=url_for('inventory.storage', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, status=selected_status, search=search, page=pagination.prev_page, per_page=pagination.per_page, partial_mode='table_content') %}<a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#storage-table-content" hx-swap="innerHTML" hx-indicator="#storage-table-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>{% else %}<span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>{% endif %}
+        {% if pagination.has_prev %}
+            {% set prev_url = url_for('inventory.storage', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, status=selected_status, search=search, page=pagination.prev_page, per_page=pagination.per_page, partial_mode='table_content') %}<a href="{{ prev_url }}"
+   hx-get="{{ prev_url }}"
+   hx-target="#storage-table-content"
+   hx-swap="innerHTML"
+   hx-indicator="#storage-table-loading"
+   class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+        {% else %}
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+        {% endif %}
         {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages) }}
-        {% if pagination.has_next %}{% set next_url=url_for('inventory.storage', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, status=selected_status, search=search, page=pagination.next_page, per_page=pagination.per_page, partial_mode='table_content') %}<a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#storage-table-content" hx-swap="innerHTML" hx-indicator="#storage-table-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>{% else %}<span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>{% endif %}
+        {% if pagination.has_next %}
+            {% set next_url = url_for('inventory.storage', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, status=selected_status, search=search, page=pagination.next_page, per_page=pagination.per_page, partial_mode='table_content') %}<a href="{{ next_url }}"
+   hx-get="{{ next_url }}"
+   hx-target="#storage-table-content"
+   hx-swap="innerHTML"
+   hx-indicator="#storage-table-loading"
+   class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+        {% else %}
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+        {% endif %}
     </div>
 </footer>

@@ -1,26 +1,47 @@
 {% import "components/live_lookup_notice.html" as live_lookup %}
 {% import "components/table_label.html" as table_label %}
-<input type="hidden" name="workspace_mode" value="{{ workspace_mode|default('update') }}">
+<input type="hidden"
+       name="workspace_mode"
+       value="{{ workspace_mode|default('update') }}">
 <div class="grid gap-4 md:grid-cols-3">
     <label class="block min-w-0" for="configmap-cluster">
         <span class="text-sm font-semibold text-content-primary">Cluster</span>
-        <select id="configmap-cluster" name="cluster_id" hx-get="{{ url_for('kubernetes_operations.configmap_workspace') }}" hx-target="#configmap-workspace" hx-include="closest #configmap-workspace" class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+        <select id="configmap-cluster"
+                name="cluster_id"
+                hx-get="{{ url_for('kubernetes_operations.configmap_workspace') }}"
+                hx-target="#configmap-workspace"
+                hx-include="closest #configmap-workspace"
+                class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
             <option value="">Select cluster</option>
             {% for cluster in clusters|default([]) %}
-                <option value="{{ cluster.id }}" {{ 'selected' if cluster.id|string == selected_cluster_id|string else '' }}>{{ cluster.name }}</option>
+                <option value="{{ cluster.id }}"
+                        {{ 'selected' if cluster.id|string == selected_cluster_id|string else '' }}>{{ cluster.name }}
+                </option>
             {% endfor %}
         </select>
     </label>
     <label class="block min-w-0" for="configmap-namespace">
         <span class="text-sm font-semibold text-content-primary">Namespace</span>
-        <select id="configmap-namespace" name="namespace" hx-get="{{ url_for('kubernetes_operations.configmap_workspace') }}" hx-target="#configmap-workspace" hx-include="closest #configmap-workspace" class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20" {{ 'disabled' if not selected_cluster_id or not namespaces else '' }}>
+        <select id="configmap-namespace"
+                name="namespace"
+                hx-get="{{ url_for('kubernetes_operations.configmap_workspace') }}"
+                hx-target="#configmap-workspace"
+                hx-include="closest #configmap-workspace"
+                class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20"
+                {{ 'disabled' if not selected_cluster_id or not namespaces else '' }}>
             <option value="">
-                {% if not selected_cluster_id %}Select cluster first
-                {% elif namespaces %}Select namespace
-                {% else %}No live namespaces available{% endif %}
+                {% if not selected_cluster_id %}
+                    Select cluster first
+                {% elif namespaces %}
+                    Select namespace
+                {% else %}
+                    No live namespaces available
+                {% endif %}
             </option>
             {% for namespace in namespaces|default([]) %}
-                <option value="{{ namespace }}" {{ 'selected' if namespace == selected_namespace else '' }}>{{ namespace }}</option>
+                <option value="{{ namespace }}"
+                        {{ 'selected' if namespace == selected_namespace else '' }}>{{ namespace }}
+                </option>
             {% endfor %}
         </select>
         {% if selected_cluster_id and not selection_error and not namespaces %}
@@ -32,14 +53,26 @@
             <span class="text-sm font-semibold text-content-primary">ConfigMap</span>
             {{ table_label.status_label('Live', 'normal', 'radio') }}
         </span>
-        <select id="configmap-name" name="configmap_name" hx-get="{{ delete_target_url if workspace_mode == 'delete' else url_for('kubernetes_operations.configmap_editor') }}" hx-target="{{ '#configmap-delete-target' if workspace_mode == 'delete' else '#configmap-editor' }}" hx-include="closest #configmap-workspace" class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20" {{ 'disabled' if not selected_namespace or not configmaps else '' }}>
+        <select id="configmap-name"
+                name="configmap_name"
+                hx-get="{{ delete_target_url if workspace_mode == 'delete' else url_for('kubernetes_operations.configmap_editor') }}"
+                hx-target="{{ '#configmap-delete-target' if workspace_mode == 'delete' else '#configmap-editor' }}"
+                hx-include="closest #configmap-workspace"
+                class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20"
+                {{ 'disabled' if not selected_namespace or not configmaps else '' }}>
             <option value="">
-                {% if not selected_namespace %}Select namespace first
-                {% elif configmaps %}Select ConfigMap
-                {% else %}No live ConfigMaps available{% endif %}
+                {% if not selected_namespace %}
+                    Select namespace first
+                {% elif configmaps %}
+                    Select ConfigMap
+                {% else %}
+                    No live ConfigMaps available
+                {% endif %}
             </option>
             {% for item in configmaps|default([]) %}
-                <option value="{{ item.name }}" {{ 'selected' if item.name == selected_configmap_name else '' }}>{{ item.name }}{{ ' · immutable' if item.immutable else '' }}</option>
+                <option value="{{ item.name }}"
+                        {{ 'selected' if item.name == selected_configmap_name else '' }}>{{ item.name }}{{ ' · immutable' if item.immutable else '' }}
+                </option>
             {% endfor %}
         </select>
         {% if selected_namespace and not configmaps and not selection_error %}

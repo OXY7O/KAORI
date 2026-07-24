@@ -1,6 +1,9 @@
 {% import "components/progress_bar.html" as progress_bar %}
-<section id="dashboard-top-consumers" x-data="{ open: false }" class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <div @click="open = !open" class="flex cursor-pointer select-none items-center gap-3 border-b border-outline-subtle px-5 py-4">
+<section id="dashboard-top-consumers"
+         x-data="{ open: false }"
+         class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <div @click="open = !open"
+         class="flex cursor-pointer select-none items-center gap-3 border-b border-outline-subtle px-5 py-4">
         <div class="flex min-w-0 flex-1 items-center gap-3">
             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                 <i data-lucide="bar-chart-3" class="h-5 w-5"></i>
@@ -11,24 +14,27 @@
             </div>
         </div>
         <div class="ml-auto flex shrink-0 items-center gap-2">
-            <a @click.stop href="/analytics/top-consumers" class="hidden text-xs font-semibold text-kaori-primary transition hover:text-kaori-primary-hover sm:inline-flex">View details</a>
+            <a @click.stop
+               href="/analytics/top-consumers"
+               class="hidden text-xs font-semibold text-kaori-primary transition hover:text-kaori-primary-hover sm:inline-flex">View details</a>
             <button type="button"
                     class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card"
                     @click.stop="open = !open"
                     :aria-expanded="open.toString()"
                     aria-label="Toggle top consumers">
-                <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
+                <i data-lucide="chevron-down"
+                   class="h-4 w-4 transition-transform duration-200"
+                   :class="open ? 'rotate-180' : ''"></i>
             </button>
         </div>
     </div>
-
     <div x-cloak x-show="open" x-transition class="p-5">
         {% if not dashboard.selected_cluster_id %}
-            {% set blocked_state_icon = 'server-off' %}
-            {% set blocked_state_label = 'Cluster Required' %}
-            {% set blocked_state_title = 'Select Cluster' %}
+            {% set blocked_state_icon = "server-off" %}
+            {% set blocked_state_label = "Cluster Required" %}
+            {% set blocked_state_title = "Select Cluster" %}
             {% set blocked_state_description = "Select a cluster to view top CPU and memory consumers from Prometheus." %}
-            {% set blocked_state_tone = 'warning' %}
+            {% set blocked_state_tone = "warning" %}
             {% include 'components/states/_blocked_state.html' %}
         {% else %}
             <div class="grid gap-5 lg:grid-cols-2">
@@ -57,12 +63,10 @@
                                             </div>
                                             {% if item.percent is not none %}
                                                 {% set signal_bar_class = 'bg-status-critical' if item.signal_state == 'critical' else ('bg-status-warning' if item.signal_state == 'warning' else ('bg-kaori-primary' if item.signal_state == 'normal' else 'bg-status-unknown')) %}
-                                                {{ progress_bar.bar(
-                                                    item.percent if item.percent <= 100 else 100,
-                                                    track_classes="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover",
-                                                    fill_classes="h-full rounded-full " ~ signal_bar_class,
-                                                    label=item.name ~ " utilization",
-                                                ) }}
+                                                {{ progress_bar.bar(item.percent if item.percent <= 100 else 100,
+                                                                                                track_classes="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover",
+                                                                                                fill_classes="h-full rounded-full " ~ signal_bar_class,
+                                                                                                label=item.name ~ " utilization",) }}
                                             {% else %}
                                                 <div class="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover">
                                                     <div class="h-full w-1/3 rounded-full bg-status-unknown"></div>
@@ -74,14 +78,13 @@
                             {% endfor %}
                         {% else %}
                             <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-4 text-center">
-                            <i data-lucide="cpu" class="mx-auto h-5 w-5 text-kaori-primary"></i>
-                            <p class="mt-2 text-xs font-semibold text-kaori-primary">CPU consumer data not available</p>
-                            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ dashboard.top_consumers_snapshot.message }}</p>
-                        </div>
+                                <i data-lucide="cpu" class="mx-auto h-5 w-5 text-kaori-primary"></i>
+                                <p class="mt-2 text-xs font-semibold text-kaori-primary">CPU consumer data not available</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ dashboard.top_consumers_snapshot.message }}</p>
+                            </div>
                         {% endif %}
                     </div>
                 </div>
-
                 <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
                     <div class="mb-3 flex items-center justify-between gap-3">
                         <div class="flex items-center gap-2">
@@ -107,12 +110,10 @@
                                             </div>
                                             {% if item.percent is not none %}
                                                 {% set signal_bar_class = 'bg-status-critical' if item.signal_state == 'critical' else ('bg-status-warning' if item.signal_state == 'warning' else ('bg-status-info' if item.signal_state == 'normal' else 'bg-status-unknown')) %}
-                                                {{ progress_bar.bar(
-                                                    item.percent if item.percent <= 100 else 100,
-                                                    track_classes="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover",
-                                                    fill_classes="h-full rounded-full " ~ signal_bar_class,
-                                                    label=item.name ~ " utilization",
-                                                ) }}
+                                                {{ progress_bar.bar(item.percent if item.percent <= 100 else 100,
+                                                                                                track_classes="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover",
+                                                                                                fill_classes="h-full rounded-full " ~ signal_bar_class,
+                                                                                                label=item.name ~ " utilization",) }}
                                             {% else %}
                                                 <div class="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover">
                                                     <div class="h-full w-1/3 rounded-full bg-status-unknown"></div>
@@ -123,19 +124,19 @@
                                 </div>
                             {% endfor %}
                         {% else %}
-                            <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-4 text-center"><i data-lucide="memory-stick" class="mx-auto h-5 w-5 text-kaori-primary"></i><p class="mt-2 text-xs font-semibold text-kaori-primary">Memory consumer data not available</p><p class="mt-1 text-xs leading-5 text-content-secondary">Prometheus memory consumer data is not available yet.</p></div>
+                            <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-4 text-center">
+                                <i data-lucide="memory-stick" class="mx-auto h-5 w-5 text-kaori-primary"></i>
+                                <p class="mt-2 text-xs font-semibold text-kaori-primary">Memory consumer data not available</p>
+                                <p class="mt-1 text-xs leading-5 text-content-secondary">Prometheus memory consumer data is not available yet.</p>
+                            </div>
                         {% endif %}
                     </div>
                 </div>
             </div>
-
             <div class="mt-5 rounded-lg border border-outline-subtle bg-surface-hover p-4">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div class="flex items-start gap-3">
-                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border
-                                    {% if dashboard.top_consumers_snapshot.high_usage_count > 0 %}border-status-critical-border bg-status-critical-soft text-status-critical-text
-                                    {% elif dashboard.top_consumers_snapshot.missing_request_limit_count > 0 %}border-status-warning-border bg-status-warning-soft text-status-warning-text
-                                    {% else %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% endif %}">
+                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border {% if dashboard.top_consumers_snapshot.high_usage_count > 0 %}border-status-critical-border bg-status-critical-soft text-status-critical-text {% elif dashboard.top_consumers_snapshot.missing_request_limit_count > 0 %}border-status-warning-border bg-status-warning-soft text-status-warning-text {% else %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% endif %}">
                             <i data-lucide="lightbulb" class="h-4 w-4"></i>
                         </div>
                         <div>

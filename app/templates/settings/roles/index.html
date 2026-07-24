@@ -40,7 +40,8 @@
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="Role management actions">
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="Role management actions">
                     <div class="{{ page_hero.context_panel_classes() }}">
                         <div>
                             <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Role Lifecycle</p>
@@ -85,11 +86,11 @@
             </header>
             <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
                 {% set metrics = [
-                                ('shield', 'Role Population', total_roles, 'All default and custom access profiles currently registered.', 'bg-kaori-soft text-kaori-primary'),
-                                ('lock-keyhole', 'Default Baselines', system_roles, 'Code-owned roles restored to their canonical permission scope by seed-rbac.', 'bg-kaori-soft text-kaori-primary'),
-                                ('sparkles', 'Custom Extensions', custom_roles, 'Administrator-managed roles created directly or cloned from a default baseline.', 'bg-status-info-soft text-status-info-text'),
-                                ('circle-check', 'Assignment Ready', active_roles, 'Active roles available to User Management and identity-provider defaults.', 'bg-status-normal-soft text-status-normal-text')
-                            ] %}
+                                    ('shield', 'Role Population', total_roles, 'All default and custom access profiles currently registered.', 'bg-kaori-soft text-kaori-primary'),
+                                    ('lock-keyhole', 'Default Baselines', system_roles, 'Code-owned roles restored to their canonical permission scope by seed-rbac.', 'bg-kaori-soft text-kaori-primary'),
+                                    ('sparkles', 'Custom Extensions', custom_roles, 'Administrator-managed roles created directly or cloned from a default baseline.', 'bg-status-info-soft text-status-info-text'),
+                                    ('circle-check', 'Assignment Ready', active_roles, 'Active roles available to User Management and identity-provider defaults.', 'bg-status-normal-soft text-status-normal-text')
+                                ] %}
                 {% for icon, label, value, description, tone in metrics %}
                     <article class="flex min-h-[12rem] flex-col bg-surface-card p-5">
                         <div class="flex items-start justify-between gap-3">
@@ -107,12 +108,7 @@
             </div>
             <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6">
                 <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                    {% set flow_items = [
-                                    ('book-key', 'Permission Registry', 'Backend-defined capability contracts synchronized through seed-rbac.'),
-                                    ('layers-3', 'Role Composition', 'Roles & Access packages permissions into reusable default or custom profiles.'),
-                                    ('user-round-check', 'User Assignment', 'User Management assigns one active role to each managed account.'),
-                                    ('shield-check', 'Server Enforcement', 'Route and service guards evaluate the effective role on every protected action.')
-                                ] %}
+                    {% set flow_items = [('book-key', 'Permission Registry', 'Backend-defined capability contracts synchronized through seed-rbac.'), ('layers-3', 'Role Composition', 'Roles & Access packages permissions into reusable default or custom profiles.'), ('user-round-check', 'User Assignment', 'User Management assigns one active role to each managed account.'), ('shield-check', 'Server Enforcement', 'Route and service guards evaluate the effective role on every protected action.')] %}
                     {% for icon, title, description in flow_items %}
                         <div class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
@@ -127,7 +123,8 @@
                 </div>
             </div>
         </section>
-        <nav class="flex flex-wrap items-center gap-2 rounded-xl border border-outline-default bg-surface-card p-2 shadow-sm" aria-label="Roles and access views">
+        <nav class="flex flex-wrap items-center gap-2 rounded-xl border border-outline-default bg-surface-card p-2 shadow-sm"
+             aria-label="Roles and access views">
             <button type="button"
                     data-role-access-tab="registry"
                     class="inline-flex min-h-10 items-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white transition cursor-pointer disabled:cursor-not-allowed">
@@ -141,7 +138,8 @@
                 Role-Permission Matrix
             </button>
         </nav>
-        <section data-role-access-panel="registry" class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <section data-role-access-panel="registry"
+                 class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
             <div class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
                 <header class="border-b border-outline-default px-5 py-4">
                     <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
@@ -356,20 +354,14 @@
                 </footer>
             </div>
             <aside class="space-y-5">
-                {% set role_assignment_flow = [
-                    ('Permission Catalog', 'Code-owned permission keys define atomic KAORI capabilities.'),
-                    ('Role Composition', 'Default or custom roles package those keys into reusable access profiles.'),
-                    ('User Management', 'One active role is assigned to each account and evaluated by server-side guards.')
-                ] %}
-                {{ info_flow.render(
-                    'Role Assignment Flow',
-                    'How backend capabilities become effective user access.',
-                    role_assignment_flow,
-                    icon='workflow',
-                    note='Super Admin remains a separate emergency authority flag and is never represented as a normal role column.',
-                    note_icon='shield-alert',
-                    open_by_default=true
-                ) }}
+                {% set role_assignment_flow = [('Permission Catalog', 'Code-owned permission keys define atomic KAORI capabilities.'), ('Role Composition', 'Default or custom roles package those keys into reusable access profiles.'), ('User Management', 'One active role is assigned to each account and evaluated by server-side guards.')] %}
+                {{ info_flow.render('Role Assignment Flow',
+                                'How backend capabilities become effective user access.',
+                                role_assignment_flow,
+                                icon='workflow',
+                                note='Super Admin remains a separate emergency authority flag and is never represented as a normal role column.',
+                                note_icon='shield-alert',
+                                open_by_default=true) }}
                 <section class="rounded-2xl border border-outline-default bg-surface-card p-5 shadow-sm">
                     <div class="flex items-center justify-between gap-3">
                         <div>
@@ -392,18 +384,19 @@
                         {% endfor %}
                     </div>
                 </section>
-                {{ related_page_card.render(
-                    'Permission Catalog',
-                    'Permission keys are code-backed KAORI contracts. Role management assigns them; it does not edit the registry.',
-                    url_for('settings.permission_catalog'),
-                    'Open Permission Catalog',
-                    icon='book-key',
-                    eyebrow='Related Access Workspace',
-                    boundary='Roles package permission keys into reusable access profiles. The catalog remains the authoritative registry for available capabilities.'
+                {{ related_page_card.render('Permission Catalog',
+                                'Permission keys are code-backed KAORI contracts. Role management assigns them; it does not edit the registry.',
+                                url_for('settings.permission_catalog') ,
+                'Open Permission Catalog',
+                icon='book-key',
+                eyebrow='Related Access Workspace',
+                boundary='Roles package permission keys into reusable access profiles. The catalog remains the authoritative registry for available capabilities.'
                 ) }}
             </aside>
         </section>
-        <section data-role-access-panel="matrix" hidden class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+        <section data-role-access-panel="matrix"
+                 hidden
+                 class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
             <header class="border-b border-outline-default px-5 py-4 lg:px-6">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div class="flex items-center gap-3">
@@ -423,7 +416,8 @@
                 <div class="grid gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 lg:grid-cols-[minmax(0,1fr)_180px_auto] lg:items-center lg:px-6">
                     <label class="relative min-w-0">
                         <span class="sr-only">Search matrix roles</span>
-                        <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
+                        <i data-lucide="search"
+                           class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
                         <input type="search"
                                data-role-matrix-search
                                placeholder="Search role name or key..."
@@ -459,7 +453,8 @@
                                            class="group block min-w-0">
                                             <span class="flex items-start gap-2">
                                                 <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg {{ 'bg-kaori-soft text-kaori-primary' if role.is_system else 'bg-status-info-soft text-status-info-text' }}">
-                                                    <i data-lucide="{{ 'shield-check' if role.is_system else 'user-cog' }}" class="h-3.5 w-3.5"></i>
+                                                    <i data-lucide="{{ 'shield-check' if role.is_system else 'user-cog' }}"
+                                                       class="h-3.5 w-3.5"></i>
                                                 </span>
                                                 <span class="min-w-0">
                                                     <span class="line-clamp-2 block text-xs font-bold leading-4 text-content-primary group-hover:text-kaori-primary">{{ role.display_name }}</span>
@@ -494,11 +489,13 @@
                                                 data-role-id="{{ role.id }}"
                                                 class="w-[136px] min-w-[136px] max-w-[136px] border-b border-r border-outline-default px-2 py-2.5 text-center last:border-r-0">
                                                 {% if mapped %}
-                                                    <span class="mx-auto flex h-7 w-7 items-center justify-center rounded-md border border-brand-outline bg-kaori-soft text-kaori-primary" title="Mapped to {{ role.display_name }}">
+                                                    <span class="mx-auto flex h-7 w-7 items-center justify-center rounded-md border border-brand-outline bg-kaori-soft text-kaori-primary"
+                                                          title="Mapped to {{ role.display_name }}">
                                                         <i data-lucide="check" class="h-3.5 w-3.5"></i>
                                                     </span>
                                                 {% else %}
-                                                    <span class="mx-auto flex h-7 w-7 items-center justify-center rounded-md border border-outline-subtle bg-surface-subtle text-content-disabled" title="Not mapped to {{ role.display_name }}">
+                                                    <span class="mx-auto flex h-7 w-7 items-center justify-center rounded-md border border-outline-subtle bg-surface-subtle text-content-disabled"
+                                                          title="Not mapped to {{ role.display_name }}">
                                                         <i data-lucide="minus" class="h-3.5 w-3.5"></i>
                                                     </span>
                                                 {% endif %}
@@ -547,5 +544,6 @@
             </div>
         </section>
     </div>
-    <script defer src="{{ url_for('static', filename='js/role_access_tabs.js') }}"></script>
+    <script defer
+            src="{{ url_for('static', filename='js/role_access_tabs.js') }}"></script>
 {% endblock dashboard_content %}

@@ -1,6 +1,7 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
-<section id="dashboard-cluster-health-section" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+<section id="dashboard-cluster-health-section"
+         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
     <div class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex min-w-0 items-center gap-3">
             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
@@ -19,7 +20,6 @@
             <i data-lucide="arrow-up-right" class="h-3.5 w-3.5"></i>
         </a>
     </div>
-
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-outline-subtle text-sm">
             <thead class="bg-surface-hover text-xs text-content-muted">
@@ -44,7 +44,8 @@
                                     </div>
                                     <div class="min-w-0">
                                         <div class="font-semibold text-content-primary">{{ row.cluster_name }}</div>
-                                        <div class="mt-0.5 max-w-[260px] truncate text-xs text-content-muted" title="{{ row.cluster_endpoint }}">{{ row.cluster_endpoint }}</div>
+                                        <div class="mt-0.5 max-w-[260px] truncate text-xs text-content-muted"
+                                             title="{{ row.cluster_endpoint }}">{{ row.cluster_endpoint }}</div>
                                     </div>
                                 </div>
                             </td>
@@ -53,7 +54,8 @@
                                     {% set overall_tone = 'normal' if row.status == 'Healthy' else 'warning' if row.status == 'Warning' else 'critical' if row.status == 'Critical' else 'unknown' %}
                                     {% set overall_icon = 'circle-check' if row.status == 'Healthy' else 'triangle-alert' if row.status == 'Warning' else 'octagon-alert' if row.status == 'Critical' else 'circle-help' %}
                                     {{ table_label.status_label(row.status, overall_tone, overall_icon) }}
-                                    <p class="max-w-[190px] text-xs leading-4 text-content-muted" title="{{ row.status_reason }}">{{ row.status_reason }}</p>
+                                    <p class="max-w-[190px] text-xs leading-4 text-content-muted"
+                                       title="{{ row.status_reason }}">{{ row.status_reason }}</p>
                                 </div>
                             </td>
                             <td class="px-4 py-3.5 align-top">
@@ -122,7 +124,6 @@
             </tbody>
         </table>
     </div>
-
     {% if dashboard.cluster_health_pagination.total_pages > 1 %}
         <div class="flex flex-col gap-3 border-t border-outline-subtle px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
             <p class="text-xs text-content-muted">

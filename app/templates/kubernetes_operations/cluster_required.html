@@ -2,34 +2,34 @@
 {% import "components/page_hero.html" as page_hero %}
 {% block title %}Kubernetes Cluster Required{% endblock title %}
 {% block dashboard_content %}
-<div class="grid gap-6">
-    <section class="{{ page_hero.shell_classes() }}">
-        <div class="{{ page_hero.layout_classes() }}">
-            <div class="{{ page_hero.content_classes() }}">
-                {% call page_hero.intro('workflow', 'Kubernetes Operations', 'shield-alert') %}
-                    <h1 class="{{ page_hero.title_classes() }}">Kubernetes Cluster Required</h1>
-                    <p class="mt-2 {{ page_hero.description_classes() }}">
-                        {{ requested_operation }} is unavailable until KAORI has a registered Kubernetes cluster and canonical connection.
-                    </p>
-                    <div class="{{ page_hero.metadata_row_classes() }}">
-                        {{ page_hero.meta_label('boxes', 'Cluster Registration') }}
-                        {{ page_hero.meta_label('shield-check', 'Operational Guardrail') }}
-                    </div>
-                {% endcall %}
-            </div>
-            <aside class="{{ page_hero.aside_classes() }}" aria-label="Kubernetes operation availability">
-                <div class="{{ page_hero.context_panel_classes() }}">
-                    {{ page_hero.context_header('Operation Boundary', 'Cluster Setup Required', 'shield-alert') }}
-                    <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                        {{ page_hero.context_metric('server-off', 'Registered Cluster', '0', 'No canonical Kubernetes target') }}
-                        {{ page_hero.context_metric('lock-keyhole', 'Live Operations', 'Blocked', 'Enabled after registration', value_classes='text-sm font-semibold leading-5') }}
-                    </div>
-                    {{ page_hero.context_note('KAORI blocks live Kubernetes operations until a valid cluster boundary is available.') }}
+    <div class="grid gap-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('workflow', 'Kubernetes Operations', 'shield-alert') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Kubernetes Cluster Required</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">
+                            {{ requested_operation }} is unavailable until KAORI has a registered Kubernetes cluster and canonical connection.
+                        </p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('boxes', 'Cluster Registration') }}
+                            {{ page_hero.meta_label('shield-check', 'Operational Guardrail') }}
+                        </div>
+                    {% endcall %}
                 </div>
-            </aside>
-        </div>
-    </section>
-
-    {% include "components/cluster/_onboarding_banner.html" %}
-</div>
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="Kubernetes operation availability">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        {{ page_hero.context_header('Operation Boundary', 'Cluster Setup Required', 'shield-alert') }}
+                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                            {{ page_hero.context_metric('server-off', 'Registered Cluster', '0', 'No canonical Kubernetes target') }}
+                            {{ page_hero.context_metric('lock-keyhole', 'Live Operations', 'Blocked', 'Enabled after registration', value_classes='text-sm font-semibold leading-5') }}
+                        </div>
+                        {{ page_hero.context_note("KAORI blocks live Kubernetes operations until a valid cluster boundary is available.") }}
+                    </div>
+                </aside>
+            </div>
+        </section>
+        {% include "components/cluster/_onboarding_banner.html" %}
+    </div>
 {% endblock dashboard_content %}

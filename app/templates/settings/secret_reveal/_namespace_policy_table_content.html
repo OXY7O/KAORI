@@ -19,14 +19,14 @@
             {% for row in namespace_rows %}
                 {% set live_classes = 'bg-status-normal-soft text-status-normal-text ring-status-normal-border' if row.in_live_cluster else 'bg-status-warning-soft text-status-warning-text ring-status-warning-border' %}
                 {% if row.policy == 'approval_required' %}
-                    {% set policy_classes = 'bg-kaori-soft text-kaori-primary ring-brand-outline' %}
-                    {% set policy_icon = 'users' %}
+                    {% set policy_classes = "bg-kaori-soft text-kaori-primary ring-brand-outline" %}
+                    {% set policy_icon = "users" %}
                 {% elif row.policy == 'step_up' %}
-                    {% set policy_classes = 'bg-kaori-soft text-kaori-primary ring-brand-outline' %}
-                    {% set policy_icon = 'shield-check' %}
+                    {% set policy_classes = "bg-kaori-soft text-kaori-primary ring-brand-outline" %}
+                    {% set policy_icon = "shield-check" %}
                 {% else %}
-                    {% set policy_classes = 'bg-surface-subtle text-content-secondary ring-outline-default' %}
-                    {% set policy_icon = 'lock' %}
+                    {% set policy_classes = "bg-surface-subtle text-content-secondary ring-outline-default" %}
+                    {% set policy_icon = "lock" %}
                 {% endif %}
                 <tr class="border-t border-outline-default text-sm transition hover:bg-kaori-soft/40">
                     <td class="px-5 py-3 align-middle">
@@ -35,14 +35,16 @@
                                 <i data-lucide="box" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
-                                <div class="truncate font-semibold text-content-primary" title="{{ row.namespace }}">{{ row.namespace }}</div>
+                                <div class="truncate font-semibold text-content-primary"
+                                     title="{{ row.namespace }}">{{ row.namespace }}</div>
                                 <div class="mt-0.5 text-xs text-content-muted">Namespace-scoped Secret access</div>
                             </div>
                         </div>
                     </td>
                     <td class="px-5 py-3 text-left align-middle">
                         <span class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium ring-1 ring-inset {{ live_classes }}">
-                            <i data-lucide="{{ 'check' if row.in_live_cluster else 'info' }}" class="h-3.5 w-3.5"></i>
+                            <i data-lucide="{{ 'check' if row.in_live_cluster else 'info' }}"
+                               class="h-3.5 w-3.5"></i>
                             {{ 'Current' if row.in_live_cluster else 'Missing' }}
                         </span>
                     </td>
@@ -58,10 +60,16 @@
                               class="ml-auto flex w-full max-w-md items-center justify-end gap-3">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="namespace" value="{{ row.namespace }}">
-                            <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
-                            <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
+                            <input type="hidden"
+                                   name="namespace_q"
+                                   value="{{ namespace_filters.query }}">
+                            <input type="hidden"
+                                   name="namespace_policy"
+                                   value="{{ namespace_filters.policy }}">
                             <input type="hidden" name="page" value="{{ namespace_pagination.page }}">
-                            <input type="hidden" name="per_page" value="{{ namespace_pagination.per_page }}">
+                            <input type="hidden"
+                                   name="per_page"
+                                   value="{{ namespace_pagination.per_page }}">
                             <select name="policy"
                                     aria-label="Reveal policy for {{ row.namespace }}"
                                     {% if not row.in_live_cluster and row.policy == 'disabled' %}disabled{% endif %}
@@ -118,15 +126,20 @@
               hx-indicator="#secret-reveal-namespace-loading"
               class="flex items-center">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster.id }}">
-            <input type="hidden" name="namespace_q" value="{{ namespace_filters.query }}">
-            <input type="hidden" name="namespace_policy" value="{{ namespace_filters.policy }}">
+            <input type="hidden"
+                   name="namespace_q"
+                   value="{{ namespace_filters.query }}">
+            <input type="hidden"
+                   name="namespace_policy"
+                   value="{{ namespace_filters.policy }}">
             <input type="hidden" name="page" value="1">
             <select name="per_page"
                     aria-label="Rows per page"
                     onchange="this.form.requestSubmit()"
                     class="{{ pagination_ui.page_size_classes() }}">
                 {% for option in namespace_per_page_options %}
-                    <option value="{{ option }}" {% if namespace_pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                    <option value="{{ option }}"
+                            {% if namespace_pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
                 {% endfor %}
             </select>
         </form>

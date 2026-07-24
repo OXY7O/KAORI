@@ -5,31 +5,99 @@
     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-span-8">
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
             <div class="flex items-start justify-between gap-4">
-                <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="file-key-2" class="h-5 w-5"></i></span><div><h2 class="text-base font-semibold text-content-primary">Connection Contract</h2><p class="mt-1 text-sm leading-6 text-content-secondary">Review the canonical identity, transport trust, access boundary, and authority model used by every KAORI Kubernetes workflow.</p></div></div>
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="file-key-2" class="h-5 w-5"></i></span>
+                    <div>
+                        <h2 class="text-base font-semibold text-content-primary">Connection Contract</h2>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Review the canonical identity, transport trust, access boundary, and authority model used by every KAORI Kubernetes workflow.</p>
+                    </div>
+                </div>
                 {{ status_badge(runtime_state.readiness) }}
             </div>
         </header>
         <div class="grid gap-px border-b border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
-            <div class="bg-surface-card p-4"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Canonical Identity</p><p class="mt-2 text-sm font-semibold text-content-primary">#{{ canonical.id }} · {{ cluster.name }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Stable identity for audit, runtime evidence, and bindings.</p></div>
-            <div class="bg-surface-card p-4"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Environment</p><p class="mt-2 text-sm font-semibold text-content-primary">{{ cluster.environment|environment_name }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Operational context used by coverage and policy views.</p></div>
-            <div class="bg-surface-card p-4"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Detected Version</p><p class="mt-2 text-sm font-semibold text-content-primary">{{ connection.detected_version or 'Not Discovered' }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Observed from the Kubernetes version API.</p></div>
-            <div class="bg-surface-card p-4"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Compatibility</p><p class="mt-2 text-sm font-semibold text-content-primary">{{ runtime_state.compatibility_profile or 'Validation Required' }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">Resolved from served APIs and effective permissions.</p></div>
+            <div class="bg-surface-card p-4">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Canonical Identity</p>
+                <p class="mt-2 text-sm font-semibold text-content-primary">#{{ canonical.id }} · {{ cluster.name }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Stable identity for audit, runtime evidence, and bindings.</p>
+            </div>
+            <div class="bg-surface-card p-4">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Environment</p>
+                <p class="mt-2 text-sm font-semibold text-content-primary">{{ cluster.environment|environment_name }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Operational context used by coverage and policy views.</p>
+            </div>
+            <div class="bg-surface-card p-4">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Detected Version</p>
+                <p class="mt-2 text-sm font-semibold text-content-primary">{{ connection.detected_version or 'Not Discovered' }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Observed from the Kubernetes version API.</p>
+            </div>
+            <div class="bg-surface-card p-4">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Compatibility</p>
+                <p class="mt-2 text-sm font-semibold text-content-primary">{{ runtime_state.compatibility_profile or 'Validation Required' }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Resolved from served APIs and effective permissions.</p>
+            </div>
         </div>
         <div class="grid gap-4 p-5 sm:p-6 lg:grid-cols-3">
             <article class="rounded-xl border border-brand-outline bg-kaori-soft p-4 lg:col-span-2">
-                <div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary"><i data-lucide="network" class="h-4 w-4"></i></span><div class="min-w-0"><p class="text-xs font-semibold uppercase tracking-[0.12em] text-kaori-primary">Kubernetes API Endpoint</p><p class="mt-2 break-all font-mono text-sm font-semibold text-content-primary">{{ connection.server }}</p><p class="mt-2 text-xs leading-5 text-content-secondary">This endpoint remains authoritative for live objects. KAORI stores normalized evidence and never treats its inventory snapshot as the write authority.</p></div></div>
+                <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary"><i data-lucide="network" class="h-4 w-4"></i></span>
+                    <div class="min-w-0">
+                        <p class="text-xs font-semibold uppercase tracking-[0.12em] text-kaori-primary">Kubernetes API Endpoint</p>
+                        <p class="mt-2 break-all font-mono text-sm font-semibold text-content-primary">{{ connection.server }}</p>
+                        <p class="mt-2 text-xs leading-5 text-content-secondary">This endpoint remains authoritative for live objects. KAORI stores normalized evidence and never treats its inventory snapshot as the write authority.</p>
+                    </div>
+                </div>
             </article>
-            <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4"><div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="shield-check" class="h-4 w-4"></i></span><div><p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">TLS Policy</p><p class="mt-2 text-sm font-semibold text-content-primary">{{ 'Certificate Verification Enabled' if connection.verify_ssl else 'Verification Disabled' }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ 'Legacy TLS exception allowed.' if connection.allow_weak_tls else 'No legacy TLS exception.' }}</p></div></div></article>
-            <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4"><p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Inventory Authority</p><p class="mt-2 text-sm font-semibold text-content-primary">Kubernetes Live API</p><p class="mt-1 text-xs leading-5 text-content-secondary">KAORI synchronizes operational context, history, and relationships.</p></article>
-            <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4"><p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Access Contract</p><p class="mt-2 text-sm font-semibold text-content-primary">Least-Privilege Kubeconfig</p><p class="mt-1 text-xs leading-5 text-content-secondary">Full Validation distinguishes missing RBAC verbs from unsupported APIs.</p></article>
-            <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4"><p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Operational Scope</p><div class="mt-2 flex flex-wrap gap-2">{% for capability in capability_scope %}<span class="kaori-context-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 text-[10px] font-semibold text-kaori-primary">{{ capability|replace('_',' ')|title }}</span>{% else %}<span class="text-xs text-content-muted">No explicit capability scope.</span>{% endfor %}</div></article>
+            <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">TLS Policy</p>
+                        <p class="mt-2 text-sm font-semibold text-content-primary">{{ 'Certificate Verification Enabled' if connection.verify_ssl else 'Verification Disabled' }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ 'Legacy TLS exception allowed.' if connection.allow_weak_tls else 'No legacy TLS exception.' }}</p>
+                    </div>
+                </div>
+            </article>
+            <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Inventory Authority</p>
+                <p class="mt-2 text-sm font-semibold text-content-primary">Kubernetes Live API</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI synchronizes operational context, history, and relationships.</p>
+            </article>
+            <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Access Contract</p>
+                <p class="mt-2 text-sm font-semibold text-content-primary">Least-Privilege Kubeconfig</p>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Full Validation distinguishes missing RBAC verbs from unsupported APIs.</p>
+            </article>
+            <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
+                <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Operational Scope</p>
+                <div class="mt-2 flex flex-wrap gap-2">
+                    {% for capability in capability_scope %}
+                        <span class="kaori-context-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 text-[10px] font-semibold text-kaori-primary">{{ capability|replace('_', ' ') |title }}</span>
+                    {% else %}
+                        <span class="text-xs text-content-muted">No explicit capability scope.</span>
+                    {% endfor %}
+                </div>
+            </article>
         </div>
-        <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"><p class="text-xs leading-5 text-content-secondary">Configuration changes reset readiness until worker validation confirms the updated contract.</p><a href="{{ url_for('cluster.edit_cluster', cluster_id=cluster.id) }}" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover"><i data-lucide="settings-2" class="h-4 w-4"></i>Configure Connection</a></footer>
+        <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <p class="text-xs leading-5 text-content-secondary">Configuration changes reset readiness until worker validation confirms the updated contract.</p>
+            <a href="{{ url_for('cluster.edit_cluster', cluster_id=cluster.id) }}"
+               class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover"><i data-lucide="settings-2" class="h-4 w-4"></i>Configure Connection</a>
+        </footer>
     </section>
     <aside class="space-y-4 xl:col-span-4">
         {% set operational_flow_items = [('Configure Connection', 'Set identity, environment, kubeconfig ownership, and TLS policy.'), ('Test Connection', 'Confirm the submitted Kubernetes API endpoint, credentials, and TLS policy before saving connection changes.'), ('Run Full Validation', 'Discover served APIs, effective RBAC, stable adapters, lifecycle posture, and fallback requirements.'), ('Refresh and Synchronize', 'Record runtime evidence and update normalized Kubernetes inventory.')] %}
         {{ info_flow.render('Operational Flow', 'How this connection becomes eligible for KAORI operations.', operational_flow_items, icon='workflow', note='A healthy API connection can still be Degraded when the Kubernetes version lifecycle, API fallback, or RBAC contract requires attention.', open_by_default=true) }}
-        <div class="rounded-xl border border-status-info-border bg-status-info-soft p-4"><div class="flex items-start gap-3"><i data-lucide="landmark" class="mt-0.5 h-4 w-4 shrink-0 text-status-info-text"></i><div><p class="text-sm font-semibold text-status-info-text">Authority Boundary</p><p class="mt-1 text-xs leading-5 text-content-secondary">Kubernetes owns live state and API authorization. KAORI provides controlled access, normalized history, correlation, reporting, and Activity Audit.</p></div></div></div>
-        {{ related_page_card.render('Kubernetes Inventory', 'This validated connection supplies normalized resource context to KAORI Inventory.', url_for('inventory.overview'), 'Open Kubernetes Inventory', icon='boxes', eyebrow='Related Operational Workspace', boundary='Kubernetes remains authoritative for live resources. KAORI Inventory presents synchronized context and history.') }}
+        <div class="rounded-xl border border-status-info-border bg-status-info-soft p-4">
+            <div class="flex items-start gap-3">
+                <i data-lucide="landmark"
+                   class="mt-0.5 h-4 w-4 shrink-0 text-status-info-text"></i>
+                <div>
+                    <p class="text-sm font-semibold text-status-info-text">Authority Boundary</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Kubernetes owns live state and API authorization. KAORI provides controlled access, normalized history, correlation, reporting, and Activity Audit.</p>
+                </div>
+            </div>
+        </div>
+        {{ related_page_card.render('Kubernetes Inventory', 'This validated connection supplies normalized resource context to KAORI Inventory.', url_for('inventory.overview') , 'Open Kubernetes Inventory', icon='boxes', eyebrow='Related Operational Workspace', boundary='Kubernetes remains authoritative for live resources. KAORI Inventory presents synchronized context and history.') }}
     </aside>
 </div>

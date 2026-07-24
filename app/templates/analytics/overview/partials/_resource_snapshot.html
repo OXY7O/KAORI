@@ -22,19 +22,19 @@
             {% set percent = item.percent or 0 %}
             {% set semantic_tone = {'green': 'normal', 'amber': 'warning', 'red': 'critical', 'blue': 'info', 'gray': 'unknown'}.get(item.tone, 'unknown') %}
             {% set icon_class = {
-                'green': 'bg-status-normal-soft text-status-normal',
-                'amber': 'bg-status-warning-soft text-status-warning',
-                'red': 'bg-status-critical-soft text-status-critical',
-                'blue': 'bg-status-info-soft text-status-info',
-                'gray': 'bg-status-unknown-soft text-status-unknown'
-            }.get(item.tone, 'bg-status-unknown-soft text-status-unknown') %}
+                            'green': 'bg-status-normal-soft text-status-normal',
+                            'amber': 'bg-status-warning-soft text-status-warning',
+                            'red': 'bg-status-critical-soft text-status-critical',
+                            'blue': 'bg-status-info-soft text-status-info',
+                            'gray': 'bg-status-unknown-soft text-status-unknown'
+                        }.get(item.tone, 'bg-status-unknown-soft text-status-unknown') %}
             {% set bar_class = {
-                'green': 'bg-status-normal',
-                'amber': 'bg-status-warning',
-                'red': 'bg-status-critical',
-                'blue': 'bg-status-info',
-                'gray': 'bg-status-unknown'
-            }.get(item.tone, 'bg-status-unknown') %}
+                            'green': 'bg-status-normal',
+                            'amber': 'bg-status-warning',
+                            'red': 'bg-status-critical',
+                            'blue': 'bg-status-info',
+                            'gray': 'bg-status-unknown'
+                        }.get(item.tone, 'bg-status-unknown') %}
             <article class="rounded-lg border border-outline-default bg-surface-card p-4 transition hover:bg-surface-hover">
                 <div class="flex items-start justify-between gap-3">
                     <div class="flex min-w-0 items-start gap-3">

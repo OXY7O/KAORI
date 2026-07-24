@@ -1,22 +1,23 @@
 {% import "components/table_label.html" as table_label %}
 {% set prometheus = payload.prometheus %}
 {% if prometheus.connected %}
-    {% set status_tone = 'normal' %}
-    {% set status_icon = 'circle-check' %}
-    {% set dot_class = 'bg-status-normal' %}
+    {% set status_tone = "normal" %}
+    {% set status_icon = "circle-check" %}
+    {% set dot_class = "bg-status-normal" %}
 {% elif prometheus.configured %}
-    {% set status_tone = 'critical' %}
-    {% set status_icon = 'circle-x' %}
-    {% set dot_class = 'bg-status-critical' %}
+    {% set status_tone = "critical" %}
+    {% set status_icon = "circle-x" %}
+    {% set dot_class = "bg-status-critical" %}
 {% else %}
-    {% set status_tone = 'disabled' %}
-    {% set status_icon = 'circle-minus' %}
-    {% set dot_class = 'bg-status-disabled' %}
+    {% set status_tone = "disabled" %}
+    {% set status_icon = "circle-minus" %}
+    {% set dot_class = "bg-status-disabled" %}
 {% endif %}
 <section class="rounded-lg border border-outline-default bg-kaori-soft px-4 py-3">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="flex min-w-0 items-center gap-3">
-            <span class="h-2.5 w-2.5 shrink-0 rounded-full {{ dot_class }}" aria-hidden="true"></span>
+            <span class="h-2.5 w-2.5 shrink-0 rounded-full {{ dot_class }}"
+                  aria-hidden="true"></span>
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                     <h2 class="text-sm font-semibold text-content-primary">Prometheus Status</h2>

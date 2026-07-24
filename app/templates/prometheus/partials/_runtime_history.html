@@ -1,5 +1,5 @@
-{% set runtime_history_id = 'prometheus-runtime-history' %}
-{% set runtime_history_loading_id = 'prometheus-history-loading' %}
+{% set runtime_history_id = "prometheus-runtime-history" %}
+{% set runtime_history_loading_id = "prometheus-history-loading" %}
 {% set runtime_history_url = url_for('prometheus.instance_runtime_history', instance_id=instance.id) %}
-{% set provider_label = 'Prometheus' %}
+{% set provider_label = "Prometheus" %}
 {% include 'integrations/partials/_runtime_history.html' %}

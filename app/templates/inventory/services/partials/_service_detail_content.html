@@ -5,7 +5,8 @@
     {% set display_value = value if value not in [None, ''] else '-' %}
     <div class="flex items-start justify-between gap-3">
         <span class="shrink-0 text-xs font-normal leading-5 text-content-muted">{{ label }}</span>
-        <span class="max-w-[68%] {{ 'break-all' if break_all else 'break-words' }} text-right text-xs font-medium leading-5 text-content-secondary" title="{{ display_value }}">{{ display_value }}</span>
+        <span class="max-w-[68%] {{ 'break-all' if break_all else 'break-words' }} text-right text-xs font-medium leading-5 text-content-secondary"
+              title="{{ display_value }}">{{ display_value }}</span>
     </div>
 {%- endmacro %}
 {% macro info_box(title, message, icon='info', tone='brand', equal_height=false) -%}
@@ -23,18 +24,16 @@
         <div class="flex min-h-0 flex-1 flex-col gap-2.5">{{ caller() }}</div>
     </section>
 {%- endmacro %}
-
 {% set endpoint_total = service.ready_endpoint_count + service.not_ready_endpoint_count %}
 {% if service.endpoints_reported %}
     {% if service.not_ready_endpoint_count > 0 %}
-        {% set endpoint_posture = 'Needs review' %}{% set endpoint_tone = 'warning' %}{% set endpoint_icon = 'triangle-alert' %}
+        {% set endpoint_posture = "Needs review" %}{% set endpoint_tone = "warning" %}{% set endpoint_icon = "triangle-alert" %}
     {% else %}
-        {% set endpoint_posture = 'Ready' %}{% set endpoint_tone = 'normal' %}{% set endpoint_icon = 'circle-check' %}
+        {% set endpoint_posture = "Ready" %}{% set endpoint_tone = "normal" %}{% set endpoint_icon = "circle-check" %}
     {% endif %}
 {% else %}
-    {% set endpoint_posture = 'Not reported' %}{% set endpoint_tone = 'unknown' %}{% set endpoint_icon = 'circle-help' %}
+    {% set endpoint_posture = "Not reported" %}{% set endpoint_tone = "unknown" %}{% set endpoint_icon = "circle-help" %}
 {% endif %}
-
 <div class="bg-surface-hover px-4 py-4">
     <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-sm">
         <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -54,7 +53,6 @@
                 {{ table_label.status_label(endpoint_posture, endpoint_tone, endpoint_icon) }}
             </div>
         </header>
-
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
             {% call detail_card('Object identity', 'badge-info', service.age, 'min-h-96') %}
                 {{ detail_row('Cluster', service.cluster_name) }}
@@ -66,7 +64,6 @@
                 {{ detail_row('Collected', service.collected_at|user_datetime) }}
                 <div class="mt-auto pt-3">{{ info_box('Inventory identity', service.type_description, 'lightbulb', 'brand', true) }}</div>
             {% endcall %}
-
             {% call detail_card('Network configuration', 'globe-2', service.cluster_ip, 'min-h-[28rem]') %}
                 {{ detail_row('Cluster IP', service.cluster_ip, true) }}
                 {{ detail_row('External addresses', service.external_ips|join(', ') if service.external_ips else '-', true) }}
@@ -78,7 +75,6 @@
                 {{ detail_row('External traffic', service.external_traffic_policy) }}
                 <div class="mt-auto pt-3">{{ info_box('Network identity', 'Cluster and external addresses from the current Service specification.', 'network', 'brand', true) }}</div>
             {% endcall %}
-
             {% call detail_card('Port mapping', 'plug-zap', service.port_count ~ ' ports', 'min-h-96') %}
                 {{ detail_row('Port definitions', service.port_count) }}
                 {% if service.ports %}
@@ -92,7 +88,6 @@
                 {{ detail_row('Health check NodePort', service.health_check_node_port or '-') }}
                 <div class="mt-auto pt-3">{{ info_box('Forwarding boundary', 'Port mappings show Service-to-target forwarding only.', 'route', 'brand', true) }}</div>
             {% endcall %}
-
             {% call detail_card('Selection & endpoints', 'scan-search', service.ready_endpoint_count ~ ' ready', 'min-h-[30rem]') %}
                 {{ detail_row('Selector labels', service.selectors|length) }}
                 {{ detail_row('Selected Pods', service.pod_count) }}
@@ -112,13 +107,15 @@
                 {% endcall %}
             {% endcall %}
         </div>
-
         <div class="space-y-4 border-t border-outline-subtle p-5">
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
                 <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-4">
                     <div class="flex items-center gap-3">
                         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="plug-zap" class="h-4 w-4"></i></span>
-                        <div><h4 class="text-sm font-semibold text-content-primary">Port Mappings</h4><p class="mt-0.5 text-xs text-content-muted">Service ports, target ports, protocols, and NodePort assignments.</p></div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-content-primary">Port Mappings</h4>
+                            <p class="mt-0.5 text-xs text-content-muted">Service ports, target ports, protocols, and NodePort assignments.</p>
+                        </div>
                     </div>
                     {{ table_label.metadata_label(service.port_count ~ ' ports', 'plug-zap') }}
                 </header>
@@ -126,7 +123,14 @@
                     <div class="overflow-x-auto">
                         <table class="min-w-[760px] w-full text-left text-xs text-content-secondary">
                             <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted">
-                                <tr><th class="px-4 py-2.5">Name</th><th class="px-4 py-2.5">Protocol</th><th class="px-4 py-2.5">Service port</th><th class="px-4 py-2.5">Target port</th><th class="px-4 py-2.5">NodePort</th><th class="px-4 py-2.5">App protocol</th></tr>
+                                <tr>
+                                    <th class="px-4 py-2.5">Name</th>
+                                    <th class="px-4 py-2.5">Protocol</th>
+                                    <th class="px-4 py-2.5">Service port</th>
+                                    <th class="px-4 py-2.5">Target port</th>
+                                    <th class="px-4 py-2.5">NodePort</th>
+                                    <th class="px-4 py-2.5">App protocol</th>
+                                </tr>
                             </thead>
                             <tbody class="divide-y divide-outline-subtle">
                                 {% for port in service.ports %}
@@ -147,12 +151,14 @@
                 {% endif %}
                 {% if service.ports %}{{ inventory_tip.footer('Port rows describe declared forwarding; traffic volume remains in Analytics.', 'plug-zap') }}{% endif %}
             </section>
-
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
                 <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-4">
                     <div class="flex items-center gap-3">
                         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="waypoints" class="h-4 w-4"></i></span>
-                        <div><h4 class="text-sm font-semibold text-content-primary">Endpoint Addresses</h4><p class="mt-0.5 text-xs text-content-muted">Ready and not-ready backend addresses registered for this Service.</p></div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-content-primary">Endpoint Addresses</h4>
+                            <p class="mt-0.5 text-xs text-content-muted">Ready and not-ready backend addresses registered for this Service.</p>
+                        </div>
                     </div>
                     {{ table_label.metadata_label(endpoint_total ~ ' endpoints', 'waypoints') }}
                 </header>
@@ -162,7 +168,11 @@
                             {% for endpoint in service.endpoints %}
                                 <article class="rounded-lg border border-outline-default bg-kaori-soft p-3">
                                     <div class="flex items-start justify-between gap-3">
-                                        <div class="flex min-w-0 items-center gap-2.5"><span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="waypoints" class="h-3.5 w-3.5"></i></span><p class="truncate text-xs font-semibold text-content-primary" title="{{ endpoint.ip }}">{{ endpoint.ip }}</p></div>
+                                        <div class="flex min-w-0 items-center gap-2.5">
+                                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="waypoints" class="h-3.5 w-3.5"></i></span>
+                                            <p class="truncate text-xs font-semibold text-content-primary"
+                                               title="{{ endpoint.ip }}">{{ endpoint.ip }}</p>
+                                        </div>
                                         {{ table_label.status_label('Ready', 'normal', 'circle-check') }}
                                     </div>
                                     <div class="mt-3 space-y-1.5">{{ detail_object.row('Target kind', endpoint.target_kind) }}{{ detail_object.row('Target name', endpoint.target_name) }}</div>
@@ -171,14 +181,20 @@
                             {% for endpoint in service.not_ready_endpoints %}
                                 <article class="rounded-lg border border-outline-default bg-kaori-soft p-3">
                                     <div class="flex items-start justify-between gap-3">
-                                        <div class="flex min-w-0 items-center gap-2.5"><span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="waypoints" class="h-3.5 w-3.5"></i></span><p class="truncate text-xs font-semibold text-content-primary" title="{{ endpoint.ip }}">{{ endpoint.ip }}</p></div>
+                                        <div class="flex min-w-0 items-center gap-2.5">
+                                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="waypoints" class="h-3.5 w-3.5"></i></span>
+                                            <p class="truncate text-xs font-semibold text-content-primary"
+                                               title="{{ endpoint.ip }}">{{ endpoint.ip }}</p>
+                                        </div>
                                         {{ table_label.status_label('Not ready', 'warning', 'triangle-alert') }}
                                     </div>
                                     <div class="mt-3 space-y-1.5">{{ detail_object.row('Target kind', endpoint.target_kind) }}{{ detail_object.row('Target name', endpoint.target_name) }}</div>
                                 </article>
                             {% endfor %}
                         </div>
-                        {% if service.endpoints_truncated %}<p class="mt-3 text-xs text-content-muted">Showing the first 12 addresses from each endpoint state.</p>{% endif %}
+                        {% if service.endpoints_truncated %}
+                            <p class="mt-3 text-xs text-content-muted">Showing the first 12 addresses from each endpoint state.</p>
+                        {% endif %}
                     {% elif service.endpoints_reported %}
                         {{ detail_object.empty('No endpoints registered', 'No backend address is present in the latest endpoint snapshot.', 'waypoints') }}
                     {% else %}
@@ -187,12 +203,14 @@
                 </div>
                 {% if service.endpoints or service.not_ready_endpoints %}{{ inventory_tip.footer('Endpoints reflect current backend registration and readiness.', 'waypoints') }}{% endif %}
             </section>
-
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
                 <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-4">
                     <div class="flex items-center gap-3">
                         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="package-check" class="h-4 w-4"></i></span>
-                        <div><h4 class="text-sm font-semibold text-content-primary">Selected Pods</h4><p class="mt-0.5 text-xs text-content-muted">Pods matching the Service selector in the current inventory snapshot.</p></div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-content-primary">Selected Pods</h4>
+                            <p class="mt-0.5 text-xs text-content-muted">Pods matching the Service selector in the current inventory snapshot.</p>
+                        </div>
                     </div>
                     {{ table_label.metadata_label(service.pod_count ~ ' Pods', 'package') }}
                 </header>
@@ -200,20 +218,31 @@
                     {% if service.pods %}
                         <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                             {% for pod in service.pods %}
-                                {% if pod.status == 'Running' %}{% set pod_tone = 'normal' %}{% set pod_icon = 'circle-check' %}
-                                {% elif pod.status == 'Pending' %}{% set pod_tone = 'pending' %}{% set pod_icon = 'loader-circle' %}
-                                {% elif pod.status == 'Failed' %}{% set pod_tone = 'critical' %}{% set pod_icon = 'circle-x' %}
-                                {% else %}{% set pod_tone = 'unknown' %}{% set pod_icon = 'circle-help' %}{% endif %}
+                                {% if pod.status == 'Running' %}
+                                    {% set pod_tone = "normal" %}{% set pod_icon = "circle-check" %}
+                                {% elif pod.status == 'Pending' %}
+                                    {% set pod_tone = "pending" %}{% set pod_icon = "loader-circle" %}
+                                {% elif pod.status == 'Failed' %}
+                                    {% set pod_tone = "critical" %}{% set pod_icon = "circle-x" %}
+                                {% else %}
+                                    {% set pod_tone = "unknown" %}{% set pod_icon = "circle-help" %}
+                                {% endif %}
                                 <article class="rounded-lg border border-outline-default bg-kaori-soft p-3">
                                     <div class="flex items-start justify-between gap-3">
-                                        <div class="flex min-w-0 items-center gap-2.5"><span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="package" class="h-3.5 w-3.5"></i></span><p class="truncate text-xs font-semibold text-content-primary" title="{{ pod.name }}">{{ pod.name }}</p></div>
+                                        <div class="flex min-w-0 items-center gap-2.5">
+                                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="package" class="h-3.5 w-3.5"></i></span>
+                                            <p class="truncate text-xs font-semibold text-content-primary"
+                                               title="{{ pod.name }}">{{ pod.name }}</p>
+                                        </div>
                                         {{ table_label.status_label(pod.status, pod_tone, pod_icon) }}
                                     </div>
                                     <div class="mt-3 space-y-1.5">{{ detail_object.row('Ready', pod.ready) }}{{ detail_object.row('Node', pod.node) }}{{ detail_object.row('Containers', pod.container_count) }}</div>
                                 </article>
                             {% endfor %}
                         </div>
-                        {% if service.pods_truncated %}<p class="mt-3 text-xs text-content-muted">Showing the first 8 selected Pods.</p>{% endif %}
+                        {% if service.pods_truncated %}
+                            <p class="mt-3 text-xs text-content-muted">Showing the first 8 selected Pods.</p>
+                        {% endif %}
                     {% elif service.has_selector %}
                         {{ detail_object.empty('No matching Pods', 'No Pod matches the Service selector in the latest snapshot.', 'package-x') }}
                     {% else %}
@@ -222,29 +251,48 @@
                 </div>
                 {% if service.pods %}{{ inventory_tip.footer('Pod matches are resolved from the current Service selector.', 'package-check') }}{% endif %}
             </section>
-
             <div class="grid gap-4 xl:grid-cols-2">
                 <section class="rounded-xl border border-outline-default bg-surface-card p-4">
                     <div class="mb-4 flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="tags" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Service Labels</h4><p class="mt-0.5 text-xs text-content-muted">Descriptive Kubernetes labels from the Service snapshot.</p></div></div>
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="tags" class="h-4 w-4"></i></span>
+                            <div>
+                                <h4 class="text-sm font-semibold text-content-primary">Service Labels</h4>
+                                <p class="mt-0.5 text-xs text-content-muted">Descriptive Kubernetes labels from the Service snapshot.</p>
+                            </div>
+                        </div>
                         {{ table_label.metadata_label(service.labels|length ~ ' labels', 'tags') }}
                     </div>
                     {% if service.labels %}
-                        <div class="flex max-h-44 flex-wrap gap-1.5 overflow-y-auto pr-1">{% for key, value in service.labels %}{{ table_label.metadata_label(key ~ (('=' ~ value) if value not in [None, ''] else ''), 'tag') }}{% endfor %}</div>
+                        <div class="flex max-h-44 flex-wrap gap-1.5 overflow-y-auto pr-1">
+                            {% for key, value in service.labels %}{{ table_label.metadata_label(key ~ (('=' ~ value) if value not in [None, ''] else ''), 'tag') }}{% endfor %}
+                        </div>
                     {% else %}
                         {{ info_box('No labels recorded', 'This Service has no recorded labels.', 'tags') }}
                     {% endif %}
-                    {% if service.labels %}<div class="mt-4">{{ inventory_tip.tip('Labels describe the Service and support selection.', 'tags') }}</div>{% endif %}
+                    {% if service.labels %}
+                        <div class="mt-4">{{ inventory_tip.tip('Labels describe the Service and support selection.', 'tags') }}</div>
+                    {% endif %}
                 </section>
-
                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
                     <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-4">
-                        <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="braces" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Service Annotations</h4><p class="mt-0.5 text-xs text-content-muted">Annotation metadata displayed as readable key-value rows.</p></div></div>
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="braces" class="h-4 w-4"></i></span>
+                            <div>
+                                <h4 class="text-sm font-semibold text-content-primary">Service Annotations</h4>
+                                <p class="mt-0.5 text-xs text-content-muted">Annotation metadata displayed as readable key-value rows.</p>
+                            </div>
+                        </div>
                         {{ table_label.metadata_label(service.annotations|length ~ ' annotations', 'braces') }}
                     </header>
                     {% if service.annotations %}
                         <div class="max-h-64 overflow-y-auto">
-                            {% for key, value in service.annotations %}<div class="grid gap-2 border-b border-outline-subtle px-4 py-3 last:border-b-0 md:grid-cols-[minmax(12rem,0.8fr)_minmax(0,1.2fr)]"><div class="break-all text-xs font-semibold leading-5 text-content-secondary">{{ key }}</div><div class="break-all text-xs leading-5 text-content-muted">{{ value or '-' }}</div></div>{% endfor %}
+                            {% for key, value in service.annotations %}
+                                <div class="grid gap-2 border-b border-outline-subtle px-4 py-3 last:border-b-0 md:grid-cols-[minmax(12rem,0.8fr)_minmax(0,1.2fr)]">
+                                    <div class="break-all text-xs font-semibold leading-5 text-content-secondary">{{ key }}</div>
+                                    <div class="break-all text-xs leading-5 text-content-muted">{{ value or '-' }}</div>
+                                </div>
+                            {% endfor %}
                         </div>
                     {% else %}
                         <div class="p-4">{{ info_box('No annotations recorded', 'This Service has no recorded annotations.', 'braces') }}</div>
@@ -252,7 +300,6 @@
                     {% if service.annotations %}{{ inventory_tip.footer('Annotations may influence integrations or load balancer behavior.', 'braces') }}{% endif %}
                 </section>
             </div>
-
             {{ info_box('Inventory boundary', 'This view shows snapshot data. Traffic trends remain in Analytics.', 'info') }}
         </div>
     </div>

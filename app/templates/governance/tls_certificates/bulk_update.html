@@ -21,16 +21,46 @@
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="TLS update posture">
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="TLS update posture">
                     <div class="{{ page_hero.context_panel_classes() }}">
-                        <div class="flex items-start justify-between gap-4"><div><p class="{{ page_hero.context_panel_eyebrow_classes() }}">Update posture</p><h2 class="mt-1 text-base font-semibold text-brand-foreground">Controlled certificate replacement</h2></div>{{ table_label.status_label('Validated', 'info', 'shield-check') }}</div>
-                        <div class="mt-3 grid grid-cols-2 gap-2">
-                            <div class="{{ page_hero.context_metric_card_classes() }}"><div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="check-square" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">Selected</p></div><p class="mt-1.5 text-sm font-semibold text-brand-foreground" x-text="selectedCount"></p><p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Existing TLS Secrets</p></div>
-                            <div class="{{ page_hero.context_metric_card_classes() }}"><div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="scan-search" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">Guardrail</p></div><p class="mt-1.5 text-sm font-semibold text-brand-foreground">Preview first</p><p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Certificate/key pair validated</p></div>
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Update posture</p>
+                                <h2 class="mt-1 text-base font-semibold text-brand-foreground">Controlled certificate replacement</h2>
+                            </div>
+                            {{ table_label.status_label('Validated', 'info', 'shield-check') }}
                         </div>
                         <div class="mt-3 grid grid-cols-2 gap-2">
-                            <button type="button" hx-post="{{ url_for('governance.tls_certificates_bulk_preview') }}" hx-include="#tls-secret-update-form" hx-encoding="multipart/form-data" hx-target="#tls-secret-update-feedback" hx-swap="innerHTML" class="{{ page_hero.context_action_classes() }}"><i data-lucide="shield-check" class="h-4 w-4"></i>Validate Selected</button>
-                            <button type="button" @click="updateModal = true" class="{{ page_hero.context_action_classes() }}"><i data-lucide="upload-cloud" class="h-4 w-4"></i>Update Selected</button>
+                            <div class="{{ page_hero.context_metric_card_classes() }}">
+                                <div class="flex items-center gap-2 text-brand-foreground">
+                                    <i data-lucide="check-square" class="h-3.5 w-3.5"></i>
+                                    <p class="text-[11px] font-semibold">Selected</p>
+                                </div>
+                                <p class="mt-1.5 text-sm font-semibold text-brand-foreground"
+                                   x-text="selectedCount"></p>
+                                <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Existing TLS Secrets</p>
+                            </div>
+                            <div class="{{ page_hero.context_metric_card_classes() }}">
+                                <div class="flex items-center gap-2 text-brand-foreground">
+                                    <i data-lucide="scan-search" class="h-3.5 w-3.5"></i>
+                                    <p class="text-[11px] font-semibold">Guardrail</p>
+                                </div>
+                                <p class="mt-1.5 text-sm font-semibold text-brand-foreground">Preview first</p>
+                                <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Certificate/key pair validated</p>
+                            </div>
+                        </div>
+                        <div class="mt-3 grid grid-cols-2 gap-2">
+                            <button type="button"
+                                    hx-post="{{ url_for('governance.tls_certificates_bulk_preview') }}"
+                                    hx-include="#tls-secret-update-form"
+                                    hx-encoding="multipart/form-data"
+                                    hx-target="#tls-secret-update-feedback"
+                                    hx-swap="innerHTML"
+                                    class="{{ page_hero.context_action_classes() }}"><i data-lucide="shield-check" class="h-4 w-4"></i>Validate Selected</button>
+                            <button type="button"
+                                    @click="updateModal = true"
+                                    class="{{ page_hero.context_action_classes() }}"><i data-lucide="upload-cloud" class="h-4 w-4"></i>Update Selected</button>
                         </div>
                     </div>
                 </aside>
@@ -87,8 +117,7 @@
                                             <p class="mt-3 truncate text-sm font-medium text-content-secondary"
                                                x-text="crtFileName"></p>
                                         </div>
-                                        <i data-lucide="file-text"
-                                           class="h-5 w-5 shrink-0 text-kaori-primary"></i>
+                                        <i data-lucide="file-text" class="h-5 w-5 shrink-0 text-kaori-primary"></i>
                                         <input required
                                                type="file"
                                                name="tls_crt_file"
@@ -122,8 +151,7 @@
                                             <p class="mt-3 truncate text-sm font-medium text-content-secondary"
                                                x-text="keyFileName"></p>
                                         </div>
-                                        <i data-lucide="file-key-2"
-                                           class="h-5 w-5 shrink-0 text-kaori-primary"></i>
+                                        <i data-lucide="file-key-2" class="h-5 w-5 shrink-0 text-kaori-primary"></i>
                                         <input required
                                                type="file"
                                                name="tls_key_file"
@@ -165,8 +193,7 @@
                     <h3 class="text-lg font-semibold text-content-primary">Update selected TLS Secrets</h3>
                     <p class="mt-2 text-sm leading-6 text-content-muted">
                         Apply the uploaded certificate and private key pair to
-                        <span class="font-semibold text-content-primary"
-                              x-text="selectedCount"></span>
+                        <span class="font-semibold text-content-primary" x-text="selectedCount"></span>
                         selected TLS Secret<span x-show="selectedCount !== 1">s</span>?
                     </p>
                     <div class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-500/20 dark:bg-amber-500/10">

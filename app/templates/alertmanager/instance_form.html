@@ -14,26 +14,25 @@
 {% block dashboard_content %}
     {% set submitted_form = draft_form if draft_form is defined else none %}
     {% set current_auth_type = instance.auth_type if instance else (submitted_form.auth_type if submitted_form else 'none') %}
-    {% set field_classes = 'h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20' %}
-    {% set textarea_classes = 'min-h-24 w-full resize-y rounded-lg border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-medium leading-6 text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20' %}
+    {% set field_classes = "h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20" %}
+    {% set textarea_classes = "min-h-24 w-full resize-y rounded-lg border border-outline-default bg-surface-card px-3.5 py-3 text-sm font-medium leading-6 text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20" %}
     {% set scope_type_labels = {
-        'kubernetes_cluster': 'Managed cluster',
-        'server': 'Infrastructure asset',
-        'server_group': 'Infrastructure asset group',
-        'hci_environment': 'Platform environment',
-        'storage_service': 'Infrastructure service',
-        'global': 'Global operational scope'
+        "kubernetes_cluster": "Managed cluster",
+        "server": "Infrastructure asset",
+        "server_group": "Infrastructure asset group",
+        "hci_environment": "Platform environment",
+        "storage_service": "Infrastructure service",
+        "global": "Global operational scope"
     } %}
-    <div id="alertmanager-registration-workspace" class="kaori-integration-semantic space-y-6">
+    <div id="alertmanager-registration-workspace"
+         class="kaori-integration-semantic space-y-6">
         {% set hero_readiness = (instance.readiness_status or 'validation_required') if instance else 'draft' %}
         {% set source_posture = 'Ready' if hero_readiness == 'ready' else ('Attention' if hero_readiness in ['degraded', 'blocked'] else ('Configured' if instance else 'Draft')) %}
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('siren', 'Alertmanager Integration', 'server-cog') %}
-                        <h1 class="{{ page_hero.title_classes() }}">
-                            {{ instance.name if instance else 'Register Alertmanager Instance' }}
-                        </h1>
+                        <h1 class="{{ page_hero.title_classes() }}">{{ instance.name if instance else 'Register Alertmanager Instance' }}</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">
                             {% if instance %}
                                 Manage connection settings, validation, runtime health, and scope bindings.
@@ -43,7 +42,7 @@
                         </p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {% if instance %}
-                                {{ page_hero.meta_label('shield-check', hero_readiness|replace('_', ' ')|title) }}
+                                {{ page_hero.meta_label('shield-check', hero_readiness|replace('_', ' ') |title) }}
                                 {{ page_hero.meta_label('link-2', (bindings|length|string) ~ ' Scope Bindings') }}
                             {% else %}
                                 {{ page_hero.meta_label('file-pen-line', 'Draft Connection') }}
@@ -52,17 +51,16 @@
                         </div>
                     {% endcall %}
                 </div>
-
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="Alertmanager registration posture">
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="Alertmanager registration posture">
                     <div class="{{ page_hero.context_panel_classes() }}">
                         <div class="flex items-start justify-between gap-4">
                             <div>
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">{{ 'Connection Posture' if instance else 'Registration Posture' }}</p>
                                 <h2 class="{{ page_hero.context_panel_title_classes() }}">{{ 'Readiness & Scope Coverage' if instance else 'Pre-save Requirements' }}</h2>
                             </div>
-                            {{ status_badge('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else ('validation_required' if source_posture == 'Configured' else 'not_configured')), source_posture) }}
+                            {{ status_badge('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else ('validation_required' if source_posture == 'Configured' else 'not_configured') ), source_posture) }}
                         </div>
-
                         {% if instance %}
                             <div class="mt-4 grid grid-cols-2 gap-2">
                                 <div class="{{ page_hero.context_metric_card_classes() }}">
@@ -70,7 +68,7 @@
                                         <i data-lucide="shield-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
                                         <p class="text-[11px] font-semibold">Readiness</p>
                                     </div>
-                                    <p class="mt-1.5 truncate text-sm font-semibold leading-5 text-brand-foreground">{{ hero_readiness|replace('_', ' ')|title }}</p>
+                                    <p class="mt-1.5 truncate text-sm font-semibold leading-5 text-brand-foreground">{{ hero_readiness|replace('_', ' ') |title }}</p>
                                     <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Established by Full Validation</p>
                                 </div>
                                 <div class="{{ page_hero.context_metric_card_classes() }}">
@@ -131,12 +129,12 @@
                 </aside>
             </div>
         </section>
-
         {% if instance %}
             {% include "alertmanager/partials/_runtime_panel.html" %}
-            {% with runtime_history_id='alertmanager-runtime-history', runtime_history_loading_id='alertmanager-history-loading', runtime_history_url=url_for('alertmanager.runtime_history', instance_id=instance.id), provider_label='Alertmanager' %}{% include 'integrations/partials/_runtime_history.html' %}{% endwith %}
+            {% with runtime_history_id='alertmanager-runtime-history', runtime_history_loading_id='alertmanager-history-loading', runtime_history_url=url_for('alertmanager.runtime_history', instance_id=instance.id), provider_label='Alertmanager' %}
+                {% include 'integrations/partials/_runtime_history.html' %}
+            {% endwith %}
         {% endif %}
-
         <div class="grid gap-5 xl:grid-cols-12 xl:items-start">
             <form id="alertmanager-instance-form"
                   method="post"
@@ -147,25 +145,15 @@
                   hx-swap="outerHTML"
                   hx-disabled-elt="button[type='submit']"
                   class="xl:col-span-8"
-                  x-data="{
-                      authType: '{{ current_auth_type }}',
-                      connectionVerified: {{ 'true' if registration_proof is defined and registration_proof else 'false' }},
-                      invalidateConnectionTest(event) {
-                          const fieldName = event.target?.name || '';
-                          if (['csrf_token', 'connection_test_proof'].includes(fieldName)) return;
-                          this.connectionVerified = false;
-                          this.$refs.connectionProof.value = '';
-                      },
-                      applyConnectionTest(event) {
-                          this.connectionVerified = event.detail?.connected === true;
-                          this.$refs.connectionProof.value = event.detail?.proof || '';
-                      }
-                  }"
+                  x-data="{ authType: '{{ current_auth_type }}', connectionVerified: {{ 'true' if registration_proof is defined and registration_proof else 'false' }}, invalidateConnectionTest(event) { const fieldName = event.target?.name || ''; if (['csrf_token', 'connection_test_proof'].includes(fieldName)) return; this.connectionVerified = false; this.$refs.connectionProof.value = ''; }, applyConnectionTest(event) { this.connectionVerified = event.detail?.connected === true; this.$refs.connectionProof.value = event.detail?.proof || ''; } }"
                   x-on:input.capture="invalidateConnectionTest($event)"
                   x-on:change.capture="invalidateConnectionTest($event)"
                   x-on:alertmanager-connection-tested.window="applyConnectionTest($event)">
                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                <input x-ref="connectionProof" type="hidden" name="connection_test_proof" value="{{ registration_proof if registration_proof is defined and registration_proof else '' }}">
+                <input x-ref="connectionProof"
+                       type="hidden"
+                       name="connection_test_proof"
+                       value="{{ registration_proof if registration_proof is defined and registration_proof else '' }}">
                 {% if initial_cluster %}<input type="hidden" name="cluster_id" value="{{ initial_cluster.id }}">{% endif %}
                 <section class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                     <header class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
@@ -177,12 +165,12 @@
                             <p class="mt-0.5 text-xs leading-5 text-content-muted">Connection identity, endpoint access, security controls, and operational availability.</p>
                         </div>
                     </header>
-
-
                     <div class="space-y-5 p-5">
                         <section class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
                             <div class="mb-4 flex items-start gap-3">
-                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="id-card" class="h-4 w-4"></i></div>
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                    <i data-lucide="id-card" class="h-4 w-4"></i>
+                                </div>
                                 <div>
                                     <h3 class="text-sm font-semibold text-content-primary">Connection Identity</h3>
                                     <p class="mt-0.5 text-xs leading-5 text-content-muted">A reusable KAORI identity for this Alertmanager endpoint, independent from the scopes that use it.</p>
@@ -190,16 +178,26 @@
                             </div>
                             <div class="grid gap-4 lg:grid-cols-2">
                                 <div>
-                                    <label for="alertmanager-name" class="mb-1.5 block text-sm font-semibold text-content-primary">Instance Name</label>
-                                    <input id="alertmanager-name" name="name" required value="{{ instance.name if instance else (submitted_form.name if submitted_form else (initial_cluster.name ~ ' Alertmanager' if initial_cluster else '')) }}" placeholder="Central Alertmanager" class="{{ field_classes }}">
+                                    <label for="alertmanager-name"
+                                           class="mb-1.5 block text-sm font-semibold text-content-primary">Instance Name</label>
+                                    <input id="alertmanager-name"
+                                           name="name"
+                                           required
+                                           value="{{ instance.name if instance else (submitted_form.name if submitted_form else (initial_cluster.name ~ ' Alertmanager' if initial_cluster else '')) }}"
+                                           placeholder="Central Alertmanager"
+                                           class="{{ field_classes }}">
                                     <p class="mt-1.5 text-xs leading-5 text-content-muted">Use a stable operational name that remains meaningful across multiple bindings.</p>
                                 </div>
                                 <div>
-                                    <label for="alertmanager-deployment-type" class="mb-1.5 block text-sm font-semibold text-content-primary">Connection Type</label>
-                                    <select id="alertmanager-deployment-type" name="deployment_type" class="{{ field_classes }}">
+                                    <label for="alertmanager-deployment-type"
+                                           class="mb-1.5 block text-sm font-semibold text-content-primary">Connection Type</label>
+                                    <select id="alertmanager-deployment-type"
+                                            name="deployment_type"
+                                            class="{{ field_classes }}">
                                         {% set selected_deployment = instance.deployment_type if instance else (submitted_form.deployment_type if submitted_form else ('cluster_managed' if initial_cluster else 'external_managed')) %}
                                         {% for value, label in [('external_managed','Externally managed'),('standalone','Standalone'),('shared','Shared service'),('cluster_managed','Managed for a specific scope')] %}
-                                            <option value="{{ value }}" {% if selected_deployment == value %}selected{% endif %}>{{ label }}</option>
+                                            <option value="{{ value }}"
+                                                    {% if selected_deployment == value %}selected{% endif %}>{{ label }}</option>
                                         {% endfor %}
                                     </select>
                                     <div class="mt-2 rounded-lg border border-brand-outline bg-kaori-soft px-3 py-2.5">
@@ -208,11 +206,15 @@
                                 </div>
                             </div>
                             <div class="mt-4">
-                                <label for="alertmanager-description" class="mb-1.5 block text-sm font-semibold text-content-primary">Description</label>
-                                <textarea id="alertmanager-description" name="description" rows="3" placeholder="Operational ownership, responsibility, and intended usage." class="{{ textarea_classes }}">{{ instance.description if instance and instance.description else (submitted_form.description if submitted_form and submitted_form.description else '') }}</textarea>
+                                <label for="alertmanager-description"
+                                       class="mb-1.5 block text-sm font-semibold text-content-primary">Description</label>
+                                <textarea id="alertmanager-description"
+                                          name="description"
+                                          rows="3"
+                                          placeholder="Operational ownership, responsibility, and intended usage."
+                                          class="{{ textarea_classes }}">{{ instance.description if instance and instance.description else (submitted_form.description if submitted_form and submitted_form.description else '') }}</textarea>
                             </div>
                         </section>
-
                         <section class="relative overflow-hidden rounded-lg border border-outline-subtle bg-surface-elevated">
                             {% call connection_validation_header.render(
                                 'Endpoint & Access',
@@ -220,7 +222,7 @@
                                 icon='network',
                                 loading_id='alertmanager-connection-test-loading',
                                 loading_label='Testing Alertmanager connection'
-                            ) %}
+                                ) %}
                                 {% if not instance %}
                                     <button type="button"
                                             hx-post="{{ url_for('alertmanager.test_new_instance_connection') }}"
@@ -231,52 +233,94 @@
                                             hx-disabled-elt="this"
                                             x-on:click="const form = $el.closest('form'); if (!form.reportValidity()) { $event.preventDefault(); $event.stopImmediatePropagation(); }"
                                             class="group inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-70">
-                                        <i data-lucide="plug-zap" class="h-4 w-4 group-[.htmx-request]:animate-pulse"></i>
+                                        <i data-lucide="plug-zap"
+                                           class="h-4 w-4 group-[.htmx-request]:animate-pulse"></i>
                                         Test Connection
                                     </button>
                                 {% endif %}
                             {% endcall %}
                             <div class="p-4">
-                            <div>
-                                <label for="alertmanager-endpoint" class="mb-1.5 block text-sm font-semibold text-content-primary">Endpoint URL</label>
-                                <input id="alertmanager-endpoint" type="url" name="endpoint" required value="{{ instance.endpoint if instance else (submitted_form.endpoint if submitted_form else '') }}" placeholder="https://alertmanager.example.internal:9093" class="{{ field_classes }}">
-                                <p class="mt-1.5 text-xs leading-5 text-content-muted">Use the base URL reachable from the KAORI runtime. Do not append <span class="font-medium text-kaori-primary">/api/v2</span> or embed credentials in the URL.</p>
-                            </div>
-                            <div class="mt-4 grid gap-4 lg:grid-cols-2">
                                 <div>
-                                    <label for="alertmanager-auth-type" class="mb-1.5 block text-sm font-semibold text-content-primary">Authentication</label>
-                                    <select id="alertmanager-auth-type" name="auth_type" x-on:change="authType = $event.target.value" class="{{ field_classes }}">
-                                        {% for value, label in [('none','No authentication'),('basic','Basic authentication'),('bearer','Bearer token')] %}
-                                            <option value="{{ value }}" {% if current_auth_type == value %}selected{% endif %}>{{ label }}</option>
-                                        {% endfor %}
-                                    </select>
+                                    <label for="alertmanager-endpoint"
+                                           class="mb-1.5 block text-sm font-semibold text-content-primary">Endpoint URL</label>
+                                    <input id="alertmanager-endpoint"
+                                           type="url"
+                                           name="endpoint"
+                                           required
+                                           value="{{ instance.endpoint if instance else (submitted_form.endpoint if submitted_form else '') }}"
+                                           placeholder="https://alertmanager.example.internal:9093"
+                                           class="{{ field_classes }}">
+                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Use the base URL reachable from the KAORI runtime. Do not append <span class="font-medium text-kaori-primary">/api/v2</span> or embed credentials in the URL.</p>
                                 </div>
-                                <div>
-                                    <label for="alertmanager-timeout" class="mb-1.5 block text-sm font-semibold text-content-primary">Request Timeout</label>
-                                    <input id="alertmanager-timeout" type="number" name="timeout" min="1" max="30" value="{{ instance.timeout if instance else (submitted_form.timeout if submitted_form else 5) }}" class="{{ field_classes }}">
-                                    <p class="mt-1.5 text-xs leading-5 text-content-muted">Allowed range: 1–30 seconds.</p>
+                                <div class="mt-4 grid gap-4 lg:grid-cols-2">
+                                    <div>
+                                        <label for="alertmanager-auth-type"
+                                               class="mb-1.5 block text-sm font-semibold text-content-primary">Authentication</label>
+                                        <select id="alertmanager-auth-type"
+                                                name="auth_type"
+                                                x-on:change="authType = $event.target.value"
+                                                class="{{ field_classes }}">
+                                            {% for value, label in [('none','No authentication'),('basic','Basic authentication'),('bearer','Bearer token')] %}
+                                                <option value="{{ value }}"
+                                                        {% if current_auth_type == value %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label for="alertmanager-timeout"
+                                               class="mb-1.5 block text-sm font-semibold text-content-primary">Request Timeout</label>
+                                        <input id="alertmanager-timeout"
+                                               type="number"
+                                               name="timeout"
+                                               min="1"
+                                               max="30"
+                                               value="{{ instance.timeout if instance else (submitted_form.timeout if submitted_form else 5) }}"
+                                               class="{{ field_classes }}">
+                                        <p class="mt-1.5 text-xs leading-5 text-content-muted">Allowed range: 1–30 seconds.</p>
+                                    </div>
                                 </div>
-                            </div>
-                            <div x-show="authType === 'basic'" x-cloak class="mt-4 grid gap-4 lg:grid-cols-2">
-                                <div>
-                                    <label for="alertmanager-username" class="mb-1.5 block text-sm font-semibold text-content-primary">Username</label>
-                                    <input id="alertmanager-username" name="username" x-bind:required="authType === 'basic'" value="{{ instance.username if instance and instance.username else (submitted_form.username if submitted_form and submitted_form.username else '') }}" class="{{ field_classes }}">
+                                <div x-show="authType === 'basic'"
+                                     x-cloak
+                                     class="mt-4 grid gap-4 lg:grid-cols-2">
+                                    <div>
+                                        <label for="alertmanager-username"
+                                               class="mb-1.5 block text-sm font-semibold text-content-primary">Username</label>
+                                        <input id="alertmanager-username"
+                                               name="username"
+                                               x-bind:required="authType === 'basic'"
+                                               value="{{ instance.username if instance and instance.username else (submitted_form.username if submitted_form and submitted_form.username else '') }}"
+                                               class="{{ field_classes }}">
+                                    </div>
+                                    <div>
+                                        <label for="alertmanager-password"
+                                               class="mb-1.5 block text-sm font-semibold text-content-primary">Password</label>
+                                        <input id="alertmanager-password"
+                                               type="password"
+                                               name="password"
+                                               autocomplete="new-password"
+                                               x-bind:required="authType === 'basic' && {{ 'false' if instance and instance.password else 'true' }}"
+                                               placeholder="{{ 'Leave blank to keep the current password' if instance and instance.password else 'Enter password' }}"
+                                               class="{{ field_classes }}">
+                                    </div>
                                 </div>
-                                <div>
-                                    <label for="alertmanager-password" class="mb-1.5 block text-sm font-semibold text-content-primary">Password</label>
-                                    <input id="alertmanager-password" type="password" name="password" autocomplete="new-password" x-bind:required="authType === 'basic' && {{ 'false' if instance and instance.password else 'true' }}" placeholder="{{ 'Leave blank to keep the current password' if instance and instance.password else 'Enter password' }}" class="{{ field_classes }}">
+                                <div x-show="authType === 'bearer'" x-cloak class="mt-4">
+                                    <label for="alertmanager-bearer-token"
+                                           class="mb-1.5 block text-sm font-semibold text-content-primary">Bearer Token</label>
+                                    <input id="alertmanager-bearer-token"
+                                           type="password"
+                                           name="bearer_token"
+                                           autocomplete="new-password"
+                                           x-bind:required="authType === 'bearer' && {{ 'false' if instance and instance.bearer_token else 'true' }}"
+                                           placeholder="{{ 'Leave blank to keep the current token' if instance and instance.bearer_token else 'Enter bearer token' }}"
+                                           class="{{ field_classes }}">
                                 </div>
-                            </div>
-                            <div x-show="authType === 'bearer'" x-cloak class="mt-4">
-                                <label for="alertmanager-bearer-token" class="mb-1.5 block text-sm font-semibold text-content-primary">Bearer Token</label>
-                                <input id="alertmanager-bearer-token" type="password" name="bearer_token" autocomplete="new-password" x-bind:required="authType === 'bearer' && {{ 'false' if instance and instance.bearer_token else 'true' }}" placeholder="{{ 'Leave blank to keep the current token' if instance and instance.bearer_token else 'Enter bearer token' }}" class="{{ field_classes }}">
-                            </div>
                             </div>
                         </section>
-
                         <section class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
                             <div class="mb-4 flex items-start gap-3">
-                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="shield-check" class="h-4 w-4"></i></div>
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                    <i data-lucide="shield-check" class="h-4 w-4"></i>
+                                </div>
                                 <div>
                                     <h3 class="text-sm font-semibold text-content-primary">Security &amp; Operational Controls</h3>
                                     <p class="mt-0.5 text-xs leading-5 text-content-muted">Control certificate verification and whether this connection is eligible for scope resolution.</p>
@@ -286,27 +330,35 @@
                                 {% call operational_toggle.render(
                                     'Verify TLS Certificate',
                                     'Reject untrusted or mismatched certificates.'
-                                ) %}
-                                    <input type="checkbox" name="verify_ssl" value="1" {% if (instance and instance.verify_ssl) or (not instance and (not submitted_form or submitted_form.verify_ssl)) %}checked{% endif %} class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-2 focus:ring-outline-focus/30 focus:ring-offset-2">
+                                    ) %}
+                                    <input type="checkbox"
+                                           name="verify_ssl"
+                                           value="1"
+                                           {% if (instance and instance.verify_ssl) or (not instance and (not submitted_form or submitted_form.verify_ssl)) %}checked{% endif %}
+                                           class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-2 focus:ring-outline-focus/30 focus:ring-offset-2">
                                 {% endcall %}
                                 {% call operational_toggle.render(
                                     'Allow KAORI to Use This Connection',
                                     'Disabled connections remain stored but are excluded from scope resolution.'
-                                ) %}
-                                    <input type="checkbox" name="enabled" value="1" {% if (instance and instance.enabled) or (not instance and (not submitted_form or submitted_form.enabled)) %}checked{% endif %} class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-2 focus:ring-outline-focus/30 focus:ring-offset-2">
+                                    ) %}
+                                    <input type="checkbox"
+                                           name="enabled"
+                                           value="1"
+                                           {% if (instance and instance.enabled) or (not instance and (not submitted_form or submitted_form.enabled)) %}checked{% endif %}
+                                           class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-2 focus:ring-outline-focus/30 focus:ring-offset-2">
                                 {% endcall %}
                             </div>
                         </section>
-
                         {% if not instance %}
-                            <div id="alertmanager-connection-test-result" class="hidden" aria-hidden="true"></div>
+                            <div id="alertmanager-connection-test-result"
+                                 class="hidden"
+                                 aria-hidden="true"></div>
                         {% endif %}
                     </div>
-
                     {% call form_action_bar.render(
                         'Save changes, then run Full Validation.' if instance else 'Register after Test Connection succeeds.',
                         aria_label='Alertmanager Instance Actions'
-                    ) %}
+                        ) %}
                         <button type="submit"
                                 data-operation-submit
                                 data-loading-label="{{ 'Updating instance...' if instance else 'Registering instance...' }}"
@@ -318,91 +370,63 @@
                     {% endcall %}
                 </section>
             </form>
-
             <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
                 {% if not instance %}
-                    {% set alertmanager_registration_flow = [
-                        ('Register Connection Identity', 'KAORI stores one reusable Alertmanager connection containing the endpoint, access method, TLS behavior, ownership context, and lifecycle state.'),
-                        ('Verify Reachability', 'Test Connection confirms the submitted endpoint can be reached with the selected authentication and TLS settings before KAORI creates the record.'),
-                        ('Validate Capabilities', 'Open the registered instance and run Full Validation to discover supported APIs, compatibility profile, evidence, and readiness.'),
-                        ('Assign Operational Scope', 'Create governed bindings that determine where the source is eligible and whether it acts as a primary, secondary, or fallback connection.')
-                    ] %}
-                    {{ info_flow.render(
-                        'Alertmanager Registration Flow',
-                        'How a connection becomes an eligible operational source in KAORI.',
-                        alertmanager_registration_flow,
-                        icon='waypoints',
-                        note='Registration creates the reusable connection identity only. Capability readiness and scope eligibility are established after registration.',
-                        note_icon='circle-alert',
-                        open_by_default=true
+                    {% set alertmanager_registration_flow = [('Register Connection Identity', 'KAORI stores one reusable Alertmanager connection containing the endpoint, access method, TLS behavior, ownership context, and lifecycle state.'), ('Verify Reachability', 'Test Connection confirms the submitted endpoint can be reached with the selected authentication and TLS settings before KAORI creates the record.'), ('Validate Capabilities', 'Open the registered instance and run Full Validation to discover supported APIs, compatibility profile, evidence, and readiness.'), ('Assign Operational Scope', 'Create governed bindings that determine where the source is eligible and whether it acts as a primary, secondary, or fallback connection.')] %}
+                    {{ info_flow.render('Alertmanager Registration Flow',
+                                        'How a connection becomes an eligible operational source in KAORI.',
+                                        alertmanager_registration_flow,
+                                        icon='waypoints',
+                                        note='Registration creates the reusable connection identity only. Capability readiness and scope eligibility are established after registration.',
+                                        note_icon='circle-alert',
+                                        open_by_default=true) }}
+                    {{ related_page_card.render('Alert Intelligence',
+                                        'This Alertmanager connection supplies governed alert lifecycle context to KAORI Alert Intelligence.',
+                                        url_for('intelligence.alert_intelligence') ,
+                    'Open Alert Intelligence',
+                    icon='brain-circuit',
+                    eyebrow='Related Intelligence Workspace',
+                    boundary='Alertmanager remains authoritative for routing, grouping, inhibition, silences, and notification delivery.'
                     ) }}
-
-                    {{ related_page_card.render(
-                        'Alert Intelligence',
-                        'This Alertmanager connection supplies governed alert lifecycle context to KAORI Alert Intelligence.',
-                        url_for('intelligence.alert_intelligence'),
-                        'Open Alert Intelligence',
-                        icon='brain-circuit',
-                        eyebrow='Related Intelligence Workspace',
-                        boundary='Alertmanager remains authoritative for routing, grouping, inhibition, silences, and notification delivery.'
-                    ) }}
-
-                    {% set connection_type_items = [
-                        ('building-2', 'Externally Managed', 'Use when another team, service owner, or platform manages the Alertmanager lifecycle and KAORI consumes the exposed connection.'),
-                        ('box', 'Standalone', 'Use for a dedicated, independently operated Alertmanager that is not presented as a shared organizational service.'),
-                        ('network', 'Shared Service', 'Use for a centralized Alertmanager intended to serve multiple infrastructure assets, services, domains, or workflows through governed bindings.'),
-                        ('target', 'Managed for a Specific Scope', 'Use when ownership and lifecycle align to one primary operational scope. Governed bindings may still extend eligibility.')
-                    ] %}
-                    {{ information_guide_card.render(
-                        'Connection Type Guide',
-                        'Compare the ownership and deployment models for this endpoint.',
-                        connection_type_items,
-                        icon='boxes'
-                    ) }}
-
-                    {% set connection_contract_items = [
-                        ('fingerprint', 'Connection Identity', 'The canonical KAORI record for the Alertmanager connection. It is registered once and referenced by bindings.'),
-                        ('file-check-2', 'Connection Contract', 'The base URL, authentication, request timeout, TLS verification, and API v2 status reachability used to access the source.'),
-                        ('badge-check', 'Capability Contract', 'Established only by Full Validation. It records supported APIs, detected version or profile, and readiness.'),
-                        ('link-2', 'Scope Bindings', 'Determine where the source is eligible and how resolver priority selects primary, secondary, or fallback connections.')
-                    ] %}
-                    {{ information_guide_card.render(
-                        'Connection Identity & Contract',
-                        'Reference the records that define source identity, readiness, and eligibility.',
-                        connection_contract_items,
-                        icon='file-check-2'
-                    ) }}
-
-                    {% set after_registration_items = [
-                        ('Open the Registered Instance', 'and run Full Validation to establish capability and readiness status.'),
-                        ('Review Diagnostics', 'when readiness is degraded or blocked, then correct endpoint, access, or capability issues.'),
-                        ('Create Scope Bindings', 'and assign the connection role and priority for each operational context.'),
-                        ('Keep the Connection Enabled', 'when KAORI should consider it during source resolution; disable it temporarily during maintenance.')
-                    ] %}
-                    {{ context_guidance_card.render(
-                        'After Registration',
-                        'Complete these steps before the source is used operationally.',
-                        after_registration_items,
-                        icon='list-checks'
-                    ) }}
+                    {% set connection_type_items = [('building-2', 'Externally Managed', 'Use when another team, service owner, or platform manages the Alertmanager lifecycle and KAORI consumes the exposed connection.'), ('box', 'Standalone', 'Use for a dedicated, independently operated Alertmanager that is not presented as a shared organizational service.'), ('network', 'Shared Service', 'Use for a centralized Alertmanager intended to serve multiple infrastructure assets, services, domains, or workflows through governed bindings.'), ('target', 'Managed for a Specific Scope', 'Use when ownership and lifecycle align to one primary operational scope. Governed bindings may still extend eligibility.')] %}
+                    {{ information_guide_card.render('Connection Type Guide',
+                                        'Compare the ownership and deployment models for this endpoint.',
+                                        connection_type_items,
+                                        icon='boxes') }}
+                    {% set connection_contract_items = [('fingerprint', 'Connection Identity', 'The canonical KAORI record for the Alertmanager connection. It is registered once and referenced by bindings.'), ('file-check-2', 'Connection Contract', 'The base URL, authentication, request timeout, TLS verification, and API v2 status reachability used to access the source.'), ('badge-check', 'Capability Contract', 'Established only by Full Validation. It records supported APIs, detected version or profile, and readiness.'), ('link-2', 'Scope Bindings', 'Determine where the source is eligible and how resolver priority selects primary, secondary, or fallback connections.')] %}
+                    {{ information_guide_card.render('Connection Identity & Contract',
+                                        'Reference the records that define source identity, readiness, and eligibility.',
+                                        connection_contract_items,
+                                        icon='file-check-2') }}
+                    {% set after_registration_items = [('Open the Registered Instance', 'and run Full Validation to establish capability and readiness status.'), ('Review Diagnostics', 'when readiness is degraded or blocked, then correct endpoint, access, or capability issues.'), ('Create Scope Bindings', 'and assign the connection role and priority for each operational context.'), ('Keep the Connection Enabled', 'when KAORI should consider it during source resolution; disable it temporarily during maintenance.')] %}
+                    {{ context_guidance_card.render('After Registration',
+                                        'Complete these steps before the source is used operationally.',
+                                        after_registration_items,
+                                        icon='list-checks') }}
                 {% else %}
-                    {% set connection_lifecycle_items = [
-                        ('Save', 'persists settings and resets readiness to Validation Required.'),
-                        ('Full Validation', 'rebuilds the capability profile and readiness state.'),
-                        ('Enabled', 'permits the resolver to select this source for its bound scopes.')
-                    ] %}
-                    {{ context_guidance_card.render(
-                        'Connection Lifecycle',
-                        'How configuration changes affect runtime use.',
-                        connection_lifecycle_items,
-                        icon='route'
-                    ) }}
+                    {% set connection_lifecycle_items = [('Save', 'persists settings and resets readiness to Validation Required.'), ('Full Validation', 'rebuilds the capability profile and readiness state.'), ('Enabled', 'permits the resolver to select this source for its bound scopes.')] %}
+                    {{ context_guidance_card.render('Connection Lifecycle',
+                                        'How configuration changes affect runtime use.',
+                                        connection_lifecycle_items,
+                                        icon='route') }}
                 {% endif %}
-
                 {% if initial_cluster %}
                     <section class="overflow-hidden rounded-xl border border-brand-outline bg-surface-card shadow-sm">
-                        <header class="border-b border-brand-outline bg-kaori-soft px-4 py-3.5"><div class="flex items-start gap-3"><div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary"><i data-lucide="boxes" class="h-4 w-4"></i></div><div><h2 class="text-sm font-semibold text-content-primary">Initial Scope Binding</h2><p class="mt-0.5 text-xs leading-5 text-content-muted">Created together with the connection.</p></div></div></header>
-                        <div class="p-4"><p class="text-sm font-semibold text-content-primary">{{ initial_cluster.name }}</p><p class="mt-1.5 text-xs leading-5 text-content-muted">After registration, this connection is assigned as the primary Alertmanager source for the selected managed cluster. Full Validation is still required before operational use.</p></div>
+                        <header class="border-b border-brand-outline bg-kaori-soft px-4 py-3.5">
+                            <div class="flex items-start gap-3">
+                                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary">
+                                    <i data-lucide="boxes" class="h-4 w-4"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-sm font-semibold text-content-primary">Initial Scope Binding</h2>
+                                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Created together with the connection.</p>
+                                </div>
+                            </div>
+                        </header>
+                        <div class="p-4">
+                            <p class="text-sm font-semibold text-content-primary">{{ initial_cluster.name }}</p>
+                            <p class="mt-1.5 text-xs leading-5 text-content-muted">After registration, this connection is assigned as the primary Alertmanager source for the selected managed cluster. Full Validation is still required before operational use.</p>
+                        </div>
                     </section>
                 {% endif %}
             </aside>
@@ -423,15 +447,23 @@
                         <div class="overflow-x-auto">
                             <table class="min-w-full text-left text-sm">
                                 <thead class="bg-surface-hover text-xs font-semibold text-content-tertiary">
-                                    <tr><th class="px-4 py-3">Capability</th><th class="px-4 py-3">Category</th><th class="px-4 py-3">Required</th><th class="px-4 py-3">Status</th></tr>
+                                    <tr>
+                                        <th class="px-4 py-3">Capability</th>
+                                        <th class="px-4 py-3">Category</th>
+                                        <th class="px-4 py-3">Required</th>
+                                        <th class="px-4 py-3">Status</th>
+                                    </tr>
                                 </thead>
                                 <tbody class="divide-y divide-outline-subtle">
                                     {% for row in capability_rows %}
                                         <tr>
-                                            <td class="px-4 py-3"><p class="font-bold text-content-primary">{{ row.label }}</p><p class="mt-1 text-xs text-content-secondary">{{ row.description }}</p></td>
+                                            <td class="px-4 py-3">
+                                                <p class="font-bold text-content-primary">{{ row.label }}</p>
+                                                <p class="mt-1 text-xs text-content-secondary">{{ row.description }}</p>
+                                            </td>
                                             <td class="px-4 py-3 text-content-secondary">{{ row.category|title }}</td>
                                             <td class="px-4 py-3 text-content-secondary">{{ 'Yes' if row.required else 'No' }}</td>
-                                            <td class="px-4 py-3">{{ status_badge('ready' if row.available else ('blocked' if row.required else 'not_configured')) }}</td>
+                                            <td class="px-4 py-3">{{ status_badge('ready' if row.available else ('blocked' if row.required else 'not_configured') ) }}</td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>
@@ -446,14 +478,22 @@
                         </div>
                         {% for row in module_readiness_rows %}
                             <div class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
-                                <div class="flex items-center justify-between gap-3"><p class="font-bold text-content-primary">{{ row.label }}</p>{{ status_badge(row.status) }}</div>
-                                {% if row.missing_required %}<p class="mt-2 text-xs leading-5 text-content-secondary">Missing required: {{ row.missing_required|join(', ') }}</p>{% elif row.missing_optional %}<p class="mt-2 text-xs leading-5 text-content-secondary">Optional metadata not observed: {{ row.missing_optional|join(', ') }}</p>{% else %}<p class="mt-2 text-xs leading-5 text-content-secondary">All declared requirements are available.</p>{% endif %}
+                                <div class="flex items-center justify-between gap-3">
+                                    <p class="font-bold text-content-primary">{{ row.label }}</p>
+                                    {{ status_badge(row.status) }}
+                                </div>
+                                {% if row.missing_required %}
+                                    <p class="mt-2 text-xs leading-5 text-content-secondary">Missing required: {{ row.missing_required|join(", ") }}</p>
+                                {% elif row.missing_optional %}
+                                    <p class="mt-2 text-xs leading-5 text-content-secondary">Optional metadata not observed: {{ row.missing_optional|join(", ") }}</p>
+                                {% else %}
+                                    <p class="mt-2 text-xs leading-5 text-content-secondary">All declared requirements are available.</p>
+                                {% endif %}
                             </div>
                         {% endfor %}
                     </div>
                 </div>
             </section>
-
             <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
                 <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                     <div class="flex items-start gap-3">
@@ -471,7 +511,7 @@
                                 <div>
                                     <div class="flex flex-wrap items-center gap-2">
                                         <p class="font-bold text-content-primary">{{ scope.scope_label }}</p>
-                                        {{ table_label.metadata_label(scope_type_labels.get(scope.scope_type, scope.scope_type_label), 'boxes') }}
+                                        {{ table_label.metadata_label(scope_type_labels.get(scope.scope_type, scope.scope_type_label) , 'boxes') }}
                                     </div>
                                     <p class="mt-1 text-[11px] text-content-tertiary">{{ scope.scope_type }}:{{ scope.scope_key }}</p>
                                 </div>
@@ -484,7 +524,7 @@
                                             <div>
                                                 <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">{{ consumer_label }}</p>
                                                 <p class="mt-2 font-bold text-content-primary">{{ resolution.selected_instance_name or 'No eligible source' }}</p>
-                                                <p class="mt-1 text-xs text-content-secondary">Requires {{ resolution.required_capabilities|join(', ') }}</p>
+                                                <p class="mt-1 text-xs text-content-secondary">Requires {{ resolution.required_capabilities|join(", ") }}</p>
                                             </div>
                                             {% if resolution.selected_instance_id %}
                                                 {% if resolution.current_instance_selected %}
@@ -506,7 +546,7 @@
                                                                 {% if candidate.is_current_instance %}{{ table_label.metadata_label('Current', 'server-cog') }}{% endif %}
                                                                 {% if candidate.is_selected %}{{ table_label.status_label('Selected', 'normal', 'circle-check') }}{% endif %}
                                                             </div>
-                                                            <p class="mt-1 text-[11px] text-content-secondary">{{ candidate.binding_role|title }} · Priority {{ candidate.priority }} · {{ candidate.operational_state|replace('_', ' ')|title }}</p>
+                                                            <p class="mt-1 text-[11px] text-content-secondary">{{ candidate.binding_role|title }} · Priority {{ candidate.priority }} · {{ candidate.operational_state|replace('_', ' ') |title }}</p>
                                                         </div>
                                                         {% if candidate.eligible %}
                                                             {{ table_label.status_label('Eligible', 'normal', 'circle-check') }}
@@ -516,7 +556,7 @@
                                                     </div>
                                                     <p class="mt-2 text-xs leading-5 text-content-secondary">{{ candidate.decision_reason }}</p>
                                                     {% if candidate.missing_capability_labels %}
-                                                        <p class="mt-2 text-xs font-semibold text-status-critical-text">Missing: {{ candidate.missing_capability_labels|join(', ') }}</p>
+                                                        <p class="mt-2 text-xs font-semibold text-status-critical-text">Missing: {{ candidate.missing_capability_labels|join(", ") }}</p>
                                                     {% endif %}
                                                 </div>
                                             {% else %}
@@ -535,7 +575,6 @@
                     {% endfor %}
                 </div>
             </section>
-
             <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
                 <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                     <div class="flex items-start gap-3">
@@ -564,7 +603,7 @@
                                         <tr>
                                             <td class="px-4 py-3">
                                                 <p class="font-bold text-content-primary">{{ row.scope_label }}</p>
-                                                <p class="mt-1 text-[11px] text-content-tertiary">{{ scope_type_labels.get(row.binding.asset_type, row.binding.asset_type|replace('_', ' ')|title) }} · {{ row.binding.asset_key }}</p>
+                                                <p class="mt-1 text-[11px] text-content-tertiary">{{ scope_type_labels.get(row.binding.asset_type, row.binding.asset_type|replace('_', ' ') |title) }} · {{ row.binding.asset_key }}</p>
                                             </td>
                                             <td class="px-4 py-3 text-content-secondary">{{ row.binding.binding_role|title }}</td>
                                             <td class="px-4 py-3 text-content-secondary">{{ row.binding.priority }}</td>
@@ -688,5 +727,5 @@
             {% include 'alertmanager/partials/_delete_confirmation_modal.html' %}
         {% endif %}
         {% include 'components/operation_feedback_oob.html' %}
-</div>
+    </div>
 {% endblock dashboard_content %}

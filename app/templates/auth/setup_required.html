@@ -1,109 +1,105 @@
 {% extends "layouts/auth.html" %}
 {% block title %}Database Setup Required · KAORI{% endblock title %}
 {% block content %}
-<main class="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface-page px-4 py-6 sm:px-6">
-    <div class="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-        <div class="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-kaori-soft opacity-80 blur-3xl"></div>
-        <div class="absolute -bottom-32 -right-20 h-96 w-96 rounded-full bg-kaori-soft opacity-70 blur-3xl"></div>
-    </div>
-
-    <section class="relative z-10 w-full max-w-3xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-xl shadow-black/10 dark:shadow-black/40"
-             aria-labelledby="setup-required-title">
-        <div class="border-b border-outline-default px-6 py-5 sm:px-8">
-            <div class="flex items-start gap-4">
-                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-kaori-border bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="database" class="h-5 w-5" aria-hidden="true"></i>
-                </div>
-                <div>
-                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-kaori-primary">KAORI Initialization</p>
-                    <h1 id="setup-required-title" class="mt-1 text-2xl font-bold text-content-primary">Database Setup Required</h1>
-                    <p class="mt-2 max-w-2xl text-sm leading-6 text-content-secondary">
-                        {% if readiness.setup_required %}
-                            KAORI can reach PostgreSQL, but the application schema has not been initialized yet.
-                        {% else %}
-                            KAORI cannot reach PostgreSQL. Check the database service and connection settings before continuing.
-                        {% endif %}
-                    </p>
+    <main class="relative flex min-h-screen items-center justify-center overflow-hidden bg-surface-page px-4 py-6 sm:px-6">
+        <div class="pointer-events-none absolute inset-0 overflow-hidden"
+             aria-hidden="true">
+            <div class="absolute -left-24 -top-24 h-72 w-72 rounded-full bg-kaori-soft opacity-80 blur-3xl"></div>
+            <div class="absolute -bottom-32 -right-20 h-96 w-96 rounded-full bg-kaori-soft opacity-70 blur-3xl"></div>
+        </div>
+        <section class="relative z-10 w-full max-w-3xl overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-xl shadow-black/10 dark:shadow-black/40"
+                 aria-labelledby="setup-required-title">
+            <div class="border-b border-outline-default px-6 py-5 sm:px-8">
+                <div class="flex items-start gap-4">
+                    <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-kaori-border bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="database" class="h-5 w-5" aria-hidden="true"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-[0.16em] text-kaori-primary">KAORI Initialization</p>
+                        <h1 id="setup-required-title"
+                            class="mt-1 text-2xl font-bold text-content-primary">Database Setup Required</h1>
+                        <p class="mt-2 max-w-2xl text-sm leading-6 text-content-secondary">
+                            {% if readiness.setup_required %}
+                                KAORI can reach PostgreSQL, but the application schema has not been initialized yet.
+                            {% else %}
+                                KAORI cannot reach PostgreSQL. Check the database service and connection settings before continuing.
+                            {% endif %}
+                        </p>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <div class="space-y-5 px-6 py-6 sm:px-8">
-            {% if readiness.setup_required %}
-                <div class="rounded-xl border border-status-info-border bg-status-info-soft px-4 py-4">
-                    <div class="flex gap-3">
-                        <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-status-info" aria-hidden="true"></i>
-                        <div>
-                            <p class="text-sm font-semibold text-content-primary">Run the initial KAORI database bootstrap</p>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary">
-                                Open the Dev Container terminal from the KAORI repository and run:
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-muted">
-                    <div class="flex items-center justify-between border-b border-outline-default px-4 py-3">
-                        <span class="text-xs font-semibold uppercase tracking-wide text-content-secondary">Development bootstrap</span>
-                        <span class="rounded-md border border-outline-default bg-surface-card px-2 py-1 text-[10px] font-semibold text-content-secondary">Terminal</span>
-                    </div>
-                    <pre class="overflow-x-auto px-4 py-4 text-sm leading-6 text-content-primary"><code>bash scripts/init_db.sh --bootstrap-admin</code></pre>
-                </div>
-
-                <details class="rounded-xl border border-outline-default bg-surface-card">
-                    <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-content-primary">Manual initialization commands</summary>
-                    <div class="border-t border-outline-default px-4 py-4">
-                        <pre class="overflow-x-auto rounded-lg bg-surface-muted px-4 py-3 text-sm leading-6 text-content-primary"><code>flask --app run:app db upgrade
-flask --app run:app seed-rbac</code></pre>
-                    </div>
-                </details>
-
-                <div class="rounded-xl border border-status-warning-border bg-status-warning-soft px-4 py-4">
-                    <p class="text-sm font-semibold text-content-primary">Encryption key requirement</p>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">
-                        Ensure <code class="rounded bg-surface-card px-1.5 py-0.5 text-xs">INTEGRATION_CREDENTIAL_KEY</code>
-                        is configured before running migration. Keep the same key after integration credentials are created.
-                    </p>
-                </div>
-
-                {% if readiness.missing_tables %}
-                    <details class="rounded-xl border border-outline-default bg-surface-card">
-                        <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-content-primary">Missing schema objects</summary>
-                        <div class="border-t border-outline-default px-4 py-4">
-                            <p class="text-sm leading-6 text-content-secondary">KAORI did not find:</p>
-                            <div class="mt-3 flex flex-wrap gap-2">
-                                {% for table in readiness.missing_tables %}
-                                    <code class="rounded-md border border-outline-default bg-surface-muted px-2 py-1 text-xs text-content-primary">{{ table }}</code>
-                                {% endfor %}
+            <div class="space-y-5 px-6 py-6 sm:px-8">
+                {% if readiness.setup_required %}
+                    <div class="rounded-xl border border-status-info-border bg-status-info-soft px-4 py-4">
+                        <div class="flex gap-3">
+                            <i data-lucide="info"
+                               class="mt-0.5 h-4 w-4 shrink-0 text-status-info"
+                               aria-hidden="true"></i>
+                            <div>
+                                <p class="text-sm font-semibold text-content-primary">Run the initial KAORI database bootstrap</p>
+                                <p class="mt-1 text-sm leading-6 text-content-secondary">
+                                    Open the Dev Container terminal from the KAORI repository and run:
+                                </p>
                             </div>
                         </div>
+                    </div>
+                    <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-muted">
+                        <div class="flex items-center justify-between border-b border-outline-default px-4 py-3">
+                            <span class="text-xs font-semibold uppercase tracking-wide text-content-secondary">Development bootstrap</span>
+                            <span class="rounded-md border border-outline-default bg-surface-card px-2 py-1 text-[10px] font-semibold text-content-secondary">Terminal</span>
+                        </div>
+                        <pre class="overflow-x-auto px-4 py-4 text-sm leading-6 text-content-primary"><code>bash scripts/init_db.sh --bootstrap-admin</code></pre>
+                    </div>
+                    <details class="rounded-xl border border-outline-default bg-surface-card">
+                        <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-content-primary">Manual initialization commands</summary>
+                        <div class="border-t border-outline-default px-4 py-4">
+                            <pre class="overflow-x-auto rounded-lg bg-surface-muted px-4 py-3 text-sm leading-6 text-content-primary"><code>flask --app run:app db upgrade
+flask --app run:app seed-rbac</code></pre>
+                        </div>
                     </details>
-                {% endif %}
-            {% else %}
-                <div class="rounded-xl border border-status-critical-border bg-status-critical-soft px-4 py-4">
-                    <p class="text-sm font-semibold text-content-primary">PostgreSQL is unavailable</p>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">
-                        Verify <code class="rounded bg-surface-card px-1.5 py-0.5 text-xs">DATABASE_URL</code>, start the database service,
-                        and confirm the PostgreSQL container is healthy.
-                    </p>
-                </div>
-
-                <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-muted">
-                    <div class="border-b border-outline-default px-4 py-3 text-xs font-semibold uppercase tracking-wide text-content-secondary">Development checks</div>
-                    <pre class="overflow-x-auto px-4 py-4 text-sm leading-6 text-content-primary"><code>docker compose ps
+                    <div class="rounded-xl border border-status-warning-border bg-status-warning-soft px-4 py-4">
+                        <p class="text-sm font-semibold text-content-primary">Encryption key requirement</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">
+                            Ensure <code class="rounded bg-surface-card px-1.5 py-0.5 text-xs">INTEGRATION_CREDENTIAL_KEY</code>
+                            is configured before running migration. Keep the same key after integration credentials are created.
+                        </p>
+                    </div>
+                    {% if readiness.missing_tables %}
+                        <details class="rounded-xl border border-outline-default bg-surface-card">
+                            <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-content-primary">Missing schema objects</summary>
+                            <div class="border-t border-outline-default px-4 py-4">
+                                <p class="text-sm leading-6 text-content-secondary">KAORI did not find:</p>
+                                <div class="mt-3 flex flex-wrap gap-2">
+                                    {% for table in readiness.missing_tables %}
+                                        <code class="rounded-md border border-outline-default bg-surface-muted px-2 py-1 text-xs text-content-primary">{{ table }}</code>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </details>
+                    {% endif %}
+                {% else %}
+                    <div class="rounded-xl border border-status-critical-border bg-status-critical-soft px-4 py-4">
+                        <p class="text-sm font-semibold text-content-primary">PostgreSQL is unavailable</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">
+                            Verify <code class="rounded bg-surface-card px-1.5 py-0.5 text-xs">DATABASE_URL</code>, start the database service,
+                            and confirm the PostgreSQL container is healthy.
+                        </p>
+                    </div>
+                    <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-muted">
+                        <div class="border-b border-outline-default px-4 py-3 text-xs font-semibold uppercase tracking-wide text-content-secondary">Development checks</div>
+                        <pre class="overflow-x-auto px-4 py-4 text-sm leading-6 text-content-primary"><code>docker compose ps
 pg_isready -h db -p 5432</code></pre>
+                    </div>
+                {% endif %}
+                <div class="flex flex-col gap-3 border-t border-outline-default pt-5 sm:flex-row sm:items-center sm:justify-between">
+                    <p class="text-xs leading-5 text-content-muted">No application data has been displayed or modified by this readiness check.</p>
+                    <a href="{{ url_for('auth.login') }}"
+                       class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-kaori-hover focus:outline-none focus:ring-2 focus:ring-kaori-accent focus:ring-offset-2">
+                        <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
+                        Retry Setup Check
+                    </a>
                 </div>
-            {% endif %}
-
-            <div class="flex flex-col gap-3 border-t border-outline-default pt-5 sm:flex-row sm:items-center sm:justify-between">
-                <p class="text-xs leading-5 text-content-muted">No application data has been displayed or modified by this readiness check.</p>
-                <a href="{{ url_for('auth.login') }}"
-                   class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-kaori-hover focus:outline-none focus:ring-2 focus:ring-kaori-accent focus:ring-offset-2">
-                    <i data-lucide="refresh-cw" class="h-4 w-4" aria-hidden="true"></i>
-                    Retry Setup Check
-                </a>
             </div>
-        </div>
-    </section>
-</main>
+        </section>
+    </main>
 {% endblock content %}

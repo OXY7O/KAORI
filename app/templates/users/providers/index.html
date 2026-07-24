@@ -5,15 +5,12 @@
     {% set enabled_count = providers|selectattr('enabled')|list|length %}
     {% set ldap_count = providers|selectattr('provider_type', 'equalto', 'ldap')|list|length %}
     {% set sso_count = providers|rejectattr('provider_type', 'equalto', 'ldap')|list|length %}
-
     <div class="space-y-6">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('fingerprint', 'Identity Administration', 'shield-user') %}
-                        <h1 class="{{ page_hero.title_classes() }}">
-                            Identity Providers
-                        </h1>
+                        <h1 class="{{ page_hero.title_classes() }}">Identity Providers</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">
                             Manage LDAP, Google OpenID Connect, and GitHub OAuth integrations through a provider-neutral authentication boundary with explicit provisioning and admission controls.
                         </p>
@@ -24,7 +21,6 @@
                         </div>
                     {% endcall %}
                 </div>
-
                 <aside class="{{ page_hero.aside_classes() }}">
                     <div class="{{ page_hero.context_panel_classes() }}">
                         <div class="flex items-start justify-between gap-4">
@@ -36,7 +32,6 @@
                                 <i data-lucide="fingerprint" class="h-5 w-5"></i>
                             </span>
                         </div>
-
                         <div class="mt-4 grid grid-cols-2 gap-2">
                             <div class="rounded-xl border border-white/20 bg-white/10 px-3 py-3">
                                 <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-brand-foreground-muted">Configured</p>
@@ -47,7 +42,6 @@
                                 <p class="mt-1 text-lg font-bold leading-none text-brand-foreground">{{ enabled_count }}</p>
                             </div>
                         </div>
-
                         <div class="mt-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
                             <a href="{{ url_for('users.create_provider') }}"
                                class="{{ page_hero.context_action_classes() }}">
@@ -64,7 +58,6 @@
                 </aside>
             </div>
         </section>
-
         <div class="grid gap-6 xl:grid-cols-12 xl:items-start">
             <main class="min-w-0 xl:col-span-8">
                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
@@ -84,7 +77,6 @@
                             </span>
                         </div>
                     </header>
-
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-outline-subtle text-sm">
                             <thead class="bg-surface-card text-left text-xs font-semibold text-content-tertiary">
@@ -104,7 +96,8 @@
                                         <td class="px-5 py-4 align-top">
                                             <div class="flex min-w-[190px] items-start gap-3">
                                                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                                    <i data-lucide="{{ 'network' if is_ldap else ('chrome' if is_google else 'github') }}" class="h-4.5 w-4.5"></i>
+                                                    <i data-lucide="{{ 'network' if is_ldap else ('chrome' if is_google else 'github') }}"
+                                                       class="h-4.5 w-4.5"></i>
                                                 </span>
                                                 <div class="min-w-0">
                                                     <p class="font-semibold text-content-primary">{{ provider.display_name }}</p>
@@ -139,7 +132,8 @@
                                         </td>
                                         <td class="px-5 py-4 align-top">
                                             <div class="flex min-w-[150px] justify-end gap-2">
-                                                <form method="post" action="{{ url_for('users.validate_provider', provider_id=provider.id) }}">
+                                                <form method="post"
+                                                      action="{{ url_for('users.validate_provider', provider_id=provider.id) }}">
                                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                                     <button type="submit"
                                                             class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-outline-default px-3 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-kaori-primary/20 cursor-pointer disabled:cursor-not-allowed">
@@ -176,9 +170,9 @@
                     </div>
                 </section>
             </main>
-
             <aside class="space-y-5 xl:sticky xl:top-6 xl:col-span-4">
-                <details open class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm group">
+                <details open
+                         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm group">
                     <summary class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 cursor-pointer list-none select-none transition hover:bg-kaori-soft/40 [&::-webkit-details-marker]:hidden">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                             <i data-lucide="workflow" class="h-5 w-5"></i>
@@ -187,12 +181,13 @@
                             <h2 class="text-base font-semibold text-content-primary">How Each Provider Is Used</h2>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Authentication and provisioning behavior differs by provider type.</p>
                         </div>
-                    
                         <span class="ml-auto flex shrink-0 items-center gap-2 pl-3 text-xs font-semibold text-content-secondary">
                             <span class="group-open:hidden">Details</span>
                             <span class="hidden group-open:inline">Collapse</span>
-                            <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
-                        </span></summary>
+                            <i data-lucide="chevron-down"
+                               class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
+                        </span>
+                    </summary>
                     <div class="divide-y divide-outline-subtle px-5">
                         <div class="flex items-start gap-3 py-4">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="network" class="h-4 w-4"></i></span>
@@ -217,7 +212,6 @@
                         </div>
                     </div>
                 </details>
-
                 <details class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm group">
                     <summary class="flex items-start gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 cursor-pointer list-none select-none transition hover:bg-kaori-soft/40 [&::-webkit-details-marker]:hidden">
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
@@ -227,21 +221,23 @@
                             <h2 class="text-sm font-semibold text-content-primary">Activation Sequence</h2>
                             <p class="mt-1 text-xs leading-5 text-content-muted">Use the same controlled sequence for every provider.</p>
                         </div>
-                    
                         <span class="ml-auto flex shrink-0 items-center gap-2 pl-3 text-xs font-semibold text-content-secondary">
                             <span class="group-open:hidden">Details</span>
                             <span class="hidden group-open:inline">Collapse</span>
-                            <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
-                        </span></summary>
+                            <i data-lucide="chevron-down"
+                               class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
+                        </span>
+                    </summary>
                     <div class="divide-y divide-outline-subtle px-5">
                         {% for icon, title, text in [
                             ('settings-2', 'Configure', 'Save only the settings required by the selected provider type.'),
                             ('key-round', 'Supply secrets', 'Expose the referenced bind or client secret environment variable to the KAORI runtime.'),
                             ('badge-check', 'Validate', 'Run live validation before relying on the provider for authentication.'),
                             ('power', 'Enable', 'Enable the provider only after its integration and admission policy are ready.')
-                        ] %}
+                            ] %}
                             <div class="flex items-start gap-3 py-3.5">
-                                <i data-lucide="{{ icon }}" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                                <i data-lucide="{{ icon }}"
+                                   class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
                                 <div>
                                     <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
                                     <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ text }}</p>
@@ -250,7 +246,6 @@
                         {% endfor %}
                     </div>
                 </details>
-
                 <details class="group overflow-hidden rounded-2xl border border-brand-outline bg-kaori-soft/70 shadow-sm">
                     <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 marker:hidden transition hover:bg-kaori-soft [&::-webkit-details-marker]:hidden">
                         <div class="flex min-w-0 items-start gap-3">

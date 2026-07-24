@@ -1,10 +1,8 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/details/_detail_content.html" as detail %}
 {% import "components/detail_tip.html" as inventory_tip %}
-
 {% set readiness_tone = 'normal' if row.readiness == 'ready' else ('critical' if row.readiness == 'blocked' else 'warning') %}
 {% set readiness_label = row.readiness|replace('_', ' ')|title %}
-
 <div class="bg-surface-hover px-4 py-4">
     <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
         <header class="flex flex-col gap-4 border-b border-outline-subtle bg-surface-elevated px-5 py-4 xl:flex-row xl:items-center xl:justify-between">
@@ -23,7 +21,6 @@
                     </p>
                 </div>
             </div>
-
             <div class="flex flex-wrap items-center gap-2 xl:justify-end">
                 {% if row.prometheus_instance_id %}
                     <a href="{{ url_for('prometheus.instance_detail', instance_id=row.prometheus_instance_id) }}#scope"
@@ -38,7 +35,6 @@
                         Metrics
                     </a>
                 {% endif %}
-
                 {% if row.alertmanager_instance_id %}
                     <a href="{{ url_for('alertmanager.instance_detail', instance_id=row.alertmanager_instance_id) }}#scope"
                        class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-status-normal-border bg-status-normal-soft px-2.5 text-xs font-semibold text-status-normal transition hover:brightness-95">
@@ -52,7 +48,6 @@
                         Alerts
                     </a>
                 {% endif %}
-
                 {% if current_user.has_permission('clusters.manage') %}
                     <button type="button"
                             data-delete-url="{{ url_for('cluster.delete_cluster_route', cluster_id=row.cluster_id) }}"
@@ -65,7 +60,6 @@
                 {% endif %}
             </div>
         </header>
-
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
             {% call detail.detail_card('Connection identity', 'badge-info', 'Connection #' ~ row.connection_id, 'metadata', 'unknown', 'min-h-72') %}
                 {{ detail.detail_row('Cluster', row.cluster_name) }}
@@ -76,16 +70,14 @@
                     {{ inventory_tip.tip('This connection is the canonical Kubernetes API identity used by KAORI for this cluster.', 'network', true) }}
                 </div>
             {% endcall %}
-
             {% call detail.detail_card('Kubernetes API', 'shield-check', readiness_label, 'status', readiness_tone, 'min-h-72') %}
                 {{ detail.detail_row('Version', row.version or 'Not Discovered') }}
                 {{ detail.detail_row('Compatibility', row.compatibility_profile or 'Validation Required') }}
                 {{ detail.detail_row('Last validated', row.last_validated_at) }}
-                                <div class="mt-auto pt-4">
+                <div class="mt-auto pt-4">
                     {{ inventory_tip.tip('Run Full Validation to refresh API access, RBAC, compatibility, and discovered Kubernetes capabilities.', 'shield-check', true) }}
                 </div>
             {% endcall %}
-
             {% call detail.detail_card(
                 'Operational coverage',
                 'chart-no-axes-combined',
@@ -93,7 +85,7 @@
                 'status',
                 row.coverage_summary.status,
                 'min-h-72'
-            ) %}
+                ) %}
                 {{ detail.status_row('Inventory', row.inventory_coverage.label, row.inventory_coverage.status) }}
                 {{ detail.status_row('Analytics', row.metrics_coverage.label, row.metrics_coverage.status) }}
                 {{ detail.status_row('Alerts', row.alerts_coverage.label, row.alerts_coverage.status) }}
@@ -101,7 +93,6 @@
                     {{ inventory_tip.tip('Inventory requires Kubernetes API readiness. Analytics and Alerts also require ready source bindings.', 'workflow', true) }}
                 </div>
             {% endcall %}
-
             {% call detail.detail_card(
                 'Source bindings',
                 'waypoints',
@@ -109,28 +100,24 @@
                 'status',
                 'normal' if row.source_operational_count == 2 else ('warning' if row.source_operational_count > 0 else 'unknown'),
                 'min-h-72'
-            ) %}
+                ) %}
                 {{ detail.detail_row('Prometheus', row.prometheus_name or 'Not Bound') }}
-                {{ detail.status_row(
-                    'Prometheus source',
-                    (row.prometheus_source_status or 'Not Configured')|replace('_', ' ')|title,
-                    row.prometheus_source_status or 'not_configured'
+                {{ detail.status_row('Prometheus source',
+                                (row.prometheus_source_status or 'Not Configured') |replace('_', ' ')|title,
+                row.prometheus_source_status or 'not_configured'
                 ) }}
-                {{ detail.status_row(
-                    'Metrics binding',
-                    (row.prometheus_binding_status or 'Not Configured')|replace('_', ' ')|title,
-                    row.prometheus_binding_status or 'not_configured'
+                {{ detail.status_row('Metrics binding',
+                                (row.prometheus_binding_status or 'Not Configured') |replace('_', ' ')|title,
+                row.prometheus_binding_status or 'not_configured'
                 ) }}
                 {{ detail.detail_row('Alertmanager', row.alertmanager_name or 'Not Bound') }}
-                {{ detail.status_row(
-                    'Alertmanager source',
-                    (row.alertmanager_source_status or 'Not Configured')|replace('_', ' ')|title,
-                    row.alertmanager_source_status or 'not_configured'
+                {{ detail.status_row('Alertmanager source',
+                                (row.alertmanager_source_status or 'Not Configured') |replace('_', ' ')|title,
+                row.alertmanager_source_status or 'not_configured'
                 ) }}
-                {{ detail.status_row(
-                    'Alert binding',
-                    (row.alertmanager_binding_status or 'Not Configured')|replace('_', ' ')|title,
-                    row.alertmanager_binding_status or 'not_configured'
+                {{ detail.status_row('Alert binding',
+                                (row.alertmanager_binding_status or 'Not Configured') |replace('_', ' ')|title,
+                row.alertmanager_binding_status or 'not_configured'
                 ) }}
                 <div class="mt-auto pt-4">
                     {{ inventory_tip.tip('Source readiness and binding validation are independent gates and must both be Ready for operational use.', 'waypoints', true) }}

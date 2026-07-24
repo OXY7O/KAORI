@@ -22,26 +22,26 @@
     </div>
     <div class="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
         {% set cards = [
-            {'label': 'Missing CPU Requests', 'value': payload.workload_snapshot.missing_cpu_requests, 'icon': 'cpu', 'tone': 'critical'},
-            {'label': 'Missing Memory Requests', 'value': payload.workload_snapshot.missing_memory_requests, 'icon': 'memory-stick', 'tone': 'critical'},
-            {'label': 'Missing CPU Limits', 'value': payload.workload_snapshot.missing_cpu_limits, 'icon': 'gauge', 'tone': 'warning'},
-            {'label': 'Missing Memory Limits', 'value': payload.workload_snapshot.missing_memory_limits, 'icon': 'gauge-circle', 'tone': 'warning'},
-            {'label': 'Over-provisioned', 'value': payload.workload_snapshot.over_provisioned, 'icon': 'arrow-up-circle', 'tone': 'normal'},
-            {'label': 'Under-provisioned', 'value': payload.workload_snapshot.under_provisioned, 'icon': 'arrow-down-circle', 'tone': 'maintenance'}
-        ] %}
+                    {'label': 'Missing CPU Requests', 'value': payload.workload_snapshot.missing_cpu_requests, 'icon': 'cpu', 'tone': 'critical'},
+                    {'label': 'Missing Memory Requests', 'value': payload.workload_snapshot.missing_memory_requests, 'icon': 'memory-stick', 'tone': 'critical'},
+                    {'label': 'Missing CPU Limits', 'value': payload.workload_snapshot.missing_cpu_limits, 'icon': 'gauge', 'tone': 'warning'},
+                    {'label': 'Missing Memory Limits', 'value': payload.workload_snapshot.missing_memory_limits, 'icon': 'gauge-circle', 'tone': 'warning'},
+                    {'label': 'Over-provisioned', 'value': payload.workload_snapshot.over_provisioned, 'icon': 'arrow-up-circle', 'tone': 'normal'},
+                    {'label': 'Under-provisioned', 'value': payload.workload_snapshot.under_provisioned, 'icon': 'arrow-down-circle', 'tone': 'maintenance'}
+                ] %}
         {% for card in cards %}
             {% set icon_class = {
-                'critical': 'bg-status-critical-soft text-status-critical',
-                'warning': 'bg-status-warning-soft text-status-warning',
-                'normal': 'bg-status-normal-soft text-status-normal',
-                'maintenance': 'bg-status-maintenance-soft text-status-maintenance'
-            }.get(card.tone, 'bg-status-unknown-soft text-status-unknown') %}
+                            'critical': 'bg-status-critical-soft text-status-critical',
+                            'warning': 'bg-status-warning-soft text-status-warning',
+                            'normal': 'bg-status-normal-soft text-status-normal',
+                            'maintenance': 'bg-status-maintenance-soft text-status-maintenance'
+                        }.get(card.tone, 'bg-status-unknown-soft text-status-unknown') %}
             {% set value_class = {
-                'critical': 'text-status-critical',
-                'warning': 'text-status-warning',
-                'normal': 'text-status-normal',
-                'maintenance': 'text-status-maintenance'
-            }.get(card.tone, 'text-content-primary') %}
+                            'critical': 'text-status-critical',
+                            'warning': 'text-status-warning',
+                            'normal': 'text-status-normal',
+                            'maintenance': 'text-status-maintenance'
+                        }.get(card.tone, 'text-content-primary') %}
             <div class="flex min-h-20 items-center rounded-lg border border-outline-default bg-surface-card p-4 transition hover:bg-surface-hover">
                 <div class="flex w-full items-center justify-between gap-3">
                     <span class="inline-flex min-w-0 items-center gap-2 text-sm font-semibold text-content-secondary">

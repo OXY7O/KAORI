@@ -1,217 +1,224 @@
 {% extends "layouts/app.html" %}
 {% block title %}Integrations · KAORI{% endblock %}
 {% block dashboard_content %}
-<div class="kaori-integration-semantic space-y-6"
-     x-data="{
-       activeTab: '{{ active_tab }}',
-       activateTab(tab) {
-         this.activeTab = tab
-         const url = new URL(window.location.href)
-         url.searchParams.set('tab', tab)
-         window.history.replaceState({}, '', url)
-         this.$nextTick(() => {
-           if (window.lucide) window.lucide.createIcons()
-         })
-       }
-     }">
-    {% set badge='Integrations' %}
-    {% set title='Infrastructure Integrations' %}
-    {% set description='Connect infrastructure providers to KAORI through reusable connection, compatibility, runtime, and binding contracts.' %}
-    {% include 'integrations/partials/_hero.html' %}
-
-    <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm" aria-labelledby="integration-portfolio-title">
-        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div class="flex items-start gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
-                        <i data-lucide="blocks" class="h-5 w-5"></i>
-                    </span>
-                    <div>
-                        <h2 id="integration-portfolio-title" class="text-lg font-semibold text-content-primary">Integration Portfolio Overview</h2>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">Review registered providers, operational readiness, and KAORI integration boundaries from one workspace.</p>
-                    </div>
-                </div>
-                {% if current_user.has_permission('jobs.view') %}<a href="{{ url_for('integrations.jobs') }}" class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-kaori-primary/30 bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft"><i data-lucide="list-checks" class="h-4 w-4"></i>Review Jobs</a>{% endif %}
-            </div>
-        </header>
-
-        <div class="grid gap-4 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-4">
-            {% for item in [
-                ('Available Providers', available_provider_count, 'Provider workspaces ready to configure', 'package-search'),
-                ('Configured Targets', stats.configured, 'Registered provider connections', 'plug-zap'),
-                ('Ready for Use', stats.ready, 'Validated operational targets', 'badge-check'),
-                ('Needs Attention', stats.attention, 'Validation or runtime review', 'triangle-alert')
-            ] %}
-                <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ item[0] }}</p>
-                            <p class="mt-2 text-2xl font-semibold text-content-primary">{{ item[1] }}</p>
-                        </div>
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
-                            <i data-lucide="{{ item[3] }}" class="h-4 w-4"></i>
-                        </span>
-                    </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ item[2] }}</p>
-                </article>
-            {% endfor %}
-        </div>
-
-        <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle md:grid-cols-3">
-            <div class="bg-surface-card px-5 py-4 sm:px-6">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Connection Contract</p>
-                <p class="mt-1.5 text-sm font-semibold text-content-primary">Register Each Provider Endpoint Once</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI stores endpoint identity, authentication, TLS, lifecycle, and compatibility as one reusable connection.</p>
-            </div>
-            <div class="bg-surface-card px-5 py-4 sm:px-6">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Binding Contract</p>
-                <p class="mt-1.5 text-sm font-semibold text-content-primary">Share Sources Through Isolated Bindings</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">Kubernetes clusters and future infrastructure scopes bind to existing sources with explicit identity selectors.</p>
-            </div>
-            <div class="bg-surface-card px-5 py-4 sm:px-6">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Authority Boundary</p>
-                <p class="mt-1.5 text-sm font-semibold text-content-primary">External Providers Remain Authoritative</p>
-                <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI provides governance, correlation, visibility, audit, and controlled workflows without replacing provider engines.</p>
-            </div>
-        </div>
-    </section>
-
-    <nav id="integration-workspace" class="rounded-xl border border-kaori-primary/20 bg-kaori-soft p-1.5" aria-label="Integration overview workspace">
-        <div class="grid gap-1 sm:grid-cols-3">
-            {% for key, label, icon, count in [
-                ('catalog', 'Provider Catalog', 'package-search', catalog|length),
-                ('runtime', 'Runtime Overview', 'activity', runtime_stats.total),
-                ('coverage', 'Domain Coverage', 'layout-grid', coverage|length)
-            ] %}
-                <button type="button"
-                        @click="activateTab('{{ key }}')"
-                        :class="activeTab === '{{ key }}' ? 'bg-kaori-primary text-white shadow-sm' : 'bg-surface-card text-kaori-primary hover:bg-white'"
-                        class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-kaori-primary/20 px-4 text-sm font-semibold transition"
-                        :aria-selected="activeTab === '{{ key }}'"
-                        role="tab">
-                    <i data-lucide="{{ icon }}" class="h-4 w-4" aria-hidden="true"></i>
-                    {{ label }}
-                    <span :class="activeTab === '{{ key }}' ? 'bg-white text-kaori-primary' : 'bg-kaori-soft text-kaori-primary'" class="inline-flex min-h-5 min-w-5 items-center justify-center rounded-md px-1.5 text-[10px] font-semibold">{{ count }}</span>
-                </button>
-            {% endfor %}
-        </div>
-    </nav>
-
-    <div x-show="activeTab === 'catalog'" x-cloak role="tabpanel">
-        <section id="provider-catalog" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm" aria-labelledby="provider-catalog-title">
+    <div class="kaori-integration-semantic space-y-6"
+         x-data="{ activeTab: '{{ active_tab }}', activateTab(tab) { this.activeTab = tab const url = new URL(window.location.href) url.searchParams.set('tab', tab) window.history.replaceState({}, '', url) this.$nextTick(() => { if (window.lucide) window.lucide.createIcons() }) } }">
+        {% set badge = "Integrations" %}
+        {% set title = "Infrastructure Integrations" %}
+        {% set description = "Connect infrastructure providers to KAORI through reusable connection, compatibility, runtime, and binding contracts." %}
+        {% include 'integrations/partials/_hero.html' %}
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+                 aria-labelledby="integration-portfolio-title">
             <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div class="flex items-start gap-3">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
-                            <i data-lucide="package-search" class="h-5 w-5"></i>
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true">
+                            <i data-lucide="blocks" class="h-5 w-5"></i>
                         </span>
                         <div>
-                            <h2 id="provider-catalog-title" class="text-base font-semibold text-content-primary">Provider Catalog</h2>
-                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Open an available provider workspace or review the planned KAORI integration roadmap.</p>
+                            <h2 id="integration-portfolio-title"
+                                class="text-lg font-semibold text-content-primary">Integration Portfolio Overview</h2>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">Review registered providers, operational readiness, and KAORI integration boundaries from one workspace.</p>
                         </div>
                     </div>
-                    <span class="kaori-context-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 text-[10px] font-semibold text-kaori-primary">{{ available_provider_count }} available · {{ planned_provider_count }} planned</span>
+                    {% if current_user.has_permission('jobs.view') %}<a href="{{ url_for('integrations.jobs') }}"
+   class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-kaori-primary/30 bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft"><i data-lucide="list-checks" class="h-4 w-4"></i>Review Jobs</a>{% endif %}
                 </div>
             </header>
-
-            <div class="grid gap-4 p-5 sm:p-6 lg:grid-cols-3">
-                {% for item in catalog %}
-                    {% if item.availability == 'available' %}
-                        <article class="flex min-h-[13rem] flex-col rounded-xl border border-outline-subtle bg-surface-hover p-5 transition hover:border-kaori-primary/30 hover:bg-kaori-soft">
-                            <div class="flex items-start justify-between gap-3">
-                                <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
-                                    <i data-lucide="{{ item.icon }}" class="h-5 w-5"></i>
-                                </span>
-                                <span class="rounded-md border border-status-normal-border bg-status-normal-soft px-2 py-1 text-[10px] font-semibold text-status-normal-text">Available</span>
+            <div class="grid gap-4 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-4">
+                {% for item in [
+                    ('Available Providers', available_provider_count, 'Provider workspaces ready to configure', 'package-search'),
+                    ('Configured Targets', stats.configured, 'Registered provider connections', 'plug-zap'),
+                    ('Ready for Use', stats.ready, 'Validated operational targets', 'badge-check'),
+                    ('Needs Attention', stats.attention, 'Validation or runtime review', 'triangle-alert')
+                    ] %}
+                    <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ item[0] }}</p>
+                                <p class="mt-2 text-2xl font-semibold text-content-primary">{{ item[1] }}</p>
                             </div>
-                            <p class="mt-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ item.category }}</p>
-                            <h3 class="mt-1 text-base font-semibold text-content-primary">{{ item.name }}</h3>
-                            <p class="mt-2 flex-1 text-sm leading-6 text-content-secondary">{{ item.description }}</p>
-                            <div class="mt-4 flex items-center justify-between gap-3 border-t border-outline-subtle pt-4">
-                                <div>
-                                    <p class="text-lg font-semibold text-content-primary">{{ item.configured }}</p>
-                                    <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Configured</p>
-                                </div>
-                                {% if item.key == 'kubernetes' %}
-                                    <a href="{{ url_for('integrations.kubernetes') }}" class="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover">Open Workspace <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i></a>
-                                {% elif item.key == 'prometheus' %}
-                                    <a href="{{ url_for('integrations.prometheus') }}" class="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover">Open Workspace <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i></a>
-                                {% elif item.key == 'alertmanager' %}
-                                    <a href="{{ url_for('integrations.alertmanager') }}" class="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover">Open Workspace <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i></a>
-                                {% endif %}
-                            </div>
-                        </article>
-                    {% endif %}
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="{{ item[3] }}" class="h-4 w-4"></i>
+                            </span>
+                        </div>
+                        <p class="mt-2 text-xs leading-5 text-content-secondary">{{ item[2] }}</p>
+                    </article>
                 {% endfor %}
             </div>
-
-            <div class="border-t border-outline-subtle bg-surface-hover px-5 py-5 sm:px-6">
-                <div class="mb-3 flex items-center justify-between gap-3">
-                    <div>
-                        <p class="text-xs font-semibold text-content-primary">Planned Providers</p>
-                        <p class="mt-0.5 text-xs text-content-muted">Roadmap entries are visible but not configurable yet.</p>
-                    </div>
-                    <span class="kaori-context-label inline-flex min-h-6 items-center rounded-md bg-status-unknown-soft px-2 text-[10px] font-semibold text-status-unknown-text">{{ planned_provider_count }} planned</span>
+            <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle md:grid-cols-3">
+                <div class="bg-surface-card px-5 py-4 sm:px-6">
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Connection Contract</p>
+                    <p class="mt-1.5 text-sm font-semibold text-content-primary">Register Each Provider Endpoint Once</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI stores endpoint identity, authentication, TLS, lifecycle, and compatibility as one reusable connection.</p>
                 </div>
-                <div class="grid gap-3 md:grid-cols-2">
+                <div class="bg-surface-card px-5 py-4 sm:px-6">
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Binding Contract</p>
+                    <p class="mt-1.5 text-sm font-semibold text-content-primary">Share Sources Through Isolated Bindings</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">Kubernetes clusters and future infrastructure scopes bind to existing sources with explicit identity selectors.</p>
+                </div>
+                <div class="bg-surface-card px-5 py-4 sm:px-6">
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Authority Boundary</p>
+                    <p class="mt-1.5 text-sm font-semibold text-content-primary">External Providers Remain Authoritative</p>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI provides governance, correlation, visibility, audit, and controlled workflows without replacing provider engines.</p>
+                </div>
+            </div>
+        </section>
+        <nav id="integration-workspace"
+             class="rounded-xl border border-kaori-primary/20 bg-kaori-soft p-1.5"
+             aria-label="Integration overview workspace">
+            <div class="grid gap-1 sm:grid-cols-3">
+                {% for key, label, icon, count in [
+                    ('catalog', 'Provider Catalog', 'package-search', catalog|length),
+                    ('runtime', 'Runtime Overview', 'activity', runtime_stats.total),
+                    ('coverage', 'Domain Coverage', 'layout-grid', coverage|length)
+                    ] %}
+                    <button type="button"
+                            @click="activateTab('{{ key }}')"
+                            :class="activeTab === '{{ key }}' ? 'bg-kaori-primary text-white shadow-sm' : 'bg-surface-card text-kaori-primary hover:bg-white'"
+                            class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-kaori-primary/20 px-4 text-sm font-semibold transition"
+                            :aria-selected="activeTab === '{{ key }}'"
+                            role="tab">
+                        <i data-lucide="{{ icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                        {{ label }}
+                        <span :class="activeTab === '{{ key }}' ? 'bg-white text-kaori-primary' : 'bg-kaori-soft text-kaori-primary'"
+                              class="inline-flex min-h-5 min-w-5 items-center justify-center rounded-md px-1.5 text-[10px] font-semibold">{{ count }}</span>
+                    </button>
+                {% endfor %}
+            </div>
+        </nav>
+        <div x-show="activeTab === 'catalog'" x-cloak role="tabpanel">
+            <section id="provider-catalog"
+                     class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+                     aria-labelledby="provider-catalog-title">
+                <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="flex items-start gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                                  aria-hidden="true">
+                                <i data-lucide="package-search" class="h-5 w-5"></i>
+                            </span>
+                            <div>
+                                <h2 id="provider-catalog-title"
+                                    class="text-base font-semibold text-content-primary">Provider Catalog</h2>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">Open an available provider workspace or review the planned KAORI integration roadmap.</p>
+                            </div>
+                        </div>
+                        <span class="kaori-context-label inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 text-[10px] font-semibold text-kaori-primary">{{ available_provider_count }} available · {{ planned_provider_count }} planned</span>
+                    </div>
+                </header>
+                <div class="grid gap-4 p-5 sm:p-6 lg:grid-cols-3">
                     {% for item in catalog %}
-                        {% if item.availability != 'available' %}
-                            <article class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-4">
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-hover text-content-muted" aria-hidden="true"><i data-lucide="{{ item.icon }}" class="h-4 w-4"></i></span>
-                                <div class="min-w-0">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <h3 class="text-sm font-semibold text-content-primary">{{ item.name }}</h3>
-                                        <span class="rounded-md bg-status-unknown-soft px-2 py-1 text-[10px] font-semibold text-status-unknown-text">Planned</span>
+                        {% if item.availability == 'available' %}
+                            <article class="flex min-h-[13rem] flex-col rounded-xl border border-outline-subtle bg-surface-hover p-5 transition hover:border-kaori-primary/30 hover:bg-kaori-soft">
+                                <div class="flex items-start justify-between gap-3">
+                                    <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                                          aria-hidden="true">
+                                        <i data-lucide="{{ item.icon }}" class="h-5 w-5"></i>
+                                    </span>
+                                    <span class="rounded-md border border-status-normal-border bg-status-normal-soft px-2 py-1 text-[10px] font-semibold text-status-normal-text">Available</span>
+                                </div>
+                                <p class="mt-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ item.category }}</p>
+                                <h3 class="mt-1 text-base font-semibold text-content-primary">{{ item.name }}</h3>
+                                <p class="mt-2 flex-1 text-sm leading-6 text-content-secondary">{{ item.description }}</p>
+                                <div class="mt-4 flex items-center justify-between gap-3 border-t border-outline-subtle pt-4">
+                                    <div>
+                                        <p class="text-lg font-semibold text-content-primary">{{ item.configured }}</p>
+                                        <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Configured</p>
                                     </div>
-                                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.description }}</p>
+                                    {% if item.key == 'kubernetes' %}
+                                        <a href="{{ url_for('integrations.kubernetes') }}"
+                                           class="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover">Open Workspace <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i></a>
+                                    {% elif item.key == 'prometheus' %}
+                                        <a href="{{ url_for('integrations.prometheus') }}"
+                                           class="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover">Open Workspace <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i></a>
+                                    {% elif item.key == 'alertmanager' %}
+                                        <a href="{{ url_for('integrations.alertmanager') }}"
+                                           class="inline-flex min-h-9 items-center gap-1.5 rounded-lg bg-kaori-primary px-3 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover">Open Workspace <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i></a>
+                                    {% endif %}
                                 </div>
                             </article>
                         {% endif %}
                     {% endfor %}
                 </div>
-            </div>
-        </section>
-    </div>
-
-    <div x-show="activeTab === 'runtime'" x-cloak role="tabpanel">
-        {% include 'integrations/partials/_runtime_overview.html' %}
-    </div>
-
-    <div x-show="activeTab === 'coverage'" x-cloak role="tabpanel">
-        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm" aria-labelledby="coverage-summary-title">
-            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-                <div class="flex items-start gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="layout-grid" class="h-5 w-5"></i></span>
-                    <div>
-                        <h2 id="coverage-summary-title" class="text-base font-semibold text-content-primary">Integration Domain Coverage</h2>
-                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Review configured and ready targets across active and planned infrastructure domains.</p>
+                <div class="border-t border-outline-subtle bg-surface-hover px-5 py-5 sm:px-6">
+                    <div class="mb-3 flex items-center justify-between gap-3">
+                        <div>
+                            <p class="text-xs font-semibold text-content-primary">Planned Providers</p>
+                            <p class="mt-0.5 text-xs text-content-muted">Roadmap entries are visible but not configurable yet.</p>
+                        </div>
+                        <span class="kaori-context-label inline-flex min-h-6 items-center rounded-md bg-status-unknown-soft px-2 text-[10px] font-semibold text-status-unknown-text">{{ planned_provider_count }} planned</span>
+                    </div>
+                    <div class="grid gap-3 md:grid-cols-2">
+                        {% for item in catalog %}
+                            {% if item.availability != 'available' %}
+                                <article class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-4">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-hover text-content-muted"
+                                          aria-hidden="true"><i data-lucide="{{ item.icon }}" class="h-4 w-4"></i></span>
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <h3 class="text-sm font-semibold text-content-primary">{{ item.name }}</h3>
+                                            <span class="rounded-md bg-status-unknown-soft px-2 py-1 text-[10px] font-semibold text-status-unknown-text">Planned</span>
+                                        </div>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.description }}</p>
+                                    </div>
+                                </article>
+                            {% endif %}
+                        {% endfor %}
                     </div>
                 </div>
-            </header>
-            <div class="grid gap-4 p-5 sm:p-6 md:grid-cols-2 xl:grid-cols-4">
-                {% for item in coverage %}
-                    {% set is_planned = item.total == 0 %}
-                    <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ item.label }}</p>
-                                <p class="mt-2 text-2xl font-semibold text-content-primary">{{ item.configured }}</p>
-                                <p class="mt-1 text-xs text-content-muted">Configured Targets</p>
+            </section>
+        </div>
+        <div x-show="activeTab === 'runtime'" x-cloak role="tabpanel">
+            {% include 'integrations/partials/_runtime_overview.html' %}
+        </div>
+        <div x-show="activeTab === 'coverage'" x-cloak role="tabpanel">
+            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+                     aria-labelledby="coverage-summary-title">
+                <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true"><i data-lucide="layout-grid" class="h-5 w-5"></i></span>
+                        <div>
+                            <h2 id="coverage-summary-title"
+                                class="text-base font-semibold text-content-primary">Integration Domain Coverage</h2>
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Review configured and ready targets across active and planned infrastructure domains.</p>
+                        </div>
+                    </div>
+                </header>
+                <div class="grid gap-4 p-5 sm:p-6 md:grid-cols-2 xl:grid-cols-4">
+                    {% for item in coverage %}
+                        {% set is_planned = item.total == 0 %}
+                        <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ item.label }}</p>
+                                    <p class="mt-2 text-2xl font-semibold text-content-primary">{{ item.configured }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">Configured Targets</p>
+                                </div>
+                                <span class="flex h-10 w-10 items-center justify-center rounded-xl {% if is_planned %}bg-status-unknown-soft text-status-unknown-text{% else %}bg-kaori-soft text-kaori-primary{% endif %}"
+                                      aria-hidden="true"><i data-lucide="{{ item.icon }}" class="h-5 w-5"></i></span>
                             </div>
-                            <span class="flex h-10 w-10 items-center justify-center rounded-xl {% if is_planned %}bg-status-unknown-soft text-status-unknown-text{% else %}bg-kaori-soft text-kaori-primary{% endif %}" aria-hidden="true"><i data-lucide="{{ item.icon }}" class="h-5 w-5"></i></span>
-                        </div>
-                        <div class="mt-4 flex items-center justify-between border-t border-outline-subtle pt-3 text-xs">
-                            <span class="text-content-muted">{% if is_planned %}Lifecycle{% else %}Ready{% endif %}</span>
-                            {% if is_planned %}
-                                <span class="rounded-md bg-status-unknown-soft px-2 py-1 text-[10px] font-semibold text-status-unknown-text">Planned</span>
-                            {% else %}
-                                <span class="font-semibold text-content-primary">{{ item.ready }} of {{ item.total }}</span>
-                            {% endif %}
-                        </div>
-                    </article>
-                {% endfor %}
-            </div>
-        </section>
+                            <div class="mt-4 flex items-center justify-between border-t border-outline-subtle pt-3 text-xs">
+                                <span class="text-content-muted">
+                                    {% if is_planned %}
+                                        Lifecycle
+                                    {% else %}
+                                        Ready
+                                    {% endif %}
+                                </span>
+                                {% if is_planned %}
+                                    <span class="rounded-md bg-status-unknown-soft px-2 py-1 text-[10px] font-semibold text-status-unknown-text">Planned</span>
+                                {% else %}
+                                    <span class="font-semibold text-content-primary">{{ item.ready }} of {{ item.total }}</span>
+                                {% endif %}
+                            </div>
+                        </article>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
     </div>
-</div>
 {% endblock %}

@@ -8,7 +8,6 @@
             {% for _ in range(20) %}<span class="h-1 w-1 rounded-full bg-brand-foreground"></span>{% endfor %}
         </div>
     </div>
-
     <div class="relative z-10 flex items-center gap-3">
         <span class="flex h-9 w-9 items-center justify-center rounded-xl border border-brand-outline bg-brand-surface-strong shadow-lg shadow-black/20 backdrop-blur">
             <img src="{{ url_for('static', filename='images/kaori-logo.svg') }}"
@@ -17,17 +16,15 @@
         </span>
         <span class="text-lg font-extrabold tracking-widest">KAORI</span>
     </div>
-
     <div class="relative z-10 mt-5">
         <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kaori-accent">Infrastructure Operations</p>
         <h1 class="mt-2 max-w-sm text-2xl font-extrabold leading-tight tracking-tight xl:text-3xl">
             Operate With <span class="text-kaori-accent">Clarity</span>
         </h1>
         <p class="mt-2 max-w-sm text-xs leading-5 text-brand-foreground-muted">
-           Knowledge, Automation, Operations, Resilience & Intelligence
+            Knowledge, Automation, Operations, Resilience & Intelligence
         </p>
     </div>
-
     <div class="relative z-10 mt-4 flex min-h-0 flex-1 items-center justify-center">
         {% include "auth/partials/_feature_cards.html" %}
     </div>

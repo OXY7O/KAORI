@@ -1,19 +1,17 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/detail_object.html" as detail_object %}
 {% import "components/detail_tip.html" as inventory_tip %}
-
 {% macro detail_row(label, value='-', break_all=false) -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
     <div class="flex items-start justify-between gap-3">
         <span class="shrink-0 text-xs font-normal leading-5 text-content-muted">{{ label }}</span>
-        <span class="max-w-[68%] {{ 'break-all' if break_all else 'break-words' }} text-right text-xs font-medium leading-5 text-content-secondary" title="{{ display_value }}">{{ display_value }}</span>
+        <span class="max-w-[68%] {{ 'break-all' if break_all else 'break-words' }} text-right text-xs font-medium leading-5 text-content-secondary"
+              title="{{ display_value }}">{{ display_value }}</span>
     </div>
 {%- endmacro %}
-
 {% macro info_box(title, message, icon='info', tone='brand', equal_height=false) -%}
     {{ inventory_tip.info_box(title, message, icon, tone, equal_height) }}
 {%- endmacro %}
-
 {% macro detail_card(title, icon, badge=None, class_name='') -%}
     <section class="flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-4 {{ class_name }}">
         <div class="mb-4 flex items-center justify-between gap-3">
@@ -26,13 +24,11 @@
         <div class="flex min-h-0 flex-1 flex-col gap-2.5">{{ caller() }}</div>
     </section>
 {%- endmacro %}
-
 {% if ingress.tls %}
-    {% set tls_label = 'TLS enabled' %}{% set tls_tone = 'normal' %}{% set tls_icon = 'shield-check' %}
+    {% set tls_label = "TLS enabled" %}{% set tls_tone = "normal" %}{% set tls_icon = "shield-check" %}
 {% else %}
-    {% set tls_label = 'No TLS' %}{% set tls_tone = 'warning' %}{% set tls_icon = 'shield-off' %}
+    {% set tls_label = "No TLS" %}{% set tls_tone = "warning" %}{% set tls_icon = "shield-off" %}
 {% endif %}
-
 <div class="bg-surface-hover px-4 py-4">
     <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-sm">
         <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -52,7 +48,6 @@
                 {{ table_label.status_label(tls_label, tls_tone, tls_icon) }}
             </div>
         </header>
-
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
             {% call detail_card('Object identity', 'badge-info', ingress.age, 'min-h-[30rem]') %}
                 {{ detail_row('Cluster', ingress.cluster_name) }}
@@ -64,7 +59,6 @@
                 {{ detail_row('Collected', ingress.collected_at|user_datetime) }}
                 <div class="mt-auto pt-3">{{ info_box('Inventory identity', 'Ingress identity from the latest Kubernetes snapshot.', 'badge-info', 'brand', true) }}</div>
             {% endcall %}
-
             {% call detail_card('Exposure', 'globe-2', ingress.host_count ~ ' hosts', 'min-h-[32rem]') %}
                 {{ detail_row('Load balancer address', ingress.address, true) }}
                 {{ detail_row('Hosts', ingress.host_count) }}
@@ -84,7 +78,10 @@
                                     </div>
                                     <div class="mt-2 space-y-1.5">
                                         {% for host in ingress.hosts %}
-                                            <a href="{{ host.url }}" target="_blank" rel="noopener noreferrer" class="flex items-start justify-between gap-3 text-xs leading-5 text-content-secondary transition hover:text-kaori-primary">
+                                            <a href="{{ host.url }}"
+                                               target="_blank"
+                                               rel="noopener noreferrer"
+                                               class="flex items-start justify-between gap-3 text-xs leading-5 text-content-secondary transition hover:text-kaori-primary">
                                                 <span class="break-all">{{ host.value }}</span><i data-lucide="external-link" class="mt-0.5 h-3.5 w-3.5 shrink-0"></i>
                                             </a>
                                         {% endfor %}
@@ -98,7 +95,6 @@
                     {{ info_box('Exposure boundary', 'Addresses appear after the controller publishes status.', 'network', 'brand', true) }}
                 {% endcall %}
             {% endcall %}
-
             {% call detail_card('TLS configuration', 'shield-check', ingress.tls_entries|length ~ ' entries', 'min-h-[34rem]') %}
                 {{ detail_row('TLS enabled', 'Yes' if ingress.tls else 'No') }}
                 {{ detail_row('TLS entries', ingress.tls_entries|length) }}
@@ -117,7 +113,7 @@
                                         {% for tls in ingress.tls_entries %}
                                             <div class="grid gap-1.5 border-t border-outline-subtle pt-2 text-xs leading-5 first:border-t-0 first:pt-0 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] sm:gap-3">
                                                 <span class="break-all font-medium text-content-primary">{{ tls.secret_name or '-' }}</span>
-                                                <span class="break-all text-content-muted sm:text-right">{{ tls.hosts|join(', ') if tls.hosts else 'No host list' }}</span>
+                                                <span class="break-all text-content-muted sm:text-right">{{ tls.hosts|join(", ") if tls.hosts else 'No host list' }}</span>
                                             </div>
                                         {% endfor %}
                                     </div>
@@ -130,7 +126,6 @@
                     {{ info_box('TLS boundary', 'Secret references only; validity remains in TLS Governance.', 'lock-keyhole', 'brand', true) }}
                 {% endcall %}
             {% endcall %}
-
             {% call detail_card('Routing summary', 'git-branch', ingress.backend_count ~ ' paths', 'min-h-[30rem]') %}
                 {{ detail_row('Rules', ingress.rule_count) }}
                 {{ detail_row('Hosts', ingress.host_count) }}
@@ -140,7 +135,9 @@
                 {% call detail_object.stack() %}
                     {% if ingress.finalizers %}
                         {% call detail_object.card('Finalizers', ingress.finalizers|length ~ ' entries', 'lock-keyhole') %}
-                            <div class="flex flex-wrap gap-1.5">{% for finalizer in ingress.finalizers %}{{ table_label.metadata_label(finalizer, 'lock-keyhole') }}{% endfor %}</div>
+                            <div class="flex flex-wrap gap-1.5">
+                                {% for finalizer in ingress.finalizers %}{{ table_label.metadata_label(finalizer, 'lock-keyhole') }}{% endfor %}
+                            </div>
                         {% endcall %}
                     {% else %}
                         {{ detail_object.empty('No finalizers configured', 'This Ingress has no recorded finalizer.', 'lock-open') }}
@@ -149,13 +146,15 @@
                 {% endcall %}
             {% endcall %}
         </div>
-
         <div class="space-y-4 border-t border-outline-subtle p-5">
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
                 <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-4">
                     <div class="flex items-center gap-3">
                         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="git-branch" class="h-4 w-4"></i></span>
-                        <div><h4 class="text-sm font-semibold text-content-primary">Backend Routes</h4><p class="mt-0.5 text-xs text-content-muted">Declared host, path, path type, backend Service, and port mappings.</p></div>
+                        <div>
+                            <h4 class="text-sm font-semibold text-content-primary">Backend Routes</h4>
+                            <p class="mt-0.5 text-xs text-content-muted">Declared host, path, path type, backend Service, and port mappings.</p>
+                        </div>
                     </div>
                     {{ table_label.metadata_label(ingress.backend_count ~ ' routes', 'route') }}
                 </header>
@@ -163,12 +162,19 @@
                     <div class="overflow-x-auto">
                         <table class="min-w-[860px] w-full text-left text-xs text-content-secondary">
                             <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted">
-                                <tr><th class="px-4 py-2.5">Host</th><th class="px-4 py-2.5">Path</th><th class="px-4 py-2.5">Path type</th><th class="px-4 py-2.5">Backend Service</th><th class="px-4 py-2.5">Port</th></tr>
+                                <tr>
+                                    <th class="px-4 py-2.5">Host</th>
+                                    <th class="px-4 py-2.5">Path</th>
+                                    <th class="px-4 py-2.5">Path type</th>
+                                    <th class="px-4 py-2.5">Backend Service</th>
+                                    <th class="px-4 py-2.5">Port</th>
+                                </tr>
                             </thead>
                             <tbody class="divide-y divide-outline-subtle">
                                 {% for backend in ingress.backend_paths %}
                                     <tr>
-                                        <td class="max-w-[260px] px-4 py-3"><span class="block truncate font-medium text-content-primary" title="{{ backend.host }}">{{ backend.host }}</span></td>
+                                        <td class="max-w-[260px] px-4 py-3"><span class="block truncate font-medium text-content-primary"
+      title="{{ backend.host }}">{{ backend.host }}</span></td>
                                         <td class="max-w-[260px] px-4 py-3"><span class="block break-all font-medium text-content-primary">{{ backend.path }}</span></td>
                                         <td class="px-4 py-3">{{ table_label.metadata_label(backend.path_type, 'split') }}</td>
                                         <td class="px-4 py-3 font-medium text-content-primary">{{ backend.service_name }}</td>
@@ -183,29 +189,46 @@
                     <div class="p-4">{{ detail_object.empty('No backend routes', 'No backend route is recorded for this Ingress.', 'route-off') }}</div>
                 {% endif %}
             </section>
-
             <div class="grid gap-4 xl:grid-cols-2">
                 <section class="rounded-xl border border-outline-default bg-surface-card p-4">
                     <div class="mb-4 flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="tags" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Ingress Labels</h4><p class="mt-0.5 text-xs text-content-muted">Descriptive Kubernetes labels from the Ingress snapshot.</p></div></div>
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="tags" class="h-4 w-4"></i></span>
+                            <div>
+                                <h4 class="text-sm font-semibold text-content-primary">Ingress Labels</h4>
+                                <p class="mt-0.5 text-xs text-content-muted">Descriptive Kubernetes labels from the Ingress snapshot.</p>
+                            </div>
+                        </div>
                         {{ table_label.metadata_label(ingress.labels|length ~ ' labels', 'tags') }}
                     </div>
                     {% if ingress.labels %}
-                        <div class="flex max-h-44 flex-wrap gap-1.5 overflow-y-auto pr-1">{% for key, value in ingress.labels %}{{ table_label.metadata_label(key ~ (('=' ~ value) if value not in [None, ''] else ''), 'tag') }}{% endfor %}</div>
+                        <div class="flex max-h-44 flex-wrap gap-1.5 overflow-y-auto pr-1">
+                            {% for key, value in ingress.labels %}{{ table_label.metadata_label(key ~ (('=' ~ value) if value not in [None, ''] else ''), 'tag') }}{% endfor %}
+                        </div>
                         <div class="mt-4">{{ inventory_tip.tip('Labels describe the Ingress and controller selection context.', 'tags') }}</div>
                     {% else %}
                         {{ info_box('No labels recorded', 'This Ingress has no recorded labels.', 'tags') }}
                     {% endif %}
                 </section>
-
                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
                     <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-4">
-                        <div class="flex items-center gap-3"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="braces" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Ingress Annotations</h4><p class="mt-0.5 text-xs text-content-muted">Controller and integration annotations displayed as key-value rows.</p></div></div>
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="braces" class="h-4 w-4"></i></span>
+                            <div>
+                                <h4 class="text-sm font-semibold text-content-primary">Ingress Annotations</h4>
+                                <p class="mt-0.5 text-xs text-content-muted">Controller and integration annotations displayed as key-value rows.</p>
+                            </div>
+                        </div>
                         {{ table_label.metadata_label(ingress.annotations|length ~ ' annotations', 'braces') }}
                     </header>
                     {% if ingress.annotations %}
                         <div class="max-h-64 overflow-y-auto">
-                            {% for key, value in ingress.annotations %}<div class="grid gap-2 border-b border-outline-subtle px-4 py-3 last:border-b-0 md:grid-cols-[minmax(12rem,0.8fr)_minmax(0,1.2fr)]"><div class="break-all text-xs font-semibold leading-5 text-content-secondary">{{ key }}</div><div class="break-all text-xs leading-5 text-content-muted">{{ value or '-' }}</div></div>{% endfor %}
+                            {% for key, value in ingress.annotations %}
+                                <div class="grid gap-2 border-b border-outline-subtle px-4 py-3 last:border-b-0 md:grid-cols-[minmax(12rem,0.8fr)_minmax(0,1.2fr)]">
+                                    <div class="break-all text-xs font-semibold leading-5 text-content-secondary">{{ key }}</div>
+                                    <div class="break-all text-xs leading-5 text-content-muted">{{ value or '-' }}</div>
+                                </div>
+                            {% endfor %}
                         </div>
                         {{ inventory_tip.footer('Annotations may influence controller and integration behavior.', 'braces') }}
                     {% else %}
@@ -213,7 +236,6 @@
                     {% endif %}
                 </section>
             </div>
-
             {{ info_box('Inventory boundary', 'This view shows snapshot configuration. Traffic and certificate posture remain in Analytics and Governance.', 'info') }}
         </div>
     </div>

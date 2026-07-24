@@ -20,14 +20,13 @@
             {{ inventory.unique_image_count or 0 }} unique images
         </div>
     </header>
-
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {% set cards = [
-            ('Total Pods', total_pods, 'package', (inventory.total_image_references or 0) ~ ' image references detected.'),
-            ('Running', running_count, 'circle-check', running_percentage|int ~ '% of matching Pods are running.'),
-            ('Pending', pending_count, 'clock-3', 'Pods waiting for scheduling, initialization, or readiness.'),
-            ('Failed', failed_count, 'circle-x', 'Pods reporting a failed lifecycle phase.')
-        ] %}
+                    ('Total Pods', total_pods, 'package', (inventory.total_image_references or 0) ~ ' image references detected.'),
+                    ('Running', running_count, 'circle-check', running_percentage|int ~ '% of matching Pods are running.'),
+                    ('Pending', pending_count, 'clock-3', 'Pods waiting for scheduling, initialization, or readiness.'),
+                    ('Failed', failed_count, 'circle-x', 'Pods reporting a failed lifecycle phase.')
+                ] %}
         {% for label, value, icon, description in cards %}
             <article class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm transition hover:border-outline-strong hover:bg-surface-hover">
                 <div class="flex items-start justify-between gap-4">
@@ -43,7 +42,6 @@
             </article>
         {% endfor %}
     </div>
-
     <div class="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
         <article class="rounded-xl bg-kaori-primary-dark p-5 text-white shadow-sm">
             <div class="flex items-center justify-between gap-4">
@@ -58,7 +56,6 @@
             </div>
             {{ progress_bar.bar(running_percentage, track_classes="mt-5 h-2 overflow-hidden rounded-full bg-white/20", fill_classes="h-full rounded-full bg-white", label="Coverage progress") }}
         </article>
-
         <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
             <div class="flex items-center justify-between gap-4">
                 <div>

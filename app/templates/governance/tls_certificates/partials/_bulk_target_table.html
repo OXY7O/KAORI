@@ -74,9 +74,7 @@
                         <td class="px-4 py-3 text-left align-middle">
                             {{ table_label.metadata_label(record.cluster.name if record.cluster else record.cluster_id, 'building-2') }}
                         </td>
-                        <td class="px-4 py-3 text-left align-middle">
-                            {{ table_label.metadata_label(record.namespace, 'boxes') }}
-                        </td>
+                        <td class="px-4 py-3 text-left align-middle">{{ table_label.metadata_label(record.namespace, 'boxes') }}</td>
                         <td class="px-4 py-3 text-left align-middle">
                             <div class="flex max-w-[360px] items-center gap-2.5 text-left">
                                 <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">

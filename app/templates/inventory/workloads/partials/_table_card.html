@@ -1,4 +1,5 @@
-<section id="workloads-table-card" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+<section id="workloads-table-card"
+         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
     <header class="border-b border-outline-subtle px-5 py-4">
         <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
             <div class="flex items-start gap-3">
@@ -16,11 +17,11 @@
                 Open Cluster List
             </a>
         </div>
-        <div id="workloads-table-loading" class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
+        <div id="workloads-table-loading"
+             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
             <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
         </div>
     </header>
-
     <div class="border-b border-outline-subtle px-5 py-4">
         <form hx-get="{{ url_for('inventory.workloads') }}"
               hx-target="#workloads-table-card"
@@ -31,14 +32,14 @@
             <input type="hidden" name="page" value="1" />
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}" />
             <input type="hidden" name="partial_mode" value="table_card" />
-
-            {% set select_class = 'h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20' %}
+            {% set select_class = "h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20" %}
             <div class="xl:col-span-2">
                 <label class="mb-2 block text-sm font-semibold text-content-secondary">Cluster</label>
                 <select name="cluster_id" class="{{ select_class }}">
                     <option value="">All Clusters</option>
                     {% for cluster in clusters %}
-                        <option value="{{ cluster.id }}" {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                        <option value="{{ cluster.id }}"
+                                {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -47,7 +48,8 @@
                 <select name="namespace" class="{{ select_class }}">
                     <option value="" {% if not selected_namespace %}selected{% endif %}>All Namespaces</option>
                     {% for namespace_name in inventory.namespaces %}
-                        <option value="{{ namespace_name }}" {% if selected_namespace == namespace_name %}selected{% endif %}>{{ namespace_name }}</option>
+                        <option value="{{ namespace_name }}"
+                                {% if selected_namespace == namespace_name %}selected{% endif %}>{{ namespace_name }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -56,7 +58,8 @@
                 <select name="type" class="{{ select_class }}">
                     <option value="" {% if not selected_type %}selected{% endif %}>All Types</option>
                     {% for type_name in inventory.workload_types %}
-                        <option value="{{ type_name }}" {% if selected_type == type_name %}selected{% endif %}>{{ type_name }}</option>
+                        <option value="{{ type_name }}"
+                                {% if selected_type == type_name %}selected{% endif %}>{{ type_name }}</option>
                     {% endfor %}
                 </select>
             </div>
@@ -65,14 +68,16 @@
                 <select name="status" class="{{ select_class }}">
                     <option value="" {% if not selected_status %}selected{% endif %}>All Statuses</option>
                     {% for status_name in inventory.workload_statuses %}
-                        <option value="{{ status_name }}" {% if selected_status == status_name %}selected{% endif %}>{{ status_name }}</option>
+                        <option value="{{ status_name }}"
+                                {% if selected_status == status_name %}selected{% endif %}>{{ status_name }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div class="xl:col-span-4">
                 <label class="mb-2 block text-sm font-semibold text-content-secondary">Search workload</label>
                 <div class="relative">
-                    <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
+                    <i data-lucide="search"
+                       class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
                     <input type="text"
                            name="search"
                            value="{{ search }}"
@@ -82,6 +87,5 @@
             </div>
         </form>
     </div>
-
     <div id="workloads-table-content">{% include "inventory/workloads/partials/_table_content.html" %}</div>
 </section>

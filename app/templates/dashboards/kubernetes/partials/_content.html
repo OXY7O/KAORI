@@ -1,7 +1,6 @@
 {% set dashboard_cluster_query = 'cluster_id=' ~ (dashboard.selected_cluster_id or '') ~ '&cluster_health_page=' ~ dashboard.cluster_health_pagination.page %}
 <div class="space-y-5">
     {% include "dashboards/kubernetes/partials/_hero.html" %}
-
     {% if cluster_onboarding.is_blocked %}
         {% include "components/cluster/_onboarding_banner.html" %}
     {% else %}
@@ -15,7 +14,6 @@
                 {% include "dashboards/kubernetes/partials/_section_loading.html" %}
             {% endwith %}
         </div>
-
         <div id="dashboard-cluster-health-section"
              hx-get="{{ url_for('kubernetes_dashboard.section', section='cluster_health') }}?{{ dashboard_cluster_query }}"
              hx-trigger="load"
@@ -26,7 +24,6 @@
                 {% include "dashboards/kubernetes/partials/_section_loading.html" %}
             {% endwith %}
         </div>
-
         <div class="grid items-stretch gap-5 xl:grid-cols-12">
             <div class="xl:col-span-6">
                 <div id="dashboard-capacity-snapshot"
@@ -53,7 +50,6 @@
                 </div>
             </div>
         </div>
-
         <div id="dashboard-top-consumers"
              hx-get="{{ url_for('kubernetes_dashboard.section', section='top_consumers') }}?{{ dashboard_cluster_query }}"
              hx-trigger="load"
@@ -64,7 +60,6 @@
                 {% include "dashboards/kubernetes/partials/_section_loading.html" %}
             {% endwith %}
         </div>
-
         <div class="grid items-stretch gap-5 xl:grid-cols-12">
             <div class="xl:col-span-6">
                 <div id="dashboard-forecast-risk"
@@ -80,7 +75,6 @@
             </div>
             <div class="xl:col-span-6">{% include "dashboards/kubernetes/partials/_reporting_summary.html" %}</div>
         </div>
-
         <div class="grid items-stretch gap-5 xl:grid-cols-12">
             <div class="xl:col-span-6">{% include "dashboards/kubernetes/partials/_inventory_summary.html" %}</div>
             <div class="xl:col-span-6">
@@ -96,7 +90,6 @@
                 </div>
             </div>
         </div>
-
         <div id="dashboard-recommended-actions"
              hx-get="{{ url_for('kubernetes_dashboard.section', section='recommended_actions') }}?{{ dashboard_cluster_query }}"
              hx-trigger="load"

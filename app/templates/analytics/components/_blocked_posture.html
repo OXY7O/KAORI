@@ -1,5 +1,5 @@
 {% set blocker_tone = 'warning' if dependency_blocker.kind in ['cluster_required', 'prometheus_setup', 'alert_source_setup'] else 'critical' %}
-{% set blocked_state_variant = 'posture' %}
+{% set blocked_state_variant = "posture" %}
 {% set blocked_state_eyebrow = analytics_posture_label|default('Analytics Posture') %}
 {% set blocked_state_icon = 'triangle-alert' if blocker_tone == 'warning' else 'circle-x' %}
 {% set blocked_state_label = 'Setup Required' if blocker_tone == 'warning' else 'Unavailable' %}

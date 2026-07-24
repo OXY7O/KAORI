@@ -6,26 +6,32 @@
     <div class="space-y-6">
         <!-- Hero -->
         <section class="{{ page_hero.shell_classes() }}">
-    <div class="{{ page_hero.layout_classes() }}">
-        <div class="{{ page_hero.content_classes() }}">
-            {% call page_hero.intro('file-text', 'Infrastructure reporting center', 'file-text') %}
-                <h1 class="{{ page_hero.title_classes() }}">{{ payload.page_title }}</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">{{ payload.page_subtitle }}</p>
-                <div class="{{ page_hero.metadata_row_classes() }}">
-                    {{ page_hero.meta_label('boxes', 'Infrastructure resources') }}
-                    {{ page_hero.meta_label('hard-drive', payload.storage_status) }}
-                    {{ page_hero.meta_label('calendar-clock', 'Scheduled reporting') }}
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('file-text', 'Infrastructure reporting center', 'file-text') %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ payload.page_title }}</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">{{ payload.page_subtitle }}</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('boxes', 'Infrastructure resources') }}
+                            {{ page_hero.meta_label('hard-drive', payload.storage_status) }}
+                            {{ page_hero.meta_label('calendar-clock', 'Scheduled reporting') }}
+                        </div>
+                    {% endcall %}
                 </div>
-            {% endcall %}
-        </div>
-        <aside class="{{ page_hero.aside_classes() }}" aria-label="Report actions">
-            <div class="{{ page_hero.context_panel_classes() }}">
-                <div><p class="{{ page_hero.context_panel_eyebrow_classes() }}">Report engine</p><h2 class="{{ page_hero.context_panel_title_classes() }}">{{ payload.report_engine_status }}</h2><p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Generate and govern standalone PDF artifacts from reusable templates and selected infrastructure scopes.</p></div>
-                <div class="mt-4 grid grid-cols-2 gap-2"><a href="{{ url_for('reports.report_templates') }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="layout-template" class="h-4 w-4"></i>Templates</a><a href="{{ url_for('reports.generate_report') }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="plus-circle" class="h-4 w-4"></i>Generate</a></div>
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="Report actions">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        <div>
+                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Report engine</p>
+                            <h2 class="{{ page_hero.context_panel_title_classes() }}">{{ payload.report_engine_status }}</h2>
+                            <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Generate and govern standalone PDF artifacts from reusable templates and selected infrastructure scopes.</p>
+                        </div>
+                        <div class="mt-4 grid grid-cols-2 gap-2"><a href="{{ url_for('reports.report_templates') }}"
+   class="{{ page_hero.context_action_classes() }}"><i data-lucide="layout-template" class="h-4 w-4"></i>Templates</a><a href="{{ url_for('reports.generate_report') }}"
+   class="{{ page_hero.context_action_classes() }}"><i data-lucide="plus-circle" class="h-4 w-4"></i>Generate</a></div>
+                    </div>
+                </aside>
             </div>
-        </aside>
-    </div>
-</section>
+        </section>
         <!-- Summary Cards -->
         <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {% for card in payload.summary_cards %}
@@ -319,7 +325,8 @@
                                 <ul class="mt-4 space-y-2">
                                     {% for item in domain['items'] %}
                                         <li class="flex gap-2 text-xs leading-5 text-content-secondary dark:text-content-secondary">
-                                            <i data-lucide="check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/900"></i>
+                                            <i data-lucide="check"
+                                               class="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/900"></i>
                                             <span>{{ item }}</span>
                                         </li>
                                     {% endfor %}

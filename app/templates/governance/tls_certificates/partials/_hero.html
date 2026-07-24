@@ -23,7 +23,8 @@
                 </div>
             {% endcall %}
         </div>
-        <aside class="{{ page_hero.aside_classes() }}" aria-label="TLS governance posture">
+        <aside class="{{ page_hero.aside_classes() }}"
+               aria-label="TLS governance posture">
             <div class="{{ page_hero.context_panel_classes() }}">
                 <div class="flex items-start justify-between gap-4">
                     <div>
@@ -40,29 +41,46 @@
                 </div>
                 <div class="mt-3 grid grid-cols-2 gap-2">
                     <div class="{{ page_hero.context_metric_card_classes() }}">
-                        <div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="shield-check" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">Healthy</p></div>
+                        <div class="flex items-center gap-2 text-brand-foreground">
+                            <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
+                            <p class="text-[11px] font-semibold">Healthy</p>
+                        </div>
                         <p class="mt-1.5 text-sm font-semibold leading-5 text-brand-foreground">{{ healthy_total }}</p>
                         <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">TLS Secrets without current risk signals</p>
                     </div>
                     <div class="{{ page_hero.context_metric_card_classes() }}">
-                        <div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="calendar-clock" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">Needs review</p></div>
+                        <div class="flex items-center gap-2 text-brand-foreground">
+                            <i data-lucide="calendar-clock" class="h-3.5 w-3.5"></i>
+                            <p class="text-[11px] font-semibold">Needs review</p>
+                        </div>
                         <p class="mt-1.5 text-sm font-semibold leading-5 text-brand-foreground">{{ risk_total }}</p>
                         <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Expiring, invalid, critical, or expired</p>
                     </div>
                 </div>
                 {% if cluster_onboarding.is_blocked %}
-                    <a href="{{ url_for('integrations.kubernetes') }}" class="{{ page_hero.context_single_action_classes() }}">
+                    <a href="{{ url_for('integrations.kubernetes') }}"
+                       class="{{ page_hero.context_single_action_classes() }}">
                         <i data-lucide="server-cog" class="h-4 w-4"></i>Manage Clusters
                     </a>
                 {% else %}
                     <div class="mt-3 grid grid-cols-2 gap-2">
-                        <form method="post" action="{{ url_for('governance.tls_certificates_sync') }}" hx-post="{{ url_for('governance.tls_certificates_sync') }}" hx-target="#tls-certificates-page-content" hx-swap="outerHTML" hx-indicator="#tls-certificates-table-loading" hx-on::before-request="window.showTlsSecretSyncProgress && window.showTlsSecretSyncProgress()">
-                            <input type="hidden" name="cluster_id" value="{{ payload.filters.cluster_id }}">
-                            <button type="submit" class="{{ page_hero.context_action_classes() }} cursor-not-allowed opacity-60">
+                        <form method="post"
+                              action="{{ url_for('governance.tls_certificates_sync') }}"
+                              hx-post="{{ url_for('governance.tls_certificates_sync') }}"
+                              hx-target="#tls-certificates-page-content"
+                              hx-swap="outerHTML"
+                              hx-indicator="#tls-certificates-table-loading"
+                              hx-on::before-request="window.showTlsSecretSyncProgress && window.showTlsSecretSyncProgress()">
+                            <input type="hidden"
+                                   name="cluster_id"
+                                   value="{{ payload.filters.cluster_id }}">
+                            <button type="submit"
+                                    class="{{ page_hero.context_action_classes() }} cursor-not-allowed opacity-60">
                                 <i data-lucide="refresh-cw" class="h-4 w-4"></i>Sync TLS
                             </button>
                         </form>
-                        <a href="{{ url_for('kubernetes_operations.tls_secret_bulk_rotation') }}" class="{{ page_hero.context_action_classes() }}">
+                        <a href="{{ url_for('kubernetes_operations.tls_secret_bulk_rotation') }}"
+                           class="{{ page_hero.context_action_classes() }}">
                             <i data-lucide="upload-cloud" class="h-4 w-4"></i>Bulk Update
                         </a>
                     </div>

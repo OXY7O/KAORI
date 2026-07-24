@@ -4,375 +4,365 @@
 {% set overview = payload.overview %}
 {% set pagination = payload.pagination %}
 {% if render_dependency_blocker|default(false) and dependency_blocker %}
- {% include "components/dependencies/_blocker.html" %}
+    {% include "components/dependencies/_blocker.html" %}
 {% elif not dependency_blocker %}
- <div class="space-y-6">
- <section class="rounded-xl border border-outline-default bg-surface-card shadow-sm ">
- <div class="border-b border-outline-default px-6 py-4 ">
- <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
- <div>
- <div class="flex items-center gap-2">
- <h2 class="text-base font-semibold text-content-primary">Top Consumer Summary</h2>
- <i data-lucide="info" class="h-4 w-4 text-content-muted"></i>
- </div>
- <p class="mt-1 text-sm text-content-muted ">
- Highest consumers by CPU, memory, pod count, and PVC usage for the selected scope.
- </p>
- </div>
- <span class="inline-flex w-fit items-center gap-2 rounded-md bg-kaori-soft px-3 py-1.5 text-xs font-semibold text-kaori-primary bg-kaori-soft ">
- <i data-lucide="clock-3" class="h-3.5 w-3.5"></i>
- {{ selected_time_range }}
- </span>
- </div>
- </div>
- <div class="p-6">
- <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
- {% set cards = [
- ('cpu', summary.highest_cpu, 'cpu', 'bg-kaori-soft text-kaori-primary bg-kaori-soft '),
- ('memory', summary.highest_memory, 'memory-stick', 'bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-300'),
- ('pods', summary.highest_pods, 'boxes', 'bg-violet-50 text-violet-600 dark:bg-violet-950/60 dark:text-violet-300'),
- ('pvc', summary.highest_pvc, 'database', 'bg-orange-50 text-orange-600 dark:bg-orange-950/60 dark:text-orange-300')
- ] %}
- {% for _, card, icon, icon_class in cards %}
- <div class="rounded-xl border border-outline-default bg-surface-subtle p-5 ">
- <div class="flex items-center gap-4">
- <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl {{ icon_class }}">
- <i data-lucide="{{ icon }}" class="h-7 w-7"></i>
- </div>
- <div class="min-w-0">
- <p class="text-xs font-semibold text-content-muted ">{{ card.title }}</p>
- <p class="mt-1 truncate text-lg font-semibold text-content-primary "
- title="{{ card.label }}">{{ card.label }}</p>
- <p class="mt-1 text-2xl font-semibold {% if icon == 'cpu' %}text-kaori-primary{% elif icon == 'memory-stick' %}text-rose-600{% elif icon == 'boxes' %}text-violet-600{% else %}text-orange-600{% endif %}">
- {{ card.value }}
- </p>
- <p class="mt-1 text-xs text-content-muted ">{{ card.subtitle }}</p>
- </div>
- </div>
- </div>
- {% endfor %}
- </div>
- </div>
- </section>
- <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm ">
- <div class="border-b border-outline-default px-6 py-4 ">
- <div class="flex items-center gap-2">
- <h2 class="text-base font-semibold text-content-primary">Top Consumer Overview</h2>
- <i data-lucide="info" class="h-4 w-4 text-content-muted"></i>
- </div>
- <p class="mt-1 text-sm text-content-muted ">
- Top 10 consumers by CPU and memory usage across namespaces.
- </p>
- </div>
- <div class="grid gap-6 p-6 xl:grid-cols-[minmax(0,1fr)_470px]">
- <div class="min-w-0">
- {% if payload.has_data %}
- <div x-data="{ activeConsumerTab: 'cpu' }">
- <div class="pb-5">
- <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
- <div class="inline-flex w-fit rounded-xl bg-surface-hover p-1 ">
- <button type="button"
- class="inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold transition"
- :class="activeConsumerTab === 'cpu' ? 'bg-surface-card text-kaori-primary shadow-sm ring-1 ring-outline-default ring-outline-default' : 'text-content-muted hover:text-content-primary dark:hover:text-content-primary'"
- @click="activeConsumerTab = 'cpu'">
- <i data-lucide="cpu" class="h-4 w-4"></i>
- CPU
- </button>
- <button type="button"
- class="inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold transition"
- :class="activeConsumerTab === 'memory' ? 'bg-surface-card text-kaori-primary shadow-sm ring-1 ring-outline-default ring-outline-default' : 'text-content-muted hover:text-content-primary dark:hover:text-content-primary'"
- @click="activeConsumerTab = 'memory'">
- <i data-lucide="memory-stick" class="h-4 w-4"></i>
- Memory
- </button>
- </div>
- <div class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary shadow-sm ">
- <i data-lucide="clock-3" class="h-4 w-4"></i>
- {{ selected_time_range }}
- </div>
- </div>
- </div>
- <div>
- <div x-show="activeConsumerTab === 'cpu'" x-cloak>
- <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
- <div>
- <h3 class="text-base font-semibold text-content-primary">Top 10 CPU Consumers</h3>
- <p class="mt-1 text-sm text-content-muted ">
- Ranked by CPU usage in cores during the selected time window.
- </p>
- </div>
- <span class="inline-flex w-fit rounded-xl bg-kaori-soft px-3 py-1 text-xs font-semibold text-kaori-primary bg-kaori-soft ">
- cores
- </span>
- </div>
- <div class="mt-5 overflow-hidden rounded-xl border border-outline-default ">
- <div class="grid grid-cols-[46px_minmax(220px,1fr)_minmax(220px,420px)_96px_76px] gap-3 border-b border-outline-default bg-surface-subtle px-4 py-3 text-xs font-semibold uppercase tracking-wide text-content-muted ">
- <div>#</div>
- <div>Consumer</div>
- <div class="text-right">CPU Usage</div>
- <div class="text-right">Cores</div>
- <div class="text-right">% Total</div>
- </div>
- <div class="divide-y divide-outline-subtle dark:divide-outline-default">
- {% for row in overview.cpu_chart.rows %}
- <div class="grid grid-cols-[46px_minmax(220px,1fr)_minmax(220px,420px)_96px_76px] items-center gap-3 px-4 py-3 hover:bg-surface-subtle dark:hover:bg-surface-hover/40">
- <div>
- <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-surface-hover text-sm font-semibold text-content-secondary ">
- {{ row.rank }}
- </span>
- </div>
- <div class="min-w-0">
- <div class="truncate text-sm font-semibold text-content-primary "
- title="{{ row.full_name }}">{{ row.primary_name }}</div>
- <div class="mt-0.5 truncate text-xs text-content-muted "
- title="{{ row.secondary_name }}">
- {{ row.secondary_name }}
- </div>
- </div>
- <div class="min-w-0">
- {{ progress_bar.bar(
- row.bar_percent,
- track_classes="h-2.5 overflow-hidden rounded-full bg-surface-hover",
- fill_classes="h-full rounded-full bg-kaori-primary",
- label=row.primary_name ~ " contribution",
- ) }}
- </div>
- <div class="text-right text-sm font-semibold tabular-nums text-content-primary ">{{ row.value }}</div>
- <div class="text-right">
- <span class="inline-flex rounded-lg bg-kaori-soft px-2 py-1 text-xs font-semibold tabular-nums text-kaori-primary bg-kaori-soft ">
- {{ row.percent_of_total }}%
- </span>
- </div>
- </div>
- {% endfor %}
- </div>
- </div>
- </div>
- <div x-show="activeConsumerTab === 'memory'" x-cloak>
- <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
- <div>
- <h3 class="text-base font-semibold text-content-primary">Top 10 Memory Consumers</h3>
- <p class="mt-1 text-sm text-content-muted ">
- Ranked by memory usage in GiB during the selected time window.
- </p>
- </div>
- <span class="inline-flex w-fit rounded-xl bg-kaori-soft px-3 py-1 text-xs font-semibold text-kaori-primary bg-kaori-soft ">
- GiB
- </span>
- </div>
- <div class="mt-5 overflow-hidden rounded-xl border border-outline-default ">
- <div class="grid grid-cols-[46px_minmax(220px,1fr)_minmax(220px,420px)_96px_76px] gap-3 border-b border-outline-default bg-surface-subtle px-4 py-3 text-xs font-semibold uppercase tracking-wide text-content-muted ">
- <div>#</div>
- <div>Consumer</div>
- <div class="text-right">Memory Usage</div>
- <div class="text-right">GiB</div>
- <div class="text-right">% Total</div>
- </div>
- <div class="divide-y divide-outline-subtle dark:divide-outline-default">
- {% for row in overview.memory_chart.rows %}
- <div class="grid grid-cols-[46px_minmax(220px,1fr)_minmax(220px,420px)_96px_76px] items-center gap-3 px-4 py-3 hover:bg-surface-subtle dark:hover:bg-surface-hover/40">
- <div>
- <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-surface-hover text-sm font-semibold text-content-secondary ">
- {{ row.rank }}
- </span>
- </div>
- <div class="min-w-0">
- <div class="truncate text-sm font-semibold text-content-primary "
- title="{{ row.full_name }}">{{ row.primary_name }}</div>
- <div class="mt-0.5 truncate text-xs text-content-muted "
- title="{{ row.secondary_name }}">
- {{ row.secondary_name }}
- </div>
- </div>
- <div class="min-w-0">
- {{ progress_bar.bar(
- row.bar_percent,
- track_classes="h-2.5 overflow-hidden rounded-full bg-surface-hover",
- fill_classes="h-full rounded-full bg-kaori-primary",
- label=row.primary_name ~ " contribution",
- ) }}
- </div>
- <div class="text-right text-sm font-semibold tabular-nums text-content-primary ">{{ row.value }}</div>
- <div class="text-right">
- <span class="inline-flex rounded-lg bg-kaori-soft px-2 py-1 text-xs font-semibold tabular-nums text-kaori-primary bg-kaori-soft ">
- {{ row.percent_of_total }}%
- </span>
- </div>
- </div>
- {% endfor %}
- </div>
- </div>
- </div>
- </div>
- </div>
- {% else %}
- {% set empty_state_icon = "bar-chart-3" %}
- {% set empty_state_title = "No Top Consumer Data Available" %}
- {% set empty_state_description = payload.message|default('Top consumer data will appear after Prometheus returns resource metrics for the selected filters.', true) %}
- {% set empty_state_min_height = "min-h-[560px]" %}
- {% include "components/states/_empty_state.html" %}
- {% endif %}
- </div>
- <aside class="min-w-0">
- <div class="relative flex h-full min-h-[620px] flex-col overflow-hidden rounded-xl bg-kaori-primary p-5 text-white shadow-lg shadow-sm">
- <div class="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-surface-card/10 blur-3xl"></div>
- <div class="absolute -bottom-16 left-10 h-44 w-44 rounded-full bg-cyan-300/20 blur-3xl"></div>
- <div class="relative">
- <h3 class="text-sm font-semibold text-white">Overview Summary</h3>
- <p class="mt-1 text-xs text-brand-foreground-muted">Total usage, scope, and risk context for the selected filters.</p>
- </div>
- <div class="relative mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
- {% set overview_cards = [
- ('cpu', 'CPU Used', overview.summary.total_cpu_used, overview.summary.total_cpu_percent ~ '% of allocatable', 'cpu'),
- ('memory', 'Memory Used', overview.summary.total_memory_used, overview.summary.total_memory_percent ~ '% of allocatable', 'memory-stick'),
- ('pods', 'Total Pods', overview.summary.total_pods ~ ' pods', overview.summary.total_pods_percent ~ '% of capacity', 'boxes'),
- ('pvc', 'PVC Usage', overview.summary.total_pvc_used, overview.summary.total_pvc_percent ~ '% of capacity', 'database')
- ] %}
- {% for _, label, value, subtitle, icon in overview_cards %}
- <div class="rounded-xl border border-white/15 bg-surface-card/12 p-4 backdrop-blur">
- <div class="flex items-center gap-3">
- <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-surface-card/15 text-white">
- <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
- </div>
- <div class="min-w-0">
- <div class="text-xs text-brand-foreground-muted">{{ label }}</div>
- <div class="mt-1 truncate font-semibold text-white">{{ value }}</div>
- <div class="text-xs text-brand-foreground-muted/70">{{ subtitle }}</div>
- </div>
- </div>
- </div>
- {% endfor %}
- </div>
- <div class="relative mt-5 rounded-xl border border-white/15 bg-surface-card/12 p-4 backdrop-blur">
- <div class="flex items-center gap-2">
- <i data-lucide="radar" class="h-4 w-4 text-brand-foreground-muted"></i>
- <h4 class="text-xs font-semibold text-brand-foreground-muted">Analysis Context</h4>
- </div>
- <div class="mt-5 space-y-3">
- <div class="grid grid-cols-[110px_minmax(0,1fr)] items-center gap-4">
- <span class="text-sm text-brand-foreground-muted">Scope</span>
- <div class="min-w-0 rounded-xl bg-surface-card/15 px-4 py-2 text-sm font-semibold leading-5 text-white">
- <div class="truncate"
- title="{% if selected_namespace %}{{ selected_namespace }}{% else %}All Namespaces{% endif %}">
- {% if selected_namespace %}
- {{ selected_namespace }}
- {% else %}
- All Namespaces
- {% endif %}
- </div>
- </div>
- </div>
- <div class="grid grid-cols-[110px_minmax(0,1fr)] items-center gap-4">
- <span class="text-sm text-brand-foreground-muted">Resource</span>
- <div class="min-w-0 rounded-xl bg-surface-card/15 px-4 py-2 text-sm font-semibold leading-5 text-white">
- <div class="truncate">
- {% if selected_resource == 'all' %}
- All Resources
- {% else %}
- {{ selected_resource | upper }}
- {% endif %}
- </div>
- </div>
- </div>
- <div class="grid grid-cols-[110px_minmax(0,1fr)] items-center gap-4">
- <span class="text-sm text-brand-foreground-muted">Time Range</span>
- <div class="min-w-0 rounded-xl bg-surface-card/15 px-4 py-2 text-sm font-semibold leading-5 text-white">
- <div class="truncate">{{ selected_time_range }}</div>
- </div>
- </div>
- <div class="grid grid-cols-[110px_minmax(0,1fr)] items-center gap-4">
- <span class="text-sm text-brand-foreground-muted">Risk Rule</span>
- <div class="min-w-0 rounded-xl bg-surface-card/15 px-4 py-2 text-sm font-semibold leading-5 text-white">
- <div class="truncate">75% warning / 90% critical</div>
- </div>
- </div>
- </div>
- </div>
- <div class="relative mt-5 rounded-xl border border-white/15 bg-surface-card/12 p-4 text-brand-foreground-muted backdrop-blur">
- <div class="flex items-start gap-3">
- <i data-lucide="lightbulb" class="mt-0.5 h-4 w-4 shrink-0"></i>
- <div>
- <p class="text-xs font-semibold uppercase tracking-wide text-brand-foreground-muted">Usage Insight</p>
- <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">
- Use this overview to identify dominant consumers before reviewing detailed rows and recommendations below.
- </p>
- </div>
- </div>
- </div>
- </div>
- </aside>
- </div>
- </section>
- {% include "analytics/top_consumers/partials/_consumer_detail_section.html" %}
- <section class="rounded-xl border border-outline-default bg-surface-card shadow-sm ">
- <details class="group">
- <summary class="flex cursor-pointer list-none flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
- <div class="flex min-w-0 items-start gap-3">
- <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary ring-1 ring-brand-outline bg-kaori-soft ">
- <i data-lucide="list-checks" class="h-5 w-5"></i>
- </div>
- <div class="min-w-0">
- <div class="flex flex-wrap items-center gap-2">
- <h2 class="text-base font-semibold text-content-primary">Consumer Recommendations</h2>
- <span class="inline-flex w-fit items-center gap-2 rounded-md bg-kaori-soft px-3 py-1 text-xs font-semibold text-kaori-primary ring-1 ring-brand-outline bg-kaori-soft ">
- {{ payload.recommendation_count | default(0) }} actionable
- </span>
- </div>
- <p class="mt-1 text-sm text-content-muted ">
- Actionable hotspot findings from CPU, memory, pod, PVC, and namespace signals.
- </p>
- </div>
- </div>
- <span class="inline-flex w-fit items-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-3 py-2 text-xs font-semibold text-content-secondary transition group-open:bg-kaori-soft group-open:text-kaori-primary group-open:bg-kaori-soft dark:group-open:text-kaori-primary">
- <i data-lucide="chevron-down"
- class="h-4 w-4 transition group-open:rotate-180"></i>
- Details
- </span>
- </summary>
- <div class="border-t border-outline-default p-6 ">
- <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
- {% for recommendation in payload.recommendation_cards %}
- <div class="rounded-xl border border-outline-default p-5 transition hover:border-brand-outline hover:bg-kaori-soft dark:hover:border-brand-outline hover:bg-kaori-soft">
- <div class="flex items-start gap-3">
- <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl {{ recommendation.icon_class }}">
- <i data-lucide="{{ recommendation.icon }}" class="h-6 w-6"></i>
- </div>
- <div class="min-w-0">
- <div class="mb-2 flex flex-wrap items-center gap-2">
- <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ recommendation.priority_class }}">
- {{ recommendation.priority }}
- </span>
- <span class="rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary ">
- {{ recommendation.source_label }}
- </span>
- </div>
- <h3 class="font-semibold text-content-primary">{{ recommendation.title }}</h3>
- <p class="mt-1 text-sm leading-6 text-content-muted ">{{ recommendation.description }}</p>
- {% if recommendation.is_actionable == 'Yes' %}
- <a href="{{ recommendation.href }}"
- class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-kaori-primary transition hover:text-kaori-primary hover:text-kaori-primary">
- Review consumers
- <i data-lucide="arrow-right" class="h-4 w-4"></i>
- </a>
- {% else %}
- <div class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-content-muted ">
- Context only
- <i data-lucide="check-circle-2" class="h-4 w-4"></i>
- </div>
- {% endif %}
- </div>
- </div>
- </div>
- {% else %}
- {% set empty_state_icon = "list-checks" %}
- {% set empty_state_title = "No Consumer Recommendations Available" %}
- {% set empty_state_description = "Recommendations will appear when consumer metrics cross configured operational thresholds." %}
- {% set empty_state_min_height = "min-h-[180px]" %}
- {% include "components/states/_empty_state.html" %}
- {% endfor %}
- </div>
- </div>
- </details>
- </section>
- </div>
+    <div class="space-y-6">
+        <section class="rounded-xl border border-outline-default bg-surface-card shadow-sm ">
+            <div class="border-b border-outline-default px-6 py-4 ">
+                <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-base font-semibold text-content-primary">Top Consumer Summary</h2>
+                            <i data-lucide="info" class="h-4 w-4 text-content-muted"></i>
+                        </div>
+                        <p class="mt-1 text-sm text-content-muted ">
+                            Highest consumers by CPU, memory, pod count, and PVC usage for the selected scope.
+                        </p>
+                    </div>
+                    <span class="inline-flex w-fit items-center gap-2 rounded-md bg-kaori-soft px-3 py-1.5 text-xs font-semibold text-kaori-primary bg-kaori-soft ">
+                        <i data-lucide="clock-3" class="h-3.5 w-3.5"></i>
+                        {{ selected_time_range }}
+                    </span>
+                </div>
+            </div>
+            <div class="p-6">
+                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    {% set cards = [
+                                            ('cpu', summary.highest_cpu, 'cpu', 'bg-kaori-soft text-kaori-primary bg-kaori-soft '),
+                                            ('memory', summary.highest_memory, 'memory-stick', 'bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-300'),
+                                            ('pods', summary.highest_pods, 'boxes', 'bg-violet-50 text-violet-600 dark:bg-violet-950/60 dark:text-violet-300'),
+                                            ('pvc', summary.highest_pvc, 'database', 'bg-orange-50 text-orange-600 dark:bg-orange-950/60 dark:text-orange-300')
+                                        ] %}
+                    {% for _, card, icon, icon_class in cards %}
+                        <div class="rounded-xl border border-outline-default bg-surface-subtle p-5 ">
+                            <div class="flex items-center gap-4">
+                                <div class="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl {{ icon_class }}">
+                                    <i data-lucide="{{ icon }}" class="h-7 w-7"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <p class="text-xs font-semibold text-content-muted ">{{ card.title }}</p>
+                                    <p class="mt-1 truncate text-lg font-semibold text-content-primary "
+                                       title="{{ card.label }}">{{ card.label }}</p>
+                                    <p class="mt-1 text-2xl font-semibold {% if icon == 'cpu' %}text-kaori-primary{% elif icon == 'memory-stick' %}text-rose-600{% elif icon == 'boxes' %}text-violet-600{% else %}text-orange-600{% endif %}">
+                                        {{ card.value }}
+                                    </p>
+                                    <p class="mt-1 text-xs text-content-muted ">{{ card.subtitle }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </section>
+        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm ">
+            <div class="border-b border-outline-default px-6 py-4 ">
+                <div class="flex items-center gap-2">
+                    <h2 class="text-base font-semibold text-content-primary">Top Consumer Overview</h2>
+                    <i data-lucide="info" class="h-4 w-4 text-content-muted"></i>
+                </div>
+                <p class="mt-1 text-sm text-content-muted ">Top 10 consumers by CPU and memory usage across namespaces.</p>
+            </div>
+            <div class="grid gap-6 p-6 xl:grid-cols-[minmax(0,1fr)_470px]">
+                <div class="min-w-0">
+                    {% if payload.has_data %}
+                        <div x-data="{ activeConsumerTab: 'cpu' }">
+                            <div class="pb-5">
+                                <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                                    <div class="inline-flex w-fit rounded-xl bg-surface-hover p-1 ">
+                                        <button type="button"
+                                                class="inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold transition"
+                                                :class="activeConsumerTab === 'cpu' ? 'bg-surface-card text-kaori-primary shadow-sm ring-1 ring-outline-default ring-outline-default' : 'text-content-muted hover:text-content-primary dark:hover:text-content-primary'"
+                                                @click="activeConsumerTab = 'cpu'">
+                                            <i data-lucide="cpu" class="h-4 w-4"></i>
+                                            CPU
+                                        </button>
+                                        <button type="button"
+                                                class="inline-flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold transition"
+                                                :class="activeConsumerTab === 'memory' ? 'bg-surface-card text-kaori-primary shadow-sm ring-1 ring-outline-default ring-outline-default' : 'text-content-muted hover:text-content-primary dark:hover:text-content-primary'"
+                                                @click="activeConsumerTab = 'memory'">
+                                            <i data-lucide="memory-stick" class="h-4 w-4"></i>
+                                            Memory
+                                        </button>
+                                    </div>
+                                    <div class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary shadow-sm ">
+                                        <i data-lucide="clock-3" class="h-4 w-4"></i>
+                                        {{ selected_time_range }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <div x-show="activeConsumerTab === 'cpu'" x-cloak>
+                                    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                        <div>
+                                            <h3 class="text-base font-semibold text-content-primary">Top 10 CPU Consumers</h3>
+                                            <p class="mt-1 text-sm text-content-muted ">Ranked by CPU usage in cores during the selected time window.</p>
+                                        </div>
+                                        <span class="inline-flex w-fit rounded-xl bg-kaori-soft px-3 py-1 text-xs font-semibold text-kaori-primary bg-kaori-soft ">
+                                            cores
+                                        </span>
+                                    </div>
+                                    <div class="mt-5 overflow-hidden rounded-xl border border-outline-default ">
+                                        <div class="grid grid-cols-[46px_minmax(220px,1fr)_minmax(220px,420px)_96px_76px] gap-3 border-b border-outline-default bg-surface-subtle px-4 py-3 text-xs font-semibold uppercase tracking-wide text-content-muted ">
+                                            <div>#</div>
+                                            <div>Consumer</div>
+                                            <div class="text-right">CPU Usage</div>
+                                            <div class="text-right">Cores</div>
+                                            <div class="text-right">% Total</div>
+                                        </div>
+                                        <div class="divide-y divide-outline-subtle dark:divide-outline-default">
+                                            {% for row in overview.cpu_chart.rows %}
+                                                <div class="grid grid-cols-[46px_minmax(220px,1fr)_minmax(220px,420px)_96px_76px] items-center gap-3 px-4 py-3 hover:bg-surface-subtle dark:hover:bg-surface-hover/40">
+                                                    <div>
+                                                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-surface-hover text-sm font-semibold text-content-secondary ">
+                                                            {{ row.rank }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        <div class="truncate text-sm font-semibold text-content-primary "
+                                                             title="{{ row.full_name }}">{{ row.primary_name }}</div>
+                                                        <div class="mt-0.5 truncate text-xs text-content-muted "
+                                                             title="{{ row.secondary_name }}">
+                                                            {{ row.secondary_name }}
+                                                        </div>
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        {{ progress_bar.bar(row.bar_percent,
+                                                                                                                track_classes="h-2.5 overflow-hidden rounded-full bg-surface-hover",
+                                                                                                                fill_classes="h-full rounded-full bg-kaori-primary",
+                                                                                                                label=row.primary_name ~ " contribution",) }}
+                                                    </div>
+                                                    <div class="text-right text-sm font-semibold tabular-nums text-content-primary ">{{ row.value }}</div>
+                                                    <div class="text-right">
+                                                        <span class="inline-flex rounded-lg bg-kaori-soft px-2 py-1 text-xs font-semibold tabular-nums text-kaori-primary bg-kaori-soft ">
+                                                            {{ row.percent_of_total }}%
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div x-show="activeConsumerTab === 'memory'" x-cloak>
+                                    <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                        <div>
+                                            <h3 class="text-base font-semibold text-content-primary">Top 10 Memory Consumers</h3>
+                                            <p class="mt-1 text-sm text-content-muted ">Ranked by memory usage in GiB during the selected time window.</p>
+                                        </div>
+                                        <span class="inline-flex w-fit rounded-xl bg-kaori-soft px-3 py-1 text-xs font-semibold text-kaori-primary bg-kaori-soft ">
+                                            GiB
+                                        </span>
+                                    </div>
+                                    <div class="mt-5 overflow-hidden rounded-xl border border-outline-default ">
+                                        <div class="grid grid-cols-[46px_minmax(220px,1fr)_minmax(220px,420px)_96px_76px] gap-3 border-b border-outline-default bg-surface-subtle px-4 py-3 text-xs font-semibold uppercase tracking-wide text-content-muted ">
+                                            <div>#</div>
+                                            <div>Consumer</div>
+                                            <div class="text-right">Memory Usage</div>
+                                            <div class="text-right">GiB</div>
+                                            <div class="text-right">% Total</div>
+                                        </div>
+                                        <div class="divide-y divide-outline-subtle dark:divide-outline-default">
+                                            {% for row in overview.memory_chart.rows %}
+                                                <div class="grid grid-cols-[46px_minmax(220px,1fr)_minmax(220px,420px)_96px_76px] items-center gap-3 px-4 py-3 hover:bg-surface-subtle dark:hover:bg-surface-hover/40">
+                                                    <div>
+                                                        <span class="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-surface-hover text-sm font-semibold text-content-secondary ">
+                                                            {{ row.rank }}
+                                                        </span>
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        <div class="truncate text-sm font-semibold text-content-primary "
+                                                             title="{{ row.full_name }}">{{ row.primary_name }}</div>
+                                                        <div class="mt-0.5 truncate text-xs text-content-muted "
+                                                             title="{{ row.secondary_name }}">
+                                                            {{ row.secondary_name }}
+                                                        </div>
+                                                    </div>
+                                                    <div class="min-w-0">
+                                                        {{ progress_bar.bar(row.bar_percent,
+                                                                                                                track_classes="h-2.5 overflow-hidden rounded-full bg-surface-hover",
+                                                                                                                fill_classes="h-full rounded-full bg-kaori-primary",
+                                                                                                                label=row.primary_name ~ " contribution",) }}
+                                                    </div>
+                                                    <div class="text-right text-sm font-semibold tabular-nums text-content-primary ">{{ row.value }}</div>
+                                                    <div class="text-right">
+                                                        <span class="inline-flex rounded-lg bg-kaori-soft px-2 py-1 text-xs font-semibold tabular-nums text-kaori-primary bg-kaori-soft ">
+                                                            {{ row.percent_of_total }}%
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        {% set empty_state_icon = "bar-chart-3" %}
+                        {% set empty_state_title = "No Top Consumer Data Available" %}
+                        {% set empty_state_description = payload.message|default('Top consumer data will appear after Prometheus returns resource metrics for the selected filters.', true) %}
+                        {% set empty_state_min_height = "min-h-[560px]" %}
+                        {% include "components/states/_empty_state.html" %}
+                    {% endif %}
+                </div>
+                <aside class="min-w-0">
+                    <div class="relative flex h-full min-h-[620px] flex-col overflow-hidden rounded-xl bg-kaori-primary p-5 text-white shadow-lg shadow-sm">
+                        <div class="absolute -right-12 -top-12 h-36 w-36 rounded-full bg-surface-card/10 blur-3xl"></div>
+                        <div class="absolute -bottom-16 left-10 h-44 w-44 rounded-full bg-cyan-300/20 blur-3xl"></div>
+                        <div class="relative">
+                            <h3 class="text-sm font-semibold text-white">Overview Summary</h3>
+                            <p class="mt-1 text-xs text-brand-foreground-muted">Total usage, scope, and risk context for the selected filters.</p>
+                        </div>
+                        <div class="relative mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-2">
+                            {% set overview_cards = [
+                                                            ('cpu', 'CPU Used', overview.summary.total_cpu_used, overview.summary.total_cpu_percent ~ '% of allocatable', 'cpu'),
+                                                            ('memory', 'Memory Used', overview.summary.total_memory_used, overview.summary.total_memory_percent ~ '% of allocatable', 'memory-stick'),
+                                                            ('pods', 'Total Pods', overview.summary.total_pods ~ ' pods', overview.summary.total_pods_percent ~ '% of capacity', 'boxes'),
+                                                            ('pvc', 'PVC Usage', overview.summary.total_pvc_used, overview.summary.total_pvc_percent ~ '% of capacity', 'database')
+                                                        ] %}
+                            {% for _, label, value, subtitle, icon in overview_cards %}
+                                <div class="rounded-xl border border-white/15 bg-surface-card/12 p-4 backdrop-blur">
+                                    <div class="flex items-center gap-3">
+                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-surface-card/15 text-white">
+                                            <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <div class="text-xs text-brand-foreground-muted">{{ label }}</div>
+                                            <div class="mt-1 truncate font-semibold text-white">{{ value }}</div>
+                                            <div class="text-xs text-brand-foreground-muted/70">{{ subtitle }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        <div class="relative mt-5 rounded-xl border border-white/15 bg-surface-card/12 p-4 backdrop-blur">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="radar" class="h-4 w-4 text-brand-foreground-muted"></i>
+                                <h4 class="text-xs font-semibold text-brand-foreground-muted">Analysis Context</h4>
+                            </div>
+                            <div class="mt-5 space-y-3">
+                                <div class="grid grid-cols-[110px_minmax(0,1fr)] items-center gap-4">
+                                    <span class="text-sm text-brand-foreground-muted">Scope</span>
+                                    <div class="min-w-0 rounded-xl bg-surface-card/15 px-4 py-2 text-sm font-semibold leading-5 text-white">
+                                        <div class="truncate"
+                                             title="{% if selected_namespace %}{{ selected_namespace }}{% else %}All Namespaces{% endif %}">
+                                            {% if selected_namespace %}
+                                                {{ selected_namespace }}
+                                            {% else %}
+                                                All Namespaces
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-[110px_minmax(0,1fr)] items-center gap-4">
+                                    <span class="text-sm text-brand-foreground-muted">Resource</span>
+                                    <div class="min-w-0 rounded-xl bg-surface-card/15 px-4 py-2 text-sm font-semibold leading-5 text-white">
+                                        <div class="truncate">
+                                            {% if selected_resource == 'all' %}
+                                                All Resources
+                                            {% else %}
+                                                {{ selected_resource | upper }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-[110px_minmax(0,1fr)] items-center gap-4">
+                                    <span class="text-sm text-brand-foreground-muted">Time Range</span>
+                                    <div class="min-w-0 rounded-xl bg-surface-card/15 px-4 py-2 text-sm font-semibold leading-5 text-white">
+                                        <div class="truncate">{{ selected_time_range }}</div>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-[110px_minmax(0,1fr)] items-center gap-4">
+                                    <span class="text-sm text-brand-foreground-muted">Risk Rule</span>
+                                    <div class="min-w-0 rounded-xl bg-surface-card/15 px-4 py-2 text-sm font-semibold leading-5 text-white">
+                                        <div class="truncate">75% warning / 90% critical</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="relative mt-5 rounded-xl border border-white/15 bg-surface-card/12 p-4 text-brand-foreground-muted backdrop-blur">
+                            <div class="flex items-start gap-3">
+                                <i data-lucide="lightbulb" class="mt-0.5 h-4 w-4 shrink-0"></i>
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-brand-foreground-muted">Usage Insight</p>
+                                    <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">
+                                        Use this overview to identify dominant consumers before reviewing detailed rows and recommendations below.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+        {% include "analytics/top_consumers/partials/_consumer_detail_section.html" %}
+        <section class="rounded-xl border border-outline-default bg-surface-card shadow-sm ">
+            <details class="group">
+                <summary class="flex cursor-pointer list-none flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary ring-1 ring-brand-outline bg-kaori-soft ">
+                            <i data-lucide="list-checks" class="h-5 w-5"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <h2 class="text-base font-semibold text-content-primary">Consumer Recommendations</h2>
+                                <span class="inline-flex w-fit items-center gap-2 rounded-md bg-kaori-soft px-3 py-1 text-xs font-semibold text-kaori-primary ring-1 ring-brand-outline bg-kaori-soft ">
+                                    {{ payload.recommendation_count | default(0) }} actionable
+                                </span>
+                            </div>
+                            <p class="mt-1 text-sm text-content-muted ">
+                                Actionable hotspot findings from CPU, memory, pod, PVC, and namespace signals.
+                            </p>
+                        </div>
+                    </div>
+                    <span class="inline-flex w-fit items-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-3 py-2 text-xs font-semibold text-content-secondary transition group-open:bg-kaori-soft group-open:text-kaori-primary group-open:bg-kaori-soft dark:group-open:text-kaori-primary">
+                        <i data-lucide="chevron-down"
+                           class="h-4 w-4 transition group-open:rotate-180"></i>
+                        Details
+                    </span>
+                </summary>
+                <div class="border-t border-outline-default p-6 ">
+                    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                        {% for recommendation in payload.recommendation_cards %}
+                            <div class="rounded-xl border border-outline-default p-5 transition hover:border-brand-outline hover:bg-kaori-soft dark:hover:border-brand-outline hover:bg-kaori-soft">
+                                <div class="flex items-start gap-3">
+                                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl {{ recommendation.icon_class }}">
+                                        <i data-lucide="{{ recommendation.icon }}" class="h-6 w-6"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <div class="mb-2 flex flex-wrap items-center gap-2">
+                                            <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ recommendation.priority_class }}">
+                                                {{ recommendation.priority }}
+                                            </span>
+                                            <span class="rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary ">
+                                                {{ recommendation.source_label }}
+                                            </span>
+                                        </div>
+                                        <h3 class="font-semibold text-content-primary">{{ recommendation.title }}</h3>
+                                        <p class="mt-1 text-sm leading-6 text-content-muted ">{{ recommendation.description }}</p>
+                                        {% if recommendation.is_actionable == 'Yes' %}
+                                            <a href="{{ recommendation.href }}"
+                                               class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-kaori-primary transition hover:text-kaori-primary hover:text-kaori-primary">
+                                                Review consumers
+                                                <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                                            </a>
+                                        {% else %}
+                                            <div class="mt-4 inline-flex items-center gap-1 text-sm font-semibold text-content-muted ">
+                                                Context only
+                                                <i data-lucide="check-circle-2" class="h-4 w-4"></i>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            {% set empty_state_icon = "list-checks" %}
+                            {% set empty_state_title = "No Consumer Recommendations Available" %}
+                            {% set empty_state_description = "Recommendations will appear when consumer metrics cross configured operational thresholds." %}
+                            {% set empty_state_min_height = "min-h-[180px]" %}
+                            {% include "components/states/_empty_state.html" %}
+                        {% endfor %}
+                    </div>
+                </div>
+            </details>
+        </section>
+    </div>
 {% endif %}

@@ -1,5 +1,6 @@
 {% import "components/table_label.html" as table_label %}
-<div id="utilization-trend-panel" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+<div id="utilization-trend-panel"
+     class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
     <div class="border-b border-outline-subtle p-5">
         <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div class="flex items-start gap-3">
@@ -20,22 +21,28 @@
                   hx-indicator="#utilization-trend-indicator"
                   hx-disinherit="hx-target hx-select hx-push-url hx-indicator"
                   class="sm:w-[280px]">
-                <input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}" />
+                <input type="hidden"
+                       name="cluster_id"
+                       value="{{ cluster.id if cluster else '' }}" />
                 <input type="hidden" name="trend_hours" value="{{ trend_hours }}" />
                 <label class="block">
                     <span class="text-xs font-semibold text-content-secondary">Worker Node</span>
-                    <select name="trend_node" class="mt-1.5 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary shadow-sm outline-none transition hover:border-outline-strong focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
+                    <select name="trend_node"
+                            class="mt-1.5 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary shadow-sm outline-none transition hover:border-outline-strong focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
                         <option value="">All Worker Nodes</option>
-                        {% for node in available_worker_nodes %}<option value="{{ node }}" {% if selected_trend_node == node %}selected{% endif %}>{{ node }}</option>{% endfor %}
+                        {% for node in available_worker_nodes %}
+                            <option value="{{ node }}"
+                                    {% if selected_trend_node == node %}selected{% endif %}>{{ node }}</option>
+                        {% endfor %}
                     </select>
                 </label>
             </form>
         </div>
-        <div id="utilization-trend-indicator" class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
+        <div id="utilization-trend-indicator"
+             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
             <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
         </div>
     </div>
-
     <div class="p-5">
         {% if cluster_onboarding.has_clusters and error %}
             <div class="mb-5 rounded-lg border border-status-warning-border bg-status-warning-soft px-4 py-3 text-sm text-content-secondary">
@@ -52,7 +59,19 @@
             <article class="rounded-lg border border-outline-default bg-surface-hover p-4">
                 <p class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-content-muted"><i data-lucide="clock-3" class="h-3.5 w-3.5"></i>Window</p>
                 <p class="mt-2 text-lg font-semibold text-content-primary">
-                    {% if trend_hours < 24 %}Last {{ trend_hours }}h{% elif trend_hours == 24 %}Last 24 Hours{% elif trend_hours == 168 %}Last 7 Days{% elif trend_hours == 720 %}Last 30 Days{% elif trend_hours == 1440 %}Last 60 Days{% else %}{{ trend_hours }}h{% endif %}
+                    {% if trend_hours < 24 %}
+                        Last {{ trend_hours }}h
+                    {% elif trend_hours == 24 %}
+                        Last 24 Hours
+                    {% elif trend_hours == 168 %}
+                        Last 7 Days
+                    {% elif trend_hours == 720 %}
+                        Last 30 Days
+                    {% elif trend_hours == 1440 %}
+                        Last 60 Days
+                    {% else %}
+                        {{ trend_hours }}h
+                    {% endif %}
                 </p>
                 <p class="mt-1 text-xs leading-5 text-content-muted">Controlled by the page time-range filter.</p>
             </article>
@@ -67,7 +86,6 @@
                 <p class="mt-1 text-xs leading-5 text-content-muted">Prometheus range points rendered.</p>
             </article>
         </div>
-
         <div class="rounded-xl border border-outline-default bg-surface-hover p-4">
             <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
@@ -76,8 +94,12 @@
                 </div>
                 {{ table_label.metadata_label('Historical view', 'line-chart') }}
             </div>
-            <div id="utilizationTrendChartContainer" class="relative h-[320px] rounded-lg border border-outline-subtle bg-surface-card p-3">
-                <canvas id="utilizationTrendChart" class="block h-full w-full" width="1200" height="320"></canvas>
+            <div id="utilizationTrendChartContainer"
+                 class="relative h-[320px] rounded-lg border border-outline-subtle bg-surface-card p-3">
+                <canvas id="utilizationTrendChart"
+                        class="block h-full w-full"
+                        width="1200"
+                        height="320"></canvas>
             </div>
             <div id="trendEmptyState" class="hidden">
                 {% set empty_state_icon = "line-chart" %}

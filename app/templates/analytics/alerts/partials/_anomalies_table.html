@@ -1,42 +1,42 @@
 <div id="anomalies-table-container">
- <div class="overflow-x-auto">
- <table class="min-w-full divide-y divide-outline-default dark:divide-outline-default">
- <thead class="bg-surface-subtle /60">
- <tr>
- <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">Anomaly</th>
- <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">Severity</th>
- <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">Namespace</th>
- <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">Signal</th>
- <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">Details</th>
- </tr>
- </thead>
- <tbody x-data="{ openAnomaly: null }"
- class="divide-y divide-outline-default bg-surface-card dark:divide-outline-default ">
- {% if anomalies %}
- {% for anomaly in anomalies %}
- {% set row_key = 'anomaly-' ~ loop.index0 %}
- {% include "analytics/alerts/partials/_anomalies_table_row.html" %}
- {% endfor %}
- {% else %}
- <tr>
- <td colspan="5" class="p-0">
- {% set empty_state_icon = "radar" %}
- {% set empty_state_title = "No Anomalies Detected" %}
- {% set empty_state_description = "No metric deviation candidate matched the current analysis window." %}
- {% set empty_state_min_height = "min-h-[210px]" %}
- {% include "components/states/_empty_state.html" %}
- </td>
- </tr>
- {% endif %}
- </tbody>
- </table>
- </div>
- {% set pagination = anomalies_pagination %}
- {% set endpoint_name = "analytics.alerts_anomalies_table" %}
- {% set target_id = "#anomalies-table-container" %}
- {% set row_label = "anomalies" %}
- {% set page_size_name = "anomalies_per_page" %}
- {% set sibling_page_size_name = "alerts_per_page" %}
- {% set sibling_page_size_value = selected_alerts_per_page %}
- {% include "analytics/alerts/partials/_pagination.html" %}
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-outline-default dark:divide-outline-default">
+            <thead class="bg-surface-subtle /60">
+                <tr>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">Anomaly</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">Severity</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">Namespace</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">Signal</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">Details</th>
+                </tr>
+            </thead>
+            <tbody x-data="{ openAnomaly: null }"
+                   class="divide-y divide-outline-default bg-surface-card dark:divide-outline-default ">
+                {% if anomalies %}
+                    {% for anomaly in anomalies %}
+                        {% set row_key = 'anomaly-' ~ loop.index0 %}
+                        {% include "analytics/alerts/partials/_anomalies_table_row.html" %}
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="p-0">
+                            {% set empty_state_icon = "radar" %}
+                            {% set empty_state_title = "No Anomalies Detected" %}
+                            {% set empty_state_description = "No metric deviation candidate matched the current analysis window." %}
+                            {% set empty_state_min_height = "min-h-[210px]" %}
+                            {% include "components/states/_empty_state.html" %}
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    {% set pagination = anomalies_pagination %}
+    {% set endpoint_name = "analytics.alerts_anomalies_table" %}
+    {% set target_id = "#anomalies-table-container" %}
+    {% set row_label = "anomalies" %}
+    {% set page_size_name = "anomalies_per_page" %}
+    {% set sibling_page_size_name = "alerts_per_page" %}
+    {% set sibling_page_size_value = selected_alerts_per_page %}
+    {% include "analytics/alerts/partials/_pagination.html" %}
 </div>

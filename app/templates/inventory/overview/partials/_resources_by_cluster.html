@@ -1,12 +1,16 @@
-<section id="resources-by-cluster" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm" aria-labelledby="resources-by-cluster-title">
+<section id="resources-by-cluster"
+         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+         aria-labelledby="resources-by-cluster-title">
     <header class="border-b border-outline-subtle px-5 py-4">
         <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
                     <i data-lucide="table-properties" class="h-5 w-5"></i>
                 </span>
                 <div>
-                    <h2 id="resources-by-cluster-title" class="text-sm font-semibold text-content-primary">Resources by Cluster</h2>
+                    <h2 id="resources-by-cluster-title"
+                        class="text-sm font-semibold text-content-primary">Resources by Cluster</h2>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Compare collected Kubernetes resources and verify the latest inventory sync state for each cluster.</p>
                 </div>
             </div>
@@ -16,7 +20,8 @@
                 Open Cluster List
             </a>
         </div>
-        <div id="resources-by-cluster-loading" class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
+        <div id="resources-by-cluster-loading"
+             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
             <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
         </div>
     </header>

@@ -1,5 +1,8 @@
-<section id="dashboard-data-freshness" x-data="{ open: false }" class="h-full rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <div @click="open = !open" class="flex cursor-pointer select-none items-center gap-3 border-b border-outline-subtle px-5 py-4">
+<section id="dashboard-data-freshness"
+         x-data="{ open: false }"
+         class="h-full rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <div @click="open = !open"
+         class="flex cursor-pointer select-none items-center gap-3 border-b border-outline-subtle px-5 py-4">
         <div class="flex min-w-0 flex-1 items-center gap-3">
             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                 <i data-lucide="clock-3" class="h-5 w-5"></i>
@@ -14,11 +17,15 @@
                 @click.stop="open = !open"
                 :aria-expanded="open.toString()"
                 aria-label="Toggle data freshness">
-            <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
+            <i data-lucide="chevron-down"
+               class="h-4 w-4 transition-transform duration-200"
+               :class="open ? 'rotate-180' : ''"></i>
         </button>
     </div>
-
-    <div x-cloak x-show="open" x-transition class="grid gap-3 p-5 sm:grid-cols-2">
+    <div x-cloak
+         x-show="open"
+         x-transition
+         class="grid gap-3 p-5 sm:grid-cols-2">
         {% for item in dashboard.data_freshness %}
             <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3.5">
                 <div class="flex items-start gap-3">
@@ -31,12 +38,7 @@
                                 <p class="text-sm font-semibold text-content-primary">{{ item.label }}</p>
                                 <p class="mt-0.5 truncate text-xs font-medium text-content-muted">{{ item.value }}</p>
                             </div>
-                            <span class="rounded-md border px-2.5 py-1 text-xs font-semibold
-                                        {% if item.status == 'Healthy' %}border-status-normal-border bg-status-normal-soft text-status-normal-text
-                                        {% elif item.status == 'Warning' %}border-status-warning-border bg-status-warning-soft text-status-warning-text
-                                        {% elif item.status == 'Unavailable' %}border-status-critical-border bg-status-critical-soft text-status-critical-text
-                                        {% elif item.status == 'Info' %}border-status-info-border bg-status-info-soft text-status-info-text
-                                        {% else %}border-status-unknown-border bg-status-unknown-soft text-status-unknown-text{% endif %}">
+                            <span class="rounded-md border px-2.5 py-1 text-xs font-semibold {% if item.status == 'Healthy' %}border-status-normal-border bg-status-normal-soft text-status-normal-text {% elif item.status == 'Warning' %}border-status-warning-border bg-status-warning-soft text-status-warning-text {% elif item.status == 'Unavailable' %}border-status-critical-border bg-status-critical-soft text-status-critical-text {% elif item.status == 'Info' %}border-status-info-border bg-status-info-soft text-status-info-text {% else %}border-status-unknown-border bg-status-unknown-soft text-status-unknown-text{% endif %}">
                                 {{ item.status }}
                             </span>
                         </div>

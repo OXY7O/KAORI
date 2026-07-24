@@ -1,120 +1,120 @@
 {% set health = source_health|default({}) %}
 {% set checks = health.checks|default([]) %}
 <section class="rounded-xl border border-outline-default bg-surface-card shadow-sm ">
- <details class="group">
- <summary class="flex cursor-pointer list-none flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
- <div class="flex min-w-0 items-start gap-3">
- <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary ring-1 ring-brand-outline bg-kaori-soft ">
- <i data-lucide="{{ health.icon|default('radio-tower') }}"
- class="h-5 w-5"></i>
- </div>
- <div class="min-w-0">
- <div class="flex flex-wrap items-center gap-2">
- <h2 class="text-base font-semibold text-content-primary">{{ health.label|default("Alert Source Health") }}</h2>
- <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ health.class|default('bg-surface-hover text-content-secondary ') }}">
- {{ health.score|default(0) }}/100
- </span>
- <span class="rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary ">
- {{ source_status.resolved_source|default("none") |title }}
- </span>
- </div>
- <p class="mt-1 text-sm text-content-muted ">
- {{ health.description|default("Alertmanager is primary in Auto mode. Prometheus ALERTS is used only as fallback.") }}
- </p>
- </div>
- </div>
- <span class="inline-flex w-fit items-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-3 py-2 text-xs font-semibold text-content-secondary transition group-open:bg-kaori-soft group-open:text-kaori-primary group-open:bg-kaori-soft dark:group-open:text-kaori-primary">
- <i data-lucide="chevron-down"
- class="h-4 w-4 transition group-open:rotate-180"></i>
- Details
- </span>
- </summary>
- <div class="border-t border-outline-default p-6 ">
- <div class="mb-5 rounded-xl border border-brand-outline bg-kaori-soft p-4 ">
- <div class="flex items-start gap-3">
- <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kaori-primary text-white">
- <i data-lucide="compass" class="h-4 w-4"></i>
- </div>
- <div>
- <p class="text-sm font-semibold text-content-primary ">What this means</p>
- <p class="mt-1 text-sm leading-6 text-content-secondary ">
- Use this card to confirm whether alert intelligence is using Alertmanager as the source of truth or falling back to Prometheus ALERTS.
- </p>
- </div>
- </div>
- </div>
- <div class="grid gap-5 lg:grid-cols-[0.95fr_1.25fr]">
- <div class="grid gap-3 sm:grid-cols-2">
- <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 ">
- <p class="text-xs font-semibold uppercase tracking-wide text-content-muted ">Configured</p>
- <p class="mt-2 text-lg font-semibold text-content-primary ">{{ 'Yes' if source_status.configured else 'No' }}</p>
- </div>
- <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 ">
- <p class="text-xs font-semibold uppercase tracking-wide text-content-muted ">Connection</p>
- <p class="mt-2 text-lg font-semibold text-content-primary ">{{ 'Connected' if source_status.connected else 'Unavailable' }}</p>
- </div>
- <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 ">
- <p class="text-xs font-semibold uppercase tracking-wide text-content-muted ">Response</p>
- <p class="mt-2 text-lg font-semibold text-content-primary ">
- {{ source_status.response_time_ms if source_status.response_time_ms else '-' }}
- {% if source_status.response_time_ms %}ms{% endif %}
- </p>
- </div>
- <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 ">
- <p class="text-xs font-semibold uppercase tracking-wide text-content-muted ">Fallback</p>
- <p class="mt-2 text-lg font-semibold text-content-primary ">{{ 'Active' if source_status.fallback_used else 'Standby' }}</p>
- </div>
- {% if source_status.fallback_reason %}
- <div class="sm:col-span-2 rounded-xl border border-brand-outline bg-kaori-soft p-3 text-sm text-kaori-primary bg-kaori-soft ">
- <div class="flex items-start gap-2">
- <i data-lucide="route" class="mt-0.5 h-4 w-4 shrink-0"></i>
- <span>{{ source_status.fallback_reason }}</span>
- </div>
- </div>
- {% endif %}
- {% if source_status.error %}
- <div class="sm:col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300">
- {{ source_status.error }}
- </div>
- {% endif %}
- </div>
- <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 /30">
- <div class="mb-3 flex items-center justify-between">
- <div>
- <h3 class="text-sm font-semibold text-content-primary">Health Checks</h3>
- <p class="text-xs text-content-muted ">Primary source readiness and fallback confidence.</p>
- </div>
- <span class="rounded-md bg-surface-card px-2.5 py-1 text-xs font-semibold text-content-secondary shadow-sm ">{{ checks|length }} checks</span>
- </div>
- <div class="grid gap-2 md:grid-cols-2">
- {% for check in checks %}
- {% if check.status == 'pass' %}
- {% set check_class = "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300" %}
- {% set check_icon = "check-circle-2" %}
- {% elif check.status == 'warning' %}
- {% set check_class = "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300" %}
- {% set check_icon = "alert-triangle" %}
- {% else %}
- {% set check_class = "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-300" %}
- {% set check_icon = "circle-alert" %}
- {% endif %}
- <div class="rounded-xl bg-surface-card p-3 shadow-sm ">
- <div class="flex items-start gap-3">
- <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ check_class }}">
- <i data-lucide="{{ check_icon }}" class="h-4 w-4"></i>
- </span>
- <div>
- <div class="text-sm font-semibold text-content-primary ">{{ check.label }}</div>
- <p class="mt-0.5 text-xs leading-5 text-content-muted ">{{ check.description }}</p>
- </div>
- </div>
- </div>
- {% else %}
- <p class="text-sm text-content-muted ">No source health check available.</p>
- {% endfor %}
- </div>
- </div>
- </div>
- </div>
- </details>
+    <details class="group">
+        <summary class="flex cursor-pointer list-none flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary ring-1 ring-brand-outline bg-kaori-soft ">
+                    <i data-lucide="{{ health.icon|default('radio-tower') }}"
+                       class="h-5 w-5"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">{{ health.label|default("Alert Source Health") }}</h2>
+                        <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ health.class|default('bg-surface-hover text-content-secondary ') }}">
+                            {{ health.score|default(0) }}/100
+                        </span>
+                        <span class="rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary ">
+                            {{ source_status.resolved_source|default("none") |title }}
+                        </span>
+                    </div>
+                    <p class="mt-1 text-sm text-content-muted ">
+                        {{ health.description|default("Alertmanager is primary in Auto mode. Prometheus ALERTS is used only as fallback.") }}
+                    </p>
+                </div>
+            </div>
+            <span class="inline-flex w-fit items-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-3 py-2 text-xs font-semibold text-content-secondary transition group-open:bg-kaori-soft group-open:text-kaori-primary group-open:bg-kaori-soft dark:group-open:text-kaori-primary">
+                <i data-lucide="chevron-down"
+                   class="h-4 w-4 transition group-open:rotate-180"></i>
+                Details
+            </span>
+        </summary>
+        <div class="border-t border-outline-default p-6 ">
+            <div class="mb-5 rounded-xl border border-brand-outline bg-kaori-soft p-4 ">
+                <div class="flex items-start gap-3">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kaori-primary text-white">
+                        <i data-lucide="compass" class="h-4 w-4"></i>
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-content-primary ">What this means</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary ">
+                            Use this card to confirm whether alert intelligence is using Alertmanager as the source of truth or falling back to Prometheus ALERTS.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="grid gap-5 lg:grid-cols-[0.95fr_1.25fr]">
+                <div class="grid gap-3 sm:grid-cols-2">
+                    <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 ">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted ">Configured</p>
+                        <p class="mt-2 text-lg font-semibold text-content-primary ">{{ 'Yes' if source_status.configured else 'No' }}</p>
+                    </div>
+                    <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 ">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted ">Connection</p>
+                        <p class="mt-2 text-lg font-semibold text-content-primary ">{{ 'Connected' if source_status.connected else 'Unavailable' }}</p>
+                    </div>
+                    <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 ">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted ">Response</p>
+                        <p class="mt-2 text-lg font-semibold text-content-primary ">
+                            {{ source_status.response_time_ms if source_status.response_time_ms else '-' }}
+                            {% if source_status.response_time_ms %}ms{% endif %}
+                        </p>
+                    </div>
+                    <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 ">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted ">Fallback</p>
+                        <p class="mt-2 text-lg font-semibold text-content-primary ">{{ 'Active' if source_status.fallback_used else 'Standby' }}</p>
+                    </div>
+                    {% if source_status.fallback_reason %}
+                        <div class="sm:col-span-2 rounded-xl border border-brand-outline bg-kaori-soft p-3 text-sm text-kaori-primary bg-kaori-soft ">
+                            <div class="flex items-start gap-2">
+                                <i data-lucide="route" class="mt-0.5 h-4 w-4 shrink-0"></i>
+                                <span>{{ source_status.fallback_reason }}</span>
+                            </div>
+                        </div>
+                    {% endif %}
+                    {% if source_status.error %}
+                        <div class="sm:col-span-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-300">
+                            {{ source_status.error }}
+                        </div>
+                    {% endif %}
+                </div>
+                <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 /30">
+                    <div class="mb-3 flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-semibold text-content-primary">Health Checks</h3>
+                            <p class="text-xs text-content-muted ">Primary source readiness and fallback confidence.</p>
+                        </div>
+                        <span class="rounded-md bg-surface-card px-2.5 py-1 text-xs font-semibold text-content-secondary shadow-sm ">{{ checks|length }} checks</span>
+                    </div>
+                    <div class="grid gap-2 md:grid-cols-2">
+                        {% for check in checks %}
+                            {% if check.status == 'pass' %}
+                                {% set check_class = "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300" %}
+                                {% set check_icon = "check-circle-2" %}
+                            {% elif check.status == 'warning' %}
+                                {% set check_class = "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300" %}
+                                {% set check_icon = "alert-triangle" %}
+                            {% else %}
+                                {% set check_class = "bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-300" %}
+                                {% set check_icon = "circle-alert" %}
+                            {% endif %}
+                            <div class="rounded-xl bg-surface-card p-3 shadow-sm ">
+                                <div class="flex items-start gap-3">
+                                    <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ check_class }}">
+                                        <i data-lucide="{{ check_icon }}" class="h-4 w-4"></i>
+                                    </span>
+                                    <div>
+                                        <div class="text-sm font-semibold text-content-primary ">{{ check.label }}</div>
+                                        <p class="mt-0.5 text-xs leading-5 text-content-muted ">{{ check.description }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        {% else %}
+                            <p class="text-sm text-content-muted ">No source health check available.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </details>
 </section>

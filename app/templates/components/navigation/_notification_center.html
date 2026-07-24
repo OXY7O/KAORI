@@ -34,9 +34,7 @@
                             </span>
                         {% endif %}
                     </div>
-                    <p class="mt-1 text-xs leading-4 text-content-muted">
-                        Operational activity and completed actions for your account.
-                    </p>
+                    <p class="mt-1 text-xs leading-4 text-content-muted">Operational activity and completed actions for your account.</p>
                 </div>
                 {% if navigation_unread_count|default(0) > 0 %}
                     <form method="POST" action="{{ url_for('notifications.mark_all_read') }}">

@@ -58,11 +58,9 @@
                 </div>
             </div>
         </div>
-        {{ progress_bar.bar(
-            sync.progress_percent,
-            track_classes="mt-4 h-1.5 overflow-hidden rounded-full bg-kaori-soft/70",
-            fill_classes="h-full rounded-full bg-kaori-primary transition-all duration-500",
-            label="Cluster synchronization progress",
-        ) }}
+        {{ progress_bar.bar(sync.progress_percent,
+                track_classes="mt-4 h-1.5 overflow-hidden rounded-full bg-kaori-soft/70",
+                fill_classes="h-full rounded-full bg-kaori-primary transition-all duration-500",
+                label="Cluster synchronization progress",) }}
     </div>
 </div>

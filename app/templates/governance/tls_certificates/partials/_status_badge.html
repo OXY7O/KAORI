@@ -9,5 +9,5 @@
 {% elif status == 'invalid' %}
     {{ table_label.status_label('Invalid', 'critical', 'triangle-alert') }}
 {% else %}
-    {{ table_label.status_label(status.replace('_', ' ')|title, 'unknown', 'circle-help') }}
+    {{ table_label.status_label(status.replace('_', ' ') |title, 'unknown', 'circle-help') }}
 {% endif %}

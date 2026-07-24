@@ -7,136 +7,132 @@
 {% set end_item = pagination.end_item | default(current_page * per_page if current_page * per_page < total_rows else total_rows) %}
 {% set per_page_options = [5, 10, 25, 50] %}
 <div class="mt-5 flex flex-col gap-3 border-t border-outline-default pt-4 lg:flex-row lg:items-center lg:justify-between">
- <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
- <div class="text-xs text-content-muted ">
- Showing
- <span class="font-semibold text-content-secondary ">{{ start_item }}</span>
- -
- <span class="font-semibold text-content-secondary ">{{ end_item }}</span>
- of
- <span class="font-semibold text-content-secondary ">{{ total_rows }}</span>
- storages
- </div>
- <div class="flex items-center gap-2">
- {% if selected_storage_tab == 'pvc' %}
- <select name="pvc_per_page"
- class="{{ pagination_ui.page_size_classes() }}"
- hx-get="{{ url_for('analytics.storage_persistent_summary') }}"
- hx-trigger="change"
- hx-target="#persistent-storage-panel"
- hx-swap="outerHTML"
- hx-include="#persistent-storage-filter-form, [name='pvc_per_page']"
- hx-indicator="#storage-refresh-indicator">
- {% for option in per_page_options %}
- <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
- {% endfor %}
- </select>
- {% else %}
- <select name="pv_per_page"
- class="{{ pagination_ui.page_size_classes() }}"
- hx-get="{{ url_for('analytics.storage_persistent_summary') }}"
- hx-trigger="change"
- hx-target="#persistent-storage-panel"
- hx-swap="outerHTML"
- hx-include="#persistent-storage-filter-form, [name='pv_per_page']"
- hx-indicator="#storage-refresh-indicator">
- {% for option in per_page_options %}
- <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
- {% endfor %}
- </select>
- {% endif %}
- </div>
- </div>
- {% if total_pages > 1 %}
- <div class="flex items-center gap-2">
- {% if selected_storage_tab == 'pvc' %}
- {% set prev_url = url_for(
- 'analytics.storage_persistent_summary',
- cluster_id=cluster.id if cluster else '',
- namespace=selected_namespace,
- time_range=selected_time_range,
- storage_tab='pvc',
- pvc_search=selected_pvc_search,
- pvc_status=selected_pvc_status,
- pvc_storage_class=selected_pvc_storage_class,
- pvc_page=current_page - 1,
- pvc_per_page=per_page
- ) %}
- {% set next_url = url_for(
- 'analytics.storage_persistent_summary',
- cluster_id=cluster.id if cluster else '',
- namespace=selected_namespace,
- time_range=selected_time_range,
- storage_tab='pvc',
- pvc_search=selected_pvc_search,
- pvc_status=selected_pvc_status,
- pvc_storage_class=selected_pvc_storage_class,
- pvc_page=current_page + 1,
- pvc_per_page=per_page
- ) %}
- {% else %}
- {% set prev_url = url_for(
- 'analytics.storage_persistent_summary',
- cluster_id=cluster.id if cluster else '',
- namespace=selected_namespace,
- time_range=selected_time_range,
- storage_tab='pv',
- pv_search=selected_pv_search,
- pv_status=selected_pv_status,
- pv_storage_class=selected_pv_storage_class,
- pv_page=current_page - 1,
- pv_per_page=per_page
- ) %}
- {% set next_url = url_for(
- 'analytics.storage_persistent_summary',
- cluster_id=cluster.id if cluster else '',
- namespace=selected_namespace,
- time_range=selected_time_range,
- storage_tab='pv',
- pv_search=selected_pv_search,
- pv_status=selected_pv_status,
- pv_storage_class=selected_pv_storage_class,
- pv_page=current_page + 1,
- pv_per_page=per_page
- ) %}
- {% endif %}
- {% if current_page > 1 %}
- <a href="{{ prev_url }}"
- hx-get="{{ prev_url }}"
- hx-target="#persistent-storage-panel"
- hx-swap="outerHTML"
- hx-indicator="#storage-refresh-indicator"
- class="{{ pagination_ui.navigation_classes(disabled=false) }}">
-<i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
-
- Previous
- </a>
- {% else %}
- <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">
-<i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
-
- Previous
- </span>
- {% endif %}
- {{ pagination_ui.numeric_pages(current_page, total_pages) }}
- {% if current_page < total_pages %}
- <a href="{{ next_url }}"
- hx-get="{{ next_url }}"
- hx-target="#persistent-storage-panel"
- hx-swap="outerHTML"
- hx-indicator="#storage-refresh-indicator"
- class="{{ pagination_ui.navigation_classes(disabled=false) }}">
- Next
- 
-<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
-</a>
- {% else %}
- <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">
- Next
- 
-<i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
-</span>
- {% endif %}
- </div>
- {% endif %}
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <div class="text-xs text-content-muted ">
+            Showing
+            <span class="font-semibold text-content-secondary ">{{ start_item }}</span>
+            -
+            <span class="font-semibold text-content-secondary ">{{ end_item }}</span>
+            of
+            <span class="font-semibold text-content-secondary ">{{ total_rows }}</span>
+            storages
+        </div>
+        <div class="flex items-center gap-2">
+            {% if selected_storage_tab == 'pvc' %}
+                <select name="pvc_per_page"
+                        class="{{ pagination_ui.page_size_classes() }}"
+                        hx-get="{{ url_for('analytics.storage_persistent_summary') }}"
+                        hx-trigger="change"
+                        hx-target="#persistent-storage-panel"
+                        hx-swap="outerHTML"
+                        hx-include="#persistent-storage-filter-form, [name='pvc_per_page']"
+                        hx-indicator="#storage-refresh-indicator">
+                    {% for option in per_page_options %}
+                        <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            {% else %}
+                <select name="pv_per_page"
+                        class="{{ pagination_ui.page_size_classes() }}"
+                        hx-get="{{ url_for('analytics.storage_persistent_summary') }}"
+                        hx-trigger="change"
+                        hx-target="#persistent-storage-panel"
+                        hx-swap="outerHTML"
+                        hx-include="#persistent-storage-filter-form, [name='pv_per_page']"
+                        hx-indicator="#storage-refresh-indicator">
+                    {% for option in per_page_options %}
+                        <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
+                    {% endfor %}
+                </select>
+            {% endif %}
+        </div>
+    </div>
+    {% if total_pages > 1 %}
+        <div class="flex items-center gap-2">
+            {% if selected_storage_tab == 'pvc' %}
+                {% set prev_url = url_for(
+                                    'analytics.storage_persistent_summary',
+                                    cluster_id=cluster.id if cluster else '',
+                                    namespace=selected_namespace,
+                                    time_range=selected_time_range,
+                                    storage_tab='pvc',
+                                    pvc_search=selected_pvc_search,
+                                    pvc_status=selected_pvc_status,
+                                    pvc_storage_class=selected_pvc_storage_class,
+                                    pvc_page=current_page - 1,
+                                    pvc_per_page=per_page
+                                ) %}
+                {% set next_url = url_for(
+                                    'analytics.storage_persistent_summary',
+                                    cluster_id=cluster.id if cluster else '',
+                                    namespace=selected_namespace,
+                                    time_range=selected_time_range,
+                                    storage_tab='pvc',
+                                    pvc_search=selected_pvc_search,
+                                    pvc_status=selected_pvc_status,
+                                    pvc_storage_class=selected_pvc_storage_class,
+                                    pvc_page=current_page + 1,
+                                    pvc_per_page=per_page
+                                ) %}
+            {% else %}
+                {% set prev_url = url_for(
+                                    'analytics.storage_persistent_summary',
+                                    cluster_id=cluster.id if cluster else '',
+                                    namespace=selected_namespace,
+                                    time_range=selected_time_range,
+                                    storage_tab='pv',
+                                    pv_search=selected_pv_search,
+                                    pv_status=selected_pv_status,
+                                    pv_storage_class=selected_pv_storage_class,
+                                    pv_page=current_page - 1,
+                                    pv_per_page=per_page
+                                ) %}
+                {% set next_url = url_for(
+                                    'analytics.storage_persistent_summary',
+                                    cluster_id=cluster.id if cluster else '',
+                                    namespace=selected_namespace,
+                                    time_range=selected_time_range,
+                                    storage_tab='pv',
+                                    pv_search=selected_pv_search,
+                                    pv_status=selected_pv_status,
+                                    pv_storage_class=selected_pv_storage_class,
+                                    pv_page=current_page + 1,
+                                    pv_per_page=per_page
+                                ) %}
+            {% endif %}
+            {% if current_page > 1 %}
+                <a href="{{ prev_url }}"
+                   hx-get="{{ prev_url }}"
+                   hx-target="#persistent-storage-panel"
+                   hx-swap="outerHTML"
+                   hx-indicator="#storage-refresh-indicator"
+                   class="{{ pagination_ui.navigation_classes(disabled=false) }}">
+                    <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
+                    Previous
+                </a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">
+                    <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
+                    Previous
+                </span>
+            {% endif %}
+            {{ pagination_ui.numeric_pages(current_page, total_pages) }}
+            {% if current_page < total_pages %}
+                <a href="{{ next_url }}"
+                   hx-get="{{ next_url }}"
+                   hx-target="#persistent-storage-panel"
+                   hx-swap="outerHTML"
+                   hx-indicator="#storage-refresh-indicator"
+                   class="{{ pagination_ui.navigation_classes(disabled=false) }}">
+                    Next
+                    <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
+                </a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">
+                    Next
+                    <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
+                </span>
+            {% endif %}
+        </div>
+    {% endif %}
 </div>

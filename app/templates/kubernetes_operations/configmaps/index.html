@@ -23,26 +23,24 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ configmap_ui.hero_context(
-                    'Operational boundary',
-                    'Controlled configuration changes',
-                    'Controlled',
-                    'info',
-                    'shield-check',
-                    'radio-tower',
-                    'Source',
-                    'Live Kubernetes API',
-                    'Authoritative object state',
-                    'scan-search',
-                    'Validation',
-                    'Server-side dry-run',
-                    'Checked before mutation',
-                    url_for('integrations.kubernetes'),
-                    'Manage Clusters'
+                {{ configmap_ui.hero_context('Operational boundary',
+                                'Controlled configuration changes',
+                                'Controlled',
+                                'info',
+                                'shield-check',
+                                'radio-tower',
+                                'Source',
+                                'Live Kubernetes API',
+                                'Authoritative object state',
+                                'scan-search',
+                                'Validation',
+                                'Server-side dry-run',
+                                'Checked before mutation',
+                                url_for('integrations.kubernetes') ,
+                'Manage Clusters'
                 ) }}
             </div>
         </section>
-
         <section class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm sm:p-6">
             <header class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div>
@@ -54,16 +52,22 @@
                     <p class="mt-1.5 max-w-3xl text-sm leading-6 text-content-muted">Each workflow has its own permission, validation, impact review, and confirmation boundary.</p>
                 </div>
                 <div class="inline-flex min-h-9 items-center gap-2 self-start rounded-lg border border-outline-default bg-surface-hover px-3 text-xs font-medium text-content-secondary lg:self-auto">
-                    <i data-lucide="shield-check" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                    <i data-lucide="shield-check"
+                       class="h-4 w-4 text-kaori-primary"
+                       aria-hidden="true"></i>
                     Dry-run first · Impact aware
                 </div>
             </header>
-
             <div class="mt-6 grid gap-5 lg:grid-cols-3">
                 <article class="flex min-h-[23rem] flex-col rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
                     <div class="flex items-start justify-between gap-4">
-                        <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="file-plus-2" class="h-5 w-5"></i></span>
-                        {% if can_create %}{{ table_label.status_label('Available', 'normal', 'check') }}{% else %}{{ table_label.status_label('Restricted', 'disabled', 'lock') }}{% endif %}
+                        <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true"><i data-lucide="file-plus-2" class="h-5 w-5"></i></span>
+                        {% if can_create %}
+                            {{ table_label.status_label('Available', 'normal', 'check') }}
+                        {% else %}
+                            {{ table_label.status_label('Restricted', 'disabled', 'lock') }}
+                        {% endif %}
                     </div>
                     <h3 class="mt-5 text-lg font-semibold text-content-primary">Create ConfigMap</h3>
                     <p class="mt-2 text-sm leading-6 text-content-muted">Create a new text or binary configuration object without overwriting an existing resource.</p>
@@ -79,17 +83,24 @@
                     </div>
                     <div class="mt-auto pt-5">
                         {% if can_create %}
-                            <a href="{{ url_for('kubernetes_operations.create_configmap') }}" class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"><i data-lucide="plus" class="h-4 w-4"></i>Create ConfigMap</a>
+                            <a href="{{ url_for('kubernetes_operations.create_configmap') }}"
+                               class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"><i data-lucide="plus" class="h-4 w-4"></i>Create ConfigMap</a>
                         {% else %}
-                            <button type="button" disabled class="inline-flex min-h-11 w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg border border-status-disabled-border bg-status-disabled-soft px-4 text-sm font-semibold text-status-disabled-text"><i data-lucide="lock" class="h-4 w-4"></i>Permission required</button>
+                            <button type="button"
+                                    disabled
+                                    class="inline-flex min-h-11 w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg border border-status-disabled-border bg-status-disabled-soft px-4 text-sm font-semibold text-status-disabled-text"><i data-lucide="lock" class="h-4 w-4"></i>Permission required</button>
                         {% endif %}
                     </div>
                 </article>
-
                 <article class="flex min-h-[23rem] flex-col rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
                     <div class="flex items-start justify-between gap-4">
-                        <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="file-pen-line" class="h-5 w-5"></i></span>
-                        {% if can_update %}{{ table_label.status_label('Available', 'normal', 'check') }}{% else %}{{ table_label.status_label('Restricted', 'disabled', 'lock') }}{% endif %}
+                        <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                              aria-hidden="true"><i data-lucide="file-pen-line" class="h-5 w-5"></i></span>
+                        {% if can_update %}
+                            {{ table_label.status_label('Available', 'normal', 'check') }}
+                        {% else %}
+                            {{ table_label.status_label('Restricted', 'disabled', 'lock') }}
+                        {% endif %}
                     </div>
                     <h3 class="mt-5 text-lg font-semibold text-content-primary">View &amp; Update ConfigMap</h3>
                     <p class="mt-2 text-sm leading-6 text-content-muted">Load current values, review workload usage, preview the diff, and apply a merge or replacement.</p>
@@ -105,17 +116,24 @@
                     </div>
                     <div class="mt-auto pt-5">
                         {% if can_update %}
-                            <a href="{{ url_for('kubernetes_operations.update_configmap') }}" class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"><i data-lucide="pencil-line" class="h-4 w-4"></i>Open Update Workflow</a>
+                            <a href="{{ url_for('kubernetes_operations.update_configmap') }}"
+                               class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"><i data-lucide="pencil-line" class="h-4 w-4"></i>Open Update Workflow</a>
                         {% else %}
-                            <button type="button" disabled class="inline-flex min-h-11 w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg border border-status-disabled-border bg-status-disabled-soft px-4 text-sm font-semibold text-status-disabled-text"><i data-lucide="lock" class="h-4 w-4"></i>Permission required</button>
+                            <button type="button"
+                                    disabled
+                                    class="inline-flex min-h-11 w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg border border-status-disabled-border bg-status-disabled-soft px-4 text-sm font-semibold text-status-disabled-text"><i data-lucide="lock" class="h-4 w-4"></i>Permission required</button>
                         {% endif %}
                     </div>
                 </article>
-
                 <article class="flex min-h-[23rem] flex-col rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
                     <div class="flex items-start justify-between gap-4">
-                        <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-status-critical-soft text-status-critical-text" aria-hidden="true"><i data-lucide="trash-2" class="h-5 w-5"></i></span>
-                        {% if can_delete %}{{ table_label.status_label('Available', 'normal', 'check') }}{% else %}{{ table_label.status_label('Restricted', 'disabled', 'lock') }}{% endif %}
+                        <span class="flex h-11 w-11 items-center justify-center rounded-lg bg-status-critical-soft text-status-critical-text"
+                              aria-hidden="true"><i data-lucide="trash-2" class="h-5 w-5"></i></span>
+                        {% if can_delete %}
+                            {{ table_label.status_label('Available', 'normal', 'check') }}
+                        {% else %}
+                            {{ table_label.status_label('Restricted', 'disabled', 'lock') }}
+                        {% endif %}
                     </div>
                     <h3 class="mt-5 text-lg font-semibold text-content-primary">Delete ConfigMap</h3>
                     <p class="mt-2 text-sm leading-6 text-content-muted">Remove a live ConfigMap through an explicit impact review and exact-name confirmation workflow.</p>
@@ -131,15 +149,17 @@
                     </div>
                     <div class="mt-auto pt-5">
                         {% if can_delete %}
-                            <a href="{{ url_for('kubernetes_operations.delete_configmap') }}" class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-status-critical px-4 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-critical"><i data-lucide="trash-2" class="h-4 w-4"></i>Open Delete Workflow</a>
+                            <a href="{{ url_for('kubernetes_operations.delete_configmap') }}"
+                               class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-status-critical px-4 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-critical"><i data-lucide="trash-2" class="h-4 w-4"></i>Open Delete Workflow</a>
                         {% else %}
-                            <button type="button" disabled class="inline-flex min-h-11 w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg border border-status-disabled-border bg-status-disabled-soft px-4 text-sm font-semibold text-status-disabled-text"><i data-lucide="lock" class="h-4 w-4"></i>Permission required</button>
+                            <button type="button"
+                                    disabled
+                                    class="inline-flex min-h-11 w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg border border-status-disabled-border bg-status-disabled-soft px-4 text-sm font-semibold text-status-disabled-text"><i data-lucide="lock" class="h-4 w-4"></i>Permission required</button>
                         {% endif %}
                     </div>
                 </article>
             </div>
         </section>
-
         <section class="grid gap-4 md:grid-cols-3">
             <div class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">{{ configmap_ui.guardrail('scan-search', 'Impact-aware workflow', 'Live values and known consumers are reviewed before update or deletion.') }}</div>
             <div class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">{{ configmap_ui.guardrail('git-compare-arrows', 'Validated changes', 'Diff preview and Kubernetes server-side dry-run precede writes.') }}</div>

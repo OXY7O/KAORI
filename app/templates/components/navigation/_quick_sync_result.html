@@ -3,121 +3,123 @@
 {% set is_error = status == 'error' %}
 {% if toast_oob|default(false) %}
     <div hx-swap-oob="beforeend:#operational-action-feedback">
-{% endif %}
-<div data-quick-action-toast
-     data-operation-result-toast="{{ notification_id|default(task_id|default('result-' ~ range(100000, 999999) |random)) }}"
-     role="status"
-     aria-live="polite"
-     class="quick-action-toast pointer-events-auto w-full">
-    <article class="relative isolate overflow-hidden rounded-2xl border border-outline-default bg-surface-elevated shadow-xl shadow-black/10">
-        <div class="p-4">
-            <div class="flex items-start gap-3">
-                <span class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {% if is_success %}bg-status-normal-soft text-status-normal-text{% elif is_warning %}bg-status-warning-soft text-status-warning-text{% elif is_error %}bg-status-critical-soft text-status-critical-text{% else %}bg-kaori-soft text-kaori-primary{% endif %}">
-                    {% if is_success %}
-                        <i data-lucide="check-circle-2" class="h-5 w-5"></i>
-                    {% elif is_warning %}
-                        <i data-lucide="alert-triangle" class="h-5 w-5"></i>
-                    {% elif is_error %}
-                        <i data-lucide="x-circle" class="h-5 w-5"></i>
-                    {% else %}
-                        <i data-lucide="info" class="h-5 w-5"></i>
-                    {% endif %}
-                </span>
-                <div class="min-w-0 flex-1">
-                    <div class="flex items-start justify-between gap-3">
-                        <div class="min-w-0">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
-                                <span class="rounded-lg px-2 py-1 text-[10px] font-semibold uppercase tracking-wide {% if is_success %}bg-status-normal-soft text-status-normal-text{% elif is_warning %}bg-status-warning-soft text-status-warning-text{% elif is_error %}bg-status-critical-soft text-status-critical-text{% else %}bg-kaori-soft text-kaori-primary{% endif %}">
-                                    {{ status }}
-                                </span>
+    {% endif %}
+    <div data-quick-action-toast
+         data-operation-result-toast="{{ notification_id|default(task_id|default('result-' ~ range(100000, 999999) |random)) }}"
+         role="status"
+         aria-live="polite"
+         class="quick-action-toast pointer-events-auto w-full">
+        <article class="relative isolate overflow-hidden rounded-2xl border border-outline-default bg-surface-elevated shadow-xl shadow-black/10">
+            <div class="p-4">
+                <div class="flex items-start gap-3">
+                    <span class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {% if is_success %}bg-status-normal-soft text-status-normal-text{% elif is_warning %}bg-status-warning-soft text-status-warning-text{% elif is_error %}bg-status-critical-soft text-status-critical-text{% else %}bg-kaori-soft text-kaori-primary{% endif %}">
+                        {% if is_success %}
+                            <i data-lucide="check-circle-2" class="h-5 w-5"></i>
+                        {% elif is_warning %}
+                            <i data-lucide="alert-triangle" class="h-5 w-5"></i>
+                        {% elif is_error %}
+                            <i data-lucide="x-circle" class="h-5 w-5"></i>
+                        {% else %}
+                            <i data-lucide="info" class="h-5 w-5"></i>
+                        {% endif %}
+                    </span>
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+                                    <span class="rounded-lg px-2 py-1 text-[10px] font-semibold uppercase tracking-wide {% if is_success %}bg-status-normal-soft text-status-normal-text{% elif is_warning %}bg-status-warning-soft text-status-warning-text{% elif is_error %}bg-status-critical-soft text-status-critical-text{% else %}bg-kaori-soft text-kaori-primary{% endif %}">
+                                        {{ status }}
+                                    </span>
+                                </div>
+                                <p class="mt-1 text-xs font-semibold leading-5 text-content-secondary">{{ message }}</p>
                             </div>
-                            <p class="mt-1 text-xs font-semibold leading-5 text-content-secondary">{{ message }}</p>
-                        </div>
-                        {% if task_id is defined and task_id %}
-                            {% set resolved_dismiss_url = dismiss_url|default(url_for('cluster.dismiss_sync_all_status', task_id=task_id)) %}
-                            <form method="POST"
-                                  action="{{ resolved_dismiss_url }}"
-                                  hx-post="{{ resolved_dismiss_url }}"
-                                  hx-target="closest [data-quick-action-toast]"
-                                  hx-swap="outerHTML">
-                                {% if csrf_token is defined %}
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                {% endif %}
-                                <button type="submit"
-                                        class="relative z-10 rounded-lg p-1 text-content-muted transition hover:bg-kaori-soft hover:text-kaori-primary cursor-pointer disabled:cursor-not-allowed"
-                                        aria-label="Close sync result">
+                            {% if task_id is defined and task_id %}
+                                {% set resolved_dismiss_url = dismiss_url|default(url_for('cluster.dismiss_sync_all_status', task_id=task_id)) %}
+                                <form method="POST"
+                                      action="{{ resolved_dismiss_url }}"
+                                      hx-post="{{ resolved_dismiss_url }}"
+                                      hx-target="closest [data-quick-action-toast]"
+                                      hx-swap="outerHTML">
+                                    {% if csrf_token is defined %}
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    {% endif %}
+                                    <button type="submit"
+                                            class="relative z-10 rounded-lg p-1 text-content-muted transition hover:bg-kaori-soft hover:text-kaori-primary cursor-pointer disabled:cursor-not-allowed"
+                                            aria-label="Close sync result">
+                                        <i data-lucide="x" class="h-4 w-4"></i>
+                                    </button>
+                                </form>
+                            {% else %}
+                                <button type="button"
+                                        data-quick-action-toast-close
+                                        onclick="window.dismissQuickActionToast && window.dismissQuickActionToast(this)"
+                                        class="relative z-20 rounded-lg p-1 text-content-muted transition hover:bg-kaori-soft hover:text-kaori-primary"
+                                        aria-label="Close operational result">
                                     <i data-lucide="x" class="h-4 w-4"></i>
                                 </button>
-                            </form>
-                        {% else %}
-                            <button type="button"
-                                    data-quick-action-toast-close
-                                    onclick="window.dismissQuickActionToast && window.dismissQuickActionToast(this)"
-                                    class="relative z-20 rounded-lg p-1 text-content-muted transition hover:bg-kaori-soft hover:text-kaori-primary"
-                                    aria-label="Close operational result">
-                                <i data-lucide="x" class="h-4 w-4"></i>
-                            </button>
+                            {% endif %}
+                        </div>
+                        {% if total_count is defined and total_count is not none %}
+                            <div class="mt-3 grid grid-cols-3 gap-2">
+                                <div class="rounded-xl border border-outline-default bg-surface-subtle px-3 py-2">
+                                    <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Target</p>
+                                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ total_count }}</p>
+                                </div>
+                                <div class="rounded-xl border border-status-normal-border bg-status-normal-soft px-3 py-2">
+                                    <p class="text-[10px] font-semibold uppercase tracking-wide text-status-normal-text">Synced</p>
+                                    <p class="mt-1 text-sm font-semibold text-status-normal-text">{{ synced_count|default(0) }}</p>
+                                </div>
+                                <div class="rounded-xl border border-status-critical-border bg-status-critical-soft px-3 py-2">
+                                    <p class="text-[10px] font-semibold uppercase tracking-wide text-status-critical-text">Failed</p>
+                                    <p class="mt-1 text-sm font-semibold text-status-critical-text">{{ failed_count|default(0) }}</p>
+                                </div>
+                            </div>
                         {% endif %}
+                        {% if detail %}
+                            <div class="mt-3 rounded-xl border border-outline-subtle bg-surface-subtle px-3 py-2.5">
+                                <p class="text-xs leading-5 text-content-muted">{{ detail }}</p>
+                            </div>
+                        {% endif %}
+                        <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+                            <div class="flex flex-wrap items-center gap-2 text-[10px] font-semibold text-content-muted">
+                                <span class="inline-flex items-center gap-1.5">
+                                    <i data-lucide="clock-3" class="h-3.5 w-3.5"></i>
+                                    {{ completed_label|default("Completed just now") }}
+                                </span>
+                                {% if duration_seconds is defined and duration_seconds is not none %}
+                                    <span class="inline-flex items-center gap-1.5">
+                                        <i data-lucide="timer" class="h-3.5 w-3.5"></i>
+                                        {{ duration_seconds }}s
+                                    </span>
+                                {% endif %}
+                                {% if notification_saved|default(true) %}
+                                    <span class="inline-flex items-center gap-1.5">
+                                        <i data-lucide="bell" class="h-3.5 w-3.5"></i>
+                                        Saved to notifications
+                                    </span>
+                                {% endif %}
+                            </div>
+                            {% if view_url|default(None) %}
+                                <a href="{{ view_url }}"
+                                   class="inline-flex items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 py-1.5 text-[10px] font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary">
+                                    {{ action_label|default("View clusters") }}
+                                    <i data-lucide="{{ action_icon|default('arrow-up-right') }}"
+                                       class="h-3.5 w-3.5"></i>
+                                </a>
+                            {% endif %}
+                        </div>
                     </div>
-                    {% if total_count is defined and total_count is not none %}
-                        <div class="mt-3 grid grid-cols-3 gap-2">
-                            <div class="rounded-xl border border-outline-default bg-surface-subtle px-3 py-2">
-                                <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Target</p>
-                                <p class="mt-1 text-sm font-semibold text-content-primary">{{ total_count }}</p>
-                            </div>
-                            <div class="rounded-xl border border-status-normal-border bg-status-normal-soft px-3 py-2">
-                                <p class="text-[10px] font-semibold uppercase tracking-wide text-status-normal-text">Synced</p>
-                                <p class="mt-1 text-sm font-semibold text-status-normal-text">{{ synced_count|default(0) }}</p>
-                            </div>
-                            <div class="rounded-xl border border-status-critical-border bg-status-critical-soft px-3 py-2">
-                                <p class="text-[10px] font-semibold uppercase tracking-wide text-status-critical-text">Failed</p>
-                                <p class="mt-1 text-sm font-semibold text-status-critical-text">{{ failed_count|default(0) }}</p>
-                            </div>
-                        </div>
-                    {% endif %}
-                    {% if detail %}
-                        <div class="mt-3 rounded-xl border border-outline-subtle bg-surface-subtle px-3 py-2.5">
-                            <p class="text-xs leading-5 text-content-muted">{{ detail }}</p>
-                        </div>
-                    {% endif %}
-                    <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
-                        <div class="flex flex-wrap items-center gap-2 text-[10px] font-semibold text-content-muted">
-                            <span class="inline-flex items-center gap-1.5">
-                                <i data-lucide="clock-3" class="h-3.5 w-3.5"></i>
-                                {{ completed_label|default("Completed just now") }}
-                            </span>
-                            {% if duration_seconds is defined and duration_seconds is not none %}
-                                <span class="inline-flex items-center gap-1.5">
-                                    <i data-lucide="timer" class="h-3.5 w-3.5"></i>
-                                    {{ duration_seconds }}s
-                                </span>
-                            {% endif %}
-                            {% if notification_saved|default(true) %}
-                                <span class="inline-flex items-center gap-1.5">
-                                    <i data-lucide="bell" class="h-3.5 w-3.5"></i>
-                                    Saved to notifications
-                                </span>
-                            {% endif %}
-                        </div>
-                        {% if view_url|default(None) %}
-                            <a href="{{ view_url }}"
-                               class="inline-flex items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 py-1.5 text-[10px] font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary">
-                                {{ action_label|default("View clusters") }}
-                                <i data-lucide="{{ action_icon|default('arrow-up-right') }}"
-                                   class="h-3.5 w-3.5"></i>
-                            </a>
-                        {% endif %}
+                </div>
+                <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-kaori-soft/70"
+                     aria-hidden="true">
+                    <div class="h-full w-full rounded-full {% if is_success %}bg-status-normal{% elif is_warning %}bg-status-warning{% elif is_error %}bg-status-critical{% else %}bg-kaori-primary{% endif %}">
                     </div>
                 </div>
             </div>
-            <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-kaori-soft/70" aria-hidden="true">
-                <div class="h-full w-full rounded-full {% if is_success %}bg-status-normal{% elif is_warning %}bg-status-warning{% elif is_error %}bg-status-critical{% else %}bg-kaori-primary{% endif %}"></div>
-            </div>
-        </div>
-    </article>
-</div>
-{% if toast_oob|default(false) %}
+        </article>
+    </div>
+    {% if toast_oob|default(false) %}
     </div>
 {% endif %}
 {% if notification_context is defined %}

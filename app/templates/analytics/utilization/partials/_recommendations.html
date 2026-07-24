@@ -15,7 +15,8 @@
                 </div>
             </div>
             <span class="inline-flex min-h-9 w-fit items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition group-open:border-kaori-primary/20 group-open:bg-kaori-soft group-open:text-kaori-primary">
-                <i data-lucide="chevron-down" class="h-4 w-4 transition group-open:rotate-180"></i>
+                <i data-lucide="chevron-down"
+                   class="h-4 w-4 transition group-open:rotate-180"></i>
                 Details
             </span>
         </summary>
@@ -24,12 +25,12 @@
                 <div class="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
                     {% for item in recommendation_cards %}
                         {% set recommendation_url = url_for(
-                            'analytics.utilization',
-                            cluster_id=cluster.id if cluster else '',
-                            trend_hours=trend_hours,
-                            trend_node=selected_trend_node,
-                            node=selected_node
-                        ) %}
+                                                    'analytics.utilization',
+                                                    cluster_id=cluster.id if cluster else '',
+                                                    trend_hours=trend_hours,
+                                                    trend_node=selected_trend_node,
+                                                    node=selected_node
+                                                ) %}
                         {% if item.resource == 'storage' or item.source == 'storage' or item.action_type == 'storage_review' %}
                             {% set recommendation_url = url_for('analytics.storage', cluster_id=cluster.id if cluster else '', time_range='24h') %}
                             {% set recommendation_label = "Open Storage Analysis" %}
@@ -37,13 +38,13 @@
                             {% set recommendation_label = "Review Utilization" %}
                         {% endif %}
                         {% set priority_tone = {
-                            'P1': 'critical',
-                            'Critical': 'critical',
-                            'P2': 'warning',
-                            'Warning': 'warning',
-                            'P3': 'info',
-                            'P4': 'maintenance'
-                        }.get(item.priority, 'unknown') %}
+                                                    'P1': 'critical',
+                                                    'Critical': 'critical',
+                                                    'P2': 'warning',
+                                                    'Warning': 'warning',
+                                                    'P3': 'info',
+                                                    'P4': 'maintenance'
+                                                }.get(item.priority, 'unknown') %}
                         <article class="flex h-full flex-col rounded-lg border border-outline-default bg-surface-card p-4 transition hover:bg-surface-hover">
                             <div class="flex items-start gap-3">
                                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">

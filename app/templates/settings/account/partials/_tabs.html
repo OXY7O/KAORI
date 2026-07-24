@@ -15,7 +15,6 @@
                 {{ identity_context.type_label }}
             </span>
         </a>
-
         <a href="{{ url_for('settings.account', tab='activity') }}"
            hx-get="{{ url_for('settings.account', tab='activity') }}"
            hx-target="#account-authentication-page"
@@ -30,7 +29,6 @@
                 {{ activity_summary.total }} recent
             </span>
         </a>
-
         <a href="{{ url_for('settings.account', tab='credentials') }}"
            hx-get="{{ url_for('settings.account', tab='credentials') }}"
            hx-target="#account-authentication-page"

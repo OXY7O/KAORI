@@ -10,7 +10,6 @@
                     <p class="mt-1 text-sm leading-5 text-content-muted">Explore stored object relationships without querying the Kubernetes API on every interaction.</p>
                 </div>
             </div>
-
             <div class="flex flex-wrap items-center gap-2">
                 <button type="button"
                         id="topology-fit-button"
@@ -47,28 +46,30 @@
                 </button>
             </div>
         </div>
-
-        <div id="topology-loading" class="mt-4 hidden h-1 overflow-hidden rounded-full bg-kaori-soft">
+        <div id="topology-loading"
+             class="mt-4 hidden h-1 overflow-hidden rounded-full bg-kaori-soft">
             <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
         </div>
     </div>
-
     <div class="border-b border-outline-subtle bg-surface-elevated px-5 py-4">
-        <form id="topology-filter-form" class="grid gap-4 xl:grid-cols-12 xl:items-end">
+        <form id="topology-filter-form"
+              class="grid gap-4 xl:grid-cols-12 xl:items-end">
             <div class="xl:col-span-2">
-                <label for="topology-cluster" class="mb-2 block text-sm font-semibold text-content-secondary">Cluster</label>
+                <label for="topology-cluster"
+                       class="mb-2 block text-sm font-semibold text-content-secondary">Cluster</label>
                 <select id="topology-cluster"
                         name="cluster_id"
                         class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                     <option value="">All Clusters</option>
                     {% for cluster in clusters %}
-                        <option value="{{ cluster.id }}" {% if filters.cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                        <option value="{{ cluster.id }}"
+                                {% if filters.cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
                     {% endfor %}
                 </select>
             </div>
-
             <div class="xl:col-span-2">
-                <label for="topology-namespace" class="mb-2 block text-sm font-semibold text-content-secondary">Namespace</label>
+                <label for="topology-namespace"
+                       class="mb-2 block text-sm font-semibold text-content-secondary">Namespace</label>
                 <select id="topology-namespace"
                         name="namespace"
                         {% if not filters.cluster_id %}disabled{% endif %}
@@ -76,38 +77,42 @@
                     <option value="">All Namespaces</option>
                     {% if filters.cluster_id %}
                         {% for item in namespace_map.get(filters.cluster_id, []) %}
-                            <option value="{{ item }}" {% if filters.namespace == item %}selected{% endif %}>{{ item }}</option>
+                            <option value="{{ item }}"
+                                    {% if filters.namespace == item %}selected{% endif %}>{{ item }}</option>
                         {% endfor %}
                     {% endif %}
                 </select>
             </div>
-
             <div class="xl:col-span-2">
-                <label for="topology-scope" class="mb-2 block text-sm font-semibold text-content-secondary">Resource scope</label>
+                <label for="topology-scope"
+                       class="mb-2 block text-sm font-semibold text-content-secondary">Resource scope</label>
                 <select id="topology-scope"
                         name="scope"
                         class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                     {% for value, label in scope_options.items() %}
-                        <option value="{{ value }}" {% if filters.scope == value %}selected{% endif %}>{{ label }}</option>
+                        <option value="{{ value }}"
+                                {% if filters.scope == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
-
             <div class="xl:col-span-2">
-                <label for="topology-depth" class="mb-2 block text-sm font-semibold text-content-secondary">Depth</label>
+                <label for="topology-depth"
+                       class="mb-2 block text-sm font-semibold text-content-secondary">Depth</label>
                 <select id="topology-depth"
                         name="depth"
                         class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                     {% for value, label in depth_options.items() %}
-                        <option value="{{ value }}" {% if filters.depth == value %}selected{% endif %}>{{ label }}</option>
+                        <option value="{{ value }}"
+                                {% if filters.depth == value %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                 </select>
             </div>
-
             <div class="xl:col-span-4">
-                <label for="topology-search" class="mb-2 block text-sm font-semibold text-content-secondary">Search resource</label>
+                <label for="topology-search"
+                       class="mb-2 block text-sm font-semibold text-content-secondary">Search resource</label>
                 <div class="relative">
-                    <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
+                    <i data-lucide="search"
+                       class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
                     <input id="topology-search"
                            type="search"
                            autocomplete="off"
@@ -119,13 +124,11 @@
                 </div>
             </div>
         </form>
-
         <div class="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-content-muted">
             <span id="topology-filter-summary" class="font-medium text-kaori-primary">{{ graph.summary.scope_label }} · {{ graph.summary.depth_label }}</span>
             <span id="topology-search-summary">Search and open a resource directly in the graph.</span>
         </div>
     </div>
-
     <div id="topology-limit-warning"
          class="{% if not graph.summary.truncated %}hidden {% endif %}border-b border-status-warning-border bg-status-warning-soft px-5 py-3 text-xs text-status-warning-text">
         <span class="inline-flex items-start gap-2">
@@ -133,29 +136,28 @@
             <span id="topology-limit-message">The graph was limited for readability. Narrow the cluster or namespace scope to display more resources.</span>
         </span>
     </div>
-
-    <div id="topology-error" class="hidden border-b border-status-critical-border bg-status-critical-soft px-5 py-3 text-xs text-status-critical-text"></div>
-
-    <div id="topology-runtime-status" class="border-b border-status-pending-border bg-status-pending-soft px-5 py-3 text-xs text-status-pending-text">
+    <div id="topology-error"
+         class="hidden border-b border-status-critical-border bg-status-critical-soft px-5 py-3 text-xs text-status-critical-text">
+    </div>
+    <div id="topology-runtime-status"
+         class="border-b border-status-pending-border bg-status-pending-soft px-5 py-3 text-xs text-status-pending-text">
         <span class="inline-flex items-center gap-2">
             <i data-lucide="loader-circle" class="h-4 w-4 animate-spin"></i>
             Preparing the topology renderer and inventory snapshot...
         </span>
     </div>
-
     <div class="grid min-h-[720px] xl:grid-cols-12">
         <aside class="h-[720px] overflow-y-auto border-b border-outline-subtle bg-surface-elevated p-4 xl:col-span-2 xl:border-b-0 xl:border-r 2xl:h-[800px]">
             <div>
                 <h3 class="text-sm font-semibold text-content-primary">Display Controls</h3>
                 <p class="mt-1 text-xs leading-5 text-content-muted">Adjust graph presentation without reloading inventory data.</p>
             </div>
-
             <div class="mt-4 space-y-2.5">
                 {% for control_id, label, checked in [
                     ('topology-node-label-toggle', 'Resource labels', true),
                     ('topology-edge-label-toggle', 'Relationship labels', false),
                     ('topology-group-namespace-toggle', 'Group by namespace', false)
-                ] %}
+                    ] %}
                     <label class="flex min-h-10 items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2 text-xs font-medium text-content-secondary">
                         <span>{{ label }}</span>
                         <input id="{{ control_id }}"
@@ -164,9 +166,9 @@
                                class="h-4 w-4 rounded border-outline-strong accent-kaori-primary focus:ring-outline-focus">
                     </label>
                 {% endfor %}
-
                 <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
-                    <label for="topology-layout-mode" class="block text-xs font-semibold text-content-secondary">Layout mode</label>
+                    <label for="topology-layout-mode"
+                           class="block text-xs font-semibold text-content-secondary">Layout mode</label>
                     <select id="topology-layout-mode"
                             class="mt-2 h-9 w-full rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                         <option value="hierarchy">Hierarchy view</option>
@@ -174,8 +176,8 @@
                     </select>
                 </div>
             </div>
-
-            <details open class="mt-5 rounded-xl border border-outline-subtle bg-surface-card p-3">
+            <details open
+                     class="mt-5 rounded-xl border border-outline-subtle bg-surface-card p-3">
                 <summary class="cursor-pointer text-sm font-semibold text-content-primary">Resource visibility</summary>
                 <div class="mt-3 grid gap-1.5 text-xs text-content-secondary">
                     {% for value, label, icon in [
@@ -190,7 +192,7 @@
                         ('secret', 'Secret', 'key-round'),
                         ('pvc', 'PVC', 'database'),
                         ('pv', 'PV', 'hard-drive')
-                    ] %}
+                        ] %}
                         <label class="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-1.5 transition hover:bg-surface-hover">
                             <span class="inline-flex min-w-0 items-center gap-2">
                                 <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
@@ -199,7 +201,8 @@
                                 <span class="truncate">{{ label }}</span>
                             </span>
                             <span class="flex items-center gap-2">
-                                <span data-topology-count-type="{{ value }}" class="text-[10px] font-semibold text-kaori-primary">0</span>
+                                <span data-topology-count-type="{{ value }}"
+                                      class="text-[10px] font-semibold text-kaori-primary">0</span>
                                 <input type="checkbox"
                                        checked
                                        data-topology-resource-toggle="{{ value }}"
@@ -209,8 +212,8 @@
                     {% endfor %}
                 </div>
             </details>
-
-            <details open class="mt-4 rounded-xl border border-outline-subtle bg-surface-card p-3">
+            <details open
+                     class="mt-4 rounded-xl border border-outline-subtle bg-surface-card p-3">
                 <summary class="cursor-pointer text-sm font-semibold text-content-primary">Relationship visibility</summary>
                 <div class="mt-3 grid gap-1.5 text-[10px] text-content-secondary">
                     {% for value, label, tone in [
@@ -222,7 +225,7 @@
                         ('uses', 'Uses configuration', 'bg-sky-500'),
                         ('mounts', 'Mounts claim', 'bg-orange-500'),
                         ('binds', 'Binds volume', 'bg-lime-600')
-                    ] %}
+                        ] %}
                         <label class="flex cursor-pointer items-center justify-between gap-3 rounded-lg px-2 py-1.5 transition hover:bg-surface-hover">
                             <span class="inline-flex min-w-0 items-center gap-2">
                                 <span class="h-0.5 w-5 shrink-0 rounded-full {{ tone }}"></span>
@@ -236,7 +239,6 @@
                     {% endfor %}
                 </div>
             </details>
-
             <div class="mt-5">
                 <h3 class="text-sm font-semibold text-content-primary">Status Legend</h3>
                 <div class="mt-3 grid gap-1.5 text-[10px] text-content-secondary">
@@ -245,7 +247,7 @@
                         ('Warning', 'bg-status-warning'),
                         ('Critical', 'bg-status-critical'),
                         ('Unknown / informational', 'bg-status-unknown')
-                    ] %}
+                        ] %}
                         <div class="flex items-center gap-2 rounded-lg px-2 py-1.5">
                             <span class="h-2.5 w-2.5 rounded-full {{ tone }}"></span>
                             <span>{{ label }}</span>
@@ -254,26 +256,27 @@
                 </div>
             </div>
         </aside>
-
-        <div id="topology-canvas-shell" class="relative h-[720px] min-w-0 overflow-hidden bg-surface-card xl:col-span-7 2xl:h-[800px]">
-            <div id="topology-namespace-boundaries" class="pointer-events-none absolute inset-0 z-0"></div>
+        <div id="topology-canvas-shell"
+             class="relative h-[720px] min-w-0 overflow-hidden bg-surface-card xl:col-span-7 2xl:h-[800px]">
+            <div id="topology-namespace-boundaries"
+                 class="pointer-events-none absolute inset-0 z-0"></div>
             <div id="topology-canvas"
                  role="application"
                  aria-label="Interactive Kubernetes topology graph"
                  class="absolute inset-0 z-10 h-full w-full"></div>
-            <div id="topology-empty-state" class="pointer-events-none absolute inset-0 hidden items-center justify-center p-8">
+            <div id="topology-empty-state"
+                 class="pointer-events-none absolute inset-0 hidden items-center justify-center p-8">
                 <div class="pointer-events-auto w-full max-w-md">
-                    {% set empty_state_icon = 'waypoints' %}
-                    {% set empty_state_label = 'No Results' %}
-                    {% set empty_state_title = 'No Topology Resources Found' %}
-                    {% set empty_state_description = 'Adjust the cluster, namespace, scope, or depth. Run inventory sync if KAORI has not collected this cluster yet.' %}
-                    {% set empty_state_variant = 'panel' %}
-                    {% set empty_state_min_height = 'min-h-[220px]' %}
+                    {% set empty_state_icon = "waypoints" %}
+                    {% set empty_state_label = "No Results" %}
+                    {% set empty_state_title = "No Topology Resources Found" %}
+                    {% set empty_state_description = "Adjust the cluster, namespace, scope, or depth. Run inventory sync if KAORI has not collected this cluster yet." %}
+                    {% set empty_state_variant = "panel" %}
+                    {% set empty_state_min_height = "min-h-[220px]" %}
                     {% include 'components/states/_empty_state.html' %}
                 </div>
             </div>
         </div>
-
         <aside class="h-[720px] min-w-0 overflow-y-auto border-t border-outline-subtle bg-surface-card p-4 xl:col-span-3 xl:border-l xl:border-t-0 2xl:h-[800px]">
             <div class="flex items-center gap-3">
                 <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
@@ -286,7 +289,8 @@
             </div>
             <div id="topology-detail-content" class="mt-4">
                 <div class="rounded-xl border border-dashed border-outline-strong bg-kaori-soft px-4 py-8 text-center">
-                    <i data-lucide="mouse-pointer-click" class="mx-auto h-7 w-7 text-kaori-primary"></i>
+                    <i data-lucide="mouse-pointer-click"
+                       class="mx-auto h-7 w-7 text-kaori-primary"></i>
                     <p class="mt-3 text-sm font-semibold text-kaori-primary">Nothing selected</p>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Click a graph node to inspect identity, status, inventory fields, and related workspace links.</p>
                 </div>

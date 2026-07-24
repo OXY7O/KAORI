@@ -19,7 +19,8 @@
             <div class="flex flex-wrap items-center gap-2">
                 {{ table_label.status_label(critical_count ~ ' critical', 'critical', 'shield-alert') }}
                 {{ table_label.status_label(warning_count ~ ' warning', 'warning', 'triangle-alert') }}
-                <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-outline-default bg-kaori-soft px-3 text-xs font-semibold text-kaori-primary"><i data-lucide="chevron-down" class="h-4 w-4 transition group-open:rotate-180"></i>Details</span>
+                <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-outline-default bg-kaori-soft px-3 text-xs font-semibold text-kaori-primary"><i data-lucide="chevron-down"
+   class="h-4 w-4 transition group-open:rotate-180"></i>Details</span>
             </div>
         </summary>
         <div class="border-t border-outline-subtle p-5">
@@ -30,11 +31,11 @@
                         {% set source_label = recommendation.source_label|default(source_key|replace('_', ' ')|title) %}
                         {% set severity_tone = {'red': 'critical', 'amber': 'warning', 'green': 'normal', 'blue': 'info'}.get(recommendation.severity_tone, 'unknown') %}
                         {% set severity_icon_class = {
-                            'red': 'bg-status-critical-soft text-status-critical',
-                            'amber': 'bg-status-warning-soft text-status-warning',
-                            'green': 'bg-status-normal-soft text-status-normal',
-                            'blue': 'bg-status-info-soft text-status-info'
-                        }.get(recommendation.severity_tone, 'bg-status-unknown-soft text-status-unknown') %}
+                                                    'red': 'bg-status-critical-soft text-status-critical',
+                                                    'amber': 'bg-status-warning-soft text-status-warning',
+                                                    'green': 'bg-status-normal-soft text-status-normal',
+                                                    'blue': 'bg-status-info-soft text-status-info'
+                                                }.get(recommendation.severity_tone, 'bg-status-unknown-soft text-status-unknown') %}
                         <a href="{{ recommendation.href }}?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}"
                            class="group/card rounded-xl border border-outline-default p-4 transition hover:border-kaori-primary/30 hover:bg-kaori-soft">
                             <div class="flex items-start gap-4">
@@ -57,12 +58,12 @@
                     {% endfor %}
                 </div>
             {% else %}
-                {% set empty_state_icon = 'lightbulb' %}
-                {% set empty_state_label = 'No Data' %}
-                {% set empty_state_title = 'No Prioritized Actions Available' %}
-                {% set empty_state_description = 'KAORI will surface prioritized actions after analytics evidence is available.' %}
-                {% set empty_state_variant = 'panel' %}
-                {% set empty_state_min_height = 'min-h-[150px]' %}
+                {% set empty_state_icon = "lightbulb" %}
+                {% set empty_state_label = "No Data" %}
+                {% set empty_state_title = "No Prioritized Actions Available" %}
+                {% set empty_state_description = "KAORI will surface prioritized actions after analytics evidence is available." %}
+                {% set empty_state_variant = "panel" %}
+                {% set empty_state_min_height = "min-h-[150px]" %}
                 {% include 'components/states/_empty_state.html' %}
             {% endif %}
         </div>

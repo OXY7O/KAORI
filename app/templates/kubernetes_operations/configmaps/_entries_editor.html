@@ -1,28 +1,51 @@
 <div id="configmap-entries" class="space-y-3">
     {% for key, value in entries %}
         <div class="configmap-entry grid items-start gap-3 rounded-lg border border-outline-default bg-surface-hover p-3 md:grid-cols-[minmax(180px,0.8fr)_130px_minmax(260px,2fr)_44px]">
-            <input name="entry_key" value="{{ key }}" placeholder="Key" class="h-10 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-            <select name="entry_kind" class="h-10 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-                <option value="text" {{ 'selected' if value.kind == 'text' else '' }}>Text</option>
-                <option value="binary" {{ 'selected' if value.kind == 'binary' else '' }}>Binary/base64</option>
+            <input name="entry_key"
+                   value="{{ key }}"
+                   placeholder="Key"
+                   class="h-10 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+            <select name="entry_kind"
+                    class="h-10 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                <option value="text" {{ 'selected' if value.kind == 'text' else '' }}>Text
+                </option>
+                <option value="binary" {{ 'selected' if value.kind == 'binary' else '' }}>Binary/base64
+                </option>
             </select>
-            <textarea name="entry_value" rows="5" placeholder="Value" class="min-h-28 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm font-mono leading-5 text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">{{ value.value }}</textarea>
-            <button type="button" data-remove-entry class="flex h-10 w-10 items-center justify-center rounded-lg border border-status-critical-border bg-status-critical-soft text-status-critical-text transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-critical cursor-pointer disabled:cursor-not-allowed" aria-label="Remove ConfigMap entry">
+            <textarea name="entry_value"
+                      rows="5"
+                      placeholder="Value"
+                      class="min-h-28 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm font-mono leading-5 text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">{{ value.value }}</textarea>
+            <button type="button"
+                    data-remove-entry
+                    class="flex h-10 w-10 items-center justify-center rounded-lg border border-status-critical-border bg-status-critical-soft text-status-critical-text transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-critical cursor-pointer disabled:cursor-not-allowed"
+                    aria-label="Remove ConfigMap entry">
                 <i data-lucide="trash-2" class="h-4 w-4"></i>
             </button>
         </div>
     {% endfor %}
 </div>
-<button type="button" data-add-entry class="mt-3 inline-flex min-h-10 items-center gap-2 rounded-lg border border-kaori-primary/25 bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:border-kaori-primary/40 hover:bg-kaori-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus cursor-pointer disabled:cursor-not-allowed"><i data-lucide="plus" class="h-4 w-4"></i>Add Key</button>
+<button type="button"
+        data-add-entry
+        class="mt-3 inline-flex min-h-10 items-center gap-2 rounded-lg border border-kaori-primary/25 bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:border-kaori-primary/40 hover:bg-kaori-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus cursor-pointer disabled:cursor-not-allowed"><i data-lucide="plus" class="h-4 w-4"></i>Add Key</button>
 <template id="configmap-entry-template">
     <div class="configmap-entry grid items-start gap-3 rounded-lg border border-outline-default bg-surface-hover p-3 md:grid-cols-[minmax(180px,0.8fr)_130px_minmax(260px,2fr)_44px]">
-        <input name="entry_key" placeholder="Key" class="h-10 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-        <select name="entry_kind" class="h-10 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+        <input name="entry_key"
+               placeholder="Key"
+               class="h-10 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+        <select name="entry_kind"
+                class="h-10 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
             <option value="text">Text</option>
             <option value="binary">Binary/base64</option>
         </select>
-        <textarea name="entry_value" rows="5" placeholder="Value" class="min-h-28 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm font-mono leading-5 text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20"></textarea>
-        <button type="button" data-remove-entry class="flex h-10 w-10 items-center justify-center rounded-lg border border-status-critical-border bg-status-critical-soft text-status-critical-text transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-critical cursor-pointer disabled:cursor-not-allowed" aria-label="Remove ConfigMap entry">
+        <textarea name="entry_value"
+                  rows="5"
+                  placeholder="Value"
+                  class="min-h-28 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm font-mono leading-5 text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20"></textarea>
+        <button type="button"
+                data-remove-entry
+                class="flex h-10 w-10 items-center justify-center rounded-lg border border-status-critical-border bg-status-critical-soft text-status-critical-text transition hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-critical cursor-pointer disabled:cursor-not-allowed"
+                aria-label="Remove ConfigMap entry">
             <i data-lucide="trash-2" class="h-4 w-4"></i>
         </button>
     </div>

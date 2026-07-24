@@ -17,7 +17,8 @@
                 <i data-lucide="layout-grid" class="h-4 w-4"></i>
                 Inventory footprint
             </div>
-            <h2 id="inventory-footprint-title" class="mt-3 text-xl font-semibold tracking-tight text-content-primary">Collected Kubernetes Resources</h2>
+            <h2 id="inventory-footprint-title"
+                class="mt-3 text-xl font-semibold tracking-tight text-content-primary">Collected Kubernetes Resources</h2>
             <p class="mt-1 text-sm leading-6 text-content-muted">Core objects stored by the inventory collector across registered clusters.</p>
         </div>
         <div class="flex flex-wrap gap-2">
@@ -31,7 +32,6 @@
             </span>
         </div>
     </header>
-
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {% for card in cards %}
             <article class="group rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm transition duration-150 hover:border-outline-strong hover:bg-surface-hover">
@@ -40,7 +40,8 @@
                         <p class="text-xs font-semibold uppercase tracking-[0.08em] text-kaori-primary">{{ card.title }}</p>
                         <p class="mt-2 text-2xl font-semibold tracking-tight text-content-primary">{{ card.value }}</p>
                     </div>
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
                         <i data-lucide="{{ card.icon }}" class="h-5 w-5"></i>
                     </span>
                 </div>
@@ -51,11 +52,11 @@
             </article>
         {% endfor %}
     </div>
-
     <div class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
                     <i data-lucide="database" class="h-5 w-5"></i>
                 </span>
                 <div>

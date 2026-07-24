@@ -1,16 +1,18 @@
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 <div class="space-y-5">
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm" aria-labelledby="inventory-operational-use-title">
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+             aria-labelledby="inventory-operational-use-title">
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
             <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="database" class="h-5 w-5"></i></span>
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true"><i data-lucide="database" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
-                    <h2 id="inventory-operational-use-title" class="text-base font-semibold text-content-primary">Inventory & Operational Use</h2>
+                    <h2 id="inventory-operational-use-title"
+                        class="text-base font-semibold text-content-primary">Inventory & Operational Use</h2>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">See how KAORI uses this Kubernetes connection, which observability sources serve it, and what the lifecycle boundary protects.</p>
                 </div>
             </div>
         </header>
-
         <div class="grid gap-3 border-b border-outline-subtle p-5 sm:grid-cols-2 xl:grid-cols-4 sm:p-6">
             <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
                 <div class="flex items-center justify-between gap-3"><span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="server" class="h-4 w-4"></i></span><span class="text-xs font-semibold text-content-muted">Inventory</span></div>
@@ -33,34 +35,52 @@
                 <p class="mt-1 text-xs font-medium text-content-muted">Generated · {{ operational_use.schedule_count }} Scheduled</p>
             </article>
         </div>
-
         <div class="grid gap-5 p-5 xl:grid-cols-12 sm:p-6">
             <section class="xl:col-span-7" aria-labelledby="operational-consumers-title">
-                <div class="flex items-center gap-2"><i data-lucide="workflow" class="h-4 w-4 text-kaori-primary"></i><h3 id="operational-consumers-title" class="text-sm font-semibold text-content-primary">KAORI Operational Consumers</h3></div>
+                <div class="flex items-center gap-2">
+                    <i data-lucide="workflow" class="h-4 w-4 text-kaori-primary"></i>
+                    <h3 id="operational-consumers-title"
+                        class="text-sm font-semibold text-content-primary">KAORI Operational Consumers</h3>
+                </div>
                 <div class="mt-3 grid gap-3 sm:grid-cols-2">
-                    {% set consumers = [
-                        ('boxes', 'Kubernetes Inventory', 'Normalized nodes, namespaces, workloads, pods, services, ingress, storage, and topology.'),
-                        ('chart-no-axes-combined', 'Kubernetes Analytics', 'Metrics-backed utilization, capacity, storage, workload, and forecasting consumers.'),
-                        ('shield-check', 'Governance', 'TLS inventory, protected secret policy, and operational compliance context.'),
-                        ('square-terminal', 'Operations', 'Live ConfigMap and Secret workflows use the registered Kubernetes authority and RBAC boundary.'),
-                        ('file-chart-column', 'Reports', 'Generated reports remain available even when this Kubernetes registration is later removed.')
-                    ] %}
+                    {% set consumers = [('boxes', 'Kubernetes Inventory', 'Normalized nodes, namespaces, workloads, pods, services, ingress, storage, and topology.'), ('chart-no-axes-combined', 'Kubernetes Analytics', 'Metrics-backed utilization, capacity, storage, workload, and forecasting consumers.'), ('shield-check', 'Governance', 'TLS inventory, protected secret policy, and operational compliance context.'), ('square-terminal', 'Operations', 'Live ConfigMap and Secret workflows use the registered Kubernetes authority and RBAC boundary.'), ('file-chart-column', 'Reports', 'Generated reports remain available even when this Kubernetes registration is later removed.')] %}
                     {% for icon, title, description in consumers %}
                         <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4 {% if loop.last and consumers|length is odd %}sm:col-span-2{% endif %}">
-                            <div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><div><p class="text-sm font-semibold text-content-primary">{{ title }}</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ description }}</p></div></div>
+                            <div class="flex items-start gap-3">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                                <div>
+                                    <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ description }}</p>
+                                </div>
+                            </div>
                         </article>
                     {% endfor %}
                 </div>
             </section>
-
             <aside class="xl:col-span-5" aria-labelledby="bound-sources-title">
-                <div class="flex items-center gap-2"><i data-lucide="waypoints" class="h-4 w-4 text-kaori-primary"></i><h3 id="bound-sources-title" class="text-sm font-semibold text-content-primary">Bound Observability Sources</h3></div>
+                <div class="flex items-center gap-2">
+                    <i data-lucide="waypoints" class="h-4 w-4 text-kaori-primary"></i>
+                    <h3 id="bound-sources-title"
+                        class="text-sm font-semibold text-content-primary">Bound Observability Sources</h3>
+                </div>
                 <div class="mt-3 space-y-3">
                     {% for source in source_bindings %}
                         <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
                             <div class="flex items-start justify-between gap-3">
-                                <div class="flex min-w-0 items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ source.icon }}" class="h-4 w-4"></i></span><div class="min-w-0"><p class="text-xs font-semibold text-content-muted">{{ source.provider }}</p><p class="mt-1 truncate text-sm font-semibold text-content-primary" title="{{ source.name }}">{{ source.name }}</p>{% if source.role %}<p class="mt-1 text-xs text-content-secondary">{{ source.role|title }} source binding</p>{% else %}<p class="mt-1 text-xs text-content-secondary">No reusable source is bound.</p>{% endif %}</div></div>
-                                {{ status_badge(source.status, source.status|replace('_', ' ')|title) }}
+                                <div class="flex min-w-0 items-start gap-3">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ source.icon }}" class="h-4 w-4"></i></span>
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-semibold text-content-muted">{{ source.provider }}</p>
+                                        <p class="mt-1 truncate text-sm font-semibold text-content-primary"
+                                           title="{{ source.name }}">{{ source.name }}</p>
+                                        {% if source.role %}
+                                            <p class="mt-1 text-xs text-content-secondary">{{ source.role|title }} source binding</p>
+                                        {% else %}
+                                            <p class="mt-1 text-xs text-content-secondary">No reusable source is bound.</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                {{ status_badge(source.status, source.status|replace('_', ' ') |title) }}
                             </div>
                         </article>
                     {% endfor %}
@@ -71,29 +91,44 @@
                 </div>
             </aside>
         </div>
-
         <div class="grid border-t border-outline-subtle md:grid-cols-2">
             <div class="border-b border-outline-subtle p-5 md:border-b-0 md:border-r sm:px-6">
-                <div class="flex items-center gap-2"><i data-lucide="trash-2" class="h-4 w-4 text-status-critical"></i><h3 class="text-sm font-semibold text-content-primary">Removed With the Connection</h3></div>
+                <div class="flex items-center gap-2">
+                    <i data-lucide="trash-2" class="h-4 w-4 text-status-critical"></i>
+                    <h3 class="text-sm font-semibold text-content-primary">Removed With the Connection</h3>
+                </div>
                 <p class="mt-2 text-xs leading-5 text-content-secondary">Kubernetes identity, stored kubeconfig, synchronized inventory, cluster-scoped governance/configuration rows, and this cluster's source bindings.</p>
             </div>
             <div class="p-5 sm:px-6">
-                <div class="flex items-center gap-2"><i data-lucide="archive-restore" class="h-4 w-4 text-status-normal-text"></i><h3 class="text-sm font-semibold text-content-primary">Retained After Deletion</h3></div>
+                <div class="flex items-center gap-2">
+                    <i data-lucide="archive-restore" class="h-4 w-4 text-status-normal-text"></i>
+                    <h3 class="text-sm font-semibold text-content-primary">Retained After Deletion</h3>
+                </div>
                 <p class="mt-2 text-xs leading-5 text-content-secondary">Shared Prometheus/Alertmanager instances, generated reports and schedules, runtime observation history, JobExecution history, and Activity Audit evidence.</p>
             </div>
         </div>
     </section>
-
-    <section class="overflow-hidden rounded-xl border border-status-critical-border bg-surface-card shadow-sm" aria-labelledby="connection-lifecycle-title">
+    <section class="overflow-hidden rounded-xl border border-status-critical-border bg-surface-card shadow-sm"
+             aria-labelledby="connection-lifecycle-title">
         <header class="border-b border-status-critical-border bg-status-critical-soft px-5 py-4 sm:px-6">
-            <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-critical"><i data-lucide="shield-alert" class="h-5 w-5"></i></span><div><h2 id="connection-lifecycle-title" class="text-base font-semibold text-content-primary">Connection Lifecycle</h2><p class="mt-1 text-sm leading-6 text-content-secondary">KAORI performs a governed delete only after active work and protected operational requests are resolved.</p></div></div>
+            <div class="flex items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-critical"><i data-lucide="shield-alert" class="h-5 w-5"></i></span>
+                <div>
+                    <h2 id="connection-lifecycle-title"
+                        class="text-base font-semibold text-content-primary">Connection Lifecycle</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">KAORI performs a governed delete only after active work and protected operational requests are resolved.</p>
+                </div>
+            </div>
         </header>
         <div class="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between sm:p-6">
             <div class="min-w-0">
                 {% if deletion_guard.blocked %}
                     <p class="text-sm font-semibold text-status-warning-text">Deletion Is Currently Blocked</p>
                     <ul class="mt-2 space-y-1.5 text-xs leading-5 text-content-secondary">
-                        {% for reason in deletion_guard.reasons %}<li class="flex items-start gap-2"><i data-lucide="circle-alert" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-status-warning-text"></i><span>{{ reason }}</span></li>{% endfor %}
+                        {% for reason in deletion_guard.reasons %}
+                            <li class="flex items-start gap-2"><i data-lucide="circle-alert"
+   class="mt-0.5 h-3.5 w-3.5 shrink-0 text-status-warning-text"></i><span>{{ reason }}</span></li>
+                        {% endfor %}
                     </ul>
                 {% else %}
                     <p class="text-sm font-semibold text-content-primary">Deletion Guardrails Passed</p>

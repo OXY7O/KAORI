@@ -40,14 +40,12 @@
         </div>
     </div>
     <div class="mt-5 flex-1">
-        {{ progress_bar.stacked_bar(
-            payload.storage_snapshot.used_percent,
-            payload.storage_snapshot.free_percent,
-            track_classes="flex h-3 overflow-hidden rounded-full bg-surface-hover",
-            primary_classes="bg-kaori-primary",
-            secondary_classes="bg-status-normal",
-            label="Storage capacity usage",
-        ) }}
+        {{ progress_bar.stacked_bar(payload.storage_snapshot.used_percent,
+                payload.storage_snapshot.free_percent,
+                track_classes="flex h-3 overflow-hidden rounded-full bg-surface-hover",
+                primary_classes="bg-kaori-primary",
+                secondary_classes="bg-status-normal",
+                label="Storage capacity usage",) }}
         <div class="mt-3 flex flex-wrap items-center gap-4 text-xs text-content-muted">
             <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-kaori-primary"></span>Used {{ payload.storage_snapshot.used_percent }}%</span>
             <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-status-normal"></span>Free {{ payload.storage_snapshot.free_percent }}%</span>

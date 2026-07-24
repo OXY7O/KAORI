@@ -34,9 +34,7 @@
                            class="h-3.5 w-3.5 flex-shrink-0 text-content-disabled"
                            aria-hidden="true"></i>
                         <span class="truncate {{ 'text-kaori-primary' if loop.last else 'text-content-secondary' }}"
-                              {% if loop.last %}aria-current="page"{% endif %}>
-                            {{ item.label }}
-                        </span>
+                              {% if loop.last %}aria-current="page"{% endif %}>{{ item.label }}</span>
                     {% endif %}
                 {% endfor %}
             </nav>

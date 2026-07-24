@@ -20,14 +20,13 @@
             TLS ratio {{ tls_percentage | int }}%
         </div>
     </header>
-
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {% set cards = [
-            ('Total Ingresses', total_ingresses, 'route', 'Ingress resources collected from the active cluster and namespace scope.'),
-            ('TLS Enabled', tls_enabled, 'shield-check', 'Ingress resources with at least one TLS configuration entry.'),
-            ('Published Hosts', inventory.total_hosts, 'globe-2', 'Unique hostnames declared by matching Ingress rules.'),
-            ('Namespaces', inventory.total_namespaces, 'folder-tree', 'Namespaces currently publishing Ingress resources.')
-        ] %}
+                    ('Total Ingresses', total_ingresses, 'route', 'Ingress resources collected from the active cluster and namespace scope.'),
+                    ('TLS Enabled', tls_enabled, 'shield-check', 'Ingress resources with at least one TLS configuration entry.'),
+                    ('Published Hosts', inventory.total_hosts, 'globe-2', 'Unique hostnames declared by matching Ingress rules.'),
+                    ('Namespaces', inventory.total_namespaces, 'folder-tree', 'Namespaces currently publishing Ingress resources.')
+                ] %}
         {% for label, value, icon, description in cards %}
             <article class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm transition hover:border-outline-strong hover:bg-surface-hover">
                 <div class="flex items-start justify-between gap-4">
@@ -43,7 +42,6 @@
             </article>
         {% endfor %}
     </div>
-
     <div class="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
         <article class="rounded-xl bg-kaori-primary-dark p-5 text-white shadow-sm">
             <div class="flex items-center justify-between gap-4">
@@ -58,7 +56,6 @@
             </div>
             {{ progress_bar.bar(tls_percentage, track_classes="mt-5 h-2 overflow-hidden rounded-full bg-white/20", fill_classes="h-full rounded-full bg-white", label="Coverage progress") }}
         </article>
-
         <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
             <div class="flex items-center justify-between gap-4">
                 <div>
@@ -82,7 +79,11 @@
                 </div>
                 <div class="rounded-lg border border-outline-default bg-surface-hover px-3 py-3">
                     <div class="flex items-center gap-2">
-                        {% if no_tls > 0 %}{{ table_label.status_label('Review needed', 'warning', 'triangle-alert') }}{% else %}{{ table_label.status_label('No review', 'normal', 'circle-check') }}{% endif %}
+                        {% if no_tls > 0 %}
+                            {{ table_label.status_label('Review needed', 'warning', 'triangle-alert') }}
+                        {% else %}
+                            {{ table_label.status_label('No review', 'normal', 'circle-check') }}
+                        {% endif %}
                     </div>
                     <p class="mt-2 text-xl font-semibold text-content-primary">{{ no_tls }}</p>
                     <p class="mt-1 text-[10px] leading-4 text-content-muted">{{ no_tls_percentage|int }}% without TLS.</p>

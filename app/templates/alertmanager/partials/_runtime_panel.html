@@ -5,41 +5,37 @@
 {% set health_icon = 'circle-check' if runtime_state.health_status == 'healthy' else ('triangle-alert' if runtime_state.health_status == 'degraded' else ('octagon-alert' if runtime_state.health_status == 'unhealthy' else 'circle-help')) %}
 {% set readiness_tone = 'normal' if runtime_state.readiness == 'ready' else ('warning' if runtime_state.readiness == 'degraded' else ('critical' if runtime_state.readiness == 'blocked' else ('unknown' if runtime_state.readiness == 'not_configured' else 'info'))) %}
 {% set readiness_icon = 'circle-check' if runtime_state.readiness == 'ready' else ('triangle-alert' if runtime_state.readiness == 'degraded' else ('octagon-alert' if runtime_state.readiness == 'blocked' else ('circle-help' if runtime_state.readiness == 'not_configured' else 'badge-check'))) %}
-<section id="alertmanager-runtime-panel" class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
-         {% if runtime_refresh_job and runtime_refresh_job.is_active %}
-         hx-get="{{ url_for('alertmanager.runtime_refresh_status', instance_id=instance.id, task_id=runtime_refresh_job.task_id) }}"
-         hx-trigger="load delay:1500ms"
-         hx-target="this"
-         hx-swap="outerHTML"
-         {% endif %}>
+<section id="alertmanager-runtime-panel"
+         class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+         {% if runtime_refresh_job and runtime_refresh_job.is_active %} hx-get="{{ url_for('alertmanager.runtime_refresh_status', instance_id=instance.id, task_id=runtime_refresh_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML" {% endif %}>
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div class="flex items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                <i data-lucide="activity" class="h-5 w-5" aria-hidden="true"></i>
-            </span>
-            <div>
-                <h2 class="text-base font-semibold text-content-primary">Runtime Health &amp; Diagnostics</h2>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Current health evidence, validation posture, response behavior, and technical checks.</p>
+            <div class="flex items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="activity" class="h-5 w-5" aria-hidden="true"></i>
+                </span>
+                <div>
+                    <h2 class="text-base font-semibold text-content-primary">Runtime Health &amp; Diagnostics</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Current health evidence, validation posture, response behavior, and technical checks.</p>
+                </div>
             </div>
+            <button type="button"
+                    hx-post="{{ url_for('alertmanager.refresh_runtime', instance_id=instance.id) }}"
+                    hx-target="#alertmanager-runtime-panel"
+                    hx-swap="outerHTML"
+                    hx-disabled-elt="this"
+                    hx-indicator="#alertmanager-runtime-loading"
+                    {% if runtime_refresh_job and runtime_refresh_job.is_active %}disabled{% endif %}
+                    class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
+                <i data-lucide="{{ 'loader-circle' if runtime_refresh_job and runtime_refresh_job.is_active else 'refresh-cw' }}"
+                   class="h-4 w-4{% if runtime_refresh_job and runtime_refresh_job.is_active %} animate-spin{% endif %}"
+                   aria-hidden="true"></i>
+                {{ 'Refresh Running' if runtime_refresh_job and runtime_refresh_job.is_active else 'Refresh Runtime' }}
+            </button>
         </div>
-        <button type="button"
-                hx-post="{{ url_for('alertmanager.refresh_runtime', instance_id=instance.id) }}"
-                hx-target="#alertmanager-runtime-panel"
-                hx-swap="outerHTML"
-                hx-disabled-elt="this"
-                hx-indicator="#alertmanager-runtime-loading"
-                {% if runtime_refresh_job and runtime_refresh_job.is_active %}disabled{% endif %}
-                class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
-            <i data-lucide="{{ 'loader-circle' if runtime_refresh_job and runtime_refresh_job.is_active else 'refresh-cw' }}" class="h-4 w-4{% if runtime_refresh_job and runtime_refresh_job.is_active %} animate-spin{% endif %}" aria-hidden="true"></i>
-            {{ 'Refresh Running' if runtime_refresh_job and runtime_refresh_job.is_active else 'Refresh Runtime' }}
-        </button>
-        </div>
-        {{ loading_bar.render(
-            'alertmanager-runtime-loading',
-            active=runtime_refresh_job and runtime_refresh_job.is_active,
-            label='Refreshing Alertmanager runtime health'
-        ) }}
+        {{ loading_bar.render('alertmanager-runtime-loading',
+                active=runtime_refresh_job and runtime_refresh_job.is_active,
+                label='Refreshing Alertmanager runtime health') }}
     </header>
     {% if runtime_refresh_job and runtime_refresh_job.is_active %}
         <div class="flex flex-col gap-2 border-b border-brand-outline bg-kaori-soft px-5 py-3 text-xs text-content-secondary sm:flex-row sm:items-center sm:justify-between">
@@ -47,7 +43,6 @@
             <span>Task {{ runtime_refresh_job.task_id[:8] }} · {{ runtime_refresh_job.state_label|title }} · {{ runtime_refresh_job.elapsed_seconds }}s</span>
         </div>
     {% endif %}
-
     <div class="grid gap-3 border-b border-outline-subtle bg-surface-hover p-4 sm:grid-cols-2 sm:p-5 xl:grid-cols-4">
         <article class="rounded-lg border border-outline-subtle bg-surface-card p-3.5">
             <div class="flex items-start gap-3">
@@ -82,7 +77,8 @@
                 <div class="min-w-0">
                     <p class="text-xs font-semibold text-content-muted">Response Evidence</p>
                     <p class="mt-1.5 text-sm font-semibold text-kaori-primary">{{ runtime_state.latency_display }}</p>
-                    <p class="mt-1 truncate text-xs text-content-secondary" title="{{ runtime_state.observed_at_display }}">{{ runtime_state.observed_at_display }}</p>
+                    <p class="mt-1 truncate text-xs text-content-secondary"
+                       title="{{ runtime_state.observed_at_display }}">{{ runtime_state.observed_at_display }}</p>
                 </div>
             </div>
         </article>
@@ -93,24 +89,21 @@
                 </span>
                 <div class="min-w-0">
                     <p class="text-xs font-semibold text-content-muted">Capability Context</p>
-                    <p class="mt-1.5 truncate text-sm font-semibold text-content-primary" title="{{ runtime_state.capability_profile or 'Not detected' }}">{{ runtime_state.capability_profile or 'Not detected' }}</p>
+                    <p class="mt-1.5 truncate text-sm font-semibold text-content-primary"
+                       title="{{ runtime_state.capability_profile or 'Not detected' }}">{{ runtime_state.capability_profile or 'Not detected' }}</p>
                     <p class="mt-1 text-xs text-content-secondary">{{ runtime_state.capability_count_display }}</p>
                 </div>
             </div>
         </article>
     </div>
-
     <div class="space-y-4 p-5 sm:p-6">
-        {{ health_interpretation.render(
-            runtime_state.health_score,
-            runtime_state.health_status_label,
-            health_tone,
-            health_icon,
-            runtime_state.health_summary,
-            runtime_state.factors,
-            readiness_label=runtime_state.readiness_label
-        ) }}
-
+        {{ health_interpretation.render(runtime_state.health_score,
+                runtime_state.health_status_label,
+                health_tone,
+                health_icon,
+                runtime_state.health_summary,
+                runtime_state.factors,
+                readiness_label=runtime_state.readiness_label) }}
         <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
             <header class="flex flex-col gap-2 border-b border-outline-subtle bg-surface-hover px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -119,7 +112,6 @@
                 </div>
                 {{ table_label.metadata_label(runtime_state.diagnostics|length ~ ' checks', 'list-checks') }}
             </header>
-
             <div class="overflow-x-auto">
                 <table class="min-w-full text-left text-sm">
                     <thead class="bg-surface-card text-xs font-semibold text-content-muted">
@@ -144,13 +136,21 @@
                                     <p class="font-semibold text-content-primary">{{ step.label }}</p>
                                     <p class="mt-1 text-xs text-content-secondary">{{ step.category_label }}</p>
                                 </td>
-                                <td class="px-4 py-3">{{ table_label.status_label('Passed' if step.status == 'success' else ('Failed' if step.status == 'failed' else 'Pending'), step_tone, step_icon) }}</td>
+                                <td class="px-4 py-3">{{ table_label.status_label('Passed' if step.status == 'success' else ('Failed' if step.status == 'failed' else 'Pending') , step_tone, step_icon) }}</td>
                                 <td class="px-4 py-3 text-xs leading-5 text-content-secondary">{{ step.detail or 'No evidence recorded.' }}</td>
-                                <td class="whitespace-nowrap px-4 py-3 text-xs font-medium text-content-secondary">{% if step.duration_ms is not none %}{{ step.duration_ms }} ms{% else %}—{% endif %}</td>
+                                <td class="whitespace-nowrap px-4 py-3 text-xs font-medium text-content-secondary">
+                                    {% if step.duration_ms is not none %}
+                                        {{ step.duration_ms }} ms
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
                                 <td class="px-4 py-3 text-xs leading-5 text-content-secondary">
                                     {% if step.recommendation %}
                                         <div class="flex items-start gap-2">
-                                            <i data-lucide="wrench" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-status-warning-text" aria-hidden="true"></i>
+                                            <i data-lucide="wrench"
+                                               class="mt-0.5 h-3.5 w-3.5 shrink-0 text-status-warning-text"
+                                               aria-hidden="true"></i>
                                             <span>{{ step.recommendation }}</span>
                                         </div>
                                     {% else %}

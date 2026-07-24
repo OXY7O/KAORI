@@ -1,42 +1,49 @@
 {% macro render(provider_key, active_tab='coverage', coverage_count=0, registry_count=0) -%}
-<section x-data="{ activeTab: '{{ active_tab }}' }" class="space-y-4" aria-label="Integration workspace">
-    <div class="flex flex-col gap-3 rounded-2xl border border-brand-outline bg-kaori-soft p-2 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-        <div class="grid w-full grid-cols-2 gap-2 sm:w-auto" role="tablist" aria-label="{{ provider_key|title }} integration views">
-            <button type="button"
-                    id="{{ provider_key }}-coverage-tab"
-                    @click="activeTab = 'coverage'; const url = new URL(window.location.href); url.searchParams.set('tab', 'coverage'); history.replaceState({}, '', url)"
-                    :class="activeTab === 'coverage' ? 'border-kaori-primary bg-kaori-primary text-white shadow-sm' : 'border-brand-outline bg-surface-card text-kaori-primary hover:border-kaori-primary hover:bg-kaori-soft'"
-                    class="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus/30"
-                    :aria-selected="activeTab === 'coverage'"
-                    aria-controls="{{ provider_key }}-coverage-panel"
-                    role="tab">
-                <i data-lucide="route" class="h-4 w-4" aria-hidden="true"></i>
-                Integration Coverage
-                <span :class="activeTab === 'coverage' ? 'border-white bg-white text-kaori-primary-dark' : 'border-brand-outline bg-kaori-soft text-kaori-primary'"
-                      class="rounded-md border px-1.5 py-0.5 text-[10px] font-semibold">{{ coverage_count }}</span>
-            </button>
-            <button type="button"
-                    id="{{ provider_key }}-registry-tab"
-                    @click="activeTab = 'registry'; const url = new URL(window.location.href); url.searchParams.set('tab', 'registry'); history.replaceState({}, '', url)"
-                    :class="activeTab === 'registry' ? 'border-kaori-primary bg-kaori-primary text-white shadow-sm' : 'border-brand-outline bg-surface-card text-kaori-primary hover:border-kaori-primary hover:bg-kaori-soft'"
-                    class="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus/30"
-                    :aria-selected="activeTab === 'registry'"
-                    aria-controls="{{ provider_key }}-registry-panel"
-                    role="tab">
-                <i data-lucide="database-zap" class="h-4 w-4" aria-hidden="true"></i>
-                Connection Registry
-                <span :class="activeTab === 'registry' ? 'border-white bg-white text-kaori-primary-dark' : 'border-brand-outline bg-kaori-soft text-kaori-primary'"
-                      class="rounded-md border px-1.5 py-0.5 text-[10px] font-semibold">{{ registry_count }}</span>
-            </button>
+    <section x-data="{ activeTab: '{{ active_tab }}' }"
+             class="space-y-4"
+             aria-label="Integration workspace">
+        <div class="flex flex-col gap-3 rounded-2xl border border-brand-outline bg-kaori-soft p-2 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div class="grid w-full grid-cols-2 gap-2 sm:w-auto"
+                 role="tablist"
+                 aria-label="{{ provider_key|title }} integration views">
+                <button type="button"
+                        id="{{ provider_key }}-coverage-tab"
+                        @click="activeTab = 'coverage'; const url = new URL(window.location.href); url.searchParams.set('tab', 'coverage'); history.replaceState({}, '', url)"
+                        :class="activeTab === 'coverage' ? 'border-kaori-primary bg-kaori-primary text-white shadow-sm' : 'border-brand-outline bg-surface-card text-kaori-primary hover:border-kaori-primary hover:bg-kaori-soft'"
+                        class="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus/30"
+                        :aria-selected="activeTab === 'coverage'"
+                        aria-controls="{{ provider_key }}-coverage-panel"
+                        role="tab">
+                    <i data-lucide="route" class="h-4 w-4" aria-hidden="true"></i>
+                    Integration Coverage
+                    <span :class="activeTab === 'coverage' ? 'border-white bg-white text-kaori-primary-dark' : 'border-brand-outline bg-kaori-soft text-kaori-primary'"
+                          class="rounded-md border px-1.5 py-0.5 text-[10px] font-semibold">{{ coverage_count }}</span>
+                </button>
+                <button type="button"
+                        id="{{ provider_key }}-registry-tab"
+                        @click="activeTab = 'registry'; const url = new URL(window.location.href); url.searchParams.set('tab', 'registry'); history.replaceState({}, '', url)"
+                        :class="activeTab === 'registry' ? 'border-kaori-primary bg-kaori-primary text-white shadow-sm' : 'border-brand-outline bg-surface-card text-kaori-primary hover:border-kaori-primary hover:bg-kaori-soft'"
+                        class="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus/30"
+                        :aria-selected="activeTab === 'registry'"
+                        aria-controls="{{ provider_key }}-registry-panel"
+                        role="tab">
+                    <i data-lucide="database-zap" class="h-4 w-4" aria-hidden="true"></i>
+                    Connection Registry
+                    <span :class="activeTab === 'registry' ? 'border-white bg-white text-kaori-primary-dark' : 'border-brand-outline bg-kaori-soft text-kaori-primary'"
+                          class="rounded-md border px-1.5 py-0.5 text-[10px] font-semibold">{{ registry_count }}</span>
+                </button>
+            </div>
+            <p class="px-2 text-xs font-medium leading-5 text-kaori-primary">Switch views without leaving the {{ provider_key|title }} integration workspace.</p>
         </div>
-        <p class="px-2 text-xs font-medium leading-5 text-kaori-primary">Switch views without leaving the {{ provider_key|title }} integration workspace.</p>
-    </div>
-
-    <div id="{{ provider_key }}-coverage-panel" x-show="activeTab === 'coverage'" x-cloak role="tabpanel" aria-labelledby="{{ provider_key }}-coverage-tab">
-        {{ caller('coverage') }}
-    </div>
-    <div id="{{ provider_key }}-registry-panel" x-show="activeTab === 'registry'" x-cloak role="tabpanel" aria-labelledby="{{ provider_key }}-registry-tab">
-        {{ caller('registry') }}
-    </div>
-</section>
+        <div id="{{ provider_key }}-coverage-panel"
+             x-show="activeTab === 'coverage'"
+             x-cloak
+             role="tabpanel"
+             aria-labelledby="{{ provider_key }}-coverage-tab">{{ caller("coverage") }}</div>
+        <div id="{{ provider_key }}-registry-panel"
+             x-show="activeTab === 'registry'"
+             x-cloak
+             role="tabpanel"
+             aria-labelledby="{{ provider_key }}-registry-tab">{{ caller("registry") }}</div>
+    </section>
 {%- endmacro %}

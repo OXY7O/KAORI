@@ -23,7 +23,8 @@
                             <div class="flex items-start justify-between gap-3">
                                 <div>
                                     <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Reveal policy posture</p>
-                                    <p id="secret-reveal-hero-cluster-name" class="mt-2 text-lg font-bold text-brand-foreground">{{ selected_cluster.name if selected_cluster else 'No cluster selected' }}</p>
+                                    <p id="secret-reveal-hero-cluster-name"
+                                       class="mt-2 text-lg font-bold text-brand-foreground">{{ selected_cluster.name if selected_cluster else 'No cluster selected' }}</p>
                                 </div>
                                 {{ table_label.status_label('Enabled' if global_reveal_enabled else 'Disabled', 'normal' if global_reveal_enabled else 'warning', 'shield-check' if global_reveal_enabled else 'shield-alert') }}
                             </div>
@@ -38,7 +39,6 @@
                 </aside>
             </div>
         </section>
-
         <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
             <header class="border-b border-outline-default px-5 py-4 lg:px-6">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -54,7 +54,6 @@
                     {{ table_label.status_label('Reveal enabled' if global_reveal_enabled else 'Reveal disabled', 'normal' if global_reveal_enabled else 'warning', 'shield-check' if global_reveal_enabled else 'shield-alert') }}
                 </div>
             </header>
-
             <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
                 <article class="flex min-h-[12rem] flex-col bg-surface-card p-5">
                     <div class="flex items-start justify-between gap-3">
@@ -63,12 +62,12 @@
                             <p class="mt-2 text-2xl font-bold tracking-tight {{ 'text-status-normal-text' if global_reveal_enabled else 'text-status-warning-text' }}">{{ 'Enabled' if global_reveal_enabled else 'Disabled' }}</p>
                         </div>
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ 'bg-status-normal-soft text-status-normal-text' if global_reveal_enabled else 'bg-status-warning-soft text-status-warning-text' }}">
-                            <i data-lucide="{{ 'power' if global_reveal_enabled else 'power-off' }}" class="h-5 w-5"></i>
+                            <i data-lucide="{{ 'power' if global_reveal_enabled else 'power-off' }}"
+                               class="h-5 w-5"></i>
                         </span>
                     </div>
                     <p class="mt-3 text-sm leading-6 text-content-muted">Application-wide switch controlling whether protected reveal requests may proceed.</p>
                 </article>
-
                 <article class="flex min-h-[12rem] flex-col bg-surface-card p-5">
                     <div class="flex items-start justify-between gap-3">
                         <div>
@@ -81,7 +80,6 @@
                     </div>
                     <p class="mt-3 text-sm leading-6 text-content-muted">Clusters with at least one namespace configured for step-up or approval-controlled reveal.</p>
                 </article>
-
                 <article class="flex min-h-[12rem] flex-col bg-surface-card p-5">
                     <div class="flex items-start justify-between gap-3">
                         <div>
@@ -94,7 +92,6 @@
                     </div>
                     <p class="mt-3 text-sm leading-6 text-content-muted">Namespaces currently admitted to the protected reveal workflow across all managed clusters.</p>
                 </article>
-
                 <article class="flex min-h-[12rem] flex-col bg-surface-card p-5">
                     <div class="flex items-start justify-between gap-3">
                         <div>
@@ -102,21 +99,16 @@
                             <p class="mt-2 text-xl font-bold tracking-tight {{ 'text-status-normal-text' if selected_cluster_ready else 'text-status-warning-text' if selected_cluster else 'text-content-muted' }}">{{ 'Ready' if selected_cluster_ready else 'Review required' if selected_cluster else 'Not selected' }}</p>
                         </div>
                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ 'bg-status-normal-soft text-status-normal-text' if selected_cluster_ready else 'bg-status-warning-soft text-status-warning-text' if selected_cluster else 'bg-surface-disabled text-content-muted' }}">
-                            <i data-lucide="{{ 'badge-check' if selected_cluster_ready else 'shield-alert' if selected_cluster else 'circle-dashed' }}" class="h-5 w-5"></i>
+                            <i data-lucide="{{ 'badge-check' if selected_cluster_ready else 'shield-alert' if selected_cluster else 'circle-dashed' }}"
+                               class="h-5 w-5"></i>
                         </span>
                     </div>
                     <p class="mt-3 text-sm leading-6 text-content-muted">{{ selected_cluster.name if selected_cluster else 'Choose a cluster to review its reveal readiness and namespace policy scope.' }}</p>
                 </article>
             </div>
-
             <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6">
                 <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                    {% set protection_boundaries = [
-                        ('key-round', 'Step-up Authentication', 'Require credential re-verification before a one-time Secret value can be revealed.'),
-                        ('user-check', 'Independent Approval', 'Use request and approval separation for namespaces that require four-eyes control.'),
-                        ('file-key-2', 'Single Kubeconfig', 'KAORI uses the configured cluster credential; least-privilege Kubernetes RBAC must be enforced externally.'),
-                        ('shield-check', 'Final Authorization', 'Application policy, role permission, namespace admission, and Kubernetes RBAC must all allow the action.')
-                    ] %}
+                    {% set protection_boundaries = [('key-round', 'Step-up Authentication', 'Require credential re-verification before a one-time Secret value can be revealed.'), ('user-check', 'Independent Approval', 'Use request and approval separation for namespaces that require four-eyes control.'), ('file-key-2', 'Single Kubeconfig', 'KAORI uses the configured cluster credential; least-privilege Kubernetes RBAC must be enforced externally.'), ('shield-check', 'Final Authorization', 'Application policy, role permission, namespace admission, and Kubernetes RBAC must all allow the action.')] %}
                     {% for icon, title, description in protection_boundaries %}
                         <div class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
@@ -131,7 +123,6 @@
                 </div>
             </div>
         </section>
-
         {% if not global_reveal_enabled %}
             <section class="rounded-2xl border border-status-warning-border bg-status-warning-soft p-5 shadow-sm">
                 <div class="flex items-start gap-3">
@@ -143,7 +134,6 @@
                 </div>
             </section>
         {% endif %}
-
         {% include "settings/secret_reveal/_cluster_workspace.html" %}
     </div>
 {% endblock dashboard_content %}

@@ -1,4 +1,5 @@
-<section id="alertmanager-inventory-card" class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+<section id="alertmanager-inventory-card"
+         class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex items-start gap-3">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
@@ -9,11 +10,11 @@
                 <p class="mt-1 text-sm leading-6 text-content-secondary">Manage reusable alert connections and the operational scopes that can use them.</p>
             </div>
         </div>
-        <div id="alertmanager-inventory-loading" class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
+        <div id="alertmanager-inventory-loading"
+             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
             <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
         </div>
     </header>
-
     <div class="border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
         <form id="alertmanager-inventory-filter-form"
               method="get"
@@ -29,38 +30,62 @@
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
             <input type="hidden" name="coverage_page" value="1">
-            <input type="hidden" name="coverage_per_page" value="{{ coverage_pagination.per_page }}">
+            <input type="hidden"
+                   name="coverage_per_page"
+                   value="{{ coverage_pagination.per_page }}">
             <input type="hidden" name="coverage_q" value="{{ selected_coverage_query }}">
-            <input type="hidden" name="coverage_environment" value="{{ selected_coverage_environment }}">
-            <input type="hidden" name="coverage_status" value="{{ selected_coverage_status }}">
-            <input type="hidden" name="deployment_type" value="{{ selected_deployment_type }}">
-
+            <input type="hidden"
+                   name="coverage_environment"
+                   value="{{ selected_coverage_environment }}">
+            <input type="hidden"
+                   name="coverage_status"
+                   value="{{ selected_coverage_status }}">
+            <input type="hidden"
+                   name="deployment_type"
+                   value="{{ selected_deployment_type }}">
             <div class="md:col-span-2 xl:col-span-5">
-                <label class="mb-2 block text-sm font-semibold text-content-secondary" for="alertmanager-search">Search Connection</label>
+                <label class="mb-2 block text-sm font-semibold text-content-secondary"
+                       for="alertmanager-search">Search Connection</label>
                 <div class="relative">
-                    <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted" aria-hidden="true"></i>
-                    <input id="alertmanager-search" type="search" name="q" value="{{ selected_query }}" placeholder="Name, endpoint, version, or profile" class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                    <i data-lucide="search"
+                       class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+                       aria-hidden="true"></i>
+                    <input id="alertmanager-search"
+                           type="search"
+                           name="q"
+                           value="{{ selected_query }}"
+                           placeholder="Name, endpoint, version, or profile"
+                           class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                 </div>
             </div>
-
             <div class="xl:col-span-3">
-                <label class="mb-2 block text-sm font-semibold text-content-secondary" for="alertmanager-readiness">Readiness</label>
-                <select id="alertmanager-readiness" name="readiness" class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                <label class="mb-2 block text-sm font-semibold text-content-secondary"
+                       for="alertmanager-readiness">Readiness</label>
+                <select id="alertmanager-readiness"
+                        name="readiness"
+                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                     <option value="">All Readiness</option>
-                    {% for option in readiness_options %}<option value="{{ option }}" {% if selected_readiness == option %}selected{% endif %}>{{ option|replace('_', ' ')|title }}</option>{% endfor %}
+                    {% for option in readiness_options %}
+                        <option value="{{ option }}"
+                                {% if selected_readiness == option %}selected{% endif %}>{{ option|replace('_', ' ') |title }}</option>
+                    {% endfor %}
                 </select>
             </div>
-
             <div class="xl:col-span-4">
-                <label class="mb-2 block text-sm font-semibold text-content-secondary" for="alertmanager-compatibility">Compatibility</label>
-                <select id="alertmanager-compatibility" name="compatibility" class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                <label class="mb-2 block text-sm font-semibold text-content-secondary"
+                       for="alertmanager-compatibility">Compatibility</label>
+                <select id="alertmanager-compatibility"
+                        name="compatibility"
+                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                     <option value="">All Compatibility States</option>
-                    {% for option in compatibility_options %}<option value="{{ option }}" {% if selected_compatibility == option %}selected{% endif %}>{{ option|replace('_', ' ')|title }}</option>{% endfor %}
+                    {% for option in compatibility_options %}
+                        <option value="{{ option }}"
+                                {% if selected_compatibility == option %}selected{% endif %}>{{ option|replace('_', ' ') |title }}</option>
+                    {% endfor %}
                 </select>
             </div>
         </form>
     </div>
-
     <div id="alertmanager-inventory-content">
         {% include 'integrations/alertmanager/partials/_inventory_content.html' %}
     </div>

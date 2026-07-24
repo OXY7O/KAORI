@@ -1,5 +1,4 @@
 {% import "components/table_label.html" as table_label %}
-
 {% macro detail_row(label, value='-', break_all=False) -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
     <div class="flex items-start justify-between gap-3">
@@ -8,14 +7,12 @@
               title="{{ display_value }}">{{ display_value }}</span>
     </div>
 {%- endmacro %}
-
 {% macro status_row(label, value, tone='unknown', icon=None) -%}
     <div class="flex items-start justify-between gap-3">
         <span class="shrink-0 text-xs leading-5 text-content-muted">{{ label }}</span>
         {{ table_label.status_label(value, tone, icon) }}
     </div>
 {%- endmacro %}
-
 {% macro detail_card(title, icon, badge=None, badge_type='metadata', badge_tone='unknown', class_name='') -%}
     <section class="flex h-full flex-col rounded-xl border border-outline-subtle bg-surface-card p-4 {{ class_name }}">
         <div class="mb-4 flex items-center justify-between gap-3">

@@ -3,40 +3,40 @@
      class="fixed inset-0 z-50 flex items-center justify-center bg-surface-overlay px-4 backdrop-blur-sm"
      x-cloak
      @keydown.escape.window="deleteModal = false">
-  <div @click.away="deleteModal = false"
-       x-transition
-       class="w-full max-w-md overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-2xl">
-    <div class="p-5">
-      <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-status-critical-soft text-status-critical">
-        <i data-lucide="trash-2" class="h-5 w-5"></i>
-      </div>
-      <h3 class="mt-4 text-lg font-semibold text-content-primary">Delete Kubernetes Connection</h3>
-      <p class="mt-2 text-sm leading-6 text-content-secondary">
-        Delete <span class="font-semibold text-content-primary" x-text="deleteName"></span> from KAORI?
-      </p>
-      <p class="mt-1 text-sm font-semibold text-status-critical-text">This action cannot be undone.</p>
-      <div class="mt-4 rounded-lg border border-status-critical-border bg-status-critical-soft p-3">
-        <p class="text-xs leading-5 text-status-critical-text">
-          The Kubernetes registration, inventory snapshots, and its Prometheus and Alertmanager bindings will be removed. Shared source instances, generated reports, runtime observation history, and Activity Audit records remain available.
-        </p>
-      </div>
+    <div @click.away="deleteModal = false"
+         x-transition
+         class="w-full max-w-md overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-2xl">
+        <div class="p-5">
+            <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-status-critical-soft text-status-critical">
+                <i data-lucide="trash-2" class="h-5 w-5"></i>
+            </div>
+            <h3 class="mt-4 text-lg font-semibold text-content-primary">Delete Kubernetes Connection</h3>
+            <p class="mt-2 text-sm leading-6 text-content-secondary">
+                Delete <span class="font-semibold text-content-primary" x-text="deleteName"></span> from KAORI?
+            </p>
+            <p class="mt-1 text-sm font-semibold text-status-critical-text">This action cannot be undone.</p>
+            <div class="mt-4 rounded-lg border border-status-critical-border bg-status-critical-soft p-3">
+                <p class="text-xs leading-5 text-status-critical-text">
+                    The Kubernetes registration, inventory snapshots, and its Prometheus and Alertmanager bindings will be removed. Shared source instances, generated reports, runtime observation history, and Activity Audit records remain available.
+                </p>
+            </div>
+        </div>
+        <div class="flex justify-end gap-2 border-t border-outline-subtle bg-surface-hover px-5 py-4">
+            <button type="button"
+                    @click="deleteModal = false"
+                    class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus/20">
+                Cancel
+            </button>
+            <form x-bind:action="deleteUrl" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit"
+                        data-operation-submit
+                        data-loading-label="Deleting connection..."
+                        class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-status-critical px-4 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-wait disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
+                    <i data-lucide="trash-2" class="h-4 w-4"></i>
+                    <span data-operation-submit-label>Delete connection</span>
+                </button>
+            </form>
+        </div>
     </div>
-    <div class="flex justify-end gap-2 border-t border-outline-subtle bg-surface-hover px-5 py-4">
-      <button type="button"
-              @click="deleteModal = false"
-              class="inline-flex h-10 items-center justify-center rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus/20">
-        Cancel
-      </button>
-      <form x-bind:action="deleteUrl" method="POST">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit"
-                data-operation-submit
-                data-loading-label="Deleting connection..."
-                class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-status-critical px-4 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-wait disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
-          <i data-lucide="trash-2" class="h-4 w-4"></i>
-          <span data-operation-submit-label>Delete connection</span>
-        </button>
-      </form>
-    </div>
-  </div>
 </div>

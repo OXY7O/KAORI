@@ -5,11 +5,11 @@
 {% set no_tls = total_ingresses - tls_enabled %}
 {% set tls_percentage = ((tls_enabled / total_ingresses) * 100) | round(0) if total_ingresses > 0 else 0 %}
 {% if total_ingresses == 0 %}
-    {% set posture_label = 'Unknown' %}{% set posture_tone = 'unknown' %}{% set posture_icon = 'circle-help' %}
+    {% set posture_label = "Unknown" %}{% set posture_tone = "unknown" %}{% set posture_icon = "circle-help" %}
 {% elif no_tls > 0 %}
-    {% set posture_label = 'TLS review' %}{% set posture_tone = 'warning' %}{% set posture_icon = 'triangle-alert' %}
+    {% set posture_label = "TLS review" %}{% set posture_tone = "warning" %}{% set posture_icon = "triangle-alert" %}
 {% else %}
-    {% set posture_label = 'TLS covered' %}{% set posture_tone = 'normal' %}{% set posture_icon = 'shield-check' %}
+    {% set posture_label = "TLS covered" %}{% set posture_tone = "normal" %}{% set posture_icon = "shield-check" %}
 {% endif %}
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
@@ -26,7 +26,6 @@
                 </div>
             {% endcall %}
         </div>
-
         <aside class="{{ page_hero.aside_classes() }}" aria-label="Ingress posture">
             <div class="{{ page_hero.context_panel_classes() }}">
                 <div class="flex items-start justify-between gap-4">
@@ -36,7 +35,6 @@
                     </div>
                     {{ table_label.status_label(posture_label, posture_tone, posture_icon) }}
                 </div>
-
                 <div class="mt-3 grid grid-cols-2 gap-2">
                     <div class="{{ page_hero.context_metric_card_classes() }}">
                         <div class="flex items-center gap-2 text-brand-foreground">
@@ -55,7 +53,6 @@
                         <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Ingresses requiring review</p>
                     </div>
                 </div>
-
                 <a href="{{ url_for('integrations.kubernetes') }}"
                    class="{{ page_hero.context_single_action_classes() }}">
                     <i data-lucide="server-cog" class="h-4 w-4"></i>

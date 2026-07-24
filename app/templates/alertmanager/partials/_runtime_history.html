@@ -1,5 +1,5 @@
-{% set runtime_history_id = 'alertmanager-runtime-history' %}
-{% set runtime_history_loading_id = 'alertmanager-history-loading' %}
+{% set runtime_history_id = "alertmanager-runtime-history" %}
+{% set runtime_history_loading_id = "alertmanager-history-loading" %}
 {% set runtime_history_url = url_for('alertmanager.runtime_history', instance_id=instance.id) %}
-{% set provider_label = 'Alertmanager' %}
+{% set provider_label = "Alertmanager" %}
 {% include 'integrations/partials/_runtime_history.html' %}

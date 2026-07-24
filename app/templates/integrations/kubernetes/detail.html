@@ -3,121 +3,132 @@
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 {% block title %}{{ cluster.name }} · Kubernetes Integration · KAORI{% endblock %}
 {% block dashboard_content %}
-{% set readiness = runtime_state.readiness or 'validation_required' %}
-{% set source_posture = 'Ready' if readiness == 'ready' else ('Attention' if readiness in ['degraded', 'blocked'] else 'Configured') %}
-<div class="kaori-integration-semantic space-y-6"
-     x-data="{
-         activeTab: ['configuration', 'validation', 'runtime', 'inventory'].includes(window.location.hash.replace('#', '')) ? window.location.hash.replace('#', '') : 'configuration',
-         deleteModal: false,
-         deleteUrl: '',
-         deleteName: '',
-         setTab(tab, moveToWorkspace = false) {
-             this.activeTab = tab;
-             window.history.replaceState(null, '', '#' + tab);
-             if (moveToWorkspace) {
-                 this.$nextTick(() => document.getElementById('kubernetes-detail-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-             }
-         },
-         openDelete(url, name) {
-             this.deleteUrl = url;
-             this.deleteName = name;
-             this.deleteModal = true;
-         }
-     }"
-     x-on:hashchange.window="activeTab = ['configuration', 'validation', 'runtime', 'inventory'].includes(window.location.hash.replace('#', '')) ? window.location.hash.replace('#', '') : 'configuration'">
-    <section class="{{ page_hero.shell_classes() }}">
-        <div class="{{ page_hero.layout_classes() }}">
-            <div class="{{ page_hero.content_classes() }}">
-                {% call page_hero.intro('server-cog', 'Kubernetes Integration', 'network') %}
-                    <h1 class="{{ page_hero.title_classes() }}">{{ cluster.name }}</h1>
-                    <p class="mt-2 {{ page_hero.description_classes() }}">Manage the connection contract, capability evidence, runtime health, and governed Kubernetes lifecycle.</p>
-                    <div class="{{ page_hero.metadata_row_classes() }}">
-                        {{ page_hero.meta_label('shield-check', readiness|replace('_', ' ')|title) }}
-                        {{ page_hero.meta_label('layers-3', (runtime_state.capability_count|string) ~ ' Capabilities') }}
-                        {{ page_hero.meta_label('network', cluster.environment|environment_name) }}
-                    </div>
-                {% endcall %}
-            </div>
-            <aside class="{{ page_hero.aside_classes() }}" aria-label="Kubernetes connection posture">
-                <div class="{{ page_hero.context_panel_classes() }}">
-                    <div class="flex items-start justify-between gap-4">
-                        <div>
-                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Posture</p>
-                            <h2 class="{{ page_hero.context_panel_title_classes() }}">Kubernetes API Readiness</h2>
+    {% set readiness = runtime_state.readiness or 'validation_required' %}
+    {% set source_posture = 'Ready' if readiness == 'ready' else ('Attention' if readiness in ['degraded', 'blocked'] else 'Configured') %}
+    <div class="kaori-integration-semantic space-y-6"
+         x-data="{ activeTab: ['configuration', 'validation', 'runtime', 'inventory'].includes(window.location.hash.replace('#', '')) ? window.location.hash.replace('#', '') : 'configuration', deleteModal: false, deleteUrl: '', deleteName: '', setTab(tab, moveToWorkspace = false) { this.activeTab = tab; window.history.replaceState(null, '', '#' + tab); if (moveToWorkspace) { this.$nextTick(() => document.getElementById('kubernetes-detail-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); } }, openDelete(url, name) { this.deleteUrl = url; this.deleteName = name; this.deleteModal = true; } }"
+         x-on:hashchange.window="activeTab = ['configuration', 'validation', 'runtime', 'inventory'].includes(window.location.hash.replace('#', '')) ? window.location.hash.replace('#', '') : 'configuration'">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('server-cog', 'Kubernetes Integration', 'network') %}
+                        <h1 class="{{ page_hero.title_classes() }}">{{ cluster.name }}</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Manage the connection contract, capability evidence, runtime health, and governed Kubernetes lifecycle.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('shield-check', readiness|replace('_', ' ') |title) }}
+                            {{ page_hero.meta_label('layers-3', (runtime_state.capability_count|string) ~ ' Capabilities') }}
+                            {{ page_hero.meta_label('network', cluster.environment|environment_name) }}
                         </div>
-                        {{ status_badge('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else 'validation_required'), source_posture) }}
-                    </div>
-                    <div class="mt-4 grid grid-cols-2 gap-2">
-                        <div class="{{ page_hero.context_metric_card_classes() }}">
-                            <div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="shield-check" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">Kubernetes API</p></div>
-                            <p class="mt-1.5 truncate text-sm font-semibold text-brand-foreground">{{ readiness|replace('_', ' ')|title }}</p>
-                            <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Produced by worker validation</p>
-                        </div>
-                        <div class="{{ page_hero.context_metric_card_classes() }}">
-                            <div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="layers-3" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">Capabilities</p></div>
-                            <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ runtime_state.capability_count }}</p>
-                            <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Served APIs and access evidence</p>
-                        </div>
-                    </div>
-                    <div class="{{ page_hero.context_actions_classes() }}">
-                        <button type="button"
-                                @click="setTab('validation', true)"
-                                class="{{ page_hero.context_action_classes() }}">
-                            <i data-lucide="scan-line" class="h-4 w-4"></i>
-                            Review Validation
-                        </button>
-                        <a href="{{ url_for('integrations.kubernetes') }}"
-                           class="{{ page_hero.context_action_classes() }}">
-                            <i data-lucide="arrow-left" class="h-4 w-4"></i>
-                            Back to Registry
-                        </a>
-                    </div>
+                    {% endcall %}
                 </div>
-            </aside>
-        </div>
-    </section>
-
-    <section id="kubernetes-detail-tabs" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-        <nav class="border-b border-outline-default bg-surface-hover px-4 pt-4 sm:px-5" aria-label="Kubernetes connection domains">
-            <div class="flex gap-2 overflow-x-auto" role="tablist">
-                {% for tab_key, tab_label, tab_icon, tab_badge in [
-                    ('configuration', 'Configuration', 'settings-2', cluster.environment|environment_name),
-                    ('validation', 'Validation & Capabilities', 'scan-search', readiness|replace('_', ' ')|title),
-                    ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label),
-                    ('inventory', 'Inventory & Lifecycle', 'database', (capability_scope|length|string) ~ ' Scopes')
-                ] %}
-                    <button type="button"
-                            role="tab"
-                            id="kubernetes-tab-{{ tab_key }}"
-                            aria-controls="kubernetes-panel-{{ tab_key }}"
-                            :aria-selected="activeTab === '{{ tab_key }}' ? 'true' : 'false'"
-                            @click="setTab('{{ tab_key }}')"
-                            class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition"
-                            :class="activeTab === '{{ tab_key }}' ? 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px' : 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary'">
-                        <i data-lucide="{{ tab_icon }}" class="h-4 w-4"></i>
-                        <span>{{ tab_label }}</span>
-                        <span class="kaori-semantic-label rounded-md border px-2 py-0.5 text-[10px] font-semibold"
-                              :class="activeTab === '{{ tab_key }}' ? 'border-brand-outline bg-kaori-soft text-kaori-primary' : 'border-outline-subtle bg-surface-card text-content-muted'">{{ tab_badge }}</span>
-                    </button>
-                {% endfor %}
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="Kubernetes connection posture">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        <div class="flex items-start justify-between gap-4">
+                            <div>
+                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Posture</p>
+                                <h2 class="{{ page_hero.context_panel_title_classes() }}">Kubernetes API Readiness</h2>
+                            </div>
+                            {{ status_badge('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else 'validation_required') , source_posture) }}
+                        </div>
+                        <div class="mt-4 grid grid-cols-2 gap-2">
+                            <div class="{{ page_hero.context_metric_card_classes() }}">
+                                <div class="flex items-center gap-2 text-brand-foreground">
+                                    <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
+                                    <p class="text-[11px] font-semibold">Kubernetes API</p>
+                                </div>
+                                <p class="mt-1.5 truncate text-sm font-semibold text-brand-foreground">{{ readiness|replace('_', ' ') |title }}</p>
+                                <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Produced by worker validation</p>
+                            </div>
+                            <div class="{{ page_hero.context_metric_card_classes() }}">
+                                <div class="flex items-center gap-2 text-brand-foreground">
+                                    <i data-lucide="layers-3" class="h-3.5 w-3.5"></i>
+                                    <p class="text-[11px] font-semibold">Capabilities</p>
+                                </div>
+                                <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ runtime_state.capability_count }}</p>
+                                <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Served APIs and access evidence</p>
+                            </div>
+                        </div>
+                        <div class="{{ page_hero.context_actions_classes() }}">
+                            <button type="button"
+                                    @click="setTab('validation', true)"
+                                    class="{{ page_hero.context_action_classes() }}">
+                                <i data-lucide="scan-line" class="h-4 w-4"></i>
+                                Review Validation
+                            </button>
+                            <a href="{{ url_for('integrations.kubernetes') }}"
+                               class="{{ page_hero.context_action_classes() }}">
+                                <i data-lucide="arrow-left" class="h-4 w-4"></i>
+                                Back to Registry
+                            </a>
+                        </div>
+                    </div>
+                </aside>
             </div>
-        </nav>
-        <div class="p-4 sm:p-5 lg:p-6">
-            <div id="kubernetes-panel-configuration" role="tabpanel" aria-labelledby="kubernetes-tab-configuration" x-show="activeTab === 'configuration'">
-                {% include 'integrations/kubernetes/partials/_connection_contract.html' %}
+        </section>
+        <section id="kubernetes-detail-tabs"
+                 class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+            <nav class="border-b border-outline-default bg-surface-hover px-4 pt-4 sm:px-5"
+                 aria-label="Kubernetes connection domains">
+                <div class="flex gap-2 overflow-x-auto" role="tablist">
+                    {% for tab_key, tab_label, tab_icon, tab_badge in [
+                        ('configuration', 'Configuration', 'settings-2', cluster.environment|environment_name),
+                        ('validation', 'Validation & Capabilities', 'scan-search', readiness|replace('_', ' ')|title),
+                        ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label),
+                        ('inventory', 'Inventory & Lifecycle', 'database', (capability_scope|length|string) ~ ' Scopes')
+                        ] %}
+                        <button type="button"
+                                role="tab"
+                                id="kubernetes-tab-{{ tab_key }}"
+                                aria-controls="kubernetes-panel-{{ tab_key }}"
+                                :aria-selected="activeTab === '{{ tab_key }}' ? 'true' : 'false'"
+                                @click="setTab('{{ tab_key }}')"
+                                class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition"
+                                :class="activeTab === '{{ tab_key }}' ? 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px' : 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary'">
+                            <i data-lucide="{{ tab_icon }}" class="h-4 w-4"></i>
+                            <span>{{ tab_label }}</span>
+                            <span class="kaori-semantic-label rounded-md border px-2 py-0.5 text-[10px] font-semibold"
+                                  :class="activeTab === '{{ tab_key }}' ? 'border-brand-outline bg-kaori-soft text-kaori-primary' : 'border-outline-subtle bg-surface-card text-content-muted'">{{ tab_badge }}</span>
+                        </button>
+                    {% endfor %}
+                </div>
+            </nav>
+            <div class="p-4 sm:p-5 lg:p-6">
+                <div id="kubernetes-panel-configuration"
+                     role="tabpanel"
+                     aria-labelledby="kubernetes-tab-configuration"
+                     x-show="activeTab === 'configuration'">
+                    {% include 'integrations/kubernetes/partials/_connection_contract.html' %}
+                </div>
+                <div id="kubernetes-panel-validation"
+                     role="tabpanel"
+                     aria-labelledby="kubernetes-tab-validation"
+                     x-show="activeTab === 'validation'"
+                     x-cloak>
+                    {% with validation_job=capability_validation_job %}
+                        {% include 'integrations/kubernetes/partials/_capability_workspace.html' %}
+                    {% endwith %}
+                </div>
+                <div id="kubernetes-panel-runtime"
+                     role="tabpanel"
+                     aria-labelledby="kubernetes-tab-runtime"
+                     x-show="activeTab === 'runtime'"
+                     x-cloak
+                     class="space-y-5">
+                    {% with validation_job=runtime_validation_job %}
+                        {% include 'integrations/kubernetes/partials/_runtime_workspace.html' %}
+                    {% endwith %}
+                    {% with runtime_history=history, runtime_history_id='kubernetes-runtime-history', runtime_history_loading_id='kubernetes-history-loading', runtime_history_url=url_for('integrations.kubernetes_runtime_history', cluster_id=cluster.id), provider_label='Kubernetes' %}
+                        {% include 'integrations/partials/_runtime_history.html' %}
+                    {% endwith %}
+                </div>
+                <div id="kubernetes-panel-inventory"
+                     role="tabpanel"
+                     aria-labelledby="kubernetes-tab-inventory"
+                     x-show="activeTab === 'inventory'"
+                     x-cloak>{% include 'integrations/kubernetes/partials/_inventory_lifecycle.html' %}</div>
             </div>
-            <div id="kubernetes-panel-validation" role="tabpanel" aria-labelledby="kubernetes-tab-validation" x-show="activeTab === 'validation'" x-cloak>
-                {% with validation_job=capability_validation_job %}{% include 'integrations/kubernetes/partials/_capability_workspace.html' %}{% endwith %}
-            </div>
-            <div id="kubernetes-panel-runtime" role="tabpanel" aria-labelledby="kubernetes-tab-runtime" x-show="activeTab === 'runtime'" x-cloak class="space-y-5">
-                {% with validation_job=runtime_validation_job %}{% include 'integrations/kubernetes/partials/_runtime_workspace.html' %}{% endwith %}
-                {% with runtime_history=history, runtime_history_id='kubernetes-runtime-history', runtime_history_loading_id='kubernetes-history-loading', runtime_history_url=url_for('integrations.kubernetes_runtime_history', cluster_id=cluster.id), provider_label='Kubernetes' %}{% include 'integrations/partials/_runtime_history.html' %}{% endwith %}
-            </div>
-            <div id="kubernetes-panel-inventory" role="tabpanel" aria-labelledby="kubernetes-tab-inventory" x-show="activeTab === 'inventory'" x-cloak>
-                {% include 'integrations/kubernetes/partials/_inventory_lifecycle.html' %}
-            </div>
-        </div>
-    </section>
-    {% include 'integrations/kubernetes/partials/_delete_modal.html' %}
-</div>
+        </section>
+        {% include 'integrations/kubernetes/partials/_delete_modal.html' %}
+    </div>
 {% endblock dashboard_content %}

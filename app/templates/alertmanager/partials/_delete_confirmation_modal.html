@@ -11,16 +11,25 @@
             <div class="flex h-11 w-11 items-center justify-center rounded-lg border border-status-critical-border bg-status-critical-soft text-status-critical-text">
                 <i data-lucide="trash-2" class="h-5 w-5" aria-hidden="true"></i>
             </div>
-            <h3 id="alertmanager-delete-modal-title" class="mt-4 text-lg font-semibold text-content-primary">Confirm Deletion</h3>
-            <p id="alertmanager-delete-modal-description" class="mt-2 text-sm leading-6 text-content-secondary">
-                Confirm removal of <span id="alertmanager-delete-name" class="font-semibold text-content-primary">This Item</span>.
+            <h3 id="alertmanager-delete-modal-title"
+                class="mt-4 text-lg font-semibold text-content-primary">Confirm Deletion</h3>
+            <p id="alertmanager-delete-modal-description"
+               class="mt-2 text-sm leading-6 text-content-secondary">
+                Confirm removal of <span id="alertmanager-delete-name"
+       class="font-semibold text-content-primary">This Item</span>.
             </p>
             <p class="mt-1 text-sm font-semibold text-status-critical-text">This action cannot be undone.</p>
             <div class="mt-4 rounded-lg border border-status-critical-border bg-status-critical-soft p-3">
-                <p id="alertmanager-delete-detail" class="text-xs leading-5 text-status-critical-text"></p>
+                <p id="alertmanager-delete-detail"
+                   class="text-xs leading-5 text-status-critical-text"></p>
             </div>
         </div>
-        <form id="alertmanager-delete-form" method="post" action="" hx-target="#alertmanager-scope-workspace" hx-swap="outerHTML" hx-disabled-elt="button[type='submit']">
+        <form id="alertmanager-delete-form"
+              method="post"
+              action=""
+              hx-target="#alertmanager-scope-workspace"
+              hx-swap="outerHTML"
+              hx-disabled-elt="button[type='submit']">
             {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
             <div class="flex justify-end gap-2 border-t border-outline-subtle bg-surface-hover px-5 py-4">
                 <button type="button"

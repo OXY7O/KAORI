@@ -28,22 +28,24 @@
                         {{ table_label.metadata_label(payload.forecast_snapshot.forecast_horizon, 'calendar-range') }}
                     </div>
                     <div class="relative h-44">
-                        <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="h-full w-full overflow-visible">
+                        <svg viewBox="0 0 100 100"
+                             preserveAspectRatio="none"
+                             class="h-full w-full overflow-visible">
                             <line x1="0" y1="10" x2="100" y2="10" class="stroke-outline-default" stroke-width="0.5"></line>
                             <line x1="0" y1="25" x2="100" y2="25" class="stroke-status-warning-border" stroke-width="0.6" stroke-dasharray="2 2"></line>
                             <line x1="0" y1="50" x2="100" y2="50" class="stroke-outline-default" stroke-width="0.5"></line>
                             <line x1="0" y1="75" x2="100" y2="75" class="stroke-outline-default" stroke-width="0.5"></line>
                             <line x1="0" y1="90" x2="100" y2="90" class="stroke-status-critical-border" stroke-width="0.6" stroke-dasharray="2 2"></line>
                             {% for item in payload.forecast_snapshot.series %}
-                                {% set stroke_class = 'stroke-content-muted' %}
+                                {% set stroke_class = "stroke-content-muted" %}
                                 {% if item.key == 'cpu' %}
-                                    {% set stroke_class = 'stroke-status-info' %}
+                                    {% set stroke_class = "stroke-status-info" %}
                                 {% elif item.key == 'memory' %}
-                                    {% set stroke_class = 'stroke-kaori-primary' %}
+                                    {% set stroke_class = "stroke-kaori-primary" %}
                                 {% elif item.key == 'storage' %}
-                                    {% set stroke_class = 'stroke-status-normal' %}
+                                    {% set stroke_class = "stroke-status-normal" %}
                                 {% elif item.key == 'pods' %}
-                                    {% set stroke_class = 'stroke-status-pending' %}
+                                    {% set stroke_class = "stroke-status-pending" %}
                                 {% endif %}
                                 {% if item.historical_points %}
                                     <polyline points="{{ item.historical_points }}" fill="none" class="{{ stroke_class }}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"></polyline>
@@ -93,21 +95,21 @@
             </div>
             <div class="space-y-2">
                 {% set trends = [
-                    {'label': 'CPU Trend', 'value': payload.forecast_snapshot.cpu_trend, 'icon': 'cpu'},
-                    {'label': 'Memory Trend', 'value': payload.forecast_snapshot.memory_trend, 'icon': 'memory-stick'},
-                    {'label': 'Storage Trend', 'value': payload.forecast_snapshot.storage_trend, 'icon': 'database'},
-                    {'label': 'Pod Trend', 'value': payload.forecast_snapshot.pod_trend, 'icon': 'boxes'}
-                ] %}
+                                    {'label': 'CPU Trend', 'value': payload.forecast_snapshot.cpu_trend, 'icon': 'cpu'},
+                                    {'label': 'Memory Trend', 'value': payload.forecast_snapshot.memory_trend, 'icon': 'memory-stick'},
+                                    {'label': 'Storage Trend', 'value': payload.forecast_snapshot.storage_trend, 'icon': 'database'},
+                                    {'label': 'Pod Trend', 'value': payload.forecast_snapshot.pod_trend, 'icon': 'boxes'}
+                                ] %}
                 {% for trend in trends %}
                     {% set trend_value = trend.value|lower %}
                     {% if trend_value == 'increasing' %}
-                        {% set trend_tone = 'warning' %}{% set trend_icon = 'trending-up' %}
+                        {% set trend_tone = "warning" %}{% set trend_icon = "trending-up" %}
                     {% elif trend_value == 'decreasing' %}
-                        {% set trend_tone = 'normal' %}{% set trend_icon = 'trending-down' %}
+                        {% set trend_tone = "normal" %}{% set trend_icon = "trending-down" %}
                     {% elif trend_value == 'stable' %}
-                        {% set trend_tone = 'info' %}{% set trend_icon = 'minus' %}
+                        {% set trend_tone = "info" %}{% set trend_icon = "minus" %}
                     {% else %}
-                        {% set trend_tone = 'unknown' %}{% set trend_icon = 'circle-help' %}
+                        {% set trend_tone = "unknown" %}{% set trend_icon = "circle-help" %}
                     {% endif %}
                     <div class="flex items-center justify-between rounded-lg border border-outline-default px-3 py-2.5">
                         <span class="inline-flex items-center gap-2 text-sm font-semibold text-content-secondary">

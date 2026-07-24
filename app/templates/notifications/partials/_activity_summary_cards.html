@@ -12,19 +12,19 @@
                 </div>
             </div>
             <span class="inline-flex h-8 shrink-0 items-center gap-1.5 self-start rounded-lg border {{ 'border-status-warning-border bg-status-warning-soft text-status-warning-text' if summary.attention_count > 0 else 'border-status-normal-border bg-status-normal-soft text-status-normal-text' }} px-3 text-xs font-semibold sm:self-auto">
-                <i data-lucide="{{ 'triangle-alert' if summary.attention_count > 0 else 'circle-check' }}" class="h-3.5 w-3.5"></i>
+                <i data-lucide="{{ 'triangle-alert' if summary.attention_count > 0 else 'circle-check' }}"
+                   class="h-3.5 w-3.5"></i>
                 {{ summary.attention_count ~ ' need attention' if summary.attention_count > 0 else 'No attention items' }}
             </span>
         </div>
     </header>
-
     <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">
         {% set activity_metrics = [
-            ('list-checks', 'Total Activities', summary.total_count, 'All operational and administrative events currently available in this audit workspace.', 'bg-kaori-soft text-kaori-primary'),
-            ('triangle-alert' if summary.attention_count > 0 else 'circle-check', 'Need Attention', summary.attention_count, 'Warning, error, or follow-up events that should be reviewed first.', 'bg-status-warning-soft text-status-warning-text' if summary.attention_count > 0 else 'bg-status-normal-soft text-status-normal-text'),
-            ('mail', 'Unread Activities', summary.unread_count, 'Events that have not yet been acknowledged through the administrative review workflow.', 'bg-status-info-soft text-status-info-text'),
-            ('badge-check', 'Success Ratio', (success_ratio | int) ~ '%', 'Share of recorded activity events that completed with a successful operational outcome.', 'bg-status-normal-soft text-status-normal-text')
-        ] %}
+                    ('list-checks', 'Total Activities', summary.total_count, 'All operational and administrative events currently available in this audit workspace.', 'bg-kaori-soft text-kaori-primary'),
+                    ('triangle-alert' if summary.attention_count > 0 else 'circle-check', 'Need Attention', summary.attention_count, 'Warning, error, or follow-up events that should be reviewed first.', 'bg-status-warning-soft text-status-warning-text' if summary.attention_count > 0 else 'bg-status-normal-soft text-status-normal-text'),
+                    ('mail', 'Unread Activities', summary.unread_count, 'Events that have not yet been acknowledged through the administrative review workflow.', 'bg-status-info-soft text-status-info-text'),
+                    ('badge-check', 'Success Ratio', (success_ratio | int) ~ '%', 'Share of recorded activity events that completed with a successful operational outcome.', 'bg-status-normal-soft text-status-normal-text')
+                ] %}
         {% for icon, label, value, description, tone in activity_metrics %}
             <article class="flex min-h-[12rem] flex-col bg-surface-card p-5">
                 <div class="flex items-start justify-between gap-3">
@@ -40,15 +40,9 @@
             </article>
         {% endfor %}
     </div>
-
     <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 lg:px-6">
         <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-            {% set audit_flow = [
-                ('layers-3', 'Event Scope', 'Cross-user actions, background jobs, lifecycle operations, and administrative outcomes are normalized into one audit stream.'),
-                ('scan-search', 'Review Priority', 'Unread and attention-required records remain the first operational review queue.'),
-                ('file-search-2', 'Technical Detail', 'Each row exposes normalized context while the detail drawer retains the full recorded metadata.'),
-                ('shield-check', 'Audit Boundary', 'Login events and personal notifications remain in their dedicated views; this workspace covers operational activity.')
-            ] %}
+            {% set audit_flow = [('layers-3', 'Event Scope', 'Cross-user actions, background jobs, lifecycle operations, and administrative outcomes are normalized into one audit stream.'), ('scan-search', 'Review Priority', 'Unread and attention-required records remain the first operational review queue.'), ('file-search-2', 'Technical Detail', 'Each row exposes normalized context while the detail drawer retains the full recorded metadata.'), ('shield-check', 'Audit Boundary', 'Login events and personal notifications remain in their dedicated views; this workspace covers operational activity.')] %}
             {% for icon, title, description in audit_flow %}
                 <div class="flex items-start gap-3 rounded-xl border border-outline-subtle bg-surface-card p-3.5">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">

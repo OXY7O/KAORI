@@ -8,9 +8,9 @@
   - and the visible segment pulses without floating over content.
 #}
 {% macro render(element_id, active=false, label='Loading') -%}
-<div id="{{ element_id }}"
-     class="{{ 'block' if active else 'htmx-indicator' }} pointer-events-none mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft"
-     aria-label="{{ label }}">
-    <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
-</div>
+    <div id="{{ element_id }}"
+         class="{{ 'block' if active else 'htmx-indicator' }} pointer-events-none mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft"
+         aria-label="{{ label }}">
+        <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
+    </div>
 {%- endmacro %}

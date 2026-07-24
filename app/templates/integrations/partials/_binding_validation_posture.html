@@ -1,24 +1,24 @@
 {% macro binding_validation_posture(row) -%}
-<div class="mt-4 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
-    <div class="grid divide-y divide-outline-subtle md:grid-cols-3 md:divide-x md:divide-y-0">
-        <section class="p-3.5">
-            <p class="text-xs font-semibold text-content-muted">Source Readiness</p>
-            <div class="mt-2">{{ status_badge(row.source_readiness) }}</div>
-            <p class="mt-2 text-xs leading-5 text-content-secondary">Owned by Run Full Validation on the registered source.</p>
-        </section>
-        <section class="p-3.5">
-            <p class="text-xs font-semibold text-content-muted">Binding Validation</p>
-            <div class="mt-2">{{ status_badge(row.validation_status if row.binding.enabled else 'not_configured') }}</div>
-            <p class="mt-2 text-xs leading-5 text-content-secondary">Owned by Validate Binding for this selector and operational scope.</p>
-        </section>
-        <section class="bg-kaori-soft/40 p-3.5">
-            <p class="text-xs font-semibold text-content-muted">Operational Status</p>
-            <div class="mt-2 flex flex-wrap items-center gap-2">
-                {{ status_badge(row.operational_status) }}
-                <span class="text-xs font-semibold text-content-primary">{{ row.operational_label }}</span>
-            </div>
-            <p class="mt-2 text-xs leading-5 text-content-secondary">{{ row.operational_message }}</p>
-        </section>
+    <div class="mt-4 overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
+        <div class="grid divide-y divide-outline-subtle md:grid-cols-3 md:divide-x md:divide-y-0">
+            <section class="p-3.5">
+                <p class="text-xs font-semibold text-content-muted">Source Readiness</p>
+                <div class="mt-2">{{ status_badge(row.source_readiness) }}</div>
+                <p class="mt-2 text-xs leading-5 text-content-secondary">Owned by Run Full Validation on the registered source.</p>
+            </section>
+            <section class="p-3.5">
+                <p class="text-xs font-semibold text-content-muted">Binding Validation</p>
+                <div class="mt-2">{{ status_badge(row.validation_status if row.binding.enabled else 'not_configured') }}</div>
+                <p class="mt-2 text-xs leading-5 text-content-secondary">Owned by Validate Binding for this selector and operational scope.</p>
+            </section>
+            <section class="bg-kaori-soft/40 p-3.5">
+                <p class="text-xs font-semibold text-content-muted">Operational Status</p>
+                <div class="mt-2 flex flex-wrap items-center gap-2">
+                    {{ status_badge(row.operational_status) }}
+                    <span class="text-xs font-semibold text-content-primary">{{ row.operational_label }}</span>
+                </div>
+                <p class="mt-2 text-xs leading-5 text-content-secondary">{{ row.operational_message }}</p>
+            </section>
+        </div>
     </div>
-</div>
 {%- endmacro %}

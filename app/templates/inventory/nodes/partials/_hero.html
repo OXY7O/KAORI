@@ -16,22 +16,20 @@
                 </div>
             {% endcall %}
         </div>
-
-        <aside class="{{ page_hero.aside_classes() }}" aria-label="Node readiness posture">
+        <aside class="{{ page_hero.aside_classes() }}"
+               aria-label="Node readiness posture">
             <div class="{{ page_hero.context_panel_classes() }}">
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Node Readiness</p>
                         <h2 class="{{ page_hero.context_panel_title_classes() }}">Scheduling Posture</h2>
                     </div>
-                    {{ table_label.status_label('Ready' if readiness_tone == 'normal' else ('Attention' if readiness_tone == 'warning' else 'Unknown'), readiness_tone, 'circle-check' if readiness_tone == 'normal' else ('triangle-alert' if readiness_tone == 'warning' else 'circle-help')) }}
+                    {{ table_label.status_label('Ready' if readiness_tone == 'normal' else ('Attention' if readiness_tone == 'warning' else 'Unknown') , readiness_tone, 'circle-check' if readiness_tone == 'normal' else ('triangle-alert' if readiness_tone == 'warning' else 'circle-help')) }}
                 </div>
-
                 <div class="{{ page_hero.context_panel_metrics_classes() }}">
                     {{ page_hero.context_metric('circle-check', 'Ready', inventory.ready_nodes, 'Available for workload scheduling') }}
                     {{ page_hero.context_metric('triangle-alert', 'Not Ready', inventory.not_ready_nodes, 'Requires operational review') }}
                 </div>
-
                 <a href="{{ url_for('integrations.kubernetes') }}"
                    class="{{ page_hero.context_single_action_classes() }}">
                     <i data-lucide="server-cog" class="h-4 w-4"></i>

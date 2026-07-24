@@ -1,31 +1,39 @@
-        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-            <div class="border-b border-outline-default px-5 py-4">
-                <div class="flex items-start gap-3">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="layers-3" class="h-4 w-4"></i></span>
-                    <div>
-                        <h2 class="text-base font-semibold text-content-primary">Domain Foundation Map</h2>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">The table shows where each completed backend domain is operated. Domains 1–7 retain their existing KAORI workspaces; Domains 8–20 are consolidated here.</p>
-                    </div>
-                </div>
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <div class="border-b border-outline-default px-5 py-4">
+        <div class="flex items-start gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="layers-3" class="h-4 w-4"></i></span>
+            <div>
+                <h2 class="text-base font-semibold text-content-primary">Domain Foundation Map</h2>
+                <p class="mt-1 text-xs leading-5 text-content-muted">The table shows where each completed backend domain is operated. Domains 1–7 retain their existing KAORI workspaces; Domains 8–20 are consolidated here.</p>
             </div>
-            <div class="overflow-x-auto">
-                <table class="w-full min-w-[64rem] divide-y divide-outline-default text-left">
-                    <thead class="bg-surface-subtle text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted">
-                        <tr><th class="px-5 py-3">Domain</th><th class="px-5 py-3">Foundation</th><th class="px-5 py-3">Layer</th><th class="px-5 py-3">Operator Surface</th><th class="px-5 py-3">Safety Evidence</th><th class="px-5 py-3">Status</th></tr>
-                    </thead>
-                    <tbody class="divide-y divide-outline-default">
-                        {% for row in payload.domain_rows %}
-                            <tr class="align-top hover:bg-surface-hover">
-                                <td class="px-5 py-4 text-sm font-semibold text-kaori-primary">{{ row.number }}</td>
-                                <td class="px-5 py-4"><p class="text-sm font-semibold text-content-primary">{{ row.title }}</p></td>
-                                <td class="px-5 py-4">{{ table_label.metadata_label(row.layer, 'box') }}</td>
-                                <td class="px-5 py-4 text-sm text-content-secondary">{{ row.operator_surface }}</td>
-                                <td class="px-5 py-4 text-xs leading-5 text-content-muted">{{ row.evidence }}</td>
-                                <td class="px-5 py-4">{{ table_label.status_label(row.status, row.tone, 'circle-check') }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
+        </div>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full min-w-[64rem] divide-y divide-outline-default text-left">
+            <thead class="bg-surface-subtle text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted">
+                <tr>
+                    <th class="px-5 py-3">Domain</th>
+                    <th class="px-5 py-3">Foundation</th>
+                    <th class="px-5 py-3">Layer</th>
+                    <th class="px-5 py-3">Operator Surface</th>
+                    <th class="px-5 py-3">Safety Evidence</th>
+                    <th class="px-5 py-3">Status</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-outline-default">
+                {% for row in payload.domain_rows %}
+                    <tr class="align-top hover:bg-surface-hover">
+                        <td class="px-5 py-4 text-sm font-semibold text-kaori-primary">{{ row.number }}</td>
+                        <td class="px-5 py-4">
+                            <p class="text-sm font-semibold text-content-primary">{{ row.title }}</p>
+                        </td>
+                        <td class="px-5 py-4">{{ table_label.metadata_label(row.layer, 'box') }}</td>
+                        <td class="px-5 py-4 text-sm text-content-secondary">{{ row.operator_surface }}</td>
+                        <td class="px-5 py-4 text-xs leading-5 text-content-muted">{{ row.evidence }}</td>
+                        <td class="px-5 py-4">{{ table_label.status_label(row.status, row.tone, 'circle-check') }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>

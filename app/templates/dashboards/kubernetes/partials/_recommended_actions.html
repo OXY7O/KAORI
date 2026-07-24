@@ -1,5 +1,8 @@
-<section id="dashboard-recommended-actions" x-data="{ open: false }" class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <div @click="open = !open" class="flex cursor-pointer select-none items-center gap-3 border-b border-outline-subtle px-5 py-4">
+<section id="dashboard-recommended-actions"
+         x-data="{ open: false }"
+         class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <div @click="open = !open"
+         class="flex cursor-pointer select-none items-center gap-3 border-b border-outline-subtle px-5 py-4">
         <div class="flex min-w-0 flex-1 items-center gap-3">
             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                 <i data-lucide="sparkles" class="h-5 w-5"></i>
@@ -19,31 +22,27 @@
                     @click.stop="open = !open"
                     :aria-expanded="open.toString()"
                     aria-label="Toggle recommended actions">
-                <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
+                <i data-lucide="chevron-down"
+                   class="h-4 w-4 transition-transform duration-200"
+                   :class="open ? 'rotate-180' : ''"></i>
             </button>
         </div>
     </div>
-
-    <div x-cloak x-show="open" x-transition class="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-5">
+    <div x-cloak
+         x-show="open"
+         x-transition
+         class="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-5">
         {% for action in dashboard.recommended_actions %}
             <a @click.stop
                href="{{ action.href }}"
                title="{{ action.rule_key }}"
                class="group flex min-h-[190px] flex-col rounded-lg border border-outline-subtle bg-surface-elevated p-4 transition duration-150 hover:border-outline-focus hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card">
                 <div class="mb-3 flex items-start justify-between gap-3">
-                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border
-                                {% if action.severity == 'critical' %}border-status-critical-border bg-status-critical-soft text-status-critical-text
-                                {% elif action.severity == 'warning' %}border-status-warning-border bg-status-warning-soft text-status-warning-text
-                                {% elif action.severity == 'success' %}border-status-normal-border bg-status-normal-soft text-status-normal-text
-                                {% else %}border-status-info-border bg-status-info-soft text-status-info-text{% endif %}">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border {% if action.severity == 'critical' %}border-status-critical-border bg-status-critical-soft text-status-critical-text {% elif action.severity == 'warning' %}border-status-warning-border bg-status-warning-soft text-status-warning-text {% elif action.severity == 'success' %}border-status-normal-border bg-status-normal-soft text-status-normal-text {% else %}border-status-info-border bg-status-info-soft text-status-info-text{% endif %}">
                         <i data-lucide="{{ action.icon }}" class="h-4 w-4"></i>
                     </div>
                     <div class="flex flex-wrap justify-end gap-1.5">
-                        <span class="rounded-md border px-2.5 py-1 text-[10px] font-semibold
-                                    {% if action.severity == 'critical' %}border-status-critical-border bg-status-critical-soft text-status-critical-text
-                                    {% elif action.severity == 'warning' %}border-status-warning-border bg-status-warning-soft text-status-warning-text
-                                    {% elif action.severity == 'success' %}border-status-normal-border bg-status-normal-soft text-status-normal-text
-                                    {% else %}border-status-info-border bg-status-info-soft text-status-info-text{% endif %}">
+                        <span class="rounded-md border px-2.5 py-1 text-[10px] font-semibold {% if action.severity == 'critical' %}border-status-critical-border bg-status-critical-soft text-status-critical-text {% elif action.severity == 'warning' %}border-status-warning-border bg-status-warning-soft text-status-warning-text {% elif action.severity == 'success' %}border-status-normal-border bg-status-normal-soft text-status-normal-text {% else %}border-status-info-border bg-status-info-soft text-status-info-text{% endif %}">
                             {{ action.priority }}
                         </span>
                         <span class="rounded-md border border-outline-default bg-surface-card px-2.5 py-1 text-[10px] font-semibold text-content-muted">{{ action.category }}</span>
@@ -52,7 +51,8 @@
                 <p class="text-sm font-semibold leading-5 text-content-primary transition group-hover:text-kaori-primary">{{ action.title }}</p>
                 <p class="mt-2 line-clamp-4 text-xs leading-5 text-content-muted">{{ action.description }}</p>
                 <div class="mt-auto flex items-center gap-2 border-t border-outline-subtle pt-3 text-xs font-medium text-content-muted">
-                    <i data-lucide="database" class="h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
+                    <i data-lucide="database"
+                       class="h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
                     <span class="truncate">{{ action.source }}</span>
                 </div>
             </a>

@@ -3,364 +3,354 @@
 {% set rows = payload.rows %}
 {% set pagination = payload.pagination %}
 {% if render_dependency_blocker|default(false) and dependency_blocker %}
- <div id="consumer-detail-section">{% include "components/dependencies/_blocker.html" %}</div>
+    <div id="consumer-detail-section">{% include "components/dependencies/_blocker.html" %}</div>
 {% elif not dependency_blocker %}
- <section id="consumer-detail-section"
- x-data="{ expandedRow: null }"
- class="rounded-xl border border-outline-default bg-surface-card shadow-sm ">
- <div class="border-b border-outline-default px-6 py-4 ">
- <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
- <div>
- <div class="flex items-center gap-2">
- <h2 class="text-base font-semibold text-content-primary">Consumer Detail</h2>
- <i data-lucide="info" class="h-4 w-4 text-content-muted"></i>
- </div>
- <p class="mt-1 text-sm text-content-muted ">
- Ranked list of top resource consumers across CPU, memory, pods, and PVC.
- </p>
- </div>
- <form id="consumer-detail-filter"
- method="GET"
- action="{{ url_for('analytics.top_consumers') }}"
- hx-get="{{ url_for('analytics.top_consumers_table') }}"
- hx-trigger="keyup changed delay:350ms from:input[name='search'], change from:select"
- hx-target="#consumer-detail-section"
- hx-swap="outerHTML"
- hx-indicator="#top-consumers-refresh-indicator"
- class="grid min-w-0 gap-3 sm:grid-cols-[minmax(220px,320px)_190px]">
- <input type="hidden"
- name="cluster_id"
- value="{{ cluster.id if cluster else '' }}">
- <input type="hidden" name="namespace" value="{{ selected_namespace }}">
- <input type="hidden" name="resource" value="{{ selected_resource }}">
- <input type="hidden" name="time_range" value="{{ selected_time_range }}">
- <input type="hidden" name="focus" value="{{ selected_focus }}">
- <input type="hidden" name="page" value="1">
- <label class="relative block min-w-0">
- <span class="sr-only">Search consumers</span>
- <i data-lucide="search"
- class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
- <input type="search"
- name="search"
- value="{{ selected_search }}"
- placeholder="Search workload, pod, PVC..."
- class="h-9 w-full rounded-xl border border-outline-strong bg-surface-card py-1.5 pl-9 pr-3 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/10 ">
- </label>
- <label class="block min-w-0">
- <span class="sr-only">Sort consumers</span>
- <select name="sort"
- class="h-9 w-full rounded-xl border border-outline-strong bg-surface-card px-3 py-1.5 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/10 ">
- {% for item in sort_options %}
- <option value="{{ item.value }}"
- {% if selected_sort == item.value %}selected{% endif %}>
- {{ item.label }}
- </option>
- {% endfor %}
- </select>
- </label>
- </form>
- </div>
- </div>
- <div class="p-6">
- {% set focus_labels = {
- "missing_requests": "Missing Requests",
- "high_usage": "High Usage Workloads",
- "dominant_namespaces": "Dominant Namespaces",
- "high_pvc": "High PVC Usage"
- } %}
- {% if selected_focus %}
- {% set clear_focus_page_url = url_for(
- 'analytics.top_consumers',
- cluster_id=cluster.id if cluster else '',
- namespace=selected_namespace,
- resource='all',
- time_range=selected_time_range,
- search='',
- sort=selected_sort,
- page=1,
- per_page=pagination.per_page
- ) %}
- {% set clear_focus_table_url = url_for(
- 'analytics.top_consumers_table',
- cluster_id=cluster.id if cluster else '',
- namespace=selected_namespace,
- resource='all',
- time_range=selected_time_range,
- search='',
- sort=selected_sort,
- page=1,
- per_page=pagination.per_page
- ) %}
- <div class="mb-5 flex flex-col gap-3 rounded-xl border border-brand-outline bg-kaori-soft px-4 py-3 text-sm text-kaori-primary bg-kaori-soft text-kaori-primary sm:flex-row sm:items-center sm:justify-between">
- <div class="flex items-center gap-2">
- <i data-lucide="filter" class="h-4 w-4 shrink-0"></i>
- <span>
- Focused view:
- <span class="font-semibold">{{ focus_labels.get(selected_focus, selected_focus) }}</span>
- </span>
- </div>
- <a href="{{ clear_focus_page_url }}"
- hx-get="{{ clear_focus_table_url }}"
- hx-target="#consumer-detail-section"
- hx-swap="outerHTML"
- hx-indicator="#top-consumers-refresh-indicator"
- class="inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:text-kaori-primary text-kaori-primary hover:text-content-primary">
- Clear focus
- <i data-lucide="x" class="h-3.5 w-3.5"></i>
- </a>
- </div>
- {% endif %}
- {% if rows %}
- <div class="overflow-x-auto">
- <table class="min-w-full divide-y divide-outline-default text-sm dark:divide-outline-default">
- <thead>
- <tr class="text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">
- <th class="whitespace-nowrap px-2 py-3">Rank</th>
- <th class="whitespace-nowrap px-2 py-3">Namespace</th>
- <th class="whitespace-nowrap px-2 py-3">Workload / Pod / PVC</th>
- <th class="whitespace-nowrap px-2 py-3">Resource Type</th>
- <th class="whitespace-nowrap px-2 py-3">Current Usage</th>
- <th class="whitespace-nowrap px-2 py-3">Request</th>
- <th class="whitespace-nowrap px-2 py-3">Limit / Capacity</th>
- <th class="whitespace-nowrap px-2 py-3">Usage %</th>
- <th class="whitespace-nowrap px-2 py-3">Risk</th>
- <th class="whitespace-nowrap px-2 py-3 text-left">Detail</th>
- </tr>
- </thead>
- <tbody class="divide-y divide-outline-subtle text-content-secondary dark:divide-outline-default ">
- {% for row in rows %}
- {% set row_key = 'consumer-' ~ row.rank %}
- {% set recommendation = row.recommendation %}
- {% set action_label = "Monitor" %}
- {% set action_class = "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" %}
- {% if row.risk.key == 'critical' %}
- {% set action_label = "Immediate Review" %}
- {% set action_class = "bg-red-50 text-red-700 dark:bg-red-950/60 dark:text-red-300" %}
- {% elif row.risk.key == 'warning' %}
- {% set action_label = "Optimize" %}
- {% set action_class = "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300" %}
- {% elif 'Add' in recommendation %}
- {% set action_label = "Missing Config" %}
- {% set action_class = "bg-kaori-soft text-kaori-primary bg-kaori-soft " %}
- {% elif row.resource_type == 'pvc' %}
- {% set action_label = "Storage Review" %}
- {% set action_class = "bg-orange-50 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300" %}
- {% endif %}
- <tr class="align-middle hover:bg-surface-subtle dark:hover:bg-surface-hover/40">
- <td class="whitespace-nowrap px-2 py-3 font-semibold text-content-muted ">{{ row.rank }}</td>
- <td class="whitespace-nowrap px-2 py-3">
- <span class="inline-flex max-w-[180px] items-center gap-1.5 truncate rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary bg-kaori-soft "
- title="{{ row.namespace }}">
- <i data-lucide="box" class="h-3.5 w-3.5"></i>
- {{ row.namespace }}
- </span>
- </td>
- <td class="px-2 py-3">
- <div class="max-w-[340px] truncate font-medium text-content-primary "
- title="{{ row.workload }}">{{ row.workload }}</div>
- </td>
- <td class="whitespace-nowrap px-2 py-3">
- <span class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold {{ row.resource_class }}">
- <i data-lucide="{{ row.resource_icon }}" class="h-3.5 w-3.5"></i>
- {{ row.resource_label }}
- </span>
- </td>
- <td class="whitespace-nowrap px-2 py-3">
- <div class="grid min-w-[170px] grid-cols-[86px_1fr] items-center gap-3">
- <span class="text-right tabular-nums">{{ row.current_display }}</span>
- {% set resource_bar_class = 'bg-kaori-primary' if row.resource_type in ['cpu', 'memory'] else ('bg-cyan-500' if row.resource_type == 'pods' else 'bg-sky-500') %}
- {{ progress_bar.bar(
- row.usage_bar_percent,
- track_classes="h-2 w-20 overflow-hidden rounded-full bg-surface-hover",
- fill_classes="h-full rounded-full " ~ resource_bar_class,
- label=row.resource_label ~ " usage",
- ) }}
- </div>
- </td>
- <td class="whitespace-nowrap px-2 py-3 tabular-nums">{{ row.request_display }}</td>
- <td class="whitespace-nowrap px-2 py-3 tabular-nums">{{ row.limit_display }}</td>
- <td class="whitespace-nowrap px-2 py-3">
- <div class="grid min-w-[150px] grid-cols-[58px_1fr] items-center gap-3">
- <span class="text-right tabular-nums">{{ row.usage_percent }}%</span>
- {% set risk_bar_class = 'bg-red-500' if row.risk.key == 'critical' else ('bg-amber-500' if row.risk.key == 'warning' else 'bg-emerald-500') %}
- {{ progress_bar.bar(
- row.usage_bar_percent,
- track_classes="h-2 w-20 overflow-hidden rounded-full bg-surface-hover",
- fill_classes="h-full rounded-md " ~ risk_bar_class,
- label="Usage risk",
- ) }}
- </div>
- </td>
- <td class="whitespace-nowrap px-2 py-3">
- <span class="inline-flex rounded-md px-2.5 py-1 text-xs font-semibold {{ row.risk.class }}">
- {{ row.risk.label }}
- </span>
- </td>
- <td class="whitespace-nowrap px-2 py-3 text-left">
- <button type="button"
- class="inline-flex items-center gap-1.5 rounded-full border border-outline-default bg-surface-card px-3 py-1.5 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary dark:hover:border-brand-outline hover:bg-kaori-soft dark:hover:text-kaori-primary"
- @click="expandedRow = expandedRow === '{{ row_key }}' ? null : '{{ row_key }}'">
- <i data-lucide="chevron-down"
- class="h-3.5 w-3.5 transition"
- :class="{ 'rotate-180': expandedRow === '{{ row_key }}' }"></i>
- <span x-text="expandedRow === '{{ row_key }}' ? 'Hide Details' : 'View More'">View More</span>
- </button>
- </td>
- </tr>
- <tr x-cloak
- x-show="expandedRow === '{{ row_key }}'"
- x-transition
- class="bg-surface-subtle ">
- <td colspan="10" class="px-4 py-4">
- <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm ">
- <div class="flex flex-col gap-3 border-b border-outline-default bg-surface-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
- <div>
- <div class="flex flex-wrap items-center gap-2">
- <h3 class="font-semibold text-content-primary">{{ row.workload }}</h3>
- <span class="rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary bg-kaori-soft ">{{ row.namespace }}</span>
- <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ row.risk.class }}">{{ row.risk.label }}</span>
- </div>
- <p class="mt-1 text-xs text-content-muted ">
- Identity, usage, request/limit, risk context, and recommended action for this consumer.
- </p>
- </div>
- <div class="flex flex-wrap gap-2">
- <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ row.resource_class }}">{{ row.resource_label }}</span>
- <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ action_class }}">{{ action_label }}</span>
- </div>
- </div>
- <div class="grid gap-4 p-5 xl:grid-cols-3">
- <div class="rounded-xl border border-outline-default bg-surface-card p-4 ">
- <div class="mb-4 flex items-center gap-2">
- <span class="flex h-8 w-8 items-center justify-center rounded-xl {{ row.resource_class }}">
- <i data-lucide="{{ row.resource_icon }}" class="h-4 w-4"></i>
- </span>
- <div>
- <h3 class="font-semibold text-content-primary">Consumer Identity</h3>
- <p class="text-xs text-content-muted ">Namespace, workload, pod, and container mapping.</p>
- </div>
- </div>
- <div class="space-y-2.5 text-sm">
- <div class="flex items-center justify-between gap-3"><span class="text-content-muted ">Namespace</span><span class="break-words text-right font-semibold text-content-primary ">{{ row.namespace }}</span></div>
- <div class="flex items-center justify-between gap-3"><span class="text-content-muted ">Resource</span><span class="font-semibold text-content-primary ">{{ row.resource_label }}</span></div>
- <div class="flex items-center justify-between gap-3"><span class="text-content-muted ">Workload</span><span class="break-words text-right font-semibold text-content-primary ">{{ row.workload }}</span></div>
- <div class="flex items-center justify-between gap-3"><span class="text-content-muted ">Pod</span><span class="break-words text-right font-semibold text-content-primary ">{{ row.pod if row.pod else '-' }}</span></div>
- <div class="flex items-center justify-between gap-3"><span class="text-content-muted ">Container</span><span class="break-words text-right font-semibold text-content-primary ">{{ row.container if row.container else '-' }}</span></div>
- </div>
- </div>
- <div class="rounded-xl border border-outline-default bg-surface-card p-4 ">
- <div class="mb-4 flex items-center justify-between gap-3">
- <div class="flex items-center gap-2">
- <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft ">
- <i data-lucide="activity" class="h-4 w-4"></i>
- </span>
- <div>
- <h3 class="font-semibold text-content-primary">Resource Usage</h3>
- <p class="text-xs text-content-muted ">Current usage compared with request, limit, or capacity.</p>
- </div>
- </div>
- <span class="inline-flex rounded-md px-2.5 py-1 text-xs font-semibold {{ row.risk.class }}">
- {{ row.risk.label }}
- </span>
- </div>
- <div class="grid gap-3 sm:grid-cols-2">
- <div class="rounded-xl bg-surface-subtle p-3 ">
- <p class="text-xs font-semibold uppercase tracking-wide text-content-muted ">Current</p>
- <p class="mt-1 text-base font-semibold text-content-primary ">{{ row.current_display }}</p>
- </div>
- <div class="rounded-xl bg-surface-subtle p-3 ">
- <p class="text-xs font-semibold uppercase tracking-wide text-content-muted ">Request</p>
- <p class="mt-1 text-base font-semibold text-content-primary ">{{ row.request_display }}</p>
- </div>
- <div class="rounded-xl bg-surface-subtle p-3 ">
- <p class="text-xs font-semibold uppercase tracking-wide text-content-muted ">Limit / Capacity</p>
- <p class="mt-1 text-base font-semibold text-content-primary ">{{ row.limit_display }}</p>
- </div>
- <div class="rounded-xl bg-surface-subtle p-3 ">
- <p class="text-xs font-semibold uppercase tracking-wide text-content-muted ">Usage</p>
- <p class="mt-1 text-base font-semibold text-content-primary ">{{ row.usage_percent }}%</p>
- </div>
- </div>
- <div class="mt-4">
- <div class="flex items-center justify-between text-xs font-medium text-content-muted ">
- <span>Usage ratio</span>
- <span>{{ row.usage_percent }}%</span>
- </div>
- {% set risk_bar_class = 'bg-red-500' if row.risk.key == 'critical' else ('bg-amber-500' if row.risk.key == 'warning' else 'bg-emerald-500') %}
- {{ progress_bar.bar(
- row.usage_bar_percent,
- track_classes="mt-2 h-3 overflow-hidden rounded-full bg-surface-hover",
- fill_classes="h-full rounded-md " ~ risk_bar_class,
- label="Usage ratio",
- ) }}
- </div>
- </div>
- <div class="rounded-xl border border-outline-default bg-surface-card p-4 ">
- <div class="mb-4 flex items-start justify-between gap-3">
- <div class="flex items-center gap-2">
- <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-300">
- <i data-lucide="lightbulb" class="h-4 w-4"></i>
- </span>
- <div>
- <h3 class="font-semibold text-content-primary">Recommended Action</h3>
- <p class="text-xs text-content-muted ">Action moved into the expanded view to keep the table focused.</p>
- </div>
- </div>
- <span class="inline-flex shrink-0 rounded-md px-2.5 py-1 text-xs font-semibold {{ action_class }}">{{ action_label }}</span>
- </div>
- <div class="rounded-xl bg-surface-subtle p-3 ">
- <p class="text-xs font-semibold uppercase tracking-wide text-content-muted ">Recommendation</p>
- <p class="mt-1 text-sm font-semibold leading-6 text-content-primary ">{{ row.recommendation }}</p>
- </div>
- <div class="mt-3 rounded-xl bg-kaori-soft p-3 text-sm leading-6 text-kaori-primary bg-kaori-soft text-kaori-primary">
- <span class="font-semibold">Reason:</span>
- {% if row.request_display == '-' and row.resource_type in ['cpu', 'memory'] %}
- {{ row.resource_label }} request is missing, so Kubernetes cannot reserve predictable capacity for this workload.
- {% elif row.limit_display == '-' and row.resource_type in ['cpu', 'memory'] %}
- {{ row.resource_label }} limit is missing, so the workload has no configured upper resource boundary.
- {% elif row.resource_type == 'pvc' and row.usage_percent >= 80 %}
- PVC usage is already {{ row.usage_percent }}%, so cleanup or expansion should be reviewed before capacity becomes critical.
- {% elif row.usage_percent >= 90 %}
- Usage is {{ row.usage_percent }}%, above the critical threshold of 90%.
- {% elif row.usage_percent >= 75 %}
- Usage is {{ row.usage_percent }}%, above the warning threshold of 75%.
- {% else %}
- Usage is {{ row.usage_percent }}%, currently below the warning threshold. Continue monitoring growth.
- {% endif %}
- </div>
- <div class="mt-3 grid gap-2 text-xs sm:grid-cols-3">
- <div class="rounded-xl border border-outline-default bg-surface-card p-3 ">
- <p class="font-semibold text-content-primary ">Review target</p>
- <p class="mt-1 leading-5 text-content-muted ">Validate {{ row.resource_label|lower }} usage against request, limit, and namespace pressure.</p>
- </div>
- <div class="rounded-xl border border-outline-default bg-surface-card p-3 ">
- <p class="font-semibold text-content-primary ">Operational check</p>
- <p class="mt-1 leading-5 text-content-muted ">Compare this consumer with nearby ranked rows before resizing or changing placement.</p>
- </div>
- <div class="rounded-xl border border-outline-default bg-surface-card p-3 ">
- <p class="font-semibold text-content-primary ">Next step</p>
- <p class="mt-1 leading-5 text-content-muted ">Prioritize critical and warning rows, then confirm trend stability in Prometheus.</p>
- </div>
- </div>
- </div>
- </div>
- </div>
- </td>
- </tr>
- {% endfor %}
- </tbody>
- </table>
- </div>
- {% include "analytics/top_consumers/partials/_consumer_detail_pagination.html" %}
- {% else %}
- <div class="rounded-xl border border-dashed border-outline-strong bg-surface-subtle ">
- {% set empty_state_icon = "list-filter" %}
- {% set empty_state_title = "No Consumer Rows Available" %}
- {% set empty_state_description = "Adjust the namespace, resource, time range, or search filters to find matching consumer data." %}
- {% set empty_state_min_height = "min-h-[280px]" %}
- {% include "components/states/_empty_state.html" %}
- </div>
- {% endif %}
- </div>
- </section>
+    <section id="consumer-detail-section"
+             x-data="{ expandedRow: null }"
+             class="rounded-xl border border-outline-default bg-surface-card shadow-sm ">
+        <div class="border-b border-outline-default px-6 py-4 ">
+            <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Consumer Detail</h2>
+                        <i data-lucide="info" class="h-4 w-4 text-content-muted"></i>
+                    </div>
+                    <p class="mt-1 text-sm text-content-muted ">
+                        Ranked list of top resource consumers across CPU, memory, pods, and PVC.
+                    </p>
+                </div>
+                <form id="consumer-detail-filter"
+                      method="GET"
+                      action="{{ url_for('analytics.top_consumers') }}"
+                      hx-get="{{ url_for('analytics.top_consumers_table') }}"
+                      hx-trigger="keyup changed delay:350ms from:input[name='search'], change from:select"
+                      hx-target="#consumer-detail-section"
+                      hx-swap="outerHTML"
+                      hx-indicator="#top-consumers-refresh-indicator"
+                      class="grid min-w-0 gap-3 sm:grid-cols-[minmax(220px,320px)_190px]">
+                    <input type="hidden"
+                           name="cluster_id"
+                           value="{{ cluster.id if cluster else '' }}">
+                    <input type="hidden" name="namespace" value="{{ selected_namespace }}">
+                    <input type="hidden" name="resource" value="{{ selected_resource }}">
+                    <input type="hidden" name="time_range" value="{{ selected_time_range }}">
+                    <input type="hidden" name="focus" value="{{ selected_focus }}">
+                    <input type="hidden" name="page" value="1">
+                    <label class="relative block min-w-0">
+                        <span class="sr-only">Search consumers</span>
+                        <i data-lucide="search"
+                           class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
+                        <input type="search"
+                               name="search"
+                               value="{{ selected_search }}"
+                               placeholder="Search workload, pod, PVC..."
+                               class="h-9 w-full rounded-xl border border-outline-strong bg-surface-card py-1.5 pl-9 pr-3 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/10 ">
+                    </label>
+                    <label class="block min-w-0">
+                        <span class="sr-only">Sort consumers</span>
+                        <select name="sort"
+                                class="h-9 w-full rounded-xl border border-outline-strong bg-surface-card px-3 py-1.5 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/10 ">
+                            {% for item in sort_options %}
+                                <option value="{{ item.value }}"
+                                        {% if selected_sort == item.value %}selected{% endif %}>
+                                    {{ item.label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                </form>
+            </div>
+        </div>
+        <div class="p-6">
+            {% set focus_labels = {
+                "missing_requests": "Missing Requests",
+                "high_usage": "High Usage Workloads",
+                "dominant_namespaces": "Dominant Namespaces",
+                "high_pvc": "High PVC Usage"
+            } %}
+            {% if selected_focus %}
+                {% set clear_focus_page_url = url_for(
+                                    'analytics.top_consumers',
+                                    cluster_id=cluster.id if cluster else '',
+                                    namespace=selected_namespace,
+                                    resource='all',
+                                    time_range=selected_time_range,
+                                    search='',
+                                    sort=selected_sort,
+                                    page=1,
+                                    per_page=pagination.per_page
+                                ) %}
+                {% set clear_focus_table_url = url_for(
+                                    'analytics.top_consumers_table',
+                                    cluster_id=cluster.id if cluster else '',
+                                    namespace=selected_namespace,
+                                    resource='all',
+                                    time_range=selected_time_range,
+                                    search='',
+                                    sort=selected_sort,
+                                    page=1,
+                                    per_page=pagination.per_page
+                                ) %}
+                <div class="mb-5 flex flex-col gap-3 rounded-xl border border-brand-outline bg-kaori-soft px-4 py-3 text-sm text-kaori-primary bg-kaori-soft text-kaori-primary sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-center gap-2">
+                        <i data-lucide="filter" class="h-4 w-4 shrink-0"></i>
+                        <span>
+                            Focused view:
+                            <span class="font-semibold">{{ focus_labels.get(selected_focus, selected_focus) }}</span>
+                        </span>
+                    </div>
+                    <a href="{{ clear_focus_page_url }}"
+                       hx-get="{{ clear_focus_table_url }}"
+                       hx-target="#consumer-detail-section"
+                       hx-swap="outerHTML"
+                       hx-indicator="#top-consumers-refresh-indicator"
+                       class="inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:text-kaori-primary text-kaori-primary hover:text-content-primary">
+                        Clear focus
+                        <i data-lucide="x" class="h-3.5 w-3.5"></i>
+                    </a>
+                </div>
+            {% endif %}
+            {% if rows %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-outline-default text-sm dark:divide-outline-default">
+                        <thead>
+                            <tr class="text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">
+                                <th class="whitespace-nowrap px-2 py-3">Rank</th>
+                                <th class="whitespace-nowrap px-2 py-3">Namespace</th>
+                                <th class="whitespace-nowrap px-2 py-3">Workload / Pod / PVC</th>
+                                <th class="whitespace-nowrap px-2 py-3">Resource Type</th>
+                                <th class="whitespace-nowrap px-2 py-3">Current Usage</th>
+                                <th class="whitespace-nowrap px-2 py-3">Request</th>
+                                <th class="whitespace-nowrap px-2 py-3">Limit / Capacity</th>
+                                <th class="whitespace-nowrap px-2 py-3">Usage %</th>
+                                <th class="whitespace-nowrap px-2 py-3">Risk</th>
+                                <th class="whitespace-nowrap px-2 py-3 text-left">Detail</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-outline-subtle text-content-secondary dark:divide-outline-default ">
+                            {% for row in rows %}
+                                {% set row_key = 'consumer-' ~ row.rank %}
+                                {% set recommendation = row.recommendation %}
+                                {% set action_label = "Monitor" %}
+                                {% set action_class = "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300" %}
+                                {% if row.risk.key == 'critical' %}
+                                    {% set action_label = "Immediate Review" %}
+                                    {% set action_class = "bg-red-50 text-red-700 dark:bg-red-950/60 dark:text-red-300" %}
+                                {% elif row.risk.key == 'warning' %}
+                                    {% set action_label = "Optimize" %}
+                                    {% set action_class = "bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300" %}
+                                {% elif 'Add' in recommendation %}
+                                    {% set action_label = "Missing Config" %}
+                                    {% set action_class = "bg-kaori-soft text-kaori-primary bg-kaori-soft " %}
+                                {% elif row.resource_type == 'pvc' %}
+                                    {% set action_label = "Storage Review" %}
+                                    {% set action_class = "bg-orange-50 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300" %}
+                                {% endif %}
+                                <tr class="align-middle hover:bg-surface-subtle dark:hover:bg-surface-hover/40">
+                                    <td class="whitespace-nowrap px-2 py-3 font-semibold text-content-muted ">{{ row.rank }}</td>
+                                    <td class="whitespace-nowrap px-2 py-3">
+                                        <span class="inline-flex max-w-[180px] items-center gap-1.5 truncate rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary bg-kaori-soft "
+                                              title="{{ row.namespace }}">
+                                            <i data-lucide="box" class="h-3.5 w-3.5"></i>
+                                            {{ row.namespace }}
+                                        </span>
+                                    </td>
+                                    <td class="px-2 py-3">
+                                        <div class="max-w-[340px] truncate font-medium text-content-primary "
+                                             title="{{ row.workload }}">{{ row.workload }}</div>
+                                    </td>
+                                    <td class="whitespace-nowrap px-2 py-3">
+                                        <span class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold {{ row.resource_class }}">
+                                            <i data-lucide="{{ row.resource_icon }}" class="h-3.5 w-3.5"></i>
+                                            {{ row.resource_label }}
+                                        </span>
+                                    </td>
+                                    <td class="whitespace-nowrap px-2 py-3">
+                                        <div class="grid min-w-[170px] grid-cols-[86px_1fr] items-center gap-3">
+                                            <span class="text-right tabular-nums">{{ row.current_display }}</span>
+                                            {% set resource_bar_class = 'bg-kaori-primary' if row.resource_type in ['cpu', 'memory'] else ('bg-cyan-500' if row.resource_type == 'pods' else 'bg-sky-500') %}
+                                            {{ progress_bar.bar(row.usage_bar_percent,
+                                                                                        track_classes="h-2 w-20 overflow-hidden rounded-full bg-surface-hover",
+                                                                                        fill_classes="h-full rounded-full " ~ resource_bar_class,
+                                                                                        label=row.resource_label ~ " usage",) }}
+                                        </div>
+                                    </td>
+                                    <td class="whitespace-nowrap px-2 py-3 tabular-nums">{{ row.request_display }}</td>
+                                    <td class="whitespace-nowrap px-2 py-3 tabular-nums">{{ row.limit_display }}</td>
+                                    <td class="whitespace-nowrap px-2 py-3">
+                                        <div class="grid min-w-[150px] grid-cols-[58px_1fr] items-center gap-3">
+                                            <span class="text-right tabular-nums">{{ row.usage_percent }}%</span>
+                                            {% set risk_bar_class = 'bg-red-500' if row.risk.key == 'critical' else ('bg-amber-500' if row.risk.key == 'warning' else 'bg-emerald-500') %}
+                                            {{ progress_bar.bar(row.usage_bar_percent,
+                                                                                        track_classes="h-2 w-20 overflow-hidden rounded-full bg-surface-hover",
+                                                                                        fill_classes="h-full rounded-md " ~ risk_bar_class,
+                                                                                        label="Usage risk",) }}
+                                        </div>
+                                    </td>
+                                    <td class="whitespace-nowrap px-2 py-3">
+                                        <span class="inline-flex rounded-md px-2.5 py-1 text-xs font-semibold {{ row.risk.class }}">{{ row.risk.label }}</span>
+                                    </td>
+                                    <td class="whitespace-nowrap px-2 py-3 text-left">
+                                        <button type="button"
+                                                class="inline-flex items-center gap-1.5 rounded-full border border-outline-default bg-surface-card px-3 py-1.5 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary dark:hover:border-brand-outline hover:bg-kaori-soft dark:hover:text-kaori-primary"
+                                                @click="expandedRow = expandedRow === '{{ row_key }}' ? null : '{{ row_key }}'">
+                                            <i data-lucide="chevron-down"
+                                               class="h-3.5 w-3.5 transition"
+                                               :class="{ 'rotate-180': expandedRow === '{{ row_key }}' }"></i>
+                                            <span x-text="expandedRow === '{{ row_key }}' ? 'Hide Details' : 'View More'">View More</span>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr x-cloak
+                                    x-show="expandedRow === '{{ row_key }}'"
+                                    x-transition
+                                    class="bg-surface-subtle ">
+                                    <td colspan="10" class="px-4 py-4">
+                                        <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm ">
+                                            <div class="flex flex-col gap-3 border-b border-outline-default bg-surface-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                                <div>
+                                                    <div class="flex flex-wrap items-center gap-2">
+                                                        <h3 class="font-semibold text-content-primary">{{ row.workload }}</h3>
+                                                        <span class="rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary bg-kaori-soft ">{{ row.namespace }}</span>
+                                                        <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ row.risk.class }}">{{ row.risk.label }}</span>
+                                                    </div>
+                                                    <p class="mt-1 text-xs text-content-muted ">
+                                                        Identity, usage, request/limit, risk context, and recommended action for this consumer.
+                                                    </p>
+                                                </div>
+                                                <div class="flex flex-wrap gap-2">
+                                                    <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ row.resource_class }}">{{ row.resource_label }}</span>
+                                                    <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ action_class }}">{{ action_label }}</span>
+                                                </div>
+                                            </div>
+                                            <div class="grid gap-4 p-5 xl:grid-cols-3">
+                                                <div class="rounded-xl border border-outline-default bg-surface-card p-4 ">
+                                                    <div class="mb-4 flex items-center gap-2">
+                                                        <span class="flex h-8 w-8 items-center justify-center rounded-xl {{ row.resource_class }}">
+                                                            <i data-lucide="{{ row.resource_icon }}" class="h-4 w-4"></i>
+                                                        </span>
+                                                        <div>
+                                                            <h3 class="font-semibold text-content-primary">Consumer Identity</h3>
+                                                            <p class="text-xs text-content-muted ">Namespace, workload, pod, and container mapping.</p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="space-y-2.5 text-sm">
+                                                        <div class="flex items-center justify-between gap-3"><span class="text-content-muted ">Namespace</span><span class="break-words text-right font-semibold text-content-primary ">{{ row.namespace }}</span></div>
+                                                        <div class="flex items-center justify-between gap-3"><span class="text-content-muted ">Resource</span><span class="font-semibold text-content-primary ">{{ row.resource_label }}</span></div>
+                                                        <div class="flex items-center justify-between gap-3"><span class="text-content-muted ">Workload</span><span class="break-words text-right font-semibold text-content-primary ">{{ row.workload }}</span></div>
+                                                        <div class="flex items-center justify-between gap-3"><span class="text-content-muted ">Pod</span><span class="break-words text-right font-semibold text-content-primary ">{{ row.pod if row.pod else '-' }}</span></div>
+                                                        <div class="flex items-center justify-between gap-3"><span class="text-content-muted ">Container</span><span class="break-words text-right font-semibold text-content-primary ">{{ row.container if row.container else '-' }}</span></div>
+                                                    </div>
+                                                </div>
+                                                <div class="rounded-xl border border-outline-default bg-surface-card p-4 ">
+                                                    <div class="mb-4 flex items-center justify-between gap-3">
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft ">
+                                                                <i data-lucide="activity" class="h-4 w-4"></i>
+                                                            </span>
+                                                            <div>
+                                                                <h3 class="font-semibold text-content-primary">Resource Usage</h3>
+                                                                <p class="text-xs text-content-muted ">Current usage compared with request, limit, or capacity.</p>
+                                                            </div>
+                                                        </div>
+                                                        <span class="inline-flex rounded-md px-2.5 py-1 text-xs font-semibold {{ row.risk.class }}">{{ row.risk.label }}</span>
+                                                    </div>
+                                                    <div class="grid gap-3 sm:grid-cols-2">
+                                                        <div class="rounded-xl bg-surface-subtle p-3 ">
+                                                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted ">Current</p>
+                                                            <p class="mt-1 text-base font-semibold text-content-primary ">{{ row.current_display }}</p>
+                                                        </div>
+                                                        <div class="rounded-xl bg-surface-subtle p-3 ">
+                                                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted ">Request</p>
+                                                            <p class="mt-1 text-base font-semibold text-content-primary ">{{ row.request_display }}</p>
+                                                        </div>
+                                                        <div class="rounded-xl bg-surface-subtle p-3 ">
+                                                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted ">Limit / Capacity</p>
+                                                            <p class="mt-1 text-base font-semibold text-content-primary ">{{ row.limit_display }}</p>
+                                                        </div>
+                                                        <div class="rounded-xl bg-surface-subtle p-3 ">
+                                                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted ">Usage</p>
+                                                            <p class="mt-1 text-base font-semibold text-content-primary ">{{ row.usage_percent }}%</p>
+                                                        </div>
+                                                    </div>
+                                                    <div class="mt-4">
+                                                        <div class="flex items-center justify-between text-xs font-medium text-content-muted ">
+                                                            <span>Usage ratio</span>
+                                                            <span>{{ row.usage_percent }}%</span>
+                                                        </div>
+                                                        {% set risk_bar_class = 'bg-red-500' if row.risk.key == 'critical' else ('bg-amber-500' if row.risk.key == 'warning' else 'bg-emerald-500') %}
+                                                        {{ progress_bar.bar(row.usage_bar_percent,
+                                                                                                                track_classes="mt-2 h-3 overflow-hidden rounded-full bg-surface-hover",
+                                                                                                                fill_classes="h-full rounded-md " ~ risk_bar_class,
+                                                                                                                label="Usage ratio",) }}
+                                                    </div>
+                                                </div>
+                                                <div class="rounded-xl border border-outline-default bg-surface-card p-4 ">
+                                                    <div class="mb-4 flex items-start justify-between gap-3">
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-300">
+                                                                <i data-lucide="lightbulb" class="h-4 w-4"></i>
+                                                            </span>
+                                                            <div>
+                                                                <h3 class="font-semibold text-content-primary">Recommended Action</h3>
+                                                                <p class="text-xs text-content-muted ">Action moved into the expanded view to keep the table focused.</p>
+                                                            </div>
+                                                        </div>
+                                                        <span class="inline-flex shrink-0 rounded-md px-2.5 py-1 text-xs font-semibold {{ action_class }}">{{ action_label }}</span>
+                                                    </div>
+                                                    <div class="rounded-xl bg-surface-subtle p-3 ">
+                                                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted ">Recommendation</p>
+                                                        <p class="mt-1 text-sm font-semibold leading-6 text-content-primary ">{{ row.recommendation }}</p>
+                                                    </div>
+                                                    <div class="mt-3 rounded-xl bg-kaori-soft p-3 text-sm leading-6 text-kaori-primary bg-kaori-soft text-kaori-primary">
+                                                        <span class="font-semibold">Reason:</span>
+                                                        {% if row.request_display == '-' and row.resource_type in ['cpu', 'memory'] %}
+                                                            {{ row.resource_label }} request is missing, so Kubernetes cannot reserve predictable capacity for this workload.
+                                                        {% elif row.limit_display == '-' and row.resource_type in ['cpu', 'memory'] %}
+                                                            {{ row.resource_label }} limit is missing, so the workload has no configured upper resource boundary.
+                                                        {% elif row.resource_type == 'pvc' and row.usage_percent >= 80 %}
+                                                            PVC usage is already {{ row.usage_percent }}%, so cleanup or expansion should be reviewed before capacity becomes critical.
+                                                        {% elif row.usage_percent >= 90 %}
+                                                            Usage is {{ row.usage_percent }}%, above the critical threshold of 90%.
+                                                        {% elif row.usage_percent >= 75 %}
+                                                            Usage is {{ row.usage_percent }}%, above the warning threshold of 75%.
+                                                        {% else %}
+                                                            Usage is {{ row.usage_percent }}%, currently below the warning threshold. Continue monitoring growth.
+                                                        {% endif %}
+                                                    </div>
+                                                    <div class="mt-3 grid gap-2 text-xs sm:grid-cols-3">
+                                                        <div class="rounded-xl border border-outline-default bg-surface-card p-3 ">
+                                                            <p class="font-semibold text-content-primary ">Review target</p>
+                                                            <p class="mt-1 leading-5 text-content-muted ">Validate {{ row.resource_label|lower }} usage against request, limit, and namespace pressure.</p>
+                                                        </div>
+                                                        <div class="rounded-xl border border-outline-default bg-surface-card p-3 ">
+                                                            <p class="font-semibold text-content-primary ">Operational check</p>
+                                                            <p class="mt-1 leading-5 text-content-muted ">Compare this consumer with nearby ranked rows before resizing or changing placement.</p>
+                                                        </div>
+                                                        <div class="rounded-xl border border-outline-default bg-surface-card p-3 ">
+                                                            <p class="font-semibold text-content-primary ">Next step</p>
+                                                            <p class="mt-1 leading-5 text-content-muted ">Prioritize critical and warning rows, then confirm trend stability in Prometheus.</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% include "analytics/top_consumers/partials/_consumer_detail_pagination.html" %}
+            {% else %}
+                <div class="rounded-xl border border-dashed border-outline-strong bg-surface-subtle ">
+                    {% set empty_state_icon = "list-filter" %}
+                    {% set empty_state_title = "No Consumer Rows Available" %}
+                    {% set empty_state_description = "Adjust the namespace, resource, time range, or search filters to find matching consumer data." %}
+                    {% set empty_state_min_height = "min-h-[280px]" %}
+                    {% include "components/states/_empty_state.html" %}
+                </div>
+            {% endif %}
+        </div>
+    </section>
 {% endif %}

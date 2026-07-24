@@ -193,11 +193,11 @@
     {%- set palette = vivid_tones if vivid else tones -%}
     {%- set selected = palette.get(tone, palette['blue']) -%}
     {% if pinned %}<div class="mt-auto pt-3">{% endif %}
-    <div class="flex shrink-0 items-start gap-2.5 rounded-xl px-3 py-2.5 text-xs leading-5 {{ selected.panel }} {{ panel_classes }}">
-        <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ selected.icon }}">
-            <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
-        </span>
-        <p class="min-w-0 flex-1">{{ message }}</p>
-    </div>
-    {% if pinned %}</div>{% endif %}
+        <div class="flex shrink-0 items-start gap-2.5 rounded-xl px-3 py-2.5 text-xs leading-5 {{ selected.panel }} {{ panel_classes }}">
+            <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg {{ selected.icon }}">
+                <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+            </span>
+            <p class="min-w-0 flex-1">{{ message }}</p>
+        </div>
+        {% if pinned %}</div>{% endif %}
 {%- endmacro %}

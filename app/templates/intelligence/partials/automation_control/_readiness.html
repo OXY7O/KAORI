@@ -1,10 +1,108 @@
-        {% if can_execute_decisions %}
-        <details class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
-            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-5"><span><span class="block text-sm font-semibold text-content-primary">Record Production-Readiness Evidence</span><span class="mt-1 block text-xs text-content-muted">Unchecked controls are stored as failed. KAORI hashes the complete evidence map for later parity checks.</span></span><i data-lucide="clipboard-check" class="h-4 w-4 text-kaori-primary"></i></summary>
-            <form method="post" action="{{ url_for('automation_control.record_automation_readiness') }}" class="space-y-5 border-t border-outline-default p-5"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><div class="grid gap-4 md:grid-cols-2"><label><span class="mb-1.5 block text-xs font-semibold text-content-secondary">Cluster</span><select name="cluster_id" required class="{{ input_classes }}"><option value="">Select cluster</option>{% for cluster in payload.clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}</select></label><label><span class="mb-1.5 block text-xs font-semibold text-content-secondary">Registered Action</span><select name="action_key" required class="{{ input_classes }}"><option value="">Select action</option>{% for row in payload.registry_rows %}<option value="{{ row.action_key }}">{{ row.action_key }}</option>{% endfor %}</select></label></div><div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">{% for check in payload.required_checks %}<label class="flex min-h-12 items-center gap-3 rounded-lg border border-outline-default bg-surface-subtle px-3 py-2 text-xs font-semibold text-content-secondary"><input type="checkbox" name="{{ check }}" class="h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-kaori-accent"><span>{{ check|replace('_',' ')|title }}</span></label>{% endfor %}</div><button class="{{ button_primary }}"><i data-lucide="shield-check" class="h-4 w-4"></i>Record Evidence</button></form>
-        </details>
-        {% endif %}
-
-        <section class="rounded-xl border border-kaori-primary/20 bg-kaori-soft px-5 py-4"><div class="flex items-start gap-3"><i data-lucide="route" class="mt-0.5 h-5 w-5 shrink-0 text-kaori-primary"></i><div><p class="text-sm font-semibold text-content-primary">Controlled sequence: Disabled → Shadow → Non-Production → Canary → Production</p><p class="mt-1 text-xs leading-5 text-content-secondary">KAORI blocks stage skipping. Canary and Production require every readiness check. Any failed revalidation disables a production record.</p></div></div></section>
-
-        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"><div class="border-b border-outline-default px-5 py-4"><h2 class="text-base font-semibold text-content-primary">Production Readiness Records</h2><p class="mt-1 text-xs text-content-muted">Evidence, deployment policy, and global operational controls are evaluated independently before stage changes.</p></div><div class="overflow-x-auto"><table class="w-full min-w-[76rem] divide-y divide-outline-default text-left"><thead class="bg-surface-subtle text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted"><tr><th class="px-4 py-3">Cluster & Action</th><th class="px-4 py-3">Evidence</th><th class="px-4 py-3">Stage</th><th class="px-4 py-3">Validated</th><th class="px-4 py-3">Approved</th><th class="px-4 py-3 text-right">Advance Stage</th></tr></thead><tbody class="divide-y divide-outline-default">{% for row in payload.readiness_rows %}<tr class="align-top hover:bg-surface-hover"><td class="px-4 py-4"><p class="text-sm font-semibold text-content-primary">{{ row.cluster }}</p><p class="mt-1 font-mono text-xs text-content-muted">{{ row.action_key }}</p></td><td class="px-4 py-4"><div class="flex items-center gap-2">{{ table_label.status_label('Ready' if row.ready else 'Incomplete', 'normal' if row.ready else 'warning', 'shield-check' if row.ready else 'shield-alert') }}<span class="text-xs font-semibold text-content-secondary">{{ row.completed_checks }}/{{ row.total_checks }}</span></div>{% if row.failed_checks %}<p class="mt-2 max-w-md text-xs leading-5 text-content-muted">Missing: {{ row.failed_checks|join(', ') }}</p>{% endif %}<p class="mt-2 max-w-sm truncate font-mono text-[10px] text-content-muted" title="{{ row.evidence_hash }}">{{ row.evidence_hash }}</p></td><td class="px-4 py-4">{{ table_label.status_label(row.stage|replace('_',' ')|title, 'normal' if row.stage == 'production' else ('warning' if row.stage in ['shadow','non_production','canary'] else 'disabled'), 'route') }}</td><td class="px-4 py-4 text-xs text-content-muted">{{ row.validated_at }}</td><td class="px-4 py-4 text-xs text-content-muted">{{ row.approved_at }}</td><td class="px-4 py-4">{% if can_execute_decisions %}<form method="post" action="{{ url_for('automation_control.advance_automation_readiness', record_id=row.id) }}" class="flex justify-end gap-2"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><select name="target_stage" class="min-h-9 rounded-lg border border-outline-strong bg-surface-card px-2 text-xs font-semibold text-content-secondary">{% for stage in payload.stage_order %}<option value="{{ stage }}" {% if stage == row.stage %}selected{% endif %}>{{ stage|replace('_',' ')|title }}</option>{% endfor %}</select><button class="{{ button_secondary }}"><i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>Apply</button></form>{% endif %}</td></tr>{% else %}<tr><td colspan="6" class="px-5 py-10 text-center text-sm text-content-muted">No production-readiness evidence has been recorded.</td></tr>{% endfor %}</tbody></table></div></section>
+{% if can_execute_decisions %}
+    <details class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-5"><span><span class="block text-sm font-semibold text-content-primary">Record Production-Readiness Evidence</span><span class="mt-1 block text-xs text-content-muted">Unchecked controls are stored as failed. KAORI hashes the complete evidence map for later parity checks.</span></span><i data-lucide="clipboard-check" class="h-4 w-4 text-kaori-primary"></i></summary>
+        <form method="post"
+              action="{{ url_for('automation_control.record_automation_readiness') }}"
+              class="space-y-5 border-t border-outline-default p-5">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="grid gap-4 md:grid-cols-2">
+                <label>
+                    <span class="mb-1.5 block text-xs font-semibold text-content-secondary">Cluster</span>
+                    <select name="cluster_id" required class="{{ input_classes }}">
+                        <option value="">Select cluster</option>
+                        {% for cluster in payload.clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}
+                    </select>
+                </label>
+                <label>
+                    <span class="mb-1.5 block text-xs font-semibold text-content-secondary">Registered Action</span>
+                    <select name="action_key" required class="{{ input_classes }}">
+                        <option value="">Select action</option>
+                        {% for row in payload.registry_rows %}<option value="{{ row.action_key }}">{{ row.action_key }}</option>{% endfor %}
+                    </select>
+                </label>
+            </div>
+            <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                {% for check in payload.required_checks %}
+                    <label class="flex min-h-12 items-center gap-3 rounded-lg border border-outline-default bg-surface-subtle px-3 py-2 text-xs font-semibold text-content-secondary">
+                        <input type="checkbox"
+                               name="{{ check }}"
+                               class="h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-kaori-accent">
+                        <span>{{ check|replace('_', ' ') |title }}</span>
+                    </label>
+                {% endfor %}
+            </div>
+            <button class="{{ button_primary }}"><i data-lucide="shield-check" class="h-4 w-4"></i>Record Evidence</button>
+        </form>
+    </details>
+{% endif %}
+<section class="rounded-xl border border-kaori-primary/20 bg-kaori-soft px-5 py-4">
+    <div class="flex items-start gap-3">
+        <i data-lucide="route"
+           class="mt-0.5 h-5 w-5 shrink-0 text-kaori-primary"></i>
+        <div>
+            <p class="text-sm font-semibold text-content-primary">Controlled sequence: Disabled → Shadow → Non-Production → Canary → Production</p>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI blocks stage skipping. Canary and Production require every readiness check. Any failed revalidation disables a production record.</p>
+        </div>
+    </div>
+</section>
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <div class="border-b border-outline-default px-5 py-4">
+        <h2 class="text-base font-semibold text-content-primary">Production Readiness Records</h2>
+        <p class="mt-1 text-xs text-content-muted">Evidence, deployment policy, and global operational controls are evaluated independently before stage changes.</p>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full min-w-[76rem] divide-y divide-outline-default text-left">
+            <thead class="bg-surface-subtle text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted">
+                <tr>
+                    <th class="px-4 py-3">Cluster & Action</th>
+                    <th class="px-4 py-3">Evidence</th>
+                    <th class="px-4 py-3">Stage</th>
+                    <th class="px-4 py-3">Validated</th>
+                    <th class="px-4 py-3">Approved</th>
+                    <th class="px-4 py-3 text-right">Advance Stage</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-outline-default">
+                {% for row in payload.readiness_rows %}
+                    <tr class="align-top hover:bg-surface-hover">
+                        <td class="px-4 py-4">
+                            <p class="text-sm font-semibold text-content-primary">{{ row.cluster }}</p>
+                            <p class="mt-1 font-mono text-xs text-content-muted">{{ row.action_key }}</p>
+                        </td>
+                        <td class="px-4 py-4">
+                            <div class="flex items-center gap-2">{{ table_label.status_label('Ready' if row.ready else 'Incomplete', 'normal' if row.ready else 'warning', 'shield-check' if row.ready else 'shield-alert') }}<span class="text-xs font-semibold text-content-secondary">{{ row.completed_checks }}/{{ row.total_checks }}</span></div>
+                            {% if row.failed_checks %}
+                                <p class="mt-2 max-w-md text-xs leading-5 text-content-muted">Missing: {{ row.failed_checks|join(", ") }}</p>
+                            {% endif %}
+                            <p class="mt-2 max-w-sm truncate font-mono text-[10px] text-content-muted"
+                               title="{{ row.evidence_hash }}">{{ row.evidence_hash }}</p>
+                        </td>
+                        <td class="px-4 py-4">{{ table_label.status_label(row.stage|replace('_',' ') |title, 'normal' if row.stage == 'production' else ('warning' if row.stage in ['shadow','non_production','canary'] else 'disabled'), 'route') }}</td>
+                        <td class="px-4 py-4 text-xs text-content-muted">{{ row.validated_at }}</td>
+                        <td class="px-4 py-4 text-xs text-content-muted">{{ row.approved_at }}</td>
+                        <td class="px-4 py-4">
+                            {% if can_execute_decisions %}
+                                <form method="post"
+                                      action="{{ url_for('automation_control.advance_automation_readiness', record_id=row.id) }}"
+                                      class="flex justify-end gap-2">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <select name="target_stage"
+                                            class="min-h-9 rounded-lg border border-outline-strong bg-surface-card px-2 text-xs font-semibold text-content-secondary">
+                                        {% for stage in payload.stage_order %}
+                                            <option value="{{ stage }}" {% if stage == row.stage %}selected{% endif %}>{{ stage|replace('_', ' ') |title }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button class="{{ button_secondary }}"><i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>Apply</button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="px-5 py-10 text-center text-sm text-content-muted">No production-readiness evidence has been recorded.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>

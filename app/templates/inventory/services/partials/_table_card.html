@@ -1,4 +1,5 @@
-<section id="services-inventory-card" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+<section id="services-inventory-card"
+         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
     <header class="border-b border-outline-subtle px-5 py-4">
         <div class="flex items-start gap-3">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
@@ -9,11 +10,11 @@
                 <p class="mt-1 text-sm leading-6 text-content-muted">Service identity, exposure type, cluster addressing, ports, and endpoint readiness.</p>
             </div>
         </div>
-        <div id="services-table-loading" class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
+        <div id="services-table-loading"
+             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
             <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
         </div>
     </header>
-
     <div class="border-b border-outline-subtle px-5 py-4">
         <form id="services-filter-form"
               hx-get="{{ url_for('inventory.services') }}"
@@ -26,34 +27,49 @@
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
             <div class="xl:col-span-3">
                 <label class="mb-2 block text-sm font-semibold text-content-secondary">Cluster</label>
-                <select name="cluster_id" class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                <select name="cluster_id"
+                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                     <option value="">All Clusters</option>
-                    {% for cluster in clusters %}<option value="{{ cluster.id }}" {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>{% endfor %}
+                    {% for cluster in clusters %}
+                        <option value="{{ cluster.id }}"
+                                {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div class="xl:col-span-3">
                 <label class="mb-2 block text-sm font-semibold text-content-secondary">Namespace</label>
-                <select name="namespace" class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                <select name="namespace"
+                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                     <option value="">All Namespaces</option>
-                    {% for ns in inventory.namespaces %}<option value="{{ ns }}" {% if selected_namespace == ns %}selected{% endif %}>{{ ns }}</option>{% endfor %}
+                    {% for ns in inventory.namespaces %}
+                        <option value="{{ ns }}" {% if selected_namespace == ns %}selected{% endif %}>{{ ns }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div class="xl:col-span-2">
                 <label class="mb-2 block text-sm font-semibold text-content-secondary">Service type</label>
-                <select name="type" class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                <select name="type"
+                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                     <option value="">All Types</option>
-                    {% for type_name in inventory.service_filter_types %}<option value="{{ type_name }}" {% if selected_type == type_name %}selected{% endif %}>{{ type_name }}</option>{% endfor %}
+                    {% for type_name in inventory.service_filter_types %}
+                        <option value="{{ type_name }}"
+                                {% if selected_type == type_name %}selected{% endif %}>{{ type_name }}</option>
+                    {% endfor %}
                 </select>
             </div>
             <div class="xl:col-span-4">
                 <label class="mb-2 block text-sm font-semibold text-content-secondary">Search service</label>
                 <div class="relative">
-                    <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
-                    <input type="search" name="search" value="{{ search }}" placeholder="Name, IP, or port" class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                    <i data-lucide="search"
+                       class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
+                    <input type="search"
+                           name="search"
+                           value="{{ search }}"
+                           placeholder="Name, IP, or port"
+                           class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                 </div>
             </div>
         </form>
     </div>
-
     <div id="services-table-content">{% include "inventory/services/partials/_table_content.html" %}</div>
 </section>

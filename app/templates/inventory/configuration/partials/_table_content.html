@@ -1,5 +1,113 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
-<div class="overflow-x-auto"><table class="min-w-[960px] w-full text-left text-xs text-content-secondary"><thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted"><tr><th class="px-3 py-2.5">Cluster</th><th class="px-3 py-2.5">Namespace</th><th class="px-3 py-2.5">Object</th><th class="px-3 py-2.5">Type</th><th class="px-3 py-2.5">Keys</th><th class="px-3 py-2.5">Immutable</th><th class="px-3 py-2.5 text-right">Details</th></tr></thead><tbody class="divide-y divide-outline-subtle">
-{% for item in inventory['items'] %}<tr id="configuration-row-{{ item.id }}" class="transition hover:bg-surface-hover"><td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(item.cluster_name, 'server') }}</td><td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(item.namespace, 'folder-tree') }}</td><td class="max-w-[320px] px-3 py-3.5 align-top"><div class="flex min-w-0 items-center gap-2"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ 'key-round' if item.type == 'Secret' else 'file-json-2' }}" class="h-4 w-4"></i></span><span class="truncate text-xs font-semibold text-content-primary" title="{{ item.name }}">{{ item.name }}</span></div></td><td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(item.type, 'key-round' if item.type == 'Secret' else 'file-json-2') }}</td><td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(item.key_count ~ ' keys', 'key-round') }}</td><td class="px-3 py-3.5 align-top">{% if item.immutable %}{{ table_label.status_label('Immutable', 'info', 'lock-keyhole') }}{% else %}{{ table_label.status_label('Mutable', 'unknown', 'unlock') }}{% endif %}</td><td class="px-3 py-3.5 text-right align-top"><button type="button" data-configuration-toggle="true" data-configuration-id="{{ item.id }}" hx-get="{{ url_for('inventory.configuration_details', configuration_id=item.id) }}" hx-target="#configuration-detail-content-{{ item.id }}" hx-swap="innerHTML" onclick="const target=document.getElementById('configuration-detail-content-{{ item.id }}');const row=document.getElementById('configuration-detail-row-{{ item.id }}');const open=target.dataset.open==='true';document.querySelectorAll('[id^=&quot;configuration-detail-row-&quot;]').forEach((entry)=>entry.classList.add('hidden'));document.querySelectorAll('[id^=&quot;configuration-detail-content-&quot;]').forEach((entry)=>{if(entry.id!==target.id){entry.innerHTML='';entry.dataset.open='false';}});document.querySelectorAll('[data-configuration-toggle=&quot;true&quot;]').forEach((button)=>{const label=button.querySelector('[data-configuration-toggle-label]');const icon=button.querySelector('[data-lucide]');if(label)label.textContent='View More';if(icon)icon.setAttribute('data-lucide','chevron-down');});if(open){target.innerHTML='';target.dataset.open='false';if(row)row.classList.add('hidden');const icon=this.querySelector('[data-lucide]');if(icon)icon.setAttribute('data-lucide','chevron-down');if(window.lucide)window.lucide.createIcons();event.preventDefault();return false;}row.classList.remove('hidden');target.dataset.open='true';const label=this.querySelector('[data-configuration-toggle-label]');const icon=this.querySelector('[data-lucide]');if(label)label.textContent='Hide Details';if(icon)icon.setAttribute('data-lucide','chevron-up');" hx-on::after-swap="if(window.lucide)window.lucide.createIcons();" class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"><i data-lucide="chevron-down" class="h-3.5 w-3.5"></i><span data-configuration-toggle-label>View More</span></button></td></tr><tr id="configuration-detail-row-{{ item.id }}" class="hidden border-0"><td colspan="7" class="w-full p-0 leading-none align-top"><div class="w-full min-w-0 overflow-x-auto" id="configuration-detail-content-{{ item.id }}" data-open="false"></div></td></tr>{% else %}<tr><td colspan="7" class="p-0">{% set empty_state_icon='file-key-2' %}{% set empty_state_title='No Configuration Objects Found' %}{% set empty_state_description='Adjust filters or sync inventory to collect ConfigMap and Secret metadata.' %}{% set empty_state_min_height='min-h-[190px]' %}{% include 'components/states/_empty_state.html' %}</td></tr>{% endfor %}</tbody></table></div>
-<footer class="flex flex-col gap-4 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs text-content-muted lg:flex-row lg:items-center lg:justify-between"><div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4"><p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ 'object' if pagination.total_items == 1 else 'objects' }}</p><form hx-get="{{ url_for('inventory.configuration') }}" hx-target="#configuration-inventory-card" hx-swap="outerHTML" hx-indicator="#configuration-table-loading" class="flex items-center"><input type="hidden" name="page" value="1"><input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}"><input type="hidden" name="namespace" value="{{ selected_namespace }}"><input type="hidden" name="type" value="{{ selected_type }}"><input type="hidden" name="search" value="{{ search }}"><select name="per_page" aria-label="Rows per page" onchange="this.form.requestSubmit()" class="{{ pagination_ui.page_size_classes() }}">{% for option in pagination.allowed_per_page %}<option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}</select></form></div><div class="flex flex-wrap items-center gap-2">{% if pagination.has_prev %}{% set prev_url=url_for('inventory.configuration', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, search=search, page=pagination.prev_page, per_page=pagination.per_page, partial_mode='table_content') %}<a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#configuration-table-content" hx-swap="innerHTML" hx-indicator="#configuration-table-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>{% else %}<span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>{% endif %}{{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages) }}{% if pagination.has_next %}{% set next_url=url_for('inventory.configuration', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, search=search, page=pagination.next_page, per_page=pagination.per_page, partial_mode='table_content') %}<a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#configuration-table-content" hx-swap="innerHTML" hx-indicator="#configuration-table-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>{% else %}<span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>{% endif %}</div></footer>
+<div class="overflow-x-auto">
+    <table class="min-w-[960px] w-full text-left text-xs text-content-secondary">
+        <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted">
+            <tr>
+                <th class="px-3 py-2.5">Cluster</th>
+                <th class="px-3 py-2.5">Namespace</th>
+                <th class="px-3 py-2.5">Object</th>
+                <th class="px-3 py-2.5">Type</th>
+                <th class="px-3 py-2.5">Keys</th>
+                <th class="px-3 py-2.5">Immutable</th>
+                <th class="px-3 py-2.5 text-right">Details</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-subtle">
+            {% for item in inventory['items'] %}
+                <tr id="configuration-row-{{ item.id }}"
+                    class="transition hover:bg-surface-hover">
+                    <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(item.cluster_name, 'server') }}</td>
+                    <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(item.namespace, 'folder-tree') }}</td>
+                    <td class="max-w-[320px] px-3 py-3.5 align-top">
+                        <div class="flex min-w-0 items-center gap-2"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ 'key-round' if item.type == 'Secret' else 'file-json-2' }}"
+   class="h-4 w-4"></i></span><span class="truncate text-xs font-semibold text-content-primary"
+      title="{{ item.name }}">{{ item.name }}</span></div>
+                    </td>
+                    <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(item.type, 'key-round' if item.type == 'Secret' else 'file-json-2') }}</td>
+                    <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(item.key_count ~ ' keys', 'key-round') }}</td>
+                    <td class="px-3 py-3.5 align-top">
+                        {% if item.immutable %}
+                            {{ table_label.status_label('Immutable', 'info', 'lock-keyhole') }}
+                        {% else %}
+                            {{ table_label.status_label('Mutable', 'unknown', 'unlock') }}
+                        {% endif %}
+                    </td>
+                    <td class="px-3 py-3.5 text-right align-top">
+                        <button type="button"
+                                data-configuration-toggle="true"
+                                data-configuration-id="{{ item.id }}"
+                                hx-get="{{ url_for('inventory.configuration_details', configuration_id=item.id) }}"
+                                hx-target="#configuration-detail-content-{{ item.id }}"
+                                hx-swap="innerHTML"
+                                onclick="const target=document.getElementById('configuration-detail-content-{{ item.id }}');const row=document.getElementById('configuration-detail-row-{{ item.id }}');const open=target.dataset.open==='true';document.querySelectorAll('[id^=&quot;configuration-detail-row-&quot;]').forEach((entry)=>entry.classList.add('hidden'));document.querySelectorAll('[id^=&quot;configuration-detail-content-&quot;]').forEach((entry)=>{if(entry.id!==target.id){entry.innerHTML='';entry.dataset.open='false';}});document.querySelectorAll('[data-configuration-toggle=&quot;true&quot;]').forEach((button)=>{const label=button.querySelector('[data-configuration-toggle-label]');const icon=button.querySelector('[data-lucide]');if(label)label.textContent='View More';if(icon)icon.setAttribute('data-lucide','chevron-down');});if(open){target.innerHTML='';target.dataset.open='false';if(row)row.classList.add('hidden');const icon=this.querySelector('[data-lucide]');if(icon)icon.setAttribute('data-lucide','chevron-down');if(window.lucide)window.lucide.createIcons();event.preventDefault();return false;}row.classList.remove('hidden');target.dataset.open='true';const label=this.querySelector('[data-configuration-toggle-label]');const icon=this.querySelector('[data-lucide]');if(label)label.textContent='Hide Details';if(icon)icon.setAttribute('data-lucide','chevron-up');"
+                                hx-on::after-swap="if(window.lucide)window.lucide.createIcons();"
+                                class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"><i data-lucide="chevron-down" class="h-3.5 w-3.5"></i><span data-configuration-toggle-label>View More</span></button>
+                    </td>
+                </tr>
+                <tr id="configuration-detail-row-{{ item.id }}" class="hidden border-0">
+                    <td colspan="7" class="w-full p-0 leading-none align-top">
+                        <div class="w-full min-w-0 overflow-x-auto"
+                             id="configuration-detail-content-{{ item.id }}"
+                             data-open="false"></div>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="7" class="p-0">
+                        {% set empty_state_icon = "file-key-2" %}{% set empty_state_title = "No Configuration Objects Found" %}{% set empty_state_description = "Adjust filters or sync inventory to collect ConfigMap and Secret metadata." %}{% set empty_state_min_height = "min-h-[190px]" %}
+                        {% include 'components/states/_empty_state.html' %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<footer class="flex flex-col gap-4 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs text-content-muted lg:flex-row lg:items-center lg:justify-between">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ 'object' if pagination.total_items == 1 else 'objects' }}</p>
+        <form hx-get="{{ url_for('inventory.configuration') }}"
+              hx-target="#configuration-inventory-card"
+              hx-swap="outerHTML"
+              hx-indicator="#configuration-table-loading"
+              class="flex items-center">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}">
+            <input type="hidden" name="namespace" value="{{ selected_namespace }}">
+            <input type="hidden" name="type" value="{{ selected_type }}">
+            <input type="hidden" name="search" value="{{ search }}">
+            <select name="per_page"
+                    aria-label="Rows per page"
+                    onchange="this.form.requestSubmit()"
+                    class="{{ pagination_ui.page_size_classes() }}">
+                {% for option in pagination.allowed_per_page %}
+                    <option value="{{ option }}"
+                            {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+        {% if pagination.has_prev %}
+            {% set prev_url = url_for('inventory.configuration', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, search=search, page=pagination.prev_page, per_page=pagination.per_page, partial_mode='table_content') %}<a href="{{ prev_url }}"
+   hx-get="{{ prev_url }}"
+   hx-target="#configuration-table-content"
+   hx-swap="innerHTML"
+   hx-indicator="#configuration-table-loading"
+   class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+        {% else %}
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+        {% endif %}
+        {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages) }}
+        {% if pagination.has_next %}
+            {% set next_url = url_for('inventory.configuration', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, search=search, page=pagination.next_page, per_page=pagination.per_page, partial_mode='table_content') %}<a href="{{ next_url }}"
+   hx-get="{{ next_url }}"
+   hx-target="#configuration-table-content"
+   hx-swap="innerHTML"
+   hx-indicator="#configuration-table-loading"
+   class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+        {% else %}
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+        {% endif %}
+    </div>
+</footer>

@@ -1,4 +1,14 @@
-{% set settings_owned_endpoints = ["settings.general", "settings.account", "settings.reports", "settings.data_lifecycle.index", "settings.data_lifecycle.preview", "settings.data_lifecycle.save_policy", "settings.data_lifecycle.run", "settings.data_lifecycle.verify", "settings.data_lifecycle.download"] %}
+{% set settings_owned_endpoints = [
+    "settings.general",
+    "settings.account",
+    "settings.reports",
+    "settings.data_lifecycle.index",
+    "settings.data_lifecycle.preview",
+    "settings.data_lifecycle.save_policy",
+    "settings.data_lifecycle.run",
+    "settings.data_lifecycle.verify",
+    "settings.data_lifecycle.download"
+] %}
 {% set settings_active = request.endpoint in settings_owned_endpoints
 or (request.endpoint and request.endpoint.startswith('settings.secret_reveal.')) %}
 <details class="sidebar-menu space-y-1"

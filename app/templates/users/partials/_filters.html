@@ -14,28 +14,44 @@
     <label class="min-w-0">
         <span class="mb-2 block text-sm font-semibold text-content-secondary">Search User</span>
         <span class="relative block">
-            <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
-            <input type="search" name="search" value="{{ filters.search }}" placeholder="Username, display name, or email"
+            <i data-lucide="search"
+               class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
+            <input type="search"
+                   name="search"
+                   value="{{ filters.search }}"
+                   placeholder="Username, display name, or email"
                    class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
         </span>
     </label>
     <label class="min-w-0">
         <span class="mb-2 block text-sm font-semibold text-content-secondary">Status</span>
-        <select name="status" class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-            {% for option in status_options %}<option value="{{ option }}" {% if filters.status == option %}selected{% endif %}>{{ option|title }}</option>{% endfor %}
+        <select name="status"
+                class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+            {% for option in status_options %}
+                <option value="{{ option }}"
+                        {% if filters.status == option %}selected{% endif %}>{{ option|title }}</option>
+            {% endfor %}
         </select>
     </label>
     <label class="min-w-0">
         <span class="mb-2 block text-sm font-semibold text-content-secondary">Identity Source</span>
-        <select name="auth_source" class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-            {% for option in auth_source_options %}<option value="{{ option }}" {% if filters.auth_source == option %}selected{% endif %}>{{ option|upper if option != 'all' else 'All Sources' }}</option>{% endfor %}
+        <select name="auth_source"
+                class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+            {% for option in auth_source_options %}
+                <option value="{{ option }}"
+                        {% if filters.auth_source == option %}selected{% endif %}>{{ option|upper if option != 'all' else 'All Sources' }}</option>
+            {% endfor %}
         </select>
     </label>
     <label class="min-w-0">
         <span class="mb-2 block text-sm font-semibold text-content-secondary">Role</span>
-        <select name="role_id" class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+        <select name="role_id"
+                class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
             <option value="all">All Roles</option>
-            {% for role in roles %}<option value="{{ role.id }}" {% if filters.role_id == role.id %}selected{% endif %}>{{ role.display_name }}</option>{% endfor %}
+            {% for role in roles %}
+                <option value="{{ role.id }}"
+                        {% if filters.role_id == role.id %}selected{% endif %}>{{ role.display_name }}</option>
+            {% endfor %}
         </select>
     </label>
 </form>

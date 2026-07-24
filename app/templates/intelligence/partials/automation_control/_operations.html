@@ -1,27 +1,264 @@
-        <section class="grid gap-4 xl:grid-cols-2">
-            <div class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                <div class="border-b border-outline-default px-5 py-4"><h2 class="text-base font-semibold text-content-primary">Resolver Registry</h2><p class="mt-1 text-xs text-content-muted">Only actions registered in the current process may receive an active deployment policy.</p></div>
-                <div class="space-y-3 p-5">{% for row in payload.registry_rows %}<article class="rounded-lg border border-outline-default bg-surface-subtle p-4"><div class="flex items-start justify-between gap-3"><div><p class="font-mono text-sm font-semibold text-content-primary">{{ row.action_key }}</p><p class="mt-2 text-xs leading-5 text-content-muted">Capabilities: {{ row.capabilities|join(', ') if row.capabilities else 'None declared' }}</p><p class="text-xs leading-5 text-content-muted">Profiles: {{ row.profiles|join(', ') if row.profiles else 'Provider-neutral' }}</p></div>{{ table_label.status_label('Rollback Required' if row.rollback_required else 'Rollback Optional', 'warning' if row.rollback_required else 'normal', 'rotate-ccw') }}</div></article>{% else %}<div class="rounded-lg border border-status-warning/30 bg-status-warning-soft p-4 text-sm text-status-warning-text">No resolver actions are enabled in this KAORI process. Configure the resolver allowlist before activating policy.</div>{% endfor %}<p class="break-all font-mono text-[11px] text-content-muted">Fingerprint: {{ payload.registry_fingerprint or 'Not initialized' }}</p></div>
-            </div>
-            {% if can_execute_decisions %}
-            <details class="rounded-xl border border-outline-default bg-surface-card shadow-sm" open>
-                <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-5"><span><span class="block text-sm font-semibold text-content-primary">Deployment Policy</span><span class="mt-1 block text-xs text-content-muted">Activate one registered action for an explicit cluster and namespace allowlist.</span></span><i data-lucide="shield-plus" class="h-4 w-4 text-kaori-primary"></i></summary>
-                <form method="post" action="{{ url_for('automation_control.update_automation_deployment_policy') }}" class="space-y-4 border-t border-outline-default p-5"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label class="block"><span class="mb-1.5 block text-xs font-semibold text-content-secondary">Cluster</span><select name="cluster_id" required class="{{ input_classes }}"><option value="">Select cluster</option>{% for cluster in payload.clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}</select></label><label class="block"><span class="mb-1.5 block text-xs font-semibold text-content-secondary">Registered Action</span><select name="action_key" required class="{{ input_classes }}"><option value="">Select action</option>{% for row in payload.registry_rows %}<option value="{{ row.action_key }}">{{ row.action_key }}</option>{% endfor %}</select></label><label class="block"><span class="mb-1.5 block text-xs font-semibold text-content-secondary">Lifecycle</span><select name="lifecycle_status" class="{{ input_classes }}"><option value="disabled">Disabled</option><option value="active">Active</option></select></label><label class="block"><span class="mb-1.5 block text-xs font-semibold text-content-secondary">Allowed Namespaces</span><input name="allowed_namespaces" placeholder="payments, billing" class="{{ input_classes }}"></label><label class="block"><span class="mb-1.5 block text-xs font-semibold text-content-secondary">Required Registry Fingerprint</span><input name="required_registry_fingerprint" value="{{ payload.registry_fingerprint }}" class="{{ input_classes }}"></label><button class="{{ button_primary }}"><i data-lucide="save" class="h-4 w-4"></i>Update Policy</button></form>
-            </details>
-            {% endif %}
-        </section>
-
-        {% if can_execute_decisions %}
-        <details class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
-            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-5"><span><span class="block text-sm font-semibold text-content-primary">Operational Safety Controls</span><span class="mt-1 block text-xs text-content-muted">Global kill switch and cluster maintenance mode are runtime gates, not presentation flags.</span></span><i data-lucide="sliders-horizontal" class="h-4 w-4 text-kaori-primary"></i></summary>
-            <form method="post" action="{{ url_for('automation_control.update_automation_operational_control') }}" class="grid gap-4 border-t border-outline-default p-5 md:grid-cols-2 xl:grid-cols-4"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><label class="md:col-span-2"><span class="mb-1.5 block text-xs font-semibold text-content-secondary">Scope</span><select name="cluster_id" class="{{ input_classes }}"><option value="">Global resolver control</option>{% for cluster in payload.clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}</select></label><div class="flex items-center gap-4 rounded-lg border border-outline-default bg-surface-subtle p-3 md:col-span-2"><label class="flex items-center gap-2 text-sm font-semibold text-content-primary"><input type="checkbox" name="global_kill_switch" class="h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-kaori-accent">Global Kill Switch</label><label class="flex items-center gap-2 text-sm font-semibold text-content-primary"><input type="checkbox" name="maintenance_mode" class="h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-kaori-accent">Maintenance Mode</label></div><label><span class="mb-1.5 block text-xs font-semibold text-content-secondary">Concurrency Limit</span><input type="number" min="1" name="concurrency_limit" value="1" class="{{ input_classes }}"></label><label><span class="mb-1.5 block text-xs font-semibold text-content-secondary">Rate / Minute</span><input type="number" min="1" name="rate_limit_per_minute" value="10" class="{{ input_classes }}"></label><label><span class="mb-1.5 block text-xs font-semibold text-content-secondary">Failure Threshold</span><input type="number" min="1" name="circuit_failure_threshold" value="3" class="{{ input_classes }}"></label><label><span class="mb-1.5 block text-xs font-semibold text-content-secondary">Cooldown Seconds</span><input type="number" min="1" name="circuit_cooldown_seconds" value="300" class="{{ input_classes }}"></label><div class="md:col-span-2 xl:col-span-4"><button class="{{ button_primary }}"><i data-lucide="save" class="h-4 w-4"></i>Apply Operational Control</button></div></form>
+<section class="grid gap-4 xl:grid-cols-2">
+    <div class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
+        <div class="border-b border-outline-default px-5 py-4">
+            <h2 class="text-base font-semibold text-content-primary">Resolver Registry</h2>
+            <p class="mt-1 text-xs text-content-muted">Only actions registered in the current process may receive an active deployment policy.</p>
+        </div>
+        <div class="space-y-3 p-5">
+            {% for row in payload.registry_rows %}
+                <article class="rounded-lg border border-outline-default bg-surface-subtle p-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="font-mono text-sm font-semibold text-content-primary">{{ row.action_key }}</p>
+                            <p class="mt-2 text-xs leading-5 text-content-muted">Capabilities: {{ row.capabilities|join(", ") if row.capabilities else 'None declared' }}</p>
+                            <p class="text-xs leading-5 text-content-muted">Profiles: {{ row.profiles|join(", ") if row.profiles else 'Provider-neutral' }}</p>
+                        </div>
+                        {{ table_label.status_label('Rollback Required' if row.rollback_required else 'Rollback Optional', 'warning' if row.rollback_required else 'normal', 'rotate-ccw') }}
+                    </div>
+                </article>
+            {% else %}
+                <div class="rounded-lg border border-status-warning/30 bg-status-warning-soft p-4 text-sm text-status-warning-text">No resolver actions are enabled in this KAORI process. Configure the resolver allowlist before activating policy.</div>
+            {% endfor %}
+            <p class="break-all font-mono text-[11px] text-content-muted">Fingerprint: {{ payload.registry_fingerprint or 'Not initialized' }}</p>
+        </div>
+    </div>
+    {% if can_execute_decisions %}
+        <details class="rounded-xl border border-outline-default bg-surface-card shadow-sm"
+                 open>
+            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-5"><span><span class="block text-sm font-semibold text-content-primary">Deployment Policy</span><span class="mt-1 block text-xs text-content-muted">Activate one registered action for an explicit cluster and namespace allowlist.</span></span><i data-lucide="shield-plus" class="h-4 w-4 text-kaori-primary"></i></summary>
+            <form method="post"
+                  action="{{ url_for('automation_control.update_automation_deployment_policy') }}"
+                  class="space-y-4 border-t border-outline-default p-5">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <label class="block">
+                    <span class="mb-1.5 block text-xs font-semibold text-content-secondary">Cluster</span>
+                    <select name="cluster_id" required class="{{ input_classes }}">
+                        <option value="">Select cluster</option>
+                        {% for cluster in payload.clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="mb-1.5 block text-xs font-semibold text-content-secondary">Registered Action</span>
+                    <select name="action_key" required class="{{ input_classes }}">
+                        <option value="">Select action</option>
+                        {% for row in payload.registry_rows %}<option value="{{ row.action_key }}">{{ row.action_key }}</option>{% endfor %}
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="mb-1.5 block text-xs font-semibold text-content-secondary">Lifecycle</span>
+                    <select name="lifecycle_status" class="{{ input_classes }}">
+                        <option value="disabled">Disabled</option>
+                        <option value="active">Active</option>
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="mb-1.5 block text-xs font-semibold text-content-secondary">Allowed Namespaces</span>
+                    <input name="allowed_namespaces"
+                           placeholder="payments, billing"
+                           class="{{ input_classes }}">
+                </label>
+                <label class="block">
+                    <span class="mb-1.5 block text-xs font-semibold text-content-secondary">Required Registry Fingerprint</span>
+                    <input name="required_registry_fingerprint"
+                           value="{{ payload.registry_fingerprint }}"
+                           class="{{ input_classes }}">
+                </label>
+                <button class="{{ button_primary }}"><i data-lucide="save" class="h-4 w-4"></i>Update Policy</button>
+            </form>
         </details>
-        {% endif %}
-
-        <section class="grid gap-4 xl:grid-cols-2">
-            <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"><div class="border-b border-outline-default px-5 py-4"><h2 class="text-base font-semibold text-content-primary">Deployment Policies</h2><p class="mt-1 text-xs text-content-muted">Policy does not bypass decision authorization, operational control, or production readiness.</p></div><div class="overflow-x-auto"><table class="w-full min-w-[54rem] divide-y divide-outline-default text-left"><thead class="bg-surface-subtle text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted"><tr><th class="px-4 py-3">Cluster & Action</th><th class="px-4 py-3">Namespaces</th><th class="px-4 py-3">Status</th><th class="px-4 py-3">Updated</th></tr></thead><tbody class="divide-y divide-outline-default">{% for row in payload.policy_rows %}<tr class="hover:bg-surface-hover"><td class="px-4 py-4"><p class="text-sm font-semibold text-content-primary">{{ row.cluster }}</p><p class="mt-1 font-mono text-xs text-content-muted">{{ row.action_key }}</p></td><td class="px-4 py-4 text-xs text-content-secondary">{{ row.namespaces|join(', ') if row.namespaces else 'No namespaces allowed' }}</td><td class="px-4 py-4">{{ table_label.status_label(row.status|title, 'normal' if row.status == 'active' else 'disabled', 'shield') }}</td><td class="px-4 py-4 text-xs text-content-muted">{{ row.updated_at }}</td></tr>{% else %}<tr><td colspan="4" class="px-5 py-10 text-center text-sm text-content-muted">No resolver deployment policies are configured.</td></tr>{% endfor %}</tbody></table></div></div>
-            <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"><div class="border-b border-outline-default px-5 py-4"><h2 class="text-base font-semibold text-content-primary">Current Controls</h2><p class="mt-1 text-xs text-content-muted">Runtime workers reload these controls before resolver execution.</p></div><div class="overflow-x-auto"><table class="w-full min-w-[54rem] divide-y divide-outline-default text-left"><thead class="bg-surface-subtle text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted"><tr><th class="px-4 py-3">Scope</th><th class="px-4 py-3">Mode</th><th class="px-4 py-3">Limits</th><th class="px-4 py-3">Circuit</th></tr></thead><tbody class="divide-y divide-outline-default">{% for row in payload.control_rows %}<tr class="hover:bg-surface-hover"><td class="px-4 py-4 text-sm font-semibold text-content-primary">{{ row.scope }}</td><td class="px-4 py-4"><div class="flex flex-wrap gap-2">{% if row.kill_switch %}{{ table_label.status_label('Kill Switch', 'critical', 'octagon-alert') }}{% endif %}{% if row.maintenance_mode %}{{ table_label.status_label('Maintenance', 'warning', 'wrench') }}{% endif %}{% if not row.kill_switch and not row.maintenance_mode %}{{ table_label.status_label('Enabled', 'normal', 'circle-check') }}{% endif %}</div></td><td class="px-4 py-4 text-xs text-content-secondary">{{ row.concurrency_limit }} concurrent · {{ row.rate_limit }}/min</td><td class="px-4 py-4"><p class="text-xs font-semibold text-content-primary">{{ row.failure_threshold }} failures</p><p class="mt-1 text-xs text-content-muted">{{ row.circuit_open_until }}</p></td></tr>{% else %}<tr><td colspan="4" class="px-5 py-10 text-center text-sm text-content-muted">No resolver operational controls have been initialized.</td></tr>{% endfor %}</tbody></table></div></div>
-        </section>
-
-        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"><div class="border-b border-outline-default px-5 py-4"><div class="flex items-start justify-between gap-4"><div><h2 class="text-base font-semibold text-content-primary">Dead-Letter Recovery</h2><p class="mt-1 text-xs text-content-muted">Requeue is explicit and attributed. It clears terminal orchestration error state but does not change the decision snapshot.</p></div><div class="flex gap-2">{{ table_label.metadata_label((payload.metrics.queued if payload.metrics else 0) ~ ' Queued', 'clock') }}{{ table_label.status_label((payload.metrics.dead_letter if payload.metrics else 0) ~ ' Dead Letter', 'critical' if payload.metrics and payload.metrics.dead_letter else 'normal', 'triangle-alert') }}</div></div></div><div class="overflow-x-auto"><table class="w-full min-w-[64rem] divide-y divide-outline-default text-left"><thead class="bg-surface-subtle text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted"><tr><th class="px-4 py-3">Action</th><th class="px-4 py-3">Scope</th><th class="px-4 py-3">Attempts</th><th class="px-4 py-3">Last Error</th><th class="px-4 py-3 text-right">Actions</th></tr></thead><tbody class="divide-y divide-outline-default">{% for row in payload.journal_rows %}<tr class="hover:bg-surface-hover"><td class="px-4 py-4 font-mono text-xs text-content-primary">{{ row.action_key }}</td><td class="px-4 py-4"><p class="text-xs font-semibold text-content-primary">{{ row.cluster }}</p><p class="mt-1 text-xs text-content-muted">{{ row.namespace }}</p></td><td class="px-4 py-4 text-sm font-semibold text-content-primary">{{ row.attempts }}</td><td class="px-4 py-4 max-w-md text-xs leading-5 text-status-critical-text">{{ row.error }}</td><td class="px-4 py-4 text-right">{% if can_execute_decisions %}<form method="post" action="{{ url_for('automation_control.requeue_automation_journal', journal_id=row.id) }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="{{ button_secondary }}"><i data-lucide="refresh-cw" class="h-3.5 w-3.5"></i>Requeue</button></form>{% endif %}</td></tr>{% else %}<tr><td colspan="5" class="px-5 py-10 text-center text-sm text-content-muted">No resolver execution journals are in dead-letter state.</td></tr>{% endfor %}</tbody></table></div></section>
-
+    {% endif %}
+</section>
+{% if can_execute_decisions %}
+    <details class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
+        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 p-5"><span><span class="block text-sm font-semibold text-content-primary">Operational Safety Controls</span><span class="mt-1 block text-xs text-content-muted">Global kill switch and cluster maintenance mode are runtime gates, not presentation flags.</span></span><i data-lucide="sliders-horizontal" class="h-4 w-4 text-kaori-primary"></i></summary>
+        <form method="post"
+              action="{{ url_for('automation_control.update_automation_operational_control') }}"
+              class="grid gap-4 border-t border-outline-default p-5 md:grid-cols-2 xl:grid-cols-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label class="md:col-span-2">
+                <span class="mb-1.5 block text-xs font-semibold text-content-secondary">Scope</span>
+                <select name="cluster_id" class="{{ input_classes }}">
+                    <option value="">Global resolver control</option>
+                    {% for cluster in payload.clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}
+                </select>
+            </label>
+            <div class="flex items-center gap-4 rounded-lg border border-outline-default bg-surface-subtle p-3 md:col-span-2">
+                <label class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                    <input type="checkbox"
+                           name="global_kill_switch"
+                           class="h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-kaori-accent">
+                    Global Kill Switch
+                </label>
+                <label class="flex items-center gap-2 text-sm font-semibold text-content-primary">
+                    <input type="checkbox"
+                           name="maintenance_mode"
+                           class="h-4 w-4 rounded border-outline-strong text-kaori-primary focus:ring-kaori-accent">
+                    Maintenance Mode
+                </label>
+            </div>
+            <label>
+                <span class="mb-1.5 block text-xs font-semibold text-content-secondary">Concurrency Limit</span>
+                <input type="number"
+                       min="1"
+                       name="concurrency_limit"
+                       value="1"
+                       class="{{ input_classes }}">
+            </label>
+            <label>
+                <span class="mb-1.5 block text-xs font-semibold text-content-secondary">Rate / Minute</span>
+                <input type="number"
+                       min="1"
+                       name="rate_limit_per_minute"
+                       value="10"
+                       class="{{ input_classes }}">
+            </label>
+            <label>
+                <span class="mb-1.5 block text-xs font-semibold text-content-secondary">Failure Threshold</span>
+                <input type="number"
+                       min="1"
+                       name="circuit_failure_threshold"
+                       value="3"
+                       class="{{ input_classes }}">
+            </label>
+            <label>
+                <span class="mb-1.5 block text-xs font-semibold text-content-secondary">Cooldown Seconds</span>
+                <input type="number"
+                       min="1"
+                       name="circuit_cooldown_seconds"
+                       value="300"
+                       class="{{ input_classes }}">
+            </label>
+            <div class="md:col-span-2 xl:col-span-4">
+                <button class="{{ button_primary }}"><i data-lucide="save" class="h-4 w-4"></i>Apply Operational Control</button>
+            </div>
+        </form>
+    </details>
+{% endif %}
+<section class="grid gap-4 xl:grid-cols-2">
+    <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+        <div class="border-b border-outline-default px-5 py-4">
+            <h2 class="text-base font-semibold text-content-primary">Deployment Policies</h2>
+            <p class="mt-1 text-xs text-content-muted">Policy does not bypass decision authorization, operational control, or production readiness.</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[54rem] divide-y divide-outline-default text-left">
+                <thead class="bg-surface-subtle text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted">
+                    <tr>
+                        <th class="px-4 py-3">Cluster & Action</th>
+                        <th class="px-4 py-3">Namespaces</th>
+                        <th class="px-4 py-3">Status</th>
+                        <th class="px-4 py-3">Updated</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-outline-default">
+                    {% for row in payload.policy_rows %}
+                        <tr class="hover:bg-surface-hover">
+                            <td class="px-4 py-4">
+                                <p class="text-sm font-semibold text-content-primary">{{ row.cluster }}</p>
+                                <p class="mt-1 font-mono text-xs text-content-muted">{{ row.action_key }}</p>
+                            </td>
+                            <td class="px-4 py-4 text-xs text-content-secondary">{{ row.namespaces|join(", ") if row.namespaces else 'No namespaces allowed' }}</td>
+                            <td class="px-4 py-4">{{ table_label.status_label(row.status|title, 'normal' if row.status == 'active' else 'disabled', 'shield') }}</td>
+                            <td class="px-4 py-4 text-xs text-content-muted">{{ row.updated_at }}</td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="px-5 py-10 text-center text-sm text-content-muted">No resolver deployment policies are configured.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+        <div class="border-b border-outline-default px-5 py-4">
+            <h2 class="text-base font-semibold text-content-primary">Current Controls</h2>
+            <p class="mt-1 text-xs text-content-muted">Runtime workers reload these controls before resolver execution.</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full min-w-[54rem] divide-y divide-outline-default text-left">
+                <thead class="bg-surface-subtle text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted">
+                    <tr>
+                        <th class="px-4 py-3">Scope</th>
+                        <th class="px-4 py-3">Mode</th>
+                        <th class="px-4 py-3">Limits</th>
+                        <th class="px-4 py-3">Circuit</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-outline-default">
+                    {% for row in payload.control_rows %}
+                        <tr class="hover:bg-surface-hover">
+                            <td class="px-4 py-4 text-sm font-semibold text-content-primary">{{ row.scope }}</td>
+                            <td class="px-4 py-4">
+                                <div class="flex flex-wrap gap-2">
+                                    {% if row.kill_switch %}{{ table_label.status_label('Kill Switch', 'critical', 'octagon-alert') }}{% endif %}
+                                    {% if row.maintenance_mode %}{{ table_label.status_label('Maintenance', 'warning', 'wrench') }}{% endif %}
+                                    {% if not row.kill_switch and not row.maintenance_mode %}{{ table_label.status_label('Enabled', 'normal', 'circle-check') }}{% endif %}
+                                </div>
+                            </td>
+                            <td class="px-4 py-4 text-xs text-content-secondary">{{ row.concurrency_limit }} concurrent · {{ row.rate_limit }}/min</td>
+                            <td class="px-4 py-4">
+                                <p class="text-xs font-semibold text-content-primary">{{ row.failure_threshold }} failures</p>
+                                <p class="mt-1 text-xs text-content-muted">{{ row.circuit_open_until }}</p>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="4" class="px-5 py-10 text-center text-sm text-content-muted">No resolver operational controls have been initialized.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <div class="border-b border-outline-default px-5 py-4">
+        <div class="flex items-start justify-between gap-4">
+            <div>
+                <h2 class="text-base font-semibold text-content-primary">Dead-Letter Recovery</h2>
+                <p class="mt-1 text-xs text-content-muted">Requeue is explicit and attributed. It clears terminal orchestration error state but does not change the decision snapshot.</p>
+            </div>
+            <div class="flex gap-2">{{ table_label.metadata_label((payload.metrics.queued if payload.metrics else 0) ~ ' Queued', 'clock') }}{{ table_label.status_label((payload.metrics.dead_letter if payload.metrics else 0) ~ ' Dead Letter', 'critical' if payload.metrics and payload.metrics.dead_letter else 'normal', 'triangle-alert') }}</div>
+        </div>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="w-full min-w-[64rem] divide-y divide-outline-default text-left">
+            <thead class="bg-surface-subtle text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted">
+                <tr>
+                    <th class="px-4 py-3">Action</th>
+                    <th class="px-4 py-3">Scope</th>
+                    <th class="px-4 py-3">Attempts</th>
+                    <th class="px-4 py-3">Last Error</th>
+                    <th class="px-4 py-3 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-outline-default">
+                {% for row in payload.journal_rows %}
+                    <tr class="hover:bg-surface-hover">
+                        <td class="px-4 py-4 font-mono text-xs text-content-primary">{{ row.action_key }}</td>
+                        <td class="px-4 py-4">
+                            <p class="text-xs font-semibold text-content-primary">{{ row.cluster }}</p>
+                            <p class="mt-1 text-xs text-content-muted">{{ row.namespace }}</p>
+                        </td>
+                        <td class="px-4 py-4 text-sm font-semibold text-content-primary">{{ row.attempts }}</td>
+                        <td class="px-4 py-4 max-w-md text-xs leading-5 text-status-critical-text">{{ row.error }}</td>
+                        <td class="px-4 py-4 text-right">
+                            {% if can_execute_decisions %}
+                                <form method="post"
+                                      action="{{ url_for('automation_control.requeue_automation_journal', journal_id=row.id) }}">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button class="{{ button_secondary }}"><i data-lucide="refresh-cw" class="h-3.5 w-3.5"></i>Requeue</button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="5" class="px-5 py-10 text-center text-sm text-content-muted">No resolver execution journals are in dead-letter state.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>

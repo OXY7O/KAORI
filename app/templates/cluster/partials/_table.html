@@ -8,10 +8,10 @@
           hx-indicator="#cluster-table-loading">
         <input type="hidden" name="page" value="1">
         <input type="hidden" name="per_page" value="{{ selected_per_page }}">
-
         <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
             <div class="relative w-full xl:max-w-xl">
-                <i data-lucide="search" class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
+                <i data-lucide="search"
+                   class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
                 <input name="search"
                        value="{{ selected_search }}"
                        type="search"
@@ -24,7 +24,6 @@
                        hx-indicator="#cluster-table-loading"
                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
             </div>
-
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <label class="flex items-center gap-2 text-sm font-semibold text-content-secondary">
                     <span>Environment</span>
@@ -37,14 +36,16 @@
                             hx-indicator="#cluster-table-loading"
                             class="h-11 min-w-44 rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition hover:border-outline-strong focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                         <option value="all" {% if selected_environment == 'all' %}selected{% endif %}>All environments</option>
-                        <option value="prd" {% if selected_environment in ['prd', 'prod', 'production'] %}selected{% endif %}>Production</option>
-                        <option value="stg" {% if selected_environment in ['stg', 'stage', 'staging'] %}selected{% endif %}>Staging</option>
-                        <option value="dev" {% if selected_environment in ['dev', 'development'] %}selected{% endif %}>Development</option>
+                        <option value="prd"
+                                {% if selected_environment in ['prd', 'prod', 'production'] %}selected{% endif %}>Production</option>
+                        <option value="stg"
+                                {% if selected_environment in ['stg', 'stage', 'staging'] %}selected{% endif %}>Staging</option>
+                        <option value="dev"
+                                {% if selected_environment in ['dev', 'development'] %}selected{% endif %}>Development</option>
                     </select>
                 </label>
             </div>
         </div>
-
         <div class="mt-3 flex flex-wrap gap-2">
             <span class="inline-flex min-h-8 items-center gap-2 rounded-md border border-outline-default bg-kaori-soft px-3 py-1.5 text-xs font-semibold text-kaori-primary">
                 <i data-lucide="database" class="h-4 w-4"></i>
@@ -57,7 +58,6 @@
         </div>
         {% include "cluster/partials/_loading_bar.html" %}
     </form>
-
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-outline-subtle text-sm text-content-primary">
             <thead class="bg-surface-hover text-xs text-content-muted">
@@ -86,8 +86,8 @@
                                 </div>
                                 <div class="min-w-0">
                                     <p class="truncate font-semibold text-content-primary">{{ cluster.name }}</p>
-                                    <p class="mt-1 max-w-md truncate text-xs text-content-muted" title="{{ cluster.kubernetes_connection.server or '-' }}">{{ cluster.kubernetes_connection.server or '-' }}</p>
-
+                                    <p class="mt-1 max-w-md truncate text-xs text-content-muted"
+                                       title="{{ cluster.kubernetes_connection.server or '-' }}">{{ cluster.kubernetes_connection.server or '-' }}</p>
                                     {% if cluster.kubernetes_connection.allow_weak_tls or not cluster.kubernetes_connection.verify_ssl %}
                                         <div class="mt-2 flex flex-wrap items-center gap-1.5">
                                             {% if cluster.kubernetes_connection.allow_weak_tls %}
@@ -98,7 +98,6 @@
                                             {% endif %}
                                         </div>
                                     {% endif %}
-
                                     <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-content-muted">
                                         <span class="inline-flex items-center gap-1.5">
                                             <i data-lucide="cpu" class="h-3.5 w-3.5 text-kaori-primary"></i>
@@ -108,7 +107,8 @@
                                             <i data-lucide="box" class="h-3.5 w-3.5 text-kaori-primary"></i>
                                             {{ inventory.version or '-' }}
                                         </span>
-                                        <span class="inline-flex items-center gap-1.5" title="{{ inventory.api_profile }}">
+                                        <span class="inline-flex items-center gap-1.5"
+                                              title="{{ inventory.api_profile }}">
                                             <i data-lucide="braces" class="h-3.5 w-3.5 text-kaori-primary"></i>
                                             {{ inventory.lifecycle_status|title }}
                                         </span>
@@ -116,11 +116,7 @@
                                 </div>
                             </div>
                         </td>
-
-                        <td class="px-4 py-4 text-left">
-                            {{ metadata_label(environment_value) }}
-                        </td>
-
+                        <td class="px-4 py-4 text-left">{{ metadata_label(environment_value) }}</td>
                         <td class="px-4 py-4 text-left">
                             {% if cluster_status == 'connected' %}
                                 {{ status_label('Connected', 'normal', 'circle-check') }}
@@ -130,7 +126,6 @@
                                 {{ status_label('Unknown', 'unknown', 'circle-help') }}
                             {% endif %}
                         </td>
-
                         <td class="px-4 py-4 text-left">
                             <div class="flex flex-col items-start gap-1.5">
                                 {% if inventory.synced_at %}
@@ -141,7 +136,6 @@
                                 <span class="text-xs text-content-muted">{{ inventory.namespaces or 0 }} namespaces</span>
                             </div>
                         </td>
-
                         <td class="px-4 py-4 text-left">
                             <div class="flex flex-col items-start gap-1.5">
                                 {% if prometheus.configured %}
@@ -149,34 +143,39 @@
                                 {% else %}
                                     {{ status_label('Prometheus not configured', 'disabled', 'activity') }}
                                 {% endif %}
-
                                 {% if alertmanager.configured %}
-                                    {{ status_label('Alertmanager ' ~ (alertmanager.label or 'configured'), 'normal', 'siren') }}
+                                    {{ status_label('Alertmanager ' ~ (alertmanager.label or 'configured') , 'normal', 'siren') }}
                                 {% else %}
                                     {{ status_label('Alertmanager not configured', 'disabled', 'siren') }}
                                 {% endif %}
                             </div>
                         </td>
-
                         <td class="px-4 py-4 text-left">
                             <div class="text-xs leading-5 text-content-muted">
                                 <p class="font-medium text-content-secondary">
-                                    {% if cluster.last_check %}Checked {{ cluster.last_check|user_datetime }}{% else %}Check pending{% endif %}
+                                    {% if cluster.last_check %}
+                                        Checked {{ cluster.last_check|user_datetime }}
+                                    {% else %}
+                                        Check pending
+                                    {% endif %}
                                 </p>
                                 <p>
-                                    {% if inventory.synced_at %}Synced {{ inventory.synced_at|user_datetime }}{% else %}Inventory pending{% endif %}
+                                    {% if inventory.synced_at %}
+                                        Synced {{ inventory.synced_at|user_datetime }}
+                                    {% else %}
+                                        Inventory pending
+                                    {% endif %}
                                 </p>
                             </div>
                         </td>
-
                         <td class="px-5 py-4 text-right">
                             <div class="flex items-center justify-end gap-1.5 whitespace-nowrap">
                                 {% set table_query = {
-                                    'page': pagination.page,
-                                    'per_page': pagination.per_page,
-                                    'search': selected_search,
-                                    'environment': selected_environment,
-                                } %}
+                                                                    'page': pagination.page,
+                                                                    'per_page': pagination.per_page,
+                                                                    'search': selected_search,
+                                                                    'environment': selected_environment,
+                                                                } %}
                                 {% if current_user.has_permission('clusters.sync') %}
                                     <a href="{{ url_for('integrations.kubernetes_detail', cluster_id=cluster.id) }}#runtime"
                                        title="Review Kubernetes runtime"
@@ -194,11 +193,11 @@
                                                 title="Sync inventory"
                                                 hx-disabled-elt="this"
                                                 class="group inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-kaori-primary transition hover:border-outline-focus hover:bg-kaori-soft disabled:cursor-wait disabled:opacity-70 cursor-pointer disabled:cursor-not-allowed">
-                                            <i data-lucide="refresh-cw" class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
+                                            <i data-lucide="refresh-cw"
+                                               class="h-4 w-4 group-[.htmx-request]:animate-spin"></i>
                                         </button>
                                     </form>
                                 {% endif %}
-
                                 {% if current_user.has_permission('settings.manage_integrations') %}
                                     <a href="{{ url_for('integrations.overview') }}?cluster={{ cluster.id }}"
                                        title="View cluster integrations"
@@ -206,7 +205,6 @@
                                         <i data-lucide="blocks" class="h-4 w-4"></i>
                                     </a>
                                 {% endif %}
-
                                 {% if current_user.has_permission('clusters.manage') %}
                                     <a href="{{ url_for('cluster.edit_cluster', cluster_id=cluster.id) }}"
                                        title="Edit cluster"
@@ -228,16 +226,16 @@
                 {% else %}
                     <tr>
                         <td colspan="7" class="p-0">
-                            {% set empty_state_icon = 'server-off' %}
+                            {% set empty_state_icon = "server-off" %}
                             {% set empty_state_label = 'Setup Required' if not filters.search and not filters.environment else 'No Results' %}
-                            {% set empty_state_title = 'No Kubernetes Clusters Found' %}
-                            {% set empty_state_description = 'Register the first cluster in KAORI or adjust the active search and environment filters.' %}
+                            {% set empty_state_title = "No Kubernetes Clusters Found" %}
+                            {% set empty_state_description = "Register the first cluster in KAORI or adjust the active search and environment filters." %}
                             {% set empty_state_action_url = url_for('cluster.add_cluster') %}
-                            {% set empty_state_action_label = 'Add Cluster' %}
-                            {% set empty_state_action_icon = 'plus' %}
-                            {% set empty_state_permission = 'clusters.manage' %}
+                            {% set empty_state_action_label = "Add Cluster" %}
+                            {% set empty_state_action_icon = "plus" %}
+                            {% set empty_state_permission = "clusters.manage" %}
                             {% set empty_state_show_admin_required = true %}
-                            {% set empty_state_min_height = 'min-h-[220px]' %}
+                            {% set empty_state_min_height = "min-h-[220px]" %}
                             {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
@@ -245,6 +243,5 @@
             </tbody>
         </table>
     </div>
-
     {% include "cluster/partials/_pagination.html" %}
 </div>

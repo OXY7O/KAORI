@@ -1,5 +1,8 @@
-<section id="dashboard-forecast-risk" x-data="{ open: false }" class="h-full rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <div @click="open = !open" class="flex cursor-pointer select-none items-center gap-3 border-b border-outline-subtle px-5 py-4">
+<section id="dashboard-forecast-risk"
+         x-data="{ open: false }"
+         class="h-full rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <div @click="open = !open"
+         class="flex cursor-pointer select-none items-center gap-3 border-b border-outline-subtle px-5 py-4">
         <div class="flex min-w-0 flex-1 items-center gap-3">
             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                 <i data-lucide="trending-up" class="h-5 w-5"></i>
@@ -10,24 +13,27 @@
             </div>
         </div>
         <div class="ml-auto flex shrink-0 items-center gap-2">
-            <a @click.stop href="/analytics/forecast" class="hidden text-xs font-semibold text-kaori-primary transition hover:text-kaori-primary-hover sm:inline-flex">View forecast</a>
+            <a @click.stop
+               href="/analytics/forecast"
+               class="hidden text-xs font-semibold text-kaori-primary transition hover:text-kaori-primary-hover sm:inline-flex">View forecast</a>
             <button type="button"
                     class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card"
                     @click.stop="open = !open"
                     :aria-expanded="open.toString()"
                     aria-label="Toggle forecast risk">
-                <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200" :class="open ? 'rotate-180' : ''"></i>
+                <i data-lucide="chevron-down"
+                   class="h-4 w-4 transition-transform duration-200"
+                   :class="open ? 'rotate-180' : ''"></i>
             </button>
         </div>
     </div>
-
     <div x-cloak x-show="open" x-transition class="p-5">
         {% if not dashboard.selected_cluster_id %}
-            {% set blocked_state_icon = 'server-off' %}
-            {% set blocked_state_label = 'Cluster Required' %}
-            {% set blocked_state_title = 'Select Cluster' %}
+            {% set blocked_state_icon = "server-off" %}
+            {% set blocked_state_label = "Cluster Required" %}
+            {% set blocked_state_title = "Select Cluster" %}
             {% set blocked_state_description = "Select a cluster to calculate forecast from Prometheus trend data." %}
-            {% set blocked_state_tone = 'warning' %}
+            {% set blocked_state_tone = "warning" %}
             {% include 'components/states/_blocked_state.html' %}
         {% else %}
             <div class="grid gap-3 sm:grid-cols-2">
@@ -40,11 +46,7 @@
                                 </div>
                                 <p class="truncate text-sm font-semibold text-content-primary">{{ item.label }}</p>
                             </div>
-                            <span class="rounded-md border px-2.5 py-1 text-xs font-semibold
-                                        {% if item.risk == 'High' %}border-status-critical-border bg-status-critical-soft text-status-critical-text
-                                        {% elif item.risk == 'Medium' %}border-status-warning-border bg-status-warning-soft text-status-warning-text
-                                        {% elif item.risk == 'Low' %}border-status-normal-border bg-status-normal-soft text-status-normal-text
-                                        {% else %}border-status-unknown-border bg-status-unknown-soft text-status-unknown-text{% endif %}">
+                            <span class="rounded-md border px-2.5 py-1 text-xs font-semibold {% if item.risk == 'High' %}border-status-critical-border bg-status-critical-soft text-status-critical-text {% elif item.risk == 'Medium' %}border-status-warning-border bg-status-warning-soft text-status-warning-text {% elif item.risk == 'Low' %}border-status-normal-border bg-status-normal-soft text-status-normal-text {% else %}border-status-unknown-border bg-status-unknown-soft text-status-unknown-text{% endif %}">
                                 {{ item.risk }}
                             </span>
                         </div>
@@ -53,7 +55,8 @@
                 {% endfor %}
             </div>
             <div class="mt-4 flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-hover p-4">
-                <i data-lucide="sparkles" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                <i data-lucide="sparkles"
+                   class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
                 <p class="text-xs leading-5 text-content-secondary">{{ dashboard.forecast_snapshot.insight }}</p>
             </div>
         {% endif %}

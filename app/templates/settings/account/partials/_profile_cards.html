@@ -10,11 +10,11 @@
             </div>
         </div>
         <span class="inline-flex h-8 w-fit items-center gap-1.5 rounded-md border px-2.5 text-xs font-semibold {{ 'border-status-normal-border bg-status-normal-soft text-status-normal-text' if current_user.account_is_active else 'border-status-warning-border bg-status-warning-soft text-status-warning-text' }}">
-            <i data-lucide="{{ 'circle-check' if current_user.account_is_active else 'circle-pause' }}" class="h-3.5 w-3.5"></i>
+            <i data-lucide="{{ 'circle-check' if current_user.account_is_active else 'circle-pause' }}"
+               class="h-3.5 w-3.5"></i>
             {{ 'Active Account' if current_user.account_is_active else 'Inactive Account' }}
         </span>
     </header>
-
     <div class="space-y-4 p-5">
         <div class="grid gap-4 lg:grid-cols-2">
             <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
@@ -30,15 +30,21 @@
                 <dl class="mt-4 divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
                     <div class="grid gap-1 px-4 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center">
                         <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Display name</dt>
-                        <dd class="break-words text-sm font-semibold text-content-primary">{{ current_user.display_label }}</dd>
+                        <dd class="break-words text-sm font-semibold text-content-primary">
+                            {{ current_user.display_label }}
+                        </dd>
                     </div>
                     <div class="grid gap-1 px-4 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center">
                         <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Username</dt>
-                        <dd class="break-words text-sm font-semibold text-content-primary">{{ current_user.username }}</dd>
+                        <dd class="break-words text-sm font-semibold text-content-primary">
+                            {{ current_user.username }}
+                        </dd>
                     </div>
                     <div class="grid gap-1 px-4 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center">
                         <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Email</dt>
-                        <dd class="break-words text-sm font-semibold text-content-primary">{{ current_user.email|default('Not configured', true) }}</dd>
+                        <dd class="break-words text-sm font-semibold text-content-primary">
+                            {{ current_user.email|default('Not configured', true) }}
+                        </dd>
                     </div>
                     <div class="grid gap-1 px-4 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center">
                         <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Time zone</dt>
@@ -54,7 +60,6 @@
                     </div>
                 </dl>
             </article>
-
             <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
                 <div class="flex items-start gap-3">
                     <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
@@ -68,24 +73,31 @@
                 <dl class="mt-4 divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
                     <div class="grid gap-1 px-4 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center">
                         <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Assigned role</dt>
-                        <dd class="text-sm font-semibold text-content-primary">{{ user_role }}</dd>
+                        <dd class="text-sm font-semibold text-content-primary">
+                            {{ user_role }}
+                        </dd>
                     </div>
                     <div class="grid gap-1 px-4 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center">
                         <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Admin tier</dt>
-                        <dd class="text-sm font-semibold text-content-primary">{{ 'Super Admin' if current_user.is_super_admin else 'Standard Account' }}</dd>
+                        <dd class="text-sm font-semibold text-content-primary">
+                            {{ 'Super Admin' if current_user.is_super_admin else 'Standard Account' }}
+                        </dd>
                     </div>
                     <div class="grid gap-1 px-4 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center">
                         <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Provider</dt>
-                        <dd class="text-sm font-semibold text-content-primary">{{ identity_context.provider_name }}</dd>
+                        <dd class="text-sm font-semibold text-content-primary">
+                            {{ identity_context.provider_name }}
+                        </dd>
                     </div>
                     <div class="grid gap-1 px-4 py-3 sm:grid-cols-[8rem_minmax(0,1fr)] sm:items-center">
                         <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Provisioning</dt>
-                        <dd class="text-sm font-semibold text-content-primary">{{ identity_context.projection_label }}</dd>
+                        <dd class="text-sm font-semibold text-content-primary">
+                            {{ identity_context.projection_label }}
+                        </dd>
                     </div>
                 </dl>
             </article>
         </div>
-
         <article class="rounded-lg border border-brand-outline bg-kaori-soft p-4">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div class="flex items-start gap-3">

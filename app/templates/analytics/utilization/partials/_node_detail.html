@@ -7,29 +7,31 @@
 {% endmacro %}
 {% macro mini_bar(value, tone='info') %}
     {% set percentage = value|default(0)|float %}
-    {% if percentage < 0 %}{% set percentage = 0 %}{% elif percentage > 100 %}{% set percentage = 100 %}{% endif %}
+    {% if percentage < 0 %}
+        {% set percentage = 0 %}
+    {% elif percentage > 100 %}
+        {% set percentage = 100 %}
+    {% endif %}
     {% set bar_class = {
-        'normal': 'bg-status-normal',
-        'warning': 'bg-status-warning',
-        'critical': 'bg-status-critical',
-        'maintenance': 'bg-status-maintenance',
-        'info': 'bg-status-info'
-    }.get(tone, 'bg-kaori-primary') %}
+            'normal': 'bg-status-normal',
+            'warning': 'bg-status-warning',
+            'critical': 'bg-status-critical',
+            'maintenance': 'bg-status-maintenance',
+            'info': 'bg-status-info'
+        }.get(tone, 'bg-kaori-primary') %}
     <div class="mt-4">
         <div class="flex items-center justify-between text-xs font-medium text-content-muted">
             <span>Usage</span>
-            <span>{{ "%.2f"|format(value|default(0)|float) }}%</span>
+            <span>{{ "%.2f"|format(value|default(0) |float) }}%</span>
         </div>
         {{ progress_bar.bar(percentage, track_classes="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover", fill_classes="h-full rounded-full transition-all duration-500 {{ bar_class }}", label="Coverage progress") }}
     </div>
 {% endmacro %}
-
 {% if cluster_onboarding.has_clusters and error %}
     <div class="m-5 rounded-lg border border-status-warning-border bg-status-warning-soft px-4 py-3 text-sm text-content-secondary">
         <span class="font-semibold text-status-warning">Node detail unavailable.</span> {{ error }}
     </div>
 {% endif %}
-
 <div class="grid gap-4 p-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]">
     <section class="rounded-xl border border-outline-default bg-surface-hover p-4">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -45,7 +47,6 @@
             </div>
             {{ table_label.metadata_label(selected_node if selected_node else 'All Nodes', 'server') }}
         </div>
-
         <div class="mt-4 grid gap-3 md:grid-cols-3">
             {% set cpu_risk = detail_risk_assessment.get('cpu', {}) %}
             <article class="rounded-lg border border-outline-default bg-surface-card p-4">
@@ -54,14 +55,13 @@
                         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="cpu" class="h-4 w-4"></i></span>
                         CPU
                     </div>
-                    {{ risk_status(cpu_risk.get('status', 'Normal')) }}
+                    {{ risk_status(cpu_risk.get('status', 'Normal') ) }}
                 </div>
                 <p class="mt-4 text-3xl font-semibold text-content-primary">{{ detail_summary.cpu_utilization }}%</p>
                 <p class="mt-1 text-sm text-content-muted">{{ detail_summary.cpu_usage }} / {{ detail_summary.cpu_capacity }} Cores</p>
                 {{ mini_bar(detail_summary.cpu_utilization, 'info') }}
                 <p class="mt-3 border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">{{ cpu_risk.get('reason', '-') }}</p>
             </article>
-
             {% set memory_risk = detail_risk_assessment.get('memory', {}) %}
             <article class="rounded-lg border border-outline-default bg-surface-card p-4">
                 <div class="flex items-center justify-between gap-3">
@@ -69,14 +69,13 @@
                         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="memory-stick" class="h-4 w-4"></i></span>
                         Memory
                     </div>
-                    {{ risk_status(memory_risk.get('status', 'Normal')) }}
+                    {{ risk_status(memory_risk.get('status', 'Normal') ) }}
                 </div>
                 <p class="mt-4 text-3xl font-semibold text-content-primary">{{ detail_summary.memory_utilization }}%</p>
                 <p class="mt-1 text-sm text-content-muted">{{ "%.2f"|format(detail_summary.memory_usage / 1024**3) }} GiB / {{ "%.2f"|format(detail_summary.memory_capacity / 1024**3) }} GiB</p>
                 {{ mini_bar(detail_summary.memory_utilization, 'normal') }}
                 <p class="mt-3 border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">{{ memory_risk.get('reason', '-') }}</p>
             </article>
-
             {% set pods_risk = detail_risk_assessment.get('pods', {}) %}
             <article class="rounded-lg border border-outline-default bg-surface-card p-4">
                 <div class="flex items-center justify-between gap-3">
@@ -84,7 +83,7 @@
                         <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="boxes" class="h-4 w-4"></i></span>
                         Pods
                     </div>
-                    {{ risk_status(pods_risk.get('status', 'Normal')) }}
+                    {{ risk_status(pods_risk.get('status', 'Normal') ) }}
                 </div>
                 <p class="mt-4 text-3xl font-semibold text-content-primary">{{ detail_summary.pod_utilization }}%</p>
                 <p class="mt-1 text-sm text-content-muted">{{ detail_summary.pod_count }} / {{ detail_summary.pod_capacity }} Pods</p>
@@ -93,7 +92,6 @@
             </article>
         </div>
     </section>
-
     {% set storage_risk = detail_risk_assessment.get('storage', {}) %}
     <section class="flex h-full flex-col rounded-xl border border-brand-outline bg-kaori-primary p-4 text-brand-foreground">
         <div class="flex items-start justify-between gap-3">
@@ -101,7 +99,7 @@
                 <p class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted"><i data-lucide="hard-drive" class="h-4 w-4"></i>Disk pressure</p>
                 <h3 class="mt-2 text-xl font-semibold text-brand-foreground">Filesystem Detail</h3>
             </div>
-            {{ risk_status(storage_risk.get('status', 'Normal')) }}
+            {{ risk_status(storage_risk.get('status', 'Normal') ) }}
         </div>
         <p class="mt-5 text-4xl font-semibold">{{ detail_summary.storage_utilization_display }}</p>
         <p class="mt-2 text-sm leading-6 text-brand-foreground-muted">{{ detail_summary.storage_usage_summary }}</p>

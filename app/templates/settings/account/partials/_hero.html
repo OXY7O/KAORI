@@ -1,30 +1,26 @@
 {% import "components/page_hero.html" as page_hero %}
 {% if active_tab == 'activity' %}
-    {% set section_eyebrow = 'Authentication History' %}
-    {% set section_icon = 'activity' %}
-    {% set section_summary = 'Review recent sign-in, failed sign-in, and sign-out events recorded in the unified Activity Audit Log.' %}
-    {% set section_boundary = 'Authentication events preserve provider, result, IP address, device context, and failure reason without storing passwords, OAuth secrets, or provider tokens.' %}
+    {% set section_eyebrow = "Authentication History" %}
+    {% set section_icon = "activity" %}
+    {% set section_summary = "Review recent sign-in, failed sign-in, and sign-out events recorded in the unified Activity Audit Log." %}
+    {% set section_boundary = "Authentication events preserve provider, result, IP address, device context, and failure reason without storing passwords, OAuth secrets, or provider tokens." %}
 {% elif active_tab == 'credentials' %}
-    {% set section_eyebrow = 'Credential Ownership' %}
-    {% set section_icon = 'key-round' %}
-    {% set section_summary = 'Manage the credential owned by KAORI or follow the recovery path of the authoritative external identity provider.' %}
+    {% set section_eyebrow = "Credential Ownership" %}
+    {% set section_icon = "key-round" %}
+    {% set section_summary = "Manage the credential owned by KAORI or follow the recovery path of the authoritative external identity provider." %}
     {% set section_boundary = identity_context.credential_detail ~ ' Role, lifecycle state, Super Admin tier, and external identity links remain separate from credential changes.' %}
 {% else %}
-    {% set section_eyebrow = 'Identity & Access' %}
-    {% set section_icon = 'id-card' %}
-    {% set section_summary = 'Review your KAORI profile, authoritative identity source, authorization role, lifecycle state, and most recent verified sign-in.' %}
-    {% set section_boundary = 'The provider verifies identity while KAORI applies account lifecycle, RBAC authorization, administrative safeguards, and personal presentation settings.' %}
+    {% set section_eyebrow = "Identity & Access" %}
+    {% set section_icon = "id-card" %}
+    {% set section_summary = "Review your KAORI profile, authoritative identity source, authorization role, lifecycle state, and most recent verified sign-in." %}
+    {% set section_boundary = "The provider verifies identity while KAORI applies account lifecycle, RBAC authorization, administrative safeguards, and personal presentation settings." %}
 {% endif %}
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro(section_icon, section_eyebrow, 'user-round-cog') %}
-                <h1 class="{{ page_hero.title_classes() }}">
-                    Account & Authentication
-                </h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">
-                    {{ section_summary }}
-                </p>
+                <h1 class="{{ page_hero.title_classes() }}">Account & Authentication</h1>
+                <p class="mt-2 {{ page_hero.description_classes() }}">{{ section_summary }}</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label(identity_context.icon, identity_context.provider_name) }}
                     {{ page_hero.meta_label('shield', user_role) }}
@@ -32,7 +28,6 @@
                 </div>
             {% endcall %}
         </div>
-
         <aside class="{{ page_hero.aside_classes() }}">
             <div class="{{ page_hero.context_panel_classes() }}">
                 <div>
@@ -42,7 +37,13 @@
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-brand-surface-strong px-3 text-xs font-semibold text-brand-foreground">
                         <i data-lucide="{{ section_icon }}" class="h-3.5 w-3.5"></i>
-                        {% if active_tab == 'activity' %}Authentication Activity{% elif active_tab == 'credentials' %}Credential Management{% else %}Profile & Access{% endif %}
+                        {% if active_tab == 'activity' %}
+                            Authentication Activity
+                        {% elif active_tab == 'credentials' %}
+                            Credential Management
+                        {% else %}
+                            Profile & Access
+                        {% endif %}
                     </span>
                     <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-brand-outline bg-brand-surface-strong px-3 text-xs font-semibold text-brand-foreground">
                         <i data-lucide="link-2" class="h-3.5 w-3.5"></i>

@@ -39,7 +39,6 @@
         </div>
     </div>
 </section>
-
 <section class="mt-5 overflow-hidden rounded-2xl border border-outline-default bg-surface-card">
     <header class="border-b border-outline-default px-5 py-4">
         <div class="flex items-start gap-3">
@@ -73,14 +72,16 @@
                     <span class="ml-2 flex shrink-0 items-center gap-1.5 pt-0.5 text-[11px] font-semibold text-content-muted transition group-hover:text-kaori-primary">
                         <span class="group-open:hidden">Details</span>
                         <span class="hidden group-open:inline">Collapse</span>
-                        <i data-lucide="chevron-down" class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
+                        <i data-lucide="chevron-down"
+                           class="h-4 w-4 transition-transform duration-200 group-open:rotate-180"></i>
                     </span>
                 </summary>
                 <div class="border-t border-outline-default bg-surface-card px-4 py-4">
                     <ul class="space-y-2.5">
                         {% for feature in group.features %}
                             <li class="flex items-start gap-2.5 text-xs leading-5 text-content-secondary">
-                                <i data-lucide="circle-check" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
+                                <i data-lucide="circle-check"
+                                   class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
                                 <span>{{ feature }}</span>
                             </li>
                         {% endfor %}

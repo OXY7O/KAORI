@@ -1,29 +1,30 @@
 {% macro tip(message, icon='info', pinned=false, class_name='') -%}
     {% if pinned %}<div class="mt-auto pt-3">{% endif %}
-    <div class="flex shrink-0 items-start gap-2.5 rounded-lg border border-outline-default bg-kaori-soft px-3 py-2.5 text-xs leading-5 text-content-secondary {{ class_name }}">
-        <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary" aria-hidden="true">
-            <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
-        </span>
-        <p class="min-w-0 flex-1">{{ message }}</p>
-    </div>
-    {% if pinned %}</div>{% endif %}
+        <div class="flex shrink-0 items-start gap-2.5 rounded-lg border border-outline-default bg-kaori-soft px-3 py-2.5 text-xs leading-5 text-content-secondary {{ class_name }}">
+            <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary"
+                  aria-hidden="true">
+                <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+            </span>
+            <p class="min-w-0 flex-1">{{ message }}</p>
+        </div>
+        {% if pinned %}</div>{% endif %}
 {%- endmacro %}
-
 {% macro info_box(title, message, icon='info', tone='brand', equal_height=false, class_name='') -%}
     {% if tone == 'warning' %}
-        {% set panel_class = 'border-status-warning-border bg-status-warning-soft' %}
-        {% set icon_class = 'bg-status-warning-soft text-status-warning-text' %}
-        {% set title_class = 'text-status-warning-text' %}
-        {% set message_class = 'text-status-warning-text' %}
+        {% set panel_class = "border-status-warning-border bg-status-warning-soft" %}
+        {% set icon_class = "bg-status-warning-soft text-status-warning-text" %}
+        {% set title_class = "text-status-warning-text" %}
+        {% set message_class = "text-status-warning-text" %}
     {% else %}
-        {% set panel_class = 'border-outline-default bg-kaori-soft' %}
-        {% set icon_class = 'bg-surface-card text-kaori-primary' %}
-        {% set title_class = 'text-kaori-primary' %}
-        {% set message_class = 'text-content-secondary' %}
+        {% set panel_class = "border-outline-default bg-kaori-soft" %}
+        {% set icon_class = "bg-surface-card text-kaori-primary" %}
+        {% set title_class = "text-kaori-primary" %}
+        {% set message_class = "text-content-secondary" %}
     {% endif %}
     <div class="flex shrink-0 {{ 'min-h-24' if equal_height else '' }} rounded-lg border {{ panel_class }} px-3 py-2.5 {{ class_name }}">
         <div class="flex w-full items-start gap-2.5">
-            <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md {{ icon_class }}" aria-hidden="true">
+            <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md {{ icon_class }}"
+                  aria-hidden="true">
                 <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
             </span>
             <div class="min-w-0 flex-1">
@@ -33,9 +34,6 @@
         </div>
     </div>
 {%- endmacro %}
-
 {% macro footer(message, icon='info', class_name='') -%}
-    <div class="border-t border-outline-subtle p-4 {{ class_name }}">
-        {{ tip(message, icon) }}
-    </div>
+    <div class="border-t border-outline-subtle p-4 {{ class_name }}">{{ tip(message, icon) }}</div>
 {%- endmacro %}

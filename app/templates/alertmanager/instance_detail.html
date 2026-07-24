@@ -9,24 +9,15 @@
     {% set readiness_icon = 'circle-check' if readiness == 'ready' else ('triangle-alert' if readiness == 'degraded' else ('octagon-alert' if readiness == 'blocked' else 'badge-check')) %}
     {% set source_posture = 'Ready' if readiness == 'ready' else ('Attention' if readiness in ['degraded', 'blocked'] else 'Configured') %}
     {% set scope_type_labels = {
-        'kubernetes_cluster': 'Managed cluster',
-        'server': 'Infrastructure asset',
-        'server_group': 'Infrastructure asset group',
-        'hci_environment': 'Platform environment',
-        'storage_service': 'Infrastructure service',
-        'global': 'Global operational scope'
+        "kubernetes_cluster": "Managed cluster",
+        "server": "Infrastructure asset",
+        "server_group": "Infrastructure asset group",
+        "hci_environment": "Platform environment",
+        "storage_service": "Infrastructure service",
+        "global": "Global operational scope"
     } %}
     <div class="kaori-integration-semantic space-y-6"
-         x-data="{
-             activeTab: ['configuration', 'validation', 'runtime', 'scope'].includes(window.location.hash.replace('#', '')) ? window.location.hash.replace('#', '') : 'configuration',
-             setTab(tab, moveToWorkspace = false) {
-                 this.activeTab = tab;
-                 window.history.replaceState(null, '', '#' + tab);
-                 if (moveToWorkspace) {
-                     this.$nextTick(() => document.getElementById('alertmanager-detail-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
-                 }
-             }
-         }"
+         x-data="{ activeTab: ['configuration', 'validation', 'runtime', 'scope'].includes(window.location.hash.replace('#', '')) ? window.location.hash.replace('#', '') : 'configuration', setTab(tab, moveToWorkspace = false) { this.activeTab = tab; window.history.replaceState(null, '', '#' + tab); if (moveToWorkspace) { this.$nextTick(() => document.getElementById('alertmanager-detail-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); } } }"
          x-on:hashchange.window="activeTab = ['configuration', 'validation', 'runtime', 'scope'].includes(window.location.hash.replace('#', '')) ? window.location.hash.replace('#', '') : 'configuration'">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
@@ -35,29 +26,36 @@
                         <h1 class="{{ page_hero.title_classes() }}">{{ instance.name }}</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">Manage the connection contract, validation evidence, runtime health, and governed scope resolution.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('shield-check', readiness|replace('_', ' ')|title) }}
+                            {{ page_hero.meta_label('shield-check', readiness|replace('_', ' ') |title) }}
                             {{ page_hero.meta_label('link-2', (bindings|length|string) ~ ' Scope Bindings') }}
-                            {{ page_hero.meta_label('layers-3', (capability_rows|selectattr('available')|list|length|string) ~ ' Capabilities') }}
+                            {{ page_hero.meta_label('layers-3', (capability_rows|selectattr('available') |list|length|string) ~ ' Capabilities') }}
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="Alertmanager connection posture">
+                <aside class="{{ page_hero.aside_classes() }}"
+                       aria-label="Alertmanager connection posture">
                     <div class="{{ page_hero.context_panel_classes() }}">
                         <div class="flex items-start justify-between gap-4">
                             <div>
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Posture</p>
                                 <h2 class="{{ page_hero.context_panel_title_classes() }}">Readiness &amp; Operational Coverage</h2>
                             </div>
-                            {{ status_badge('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else ('validation_required' if source_posture == 'Configured' else 'not_configured')), source_posture) }}
+                            {{ status_badge('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else ('validation_required' if source_posture == 'Configured' else 'not_configured') ), source_posture) }}
                         </div>
                         <div class="mt-4 grid grid-cols-2 gap-2">
                             <div class="{{ page_hero.context_metric_card_classes() }}">
-                                <div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="shield-check" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">Readiness</p></div>
-                                <p class="mt-1.5 truncate text-sm font-semibold text-brand-foreground">{{ readiness|replace('_', ' ')|title }}</p>
+                                <div class="flex items-center gap-2 text-brand-foreground">
+                                    <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
+                                    <p class="text-[11px] font-semibold">Readiness</p>
+                                </div>
+                                <p class="mt-1.5 truncate text-sm font-semibold text-brand-foreground">{{ readiness|replace('_', ' ') |title }}</p>
                                 <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Produced by Full Validation</p>
                             </div>
                             <div class="{{ page_hero.context_metric_card_classes() }}">
-                                <div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="link-2" class="h-3.5 w-3.5"></i><p class="text-[11px] font-semibold">Scope Bindings</p></div>
+                                <div class="flex items-center gap-2 text-brand-foreground">
+                                    <i data-lucide="link-2" class="h-3.5 w-3.5"></i>
+                                    <p class="text-[11px] font-semibold">Scope Bindings</p>
+                                </div>
                                 <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ bindings|length }}</p>
                                 <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Contexts evaluated by resolver</p>
                             </div>
@@ -79,16 +77,17 @@
                 </aside>
             </div>
         </section>
-
-        <section id="alertmanager-detail-tabs" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-            <nav class="border-b border-outline-default bg-surface-hover px-4 pt-4 sm:px-5" aria-label="Alertmanager instance domains">
+        <section id="alertmanager-detail-tabs"
+                 class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+            <nav class="border-b border-outline-default bg-surface-hover px-4 pt-4 sm:px-5"
+                 aria-label="Alertmanager instance domains">
                 <div class="flex gap-2 overflow-x-auto" role="tablist">
                     {% for tab_key, tab_label, tab_icon, tab_badge in [
                         ('configuration', 'Configuration', 'settings-2', instance.deployment_type|replace('_', ' ')|title),
                         ('validation', 'Validation & Capabilities', 'scan-search', readiness|replace('_', ' ')|title),
                         ('runtime', 'Runtime & History', 'activity', runtime_state.health_status_label),
                         ('scope', 'Scope & Resolution', 'route', (bindings|length|string) ~ ' Bindings')
-                    ] %}
+                        ] %}
                         <button type="button"
                                 role="tab"
                                 id="alertmanager-tab-{{ tab_key }}"
@@ -106,18 +105,27 @@
                 </div>
             </nav>
             <div class="p-4 sm:p-5 lg:p-6">
-                <div id="alertmanager-panel-configuration" role="tabpanel" aria-labelledby="alertmanager-tab-configuration" x-show="activeTab === 'configuration'">
+                <div id="alertmanager-panel-configuration"
+                     role="tabpanel"
+                     aria-labelledby="alertmanager-tab-configuration"
+                     x-show="activeTab === 'configuration'">
                     {% include 'alertmanager/partials/_detail_configuration.html' %}
                 </div>
-                <div id="alertmanager-panel-validation" role="tabpanel" aria-labelledby="alertmanager-tab-validation" x-show="activeTab === 'validation'" x-cloak>
-                    {% include 'alertmanager/partials/_detail_validation.html' %}
-                </div>
-                <div id="alertmanager-panel-runtime" role="tabpanel" aria-labelledby="alertmanager-tab-runtime" x-show="activeTab === 'runtime'" x-cloak>
-                    {% include 'alertmanager/partials/_detail_runtime.html' %}
-                </div>
-                <div id="alertmanager-panel-scope" role="tabpanel" aria-labelledby="alertmanager-tab-scope" x-show="activeTab === 'scope'" x-cloak>
-                    {% include 'alertmanager/partials/_detail_scope.html' %}
-                </div>
+                <div id="alertmanager-panel-validation"
+                     role="tabpanel"
+                     aria-labelledby="alertmanager-tab-validation"
+                     x-show="activeTab === 'validation'"
+                     x-cloak>{% include 'alertmanager/partials/_detail_validation.html' %}</div>
+                <div id="alertmanager-panel-runtime"
+                     role="tabpanel"
+                     aria-labelledby="alertmanager-tab-runtime"
+                     x-show="activeTab === 'runtime'"
+                     x-cloak>{% include 'alertmanager/partials/_detail_runtime.html' %}</div>
+                <div id="alertmanager-panel-scope"
+                     role="tabpanel"
+                     aria-labelledby="alertmanager-tab-scope"
+                     x-show="activeTab === 'scope'"
+                     x-cloak>{% include 'alertmanager/partials/_detail_scope.html' %}</div>
             </div>
         </section>
         {% include 'alertmanager/partials/_delete_confirmation_modal.html' %}

@@ -12,79 +12,79 @@
 {% set prev_page = pagination.prev_page | default(pagination.previous_page | default(current_page - 1), true) %}
 {% set next_page = pagination.next_page | default(current_page + 1, true) %}
 <div class="border-t border-outline-default px-6 py-4 ">
- <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
- <form method="GET"
- action="{{ url_for('analytics.top_consumers') }}"
- hx-get="{{ url_for('analytics.top_consumers_table') }}"
- hx-target="#consumer-detail-section"
- hx-swap="outerHTML"
- hx-indicator="#top-consumers-refresh-indicator"
- class="flex flex-wrap items-center gap-3 text-sm text-content-muted ">
- <input type="hidden"
- name="cluster_id"
- value="{{ cluster.id if cluster else '' }}">
- <input type="hidden" name="namespace" value="{{ selected_namespace }}">
- <input type="hidden" name="resource" value="{{ selected_resource }}">
- <input type="hidden" name="time_range" value="{{ selected_time_range }}">
- <input type="hidden" name="search" value="{{ selected_search }}">
- <input type="hidden" name="sort" value="{{ selected_sort }}">
- <input type="hidden" name="focus" value="{{ selected_focus }}">
- <input type="hidden" name="page" value="1">
- <span>
- Showing
- <span class="font-semibold text-content-secondary ">{{ start_item }}</span>
- –
- <span class="font-semibold text-content-secondary ">{{ end_item }}</span>
- of
- <span class="font-semibold text-content-secondary ">{{ total_items }}</span>
- consumers
- </span>
- <select name="per_page"
- onchange="this.form.requestSubmit()"
- class="{{ pagination_ui.page_size_classes() }}">
- {% for value in allowed_per_page_values %}
- <option value="{{ value }}" {% if per_page == value %}selected{% endif %}>{{ value }}</option>
- {% endfor %}
- </select>
- </form>
- <div class="flex items-center justify-end gap-2">
- {% if has_prev and prev_page >= 1 %}
- {% set prev_page_url = url_for('analytics.top_consumers', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, resource=selected_resource, time_range=selected_time_range, search=selected_search, sort=selected_sort, focus=selected_focus, page=prev_page, per_page=per_page) %}
- {% set prev_table_url = url_for('analytics.top_consumers_table', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, resource=selected_resource, time_range=selected_time_range, search=selected_search, sort=selected_sort, focus=selected_focus, page=prev_page, per_page=per_page) %}
- <a href="{{ prev_page_url }}"
- hx-get="{{ prev_table_url }}"
- hx-target="#consumer-detail-section"
- hx-swap="outerHTML"
- hx-indicator="#top-consumers-refresh-indicator"
- class="{{ pagination_ui.navigation_classes(disabled=false) }}">
- <i data-lucide="chevron-left" class="h-4 w-4"></i>
- Previous
- </a>
- {% else %}
- <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">
- <i data-lucide="chevron-left" class="h-4 w-4"></i>
- Previous
- </span>
- {% endif %}
- {{ pagination_ui.numeric_pages(current_page, total_pages) }}
- {% if has_next and next_page <= total_pages %}
- {% set next_page_url = url_for('analytics.top_consumers', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, resource=selected_resource, time_range=selected_time_range, search=selected_search, sort=selected_sort, focus=selected_focus, page=next_page, per_page=per_page) %}
- {% set next_table_url = url_for('analytics.top_consumers_table', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, resource=selected_resource, time_range=selected_time_range, search=selected_search, sort=selected_sort, focus=selected_focus, page=next_page, per_page=per_page) %}
- <a href="{{ next_page_url }}"
- hx-get="{{ next_table_url }}"
- hx-target="#consumer-detail-section"
- hx-swap="outerHTML"
- hx-indicator="#top-consumers-refresh-indicator"
- class="{{ pagination_ui.navigation_classes(disabled=false) }}">
- Next
- <i data-lucide="chevron-right" class="h-4 w-4"></i>
- </a>
- {% else %}
- <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">
- Next
- <i data-lucide="chevron-right" class="h-4 w-4"></i>
- </span>
- {% endif %}
- </div>
- </div>
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <form method="GET"
+              action="{{ url_for('analytics.top_consumers') }}"
+              hx-get="{{ url_for('analytics.top_consumers_table') }}"
+              hx-target="#consumer-detail-section"
+              hx-swap="outerHTML"
+              hx-indicator="#top-consumers-refresh-indicator"
+              class="flex flex-wrap items-center gap-3 text-sm text-content-muted ">
+            <input type="hidden"
+                   name="cluster_id"
+                   value="{{ cluster.id if cluster else '' }}">
+            <input type="hidden" name="namespace" value="{{ selected_namespace }}">
+            <input type="hidden" name="resource" value="{{ selected_resource }}">
+            <input type="hidden" name="time_range" value="{{ selected_time_range }}">
+            <input type="hidden" name="search" value="{{ selected_search }}">
+            <input type="hidden" name="sort" value="{{ selected_sort }}">
+            <input type="hidden" name="focus" value="{{ selected_focus }}">
+            <input type="hidden" name="page" value="1">
+            <span>
+                Showing
+                <span class="font-semibold text-content-secondary ">{{ start_item }}</span>
+                –
+                <span class="font-semibold text-content-secondary ">{{ end_item }}</span>
+                of
+                <span class="font-semibold text-content-secondary ">{{ total_items }}</span>
+                consumers
+            </span>
+            <select name="per_page"
+                    onchange="this.form.requestSubmit()"
+                    class="{{ pagination_ui.page_size_classes() }}">
+                {% for value in allowed_per_page_values %}
+                    <option value="{{ value }}" {% if per_page == value %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        <div class="flex items-center justify-end gap-2">
+            {% if has_prev and prev_page >= 1 %}
+                {% set prev_page_url = url_for('analytics.top_consumers', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, resource=selected_resource, time_range=selected_time_range, search=selected_search, sort=selected_sort, focus=selected_focus, page=prev_page, per_page=per_page) %}
+                {% set prev_table_url = url_for('analytics.top_consumers_table', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, resource=selected_resource, time_range=selected_time_range, search=selected_search, sort=selected_sort, focus=selected_focus, page=prev_page, per_page=per_page) %}
+                <a href="{{ prev_page_url }}"
+                   hx-get="{{ prev_table_url }}"
+                   hx-target="#consumer-detail-section"
+                   hx-swap="outerHTML"
+                   hx-indicator="#top-consumers-refresh-indicator"
+                   class="{{ pagination_ui.navigation_classes(disabled=false) }}">
+                    <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                    Previous
+                </a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">
+                    <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                    Previous
+                </span>
+            {% endif %}
+            {{ pagination_ui.numeric_pages(current_page, total_pages) }}
+            {% if has_next and next_page <= total_pages %}
+                {% set next_page_url = url_for('analytics.top_consumers', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, resource=selected_resource, time_range=selected_time_range, search=selected_search, sort=selected_sort, focus=selected_focus, page=next_page, per_page=per_page) %}
+                {% set next_table_url = url_for('analytics.top_consumers_table', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, resource=selected_resource, time_range=selected_time_range, search=selected_search, sort=selected_sort, focus=selected_focus, page=next_page, per_page=per_page) %}
+                <a href="{{ next_page_url }}"
+                   hx-get="{{ next_table_url }}"
+                   hx-target="#consumer-detail-section"
+                   hx-swap="outerHTML"
+                   hx-indicator="#top-consumers-refresh-indicator"
+                   class="{{ pagination_ui.navigation_classes(disabled=false) }}">
+                    Next
+                    <i data-lucide="chevron-right" class="h-4 w-4"></i>
+                </a>
+            {% else %}
+                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">
+                    Next
+                    <i data-lucide="chevron-right" class="h-4 w-4"></i>
+                </span>
+            {% endif %}
+        </div>
+    </div>
 </div>

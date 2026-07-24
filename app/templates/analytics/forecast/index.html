@@ -31,11 +31,31 @@
             {% set posture_badge = "bg-slate-500 text-white ring-slate-200/40" %}
         {% endif %}
         <section class="{{ page_hero.shell_classes() }}">
-    <div class="{{ page_hero.layout_classes() }}">
-        <div class="{{ page_hero.content_classes() }}">{% call page_hero.intro('sparkles', 'Kubernetes capacity forecast', 'line-chart') %}<h1 class="{{ page_hero.title_classes() }}">Resource Forecast</h1><p class="mt-2 {{ page_hero.description_classes() }}">Forecast CPU, memory, storage, and pod growth to anticipate capacity pressure and future operational risk.</p><div class="{{ page_hero.metadata_row_classes() }}">{{ page_hero.meta_label('server', selected_cluster_name) }}{{ page_hero.meta_label('lock-keyhole' if dependency_blocker else 'calendar-range', ('Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) if dependency_blocker else (selected_history_window ~ ' history')) }}{{ page_hero.meta_label('list-checks', recommendation_count ~ ' Actionable') }}</div>{% endcall %}</div>
-        <aside class="{{ page_hero.aside_classes() }}" aria-label="Forecast posture">{% if dependency_blocker %}{% set analytics_posture_label = 'Forecast posture' %}{% include 'analytics/components/_blocked_posture.html' %}{% else %}<div class="{{ page_hero.context_panel_classes() }}"><div><p class="{{ page_hero.context_panel_eyebrow_classes() }}">Forecast posture</p><h2 class="mt-1 text-2xl font-bold text-brand-foreground">{{ posture_value }}</h2><p class="mt-2 text-xs leading-5 text-brand-foreground-muted">{{ posture_desc }}</p></div><div class="mt-4">{{ page_hero.meta_label('list-checks', recommendation_count ~ ' Actionable') }}</div></div>{% endif %}</aside>
-    </div>
-</section>
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('sparkles', 'Kubernetes capacity forecast', 'line-chart') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Resource Forecast</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Forecast CPU, memory, storage, and pod growth to anticipate capacity pressure and future operational risk.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">{{ page_hero.meta_label('server', selected_cluster_name) }}{{ page_hero.meta_label('lock-keyhole' if dependency_blocker else 'calendar-range', ('Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) if dependency_blocker else (selected_history_window ~ ' history')) }}{{ page_hero.meta_label('list-checks', recommendation_count ~ ' Actionable') }}</div>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="Forecast posture">
+                    {% if dependency_blocker %}
+                        {% set analytics_posture_label = "Forecast posture" %}
+                        {% include 'analytics/components/_blocked_posture.html' %}
+                    {% else %}
+                        <div class="{{ page_hero.context_panel_classes() }}">
+                            <div>
+                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Forecast posture</p>
+                                <h2 class="mt-1 text-2xl font-bold text-brand-foreground">{{ posture_value }}</h2>
+                                <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">{{ posture_desc }}</p>
+                            </div>
+                            <div class="mt-4">{{ page_hero.meta_label('list-checks', recommendation_count ~ ' Actionable') }}</div>
+                        </div>
+                    {% endif %}
+                </aside>
+            </div>
+        </section>
         {% if dependency_blocker %}
             {% include "components/dependencies/_blocker.html" %}
         {% endif %}
