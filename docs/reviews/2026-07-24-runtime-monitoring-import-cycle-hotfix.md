@@ -10,8 +10,9 @@ pytest collection could therefore observe a partially initialized module.
 ## Resolution
 
 - `app.integrations.runtime.monitoring` now owns only provider fan-out and queue dispatch.
-- `app.integrations.runtime.service` owns the synchronous refresh-and-persist operation.
-- `app.integrations.validation.tasks` imports `refresh_and_record` from the runtime service.
+- `app.integrations.runtime.refresh` owns the synchronous refresh-and-persist operation.
+- `app.integrations.validation.tasks` imports `refresh_and_record` from the canonical runtime refresh module.
+- The temporary one-function `app.integrations.runtime.service` boundary is retired.
 - The CLI and periodic Celery entrypoint continue to use the canonical monitoring dispatcher.
 - An architecture contract prevents the bidirectional import from returning.
 

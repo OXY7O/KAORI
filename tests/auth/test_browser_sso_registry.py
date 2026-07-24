@@ -120,9 +120,39 @@ def test_sso_flow_validation_fails_closed_for_malformed_session_values() -> None
         now_timestamp=1050.0,
         ttl_seconds=60,
     )
+    assert not sso_flow_is_valid(
+        {'provider_id': object(), 'state_hash': 'hash', 'started_at': object()},
+        provider_id=7,
+        supplied_state='state',
+        now_timestamp=1050.0,
+        ttl_seconds=60,
+    )
+    assert not sso_flow_is_valid(
+        {'provider_id': True, 'state_hash': 'hash', 'started_at': float('nan')},
+        provider_id=1,
+        supplied_state='state',
+        now_timestamp=1050.0,
+        ttl_seconds=60,
+    )
+
+
+def test_sso_flow_validation_accepts_serialized_numeric_session_values() -> None:
+    flow = {
+        'provider_id': '7',
+        'state_hash': state_fingerprint('expected-state'),
+        'started_at': '1000.0',
+    }
+
+    assert sso_flow_is_valid(
+        flow,
+        provider_id=7,
+        supplied_state='expected-state',
+        now_timestamp=1050.0,
+        ttl_seconds=60,
+    )
+
 
 def test_sso_request_timeout_is_bounded_and_malformed_values_use_safe_default() -> None:
     assert request_timeout_seconds(SimpleNamespace(connect_timeout_seconds=1)) == 2
     assert request_timeout_seconds(SimpleNamespace(connect_timeout_seconds=45)) == 30
     assert request_timeout_seconds(SimpleNamespace(connect_timeout_seconds='invalid')) == 5
-

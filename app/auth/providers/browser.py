@@ -6,6 +6,7 @@ import secrets
 from collections.abc import Mapping
 from dataclasses import dataclass
 from hmac import compare_digest
+from math import isfinite
 from typing import Protocol, runtime_checkable
 
 from app.models import IdentityProvider
@@ -63,6 +64,37 @@ def state_fingerprint(state: str) -> str:
     return hashlib.sha256(state.encode('utf-8')).hexdigest()
 
 
+def _parse_session_int(value: object) -> int | None:
+    """Parse an integer from untrusted session data without broad object coercion."""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            return None
+    return None
+
+
+def _parse_session_float(value: object) -> float | None:
+    """Parse a finite timestamp-compatible number from untrusted session data."""
+    if isinstance(value, bool):
+        return None
+    parsed: float
+    if isinstance(value, (int, float)):
+        parsed = float(value)
+    elif isinstance(value, str):
+        try:
+            parsed = float(value)
+        except ValueError:
+            return None
+    else:
+        return None
+    return parsed if isfinite(parsed) else None
+
+
 def sso_flow_is_valid(
     flow: Mapping[str, object],
     *,
@@ -72,10 +104,9 @@ def sso_flow_is_valid(
     ttl_seconds: int,
 ) -> bool:
     """Validate the server-signed browser SSO flow without trusting session value types."""
-    try:
-        expected_provider_id = int(flow.get('provider_id') or 0)
-        started_at = float(flow.get('started_at') or 0)
-    except (TypeError, ValueError):
+    expected_provider_id = _parse_session_int(flow.get('provider_id'))
+    started_at = _parse_session_float(flow.get('started_at'))
+    if expected_provider_id is None or started_at is None:
         return False
 
     expected_hash = str(flow.get('state_hash') or '')

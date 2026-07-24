@@ -39,9 +39,7 @@ _RETIRED_PYTHON_MODULES = {
     'app.integrations.prometheus.validation',
     'app.integrations.runtime.contracts',
     'app.integrations.runtime.dispatcher',
-    'app.jobs.query_execution',
-    'app.jobs.query_planning',
-    'app.jobs.resource_limits',
+    'app.integrations.runtime.service',
     'app.inventory.collector',
     'app.inventory.service',
     'app.prometheus.binding_contract',
@@ -173,8 +171,7 @@ def validate_boundaries(
     errors: list[str] = []
 
     retired_paths = tuple(
-        app_root.parent / Path(*module.split('.')).with_suffix('.py')
-        for module in sorted(_RETIRED_PYTHON_MODULES)
+        app_root.parent / Path(*module.split('.')).with_suffix('.py') for module in sorted(_RETIRED_PYTHON_MODULES)
     ) + (
         app_root / 'static' / 'js' / 'dashboard.js',
         app_root / 'static' / 'js' / 'report.js',
@@ -192,9 +189,7 @@ def validate_boundaries(
             errors.append(f'{relative_source}:{record.line}: wildcard import from {record.target!r} is forbidden')
 
         if record.target in _RETIRED_PYTHON_MODULES:
-            errors.append(
-                f'{relative_source}:{record.line}: import targets retired module {record.target!r}'
-            )
+            errors.append(f'{relative_source}:{record.line}: import targets retired module {record.target!r}')
 
         relative_to_app = record.source.relative_to(app_root)
         provider = (
@@ -203,10 +198,7 @@ def validate_boundaries(
             else None
         )
         forbidden_domain = _PROVIDER_DOMAIN_BOUNDARIES.get(provider or '')
-        if forbidden_domain and (
-            record.target == forbidden_domain
-            or record.target.startswith(f'{forbidden_domain}.')
-        ):
+        if forbidden_domain and (record.target == forbidden_domain or record.target.startswith(f'{forbidden_domain}.')):
             errors.append(
                 f'{relative_source}:{record.line}: canonical {provider.title()} provider code may not '
                 f'import its web/domain package ({record.target})'
@@ -228,10 +220,14 @@ def validate_boundaries(
         imports_forms = 'forms' in target_parts
         source_domain = _source_domain(app_root, record.source)
         target_domain = _top_level_domain(record.target)
-        source_is_bootstrap = record.source in {
-            app_root / '__init__.py',
-            app_root / 'bootstrap' / 'blueprints.py',
-        } or record.source.name == '__init__.py'
+        source_is_bootstrap = (
+            record.source
+            in {
+                app_root / '__init__.py',
+                app_root / 'bootstrap' / 'blueprints.py',
+            }
+            or record.source.name == '__init__.py'
+        )
         source_is_domain_router = record.source.name == 'routes.py' and target_domain == source_domain
 
         if imports_routes and not (source_is_bootstrap or source_is_domain_router):
@@ -242,13 +238,9 @@ def validate_boundaries(
         if record.source.is_relative_to(app_root / 'models'):
             forbidden_flask_names = {'request', 'current_app', 'session', 'g'}
             if record.target == 'flask' and forbidden_flask_names.intersection(record.imported_names):
-                errors.append(
-                    f'{relative_source}:{record.line}: models may not depend on Flask request globals'
-                )
+                errors.append(f'{relative_source}:{record.line}: models may not depend on Flask request globals')
             if record.target == 'flask_login' and 'current_user' in record.imported_names:
-                errors.append(
-                    f'{relative_source}:{record.line}: models may not depend on current_user'
-                )
+                errors.append(f'{relative_source}:{record.line}: models may not depend on current_user')
             if imports_routes or imports_forms:
                 errors.append(
                     f'{relative_source}:{record.line}: models may not import web routes/forms ({record.target})'
@@ -262,9 +254,7 @@ def validate_boundaries(
 
         is_service = record.source.name in {'service.py', 'services.py'} or record.source.name.endswith('_service.py')
         if is_service and imports_routes:
-            errors.append(
-                f'{relative_source}:{record.line}: service modules may not import routes ({record.target})'
-            )
+            errors.append(f'{relative_source}:{record.line}: service modules may not import routes ({record.target})')
         if is_service and imports_forms:
             service_form_imports.add((relative_source, record.target))
 
@@ -285,18 +275,12 @@ def validate_boundaries(
             f'architecture debt baseline is stale; remove resolved service-to-form edge: {source} -> {target}'
         )
 
-    envelopes = [
-        set(item.get('domains', []))
-        for item in baseline.get('cycle_envelopes', [])
-        if isinstance(item, dict)
-    ]
+    envelopes = [set(item.get('domains', [])) for item in baseline.get('cycle_envelopes', []) if isinstance(item, dict)]
     for component in _strongly_connected_components(graph):
         if len(component) < 2:
             continue
         if not any(component <= envelope for envelope in envelopes):
-            errors.append(
-                'new or expanded top-level dependency cycle: ' + ', '.join(sorted(component))
-            )
+            errors.append('new or expanded top-level dependency cycle: ' + ', '.join(sorted(component)))
 
     return errors
 
