@@ -6,13 +6,13 @@ from collections.abc import Mapping
 from typing import Any
 
 from app.analytics.common.base_service import AnalyticsBaseService, raw_percent, safe_round
-from app.analytics.common.context import build_analysis_utilization_context
 from app.analytics.common.coercion import (
     as_dict as _as_dict,
     as_list as _as_list,
     safe_float as _safe_float,
     safe_int as _safe_int,
 )
+from app.analytics.common.context import build_analysis_utilization_context
 from app.analytics.common.params import (
     ALLOWED_PER_PAGE_VALUES,
     get_allowed_time_ranges,

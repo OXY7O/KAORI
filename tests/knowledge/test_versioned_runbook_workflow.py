@@ -18,7 +18,6 @@ from app.knowledge.service import (
     publish_revision,
     resolve_published_revision,
 )
-
 from app.resolver.contracts import DryRunResult, ResolverResult, ResolverResultStatus
 from app.resolver.registry import ResolverRegistry
 

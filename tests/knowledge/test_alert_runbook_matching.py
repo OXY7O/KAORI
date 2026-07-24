@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+
 import pytest
 
 from app.knowledge.matching import RunbookMatchError, match_alert_to_runbook

@@ -6,7 +6,6 @@ from typing import Any
 from app.models import PodInventory, ServiceInventory
 
 
-
 def format_age(
     created_at,
 ) -> str:

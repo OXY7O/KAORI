@@ -403,6 +403,7 @@ def _sync_kubernetes_runtime(
     Cluster is the Kubernetes asset. KubernetesConnection is the only connection
     and credential authority; this function never writes provider data to Cluster.
     """
+    connection = cluster.kubernetes_connection
     canonical = connection.integration_instance if connection is not None else None
     if canonical is None:
         canonical = IntegrationInstance()

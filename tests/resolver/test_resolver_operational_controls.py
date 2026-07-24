@@ -1,6 +1,3 @@
-from datetime import UTC, datetime, timedelta
-from types import SimpleNamespace
-
 import pytest
 
 from app.resolver.operations import ResolverOperationalError, ResolverReadiness

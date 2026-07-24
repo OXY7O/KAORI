@@ -7,8 +7,8 @@ def register_blueprints(app: Flask) -> None:
     """Import and register KAORI web domains after extensions are initialized."""
     from app.alertmanager.routes import alertmanager_bp
     from app.analytics.routes import analytics_bp
-    from app.automation_control.routes import automation_control_bp
     from app.auth.routes import auth_bp
+    from app.automation_control.routes import automation_control_bp
     from app.cluster.routes import cluster_bp
     from app.dashboards.kubernetes.routes import kubernetes_dashboard_bp
     from app.governance.routes import governance_bp

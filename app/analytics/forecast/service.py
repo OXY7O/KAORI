@@ -10,13 +10,13 @@ from statistics import mean
 from typing import Any
 
 from app.analytics.common.base_service import AnalyticsBaseService
-from app.analytics.common.context import build_analysis_utilization_context
 from app.analytics.common.coercion import (
     as_dict as _as_dict,
     as_list as _as_list,
     safe_float as _safe_float,
     safe_int as _safe_int,
 )
+from app.analytics.common.context import build_analysis_utilization_context
 from app.analytics.common.params import get_query_value
 from app.analytics.utilization.service import UtilizationService
 from app.common.dependencies import prometheus_connection_blocker

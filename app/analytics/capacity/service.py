@@ -9,9 +9,9 @@ from flask import current_app
 
 from app.analytics.common.base_service import AnalyticsBaseService, bytes_to_gib, raw_percent, safe_percent, safe_round
 from app.analytics.common.clusters import get_selected_cluster
+from app.analytics.common.coercion import as_dict as _as_dict
 from app.analytics.common.params import get_allowed_time_ranges, get_query_value, get_selected_time_range
 from app.analytics.common.payloads import get_empty_capacity_payload
-from app.analytics.common.coercion import as_dict as _as_dict
 from app.analytics.utilization.service import UtilizationService
 from app.common.dependencies import (
     cluster_required_blocker,

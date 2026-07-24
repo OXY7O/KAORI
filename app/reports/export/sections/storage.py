@@ -14,6 +14,7 @@ from app.analytics.utilization.service import (
 from app.cluster.constants import get_environment_label
 from app.intelligence.recommendation_engine import build_storage_actionable_recommendations
 from app.models.report import Report
+from app.prometheus.consumer import PrometheusConsumer
 from app.prometheus.service import PrometheusService
 from app.reports.export.helpers import (
     _format_resource_number,
@@ -29,9 +30,7 @@ def build_storage_analysis_pdf_sections(
     report: Report,
     styles: dict[str, ParagraphStyle],
 ) -> list[Any]:
-    payload = get_report_storage_analysis_payload(
-        report,
-    )
+    payload = get_report_storage_analysis_payload(report)
 
     if payload.get('_error'):
         return build_storage_analysis_error_section(

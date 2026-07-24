@@ -4,7 +4,11 @@ import pytest
 from flask import Flask
 
 from app.extensions import db
-from app.knowledge.candidate_review import CandidateWorkflowError, dismiss_candidate, persist_candidate, promote_candidate
+from app.knowledge.candidate_review import (
+    CandidateWorkflowError,
+    persist_candidate,
+    promote_candidate,
+)
 from app.knowledge.matching import DecisionCandidate
 from app.models.intelligence import IntelligenceDecisionCandidate
 from app.models.knowledge import KnowledgeRunbook, KnowledgeRunbookAlertBinding, KnowledgeRunbookRevision
@@ -30,7 +34,8 @@ def app() -> Flask:
 
 def _seed():
     runbook = KnowledgeRunbook(runbook_key='pod.restart', title='Restart pod')
-    db.session.add(runbook); db.session.flush()
+    db.session.add(runbook)
+    db.session.flush()
     revision = KnowledgeRunbookRevision(
         runbook_id=runbook.id, version='1.0.0', publication_status='published',
         action_key='kubernetes.pod.restart', resolver_key='kubernetes.pod.restart',
@@ -39,9 +44,11 @@ def _seed():
         parameter_schema_json={'type': 'object', 'properties': {}, 'additionalProperties': False},
         steps_json=[], content_hash='a' * 64,
     )
-    db.session.add(revision); db.session.flush()
+    db.session.add(revision)
+    db.session.flush()
     binding = KnowledgeRunbookAlertBinding(binding_key='pod-not-ready', runbook_revision_id=revision.id, alertname='KubePodNotReady')
-    db.session.add(binding); db.session.commit()
+    db.session.add(binding)
+    db.session.commit()
     candidate = DecisionCandidate(
         binding_key=binding.binding_key, runbook_key=runbook.runbook_key,
         runbook_revision_id=revision.public_id, runbook_version=revision.version,
@@ -80,7 +87,8 @@ def test_withdrawn_revision_blocks_promotion(app):
     with app.app_context():
         candidate, revision = _seed()
         record = persist_candidate(candidate, severity='critical', actor_user_id=None, actor_permissions={'intelligence.decisions.view'})
-        revision.publication_status = 'withdrawn'; db.session.commit()
+        revision.publication_status = 'withdrawn'
+        db.session.commit()
         with pytest.raises(CandidateWorkflowError):
             promote_candidate(record, rule_version='1.0.0', actor_user_id=None, actor_permissions={'intelligence.decisions.create'})
 

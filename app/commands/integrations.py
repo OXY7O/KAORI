@@ -14,7 +14,7 @@ from typing import Any
 import click
 from flask.cli import with_appcontext
 
-from app.integrations.runtime import dispatch_integration_runtime_refresh
+from app.integrations.runtime.monitoring import dispatch_integration_runtime_refresh
 
 
 @click.command('refresh-integration-runtime')

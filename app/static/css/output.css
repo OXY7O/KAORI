@@ -1002,6 +1002,9 @@
   .min-h-11 {
     min-height: calc(var(--spacing) * 11);
   }
+  .min-h-12 {
+    min-height: calc(var(--spacing) * 12);
+  }
   .min-h-20 {
     min-height: calc(var(--spacing) * 20);
   }
@@ -1469,6 +1472,24 @@
   }
   .min-w-\[12rem\] {
     min-width: 12rem;
+  }
+  .min-w-\[48rem\] {
+    min-width: 48rem;
+  }
+  .min-w-\[50rem\] {
+    min-width: 50rem;
+  }
+  .min-w-\[52rem\] {
+    min-width: 52rem;
+  }
+  .min-w-\[54rem\] {
+    min-width: 54rem;
+  }
+  .min-w-\[58rem\] {
+    min-width: 58rem;
+  }
+  .min-w-\[64rem\] {
+    min-width: 64rem;
   }
   .min-w-\[76rem\] {
     min-width: 76rem;
@@ -2023,6 +2044,12 @@
       border-color: color-mix(in oklab, var(--kaori-brand-primary) 30%, transparent);
     }
   }
+  .border-kaori-primary\/40 {
+    border-color: var(--kaori-brand-primary);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--kaori-brand-primary) 40%, transparent);
+    }
+  }
   .border-orange-200 {
     border-color: var(--color-orange-200);
   }
@@ -2082,6 +2109,12 @@
   }
   .border-status-warning-border {
     border-color: var(--kaori-status-warning-border);
+  }
+  .border-status-warning\/30 {
+    border-color: var(--kaori-status-warning);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--kaori-status-warning) 30%, transparent);
+    }
   }
   .border-transparent {
     border-color: transparent;
@@ -4889,6 +4922,13 @@
     &:hover {
       @media (hover: hover) {
         background-color: var(--color-slate-200);
+      }
+    }
+  }
+  .hover\:bg-status-critical {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--kaori-status-critical);
       }
     }
   }
