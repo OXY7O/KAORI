@@ -30,8 +30,7 @@ def _test_functions(path: Path) -> list[str]:
     return [
         node.name
         for node in tree.body
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-        and node.name.startswith('test_')
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name.startswith('test_')
     ]
 
 
@@ -48,10 +47,7 @@ def validate(root: Path) -> list[str]:
             errors.append(f'{relative_path}:{exc.lineno}: invalid Python test module')
             continue
         if len(tests) < minimum_tests:
-            errors.append(
-                f'{relative_path}: {len(tests)} behavior tests found; '
-                f'at least {minimum_tests} are required'
-            )
+            errors.append(f'{relative_path}: {len(tests)} behavior tests found; at least {minimum_tests} are required')
     return errors
 
 
@@ -69,8 +65,7 @@ def main() -> int:
         return 1
 
     print(
-        'KAORI feature characterization coverage is present across '
-        f'{len(_REQUIRED_TEST_FILES)} required test modules.'
+        f'KAORI feature characterization coverage is present across {len(_REQUIRED_TEST_FILES)} required test modules.'
     )
     return 0
 

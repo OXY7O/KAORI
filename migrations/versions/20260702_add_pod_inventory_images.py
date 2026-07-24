@@ -1,7 +1,7 @@
 """add pod inventory images
 
 Revision ID: 20260702_add_pod_images
-Revises: 
+Revises:
 Create Date: 2026-07-02
 
 """

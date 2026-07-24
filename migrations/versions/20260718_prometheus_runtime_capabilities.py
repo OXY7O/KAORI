@@ -3,6 +3,7 @@
 Revision ID: 20260718_prom_runtime
 Revises: 20260718_integration_runtime
 """
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -23,5 +24,13 @@ def upgrade():
 
 
 def downgrade():
-    for column in ('last_checked_at','last_response_time_ms','last_error','last_status','module_readiness','capabilities','capability_profile'):
+    for column in (
+        'last_checked_at',
+        'last_response_time_ms',
+        'last_error',
+        'last_status',
+        'module_readiness',
+        'capabilities',
+        'capability_profile',
+    ):
         op.drop_column('prometheus_configs', column)

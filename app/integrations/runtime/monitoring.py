@@ -16,21 +16,14 @@ __all__ = ['dispatch_integration_runtime_refresh']
 def dispatch_integration_runtime_refresh() -> dict[str, object]:
     """Queue independent runtime refresh jobs for all enabled providers."""
     provider_ids = {
-        'kubernetes': [
-            row.id
-            for row in KubernetesConnection.query.order_by(KubernetesConnection.id.asc()).all()
-        ],
+        'kubernetes': [row.id for row in KubernetesConnection.query.order_by(KubernetesConnection.id.asc()).all()],
         'alertmanager': [
             row.id
-            for row in AlertmanagerInstance.query.filter_by(enabled=True)
-            .order_by(AlertmanagerInstance.id.asc())
-            .all()
+            for row in AlertmanagerInstance.query.filter_by(enabled=True).order_by(AlertmanagerInstance.id.asc()).all()
         ],
         'prometheus': [
             row.id
-            for row in PrometheusInstance.query.filter_by(enabled=True)
-            .order_by(PrometheusInstance.id.asc())
-            .all()
+            for row in PrometheusInstance.query.filter_by(enabled=True).order_by(PrometheusInstance.id.asc()).all()
         ],
     }
     result: dict[str, Any] = {'queued': 0, 'skipped': 0, 'providers': {}}
@@ -50,21 +43,15 @@ def dispatch_integration_runtime_refresh() -> dict[str, object]:
                 )
                 provider_result['skipped'] += 1
                 result['skipped'] += 1
-                provider_result['tasks'].append(
-                    {'instance_id': instance_id, 'error': str(exc)[:300]}
-                )
+                provider_result['tasks'].append({'instance_id': instance_id, 'error': str(exc)[:300]})
                 continue
             if task_id is None:
                 provider_result['skipped'] += 1
                 result['skipped'] += 1
-                provider_result['tasks'].append(
-                    {'instance_id': instance_id, 'status': 'already_active'}
-                )
+                provider_result['tasks'].append({'instance_id': instance_id, 'status': 'already_active'})
                 continue
             provider_result['queued'] += 1
             result['queued'] += 1
-            provider_result['tasks'].append(
-                {'instance_id': instance_id, 'task_id': task_id}
-            )
+            provider_result['tasks'].append({'instance_id': instance_id, 'task_id': task_id})
         result['providers'][provider_type] = provider_result
     return result

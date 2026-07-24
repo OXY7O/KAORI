@@ -4,6 +4,7 @@ Revision ID: 20260714_secret_reveal
 Revises: 20260713_archive_retention
 Create Date: 2026-07-14 14:00:00
 """
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -59,17 +60,35 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('id'),
     )
     for column in (
-        'configuration_inventory_id', 'cluster_id', 'namespace', 'secret_name', 'ticket_reference',
-        'status', 'requester_user_id', 'approver_user_id', 'requested_at', 'expires_at',
+        'configuration_inventory_id',
+        'cluster_id',
+        'namespace',
+        'secret_name',
+        'ticket_reference',
+        'status',
+        'requester_user_id',
+        'approver_user_id',
+        'requested_at',
+        'expires_at',
     ):
         op.create_index(f'ix_secret_reveal_requests_{column}', 'secret_reveal_requests', [column], unique=False)
 
 
 def downgrade() -> None:
-    for column in reversed((
-        'configuration_inventory_id', 'cluster_id', 'namespace', 'secret_name', 'ticket_reference',
-        'status', 'requester_user_id', 'approver_user_id', 'requested_at', 'expires_at',
-    )):
+    for column in reversed(
+        (
+            'configuration_inventory_id',
+            'cluster_id',
+            'namespace',
+            'secret_name',
+            'ticket_reference',
+            'status',
+            'requester_user_id',
+            'approver_user_id',
+            'requested_at',
+            'expires_at',
+        )
+    ):
         op.drop_index(f'ix_secret_reveal_requests_{column}', table_name='secret_reveal_requests')
     op.drop_table('secret_reveal_requests')
     op.drop_column('clusters', 'secret_reveal_audit_verified')

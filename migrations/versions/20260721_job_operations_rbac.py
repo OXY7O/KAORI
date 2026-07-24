@@ -63,9 +63,7 @@ def upgrade() -> None:
         sa.column('created_at', sa.DateTime(timezone=True)),
     )
     for key, module, action, description in PERMISSIONS:
-        permission_id = bind.execute(
-            sa.select(permissions.c.id).where(permissions.c.key == key)
-        ).scalar()
+        permission_id = bind.execute(sa.select(permissions.c.id).where(permissions.c.key == key)).scalar()
         if permission_id is None:
             bind.execute(
                 permissions.insert().values(
@@ -119,9 +117,7 @@ def upgrade() -> None:
     all_keys = legacy_keys + [item[0] for item in PERMISSIONS]
     all_permission_ids = {
         row.key: row.id
-        for row in bind.execute(
-            sa.select(permissions.c.id, permissions.c.key).where(permissions.c.key.in_(all_keys))
-        )
+        for row in bind.execute(sa.select(permissions.c.id, permissions.c.key).where(permissions.c.key.in_(all_keys)))
     }
     for legacy_key, target_keys in legacy_mappings.items():
         legacy_id = all_permission_ids.get(legacy_key)
@@ -130,9 +126,7 @@ def upgrade() -> None:
         role_ids = [
             row.role_id
             for row in bind.execute(
-                sa.select(role_permissions.c.role_id).where(
-                    role_permissions.c.permission_id == legacy_id
-                )
+                sa.select(role_permissions.c.role_id).where(role_permissions.c.permission_id == legacy_id)
             )
         ]
         for role_id in role_ids:
@@ -148,9 +142,7 @@ def downgrade() -> None:
     permission_ids = [
         row.id
         for row in bind.execute(
-            sa.select(permissions.c.id).where(
-                permissions.c.key.in_([item[0] for item in PERMISSIONS])
-            )
+            sa.select(permissions.c.id).where(permissions.c.key.in_([item[0] for item in PERMISSIONS]))
         )
     ]
     if permission_ids:

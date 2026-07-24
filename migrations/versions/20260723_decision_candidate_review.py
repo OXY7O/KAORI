@@ -3,6 +3,7 @@
 Revision ID: 20260723_candidate_review
 Revises: 20260723_alert_runbook_matching
 """
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -37,7 +38,10 @@ def upgrade() -> None:
         sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
         sa.Column('expires_at', sa.DateTime(timezone=True), nullable=False),
         sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-        sa.CheckConstraint("review_status IN ('pending', 'promoted', 'dismissed', 'expired')", name='ck_intelligence_candidate_review_status'),
+        sa.CheckConstraint(
+            "review_status IN ('pending', 'promoted', 'dismissed', 'expired')",
+            name='ck_intelligence_candidate_review_status',
+        ),
         sa.ForeignKeyConstraint(['binding_id'], ['knowledge_runbook_alert_bindings.id'], ondelete='RESTRICT'),
         sa.ForeignKeyConstraint(['runbook_revision_id'], ['knowledge_runbook_revisions.id'], ondelete='RESTRICT'),
         sa.ForeignKeyConstraint(['created_by_user_id'], ['users.id'], ondelete='SET NULL'),
@@ -46,9 +50,25 @@ def upgrade() -> None:
         sa.UniqueConstraint('deduplication_key', name='uq_intelligence_candidate_deduplication'),
         sa.UniqueConstraint('promoted_decision_id'),
     )
-    op.create_index('ix_intelligence_candidates_status_expires', 'intelligence_decision_candidates', ['review_status', 'expires_at'])
-    op.create_index('ix_intelligence_candidates_alert_created', 'intelligence_decision_candidates', ['alert_fingerprint', 'created_at'])
-    for column in ('binding_id', 'runbook_revision_id', 'rule_key', 'alert_fingerprint', 'cluster_id', 'namespace', 'evidence_hash', 'review_status', 'expires_at'):
+    op.create_index(
+        'ix_intelligence_candidates_status_expires', 'intelligence_decision_candidates', ['review_status', 'expires_at']
+    )
+    op.create_index(
+        'ix_intelligence_candidates_alert_created',
+        'intelligence_decision_candidates',
+        ['alert_fingerprint', 'created_at'],
+    )
+    for column in (
+        'binding_id',
+        'runbook_revision_id',
+        'rule_key',
+        'alert_fingerprint',
+        'cluster_id',
+        'namespace',
+        'evidence_hash',
+        'review_status',
+        'expires_at',
+    ):
         op.create_index(f'ix_intelligence_decision_candidates_{column}', 'intelligence_decision_candidates', [column])
 
 

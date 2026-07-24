@@ -14,10 +14,7 @@ branch_labels = None
 depends_on = None
 
 
-_ALERTMANAGER_CAPABILITIES = (
-    '["alerts", "alerts_v2", "silences", "silences_v2", '
-    '"routing", "receivers", "status_v2"]'
-)
+_ALERTMANAGER_CAPABILITIES = '["alerts", "alerts_v2", "silences", "silences_v2", "routing", "receivers", "status_v2"]'
 
 
 def upgrade() -> None:

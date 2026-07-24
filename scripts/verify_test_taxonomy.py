@@ -32,8 +32,7 @@ def _has_collection_hook(path: Path) -> bool:
     except SyntaxError:
         return False
     return any(
-        isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
-        and node.name == 'pytest_collection_modifyitems'
+        isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == 'pytest_collection_modifyitems'
         for node in tree.body
     )
 
@@ -55,9 +54,7 @@ def validate(root: Path) -> list[str]:
         if path == canonical_conftest:
             continue
         if _has_collection_hook(path):
-            errors.append(
-                f'{path.relative_to(root)} duplicates the canonical test taxonomy hook'
-            )
+            errors.append(f'{path.relative_to(root)} duplicates the canonical test taxonomy hook')
 
     for path in sorted(tests_root.rglob('test_*.py')):
         relative = path.relative_to(tests_root)
@@ -72,13 +69,9 @@ def validate(root: Path) -> list[str]:
         has_debug_marker = 'pytest.mark.debug' in source
 
         if bucket != 'debug' and (looks_diagnostic or has_debug_marker):
-            errors.append(
-                f'{path.relative_to(root)} is diagnostic and must live under tests/debug/'
-            )
+            errors.append(f'{path.relative_to(root)} is diagnostic and must live under tests/debug/')
         if bucket == 'debug' and 'pytest.mark.functional' in source:
-            errors.append(
-                f'{path.relative_to(root)} may not be marked as release functional evidence'
-            )
+            errors.append(f'{path.relative_to(root)} may not be marked as release functional evidence')
 
     quality_gate = (root / 'scripts' / 'quality_gate.sh').read_text(encoding='utf-8')
     if "-m 'not debug'" not in quality_gate and '-m "not debug"' not in quality_gate:

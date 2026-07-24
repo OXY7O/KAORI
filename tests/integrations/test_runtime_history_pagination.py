@@ -46,7 +46,7 @@ class _RuntimeHistoryQuery:
 
     def all(self) -> list[object]:
         end = None if self.limit_value is None else self.offset_value + self.limit_value
-        return self._rows[self.offset_value:end]
+        return self._rows[self.offset_value : end]
 
 
 def test_runtime_history_returns_exact_requested_page_size(monkeypatch: pytest.MonkeyPatch) -> None:

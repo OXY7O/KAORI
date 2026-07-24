@@ -3,6 +3,7 @@
 Revision ID: 20260716_prom_endpoint_source
 Revises: 20260716_prom_detection
 """
+
 from alembic import op
 import sqlalchemy as sa
 

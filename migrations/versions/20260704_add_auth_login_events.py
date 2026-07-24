@@ -4,6 +4,7 @@ Revision ID: 20260704_add_auth_login_events
 Revises: 195a5f19967b
 Create Date: 2026-07-04
 """
+
 from alembic import op
 import sqlalchemy as sa
 

@@ -1895,7 +1895,6 @@ def _pick_number(raw: dict[str, Any], keys: list[str]) -> float | None:
     return None
 
 
-
 def _get_nested_float(source: Any, first_key: str, second_key: str) -> FloatLike | None:
     if not isinstance(source, dict):
         return None

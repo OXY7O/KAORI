@@ -68,9 +68,7 @@ def validate(root: Path, baseline_path: Path) -> list[str]:
         if re.search(r'<style\b', source, re.IGNORECASE):
             errors.append(f'{relative}: template-local <style> blocks are forbidden')
         if 'style=' in source and relative != 'app/templates/components/progress_bar.html':
-            errors.append(
-                f'{relative}: inline style must be represented by a shared component or static utility class'
-            )
+            errors.append(f'{relative}: inline style must be represented by a shared component or static utility class')
 
     progress_component = root / 'app' / 'templates' / 'components' / 'progress_bar.html'
     if not progress_component.exists():

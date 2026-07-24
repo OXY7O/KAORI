@@ -12,7 +12,7 @@ def test_bootstrap_requires_explicit_namespace_allowlist_and_fingerprint():
     source = (ROOT / 'app/integrations/resolver_bootstrap.py').read_text()
     assert 'explicit namespace allowlist' in source
     assert 'registry_fingerprint' in source
-    assert "Unknown enabled resolver actions" in source
+    assert 'Unknown enabled resolver actions' in source
     assert 'RESOLVER_TOKEN_SIGNING_KEY with at least 32 characters' in source
 
 

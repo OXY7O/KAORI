@@ -50,6 +50,7 @@ def test_migration_revision_ids_fit_alembic_version_column() -> None:
         f'oversized revision IDs: {too_long}'
     )
 
+
 def test_resolver_global_control_uses_expression_unique_index() -> None:
     migration = (ROOT / 'migrations/versions/20260723_resolver_controls.py').read_text()
     model = (ROOT / 'app/models/resolver.py').read_text()
@@ -61,4 +62,3 @@ def test_resolver_global_control_uses_expression_unique_index() -> None:
     assert expected_expression in migration
     assert expected_name in model
     assert 'func.coalesce(ResolverOperationalControl.cluster_id' in model
-

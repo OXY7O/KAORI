@@ -4,6 +4,7 @@ Revision ID: 20260720_binding_selectors
 Revises: 20260719_cutover_p2
 Create Date: 2026-07-20
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa

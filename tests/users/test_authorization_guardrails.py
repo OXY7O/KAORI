@@ -65,13 +65,16 @@ def test_user_lifecycle_service_rejects_actor_without_required_permissions() -> 
     assert can_create_user(actor, requested_role_id=None, requested_is_super_admin=False)[0] is False
     assert can_activate_user(actor, target)[0] is False
     assert can_deactivate_user(actor, target)[0] is False
-    assert can_edit_user(
-        actor,
-        target,
-        requested_role_id=target.role_id,
-        requested_is_active=True,
-        requested_is_super_admin=False,
-    )[0] is False
+    assert (
+        can_edit_user(
+            actor,
+            target,
+            requested_role_id=target.role_id,
+            requested_is_active=True,
+            requested_is_super_admin=False,
+        )[0]
+        is False
+    )
 
 
 def test_user_without_persisted_role_fails_closed() -> None:

@@ -123,6 +123,7 @@ def test_plain_ldap_is_fail_closed_unless_explicitly_enabled() -> None:
     assert transport.use_ssl is False
     assert transport.start_tls is False
 
+
 def test_ldap_transport_rejects_embedded_credentials_and_url_components() -> None:
     with pytest.raises(ExternalProviderError, match='must not embed credentials'):
         resolve_ldap_transport('ldaps://svc:secret@directory.example.com', 'ldaps')
@@ -134,4 +135,3 @@ def test_ldap_transport_rejects_embedded_credentials_and_url_components() -> Non
 def test_ldap_transport_normalizes_invalid_port_as_configuration_error() -> None:
     with pytest.raises(ExternalProviderError, match='invalid port'):
         resolve_ldap_transport('ldaps://directory.example.com:not-a-port', 'ldaps')
-

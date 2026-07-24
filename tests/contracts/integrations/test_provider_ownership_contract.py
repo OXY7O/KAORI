@@ -33,9 +33,7 @@ def test_canonical_provider_packages_do_not_import_web_domains() -> None:
     alertmanager_targets = _package_import_targets('app/integrations/alertmanager')
 
     assert not {
-        target
-        for target in prometheus_targets
-        if target == 'app.prometheus' or target.startswith('app.prometheus.')
+        target for target in prometheus_targets if target == 'app.prometheus' or target.startswith('app.prometheus.')
     }
     assert not {
         target

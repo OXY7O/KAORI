@@ -173,14 +173,11 @@ def main() -> int:
     if cycles:
         print('ERROR: runtime import cycles detected:', file=sys.stderr)
         for cycle in cycles:
-            print(f"  - {' -> '.join(cycle)}", file=sys.stderr)
+            print(f'  - {" -> ".join(cycle)}', file=sys.stderr)
         return 1
 
     edge_count = sum(len(edges) for edges in graph.values())
-    print(
-        'KAORI runtime import graph is acyclic across '
-        f'{len(modules)} modules and {edge_count} dependency edges.'
-    )
+    print(f'KAORI runtime import graph is acyclic across {len(modules)} modules and {edge_count} dependency edges.')
     return 0
 
 

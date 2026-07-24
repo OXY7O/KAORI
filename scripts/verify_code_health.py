@@ -42,7 +42,13 @@ def _branch_points(node: ast.AST) -> int:
 
 def _argument_count(node: ast.FunctionDef | ast.AsyncFunctionDef) -> int:
     args = node.args
-    return len(args.posonlyargs) + len(args.args) + len(args.kwonlyargs) + int(args.vararg is not None) + int(args.kwarg is not None)
+    return (
+        len(args.posonlyargs)
+        + len(args.args)
+        + len(args.kwonlyargs)
+        + int(args.vararg is not None)
+        + int(args.kwarg is not None)
+    )
 
 
 def _walk_functions(path: Path, tree: ast.Module) -> list[FunctionMetric]:
@@ -105,23 +111,15 @@ def build_baseline(app_root: Path) -> dict[str, object]:
             'branch_points': DEFAULT_BRANCH_POINTS,
             'arguments': DEFAULT_ARGUMENTS,
         },
-        'module_line_limits': {
-            key: value for key, value in sorted(modules.items()) if value > DEFAULT_MODULE_LINES
-        },
+        'module_line_limits': {key: value for key, value in sorted(modules.items()) if value > DEFAULT_MODULE_LINES},
         'function_line_limits': {
-            key: metric.lines
-            for key, metric in sorted(functions.items())
-            if metric.lines > DEFAULT_FUNCTION_LINES
+            key: metric.lines for key, metric in sorted(functions.items()) if metric.lines > DEFAULT_FUNCTION_LINES
         },
         'function_branch_limits': {
-            key: metric.branches
-            for key, metric in sorted(functions.items())
-            if metric.branches > DEFAULT_BRANCH_POINTS
+            key: metric.branches for key, metric in sorted(functions.items()) if metric.branches > DEFAULT_BRANCH_POINTS
         },
         'function_argument_limits': {
-            key: metric.arguments
-            for key, metric in sorted(functions.items())
-            if metric.arguments > DEFAULT_ARGUMENTS
+            key: metric.arguments for key, metric in sorted(functions.items()) if metric.arguments > DEFAULT_ARGUMENTS
         },
         'broad_exception_limit': broad_exceptions,
     }

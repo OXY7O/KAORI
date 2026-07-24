@@ -3,6 +3,7 @@
 Revision ID: 20260723_alert_runbook_matching
 Revises: 20260723_runbook_validation
 """
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -35,9 +36,15 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['created_by_user_id'], ['users.id'], ondelete='SET NULL'),
         sa.UniqueConstraint('binding_key', name='uq_runbook_alert_binding_key'),
     )
-    op.create_index('ix_runbook_alert_binding_rule_active', 'knowledge_runbook_alert_bindings', ['rule_key', 'lifecycle_status'])
-    op.create_index('ix_runbook_alert_binding_alert_active', 'knowledge_runbook_alert_bindings', ['alertname', 'lifecycle_status'])
-    op.create_index('ix_knowledge_runbook_alert_bindings_revision', 'knowledge_runbook_alert_bindings', ['runbook_revision_id'])
+    op.create_index(
+        'ix_runbook_alert_binding_rule_active', 'knowledge_runbook_alert_bindings', ['rule_key', 'lifecycle_status']
+    )
+    op.create_index(
+        'ix_runbook_alert_binding_alert_active', 'knowledge_runbook_alert_bindings', ['alertname', 'lifecycle_status']
+    )
+    op.create_index(
+        'ix_knowledge_runbook_alert_bindings_revision', 'knowledge_runbook_alert_bindings', ['runbook_revision_id']
+    )
 
 
 def downgrade() -> None:

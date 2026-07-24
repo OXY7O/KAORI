@@ -20,9 +20,7 @@ def _split_policy_values(value: str | None) -> list[str]:
 
 class IdentityProvider(db.Model):
     __tablename__ = 'identity_providers'
-    __table_args__ = (
-        db.UniqueConstraint('key', name='uq_identity_providers_key'),
-    )
+    __table_args__ = (db.UniqueConstraint('key', name='uq_identity_providers_key'),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     key: Mapped[str] = mapped_column(db.String(80), nullable=False, index=True)
@@ -80,9 +78,7 @@ class ExternalIdentityLink(db.Model):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    user_id: Mapped[int] = mapped_column(
-        db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True
-    )
+    user_id: Mapped[int] = mapped_column(db.ForeignKey('users.id', ondelete='CASCADE'), nullable=False, index=True)
     provider_id: Mapped[int] = mapped_column(
         db.ForeignKey('identity_providers.id', ondelete='CASCADE'), nullable=False, index=True
     )

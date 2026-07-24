@@ -87,18 +87,14 @@ def validate(root: Path) -> list[str]:
                         if not alias.name.startswith('app.'):
                             continue
                         if alias.name not in modules:
-                            errors.append(
-                                f'{relative}:{node.lineno}: internal module {alias.name!r} does not exist'
-                            )
+                            errors.append(f'{relative}:{node.lineno}: internal module {alias.name!r} does not exist')
                 elif isinstance(node, ast.ImportFrom):
                     target = _resolve_from(current, path, node)
                     if target != 'app' and not target.startswith('app.'):
                         continue
                     info = modules.get(target)
                     if info is None:
-                        errors.append(
-                            f'{relative}:{node.lineno}: internal import module {target!r} does not exist'
-                        )
+                        errors.append(f'{relative}:{node.lineno}: internal import module {target!r} does not exist')
                         continue
                     if info.has_dynamic_getattr:
                         continue
@@ -109,16 +105,12 @@ def validate(root: Path) -> list[str]:
                             continue
                         if f'{target}.{alias.name}' in modules:
                             continue
-                        errors.append(
-                            f'{relative}:{node.lineno}: {alias.name!r} is not exported by {target!r}'
-                        )
+                        errors.append(f'{relative}:{node.lineno}: {alias.name!r} is not exported by {target!r}')
     return errors
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description='Validate that every internal KAORI import module and symbol exists.'
-    )
+    parser = argparse.ArgumentParser(description='Validate that every internal KAORI import module and symbol exists.')
     parser.add_argument('--root', type=Path, default=Path('.'))
     args = parser.parse_args()
     root = args.root.resolve()

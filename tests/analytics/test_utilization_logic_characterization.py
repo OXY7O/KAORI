@@ -8,9 +8,7 @@ def test_utilization_prometheus_scalar_and_series_parsing_fails_closed() -> None
     assert UtilizationService._extract_scalar({'data': {'result': []}}) == 0.0
     assert UtilizationService._extract_scalar({'invalid': True}) == 0.0
 
-    assert UtilizationService._extract_series(
-        {'data': {'result': [{'values': [[1, '10.5'], [2, '11.5']]}]}}
-    ) == [
+    assert UtilizationService._extract_series({'data': {'result': [{'values': [[1, '10.5'], [2, '11.5']]}]}}) == [
         {'timestamp': 1.0, 'value': 10.5},
         {'timestamp': 2.0, 'value': 11.5},
     ]

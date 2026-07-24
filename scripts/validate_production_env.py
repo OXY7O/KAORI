@@ -59,43 +59,35 @@ def main() -> int:
         errors.append('INTEGRATION_CREDENTIAL_KEY must be independent from SECRET_KEY.')
 
     previous_credential_keys = [
-        value.strip()
-        for value in _value('INTEGRATION_CREDENTIAL_PREVIOUS_KEYS').split(',')
-        if value.strip()
+        value.strip() for value in _value('INTEGRATION_CREDENTIAL_PREVIOUS_KEYS').split(',') if value.strip()
     ]
     for index, previous_key in enumerate(previous_credential_keys, start=1):
         if len(previous_key) < 32:
-            errors.append(
-                f'INTEGRATION_CREDENTIAL_PREVIOUS_KEYS entry {index} must contain at least 32 characters.'
-            )
+            errors.append(f'INTEGRATION_CREDENTIAL_PREVIOUS_KEYS entry {index} must contain at least 32 characters.')
         elif _contains_placeholder(previous_key):
-            errors.append(
-                f'INTEGRATION_CREDENTIAL_PREVIOUS_KEYS entry {index} contains a placeholder value.'
-            )
+            errors.append(f'INTEGRATION_CREDENTIAL_PREVIOUS_KEYS entry {index} contains a placeholder value.')
     if credential_key and credential_key in previous_credential_keys:
         errors.append('INTEGRATION_CREDENTIAL_PREVIOUS_KEYS must not include the active key.')
 
-    resolver_actions = {
-        value.strip()
-        for value in _value('RESOLVER_ENABLED_ACTIONS').split(',')
-        if value.strip()
-    }
+    resolver_actions = {value.strip() for value in _value('RESOLVER_ENABLED_ACTIONS').split(',') if value.strip()}
     supported_resolver_actions = {'kubernetes.deployment.restart'}
     unknown_resolver_actions = sorted(resolver_actions - supported_resolver_actions)
     if unknown_resolver_actions:
-        errors.append('RESOLVER_ENABLED_ACTIONS contains unsupported actions: ' + ', '.join(unknown_resolver_actions) + '.')
+        errors.append(
+            'RESOLVER_ENABLED_ACTIONS contains unsupported actions: ' + ', '.join(unknown_resolver_actions) + '.'
+        )
     if resolver_actions:
         resolver_key = _value('RESOLVER_TOKEN_SIGNING_KEY')
         if len(resolver_key) < 32:
-            errors.append('RESOLVER_TOKEN_SIGNING_KEY must contain at least 32 characters when resolver actions are enabled.')
+            errors.append(
+                'RESOLVER_TOKEN_SIGNING_KEY must contain at least 32 characters when resolver actions are enabled.'
+            )
         elif _contains_placeholder(resolver_key):
             errors.append('RESOLVER_TOKEN_SIGNING_KEY still contains a placeholder value.')
         elif resolver_key == secret_key:
             errors.append('RESOLVER_TOKEN_SIGNING_KEY must be independent from SECRET_KEY.')
         resolver_namespaces = {
-            value.strip()
-            for value in _value('RESOLVER_KUBERNETES_ALLOWED_NAMESPACES').split(',')
-            if value.strip()
+            value.strip() for value in _value('RESOLVER_KUBERNETES_ALLOWED_NAMESPACES').split(',') if value.strip()
         }
         if 'kubernetes.deployment.restart' in resolver_actions and not resolver_namespaces:
             errors.append(

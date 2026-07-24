@@ -4,6 +4,7 @@ Revision ID: 20260723_resolver_orchestration
 Revises: 20260723_decision_workflow
 Create Date: 2026-07-23 17:30:00
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -18,8 +19,12 @@ depends_on = None
 def upgrade() -> None:
     with op.batch_alter_table('intelligence_execution_journal') as batch:
         batch.add_column(sa.Column('idempotency_key', sa.String(length=64), nullable=True))
-        batch.add_column(sa.Column('orchestration_status', sa.String(length=30), nullable=False, server_default='pending'))
-        batch.add_column(sa.Column('queue_name', sa.String(length=80), nullable=False, server_default='resolver-execution'))
+        batch.add_column(
+            sa.Column('orchestration_status', sa.String(length=30), nullable=False, server_default='pending')
+        )
+        batch.add_column(
+            sa.Column('queue_name', sa.String(length=80), nullable=False, server_default='resolver-execution')
+        )
         batch.add_column(sa.Column('celery_task_id', sa.String(length=64), nullable=True))
         batch.add_column(sa.Column('lease_owner', sa.String(length=255), nullable=True))
         batch.add_column(sa.Column('lease_acquired_at', sa.DateTime(timezone=True), nullable=True))
@@ -49,8 +54,17 @@ def downgrade() -> None:
         batch.drop_constraint('uq_intelligence_execution_idempotency', type_='unique')
         batch.drop_constraint('ck_intelligence_execution_orchestration_status', type_='check')
         for name in (
-            'last_error_code', 'next_retry_at', 'max_attempts', 'attempt_count',
-            'last_heartbeat_at', 'lease_expires_at', 'lease_acquired_at', 'lease_owner',
-            'celery_task_id', 'queue_name', 'orchestration_status', 'idempotency_key',
+            'last_error_code',
+            'next_retry_at',
+            'max_attempts',
+            'attempt_count',
+            'last_heartbeat_at',
+            'lease_expires_at',
+            'lease_acquired_at',
+            'lease_owner',
+            'celery_task_id',
+            'queue_name',
+            'orchestration_status',
+            'idempotency_key',
         ):
             batch.drop_column(name)

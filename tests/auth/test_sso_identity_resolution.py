@@ -205,6 +205,7 @@ def test_unsupported_provider_cannot_use_jit_admission() -> None:
     else:
         raise AssertionError('unsupported SSO provider should fail closed')
 
+
 def test_jit_account_uses_only_verified_external_email() -> None:
     provider = _provider(key='github')
     unverified = SsoIdentity(
@@ -224,4 +225,3 @@ def test_jit_account_uses_only_verified_external_email() -> None:
 
     assert sso._jit_account_email(provider, unverified) == 'github-99@external.invalid'
     assert sso._jit_account_email(provider, verified) == 'verified@example.com'
-

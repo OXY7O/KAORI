@@ -28,9 +28,7 @@ def test_report_routes_do_not_use_flask_flash() -> None:
             for alias in node.names
         }
         calls = {
-            node.func.id
-            for node in ast.walk(tree)
-            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+            node.func.id for node in ast.walk(tree) if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
         }
         assert 'flash' not in imported_names
         assert 'flash' not in calls
@@ -40,9 +38,7 @@ def test_transient_feedback_is_explicitly_non_persistent() -> None:
     path = ROOT / 'app/notifications/service.py'
     tree = ast.parse(path.read_text(encoding='utf-8'))
     function = next(
-        node
-        for node in tree.body
-        if isinstance(node, ast.FunctionDef) and node.name == 'queue_transient_feedback'
+        node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == 'queue_transient_feedback'
     )
     source = ast.get_source_segment(path.read_text(encoding='utf-8'), function) or ''
     assert 'notification_saved=False' in source

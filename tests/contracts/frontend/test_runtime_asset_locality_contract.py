@@ -60,7 +60,7 @@ def test_known_cdn_hosts_cannot_return_to_active_templates_or_static_code() -> N
         content = path.read_text(encoding='utf8').lower()
         matched = [host for host in FORBIDDEN_RUNTIME_HOSTS if host in content]
         if matched:
-            violations.append(f"{path.relative_to(ROOT)}: {', '.join(matched)}")
+            violations.append(f'{path.relative_to(ROOT)}: {", ".join(matched)}')
 
     assert violations == []
 
@@ -85,10 +85,10 @@ def test_canonical_layouts_reference_local_vendor_paths() -> None:
     app_layout = (TEMPLATES / 'layouts' / 'app.html').read_text(encoding='utf8')
     auth_layout = (TEMPLATES / 'layouts' / 'auth.html').read_text(encoding='utf8')
 
-    assert "vendor/alpine/alpine.min.js" in app_layout
-    assert "vendor/htmx/htmx.min.js" in app_layout
-    assert "vendor/lucide/lucide.min.js" in app_layout
-    assert "vendor/lucide/lucide.min.js" in auth_layout
+    assert 'vendor/alpine/alpine.min.js' in app_layout
+    assert 'vendor/htmx/htmx.min.js' in app_layout
+    assert 'vendor/lucide/lucide.min.js' in app_layout
+    assert 'vendor/lucide/lucide.min.js' in auth_layout
 
     for relative_path in (
         'analytics/top_consumers/index.html',
@@ -96,14 +96,14 @@ def test_canonical_layouts_reference_local_vendor_paths() -> None:
         'analytics/forecast/index.html',
     ):
         content = (TEMPLATES / relative_path).read_text(encoding='utf8')
-        assert "vendor/chartjs/chart.umd.min.js" in content
+        assert 'vendor/chartjs/chart.umd.min.js' in content
 
 
 def test_inter_font_is_self_hosted_from_the_canonical_tailwind_source() -> None:
     source = (ROOT / 'frontend' / 'styles.css').read_text(encoding='utf8')
 
     assert "font-family: 'Inter Variable'" in source
-    assert "../fonts/inter/inter-latin-wght-normal.woff2" in source
+    assert '../fonts/inter/inter-latin-wght-normal.woff2' in source
     assert "--font-sans: 'Inter Variable', Inter" in source
     assert 'fonts.googleapis.com' not in source
     assert 'fonts.gstatic.com' not in source

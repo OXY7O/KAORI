@@ -7,6 +7,7 @@ Create Date: 2026-07-21 19:10:00
 Development-only destructive cleanup. Existing Kubernetes runtime metadata is
 not migrated because KAORI can rediscover it through Full Validation.
 """
+
 from alembic import op
 import sqlalchemy as sa
 

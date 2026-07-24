@@ -283,7 +283,6 @@ def recover_stale_execution_leases(*, now: datetime | None = None) -> dict[str, 
     return {'recovered': recovered, 'dead_lettered': dead_lettered}
 
 
-
 def _require_owner(journal: IntelligenceExecutionJournal, owner: str) -> None:
     if journal.orchestration_status != 'running' or journal.lease_owner != owner:
         raise OrchestrationError('Worker does not own the active execution lease.')

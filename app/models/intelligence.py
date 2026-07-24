@@ -31,14 +31,14 @@ class IntelligenceDecision(db.Model):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    public_id: Mapped[str] = mapped_column(
-        db.String(64), nullable=False, unique=True, default=lambda: str(uuid4())
-    )
+    public_id: Mapped[str] = mapped_column(db.String(64), nullable=False, unique=True, default=lambda: str(uuid4()))
     recommendation_key: Mapped[str] = mapped_column(db.String(255), nullable=False, index=True)
     rule_key: Mapped[str] = mapped_column(db.String(255), nullable=False, index=True)
     rule_version: Mapped[str] = mapped_column(db.String(80), nullable=False)
     knowledge_version: Mapped[str | None] = mapped_column(db.String(120), nullable=True)
-    runbook_revision_id: Mapped[int | None] = mapped_column(db.ForeignKey('knowledge_runbook_revisions.id', ondelete='RESTRICT'), nullable=True, index=True)
+    runbook_revision_id: Mapped[int | None] = mapped_column(
+        db.ForeignKey('knowledge_runbook_revisions.id', ondelete='RESTRICT'), nullable=True, index=True
+    )
     runbook_key: Mapped[str | None] = mapped_column(db.String(255), nullable=True, index=True)
     runbook_version: Mapped[str | None] = mapped_column(db.String(80), nullable=True)
     runbook_content_hash: Mapped[str | None] = mapped_column(db.String(64), nullable=True, index=True)
@@ -61,19 +61,19 @@ class IntelligenceDecision(db.Model):
     created_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), nullable=False)
     expires_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), nullable=False, index=True)
     updated_at: Mapped[datetime] = mapped_column(
-        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC)
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
     created_by: Mapped[User | None] = relationship('User', foreign_keys=[created_by_user_id])
     runbook_revision = relationship('KnowledgeRunbookRevision', foreign_keys=[runbook_revision_id])
     approvals: Mapped[list[IntelligenceDecisionApproval]] = relationship(
-        'IntelligenceDecisionApproval', back_populates='decision', cascade='all, delete-orphan',
-        passive_deletes=True
+        'IntelligenceDecisionApproval', back_populates='decision', cascade='all, delete-orphan', passive_deletes=True
     )
     executions: Mapped[list[IntelligenceExecutionJournal]] = relationship(
-        'IntelligenceExecutionJournal', back_populates='decision', cascade='all, delete-orphan',
-        passive_deletes=True
+        'IntelligenceExecutionJournal', back_populates='decision', cascade='all, delete-orphan', passive_deletes=True
     )
 
 
@@ -127,9 +127,7 @@ class IntelligenceExecutionJournal(db.Model):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    public_id: Mapped[str] = mapped_column(
-        db.String(64), nullable=False, unique=True, default=lambda: str(uuid4())
-    )
+    public_id: Mapped[str] = mapped_column(db.String(64), nullable=False, unique=True, default=lambda: str(uuid4()))
     decision_id: Mapped[int] = mapped_column(
         db.ForeignKey('intelligence_decisions.id', ondelete='CASCADE'), nullable=False, index=True
     )
@@ -144,12 +142,8 @@ class IntelligenceExecutionJournal(db.Model):
         db.ForeignKey('job_executions.id', ondelete='SET NULL'), nullable=True, index=True
     )
     idempotency_key: Mapped[str | None] = mapped_column(db.String(64), nullable=True)
-    orchestration_status: Mapped[str] = mapped_column(
-        db.String(30), nullable=False, default='pending', index=True
-    )
-    queue_name: Mapped[str] = mapped_column(
-        db.String(80), nullable=False, default='resolver-execution'
-    )
+    orchestration_status: Mapped[str] = mapped_column(db.String(30), nullable=False, default='pending', index=True)
+    queue_name: Mapped[str] = mapped_column(db.String(80), nullable=False, default='resolver-execution')
     celery_task_id: Mapped[str | None] = mapped_column(db.String(64), nullable=True, unique=True)
     lease_owner: Mapped[str | None] = mapped_column(db.String(255), nullable=True)
     lease_acquired_at: Mapped[datetime | None] = mapped_column(db.DateTime(timezone=True), nullable=True)
@@ -169,8 +163,10 @@ class IntelligenceExecutionJournal(db.Model):
         db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC)
     )
     updated_at: Mapped[datetime] = mapped_column(
-        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC)
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
     decision: Mapped[IntelligenceDecision] = relationship('IntelligenceDecision', back_populates='executions')
@@ -192,9 +188,7 @@ class IntelligenceDecisionCandidate(db.Model):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    public_id: Mapped[str] = mapped_column(
-        db.String(64), nullable=False, unique=True, default=lambda: str(uuid4())
-    )
+    public_id: Mapped[str] = mapped_column(db.String(64), nullable=False, unique=True, default=lambda: str(uuid4()))
     binding_id: Mapped[int] = mapped_column(
         db.ForeignKey('knowledge_runbook_alert_bindings.id', ondelete='RESTRICT'), nullable=False, index=True
     )
@@ -227,8 +221,10 @@ class IntelligenceDecisionCandidate(db.Model):
     )
     expires_at: Mapped[datetime] = mapped_column(db.DateTime(timezone=True), nullable=False, index=True)
     updated_at: Mapped[datetime] = mapped_column(
-        db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now(UTC),
-        onupdate=lambda: datetime.now(UTC)
+        db.DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
     binding = relationship('KnowledgeRunbookAlertBinding', foreign_keys=[binding_id])

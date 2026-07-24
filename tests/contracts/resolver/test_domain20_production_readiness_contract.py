@@ -36,10 +36,13 @@ def test_migration_is_default_disabled_and_has_domain19_parent():
     assert "server_default='disabled'" in source
     assert 'resolver_production_readiness' in source
 
+
 def test_worker_enforces_policy_readiness_and_controls_before_execution_lease():
     source = read('app/resolver/tasks.py')
-    prepare = source[source.index('def _prepare_execution'): source.index('def _persist_preflight_failure')]
-    execute = source[source.index('def _execute_with_lease'): source.index('@shared_task', source.index('def _execute_with_lease'))]
+    prepare = source[source.index('def _prepare_execution') : source.index('def _persist_preflight_failure')]
+    execute = source[
+        source.index('def _execute_with_lease') : source.index('@shared_task', source.index('def _execute_with_lease'))
+    ]
 
     policy = prepare.index('assert_deployment_policy_allows(')
     readiness = prepare.index('assert_production_execution_ready(')
@@ -48,4 +51,3 @@ def test_worker_enforces_policy_readiness_and_controls_before_execution_lease():
 
     assert policy < readiness < controls < lease
     assert 'result = dispatch_resolver_execution' in execute
-

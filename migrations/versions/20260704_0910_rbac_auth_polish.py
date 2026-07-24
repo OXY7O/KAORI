@@ -48,8 +48,8 @@ def upgrade() -> None:
         """
     )
 
-    op.execute("UPDATE users SET created_at = NOW() WHERE created_at IS NULL")
-    op.execute("UPDATE users SET updated_at = NOW() WHERE updated_at IS NULL")
+    op.execute('UPDATE users SET created_at = NOW() WHERE created_at IS NULL')
+    op.execute('UPDATE users SET updated_at = NOW() WHERE updated_at IS NULL')
 
     with op.batch_alter_table('users') as batch_op:
         batch_op.alter_column(

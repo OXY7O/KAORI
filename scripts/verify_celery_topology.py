@@ -98,9 +98,7 @@ def _resolve_string(node: ast.AST, values: dict[str, str]) -> str | None:
 
 def parse_celery_config(config_path: Path) -> tuple[set[str], dict[str, str]]:
     tree = ast.parse(config_path.read_text(encoding='utf-8'), filename=str(config_path))
-    config_class = next(
-        node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == 'Config'
-    )
+    config_class = next(node for node in tree.body if isinstance(node, ast.ClassDef) and node.name == 'Config')
     values: dict[str, str] = {}
     celery_dict: ast.Dict | None = None
     for statement in config_class.body:
@@ -129,9 +127,7 @@ def parse_celery_config(config_path: Path) -> tuple[set[str], dict[str, str]]:
         raise ValueError('Config.CELERY imports/task_routes must remain literal collections.')
 
     imports = {
-        str(item.value)
-        for item in imports_node.elts
-        if isinstance(item, ast.Constant) and isinstance(item.value, str)
+        str(item.value) for item in imports_node.elts if isinstance(item, ast.Constant) and isinstance(item.value, str)
     }
     routes: dict[str, str] = {}
     for key, route_value in zip(routes_node.keys, routes_node.values, strict=True):
@@ -220,17 +216,13 @@ def validate(root: Path) -> list[str]:
     for queue in sorted(worker_queues - route_queues):
         errors.append(f'Production worker consumes a queue with no registered task route: {queue}')
 
-    definitions_by_symbol = {
-        f'{task.module}.{task.function}': task for task in tasks.values()
-    }
+    definitions_by_symbol = {f'{task.module}.{task.function}': task for task in tasks.values()}
     for symbol in sorted(discover_canonical_dispatch_targets(app_root)):
         task = definitions_by_symbol.get(symbol)
         if task is None:
             errors.append(f'Canonical dispatcher targets an unknown task symbol: {symbol}')
         elif 'job_execution_id' not in task.parameters:
-            errors.append(
-                f'Canonical dispatcher task does not accept injected job_execution_id: {symbol}'
-            )
+            errors.append(f'Canonical dispatcher task does not accept injected job_execution_id: {symbol}')
     return errors
 
 

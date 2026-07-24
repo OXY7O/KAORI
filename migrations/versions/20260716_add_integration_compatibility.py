@@ -3,6 +3,7 @@
 Revision ID: 20260716_integration_compat
 Revises: 20260714_ns_reveal_policy
 """
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -31,8 +32,23 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    for column in ('kubernetes_last_validated_at', 'kubernetes_validation_message', 'kubernetes_readiness_status', 'kubernetes_compatibility_profile', 'kubernetes_compatibility_status', 'kubernetes_platform', 'kubernetes_version'):
+    for column in (
+        'kubernetes_last_validated_at',
+        'kubernetes_validation_message',
+        'kubernetes_readiness_status',
+        'kubernetes_compatibility_profile',
+        'kubernetes_compatibility_status',
+        'kubernetes_platform',
+        'kubernetes_version',
+    ):
         op.drop_column('clusters', column)
     for table in ('alertmanager_configs', 'prometheus_configs'):
-        for column in ('last_validated_at', 'validation_message', 'readiness_status', 'compatibility_profile', 'compatibility_status', 'detected_version'):
+        for column in (
+            'last_validated_at',
+            'validation_message',
+            'readiness_status',
+            'compatibility_profile',
+            'compatibility_status',
+            'detected_version',
+        ):
             op.drop_column(table, column)

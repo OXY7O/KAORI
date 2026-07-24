@@ -4,6 +4,7 @@ Revision ID: 20260717_google_github_sso
 Revises: 20260717_external_identity
 Create Date: 2026-07-17
 """
+
 from alembic import op
 import sqlalchemy as sa
 

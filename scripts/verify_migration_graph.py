@@ -69,9 +69,7 @@ def validate_graph(revisions: Iterable[MigrationRevision]) -> tuple[list[str], l
     for item in revisions:
         previous = by_revision.get(item.revision)
         if previous is not None:
-            errors.append(
-                f'duplicate revision {item.revision!r}: {previous.path} and {item.path}'
-            )
+            errors.append(f'duplicate revision {item.revision!r}: {previous.path} and {item.path}')
             continue
         by_revision[item.revision] = item
 
@@ -82,9 +80,7 @@ def validate_graph(revisions: Iterable[MigrationRevision]) -> tuple[list[str], l
                 errors.append(f'{item.path}: revision cannot reference itself')
                 continue
             if parent not in by_revision:
-                errors.append(
-                    f'{item.path}: down_revision {parent!r} does not exist in migrations/versions'
-                )
+                errors.append(f'{item.path}: down_revision {parent!r} does not exist in migrations/versions')
                 continue
             children[parent].add(item.revision)
 
@@ -144,10 +140,7 @@ def main() -> int:
             print(f'ERROR: {error}')
         return 1
 
-    print(
-        f'KAORI migration graph is valid: {len(revisions)} revisions, '
-        f'root={roots[0]}, head={heads[0]}.'
-    )
+    print(f'KAORI migration graph is valid: {len(revisions)} revisions, root={roots[0]}, head={heads[0]}.')
     return 0
 
 

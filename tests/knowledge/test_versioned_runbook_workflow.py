@@ -44,10 +44,13 @@ def _resolver_registry() -> ResolverRegistry:
 @pytest.fixture
 def app() -> Flask:
     application = Flask(__name__)
-    application.config.update(TESTING=True, SQLALCHEMY_DATABASE_URI='sqlite:///:memory:', SQLALCHEMY_TRACK_MODIFICATIONS=False)
+    application.config.update(
+        TESTING=True, SQLALCHEMY_DATABASE_URI='sqlite:///:memory:', SQLALCHEMY_TRACK_MODIFICATIONS=False
+    )
     db.init_app(application)
     with application.app_context():
         import app.models  # noqa: F401
+
         db.create_all()
         yield application
         db.session.remove()
@@ -57,25 +60,36 @@ def app() -> Flask:
 def test_published_revision_is_resolved_and_locked_into_decision(app) -> None:
     with app.app_context():
         runbook = create_runbook(
-            runbook_key='kubernetes.pod.restart', title='Restart unhealthy pod', description=None,
-            actor_user_id=None, actor_permissions={MANAGE_PERMISSION},
+            runbook_key='kubernetes.pod.restart',
+            title='Restart unhealthy pod',
+            description=None,
+            actor_user_id=None,
+            actor_permissions={MANAGE_PERMISSION},
         )
         revision = create_revision(
             runbook,
-            version='1.0.0', action_key='kubernetes.pod.restart', resolver_key='kubernetes.pod.restart',
-            approval_policy='needs_approval', required_evidence=['cluster_id', 'namespace', 'pod_name'],
+            version='1.0.0',
+            action_key='kubernetes.pod.restart',
+            resolver_key='kubernetes.pod.restart',
+            approval_policy='needs_approval',
+            required_evidence=['cluster_id', 'namespace', 'pod_name'],
             parameter_schema={
                 'type': 'object',
                 'properties': {'pod_name': {'type': 'string'}},
                 'required': ['pod_name'],
                 'additionalProperties': False,
             },
-            steps=[{'order': 1, 'operation': 'delete_pod'}], rollback={'strategy': 'controller_recreate'},
-            actor_user_id=None, actor_permissions={MANAGE_PERMISSION},
+            steps=[{'order': 1, 'operation': 'delete_pod'}],
+            rollback={'strategy': 'controller_recreate'},
+            actor_user_id=None,
+            actor_permissions={MANAGE_PERMISSION},
         )
         publish_revision(
-            revision, actor_user_id=None, actor_permissions={PUBLISH_PERMISSION},
-            resolver_registry=_resolver_registry(), now=datetime(2026, 7, 23, tzinfo=UTC),
+            revision,
+            actor_user_id=None,
+            actor_permissions={PUBLISH_PERMISSION},
+            resolver_registry=_resolver_registry(),
+            now=datetime(2026, 7, 23, tzinfo=UTC),
         )
         resolved = resolve_published_revision(runbook_key=runbook.runbook_key, version='1.0.0')
         evidence = {'cluster_id': 'cluster-a', 'namespace': 'default', 'pod_name': 'api-0'}
@@ -83,10 +97,16 @@ def test_published_revision_is_resolved_and_locked_into_decision(app) -> None:
 
         snapshot = create_decision_snapshot(
             {'rule_key': 'kubernetes.pod.unhealthy_phase:api-0', 'severity': 'warning', 'evidence': evidence},
-            action_key=resolved.action_key, rule_version='1.0.0', knowledge_version=resolved.version,
-            runbook_key=runbook.runbook_key, runbook_revision_id=resolved.public_id,
-            runbook_version=resolved.version, runbook_content_hash=resolved.content_hash,
-            actor_can_execute=True, ttl=timedelta(minutes=15), now=datetime(2026, 7, 23, tzinfo=UTC),
+            action_key=resolved.action_key,
+            rule_version='1.0.0',
+            knowledge_version=resolved.version,
+            runbook_key=runbook.runbook_key,
+            runbook_revision_id=resolved.public_id,
+            runbook_version=resolved.version,
+            runbook_content_hash=resolved.content_hash,
+            actor_can_execute=True,
+            ttl=timedelta(minutes=15),
+            now=datetime(2026, 7, 23, tzinfo=UTC),
         )
         record = persist_decision(snapshot, actor_user_id=None, actor_permissions={CREATE_PERMISSION})
         restored = snapshot_from_record(record)
@@ -96,19 +116,34 @@ def test_published_revision_is_resolved_and_locked_into_decision(app) -> None:
 
         with pytest.raises(KnowledgeError, match='Only draft'):
             publish_revision(
-                revision, actor_user_id=None, actor_permissions={PUBLISH_PERMISSION},
+                revision,
+                actor_user_id=None,
+                actor_permissions={PUBLISH_PERMISSION},
                 resolver_registry=_resolver_registry(),
             )
 
 
 def test_required_evidence_is_fail_closed(app) -> None:
     with app.app_context():
-        runbook = create_runbook(runbook_key='kubernetes.node.uncordon', title='Uncordon node', description=None, actor_user_id=None, actor_permissions={MANAGE_PERMISSION})
+        runbook = create_runbook(
+            runbook_key='kubernetes.node.uncordon',
+            title='Uncordon node',
+            description=None,
+            actor_user_id=None,
+            actor_permissions={MANAGE_PERMISSION},
+        )
         revision = create_revision(
-            runbook, version='1.0.0', action_key='kubernetes.node.uncordon', resolver_key='kubernetes.node.uncordon',
-            approval_policy='needs_approval', required_evidence=['cluster_id', 'node_name'], parameter_schema={},
-            steps=[{'order': 1, 'operation': 'uncordon'}], rollback=None,
-            actor_user_id=None, actor_permissions={MANAGE_PERMISSION},
+            runbook,
+            version='1.0.0',
+            action_key='kubernetes.node.uncordon',
+            resolver_key='kubernetes.node.uncordon',
+            approval_policy='needs_approval',
+            required_evidence=['cluster_id', 'node_name'],
+            parameter_schema={},
+            steps=[{'order': 1, 'operation': 'uncordon'}],
+            rollback=None,
+            actor_user_id=None,
+            actor_permissions={MANAGE_PERMISSION},
         )
         with pytest.raises(KnowledgeError, match='node_name'):
             assert_required_evidence(revision, {'cluster_id': 'cluster-a'})

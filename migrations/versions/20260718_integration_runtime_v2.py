@@ -3,6 +3,7 @@
 Revision ID: 20260718_runtime_v2
 Revises: 20260718_prom_instances
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -37,12 +38,19 @@ def upgrade() -> None:
         sa.UniqueConstraint('provider_type', 'name', name='uq_integration_instance_provider_name'),
     )
     op.create_index('ix_integration_instances_provider_enabled', 'integration_instances', ['provider_type', 'enabled'])
-    op.create_index('ix_integration_instances_readiness', 'integration_instances', ['provider_type', 'readiness_status'])
+    op.create_index(
+        'ix_integration_instances_readiness', 'integration_instances', ['provider_type', 'readiness_status']
+    )
 
     op.create_table(
         'integration_bindings',
         sa.Column('id', sa.Integer(), primary_key=True),
-        sa.Column('integration_instance_id', sa.Integer(), sa.ForeignKey('integration_instances.id', ondelete='CASCADE'), nullable=False),
+        sa.Column(
+            'integration_instance_id',
+            sa.Integer(),
+            sa.ForeignKey('integration_instances.id', ondelete='CASCADE'),
+            nullable=False,
+        ),
         sa.Column('asset_type', sa.String(80), nullable=False),
         sa.Column('asset_key', sa.String(255), nullable=False),
         sa.Column('binding_role', sa.String(30), nullable=False, server_default='primary'),
@@ -51,16 +59,32 @@ def upgrade() -> None:
         sa.Column('capability_scope', sa.JSON(), nullable=True),
         sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
         sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-        sa.UniqueConstraint('integration_instance_id', 'asset_type', 'asset_key', 'binding_role', name='uq_integration_binding_instance_asset_role'),
+        sa.UniqueConstraint(
+            'integration_instance_id',
+            'asset_type',
+            'asset_key',
+            'binding_role',
+            name='uq_integration_binding_instance_asset_role',
+        ),
     )
     op.create_index('ix_integration_bindings_asset', 'integration_bindings', ['asset_type', 'asset_key', 'enabled'])
-    op.create_index('ix_integration_bindings_provider_role', 'integration_bindings', ['integration_instance_id', 'binding_role'])
+    op.create_index(
+        'ix_integration_bindings_provider_role', 'integration_bindings', ['integration_instance_id', 'binding_role']
+    )
 
     op.create_table(
         'kubernetes_connections',
         sa.Column('id', sa.Integer(), primary_key=True),
-        sa.Column('integration_instance_id', sa.Integer(), sa.ForeignKey('integration_instances.id', ondelete='CASCADE'), nullable=False, unique=True),
-        sa.Column('cluster_id', sa.String(36), sa.ForeignKey('clusters.id', ondelete='CASCADE'), nullable=False, unique=True),
+        sa.Column(
+            'integration_instance_id',
+            sa.Integer(),
+            sa.ForeignKey('integration_instances.id', ondelete='CASCADE'),
+            nullable=False,
+            unique=True,
+        ),
+        sa.Column(
+            'cluster_id', sa.String(36), sa.ForeignKey('clusters.id', ondelete='CASCADE'), nullable=False, unique=True
+        ),
         sa.Column('kubeconfig', sa.Text(), nullable=False),
         sa.Column('verify_ssl', sa.Boolean(), nullable=False, server_default=sa.true()),
         sa.Column('allow_weak_tls', sa.Boolean(), nullable=False, server_default=sa.false()),
@@ -76,15 +100,33 @@ def upgrade() -> None:
 
     with op.batch_alter_table('prometheus_instances') as batch:
         batch.add_column(sa.Column('integration_instance_id', sa.Integer(), nullable=True))
-        batch.create_foreign_key('fk_prometheus_instances_integration_instance', 'integration_instances', ['integration_instance_id'], ['id'], ondelete='CASCADE')
+        batch.create_foreign_key(
+            'fk_prometheus_instances_integration_instance',
+            'integration_instances',
+            ['integration_instance_id'],
+            ['id'],
+            ondelete='CASCADE',
+        )
         batch.create_unique_constraint('uq_prometheus_instances_integration_instance', ['integration_instance_id'])
     with op.batch_alter_table('alertmanager_instances') as batch:
         batch.add_column(sa.Column('integration_instance_id', sa.Integer(), nullable=True))
-        batch.create_foreign_key('fk_alertmanager_instances_integration_instance', 'integration_instances', ['integration_instance_id'], ['id'], ondelete='CASCADE')
+        batch.create_foreign_key(
+            'fk_alertmanager_instances_integration_instance',
+            'integration_instances',
+            ['integration_instance_id'],
+            ['id'],
+            ondelete='CASCADE',
+        )
         batch.create_unique_constraint('uq_alertmanager_instances_integration_instance', ['integration_instance_id'])
     with op.batch_alter_table('integration_runtime_observations') as batch:
         batch.add_column(sa.Column('integration_instance_id', sa.Integer(), nullable=True))
-        batch.create_foreign_key('fk_runtime_observation_integration_instance', 'integration_instances', ['integration_instance_id'], ['id'], ondelete='SET NULL')
+        batch.create_foreign_key(
+            'fk_runtime_observation_integration_instance',
+            'integration_instances',
+            ['integration_instance_id'],
+            ['id'],
+            ondelete='SET NULL',
+        )
         batch.create_index('ix_integration_runtime_canonical_instance', ['integration_instance_id', 'observed_at'])
 
     conn = op.get_bind()
@@ -144,7 +186,7 @@ def upgrade() -> None:
             integration_instances.insert()
             .values(
                 provider_type='kubernetes',
-                name=f"{row['name']} Kubernetes API",
+                name=f'{row["name"]} Kubernetes API',
                 description=row.get('description'),
                 environment=row.get('environment'),
                 enabled=True,
@@ -196,8 +238,20 @@ def upgrade() -> None:
         )
 
     providers = (
-        ('prometheus', 'prometheus_instances', 'prometheus_bindings', 'prometheus_instance_id', ['metrics', 'capacity', 'utilization', 'storage', 'workload', 'forecast', 'top_consumers', 'alert_metrics']),
-        ('alertmanager', 'alertmanager_instances', 'alertmanager_bindings', 'alertmanager_instance_id', ['alerts', 'silences', 'routing', 'receivers']),
+        (
+            'prometheus',
+            'prometheus_instances',
+            'prometheus_bindings',
+            'prometheus_instance_id',
+            ['metrics', 'capacity', 'utilization', 'storage', 'workload', 'forecast', 'top_consumers', 'alert_metrics'],
+        ),
+        (
+            'alertmanager',
+            'alertmanager_instances',
+            'alertmanager_bindings',
+            'alertmanager_instance_id',
+            ['alerts', 'silences', 'routing', 'receivers'],
+        ),
     )
     for provider, instance_table, binding_table, fk_name, default_scope in providers:
         rows = conn.execute(sa.text(f'SELECT * FROM {instance_table} ORDER BY id')).mappings().all()
@@ -226,10 +280,14 @@ def upgrade() -> None:
                 sa.text(f'UPDATE {instance_table} SET integration_instance_id = :canonical_id WHERE id = :id'),
                 {'canonical_id': canonical_id, 'id': row['id']},
             )
-            bindings = conn.execute(
-                sa.text(f'SELECT * FROM {binding_table} WHERE {fk_name} = :id ORDER BY priority, id'),
-                {'id': row['id']},
-            ).mappings().all()
+            bindings = (
+                conn.execute(
+                    sa.text(f'SELECT * FROM {binding_table} WHERE {fk_name} = :id ORDER BY priority, id'),
+                    {'id': row['id']},
+                )
+                .mappings()
+                .all()
+            )
             for binding in bindings:
                 conn.execute(
                     pg_insert(integration_bindings)
@@ -247,24 +305,30 @@ def upgrade() -> None:
                     .on_conflict_do_nothing()
                 )
 
-    conn.execute(sa.text('''
+    conn.execute(
+        sa.text("""
         UPDATE integration_runtime_observations o
         SET integration_instance_id = p.integration_instance_id
         FROM prometheus_instances p
         WHERE o.provider = 'prometheus' AND o.instance_id = CAST(p.id AS VARCHAR)
-    '''))
-    conn.execute(sa.text('''
+    """)
+    )
+    conn.execute(
+        sa.text("""
         UPDATE integration_runtime_observations o
         SET integration_instance_id = a.integration_instance_id
         FROM alertmanager_instances a
         WHERE o.provider = 'alertmanager' AND o.instance_id = CAST(a.id AS VARCHAR)
-    '''))
-    conn.execute(sa.text('''
+    """)
+    )
+    conn.execute(
+        sa.text("""
         UPDATE integration_runtime_observations o
         SET integration_instance_id = k.integration_instance_id
         FROM kubernetes_connections k
         WHERE o.provider = 'kubernetes' AND o.instance_id = k.cluster_id
-    '''))
+    """)
+    )
 
     with op.batch_alter_table('prometheus_instances') as batch:
         batch.alter_column('integration_instance_id', nullable=False)

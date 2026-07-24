@@ -3,6 +3,7 @@
 Revision ID: 20260716_profile_names
 Revises: 20260716_prom_endpoint_source
 """
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -62,14 +63,22 @@ def upgrade() -> None:
 
     op.add_column('clusters', sa.Column('kubernetes_lifecycle_status', sa.String(length=20), nullable=True))
     op.add_column('clusters', sa.Column('kubernetes_api_discovery_summary', sa.JSON(), nullable=True))
-    op.execute("UPDATE clusters SET kubernetes_compatibility_profile = 'kubernetes-api-v1' WHERE kubernetes_version IS NOT NULL")
+    op.execute(
+        "UPDATE clusters SET kubernetes_compatibility_profile = 'kubernetes-api-v1' WHERE kubernetes_version IS NOT NULL"
+    )
 
 
 def downgrade() -> None:
     op.drop_column('clusters', 'kubernetes_api_discovery_summary')
     op.drop_column('clusters', 'kubernetes_lifecycle_status')
     op.drop_column('alertmanager_configs', 'capability_profile')
-    op.alter_column('prometheus_configs', 'source_prometheus_major', existing_type=sa.String(length=8), type_=sa.String(length=100), existing_nullable=True)
+    op.alter_column(
+        'prometheus_configs',
+        'source_prometheus_major',
+        existing_type=sa.String(length=8),
+        type_=sa.String(length=100),
+        existing_nullable=True,
+    )
     op.execute("""
         UPDATE prometheus_configs
         SET source_prometheus_major = CASE
@@ -78,4 +87,10 @@ def downgrade() -> None:
             ELSE NULL
         END
     """)
-    op.alter_column('prometheus_configs', 'source_prometheus_major', new_column_name='source_prometheus_profile', existing_type=sa.String(length=100), existing_nullable=True)
+    op.alter_column(
+        'prometheus_configs',
+        'source_prometheus_major',
+        new_column_name='source_prometheus_profile',
+        existing_type=sa.String(length=100),
+        existing_nullable=True,
+    )

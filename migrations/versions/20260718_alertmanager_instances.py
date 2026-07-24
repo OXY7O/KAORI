@@ -142,8 +142,7 @@ def _backfill_cluster_scoped_configs() -> None:
             instances.insert().values(
                 name=f'{row["cluster_name"]} Alertmanager',
                 description=(
-                    'Migrated from the legacy cluster-scoped Alertmanager '
-                    f'configuration for {row["cluster_name"]}.'
+                    f'Migrated from the legacy cluster-scoped Alertmanager configuration for {row["cluster_name"]}.'
                 ),
                 deployment_type='cluster_managed',
                 endpoint=row['endpoint'],

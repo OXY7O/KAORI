@@ -17,7 +17,7 @@ def test_publish_service_executes_validation_before_status_transition() -> None:
 def test_publication_gate_checks_resolver_dry_run_capability_and_rollback() -> None:
     source = text('app/knowledge/validation.py')
     for boundary in (
-        "resolver_registry.resolve(revision.resolver_key)",
+        'resolver_registry.resolve(revision.resolver_key)',
         "getattr(adapter, 'dry_run', None)",
         "getattr(adapter, 'execute', None)",
         'required_capabilities_json',

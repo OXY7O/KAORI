@@ -11,7 +11,9 @@ def test_alert_intake_matches_then_persists_non_executable_candidate(monkeypatch
     calls = []
     persisted = SimpleNamespace(public_id='candidate-1')
 
-    monkeypatch.setattr(workflow, 'match_alert_to_runbook', lambda alert, bindings: calls.append('match') or Candidate())
+    monkeypatch.setattr(
+        workflow, 'match_alert_to_runbook', lambda alert, bindings: calls.append('match') or Candidate()
+    )
     monkeypatch.setattr(workflow, 'persist_candidate', lambda candidate, **kwargs: calls.append('persist') or persisted)
 
     result = workflow.ingest_alert_for_review(

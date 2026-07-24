@@ -4,6 +4,7 @@ Revision ID: 20260714_ns_reveal_policy
 Revises: 20260714_single_kubeconfig
 Create Date: 2026-07-14 18:00:00
 """
+
 from alembic import op
 import sqlalchemy as sa
 

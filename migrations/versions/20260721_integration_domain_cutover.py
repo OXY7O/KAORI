@@ -7,6 +7,7 @@ Create Date: 2026-07-21 15:30:00
 This migration is intentionally destructive after verifying that every legacy
 record has a canonical replacement. Take a database backup before applying it.
 """
+
 from __future__ import annotations
 
 import base64
@@ -54,8 +55,14 @@ _PROVIDER_BINDING_BACKFILL = {
         'binding_table': 'prometheus_bindings',
         'provider_fk': 'prometheus_instance_id',
         'capabilities': [
-            'metrics', 'capacity', 'utilization', 'storage', 'workload',
-            'forecast', 'top_consumers', 'alert_metrics',
+            'metrics',
+            'capacity',
+            'utilization',
+            'storage',
+            'workload',
+            'forecast',
+            'top_consumers',
+            'alert_metrics',
         ],
     },
     'alertmanager': {
@@ -63,8 +70,13 @@ _PROVIDER_BINDING_BACKFILL = {
         'binding_table': 'alertmanager_bindings',
         'provider_fk': 'alertmanager_instance_id',
         'capabilities': [
-            'alerts', 'alerts_v2', 'silences', 'silences_v2',
-            'routing', 'receivers', 'status_v2',
+            'alerts',
+            'alerts_v2',
+            'silences',
+            'silences_v2',
+            'routing',
+            'receivers',
+            'status_v2',
         ],
     },
 }
@@ -155,6 +167,7 @@ def _backfill_remaining_legacy_bindings(bind) -> None:
             """
         )
         import json
+
         bind.execute(statement, {'capabilities': json.dumps(settings['capabilities'])})
 
 
@@ -185,16 +198,14 @@ def _assert_legacy_bindings_materialized(bind) -> None:
 def _encrypt_column(bind, table_name: str, column_name: str) -> None:
     rows = bind.execute(
         sa.text(
-            f"SELECT id, {column_name} AS credential FROM {table_name} "
+            f'SELECT id, {column_name} AS credential FROM {table_name} '
             f"WHERE {column_name} IS NOT NULL AND {column_name} <> ''"
         )
     ).mappings()
     for row in rows:
         encrypted = _encrypt_credential(str(row['credential']))
         bind.execute(
-            sa.text(
-                f'UPDATE {table_name} SET {column_name} = :credential WHERE id = :id'
-            ),
+            sa.text(f'UPDATE {table_name} SET {column_name} = :credential WHERE id = :id'),
             {'credential': encrypted, 'id': row['id']},
         )
 

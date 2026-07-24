@@ -4,6 +4,7 @@ Revision ID: 20260717_external_identity
 Revises: 20260716_k8s_discovery_repair
 Create Date: 2026-07-17
 """
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -50,7 +51,9 @@ def upgrade():
         'external_identity_links',
         sa.Column('id', sa.Integer(), primary_key=True),
         sa.Column('user_id', sa.Integer(), sa.ForeignKey('users.id', ondelete='CASCADE'), nullable=False),
-        sa.Column('provider_id', sa.Integer(), sa.ForeignKey('identity_providers.id', ondelete='CASCADE'), nullable=False),
+        sa.Column(
+            'provider_id', sa.Integer(), sa.ForeignKey('identity_providers.id', ondelete='CASCADE'), nullable=False
+        ),
         sa.Column('subject', sa.String(length=500), nullable=False),
         sa.Column('external_username', sa.String(length=255)),
         sa.Column('distinguished_name', sa.String(length=1000)),

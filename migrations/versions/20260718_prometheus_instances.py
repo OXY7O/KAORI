@@ -3,6 +3,7 @@
 Revision ID: 20260718_prom_instances
 Revises: 20260718_prom_runtime
 """
+
 from __future__ import annotations
 
 from datetime import UTC, datetime
@@ -56,7 +57,12 @@ def upgrade() -> None:
     op.create_table(
         'prometheus_bindings',
         sa.Column('id', sa.Integer(), primary_key=True),
-        sa.Column('prometheus_instance_id', sa.Integer(), sa.ForeignKey('prometheus_instances.id', ondelete='CASCADE'), nullable=False),
+        sa.Column(
+            'prometheus_instance_id',
+            sa.Integer(),
+            sa.ForeignKey('prometheus_instances.id', ondelete='CASCADE'),
+            nullable=False,
+        ),
         sa.Column('scope_type', sa.String(50), nullable=False),
         sa.Column('scope_key', sa.String(255), nullable=False),
         sa.Column('binding_role', sa.String(30), nullable=False, server_default='primary'),
@@ -64,21 +70,27 @@ def upgrade() -> None:
         sa.Column('enabled', sa.Boolean(), nullable=False, server_default=sa.true()),
         sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
         sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-        sa.UniqueConstraint('prometheus_instance_id', 'scope_type', 'scope_key', name='uq_prometheus_binding_instance_scope'),
+        sa.UniqueConstraint(
+            'prometheus_instance_id', 'scope_type', 'scope_key', name='uq_prometheus_binding_instance_scope'
+        ),
     )
     op.create_index('ix_prometheus_bindings_scope', 'prometheus_bindings', ['scope_type', 'scope_key', 'enabled'])
 
     connection = op.get_bind()
-    rows = connection.execute(
-        sa.text(
-            """
+    rows = (
+        connection.execute(
+            sa.text(
+                """
             SELECT pc.*, c.name AS cluster_name
             FROM prometheus_configs pc
             JOIN clusters c ON c.id = pc.cluster_id
             ORDER BY pc.id
             """
+            )
         )
-    ).mappings().all()
+        .mappings()
+        .all()
+    )
     now = datetime.now(UTC)
 
     prometheus_instances = sa.table(
@@ -128,7 +140,7 @@ def upgrade() -> None:
     )
 
     for row in rows:
-        instance_name = f"{row['cluster_name']} Prometheus [{row['cluster_id']}]"
+        instance_name = f'{row["cluster_name"]} Prometheus [{row["cluster_id"]}]'
         values = {
             'name': instance_name,
             'endpoint': row['endpoint'],
@@ -163,9 +175,7 @@ def upgrade() -> None:
             'updated_at': row.get('updated_at') or now,
         }
         instance_id = connection.execute(
-            prometheus_instances.insert().values(**values).returning(
-                sa.column('id', sa.Integer())
-            )
+            prometheus_instances.insert().values(**values).returning(sa.column('id', sa.Integer()))
         ).scalar_one()
         connection.execute(
             prometheus_bindings.insert().values(
@@ -179,7 +189,6 @@ def upgrade() -> None:
                 updated_at=now,
             )
         )
-
 
 
 def downgrade() -> None:

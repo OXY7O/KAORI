@@ -18,7 +18,8 @@ def _template_source() -> str:
 def test_automation_control_maps_every_completed_domain_once() -> None:
     module = ast.parse(PRESENTATION.read_text())
     assignment = next(
-        node for node in module.body
+        node
+        for node in module.body
         if isinstance(node, ast.AnnAssign)
         and isinstance(node.target, ast.Name)
         and node.target.id == 'DOMAIN_DEFINITIONS'

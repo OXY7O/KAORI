@@ -344,8 +344,7 @@ def test_auto_source_falls_back_after_unexpected_alertmanager_exception(monkeypa
     assert status['label'] == 'Prometheus Fallback Connected'
     assert status['error'] is None
     assert status['fallback_reason'] == (
-        'Alertmanager unavailable: unexpected alertmanager failure. '
-        'Using Prometheus ALERTS fallback.'
+        'Alertmanager unavailable: unexpected alertmanager failure. Using Prometheus ALERTS fallback.'
     )
 
 

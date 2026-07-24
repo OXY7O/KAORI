@@ -9,6 +9,7 @@ integration_instances. Provider tables retain only provider-specific connection
 configuration and validation evidence. Existing development data is intentionally
 not migrated; reset and bootstrap the development database.
 """
+
 from alembic import op
 
 
@@ -43,6 +44,5 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     raise RuntimeError(
-        'This development authority cleanup is intentionally irreversible. '
-        'Reset the development database instead.'
+        'This development authority cleanup is intentionally irreversible. Reset the development database instead.'
     )

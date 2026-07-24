@@ -91,21 +91,13 @@ def _typed_dict_keys(class_name: str) -> tuple[set[str], set[str]]:
 
 def _return_dictionary_keys(path: Path, function_name: str) -> set[str]:
     tree = ast.parse(path.read_text(encoding='utf-8'))
-    function = next(
-        node
-        for node in tree.body
-        if isinstance(node, ast.FunctionDef) and node.name == function_name
-    )
+    function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == function_name)
 
     for node in ast.walk(function):
         if not isinstance(node, ast.Return) or not isinstance(node.value, ast.Dict):
             continue
 
-        keys = {
-            key.value
-            for key in node.value.keys
-            if isinstance(key, ast.Constant) and isinstance(key.value, str)
-        }
+        keys = {key.value for key in node.value.keys if isinstance(key, ast.Constant) and isinstance(key.value, str)}
         if keys:
             return keys
 
@@ -114,11 +106,7 @@ def _return_dictionary_keys(path: Path, function_name: str) -> set[str]:
 
 def _appended_dictionary_keys(path: Path, function_name: str) -> set[str]:
     tree = ast.parse(path.read_text(encoding='utf-8'))
-    function = next(
-        node
-        for node in tree.body
-        if isinstance(node, ast.FunctionDef) and node.name == function_name
-    )
+    function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == function_name)
 
     for node in ast.walk(function):
         if not (
@@ -130,11 +118,7 @@ def _appended_dictionary_keys(path: Path, function_name: str) -> set[str]:
         ):
             continue
 
-        keys = {
-            key.value
-            for key in node.args[0].keys
-            if isinstance(key, ast.Constant) and isinstance(key.value, str)
-        }
+        keys = {key.value for key in node.args[0].keys if isinstance(key, ast.Constant) and isinstance(key.value, str)}
         if keys:
             return keys
 
@@ -143,11 +127,7 @@ def _appended_dictionary_keys(path: Path, function_name: str) -> set[str]:
 
 def _assigned_subscript_keys(path: Path, function_name: str) -> set[str]:
     tree = ast.parse(path.read_text(encoding='utf-8'))
-    function = next(
-        node
-        for node in tree.body
-        if isinstance(node, ast.FunctionDef) and node.name == function_name
-    )
+    function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == function_name)
 
     return {
         target.slice.value
@@ -166,22 +146,14 @@ def _nested_dictionary_keys_from_return(
     key_name: str,
 ) -> set[str]:
     tree = ast.parse(path.read_text(encoding='utf-8'))
-    function = next(
-        node
-        for node in tree.body
-        if isinstance(node, ast.FunctionDef) and node.name == function_name
-    )
+    function = next(node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == function_name)
 
     for node in ast.walk(function):
         if not isinstance(node, ast.Return) or not isinstance(node.value, ast.Dict):
             continue
 
         for key, value in zip(node.value.keys, node.value.values, strict=True):
-            if not (
-                isinstance(key, ast.Constant)
-                and key.value == key_name
-                and isinstance(value, ast.Dict)
-            ):
+            if not (isinstance(key, ast.Constant) and key.value == key_name and isinstance(value, ast.Dict)):
                 continue
 
             return {
@@ -198,8 +170,7 @@ def test_alert_contracts_are_explicit_typed_dictionaries() -> None:
     typed_dicts = {
         node.name
         for node in tree.body
-        if isinstance(node, ast.ClassDef)
-        and any(ast.unparse(base) == 'TypedDict' for base in node.bases)
+        if isinstance(node, ast.ClassDef) and any(ast.unparse(base) == 'TypedDict' for base in node.bases)
     }
     typed_dicts.update(
         target.id
@@ -211,9 +182,7 @@ def test_alert_contracts_are_explicit_typed_dictionaries() -> None:
         if isinstance(target, ast.Name)
     )
     aliases = {
-        node.name.id
-        for node in tree.body
-        if isinstance(node, ast.TypeAlias) and isinstance(node.name, ast.Name)
+        node.name.id for node in tree.body if isinstance(node, ast.TypeAlias) and isinstance(node.name, ast.Name)
     }
 
     assert TYPED_CONTRACTS <= typed_dicts
@@ -266,9 +235,7 @@ def test_silence_and_inhibition_boundaries_use_focused_contracts() -> None:
     silence_annotations = _function_return_annotations(SILENCES)
     inhibition_annotations = _function_return_annotations(INHIBITION)
 
-    assert silence_annotations['load_alertmanager_silences'] == (
-        'tuple[list[dict[str, Any]], AlertSilenceApiStatus]'
-    )
+    assert silence_annotations['load_alertmanager_silences'] == ('tuple[list[dict[str, Any]], AlertSilenceApiStatus]')
     assert silence_annotations['normalize_silence_matchers'] == 'list[AlertSilenceMatcher]'
     assert silence_annotations['build_silence_summary'] == 'AlertSilenceSummary'
     assert silence_annotations['build_empty_silence_summary'] == 'AlertSilenceSummary'
@@ -295,18 +262,14 @@ def test_selected_cluster_signal_boundary_uses_focused_contracts() -> None:
     signal_annotations = _function_return_annotations(SIGNALS)
     readiness_source = READINESS.read_text(encoding='utf-8')
 
-    assert signal_annotations['build_selected_cluster_signal_overview'] == (
-        'AlertSelectedClusterSignalOverview'
-    )
+    assert signal_annotations['build_selected_cluster_signal_overview'] == ('AlertSelectedClusterSignalOverview')
     assert 'signal_overview: AlertSelectedClusterSignalOverview' in readiness_source
 
 
 def test_multi_cluster_and_resource_link_boundaries_use_focused_contracts() -> None:
     signal_annotations = _function_return_annotations(SIGNALS)
 
-    assert signal_annotations['build_cluster_signal_overview'] == (
-        'list[AlertClusterSignalComparisonRow]'
-    )
+    assert signal_annotations['build_cluster_signal_overview'] == ('list[AlertClusterSignalComparisonRow]')
     assert signal_annotations['build_resource_links'] == 'AlertResourceLinks'
 
 

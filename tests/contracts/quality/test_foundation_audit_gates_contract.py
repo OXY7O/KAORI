@@ -68,9 +68,7 @@ def test_dormant_large_query_foundation_is_retired_until_a_worker_uses_it() -> N
     ):
         assert not (ROOT / relative_path).exists()
 
-    architecture_gate = (ROOT / 'scripts/verify_architecture_boundaries.py').read_text(
-        encoding='utf-8'
-    )
+    architecture_gate = (ROOT / 'scripts/verify_architecture_boundaries.py').read_text(encoding='utf-8')
     for module in (
         'app.jobs.query_execution',
         'app.jobs.query_planning',

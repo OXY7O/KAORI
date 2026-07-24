@@ -30,7 +30,9 @@ def journal(**overrides):
 
 def test_second_worker_cannot_acquire_live_lease(monkeypatch) -> None:
     now = datetime(2026, 7, 23, 10, tzinfo=UTC)
-    record = journal(orchestration_status='running', lease_owner='worker-a', lease_expires_at=now + timedelta(minutes=1))
+    record = journal(
+        orchestration_status='running', lease_owner='worker-a', lease_expires_at=now + timedelta(minutes=1)
+    )
     monkeypatch.setattr(orchestration.db.session, 'get', lambda *args, **kwargs: record)
     monkeypatch.setattr(orchestration.db.session, 'flush', lambda: None)
 

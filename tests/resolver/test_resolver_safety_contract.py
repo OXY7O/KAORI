@@ -47,15 +47,9 @@ def test_registry_fails_closed_for_unknown_and_duplicate_actions() -> None:
 
 
 def test_idempotency_key_is_bound_to_decision_action_and_evidence() -> None:
-    first = build_idempotency_key(
-        decision_id='decision-1', action_key='restart', evidence_hash='a' * 64
-    )
-    repeated = build_idempotency_key(
-        decision_id='decision-1', action_key='restart', evidence_hash='a' * 64
-    )
-    changed = build_idempotency_key(
-        decision_id='decision-1', action_key='restart', evidence_hash='b' * 64
-    )
+    first = build_idempotency_key(decision_id='decision-1', action_key='restart', evidence_hash='a' * 64)
+    repeated = build_idempotency_key(decision_id='decision-1', action_key='restart', evidence_hash='a' * 64)
+    changed = build_idempotency_key(decision_id='decision-1', action_key='restart', evidence_hash='b' * 64)
 
     assert first == repeated
     assert first != changed

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Validate a JSON evidence file against KAORI Domain 20 readiness gates."""
+
 from __future__ import annotations
 
 import argparse

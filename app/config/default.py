@@ -153,9 +153,7 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
     if _env_bool('RESOLVER_MAINTENANCE_ENABLED', True):
         schedule['resolver-lease-recovery'] = {
             'task': 'app.resolver.tasks.reconcile_stale_execution_leases',
-            'schedule': crontab(
-                minute=f'*/{_bounded_env_int("RESOLVER_MAINTENANCE_INTERVAL_MINUTES", 1, 1, 60)}'
-            ),
+            'schedule': crontab(minute=f'*/{_bounded_env_int("RESOLVER_MAINTENANCE_INTERVAL_MINUTES", 1, 1, 60)}'),
             'options': {
                 'queue': _env_str('RESOLVER_MAINTENANCE_CELERY_QUEUE', 'resolver-maintenance').strip()
                 or 'resolver-maintenance'

@@ -4,6 +4,7 @@ Revision ID: 195a5f19967b
 Revises: 20260703_add_ingress_paths
 Create Date: 2026-07-04
 """
+
 from alembic import op
 import sqlalchemy as sa
 

@@ -29,9 +29,7 @@ def test_package_lock_contains_exact_runtime_asset_versions() -> None:
 def test_bootstrap_command_is_explicit_and_reproducible() -> None:
     package = json.loads((ROOT / 'package.json').read_text(encoding='utf8'))
 
-    assert package['scripts']['bootstrap-frontend'] == (
-        'bash ./scripts/bootstrap_frontend_assets.sh'
-    )
+    assert package['scripts']['bootstrap-frontend'] == ('bash ./scripts/bootstrap_frontend_assets.sh')
     bootstrap = (ROOT / 'scripts/bootstrap_frontend_assets.sh').read_text(encoding='utf8')
     assert 'npm ci --no-audit --no-fund' in bootstrap
     assert 'npm install' not in bootstrap

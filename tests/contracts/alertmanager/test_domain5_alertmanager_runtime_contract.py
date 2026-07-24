@@ -10,7 +10,6 @@ def test_validation_workers_enforce_operational_lifecycle_before_provider_io() -
     assert 'ensure_provider_operational(instance, provider_type=provider_type)' in source
 
 
-
 def test_alertmanager_resolution_blocks_non_active_canonical_identity():
     source = (ROOT / 'app/alertmanager/resolver.py').read_text()
     assert "lifecycle_eligible = canonical_enabled and lifecycle == 'active'" in source

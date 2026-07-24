@@ -85,9 +85,7 @@ def validate(root: Path) -> list[str]:
             continue
         if incoming.get(module):
             continue
-        errors.append(
-            f'{path.relative_to(root)} has no importer, configured entrypoint, test, or script consumer'
-        )
+        errors.append(f'{path.relative_to(root)} has no importer, configured entrypoint, test, or script consumer')
     return errors
 
 

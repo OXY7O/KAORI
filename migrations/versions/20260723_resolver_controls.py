@@ -3,6 +3,7 @@
 Revision ID: 20260723_resolver_controls
 Revises: 20260723_resolver_registry
 """
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -36,7 +37,7 @@ def upgrade() -> None:
     )
     op.create_index('ix_resolver_operational_controls_cluster_id', 'resolver_operational_controls', ['cluster_id'])
     op.execute(
-        "CREATE UNIQUE INDEX uq_resolver_operational_control_scope "
+        'CREATE UNIQUE INDEX uq_resolver_operational_control_scope '
         "ON resolver_operational_controls (COALESCE(cluster_id, '__global__'))"
     )
 

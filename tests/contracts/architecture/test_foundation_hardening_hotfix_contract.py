@@ -12,19 +12,12 @@ def _tree(relative_path: str) -> ast.Module:
 
 def test_runtime_refresh_command_imports_canonical_monitoring_service() -> None:
     command_tree = _tree('app/commands/integrations.py')
-    imports = {
-        alias.name
-        for node in ast.walk(command_tree)
-        if isinstance(node, ast.Import)
-        for alias in node.names
-    }
+    imports = {alias.name for node in ast.walk(command_tree) if isinstance(node, ast.Import) for alias in node.names}
 
     assert 'app.integrations.runtime.monitoring' in imports
 
     package_tree = _tree('app/integrations/runtime/__init__.py')
-    exported_functions = {
-        node.name for node in package_tree.body if isinstance(node, ast.FunctionDef)
-    }
+    exported_functions = {node.name for node in package_tree.body if isinstance(node, ast.FunctionDef)}
     assert 'dispatch_integration_runtime_refresh' not in exported_functions
 
 

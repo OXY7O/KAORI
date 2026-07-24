@@ -8,23 +8,42 @@ from app.knowledge.matching import RunbookMatchError, match_alert_to_runbook
 def _binding(key='pod-restart', priority=10, required=None):
     runbook = SimpleNamespace(runbook_key='kubernetes.pod.restart')
     revision = SimpleNamespace(
-        publication_status='published', public_id='rev-1', version='1.0.0', content_hash='a' * 64,
-        action_key='kubernetes.pod.restart', resolver_key='kubernetes.pod.restart',
-        approval_policy='needs_approval', required_evidence_json=['cluster_id', 'namespace', 'pod_name'], runbook=runbook,
+        publication_status='published',
+        public_id='rev-1',
+        version='1.0.0',
+        content_hash='a' * 64,
+        action_key='kubernetes.pod.restart',
+        resolver_key='kubernetes.pod.restart',
+        approval_policy='needs_approval',
+        required_evidence_json=['cluster_id', 'namespace', 'pod_name'],
+        runbook=runbook,
     )
     return SimpleNamespace(
-        binding_key=key, lifecycle_status='active', priority=priority, rule_key='kubernetes.pod.unhealthy_phase',
-        alertname='KubePodNotReady', cluster_id=None, namespace=None,
+        binding_key=key,
+        lifecycle_status='active',
+        priority=priority,
+        rule_key='kubernetes.pod.unhealthy_phase',
+        alertname='KubePodNotReady',
+        cluster_id=None,
+        namespace=None,
         required_labels_json=required or {'severity': 'critical'},
-        evidence_mapping_json={'pod_name': 'pod'}, revision=revision,
+        evidence_mapping_json={'pod_name': 'pod'},
+        revision=revision,
     )
 
 
 def _alert():
-    return {'rule_key': 'kubernetes.pod.unhealthy_phase', 'fingerprint': 'fp-1', 'labels': {
-        'alertname': 'KubePodNotReady', 'severity': 'critical', 'cluster_id': 'cluster-1',
-        'namespace': 'payments', 'pod': 'api-123',
-    }}
+    return {
+        'rule_key': 'kubernetes.pod.unhealthy_phase',
+        'fingerprint': 'fp-1',
+        'labels': {
+            'alertname': 'KubePodNotReady',
+            'severity': 'critical',
+            'cluster_id': 'cluster-1',
+            'namespace': 'payments',
+            'pod': 'api-123',
+        },
+    }
 
 
 def test_match_produces_non_executable_candidate_with_locked_revision():

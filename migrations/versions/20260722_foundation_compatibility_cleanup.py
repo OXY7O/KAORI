@@ -10,6 +10,7 @@ canonical validation contract, normalizes Prometheus binding capability scope,
 requires canonical report storage URIs, and normalizes retired report-domain
 names.
 """
+
 from __future__ import annotations
 
 from pathlib import PurePosixPath
@@ -78,10 +79,7 @@ _ENVIRONMENT_VALUE_MAP = {
 
 
 def _table_columns(bind: sa.Connection, table_name: str) -> set[str]:
-    return {
-        str(column['name'])
-        for column in sa.inspect(bind).get_columns(table_name)
-    }
+    return {str(column['name']) for column in sa.inspect(bind).get_columns(table_name)}
 
 
 def _normalize_report_uri(raw_path: str) -> str:
@@ -136,23 +134,14 @@ def _backfill_user_roles(bind: sa.Connection) -> None:
         sa.column('id', sa.Integer),
         sa.column('name', sa.String),
     )
-    role_ids = {
-        str(row.name).strip().lower(): int(row.id)
-        for row in bind.execute(sa.select(roles.c.id, roles.c.name))
-    }
+    role_ids = {str(row.name).strip().lower(): int(row.id) for row in bind.execute(sa.select(roles.c.id, roles.c.name))}
     viewer_role_id = role_ids.get('viewer')
 
-    for row in bind.execute(
-        sa.select(users.c.id, users.c.role, users.c.role_id).where(users.c.role_id.is_(None))
-    ):
+    for row in bind.execute(sa.select(users.c.id, users.c.role, users.c.role_id).where(users.c.role_id.is_(None))):
         role_name = str(row.role or '').strip().lower()
         target_role_id = role_ids.get(role_name) or viewer_role_id
         if target_role_id is not None:
-            bind.execute(
-                users.update()
-                .where(users.c.id == row.id)
-                .values(role_id=target_role_id)
-            )
+            bind.execute(users.update().where(users.c.id == row.id).values(role_id=target_role_id))
 
     with op.batch_alter_table('users') as batch:
         batch.drop_column('role')
@@ -185,9 +174,7 @@ def _normalize_bindings(bind: sa.Connection) -> None:
         )
         .values(
             validation_status='validation_required',
-            validation_message=(
-                'Binding requires canonical selector and runtime validation before operational use.'
-            ),
+            validation_message=('Binding requires canonical selector and runtime validation before operational use.'),
         )
     )
 
@@ -207,9 +194,7 @@ def _normalize_bindings(bind: sa.Connection) -> None:
 
     for binding_id in prometheus_binding_ids:
         bind.execute(
-            bindings.update()
-            .where(bindings.c.id == binding_id)
-            .values(capability_scope=list(_PROMETHEUS_CAPABILITIES))
+            bindings.update().where(bindings.c.id == binding_id).values(capability_scope=list(_PROMETHEUS_CAPABILITIES))
         )
 
 
@@ -223,19 +208,13 @@ def _normalize_environment_values(bind: sa.Connection, table_name: str) -> None:
         sa.column('id', sa.Integer),
         sa.column('environment', sa.String),
     )
-    rows = bind.execute(
-        sa.select(table.c.id, table.c.environment).where(table.c.environment.is_not(None))
-    )
+    rows = bind.execute(sa.select(table.c.id, table.c.environment).where(table.c.environment.is_not(None)))
     for row in rows:
         raw_value = str(row.environment or '').strip()
         normalized = raw_value.lower().replace('-', '_').replace(' ', '_')
         canonical = _ENVIRONMENT_VALUE_MAP.get(normalized, normalized)
         if canonical and canonical != raw_value:
-            bind.execute(
-                table.update()
-                .where(table.c.id == row.id)
-                .values(environment=canonical)
-            )
+            bind.execute(table.update().where(table.c.id == row.id).values(environment=canonical))
 
 
 def _normalize_report_domains(bind: sa.Connection, table_name: str) -> None:
@@ -263,11 +242,7 @@ def _normalize_report_domains(bind: sa.Connection, table_name: str) -> None:
                 'Convert it to kubernetes, server, or hci before running this migration.'
             )
         if canonical != raw_value:
-            bind.execute(
-                table.update()
-                .where(table.c.id == row.id)
-                .values(report_domain=canonical)
-            )
+            bind.execute(table.update().where(table.c.id == row.id).values(report_domain=canonical))
 
     with op.batch_alter_table(table_name) as batch:
         batch.alter_column(
@@ -293,11 +268,7 @@ def _normalize_report_paths(bind: sa.Connection) -> None:
     for row in rows:
         canonical_uri = _normalize_report_uri(str(row.file_path))
         if canonical_uri != row.file_path:
-            bind.execute(
-                reports.update()
-                .where(reports.c.id == row.id)
-                .values(file_path=canonical_uri)
-            )
+            bind.execute(reports.update().where(reports.c.id == row.id).values(file_path=canonical_uri))
 
 
 def upgrade() -> None:

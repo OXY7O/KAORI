@@ -22,20 +22,21 @@ integration_module = IntegrationModule(
         'binding.selector.update': 'inline',
         'binding.validate': 'integration-validation',
     },
-    operations=frozenset({
-        'client.build',
-        'connection.test',
-        'query_profile.audit',
-        'runtime.validate',
-        'runtime.health',
-        'runtime.state',
-        'binding.create',
-        'binding.selector.update',
-        'binding.validate',
-    }),
+    operations=frozenset(
+        {
+            'client.build',
+            'connection.test',
+            'query_profile.audit',
+            'runtime.validate',
+            'runtime.health',
+            'runtime.state',
+            'binding.create',
+            'binding.selector.update',
+            'binding.validate',
+        }
+    ),
     capability_keys=CAPABILITY_KEYS,
     compatibility_profiles=COMPATIBILITY_PROFILES,
 )
 
 registry.register(integration_module)
-

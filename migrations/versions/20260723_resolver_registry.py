@@ -3,6 +3,7 @@
 Revision ID: 20260723_resolver_registry
 Revises: 20260723_candidate_review
 """
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -31,7 +32,9 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['updated_by_user_id'], ['users.id'], ondelete='SET NULL'),
         sa.UniqueConstraint('cluster_id', 'action_key', name='uq_resolver_policy_cluster_action'),
     )
-    op.create_index('ix_resolver_policy_cluster_status', 'resolver_deployment_policies', ['cluster_id', 'lifecycle_status'])
+    op.create_index(
+        'ix_resolver_policy_cluster_status', 'resolver_deployment_policies', ['cluster_id', 'lifecycle_status']
+    )
     op.create_index('ix_resolver_deployment_policies_action_key', 'resolver_deployment_policies', ['action_key'])
 
 

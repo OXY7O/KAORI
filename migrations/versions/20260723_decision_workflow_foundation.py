@@ -4,6 +4,7 @@ Revision ID: 20260723_decision_workflow
 Revises: 20260722_foundation_cleanup
 Create Date: 2026-07-23 15:00:00
 """
+
 from __future__ import annotations
 
 import sqlalchemy as sa
@@ -65,8 +66,12 @@ def upgrade() -> None:
     op.create_index('ix_intelligence_decisions_workflow_status', 'intelligence_decisions', ['workflow_status'])
     op.create_index('ix_intelligence_decisions_created_by_user_id', 'intelligence_decisions', ['created_by_user_id'])
     op.create_index('ix_intelligence_decisions_expires_at', 'intelligence_decisions', ['expires_at'])
-    op.create_index('ix_intelligence_decisions_status_created', 'intelligence_decisions', ['workflow_status', 'created_at'])
-    op.create_index('ix_intelligence_decisions_cluster_status', 'intelligence_decisions', ['cluster_id', 'workflow_status'])
+    op.create_index(
+        'ix_intelligence_decisions_status_created', 'intelligence_decisions', ['workflow_status', 'created_at']
+    )
+    op.create_index(
+        'ix_intelligence_decisions_cluster_status', 'intelligence_decisions', ['cluster_id', 'workflow_status']
+    )
 
     op.create_table(
         'intelligence_decision_approvals',
@@ -83,9 +88,15 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('decision_id', name='uq_active_decision_approval'),
     )
-    op.create_index('ix_intelligence_decision_approvals_decision_id', 'intelligence_decision_approvals', ['decision_id'])
-    op.create_index('ix_intelligence_decision_approvals_actor_user_id', 'intelligence_decision_approvals', ['actor_user_id'])
-    op.create_index('ix_decision_approvals_actor_created', 'intelligence_decision_approvals', ['actor_user_id', 'created_at'])
+    op.create_index(
+        'ix_intelligence_decision_approvals_decision_id', 'intelligence_decision_approvals', ['decision_id']
+    )
+    op.create_index(
+        'ix_intelligence_decision_approvals_actor_user_id', 'intelligence_decision_approvals', ['actor_user_id']
+    )
+    op.create_index(
+        'ix_decision_approvals_actor_created', 'intelligence_decision_approvals', ['actor_user_id', 'created_at']
+    )
 
     op.create_table(
         'intelligence_execution_journal',
@@ -119,10 +130,18 @@ def upgrade() -> None:
     )
     op.create_index('ix_intelligence_execution_journal_decision_id', 'intelligence_execution_journal', ['decision_id'])
     op.create_index('ix_intelligence_execution_journal_status', 'intelligence_execution_journal', ['status'])
-    op.create_index('ix_intelligence_execution_journal_requested_by_user_id', 'intelligence_execution_journal', ['requested_by_user_id'])
-    op.create_index('ix_intelligence_execution_journal_resolver_job_id', 'intelligence_execution_journal', ['resolver_job_id'])
+    op.create_index(
+        'ix_intelligence_execution_journal_requested_by_user_id',
+        'intelligence_execution_journal',
+        ['requested_by_user_id'],
+    )
+    op.create_index(
+        'ix_intelligence_execution_journal_resolver_job_id', 'intelligence_execution_journal', ['resolver_job_id']
+    )
     op.create_index('ix_intelligence_execution_journal_expires_at', 'intelligence_execution_journal', ['expires_at'])
-    op.create_index('ix_intelligence_execution_decision_status', 'intelligence_execution_journal', ['decision_id', 'status'])
+    op.create_index(
+        'ix_intelligence_execution_decision_status', 'intelligence_execution_journal', ['decision_id', 'status']
+    )
     op.create_index('ix_intelligence_execution_created', 'intelligence_execution_journal', ['created_at'])
 
 

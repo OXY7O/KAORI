@@ -5,6 +5,7 @@ Revises: 20260712_node_system_uuid
 Create Date: 2026-07-13 10:00:00
 
 """
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -61,7 +62,9 @@ def upgrade() -> None:
     op.create_index('ix_archive_artifacts_status', 'archive_artifacts', ['status'], unique=False)
     op.create_index('ix_archive_artifacts_trigger_type', 'archive_artifacts', ['trigger_type'], unique=False)
     op.create_index('ix_archive_artifacts_storage_backend', 'archive_artifacts', ['storage_backend'], unique=False)
-    op.create_index('ix_archive_artifacts_triggered_by_user_id', 'archive_artifacts', ['triggered_by_user_id'], unique=False)
+    op.create_index(
+        'ix_archive_artifacts_triggered_by_user_id', 'archive_artifacts', ['triggered_by_user_id'], unique=False
+    )
     op.create_index('ix_archive_artifacts_celery_task_id', 'archive_artifacts', ['celery_task_id'], unique=False)
     op.create_index('ix_archive_artifacts_cutoff_at', 'archive_artifacts', ['cutoff_at'], unique=False)
     op.create_index('ix_archive_artifacts_completed_at', 'archive_artifacts', ['completed_at'], unique=False)

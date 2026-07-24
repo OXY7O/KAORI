@@ -42,7 +42,4 @@ def test_topology_limit_keeps_parent_context_and_valid_edges() -> None:
     assert {'cluster-a', 'namespace-a'} <= kept_ids
     assert len(limited_nodes) == 4
     assert omitted == 2
-    assert all(
-        edge['data']['source'] in kept_ids and edge['data']['target'] in kept_ids
-        for edge in limited_edges
-    )
+    assert all(edge['data']['source'] in kept_ids and edge['data']['target'] in kept_ids for edge in limited_edges)

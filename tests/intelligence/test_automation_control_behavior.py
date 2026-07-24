@@ -99,6 +99,7 @@ def test_active_deployment_policy_requires_explicit_namespace_allowlist(app: Fla
 
         assert ResolverDeploymentPolicy.query.count() == 0
 
+
 def test_deployment_policy_rejects_stale_registry_fingerprint(app: Flask) -> None:
     with app.app_context():
         _cluster()
@@ -151,4 +152,3 @@ def test_runtime_policy_gate_enforces_namespace_and_registry_parity(app: Flask) 
                 action_key=ACTION_DEPLOYMENT_RESTART,
                 registry_fingerprint='different-registry',
             )
-

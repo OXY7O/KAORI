@@ -50,37 +50,49 @@ def test_provider_guard_detects_active_job_from_resource_group(app: Flask) -> No
     with app.app_context():
         _job(resource_group='integration:prometheus:41')
 
-        assert provider_active_job_count(
-            provider_type='prometheus',
-            provider_instance_id=41,
-        ) == 1
+        assert (
+            provider_active_job_count(
+                provider_type='prometheus',
+                provider_instance_id=41,
+            )
+            == 1
+        )
 
 
 def test_provider_guard_ignores_terminal_resource_group_job(app: Flask) -> None:
     with app.app_context():
         _job(resource_group='integration:alertmanager:12', status='succeeded')
 
-        assert provider_active_job_count(
-            provider_type='alertmanager',
-            provider_instance_id=12,
-        ) == 0
+        assert (
+            provider_active_job_count(
+                provider_type='alertmanager',
+                provider_instance_id=12,
+            )
+            == 0
+        )
 
 
 def test_kubernetes_guard_detects_cluster_resource_group(app: Flask) -> None:
     with app.app_context():
         _job(resource_group='kubernetes-cluster:cluster-a')
 
-        assert kubernetes_active_job_count(
-            connection_id=7,
-            cluster_id='cluster-a',
-        ) == 1
+        assert (
+            kubernetes_active_job_count(
+                connection_id=7,
+                cluster_id='cluster-a',
+            )
+            == 1
+        )
 
 
 def test_kubernetes_guard_detects_connection_resource_group(app: Flask) -> None:
     with app.app_context():
         _job(resource_group='integration:kubernetes:7')
 
-        assert kubernetes_active_job_count(
-            connection_id=7,
-            cluster_id='cluster-a',
-        ) == 1
+        assert (
+            kubernetes_active_job_count(
+                connection_id=7,
+                cluster_id='cluster-a',
+            )
+            == 1
+        )

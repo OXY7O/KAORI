@@ -591,10 +591,7 @@ def test_multi_cluster_signal_overview_preserves_sorting_and_bar_behavior(monkey
 
     overview = build_cluster_signal_overview(clusters=clusters, source='auto')
 
-    assert all(
-        set(item) == set(AlertClusterSignalComparisonRow.__required_keys__)
-        for item in overview
-    )
+    assert all(set(item) == set(AlertClusterSignalComparisonRow.__required_keys__) for item in overview)
     assert [item['cluster_id'] for item in overview] == [
         'cluster-b',
         'cluster-a',
@@ -682,9 +679,7 @@ def test_selected_cluster_signal_overview_preserves_existing_behavior() -> None:
     assert overview['not_ready_anomalies'] == 1
     assert overview['total_signals'] == 4
     assert overview['priority']['level'] == 'critical'
-    assert overview['insight']['action_hint'] == (
-        'Inspect critical alert labels, affected target, and runbook first.'
-    )
+    assert overview['insight']['action_hint'] == ('Inspect critical alert labels, affected target, and runbook first.')
 
 
 def test_empty_selected_cluster_signal_overview_preserves_dictionary_shape() -> None:

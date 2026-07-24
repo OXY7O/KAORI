@@ -77,6 +77,6 @@ def test_resolver_delivery_uses_canonical_job_dispatcher_without_broker_secret()
     assert 'execution.succeed(' in tasks
     assert 'execution.retrying(' in tasks
     assert 'execution.fail(' in tasks
-    task_kwargs = source[source.index("task_kwargs={"): source.index("job_type='resolver_execution'")]
+    task_kwargs = source[source.index('task_kwargs={') : source.index("job_type='resolver_execution'")]
     assert "'secret_key'" not in task_kwargs
     assert "current_app.config.get('RESOLVER_TOKEN_SIGNING_KEY')" in tasks

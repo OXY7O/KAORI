@@ -3,6 +3,7 @@
 Revision ID: 20260716_promql_profiles
 Revises: 20260716_integration_compat
 """
+
 from alembic import op
 import sqlalchemy as sa
 

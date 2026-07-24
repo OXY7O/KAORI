@@ -80,7 +80,7 @@ def test_related_user_management_is_provider_aware() -> None:
     assert "'LDAP Directory Provisioning'" in content
     assert "'User Registry'" in content
     assert "'Identity Providers'" in content
-    assert "boundary=identity_context.provider_name ~" in content
+    assert 'boundary=identity_context.provider_name ~' in content
 
 
 def test_add_and_edit_user_hero_uses_compact_kaori_context_panel() -> None:
@@ -90,10 +90,13 @@ def test_add_and_edit_user_hero_uses_compact_kaori_context_panel() -> None:
     assert "page_hero.context_header('Identity Context', identity_context.provider_name" in content
     assert "page_hero.context_metric('key-round', 'Credential Owner', 'KAORI'" in content
     assert "page_hero.context_metric('fingerprint', 'Provider Type', identity_context.type_label" in content
-    assert "page_hero.context_metric('circle-check' if user.account_is_active else 'circle-pause', 'Account State'" in content
+    assert (
+        "page_hero.context_metric('circle-check' if user.account_is_active else 'circle-pause', 'Account State'"
+        in content
+    )
     assert 'page_hero.context_single_action_classes()' in content
-    assert "Create Local Database users here. Provision LDAP users" not in content
-    assert "remains the authoritative authentication source. This page updates" not in content
+    assert 'Create Local Database users here. Provision LDAP users' not in content
+    assert 'remains the authoritative authentication source. This page updates' not in content
 
 
 def test_add_user_provider_guidance_is_open_by_default() -> None:

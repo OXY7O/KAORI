@@ -28,7 +28,9 @@ def test_successful_login_commits_metadata_before_establishing_session(monkeypat
     monkeypatch.setattr(
         routes,
         'db',
-        SimpleNamespace(session=SimpleNamespace(commit=lambda: events.append('commit'), rollback=lambda: events.append('rollback'))),
+        SimpleNamespace(
+            session=SimpleNamespace(commit=lambda: events.append('commit'), rollback=lambda: events.append('rollback'))
+        ),
     )
     monkeypatch.setattr(
         routes,

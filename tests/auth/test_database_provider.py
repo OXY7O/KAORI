@@ -86,7 +86,9 @@ def test_inactive_local_user_is_rejected_after_password_verification(monkeypatch
 def test_database_error_rolls_back_and_returns_normalized_failure(monkeypatch) -> None:
     _install_user_model(monkeypatch, QueryStub(error=SQLAlchemyError('offline')))
     rollbacks: list[bool] = []
-    monkeypatch.setattr(database, 'db', SimpleNamespace(session=SimpleNamespace(rollback=lambda: rollbacks.append(True))))
+    monkeypatch.setattr(
+        database, 'db', SimpleNamespace(session=SimpleNamespace(rollback=lambda: rollbacks.append(True)))
+    )
 
     result = database.DatabaseAuthProvider().authenticate('operator', 'secret')
 

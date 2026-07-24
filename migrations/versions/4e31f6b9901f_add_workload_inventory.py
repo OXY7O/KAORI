@@ -5,6 +5,7 @@ Revises: b76e51fbbcde
 Create Date: 2026-06-21 00:42:33.329469
 
 """
+
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
@@ -22,17 +23,13 @@ def upgrade():
         batch_op.add_column(sa.Column('name', sa.String(length=255), nullable=False))
         batch_op.add_column(sa.Column('ready', sa.String(length=50), nullable=True))
         batch_op.add_column(sa.Column('collected_at', sa.DateTime(timezone=True), nullable=False))
-        batch_op.alter_column('cluster_id',
-               existing_type=sa.VARCHAR(length=255),
-               type_=sa.String(length=36),
-               existing_nullable=False)
-        batch_op.alter_column('status',
-               existing_type=sa.VARCHAR(length=50),
-               nullable=True)
-        batch_op.alter_column('created_at',
-               existing_type=postgresql.TIMESTAMP(),
-               type_=sa.DateTime(timezone=True),
-               existing_nullable=True)
+        batch_op.alter_column(
+            'cluster_id', existing_type=sa.VARCHAR(length=255), type_=sa.String(length=36), existing_nullable=False
+        )
+        batch_op.alter_column('status', existing_type=sa.VARCHAR(length=50), nullable=True)
+        batch_op.alter_column(
+            'created_at', existing_type=postgresql.TIMESTAMP(), type_=sa.DateTime(timezone=True), existing_nullable=True
+        )
         batch_op.create_unique_constraint('uq_workload_inventory', ['cluster_id', 'namespace', 'name', 'workload_type'])
         batch_op.create_foreign_key(None, 'clusters', ['cluster_id'], ['id'], ondelete='CASCADE')
         batch_op.drop_column('workload_name')
@@ -54,17 +51,13 @@ def downgrade():
         batch_op.add_column(sa.Column('workload_name', sa.VARCHAR(length=255), autoincrement=False, nullable=False))
         batch_op.drop_constraint(None, type_='foreignkey')
         batch_op.drop_constraint('uq_workload_inventory', type_='unique')
-        batch_op.alter_column('created_at',
-               existing_type=sa.DateTime(timezone=True),
-               type_=postgresql.TIMESTAMP(),
-               existing_nullable=True)
-        batch_op.alter_column('status',
-               existing_type=sa.VARCHAR(length=50),
-               nullable=False)
-        batch_op.alter_column('cluster_id',
-               existing_type=sa.String(length=36),
-               type_=sa.VARCHAR(length=255),
-               existing_nullable=False)
+        batch_op.alter_column(
+            'created_at', existing_type=sa.DateTime(timezone=True), type_=postgresql.TIMESTAMP(), existing_nullable=True
+        )
+        batch_op.alter_column('status', existing_type=sa.VARCHAR(length=50), nullable=False)
+        batch_op.alter_column(
+            'cluster_id', existing_type=sa.String(length=36), type_=sa.VARCHAR(length=255), existing_nullable=False
+        )
         batch_op.drop_column('collected_at')
         batch_op.drop_column('ready')
         batch_op.drop_column('name')

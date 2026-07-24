@@ -18,7 +18,7 @@ def test_published_revision_and_decision_binding_contract() -> None:
 
 def test_runbook_service_is_fail_closed() -> None:
     service = (ROOT / 'app/knowledge/service.py').read_text()
-    assert "Only draft runbook revisions can be published." in service
+    assert 'Only draft runbook revisions can be published.' in service
     assert "publication_status == 'published'" in service
     assert 'assert_required_evidence' in service
     assert 'Missing required permission' in service

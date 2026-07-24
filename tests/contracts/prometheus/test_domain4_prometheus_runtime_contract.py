@@ -19,7 +19,6 @@ def test_validation_worker_uses_shared_operational_guard_directly() -> None:
     assert "ensure_provider_operational(instance, provider_type='prometheus')" in tasks_source
 
 
-
 def test_prometheus_validation_calls_guard_before_runtime_refresh() -> None:
     source = Path('app/integrations/validation/tasks.py').read_text()
     prometheus_branch = source.index("provider_type == 'prometheus'")

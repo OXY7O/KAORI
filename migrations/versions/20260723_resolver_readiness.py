@@ -3,6 +3,7 @@
 Revision ID: 20260723_resolver_readiness
 Revises: 20260723_resolver_controls
 """
+
 from alembic import op
 import sqlalchemy as sa
 
@@ -38,7 +39,9 @@ def upgrade() -> None:
     )
     op.create_index('ix_resolver_production_readiness_cluster_id', 'resolver_production_readiness', ['cluster_id'])
     op.create_index('ix_resolver_production_readiness_action_key', 'resolver_production_readiness', ['action_key'])
-    op.create_index('ix_resolver_production_readiness_rollout_stage', 'resolver_production_readiness', ['rollout_stage'])
+    op.create_index(
+        'ix_resolver_production_readiness_rollout_stage', 'resolver_production_readiness', ['rollout_stage']
+    )
 
 
 def downgrade() -> None:
