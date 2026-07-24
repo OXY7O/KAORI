@@ -1,90 +1,93 @@
+{% import "components/progress_bar.html" as progress_bar %}
 {% set inventory_total = overview.total_nodes + overview.total_namespaces + overview.total_workloads + overview.total_pods + overview.total_services + overview.total_ingresses + overview.total_storage %}
 {% set cluster_average = ((inventory_total / overview.total_clusters) | round(1)) if overview.total_clusters > 0 else 0 %}
+{% set coverage_score = overview.health.coverage_score or 0 %}
+{% set healthy_clusters = overview.health.healthy_clusters or 0 %}
+{% set fresh_clusters = overview.health.fresh_synced or 0 %}
 {% set cards = [
-    {'title': 'Clusters', 'value': overview.total_clusters, 'icon': 'server', 'meta': (overview.health.connected_clusters|string) ~ ' connected targets'},
-    {'title': 'Nodes', 'value': overview.total_nodes, 'icon': 'cpu', 'meta': 'Worker and control-plane capacity'},
-    {'title': 'Namespaces', 'value': overview.total_namespaces, 'icon': 'folder-tree', 'meta': 'Tenant and application scope'},
-    {'title': 'Workloads', 'value': overview.total_workloads, 'icon': 'boxes', 'meta': 'Deployments and controllers'},
-    {'title': 'Pods', 'value': overview.total_pods, 'icon': 'container', 'meta': 'Runtime workload instances'},
-    {'title': 'Services', 'value': overview.total_services, 'icon': 'network', 'meta': 'Cluster networking endpoints'},
-    {'title': 'Ingresses', 'value': overview.total_ingresses, 'icon': 'route', 'meta': 'Published entry points'},
-    {'title': 'Storage', 'value': overview.total_storage, 'icon': 'hard-drive', 'meta': 'Storage classes, PVs, and PVCs'}
+    {'title': 'Clusters', 'value': overview.total_clusters, 'icon': 'server', 'meta': (overview.health.connected_clusters|string) ~ ' Connected Targets'},
+    {'title': 'Nodes', 'value': overview.total_nodes, 'icon': 'cpu', 'meta': 'Worker And Control Plane Capacity'},
+    {'title': 'Namespaces', 'value': overview.total_namespaces, 'icon': 'folder-tree', 'meta': 'Tenant And Application Scope'},
+    {'title': 'Workloads', 'value': overview.total_workloads, 'icon': 'boxes', 'meta': 'Deployments And Controllers'},
+    {'title': 'Pods', 'value': overview.total_pods, 'icon': 'container', 'meta': 'Runtime Workload Instances'},
+    {'title': 'Services', 'value': overview.total_services, 'icon': 'network', 'meta': 'Cluster Networking Endpoints'},
+    {'title': 'Ingresses', 'value': overview.total_ingresses, 'icon': 'route', 'meta': 'Published Entry Points'},
+    {'title': 'Storage', 'value': overview.total_storage, 'icon': 'hard-drive', 'meta': 'Storage Classes, PVs, And PVCs'}
 ] %}
-<section class="space-y-4" aria-labelledby="inventory-footprint-title">
-    <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-            <div class="inline-flex items-center gap-2 rounded-md border border-outline-default bg-kaori-soft px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-kaori-primary">
-                <i data-lucide="layout-grid" class="h-4 w-4"></i>
-                Inventory footprint
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+         aria-labelledby="inventory-footprint-title">
+    <header class="border-b border-outline-subtle px-5 py-4">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="layout-grid" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-kaori-primary">Inventory Overview</p>
+                    <h2 id="inventory-footprint-title"
+                        class="mt-1 text-sm font-semibold text-content-primary">Inventory Footprint Snapshot</h2>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Collected Kubernetes resources and current fleet collection posture across registered clusters.</p>
+                </div>
             </div>
-            <h2 id="inventory-footprint-title"
-                class="mt-3 text-xl font-semibold tracking-tight text-content-primary">Collected Kubernetes Resources</h2>
-            <p class="mt-1 text-sm leading-6 text-content-muted">Core objects stored by the inventory collector across registered clusters.</p>
-        </div>
-        <div class="flex flex-wrap gap-2">
-            <span class="inline-flex min-h-8 items-center gap-2 rounded-md border border-outline-default bg-surface-card px-3 py-1.5 text-xs font-semibold text-content-secondary">
-                <i data-lucide="calculator" class="h-4 w-4 text-kaori-primary"></i>
-                {{ cluster_average }} average per cluster
-            </span>
-            <span class="inline-flex min-h-8 items-center gap-2 rounded-md border border-outline-default bg-kaori-soft px-3 py-1.5 text-xs font-semibold text-kaori-primary">
-                <i data-lucide="scan-search" class="h-4 w-4"></i>
-                {{ overview.health.coverage_score or 0 }}% coverage
-            </span>
+            <div class="flex flex-wrap gap-2">
+                <span class="inline-flex min-h-8 items-center gap-2 rounded-md border border-outline-default bg-surface-card px-3 py-1.5 text-xs font-semibold text-content-secondary">
+                    <i data-lucide="database" class="h-4 w-4 text-kaori-primary"></i>
+                    {{ inventory_total }} Objects
+                </span>
+                <span class="inline-flex min-h-8 items-center gap-2 rounded-md border border-outline-default bg-kaori-soft px-3 py-1.5 text-xs font-semibold text-kaori-primary">
+                    <i data-lucide="scan-search" class="h-4 w-4"></i>
+                    {{ coverage_score }}% Coverage
+                </span>
+            </div>
         </div>
     </header>
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+
+    <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
         {% for card in cards %}
-            <article class="group rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm transition duration-150 hover:border-outline-strong hover:bg-surface-hover">
-                <div class="flex items-start justify-between gap-4">
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-[0.08em] text-kaori-primary">{{ card.title }}</p>
-                        <p class="mt-2 text-2xl font-semibold tracking-tight text-content-primary">{{ card.value }}</p>
-                    </div>
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
-                          aria-hidden="true">
-                        <i data-lucide="{{ card.icon }}" class="h-5 w-5"></i>
-                    </span>
+            <article class="flex min-w-0 items-start justify-between gap-4 p-5 {% if loop.index > 4 %}xl:border-t xl:border-outline-subtle{% endif %}">
+                <div class="min-w-0 flex-1">
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ card.title }}</p>
+                    <p class="mt-2 text-2xl font-semibold tracking-tight text-content-primary">{{ card.value }}</p>
+                    <p class="mt-1 truncate text-xs leading-5 text-content-muted"
+                       title="{{ card.meta }}">{{ card.meta }}</p>
                 </div>
-                <div class="mt-3 flex items-start justify-between gap-3 border-t border-outline-subtle pt-3">
-                    <p class="line-clamp-2 text-xs leading-5 text-content-muted">{{ card.meta }}</p>
-                    <span class="shrink-0 rounded-md bg-kaori-soft px-2 py-1 text-[10px] font-semibold text-kaori-primary">Tracked</span>
-                </div>
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="{{ card.icon }}" class="h-5 w-5"></i>
+                </span>
             </article>
         {% endfor %}
     </div>
-    <div class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true">
-                    <i data-lucide="database" class="h-5 w-5"></i>
-                </span>
-                <div>
-                    <p class="text-sm font-semibold text-content-primary">Inventory Collection Summary</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ inventory_total }} objects currently stored across the Kubernetes inventory domain.</p>
-                </div>
+
+    <div class="grid border-t border-outline-subtle lg:grid-cols-[1.35fr_1fr]">
+        <div class="space-y-4 p-5">
+            <div class="flex items-center justify-between gap-4 text-xs font-semibold text-content-secondary">
+                <span>Collection Coverage</span>
+                <span>{{ coverage_score }}%</span>
             </div>
-            <div class="grid gap-2 sm:grid-cols-2 lg:min-w-[540px] lg:grid-cols-4">
-                <div class="rounded-md border border-outline-subtle bg-surface-elevated px-3 py-2.5">
-                    <p class="text-[10px] font-semibold uppercase tracking-wide text-kaori-primary">Registered</p>
-                    <p class="mt-1 text-lg font-semibold text-content-primary">{{ overview.total_clusters }}</p>
-                    <p class="text-xs text-content-muted">clusters</p>
-                </div>
-                <div class="rounded-md border border-outline-subtle bg-surface-elevated px-3 py-2.5">
-                    <p class="text-[10px] font-semibold uppercase tracking-wide text-kaori-primary">Coverage</p>
-                    <p class="mt-1 text-lg font-semibold text-content-primary">{{ overview.health.coverage_score or 0 }}%</p>
-                    <p class="text-xs text-content-muted">collection</p>
-                </div>
-                <div class="rounded-md border px-3 py-2.5 {% if (overview.health.healthy_clusters or 0) == overview.total_clusters and overview.total_clusters > 0 %}border-status-normal-border bg-status-normal-soft{% elif overview.total_clusters > 0 %}border-status-warning-border bg-status-warning-soft{% else %}border-status-unknown-border bg-status-unknown-soft{% endif %}">
-                    <p class="text-[10px] font-semibold uppercase tracking-wide {% if (overview.health.healthy_clusters or 0) == overview.total_clusters and overview.total_clusters > 0 %}text-status-normal-text{% elif overview.total_clusters > 0 %}text-status-warning-text{% else %}text-status-unknown-text{% endif %}">Healthy</p>
-                    <p class="mt-1 text-lg font-semibold text-content-primary">{{ overview.health.healthy_clusters or 0 }}/{{ overview.total_clusters }}</p>
-                    <p class="text-xs text-content-muted">targets</p>
-                </div>
-                <div class="rounded-md border px-3 py-2.5 {% if (overview.health.fresh_synced or 0) == overview.total_clusters and overview.total_clusters > 0 %}border-status-normal-border bg-status-normal-soft{% elif overview.total_clusters > 0 %}border-status-warning-border bg-status-warning-soft{% else %}border-status-unknown-border bg-status-unknown-soft{% endif %}">
-                    <p class="text-[10px] font-semibold uppercase tracking-wide {% if (overview.health.fresh_synced or 0) == overview.total_clusters and overview.total_clusters > 0 %}text-status-normal-text{% elif overview.total_clusters > 0 %}text-status-warning-text{% else %}text-status-unknown-text{% endif %}">Fresh</p>
-                    <p class="mt-1 text-lg font-semibold text-content-primary">{{ overview.health.fresh_synced or 0 }}/{{ overview.total_clusters }}</p>
-                    <p class="text-xs text-content-muted">within {{ overview.health.freshness_window_hours or 24 }}h</p>
-                </div>
+            {{ progress_bar.bar(coverage_score, track_classes="h-2 overflow-hidden rounded-full bg-kaori-soft", fill_classes="h-full rounded-full bg-kaori-primary", label="Inventory collection coverage") }}
+            <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-content-muted">
+                <span class="inline-flex items-center gap-1.5">
+                    <i data-lucide="calculator" class="h-3.5 w-3.5 text-kaori-primary"></i>
+                    {{ cluster_average }} Average Objects Per Cluster
+                </span>
+                <span class="inline-flex items-center gap-1.5">
+                    <i data-lucide="clock-3" class="h-3.5 w-3.5 text-kaori-primary"></i>
+                    Freshness Window {{ overview.health.freshness_window_hours or 24 }} Hours
+                </span>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 divide-x divide-outline-subtle border-t border-outline-subtle lg:border-l lg:border-t-0">
+            <div class="p-5 {% if healthy_clusters == overview.total_clusters and overview.total_clusters > 0 %}bg-status-normal-soft{% elif overview.total_clusters > 0 %}bg-status-warning-soft{% else %}bg-status-unknown-soft{% endif %}">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] {% if healthy_clusters == overview.total_clusters and overview.total_clusters > 0 %}text-status-normal-text{% elif overview.total_clusters > 0 %}text-status-warning-text{% else %}text-status-unknown-text{% endif %}">Healthy Targets</p>
+                <p class="mt-2 text-xl font-semibold text-content-primary">{{ healthy_clusters }}/{{ overview.total_clusters }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Connected inventory targets.</p>
+            </div>
+            <div class="p-5 {% if fresh_clusters == overview.total_clusters and overview.total_clusters > 0 %}bg-status-normal-soft{% elif overview.total_clusters > 0 %}bg-status-warning-soft{% else %}bg-status-unknown-soft{% endif %}">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] {% if fresh_clusters == overview.total_clusters and overview.total_clusters > 0 %}text-status-normal-text{% elif overview.total_clusters > 0 %}text-status-warning-text{% else %}text-status-unknown-text{% endif %}">Fresh Collections</p>
+                <p class="mt-2 text-xl font-semibold text-content-primary">{{ fresh_clusters }}/{{ overview.total_clusters }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Committed within the freshness window.</p>
             </div>
         </div>
     </div>
