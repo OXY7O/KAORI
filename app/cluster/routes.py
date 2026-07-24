@@ -37,7 +37,10 @@ from app.cluster.sync_state import (
 from app.extensions.db import db
 from app.integrations.deletion import DeletionBlocked
 from app.models import Cluster
-from app.notifications.service import record_operational_activity
+from app.notifications.service import (
+    get_navigation_notification_context,
+    record_operational_activity,
+)
 from app.rbac.decorators import permission_required
 
 logger = logging.getLogger(__name__)
