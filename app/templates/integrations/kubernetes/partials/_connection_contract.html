@@ -79,6 +79,9 @@
                 </div>
             </article>
         </div>
+        <div class="border-t border-outline-subtle p-5 sm:p-6">
+            {% include 'integrations/kubernetes/partials/_minimum_validation_rbac.html' %}
+        </div>
         <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <p class="text-xs leading-5 text-content-secondary">Configuration changes reset readiness until worker validation confirms the updated contract.</p>
             <a href="{{ url_for('cluster.edit_cluster', cluster_id=cluster.id) }}"
@@ -88,7 +91,6 @@
     <aside class="space-y-4 xl:col-span-4">
         {% set operational_flow_items = [('Configure Connection', 'Set identity, environment, kubeconfig ownership, and TLS policy.'), ('Test Connection', 'Confirm the submitted Kubernetes API endpoint, credentials, and TLS policy before saving connection changes.'), ('Run Full Validation', 'Discover served APIs, effective RBAC, stable adapters, lifecycle posture, and fallback requirements.'), ('Refresh and Synchronize', 'Record runtime evidence and update normalized Kubernetes inventory.')] %}
         {{ info_flow.render('Operational Flow', 'How this connection becomes eligible for KAORI operations.', operational_flow_items, icon='workflow', note='A healthy API connection can still be Degraded when the Kubernetes version lifecycle, API fallback, or RBAC contract requires attention.', open_by_default=true) }}
-        {% include 'integrations/kubernetes/partials/_minimum_validation_rbac.html' %}
         <div class="rounded-xl border border-status-info-border bg-status-info-soft p-4">
             <div class="flex items-start gap-3">
                 <i data-lucide="landmark"

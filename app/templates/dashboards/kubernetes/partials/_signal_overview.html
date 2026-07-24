@@ -1,3 +1,4 @@
+{% import "components/loading_bar.html" as loading_bar %}
 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
     <header class="border-b border-outline-subtle bg-surface-hover px-4 py-4 sm:px-5">
         <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -29,7 +30,7 @@
                 </div>
             </div>
         </div>
-        {% include "dashboards/kubernetes/partials/_loading_bar.html" %}
+        {{ loading_bar.render('dashboard-loading-bar', label='Refreshing Kubernetes operational signals') }}
     </header>
     <div class="p-4 sm:p-5">
         <div id="dashboard-kpi-cards"
