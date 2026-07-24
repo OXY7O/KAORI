@@ -2,15 +2,15 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table.html" as table_ui %}
 <div class="overflow-x-auto overscroll-x-contain">
-    <table class="w-full min-w-[1000px] table-fixed text-xs text-content-primary">
-        <thead>
-            <tr class="border-b border-outline-subtle bg-surface-hover text-[10px] font-semibold uppercase tracking-[0.08em] text-kaori-primary">
-                <th class="w-[16%] px-4 py-3 text-left">Cluster</th>
-                <th class="w-[27%] px-4 py-3 text-left">Namespace</th>
-                <th class="w-[11%] px-3 py-3 text-left">Status</th>
-                <th class="w-[16%] px-3 py-3 text-left">Resource Quota</th>
-                <th class="w-[22%] px-3 py-3 text-left">Pod Security</th>
-                <th class="w-[8%] px-3 py-3 text-right">Details</th>
+    <table class="min-w-[980px] w-full divide-y divide-outline-subtle text-sm">
+        <thead class="bg-surface-hover text-xs text-content-muted">
+            <tr>
+                <th class="min-w-[160px] px-4 py-3 text-left font-semibold">Cluster</th>
+                <th class="min-w-[240px] px-4 py-3 text-left font-semibold">Namespace</th>
+                <th class="min-w-[120px] px-4 py-3 text-left font-semibold">Status</th>
+                <th class="min-w-[160px] px-4 py-3 text-left font-semibold">Resource Quota</th>
+                <th class="min-w-[240px] px-4 py-3 text-left font-semibold">Pod Security</th>
+                <th class="w-[132px] min-w-[132px] px-4 py-3 text-right font-semibold">Details</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-outline-subtle">
@@ -54,7 +54,7 @@
                             {% endif %}
                         </div>
                     </td>
-                    <td class="px-3 py-3.5 text-right align-top">
+                    <td class="w-[132px] min-w-[132px] whitespace-nowrap px-4 py-3.5 text-right align-top">
                         <button type="button"
                                 data-namespace-toggle="true"
                                 data-namespace-id="{{ namespace.id }}"
