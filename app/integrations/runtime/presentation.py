@@ -94,6 +94,7 @@ def runtime_history_view(
         transition = _runtime_transition(row, previous_row)
         diagnostics = _diagnostic_rows(row.diagnostics or [])
         lifecycle_context = _kubernetes_lifecycle_context(row.provider, metadata)
+        effective_status = _effective_runtime_posture(row.health_status, row.readiness)
         rendered_rows.append(
             {
                 'id': row.id,
@@ -106,6 +107,8 @@ def runtime_history_view(
                 'readiness_label': present_key_label(row.readiness),
                 'health_status': row.health_status,
                 'health_status_label': present_key_label(row.health_status),
+                'effective_status': effective_status,
+                'effective_status_label': present_key_label(effective_status),
                 'health_score': row.health_score,
                 'health_score_display': f'{row.health_score}/100',
                 'latency_ms': row.latency_ms,
@@ -140,10 +143,27 @@ def runtime_history_view(
         'rows': rendered_rows,
         'pagination': pagination,
         'latest_status': latest.health_status if latest else 'not_observed',
+        'latest_readiness': latest.readiness if latest else 'validation_required',
+        'latest_effective_status': (
+            _effective_runtime_posture(latest.health_status, latest.readiness) if latest else 'not_observed'
+        ),
         'latest_score': latest.health_score if latest else None,
         'health_counts': health_counts,
     }
 
+
+
+def _effective_runtime_posture(health_status: str | None, readiness: str | None) -> str:
+    """Return the worst current posture across runtime health and readiness."""
+    health = str(health_status or 'not_observed').strip().lower()
+    ready = str(readiness or 'validation_required').strip().lower()
+    if health == 'unhealthy' or ready == 'blocked':
+        return 'blocked'
+    if health == 'degraded' or ready == 'degraded':
+        return 'degraded'
+    if health == 'healthy' and ready == 'ready':
+        return 'ready'
+    return 'validation_required'
 
 def _diagnostic_rows(items: list[object]) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []

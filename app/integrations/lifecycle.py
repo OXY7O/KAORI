@@ -13,7 +13,8 @@ def ensure_provider_operational(provider_record: Any, *, provider_type: str) -> 
     this guard immediately before touching an external endpoint.  Administrative
     lifecycle state is authoritative even when a task was queued while active.
     """
-    if not bool(getattr(provider_record, 'enabled', False)):
+    provider_enabled = getattr(provider_record, 'enabled', None)
+    if provider_enabled is not None and not bool(provider_enabled):
         raise RuntimeError(f'{provider_type.title()} operation was canceled because the provider instance is disabled.')
     canonical = getattr(provider_record, 'integration_instance', None)
     if canonical is None:

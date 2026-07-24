@@ -259,7 +259,7 @@ def kubernetes_runtime_refresh(cluster_id: str) -> ResponseReturnValue:
             queue_feedback=not is_htmx,
         )
     if is_htmx:
-        context = _kubernetes_detail_context(cluster_id)
+        context = _kubernetes_detail_context(cluster_id, include_history=True)
         context.update(
             {
                 'validation_job': validation_job,
@@ -285,7 +285,7 @@ def kubernetes_runtime_refresh_status(cluster_id: str, task_id: str) -> Response
         instance_id=connection.id,
     ):
         abort(404)
-    context = _kubernetes_detail_context(cluster_id)
+    context = _kubernetes_detail_context(cluster_id, include_history=True)
     context.update(
         {
             'validation_job': snapshot,

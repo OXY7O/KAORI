@@ -87,7 +87,8 @@
                                 :class="activeTab === '{{ tab_key }}' ? 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px' : 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary'">
                             <i data-lucide="{{ tab_icon }}" class="h-4 w-4"></i>
                             <span>{{ tab_label }}</span>
-                            <span class="kaori-semantic-label rounded-md border px-2 py-0.5 text-[10px] font-semibold"
+                            <span {% if tab_key in ['validation', 'runtime'] %}id="kubernetes-{{ tab_key }}-tab-badge"{% endif %}
+                                  class="kaori-semantic-label rounded-md border px-2 py-0.5 text-[10px] font-semibold"
                                   :class="activeTab === '{{ tab_key }}' ? 'border-brand-outline bg-kaori-soft text-kaori-primary' : 'border-outline-subtle bg-surface-card text-content-muted'">{{ tab_badge }}</span>
                         </button>
                     {% endfor %}
