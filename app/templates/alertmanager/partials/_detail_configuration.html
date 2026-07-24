@@ -222,7 +222,7 @@
                 {% endcall %}
             </section>
         </form>
-        <aside class="space-y-4 xl:col-span-4 xl:sticky xl:top-5">
+        <aside class="space-y-4 xl:sticky xl:top-5 xl:col-span-4 xl:self-start">
             {% set configuration_flow_steps = [('Save Changes', 'Update the canonical connection contract and return readiness to Validation Required.'), ('Run Full Validation', 'Rebuild capability, compatibility, and readiness evidence for the saved settings.'), ('Refresh Runtime', 'Record current endpoint health, latency, and runtime observations.'), ('Review Resolution', 'Confirm the connection remains eligible and effective for its governed scope bindings.')] %}
             {{ info_flow.render('Configuration Flow',
                         'How saved connection changes return to governed operational use.',

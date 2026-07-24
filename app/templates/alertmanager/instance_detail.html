@@ -49,7 +49,7 @@
                                     <p class="text-[11px] font-semibold">Readiness</p>
                                 </div>
                                 <p class="mt-1.5 truncate text-sm font-semibold text-brand-foreground">{{ readiness|replace('_', ' ') |title }}</p>
-                                <p class="{{ page_hero.context_metric_helper_classes() }}">Produced by Full Validation</p>
+                                <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Produced by Full Validation</p>
                             </div>
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <div class="flex items-center gap-2 text-brand-foreground">
@@ -57,7 +57,7 @@
                                     <p class="text-[11px] font-semibold">Scope Bindings</p>
                                 </div>
                                 <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ bindings|length }}</p>
-                                <p class="{{ page_hero.context_metric_helper_classes() }}">Contexts evaluated by resolver</p>
+                                <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Contexts evaluated by resolver</p>
                             </div>
                         </div>
                         <div class="{{ page_hero.context_actions_classes() }}">
@@ -78,7 +78,7 @@
             </div>
         </section>
         <section id="alertmanager-detail-tabs"
-                 class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                 class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
             <nav class="border-b border-outline-default bg-surface-hover px-4 pt-4 sm:px-5"
                  aria-label="Alertmanager instance domains">
                 <div class="flex gap-2 overflow-x-auto" role="tablist">

@@ -292,7 +292,7 @@
                   hx-target="#prometheus-scope-workspace"
                   hx-swap="outerHTML"
                   hx-indicator="#prometheus-binding-loading"
-                  class="relative overflow-hidden rounded-xl border border-outline-subtle bg-surface-card xl:col-span-4">
+                  class="relative overflow-hidden rounded-xl border border-outline-subtle bg-surface-card xl:sticky xl:top-5 xl:col-span-4 xl:self-start">
                 {% if csrf_token is defined %}
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 {% endif %}

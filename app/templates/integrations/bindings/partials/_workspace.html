@@ -152,7 +152,7 @@
             </div>
         {% endif %}
     </section>
-    <aside class="space-y-4 lg:col-span-4">
+    <aside class="space-y-4 lg:sticky lg:top-5 lg:col-span-4 lg:self-start">
         <section class="rounded-2xl border border-outline-default bg-surface-card p-5 shadow-sm">
             <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-kaori-primary">Operational Scope</p>
             <h2 class="mt-2 text-base font-semibold text-content-primary">{{ cluster.name if cluster else 'Unavailable scope' }}</h2>
