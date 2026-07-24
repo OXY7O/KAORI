@@ -68,8 +68,8 @@
             <div class="mt-3 space-y-2 text-xs text-content-secondary">
                 {% for icon, label in [
                     ('file-chart-column', 'Report Generation'),
-                    ('chart-spline', 'Analytics Materialization'),
-                    ('brain-circuit', 'Forecast Computation')
+                    ('file-clock', 'Scheduled Report Generation'),
+                    ('brain-circuit', 'Knowledge Base Indexing')
                 ] %}
                     <div class="flex items-center gap-2">
                         <i data-lucide="{{ icon }}" class="h-4 w-4 text-kaori-primary"></i>
@@ -81,7 +81,7 @@
         </div>
     </aside>
 
-    <main class="min-w-0 xl:col-span-8">
+    <main id="job-configuration-workspace" class="min-w-0 xl:col-span-8">
         {% include "jobs/configuration/_job_workspace.html" %}
     </main>
 </div>

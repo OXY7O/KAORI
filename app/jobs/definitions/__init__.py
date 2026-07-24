@@ -1,4 +1,12 @@
+from app.jobs.definitions.analytics_refresh import ANALYTICS_REFRESH_DEFINITION
 from app.jobs.definitions.base import JobDefinition, RegisteredJobDispatchResult
+from app.jobs.definitions.forecast_refresh import FORECAST_REFRESH_DEFINITION
 from app.jobs.definitions.inventory_sync import INVENTORY_SYNC_DEFINITION
 
-__all__ = ['INVENTORY_SYNC_DEFINITION', 'JobDefinition', 'RegisteredJobDispatchResult']
+__all__ = [
+    'ANALYTICS_REFRESH_DEFINITION',
+    'FORECAST_REFRESH_DEFINITION',
+    'INVENTORY_SYNC_DEFINITION',
+    'JobDefinition',
+    'RegisteredJobDispatchResult',
+]

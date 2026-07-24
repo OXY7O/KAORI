@@ -169,6 +169,42 @@ def _build_prometheus_failure_feedback(payload: dict) -> str:
     return _render_operational_toast(feedback)
 
 
+
+
+@analytics_bp.get('/materialization/status')
+@permission_required('analytics.view')
+def materialization_status():
+    from flask import make_response
+
+    from app.analytics.materialization.service import read_snapshot
+
+    dataset_key = request.args.get('dataset_key', '').strip()
+    cluster_id = request.args.get('cluster_id', type=int)
+    parameters = {
+        key: value
+        for key, value in request.args.items()
+        if key not in {'dataset_key', 'return_url'} and value != ''
+    }
+    if not dataset_key or cluster_id is None:
+        return '', 400
+    result = read_snapshot(
+        cluster_id=cluster_id,
+        dataset_key=dataset_key,
+        parameters=parameters,
+    )
+    if result.available:
+        response = make_response('', 204)
+        response.headers['HX-Refresh'] = 'true'
+        return response
+    snapshot = result.snapshot
+    return render_template(
+        'analytics/materialization/_pending.html',
+        materialization_status_url=request.full_path,
+        materialization_return_url=request.args.get('return_url', '').strip() or url_for('analytics.overview'),
+        materialization_error=snapshot.last_error if snapshot else None,
+    )
+
+
 @analytics_bp.route(
     '/',
     methods=[

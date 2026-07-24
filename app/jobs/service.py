@@ -10,8 +10,10 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
 from app.extensions.db import db
+from app.jobs.audit import is_automatic_execution
 from app.jobs.constants import ACTIVE_JOB_STATUSES, DEFAULT_PRIORITIES, HEAVY_WORKLOAD_CLASSES
 from app.jobs.fingerprint import build_deduplication_key, payload_fingerprint
+from app.models.audit import AuditEvent
 from app.models.job import JobExecution, JobExecutionSubscriber
 
 
@@ -284,6 +286,30 @@ def update_job_progress(
     return job
 
 
+def _append_automatic_terminal_audit(job: JobExecution) -> None:
+    if not is_automatic_execution(job):
+        return
+    event = AuditEvent()
+    event.actor_user_id = None
+    event.target_type = 'job_execution'
+    event.target_id = job.public_id
+    event.action = f'automatic_job_{job.status}'
+    operation_label = job.operation.replace('_', ' ').title()
+    status_label = job.status.replace('_', ' ').title()
+    event.summary = f'Automatic {operation_label} finished with status {status_label}.'[:255]
+    event.metadata_json = {
+        'job_execution_id': job.id,
+        'job_public_id': job.public_id,
+        'job_type': job.job_type,
+        'operation': job.operation,
+        'queue_name': job.queue_name,
+        'status': job.status,
+        'result_summary': job.result_summary_json or {},
+        'error_code': job.error_code,
+    }
+    db.session.add(event)
+
+
 def mark_job_succeeded(
     task_id: str,
     *,
@@ -300,6 +326,7 @@ def mark_job_succeeded(
     if job.status == 'cancel_requested':
         _terminalize(job, 'canceled')
         job.progress_message = 'Canceled before completion was committed'
+        _append_automatic_terminal_audit(job)
         db.session.commit()
         return job
     _terminalize(job, 'partially_succeeded' if partial else 'succeeded')
@@ -309,6 +336,7 @@ def mark_job_succeeded(
     if job.progress_total:
         job.progress_current = job.progress_total
     job.progress_message = 'Completed'
+    _append_automatic_terminal_audit(job)
     db.session.commit()
     return job
 
@@ -322,12 +350,14 @@ def mark_job_failed(task_id: str, *, error: Exception | str, error_code: str | N
     if job.status == 'cancel_requested':
         _terminalize(job, 'canceled')
         job.progress_message = 'Canceled before failure finalization'
+        _append_automatic_terminal_audit(job)
         db.session.commit()
         return job
     _terminalize(job, 'failed')
     job.error_code = error_code or (type(error).__name__ if isinstance(error, Exception) else 'job_failed')
     job.error_message = str(error)[:4000]
     job.progress_message = 'Failed'
+    _append_automatic_terminal_audit(job)
     db.session.commit()
     return job
 
@@ -366,6 +396,7 @@ def mark_job_canceled(task_id: str, *, message: str = 'Canceled') -> JobExecutio
         return job
     _terminalize(job, 'canceled')
     job.progress_message = message[:255]
+    _append_automatic_terminal_audit(job)
     db.session.commit()
     return job
 
@@ -389,6 +420,7 @@ def cancel_job_execution(job: JobExecution, *, terminate: bool = False) -> JobEx
             return mark_job_canceled(job.celery_task_id, message='Canceled before worker execution') or job
         _terminalize(job, 'canceled')
         job.progress_message = 'Canceled before worker execution'
+        _append_automatic_terminal_audit(job)
         db.session.commit()
         return job
     request_job_cancel(job)

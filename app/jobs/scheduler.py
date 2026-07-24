@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.extensions.db import db
+from app.jobs.audit import record_automatic_job_event
 from app.jobs.dispatcher import dispatch_registered_job
 from app.jobs.policies.service import ensure_registered_job_policies, utcnow
 from app.models.job import JobPolicy
@@ -94,6 +95,13 @@ def dispatch_due_job_policies(*, limit: int = 25) -> dict[str, object]:
             results.append({'job_key': job_key, 'status': 'failed'})
             continue
 
+        if outcome.job is not None and outcome.created:
+            record_automatic_job_event(
+                outcome.job,
+                action='automatic_job_queued',
+                summary=f'Automatic {job_key} execution was queued.',
+                metadata={'job_key': job_key, 'dispatch_status': outcome.status},
+            )
         current = db.session.get(JobPolicy, policy_id)
         if current is not None:
             current.last_dispatch_status = outcome.status

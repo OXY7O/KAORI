@@ -1,8 +1,17 @@
 from __future__ import annotations
 
-from app.jobs.definitions import INVENTORY_SYNC_DEFINITION, JobDefinition
+from app.jobs.definitions import (
+    ANALYTICS_REFRESH_DEFINITION,
+    FORECAST_REFRESH_DEFINITION,
+    INVENTORY_SYNC_DEFINITION,
+    JobDefinition,
+)
 
-_JOB_DEFINITIONS: tuple[JobDefinition, ...] = (INVENTORY_SYNC_DEFINITION,)
+_JOB_DEFINITIONS: tuple[JobDefinition, ...] = (
+    INVENTORY_SYNC_DEFINITION,
+    ANALYTICS_REFRESH_DEFINITION,
+    FORECAST_REFRESH_DEFINITION,
+)
 _JOB_DEFINITION_BY_KEY = {definition.key: definition for definition in _JOB_DEFINITIONS}
 
 

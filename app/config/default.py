@@ -351,6 +351,7 @@ class Config:
         'timezone': CELERY_TIMEZONE,
         'enable_utc': True,
         'imports': (
+            'app.analytics.tasks',
             'app.cluster.tasks',
             'app.retention.tasks',
             'app.integrations.runtime.tasks',
@@ -359,6 +360,12 @@ class Config:
             'app.resolver.tasks',
         ),
         'task_routes': {
+            'app.analytics.tasks.materialize_analytics_snapshots': {
+                'queue': ANALYTICS_CELERY_QUEUE,
+            },
+            'app.analytics.tasks.materialize_forecast_snapshots': {
+                'queue': FORECASTING_CELERY_QUEUE,
+            },
             'app.cluster.tasks.sync_all_clusters': {
                 'queue': 'inventory',
             },

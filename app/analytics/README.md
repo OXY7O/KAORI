@@ -440,3 +440,27 @@ implemented in the analytics layer.
 
 Templates touched by this feature consume presentation-ready counters, status metadata,
 latency labels, and posture values from Python rather than deriving them in Jinja.
+
+## Worker-Backed Materialization
+
+Heavy Prometheus range queries are not executed independently for every web request. KAORI stores reusable results in `analytics_snapshots` and dispatches generation through the canonical job registry:
+
+- `analytics.materialize` uses the `analytics-batch` queue for Capacity, Storage, Workload, Top Consumers, and long-range Utilization trends.
+- `analytics.forecast.materialize` uses the dedicated `forecasting` queue for all forecast range queries.
+- Automatic policies are configured under **Platform Operations → Jobs & Executions → Job Configuration**.
+- A stale successful snapshot remains readable during refresh or temporary Prometheus failure.
+- Scheduled executions create `JobExecution` and `AuditEvent` records only; they do not create user notifications or toasts.
+- Missing custom filter combinations are deduplicated and generated once on demand. The requesting web process never runs the heavy query.
+
+### Protected refresh cadence
+
+The generic scheduler may inspect Analytics policy every 30 minutes and Forecast policy every 120 minutes, but it dispatches only snapshots whose freshness window has expired. KAORI applies minimum cadence floors by data horizon:
+
+- 24-hour analytics: at least 20 minutes
+- 7-day analytics: at least 60 minutes
+- 30-day analytics: at least 180 minutes
+- 60-day analytics: at least 360 minutes
+- 30-day forecast history: at least 120 minutes
+- 90-day forecast history: at least 360 minutes
+
+Manual execution intentionally refreshes all configured combinations. On-demand requests join an active fleet materialization when one exists, preventing a page request from duplicating work already running on the worker.

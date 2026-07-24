@@ -1,0 +1,13 @@
+{% if analytics_materialization and analytics_materialization.stale %}
+<section class="rounded-xl border border-status-warning-border bg-status-warning-soft px-4 py-3">
+    <div class="flex items-start gap-3">
+        <i data-lucide="history" class="mt-0.5 h-4 w-4 text-status-warning"></i>
+        <div>
+            <p class="text-sm font-semibold text-content-primary">Last Successful Snapshot</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">
+                KAORI is serving the last successful result while a background refresh runs. Prometheus is not queried again by this page request.
+            </p>
+        </div>
+    </div>
+</section>
+{% endif %}

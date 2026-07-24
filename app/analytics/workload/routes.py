@@ -1,57 +1,63 @@
-# app/analytics/workload/routes.py
-
 from __future__ import annotations
 
 from flask import render_template, request
 
+from app.analytics.materialization.presentation import pending_page_context, snapshot_meta
+from app.analytics.materialization.requests import resolve_materialized_request
 from app.analytics.workload.service import get_workload_analysis_context
 from app.common.dependencies import render_dependency_blocker
+from app.prometheus.repository import resolve_instance_for_cluster
 from app.rbac.decorators import permission_required
+
+
+def _context_or_pending():
+    parameters = request.args.to_dict(flat=True)
+    parameters.setdefault('time_range', '24h')
+    materialized = resolve_materialized_request(
+        dataset_key='analytics.workload',
+        job_key='analytics.materialize',
+        parameters=parameters,
+    )
+    if materialized.cluster is None or resolve_instance_for_cluster(materialized.cluster.id) is None:
+        return get_workload_analysis_context(query_args=request.args), None
+    if not materialized.result.available:
+        return None, pending_page_context(
+            materialized=materialized,
+            dataset_key='analytics.workload',
+            title='Workload Analysis',
+            description='Workload analytics are computed by the analytics worker and reused by every viewer.',
+            icon='boxes',
+        )
+    context = materialized.result.context or {}
+    context['analytics_materialization'] = snapshot_meta(materialized)
+    return context, None
 
 
 @permission_required('analytics.view')
 def workload() -> str:
-    context = get_workload_analysis_context(
-        query_args=request.args,
-    )
-
-    return render_template(
-        'analytics/workload/index.html',
-        **context,
-    )
+    context, pending = _context_or_pending()
+    if pending:
+        return render_template('analytics/materialization/pending.html', **pending)
+    return render_template('analytics/workload/index.html', **(context or {}))
 
 
 @permission_required('analytics.view')
 def workload_tenant_quota() -> str:
-    context = get_workload_analysis_context(
-        query_args=request.args,
-    )
-
-    dependency_blocker = context.get('dependency_blocker')
+    context, pending = _context_or_pending()
+    if pending:
+        return render_template('analytics/materialization/_pending.html', **pending)
+    dependency_blocker = (context or {}).get('dependency_blocker')
     if dependency_blocker:
-        return render_dependency_blocker(
-            dependency_blocker,
-        )
-
-    return render_template(
-        'analytics/workload/partials/_tenant_quota_section.html',
-        **context,
-    )
+        return render_dependency_blocker(dependency_blocker)
+    return render_template('analytics/workload/partials/_tenant_quota_section.html', **(context or {}))
 
 
 @permission_required('analytics.view')
 def workload_resource_mapping() -> str:
-    context = get_workload_analysis_context(
-        query_args=request.args,
-    )
-
-    dependency_blocker = context.get('dependency_blocker')
+    context, pending = _context_or_pending()
+    if pending:
+        return render_template('analytics/materialization/_pending.html', **pending)
+    dependency_blocker = (context or {}).get('dependency_blocker')
     if dependency_blocker:
-        return render_dependency_blocker(
-            dependency_blocker,
-        )
-
-    return render_template(
-        'analytics/workload/partials/_workload_mapping_section.html',
-        **context,
-    )
+        return render_dependency_blocker(dependency_blocker)
+    return render_template('analytics/workload/partials/_workload_mapping_section.html', **(context or {}))

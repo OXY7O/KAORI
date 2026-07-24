@@ -27,6 +27,7 @@ def _new_policy(definition: JobDefinition) -> JobPolicy:
         timezone='UTC',
         scope_type=definition.scope_type,
         scope_key=definition.scope_key,
+        configuration_json=dict(definition.default_configuration or {}),
         next_run_at=(
             calculate_next_run(interval_minutes=definition.default_interval_minutes)
             if definition.default_enabled and definition.schedule_supported
@@ -69,6 +70,7 @@ def update_job_policy(
     enabled: bool,
     interval_minutes: int,
     user_id: int,
+    configuration: dict[str, object] | None = None,
 ) -> JobPolicy:
     definition = get_job_definition(job_key)
     if not definition.schedule_supported:
@@ -84,6 +86,8 @@ def update_job_policy(
     policy.trigger_type = 'interval'
     policy.interval_minutes = interval_minutes
     policy.updated_by_user_id = user_id
+    if configuration is not None:
+        policy.configuration_json = configuration
     policy.next_run_at = calculate_next_run(interval_minutes=interval_minutes) if enabled else None
     db.session.commit()
     return policy

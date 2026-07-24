@@ -13,6 +13,7 @@
         {% set total_rows = payload.total_rows|default(0) %}
         {% set high_usage = namespace_options|length %}
         {% include "analytics/top_consumers/partials/_hero.html" %}
+        {% include "analytics/materialization/_freshness.html" %}
         {% if dependency_blocker %}
             {% include "components/dependencies/_blocker.html" %}
         {% endif %}

@@ -10,7 +10,6 @@ from flask_login import current_user
 from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.cluster.sync_state import build_cluster_sync_snapshot
 from app.extensions.db import db
 from app.jobs.configuration import build_job_configuration_context
 from app.jobs.definitions.base import JobDefinition
@@ -54,6 +53,12 @@ def _configuration_context(
         policy = selected_job['policy']
         form.enabled.data = policy.enabled
         form.interval_minutes.data = policy.interval_minutes
+        configuration = policy.configuration_json or {}
+        form.analytics_time_ranges.data = list(configuration.get('time_ranges') or [])
+        form.forecast_history_windows.data = list(configuration.get('history_windows') or [])
+        form.forecast_horizons.data = list(configuration.get('forecast_horizons') or [])
+        form.freshness_minutes.data = configuration.get('freshness_minutes')
+        form.stale_grace_minutes.data = configuration.get('stale_grace_minutes')
     context.update(
         {
             'policy_form': form,
@@ -107,8 +112,6 @@ def _render_execution_fragment(context: dict[str, object], fragment: str) -> str
     )
 
 
-
-
 def _is_htmx() -> bool:
     return request.headers.get('HX-Request') == 'true'
 
@@ -134,6 +137,7 @@ def _render_configuration_job(
             user_id=int(current_user.id)
         )
     return render_template('jobs/configuration/_job_workspace.html', **context), status_code
+
 
 def _jobs_execution_url(*, search: str = '', queue: str = '') -> str:
     return url_for(
@@ -202,11 +206,30 @@ def update_policy(job_key: str) -> ResponseReturnValue:
         return render_template('jobs/index.html', **context), 422
 
     try:
+        configuration = dict(definition.default_configuration or {})
+        if job_key == 'analytics.materialize':
+            configuration.update(
+                {
+                    'time_ranges': list(form.analytics_time_ranges.data or ['24h', '7d', '30d', '60d']),
+                    'freshness_minutes': int(form.freshness_minutes.data or 20),
+                    'stale_grace_minutes': int(form.stale_grace_minutes.data or 1440),
+                }
+            )
+        elif job_key == 'analytics.forecast.materialize':
+            configuration.update(
+                {
+                    'history_windows': list(form.forecast_history_windows.data or ['30d', '90d']),
+                    'forecast_horizons': list(form.forecast_horizons.data or ['90d', '180d', '365d']),
+                    'freshness_minutes': int(form.freshness_minutes.data or 120),
+                    'stale_grace_minutes': int(form.stale_grace_minutes.data or 4320),
+                }
+            )
         policy = update_job_policy(
             job_key=job_key,
             enabled=bool(form.enabled.data),
             interval_minutes=int(form.interval_minutes.data or definition.default_interval_minutes),
             user_id=int(current_user.id),
+            configuration=configuration,
         )
     except ValueError as exc:
         if _is_htmx():
@@ -244,6 +267,7 @@ def update_policy(job_key: str) -> ResponseReturnValue:
             'interval_minutes': policy.interval_minutes,
             'scope_type': policy.scope_type,
             'scope_key': policy.scope_key,
+            'configuration': policy.configuration_json or {},
         },
         queue_feedback=not is_htmx,
     )
@@ -334,8 +358,12 @@ def run_now(job_key: str) -> ResponseReturnValue:
     )
     if is_htmx:
         sync_progress = None
-        if outcome.created and job.celery_task_id:
+        if job_key == 'kubernetes.inventory.sync' and outcome.created and job.celery_task_id:
             try:
+                build_cluster_sync_snapshot = getattr(
+                    import_module('app.cluster.sync_state'),
+                    'build_cluster_sync_snapshot',
+                )
                 sync_progress = build_cluster_sync_snapshot(str(job.celery_task_id))
             except (RuntimeError, KeyError):
                 logger.exception(

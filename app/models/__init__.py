@@ -1,4 +1,5 @@
 from app.models.alertmanager import AlertmanagerInstance
+from app.models.analytics import AnalyticsSnapshot
 from app.models.archive import ArchiveArtifact
 from app.models.audit import AuditEvent
 from app.models.cluster import Cluster, ClusterStatus
@@ -41,6 +42,7 @@ from app.models.secret_reveal import SecretRevealNamespacePolicy, SecretRevealRe
 from app.models.user import User
 
 __all__ = [
+    'AnalyticsSnapshot',
     'ArchiveArtifact',
     'AuditEvent',
     'IdentityProvider',

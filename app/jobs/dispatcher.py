@@ -82,6 +82,8 @@ def dispatch_registered_job(
         raise ValueError(f'{definition.name} does not support manual execution.')
     if trigger_type == 'scheduled' and not definition.schedule_supported:
         raise ValueError(f'{definition.name} does not support scheduled execution.')
+    if trigger_type not in {'manual', 'scheduled', 'on_demand'}:
+        raise ValueError(f'Unsupported job trigger type: {trigger_type}')
     return definition.dispatch(
         requested_by_user_id=requested_by_user_id,
         trigger_type=trigger_type,

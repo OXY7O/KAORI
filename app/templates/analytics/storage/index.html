@@ -6,6 +6,7 @@
          data-analytics-page-tracker="storage-load-tracker"
          data-analytics-page-request-tracking="false">
         {% include "analytics/storage/partials/_hero.html" %}
+        {% include "analytics/materialization/_freshness.html" %}
         {% if dependency_blocker %}
             {% include "components/dependencies/_blocker.html" %}
         {% endif %}

@@ -1,0 +1,26 @@
+{% extends "jobs/configuration/definitions/_materialization_job.html" %}
+{% block materialization_options %}
+<div class="grid gap-4 sm:grid-cols-2">
+    <div>
+        <p class="text-xs font-semibold text-content-secondary">History Windows</p>
+        <div class="mt-2 space-y-2">
+            {% for value, label in policy_form.forecast_history_windows.choices %}
+                <label class="flex items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary">
+                    <input type="checkbox" name="forecast_history_windows" value="{{ value }}" {% if value in (policy_form.forecast_history_windows.data or []) %}checked{% endif %} class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary"> {{ label }}
+                </label>
+            {% endfor %}
+        </div>
+    </div>
+    <div>
+        <p class="text-xs font-semibold text-content-secondary">Forecast Horizons</p>
+        <div class="mt-2 space-y-2">
+            {% for value, label in policy_form.forecast_horizons.choices %}
+                <label class="flex items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary">
+                    <input type="checkbox" name="forecast_horizons" value="{{ value }}" {% if value in (policy_form.forecast_horizons.data or []) %}checked{% endif %} class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary"> {{ label }}
+                </label>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+<p class="text-xs leading-5 text-content-muted">Forecast pages never execute range queries in the web process. Namespace-specific or alternate method requests are deduplicated and sent to the forecasting worker.</p>
+{% endblock materialization_options %}
