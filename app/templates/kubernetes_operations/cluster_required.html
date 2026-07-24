@@ -19,13 +19,10 @@
                 </div>
                 <aside class="{{ page_hero.aside_classes() }}"
                        aria-label="Kubernetes operation availability">
-                    <div class="{{ page_hero.context_panel_classes() }}">
-                        {{ page_hero.context_header('Operation Boundary', 'Cluster Setup Required', 'shield-alert') }}
-                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                            {{ page_hero.context_metric('server-off', 'Registered Cluster', '0', 'No canonical Kubernetes target') }}
-                            {{ page_hero.context_metric('lock-keyhole', 'Live Operations', 'Blocked', 'Enabled after registration', value_classes='text-sm font-semibold leading-5') }}
-                        </div>
-                    </div>
+                    {% set cluster_blocked_scope = 'Kubernetes Operations' %}
+                    {% set cluster_blocked_title = 'Cluster Setup Required' %}
+                    {% set cluster_blocked_info = requested_operation ~ ' requires a registered Kubernetes cluster and canonical connection.' %}
+                    {% include 'components/cluster/_hero_blocked_context.html' %}
                 </aside>
             </div>
         </section>

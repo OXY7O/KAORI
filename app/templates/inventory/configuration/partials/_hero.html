@@ -26,6 +26,12 @@
         </div>
         <aside class="{{ page_hero.aside_classes() }}"
                aria-label="Configuration posture">
+            {% if cluster_onboarding.is_blocked %}
+                {% set cluster_blocked_scope = 'Kubernetes Configuration' %}
+                {% set cluster_blocked_title = 'Cluster Setup Required' %}
+                {% set cluster_blocked_info = 'Add a Kubernetes cluster to unlock configuration inventory in KAORI.' %}
+                {% include 'components/cluster/_hero_blocked_context.html' %}
+            {% else %}
             <div class="{{ page_hero.context_panel_classes() }}">
                 <div class="flex items-start justify-between gap-4">
                     <div>
@@ -55,6 +61,7 @@
                 <a href="{{ url_for('integrations.kubernetes') }}"
                    class="{{ page_hero.context_single_action_classes() }}"><i data-lucide="server-cog" class="h-4 w-4"></i>Manage Clusters</a>
             </div>
+        {% endif %}
         </aside>
     </div>
 </section>

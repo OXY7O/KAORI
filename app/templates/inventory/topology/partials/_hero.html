@@ -16,6 +16,12 @@
         </div>
         <aside class="{{ page_hero.aside_classes() }}"
                aria-label="Topology snapshot">
+            {% if cluster_onboarding.is_blocked %}
+                {% set cluster_blocked_scope = 'Kubernetes Topology' %}
+                {% set cluster_blocked_title = 'Cluster Setup Required' %}
+                {% set cluster_blocked_info = 'Add a Kubernetes cluster to unlock topology inventory in KAORI.' %}
+                {% include 'components/cluster/_hero_blocked_context.html' %}
+            {% else %}
             <div class="{{ page_hero.context_panel_classes() }}">
                 <div class="flex items-start justify-between gap-4">
                     <div>
@@ -52,6 +58,7 @@
                     Manage Clusters
                 </a>
             </div>
+        {% endif %}
         </aside>
     </div>
 </section>

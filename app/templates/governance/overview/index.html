@@ -14,15 +14,25 @@
                 </div>
                 <aside class="{{ page_hero.aside_classes() }}"
                        aria-label="Governance actions">
-                    <div class="{{ page_hero.context_panel_classes() }}">
-                        <div>
-                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Active capability</p>
-                            <h2 class="{{ page_hero.context_panel_title_classes() }}">TLS certificate governance</h2>
-                            <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Review certificate validity, ingress usage, and controlled renewal workflows.</p>
+                    {% if cluster_onboarding.is_blocked %}
+                        {% set cluster_blocked_scope = 'Kubernetes Governance' %}
+                        {% set cluster_blocked_title = 'Cluster Setup Required' %}
+                        {% set cluster_blocked_info = 'Add a Kubernetes cluster to unlock governance workflows in KAORI.' %}
+                        {% include 'components/cluster/_hero_blocked_context.html' %}
+                    {% else %}
+                        <div class="{{ page_hero.context_panel_classes() }}">
+                            {{ page_hero.context_header('Active Capability', 'TLS Certificate Governance', 'shield-check') }}
+                            <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                                {{ page_hero.context_metric('badge-check', 'Lifecycle Scope', 'TLS', 'Certificate validity and expiry') }}
+                                {{ page_hero.context_metric('route', 'Usage Mapping', 'Ingress', 'Referenced certificate consumers') }}
+                            </div>
+                            <a href="{{ url_for('governance.tls_certificates') }}"
+                               class="{{ page_hero.context_single_action_classes() }}">
+                                <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                                Open TLS Certificates
+                            </a>
                         </div>
-                        {% if not cluster_onboarding.is_blocked %}<a href="{{ url_for('governance.tls_certificates') }}"
-   class="mt-4 {{ page_hero.context_action_classes() }}">Open TLS Certificates<i data-lucide="arrow-right" class="h-4 w-4"></i></a>{% endif %}
-                    </div>
+                {% endif %}
                 </aside>
             </div>
         </section>
