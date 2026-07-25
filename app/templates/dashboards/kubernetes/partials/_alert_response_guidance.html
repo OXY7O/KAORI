@@ -1,0 +1,102 @@
+<section x-data="{ open: true }"
+         class="h-full rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <div @click="open = !open"
+         class="flex cursor-pointer select-none items-center gap-3 border-b border-outline-subtle px-5 py-4">
+        <div class="flex min-w-0 flex-1 items-center gap-3">
+            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <i data-lucide="book-open-check" class="h-5 w-5"></i>
+            </div>
+            <div class="min-w-0">
+                <h2 class="text-sm font-semibold text-content-primary">Alert Interpretation &amp; Response</h2>
+                <p class="mt-0.5 text-xs leading-5 text-content-muted">Meaning, triage order, and controlled response steps for active Kubernetes alerts.</p>
+            </div>
+        </div>
+        <button type="button"
+                class="ml-auto inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card"
+                @click.stop="open = !open"
+                :aria-expanded="open.toString()"
+                aria-label="Toggle Alert Interpretation and Response">
+            <i data-lucide="chevron-down"
+               class="h-4 w-4 transition-transform duration-200"
+               :class="open ? 'rotate-180' : ''"></i>
+        </button>
+    </div>
+
+    <div x-cloak x-show="open" x-transition class="space-y-5 p-5">
+        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+            <div class="flex items-start gap-3">
+                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-status-info-border bg-status-info-soft text-status-info-text">
+                    <i data-lucide="info" class="h-4 w-4"></i>
+                </div>
+                <div class="min-w-0">
+                    <p class="text-sm font-semibold text-content-primary">What This Summary Means</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">
+                        Alerts Summary is a committed worker snapshot of active Alertmanager signals, with Prometheus used only as the configured fallback source. Counts describe current signal severity; they do not by themselves confirm service impact or authorize remediation.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Severity Interpretation</p>
+            <div class="mt-3 grid gap-2 sm:grid-cols-3">
+                <div class="rounded-lg border border-status-critical-border bg-status-critical-soft p-3">
+                    <div class="flex items-center gap-2 text-status-critical-text">
+                        <i data-lucide="siren" class="h-4 w-4"></i>
+                        <p class="text-xs font-semibold">Critical</p>
+                    </div>
+                    <p class="mt-2 text-xs leading-5 text-status-critical-text">Potential active service impact. Begin incident triage immediately and establish ownership.</p>
+                </div>
+                <div class="rounded-lg border border-status-warning-border bg-status-warning-soft p-3">
+                    <div class="flex items-center gap-2 text-status-warning-text">
+                        <i data-lucide="triangle-alert" class="h-4 w-4"></i>
+                        <p class="text-xs font-semibold">Warning</p>
+                    </div>
+                    <p class="mt-2 text-xs leading-5 text-status-warning-text">Degradation or risk is developing. Investigate before thresholds escalate or capacity is exhausted.</p>
+                </div>
+                <div class="rounded-lg border border-status-info-border bg-status-info-soft p-3">
+                    <div class="flex items-center gap-2 text-status-info-text">
+                        <i data-lucide="circle-alert" class="h-4 w-4"></i>
+                        <p class="text-xs font-semibold">Info</p>
+                    </div>
+                    <p class="mt-2 text-xs leading-5 text-status-info-text">Operational context or low-risk signal. Validate relevance and watch for recurrence.</p>
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Detailed Handling Steps</p>
+            <ol class="mt-3 space-y-2.5">
+                {% set response_steps = [
+                    ('1', 'Confirm signal freshness', 'Check the snapshot timestamp, selected cluster, and alert source status before acting on the count.'),
+                    ('2', 'Triage by severity and scope', 'Handle Critical first, then Warning. Identify the affected namespace, workload, node, and user-facing service boundary.'),
+                    ('3', 'Validate supporting evidence', 'Open the alert detail and inspect labels, annotations, firing duration, related metrics, recent changes, and correlated alerts.'),
+                    ('4', 'Select the approved response', 'Use the linked runbook or KAORI recommendation. Do not execute a generic restart when the alert requires a specific recovery path.'),
+                    ('5', 'Apply controlled remediation', 'Confirm permission, blast radius, rollback path, and required approval before using the resolver or performing a manual change.'),
+                    ('6', 'Verify recovery and record outcome', 'Confirm the metric returns to normal, the alert resolves, the workload remains stable, and the action is recorded in Activity Audit.'),
+                ] %}
+                {% for number, title, description in response_steps %}
+                    <li class="flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-card p-3">
+                        <span class="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-kaori-outline bg-kaori-soft text-[10px] font-semibold text-kaori-primary">{{ number }}</span>
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ol>
+        </div>
+
+        <div class="flex flex-col gap-3 rounded-lg border border-outline-subtle bg-surface-hover p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="min-w-0">
+                <p class="text-sm font-semibold text-content-primary">Continue With Alert Detail</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Review the complete signal context before choosing remediation.</p>
+            </div>
+            <a href="/analytics/alerts"
+               class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-kaori-primary bg-kaori-primary px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card">
+                <i data-lucide="external-link" class="h-4 w-4"></i>
+                View Alerts
+            </a>
+        </div>
+    </div>
+</section>

@@ -117,15 +117,22 @@
                      x-show="activeTab === 'signals'"
                      role="tabpanel"
                      class="space-y-5">
-                    <div id="dashboard-alerts-summary"
-                         hx-get="{{ url_for('kubernetes_dashboard.section', section='alerts_summary') }}?{{ dashboard_cluster_query }}"
-                         hx-trigger="revealed"
-                         hx-target="this"
-                         hx-swap="outerHTML"
-                         hx-indicator="#dashboard-loading-bar">
-                        {% with title="Alerts Summary", description="Preparing Alertmanager and Prometheus alert visibility.", icon="bell-ring" %}
-                            {% include "dashboards/kubernetes/partials/_section_loading.html" %}
-                        {% endwith %}
+                    <div class="grid items-stretch gap-5 xl:grid-cols-12">
+                        <div class="xl:col-span-6">
+                            <div id="dashboard-alerts-summary"
+                                 hx-get="{{ url_for('kubernetes_dashboard.section', section='alerts_summary') }}?{{ dashboard_cluster_query }}"
+                                 hx-trigger="revealed"
+                                 hx-target="this"
+                                 hx-swap="outerHTML"
+                                 hx-indicator="#dashboard-loading-bar">
+                                {% with title="Alerts Summary", description="Preparing Alertmanager and Prometheus alert visibility.", icon="bell-ring" %}
+                                    {% include "dashboards/kubernetes/partials/_section_loading.html" %}
+                                {% endwith %}
+                            </div>
+                        </div>
+                        <div class="xl:col-span-6">
+                            {% include "dashboards/kubernetes/partials/_alert_response_guidance.html" %}
+                        </div>
                     </div>
 
                     <div id="dashboard-recommended-actions"

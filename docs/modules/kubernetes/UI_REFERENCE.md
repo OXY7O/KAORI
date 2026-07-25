@@ -38,3 +38,4 @@ Detailed page fields, table columns, and action names belong in the relevant Kub
 ## Kubernetes Operations Dashboard Expandable Defaults
 
 All expandable dashboard sections are open on initial render. Users may collapse a section after reviewing it, but navigating to the dashboard or loading a tab must not hide operational data behind a closed default state.
+- The Signals & Actions tab places Alert Interpretation & Response beside Alerts Summary. The guidance box is open by default and explains severity meaning, source/freshness validation, triage order, evidence review, approved remediation, rollback, and recovery verification.
