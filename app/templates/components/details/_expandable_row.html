@@ -1,3 +1,4 @@
+{% import "components/table.html" as table_ui %}
 {% macro toggle_button(group, item_id, detail_url, target_id, row_id, class_name='') -%}
     <button type="button"
             data-detail-toggle
@@ -9,15 +10,18 @@
             hx-get="{{ detail_url }}"
             hx-target="#{{ target_id }}"
             hx-swap="innerHTML"
-            class="inline-flex h-8 items-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-2.5 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-outline-focus hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus {{ class_name }}">
+            class="{{ table_ui.action_classes() }} {{ class_name }}">
         <i data-lucide="chevron-down" class="h-3.5 w-3.5"></i>
         <span data-detail-toggle-label>View More</span>
     </button>
 {%- endmacro %}
-{% macro detail_row(row_id, target_id, colspan) -%}
+{% macro detail_row(row_id, target_id, colspan, content_classes='w-full min-w-0 overflow-x-auto') -%}
     <tr id="{{ row_id }}" class="hidden border-0">
-        <td colspan="{{ colspan }}" class="p-0 leading-none align-top">
-            <div id="{{ target_id }}" data-detail-content data-open="false"></div>
+        <td colspan="{{ colspan }}" class="w-full p-0 leading-none align-top">
+            <div id="{{ target_id }}"
+                 data-detail-content
+                 data-open="false"
+                 class="{{ content_classes }}"></div>
         </td>
     </tr>
 {%- endmacro %}

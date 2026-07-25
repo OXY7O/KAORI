@@ -14,7 +14,7 @@
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
-            {% call page_hero.intro('package-search', 'Kubernetes pod inventory', 'package') %}
+            {% call page_hero.intro('package-search', 'Kubernetes Pod Inventory', 'package') %}
                 <h1 class="{{ page_hero.title_classes() }}">Pod Inventory</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">
                     Review pod identity, runtime phase, readiness, ownership, node placement, restarts, images, and configuration snapshots.
@@ -31,7 +31,7 @@
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Pod Posture</p>
-                        <h2 class="mt-1 text-base font-semibold text-brand-foreground">Runtime And Scheduling Readiness</h2>
+                        <h2 class="mt-1 text-base font-semibold text-brand-foreground">Runtime and Scheduling Readiness</h2>
                     </div>
                     {{ table_label.status_label(posture_label, posture_tone, posture_icon) }}
                 </div>

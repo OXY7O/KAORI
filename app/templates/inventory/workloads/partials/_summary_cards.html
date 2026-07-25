@@ -13,7 +13,7 @@
                 </span>
                 <div>
                     <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-kaori-primary">Workload Coverage Snapshot</p>
-                    <h2 class="mt-1 text-base font-semibold text-content-primary">Type And Lifecycle Coverage</h2>
+                    <h2 class="mt-1 text-base font-semibold text-content-primary">Type and Lifecycle Coverage</h2>
                     <p class="mt-1 text-sm leading-6 text-content-secondary">Workload type and rollout posture from the current inventory scope.</p>
                 </div>
             </div>
@@ -26,7 +26,7 @@
 
     {% set summary_cards = [
         ('Total Workloads', inventory.total_workloads, 'boxes', 'Deployments, StatefulSets, and DaemonSets.'),
-        ('Deployments', inventory.deployments, 'rocket', '{{ deployment_percentage | int }}% of matching workloads.'),
+        ('Deployments', inventory.deployments, 'rocket', (deployment_percentage | int) ~ '% of matching workloads.'),
         ('StatefulSets', inventory.statefulsets, 'database', 'State-aware workloads with stable identity.'),
         ('DaemonSets', inventory.daemonsets, 'network', 'Node-level agents and platform components.')
     ] %}

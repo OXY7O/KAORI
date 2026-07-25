@@ -1,6 +1,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/details/_expandable_row.html" as expandable %}
 <div class="overflow-x-auto">
     <table class="min-w-[960px] w-full text-left text-sm leading-5 text-content-secondary">
         <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted">
@@ -37,24 +38,20 @@
                         {% endif %}
                     </td>
                     <td class="px-4 py-3.5 text-right align-middle">
-                        <button type="button"
-                                data-configuration-toggle="true"
-                                data-configuration-id="{{ item.id }}"
-                                hx-get="{{ url_for('inventory.configuration_details', configuration_id=item.id) }}"
-                                hx-target="#configuration-detail-content-{{ item.id }}"
-                                hx-swap="innerHTML"
-                                onclick="const target=document.getElementById('configuration-detail-content-{{ item.id }}');const row=document.getElementById('configuration-detail-row-{{ item.id }}');const open=target.dataset.open==='true';document.querySelectorAll('[id^=&quot;configuration-detail-row-&quot;]').forEach((entry)=>entry.classList.add('hidden'));document.querySelectorAll('[id^=&quot;configuration-detail-content-&quot;]').forEach((entry)=>{if(entry.id!==target.id){entry.innerHTML='';entry.dataset.open='false';}});document.querySelectorAll('[data-configuration-toggle=&quot;true&quot;]').forEach((button)=>{const label=button.querySelector('[data-configuration-toggle-label]');const icon=button.querySelector('[data-lucide]');if(label)label.textContent='View More';if(icon)icon.setAttribute('data-lucide','chevron-down');});if(open){target.innerHTML='';target.dataset.open='false';if(row)row.classList.add('hidden');const icon=this.querySelector('[data-lucide]');if(icon)icon.setAttribute('data-lucide','chevron-down');if(window.lucide)window.lucide.createIcons();event.preventDefault();return false;}row.classList.remove('hidden');target.dataset.open='true';const label=this.querySelector('[data-configuration-toggle-label]');const icon=this.querySelector('[data-lucide]');if(label)label.textContent='Hide Details';if(icon)icon.setAttribute('data-lucide','chevron-up');"
-                                hx-on::after-swap="if(window.lucide)window.lucide.createIcons();"
-                                class="{{ table_ui.action_classes() }}"><i data-lucide="chevron-down" class="h-3.5 w-3.5"></i><span data-configuration-toggle-label>View More</span></button>
+                        {{ expandable.toggle_button(
+                            'inventory-configuration',
+                            item.id,
+                            url_for('inventory.configuration_details', configuration_id=item.id),
+                            'configuration-detail-content-' ~ item.id,
+                            'configuration-detail-row-' ~ item.id
+                        ) }}
                     </td>
                 </tr>
-                <tr id="configuration-detail-row-{{ item.id }}" class="hidden border-0">
-                    <td colspan="7" class="w-full p-0 leading-none align-top">
-                        <div class="w-full min-w-0 overflow-x-auto"
-                             id="configuration-detail-content-{{ item.id }}"
-                             data-open="false"></div>
-                    </td>
-                </tr>
+                {{ expandable.detail_row(
+                    'configuration-detail-row-' ~ item.id,
+                    'configuration-detail-content-' ~ item.id,
+                    7
+                ) }}
             {% else %}
                 <tr>
                     <td colspan="7" class="p-0">
@@ -81,7 +78,7 @@
             <input type="hidden" name="search" value="{{ search }}">
             <select name="per_page"
                     aria-label="Rows Per Page"
-                    onchange="this.form.requestSubmit()"
+                    data-kaori-auto-submit
                     class="{{ pagination_ui.page_size_classes() }}">
                 {% for option in pagination.allowed_per_page %}
                     <option value="{{ option }}"

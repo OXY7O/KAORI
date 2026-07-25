@@ -147,58 +147,6 @@
                 window.renderKaoriIcons()
             })
 
-            window.prepareInventoryDetail = (kind, id, button) => {
-                const target = document.getElementById(`${kind}-detail-content-${id}`)
-                const detailRow = document.getElementById(`${kind}-detail-row-${id}`)
-
-                if (!target || !detailRow) {
-                    return false
-                }
-
-                const isOpen = target.dataset.open === 'true'
-
-                document.querySelectorAll(`[id^="${kind}-detail-content-"]`).forEach((item) => {
-                    if (item.id !== target.id) {
-                        item.innerHTML = ''
-                        item.dataset.open = 'false'
-                    }
-                })
-
-                document.querySelectorAll(`[id^="${kind}-detail-row-"]`).forEach((row) => {
-                    if (row.id !== detailRow.id) {
-                        row.classList.add('hidden')
-                    }
-                })
-
-                document.querySelectorAll(`[data-inventory-detail-kind="${kind}"]`).forEach((otherButton) => {
-                    if (otherButton !== button) {
-                        const label = otherButton.querySelector('[data-inventory-detail-label]')
-                        const icon = otherButton.querySelector('[data-lucide]')
-                        if (label) label.textContent = 'View More'
-                        if (icon) icon.setAttribute('data-lucide', 'chevron-down')
-                    }
-                })
-
-                const label = button.querySelector('[data-inventory-detail-label]')
-                const icon = button.querySelector('[data-lucide]')
-
-                if (isOpen) {
-                    target.innerHTML = ''
-                    target.dataset.open = 'false'
-                    detailRow.classList.add('hidden')
-                    if (label) label.textContent = 'View More'
-                    if (icon) icon.setAttribute('data-lucide', 'chevron-down')
-                    if (window.lucide) window.lucide.createIcons()
-                    return false
-                }
-
-                detailRow.classList.remove('hidden')
-                target.dataset.open = 'true'
-                if (label) label.textContent = 'Hide Details'
-                if (icon) icon.setAttribute('data-lucide', 'chevron-up')
-                return true
-            }
-
             window.showOperationalProgressToast = (title, message) => {
                 const container = document.getElementById('operational-action-feedback')
 

@@ -71,3 +71,11 @@ All resource inventory pages use the shared KAORI table block, loading bar, filt
 - Table row actions use `components/table.html`; semantic labels are compact `rounded-md` labels, never pills.
 - Inventory loading indicators use `components/loading_bar.html` and sit directly beneath the block header.
 - List services must not compute related-object counts that are not rendered in the current table. Related composition belongs in the detail endpoint.
+
+### Reusable Interaction Contract
+
+- Page-size selectors use the shared `data-kaori-auto-submit` behavior implemented in `app/static/js/pagination.js`; do not add inline `onchange` handlers.
+- Long key/value metadata that cannot safely share one row uses `components/detail_object.html::stacked_row`, with the key above the value and explicit wrapping.
+- Detail rows use `components/details/_expandable_row.html` and `app/static/js/detail_rows.js`; page-specific inline toggle scripts are not permitted.
+- Title Case applies to user-facing inventory metadata labels while Kubernetes identifiers and canonical resource names retain their original casing.
+- Remove page-specific partials after their callers migrate to shared components; do not retain unreferenced compatibility templates.

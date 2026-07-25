@@ -103,11 +103,11 @@
               hx-swap="innerHTML"
               hx-indicator="#resources-by-cluster-loading"
               class="flex items-center gap-2">
-            <label for="cluster_per_page" class="font-medium text-content-secondary">Rows</label>
             <input type="hidden" name="cluster_page" value="1">
             <select id="cluster_per_page"
                     name="cluster_per_page"
-                    onchange="this.form.requestSubmit()"
+                    aria-label="Rows per page"
+                    data-kaori-auto-submit
                     class="{{ pagination_ui.page_size_classes() }}">
                 {% for option in overview.resources_pagination.allowed_per_page %}
                     <option value="{{ option }}"

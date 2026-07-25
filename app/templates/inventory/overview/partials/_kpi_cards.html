@@ -6,13 +6,13 @@
 {% set fresh_clusters = overview.health.fresh_synced or 0 %}
 {% set cards = [
     {'title': 'Clusters', 'value': overview.total_clusters, 'icon': 'server', 'meta': (overview.health.connected_clusters|string) ~ ' Connected Targets'},
-    {'title': 'Nodes', 'value': overview.total_nodes, 'icon': 'cpu', 'meta': 'Worker And Control Plane Capacity'},
-    {'title': 'Namespaces', 'value': overview.total_namespaces, 'icon': 'folder-tree', 'meta': 'Tenant And Application Scope'},
-    {'title': 'Workloads', 'value': overview.total_workloads, 'icon': 'boxes', 'meta': 'Deployments And Controllers'},
+    {'title': 'Nodes', 'value': overview.total_nodes, 'icon': 'cpu', 'meta': 'Worker and Control Plane Capacity'},
+    {'title': 'Namespaces', 'value': overview.total_namespaces, 'icon': 'folder-tree', 'meta': 'Tenant and Application Scope'},
+    {'title': 'Workloads', 'value': overview.total_workloads, 'icon': 'boxes', 'meta': 'Deployments and Controllers'},
     {'title': 'Pods', 'value': overview.total_pods, 'icon': 'container', 'meta': 'Runtime Workload Instances'},
     {'title': 'Services', 'value': overview.total_services, 'icon': 'network', 'meta': 'Cluster Networking Endpoints'},
     {'title': 'Ingresses', 'value': overview.total_ingresses, 'icon': 'route', 'meta': 'Published Entry Points'},
-    {'title': 'Storage', 'value': overview.total_storage, 'icon': 'hard-drive', 'meta': 'Storage Classes, PVs, And PVCs'}
+    {'title': 'Storage', 'value': overview.total_storage, 'icon': 'hard-drive', 'meta': 'Storage Classes, PVs, and PVCs'}
 ] %}
 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
          aria-labelledby="inventory-footprint-title">

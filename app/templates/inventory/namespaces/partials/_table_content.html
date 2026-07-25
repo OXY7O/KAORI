@@ -1,6 +1,7 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table.html" as table_ui %}
+{% import "components/details/_expandable_row.html" as expandable %}
 <div class="overflow-x-auto overscroll-x-contain">
     <table class="min-w-[980px] w-full divide-y divide-outline-subtle text-sm leading-5 text-content-secondary">
         <thead class="bg-surface-hover text-xs text-content-muted">
@@ -57,26 +58,20 @@
                         </div>
                     </td>
                     <td class="w-[132px] min-w-[132px] whitespace-nowrap px-4 py-3.5 text-right align-middle">
-                        <button type="button"
-                                data-namespace-toggle="true"
-                                data-namespace-id="{{ namespace.id }}"
-                                hx-get="{{ url_for('inventory.namespace_details', namespace_id=namespace.id) }}"
-                                hx-target="#namespace-detail-content-{{ namespace.id }}"
-                                hx-swap="innerHTML"
-                                hx-on::before-request="const target = document.getElementById('namespace-detail-content-{{ namespace.id }}'); const detailRow = document.getElementById('namespace-detail-row-{{ namespace.id }}'); const isOpen = target.dataset.open === 'true'; document.querySelectorAll('[id^=&quot;namespace-detail-content-&quot;]').forEach((item) => { if (item.id !== target.id) { item.innerHTML = ''; item.dataset.open = 'false'; } }); document.querySelectorAll('[id^=&quot;namespace-detail-row-&quot;]').forEach((row) => { if (row.id !== 'namespace-detail-row-{{ namespace.id }}') { row.classList.add('hidden'); } }); document.querySelectorAll('[data-namespace-toggle=&quot;true&quot;]').forEach((button) => { if (button.dataset.namespaceId !== '{{ namespace.id }}') { const label = button.querySelector('[data-namespace-toggle-label]'); const icon = button.querySelector('[data-lucide]'); if (label) label.textContent = 'View More'; if (icon) icon.setAttribute('data-lucide', 'chevron-down'); } }); if (isOpen) { target.innerHTML = ''; target.dataset.open = 'false'; if (detailRow) detailRow.classList.add('hidden'); const label = this.querySelector('[data-namespace-toggle-label]'); const icon = this.querySelector('[data-lucide]'); if (label) label.textContent = 'View More'; if (icon) icon.setAttribute('data-lucide', 'chevron-down'); if (window.lucide) window.lucide.createIcons(); event.preventDefault(); } else { if (detailRow) detailRow.classList.remove('hidden'); target.dataset.open = 'true'; const label = this.querySelector('[data-namespace-toggle-label]'); const icon = this.querySelector('[data-lucide]'); if (label) label.textContent = 'Hide Details'; if (icon) icon.setAttribute('data-lucide', 'chevron-up'); }"
-                                class="{{ table_ui.action_classes() }}">
-                            <i data-lucide="chevron-down" class="h-3.5 w-3.5"></i>
-                            <span data-namespace-toggle-label>View More</span>
-                        </button>
+                        {{ expandable.toggle_button(
+                            'inventory-namespaces',
+                            namespace.id,
+                            url_for('inventory.namespace_details', namespace_id=namespace.id),
+                            'namespace-detail-content-' ~ namespace.id,
+                            'namespace-detail-row-' ~ namespace.id
+                        ) }}
                     </td>
                 </tr>
-                <tr id="namespace-detail-row-{{ namespace.id }}" class="hidden border-0">
-                    <td colspan="6" class="w-full p-0 leading-none align-top">
-                        <div class="w-full min-w-0 overflow-x-auto"
-                             id="namespace-detail-content-{{ namespace.id }}"
-                             data-open="false"></div>
-                    </td>
-                </tr>
+                {{ expandable.detail_row(
+                    'namespace-detail-row-' ~ namespace.id,
+                    'namespace-detail-content-' ~ namespace.id,
+                    6
+                ) }}
             {% else %}
                 <tr>
                     <td colspan="6" class="p-0">
@@ -108,7 +103,7 @@
             <input type="hidden" name="search" value="{{ search }}">
             <select name="per_page"
                     aria-label="Rows Per Page"
-                    onchange="this.form.requestSubmit()"
+                    data-kaori-auto-submit
                     class="{{ pagination_ui.page_size_classes() }}">
                 {% for option in pagination.allowed_per_page %}
                     <option value="{{ option }}"

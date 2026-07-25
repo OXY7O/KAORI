@@ -1,6 +1,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/details/_expandable_row.html" as expandable %}
 <div class="overflow-x-auto">
     <table class="min-w-[1080px] w-full text-left text-sm leading-5 text-content-secondary">
         <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted">
@@ -56,26 +57,20 @@
                         <span class="font-semibold tabular-nums {{ 'text-status-warning-text' if pod.restarts > 0 else 'text-content-primary' }}">{{ pod.restarts }}</span>
                     </td>
                     <td class="px-4 py-3.5 text-right align-middle">
-                        <button type="button"
-                                data-inventory-detail-kind="pod"
-                                class="{{ table_ui.action_classes() }}"
-                                hx-get="{{ url_for('inventory.pod_details', pod_id=pod.id) }}"
-                                hx-target="#pod-detail-content-{{ pod.id }}"
-                                hx-swap="innerHTML"
-                                hx-on::before-request="if (!window.prepareInventoryDetail('pod', '{{ pod.id }}', this)) event.preventDefault()"
-                                hx-on::after-swap="if (window.lucide) window.lucide.createIcons();">
-                            <i data-lucide="chevron-down" class="h-3.5 w-3.5"></i>
-                            <span data-inventory-detail-label>View More</span>
-                        </button>
+                        {{ expandable.toggle_button(
+                            'inventory-pods',
+                            pod.id,
+                            url_for('inventory.pod_details', pod_id=pod.id),
+                            'pod-detail-content-' ~ pod.id,
+                            'pod-detail-row-' ~ pod.id
+                        ) }}
                     </td>
                 </tr>
-                <tr id="pod-detail-row-{{ pod.id }}" class="hidden border-0">
-                    <td colspan="8" class="w-full p-0 leading-none align-top">
-                        <div class="w-full min-w-0 overflow-x-auto"
-                             id="pod-detail-content-{{ pod.id }}"
-                             data-open="false"></div>
-                    </td>
-                </tr>
+                {{ expandable.detail_row(
+                    'pod-detail-row-' ~ pod.id,
+                    'pod-detail-content-' ~ pod.id,
+                    8
+                ) }}
             {% else %}
                 <tr>
                     <td colspan="8" class="p-0">
@@ -107,7 +102,7 @@
             <input type="hidden" name="search" value="{{ search }}">
             <select name="per_page"
                     aria-label="Rows Per Page"
-                    onchange="this.form.requestSubmit()"
+                    data-kaori-auto-submit
                     class="{{ pagination_ui.page_size_classes() }}">
                 {% for size in pagination.allowed_per_page %}
                     <option value="{{ size }}"

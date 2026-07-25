@@ -24,15 +24,15 @@
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
-            {% call page_hero.intro('layout-grid', 'Kubernetes workload inventory', 'boxes') %}
+            {% call page_hero.intro('layout-grid', 'Kubernetes Workload Inventory', 'boxes') %}
                 <h1 class="{{ page_hero.title_classes() }}">Workload Inventory</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">
                     Review workload lifecycle, replica readiness, delivery strategy, pod configuration, and cluster distribution.
                 </p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('boxes', total_workloads ~ ' Workloads Tracked') }}
-                    {{ page_hero.meta_label('rocket', inventory.deployments ~ ' deployments') }}
-                    {{ page_hero.meta_label('circle-check', running_count ~ ' running workloads') }}
+                    {{ page_hero.meta_label('rocket', inventory.deployments ~ ' Deployments') }}
+                    {{ page_hero.meta_label('circle-check', running_count ~ ' Running Workloads') }}
                 </div>
             {% endcall %}
         </div>
@@ -41,7 +41,7 @@
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Workload Posture</p>
-                        <h2 class="mt-1 text-base font-semibold text-brand-foreground">Lifecycle And Rollout Readiness</h2>
+                        <h2 class="mt-1 text-base font-semibold text-brand-foreground">Lifecycle and Rollout Readiness</h2>
                     </div>
                     {{ table_label.status_label(posture_label, posture_tone, posture_icon) }}
                 </div>

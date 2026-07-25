@@ -8,9 +8,9 @@
                     Map resource ownership, workload placement, and dependencies from the latest inventory snapshot.
                 </p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
-                    {{ page_hero.meta_label('boxes', graph.summary.clusters, 'topology-hero-clusters', ' clusters') }}
-                    {{ page_hero.meta_label('folders', graph.summary.namespaces, 'topology-hero-namespaces', ' namespaces') }}
-                    {{ page_hero.meta_label('package-search', graph.summary.resources, 'topology-hero-resources', ' resources') }}
+                    {{ page_hero.meta_label('boxes', graph.summary.clusters, 'topology-hero-clusters', ' Clusters') }}
+                    {{ page_hero.meta_label('folders', graph.summary.namespaces, 'topology-hero-namespaces', ' Namespaces') }}
+                    {{ page_hero.meta_label('package-search', graph.summary.resources, 'topology-hero-resources', ' Resources') }}
                 </div>
             {% endcall %}
         </div>
@@ -34,7 +34,7 @@
                         </div>
                         <p id="topology-hero-relationships"
                            class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ graph.summary.relationships }}</p>
-                        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Visible In The Current Scope</p>
+                        <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Visible in the Current Scope</p>
                     </div>
                     <div class="{{ page_hero.context_metric_card_classes() }}">
                         <div class="flex items-center gap-2 text-brand-foreground">

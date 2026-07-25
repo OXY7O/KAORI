@@ -15,13 +15,13 @@
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
-            {% call page_hero.intro('database', 'Kubernetes storage inventory', 'hard-drive') %}
+            {% call page_hero.intro('database', 'Kubernetes Storage Inventory', 'hard-drive') %}
                 <h1 class="{{ page_hero.title_classes() }}">Storage Inventory</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">
                     Review StorageClass, PersistentVolume, and PersistentVolumeClaim identity, allocation, binding, lifecycle, and provisioning metadata.
                 </p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
-                    {{ page_hero.meta_label('database', total_storage ~ ' storage objects') }}
+                    {{ page_hero.meta_label('database', total_storage ~ ' Storage Objects') }}
                     {{ page_hero.meta_label('layers-3', storage_classes ~ ' Storage Classes') }}
                     {{ page_hero.meta_label('archive', pv_pvc_total ~ ' PV/PVC Resources') }}
                 </div>

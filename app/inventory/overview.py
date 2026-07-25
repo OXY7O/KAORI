@@ -171,12 +171,12 @@ def _cluster_resource_counts(cluster_id: str) -> dict[str, int]:
     }
 
 
-def _sync_status(synced_at: datetime | None) -> tuple[str, str, str]:
+def _sync_status(synced_at: datetime | None) -> tuple[str, str]:
     if synced_at is None:
-        return 'never_synced', 'Never synced', 'amber'
+        return 'Never synced', 'amber'
     if _is_stale_inventory(synced_at):
-        return 'stale', 'Stale', 'amber'
-    return 'fresh', 'Fresh', 'green'
+        return 'Stale', 'amber'
+    return 'Fresh', 'green'
 
 
 def get_inventory_overview() -> dict[str, Any]:
@@ -187,31 +187,20 @@ def get_inventory_overview() -> dict[str, Any]:
         summary = inventory_summary.get(cluster.id, {})
         synced_at = summary.get('synced_at')
         counts = _cluster_resource_counts(cluster.id)
-        sync_status, sync_label, sync_tone = _sync_status(synced_at)
-        connection = cluster.kubernetes_connection
-        server = connection.server if connection is not None else None
-        verify_ssl = connection.verify_ssl if connection is not None else True
-        allow_weak_tls = connection.allow_weak_tls if connection is not None else False
+        sync_label, sync_tone = _sync_status(synced_at)
 
         cluster_rows.append(
             {
                 'id': cluster.id,
                 'name': cluster.name,
                 'environment': cluster.environment,
-                'server': server,
                 'status': cluster.status,
                 'node_count': counts['node_count'],
-                'last_check': cluster.last_check,
-                'created_at': cluster.created_at,
-                'updated_at': cluster.updated_at,
-                'kube_verify_ssl': verify_ssl,
-                'kube_allow_weak_tls': allow_weak_tls,
                 'workload_count': counts['workload_count'],
                 'pod_count': counts['pod_count'],
                 'service_count': counts['service_count'],
                 'ingress_count': counts['ingress_count'],
                 'storage_count': counts['storage_count'],
-                'sync_status': sync_status,
                 'sync_status_label': sync_label,
                 'sync_status_tone': sync_tone,
                 'risk_hints': _build_inventory_risk_hints(
@@ -237,7 +226,6 @@ def get_inventory_overview() -> dict[str, Any]:
         'clusters': cluster_rows,
         'inventory_summary': inventory_summary,
         'health': get_inventory_health(),
-        'activities': get_recent_inventory_activity(),
     }
 
 
@@ -310,20 +298,3 @@ def get_inventory_health() -> dict[str, Any]:
         'freshness_window_hours': INVENTORY_FRESHNESS_HOURS,
         'last_sync': last_sync,
     }
-
-
-def get_recent_inventory_activity() -> list[dict[str, Any]]:
-    inventories = ClusterInventory.query.order_by(ClusterInventory.collected_at.desc()).limit(5).all()
-    if not inventories:
-        return []
-
-    cluster_ids = {inventory.cluster_id for inventory in inventories}
-    clusters = {cluster.id: cluster for cluster in Cluster.query.filter(Cluster.id.in_(cluster_ids)).all()}
-
-    return [
-        {
-            'cluster': (clusters[inventory.cluster_id].name if inventory.cluster_id in clusters else 'Unknown'),
-            'collected_at': inventory.collected_at,
-        }
-        for inventory in inventories
-    ]

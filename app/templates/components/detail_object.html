@@ -22,6 +22,13 @@
         <span class="whitespace-nowrap font-medium text-content-primary">{{ value }}</span>
     </div>
 {%- endmacro %}
+{% macro stacked_row(label, value, mono=False) -%}
+    <div class="min-w-0 text-xs leading-5">
+        <span class="block text-content-muted">{{ label }}</span>
+        <span class="mt-0.5 block {{ 'break-all font-mono' if mono else 'break-words' }} font-medium text-content-primary"
+              title="{{ value }}">{{ value }}</span>
+    </div>
+{%- endmacro %}
 {% macro empty(title, message, icon='layout-grid') -%}
     <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-3 text-center">
         <i data-lucide="{{ icon }}" class="mx-auto h-5 w-5 text-kaori-primary"></i>

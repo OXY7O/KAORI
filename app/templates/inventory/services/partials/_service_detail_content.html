@@ -89,16 +89,18 @@
                 <div class="mt-auto pt-3">{{ info_box('Forwarding boundary', 'Port mappings show Service-to-target forwarding only.', 'route', 'brand', true) }}</div>
             {% endcall %}
             {% call detail_card('Selection & Endpoints', 'scan-search', service.ready_endpoint_count ~ ' ready', 'min-h-[30rem]') %}
-                {{ detail_row('Selector Labels', service.selectors|length) }}
+                {{ detail_row('Selector Labels', service.selector|length) }}
                 {{ detail_row('Selected Pods', service.pod_count) }}
                 {{ detail_row('Ready Endpoints', service.ready_endpoint_count) }}
                 {{ detail_row('Not-Ready Endpoints', service.not_ready_endpoint_count) }}
                 {{ detail_row('Endpoint Metadata', 'Reported' if service.endpoints_reported else 'Not reported') }}
                 {{ detail_row('Publish Not-Ready', 'Enabled' if service.publish_not_ready_addresses else 'Disabled') }}
                 {% call detail_object.stack() %}
-                    {% if service.selectors %}
-                        {% call detail_object.card('Service selectors', service.selectors|length ~ ' labels', 'tags') %}
-                            {% for selector in service.selectors %}{{ detail_object.row('Selector ' ~ loop.index, selector) }}{% endfor %}
+                    {% if service.selector %}
+                        {% call detail_object.card('Service Selectors', service.selector|length ~ ' Labels', 'tags') %}
+                            {% for key, value in service.selector|dictsort %}
+                                {{ detail_object.stacked_row(key, value, true) }}
+                            {% endfor %}
                         {% endcall %}
                     {% else %}
                         {{ detail_object.empty('No selector configured', 'This Service does not select Pods directly.', 'tags') }}

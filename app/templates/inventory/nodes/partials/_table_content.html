@@ -1,6 +1,7 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table.html" as table_ui %}
+{% import "components/details/_expandable_row.html" as expandable %}
 <div class="overflow-x-auto">
     <table class="min-w-full divide-y divide-outline-subtle text-sm leading-5 text-content-secondary">
         <thead class="bg-surface-hover text-xs text-content-muted">
@@ -26,7 +27,7 @@
                     </td>
                     <td class="px-4 py-3.5 align-middle">
                         <div class="flex max-w-[260px] items-center gap-2">
-                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
+                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
                                 <i data-lucide="server" class="h-4 w-4"></i>
                             </span>
                             <span class="min-w-0 truncate text-sm font-semibold leading-5 text-content-primary"
@@ -40,24 +41,20 @@
                     <td class="px-4 py-3.5 align-middle text-sm leading-5 text-content-secondary">{{ node.memory_display }}</td>
                     <td class="px-4 py-3.5 align-middle text-sm leading-5 text-content-secondary">{{ node.ephemeral_storage_display }}</td>
                     <td class="px-4 py-3.5 text-right align-middle">
-                        <button type="button"
-                                data-node-toggle="true"
-                                data-node-id="{{ node.id }}"
-                                hx-get="{{ url_for('inventory.node_details', node_id=node.id) }}"
-                                hx-target="#node-detail-content-{{ node.id }}"
-                                hx-swap="innerHTML"
-                                hx-on::before-request="const target = document.getElementById('node-detail-content-{{ node.id }}'); const detailRow = document.getElementById('node-detail-row-{{ node.id }}'); const isOpen = target.dataset.open === 'true'; document.querySelectorAll('[id^=&quot;node-detail-content-&quot;]').forEach((item) => { if (item.id !== target.id) { item.innerHTML = ''; item.dataset.open = 'false'; } }); document.querySelectorAll('[id^=&quot;node-detail-row-&quot;]').forEach((row) => { if (row.id !== 'node-detail-row-{{ node.id }}') { row.classList.add('hidden'); } }); document.querySelectorAll('[data-node-toggle=&quot;true&quot;]').forEach((button) => { if (button.dataset.nodeId !== '{{ node.id }}') { const label = button.querySelector('[data-node-toggle-label]'); const icon = button.querySelector('[data-lucide]'); if (label) label.textContent = 'View More'; if (icon) icon.setAttribute('data-lucide', 'chevron-down'); } }); if (isOpen) { target.innerHTML = ''; target.dataset.open = 'false'; if (detailRow) detailRow.classList.add('hidden'); const label = this.querySelector('[data-node-toggle-label]'); const icon = this.querySelector('[data-lucide]'); if (label) label.textContent = 'View More'; if (icon) icon.setAttribute('data-lucide', 'chevron-down'); if (window.lucide) window.lucide.createIcons(); event.preventDefault(); } else { if (detailRow) detailRow.classList.remove('hidden'); target.dataset.open = 'true'; const label = this.querySelector('[data-node-toggle-label]'); const icon = this.querySelector('[data-lucide]'); if (label) label.textContent = 'Hide Details'; if (icon) icon.setAttribute('data-lucide', 'chevron-up'); }"
-                                class="{{ table_ui.action_classes() }}">
-                            <i data-lucide="chevron-down" class="h-3.5 w-3.5"></i>
-                            <span data-node-toggle-label>View More</span>
-                        </button>
+                        {{ expandable.toggle_button(
+                            'inventory-nodes',
+                            node.id,
+                            url_for('inventory.node_details', node_id=node.id),
+                            'node-detail-content-' ~ node.id,
+                            'node-detail-row-' ~ node.id
+                        ) }}
                     </td>
                 </tr>
-                <tr id="node-detail-row-{{ node.id }}" class="hidden border-0">
-                    <td colspan="9" class="p-0 leading-none align-top">
-                        <div id="node-detail-content-{{ node.id }}" data-open="false"></div>
-                    </td>
-                </tr>
+                {{ expandable.detail_row(
+                    'node-detail-row-' ~ node.id,
+                    'node-detail-content-' ~ node.id,
+                    9
+                ) }}
             {% else %}
                 <tr>
                     <td colspan="9" class="p-0">
@@ -90,7 +87,7 @@
             <input type="hidden" name="search" value="{{ search }}">
             <select name="per_page"
                     aria-label="Rows Per Page"
-                    onchange="this.form.requestSubmit()"
+                    data-kaori-auto-submit
                     class="{{ pagination_ui.page_size_classes() }}">
                 {% for option in pagination.allowed_per_page %}
                     <option value="{{ option }}"

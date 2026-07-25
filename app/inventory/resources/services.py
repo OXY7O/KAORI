@@ -247,7 +247,6 @@ def get_service_detail(service_id: int) -> dict[str, Any] | None:
         'ports': ports,
         'port_count': len(ports),
         'selector': selector,
-        'selectors': [f'{key}={value}' for key, value in sorted(selector.items())],
         'age': format_age(service.created_at),
         'created_at': service.created_at,
         'collected_at': service.collected_at,
