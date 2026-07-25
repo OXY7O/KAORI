@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections.abc import Callable
 from typing import Any
 
 from celery.exceptions import CeleryError
@@ -8,201 +9,83 @@ from flask import current_app, request
 from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.alertmanager.consumer import KUBERNETES_CLUSTER_SCOPE
-from app.alertmanager.resolver import resolve_alertmanager_sources
-from app.analytics.materialization.catalog import canonical_parameters, get_dataset
-from app.analytics.materialization.service import SnapshotResult, read_snapshot
-from app.common.dependencies import (
-    DependencyBlocker,
-    alert_source_connection_blocker,
-    alert_source_setup_blocker,
-    cluster_required_blocker,
-    prometheus_capability_blocker,
-    prometheus_connection_blocker,
-    prometheus_setup_blocker,
-)
+from app.analytics.materialization.service import SnapshotResult, normalize_parameters, read_snapshot
 from app.extensions.db import db
-from app.integrations.prometheus.capabilities import definition as capability_definition
 from app.jobs.dispatcher import dispatch_registered_job
 from app.jobs.service import JobQuotaExceeded
+from app.analytics.materialization.serialization import ClusterReference
 from app.models import Cluster
-from app.prometheus.resolver import resolve_prometheus_sources
 
 
 @dataclass(frozen=True, slots=True)
 class MaterializedRequest:
     result: SnapshotResult
-    cluster: Cluster | None
+    cluster: ClusterReference | None
     parameters: dict[str, str]
     dispatched: bool
     dispatch_error: str | None = None
-    dependency_blocker: DependencyBlocker | None = None
 
 
-def selected_cluster_from_request() -> Cluster | None:
-    raw_cluster_id = request.args.get('cluster_id', '').strip()
-    if raw_cluster_id:
-        cluster = Cluster.query.get(raw_cluster_id)
-        if cluster is not None:
-            return cluster
-    return Cluster.query.order_by(Cluster.created_at.asc(), Cluster.id.asc()).first()
-
-
-def _prometheus_dependency_blocker(
-    *,
-    dataset_key: str,
-    cluster: Cluster,
-) -> DependencyBlocker | None:
-    dataset = get_dataset(dataset_key)
-    resolution = resolve_prometheus_sources(
-        scope_type=KUBERNETES_CLUSTER_SCOPE,
-        scope_key=str(cluster.id),
-        required_binding_capabilities=dataset.required_binding_capabilities,
-        required_technical_capabilities=dataset.required_capabilities,
+def _list_cluster_references() -> list[ClusterReference]:
+    rows = (
+        Cluster.query.with_entities(
+            Cluster.id,
+            Cluster.name,
+            Cluster.environment,
+            Cluster.status,
+            Cluster.created_at,
+        )
+        .order_by(Cluster.created_at.asc(), Cluster.id.asc())
+        .all()
     )
-    if not resolution.candidates:
-        return prometheus_setup_blocker(cluster)
-    if resolution.selected is not None:
-        if resolution.selected.operational_state in {
-            'unhealthy',
-            'ready_not_connected',
-            'degraded_not_connected',
-        }:
-            return prometheus_connection_blocker(
-                cluster,
-                detail=resolution.selected.decision_reason,
-            )
-        return None
-    candidate = resolution.candidates[0]
-    missing_capabilities = (
-        *candidate.missing_binding_capabilities,
-        *candidate.missing_technical_capabilities,
-    )
-    if missing_capabilities:
-        labels = []
-        for key in missing_capabilities:
-            capability = capability_definition(key)
-            labels.append(
-                capability.label
-                if capability
-                else str(key).replace('_', ' ').title()
-            )
-        return prometheus_capability_blocker(
-            cluster,
-            capability_labels=labels,
-            feature_label=dataset.label,
+    return [
+        ClusterReference(
+            id=str(row.id),
+            name=str(row.name),
+            environment=str(row.environment),
+            status=str(row.status or 'unknown'),
         )
-    return prometheus_connection_blocker(cluster, detail=candidate.decision_reason)
-
-
-def _alert_dependency_blocker(
-    *,
-    cluster: Cluster,
-    selected_source: str,
-) -> DependencyBlocker | None:
-    source = (selected_source or 'auto').strip().lower()
-    alertmanager_resolution = resolve_alertmanager_sources(
-        scope_type=KUBERNETES_CLUSTER_SCOPE,
-        scope_key=str(cluster.id),
-    )
-    prometheus_resolution = resolve_prometheus_sources(
-        scope_type=KUBERNETES_CLUSTER_SCOPE,
-        scope_key=str(cluster.id),
-        required_binding_capabilities=('metrics', 'alert_metrics'),
-        required_technical_capabilities=('instant_query', 'kubernetes_identity'),
-    )
-
-    def alertmanager_blocker() -> DependencyBlocker | None:
-        selected = alertmanager_resolution.selected
-        if selected is not None and selected.operational_state not in {
-            'unhealthy',
-            'ready_not_connected',
-            'degraded_not_connected',
-        }:
-            return None
-        if not alertmanager_resolution.candidates:
-            return alert_source_setup_blocker(cluster, source='alertmanager')
-        candidate = selected or alertmanager_resolution.candidates[0]
-        return alert_source_connection_blocker(
-            cluster,
-            source='alertmanager',
-            detail=candidate.decision_reason,
-        )
-
-    def prometheus_blocker() -> DependencyBlocker | None:
-        selected = prometheus_resolution.selected
-        if selected is not None and selected.operational_state not in {
-            'unhealthy',
-            'ready_not_connected',
-            'degraded_not_connected',
-        }:
-            return None
-        if not prometheus_resolution.candidates:
-            return alert_source_setup_blocker(cluster, source='prometheus')
-        candidate = selected or prometheus_resolution.candidates[0]
-        missing_capabilities = (
-            *candidate.missing_binding_capabilities,
-            *candidate.missing_technical_capabilities,
-        )
-        if missing_capabilities:
-            labels = []
-            for key in missing_capabilities:
-                capability = capability_definition(key)
-                labels.append(
-                    capability.label
-                    if capability
-                    else str(key).replace('_', ' ').title()
-                )
-            return prometheus_capability_blocker(
-                cluster,
-                capability_labels=labels,
-                feature_label='Alerts & Anomalies',
-            )
-        return alert_source_connection_blocker(
-            cluster,
-            source='prometheus',
-            detail=candidate.decision_reason,
-        )
-
-    if source == 'alertmanager':
-        return alertmanager_blocker()
-    if source == 'prometheus':
-        return prometheus_blocker()
-
-    if alertmanager_blocker() is None or prometheus_blocker() is None:
-        return None
-    if not alertmanager_resolution.candidates and not prometheus_resolution.candidates:
-        return alert_source_setup_blocker(cluster, source='auto')
-    details = [
-        candidate.decision_reason
-        for candidate in (
-            alertmanager_resolution.candidates[0] if alertmanager_resolution.candidates else None,
-            prometheus_resolution.candidates[0] if prometheus_resolution.candidates else None,
-        )
-        if candidate is not None
+        for row in rows
     ]
-    return alert_source_connection_blocker(
-        cluster,
-        source='auto',
-        detail=' '.join(details),
-    )
 
 
-def _dependency_blocker(
+def choose_cluster_reference(
     *,
-    dataset_key: str,
-    cluster: Cluster,
-    parameters: dict[str, str],
-) -> DependencyBlocker | None:
-    dataset = get_dataset(dataset_key)
-    if dataset.source_kind == 'prometheus':
-        return _prometheus_dependency_blocker(dataset_key=dataset_key, cluster=cluster)
-    if dataset.source_kind == 'alert':
-        return _alert_dependency_blocker(
-            cluster=cluster,
-            selected_source=parameters.get('source', 'auto'),
-        )
-    return None
+    raw_cluster_id: str,
+    clusters: list[ClusterReference],
+    is_analytics_ready: Callable[[str], bool],
+) -> ClusterReference | None:
+    """Resolve an explicit cluster or prefer a ready default for analytics.
+
+    An explicitly selected cluster is authoritative even when its Prometheus
+    source is not ready, so KAORI can show the correct scoped blocker. When the
+    URL has no cluster selection, prefer the first analytics-ready cluster
+    instead of letting an unrelated unready cluster block every analytics page.
+    """
+
+    normalized = (raw_cluster_id or '').strip()
+    if normalized:
+        for cluster in clusters:
+            if cluster.id == normalized:
+                return cluster
+
+    for cluster in clusters:
+        if is_analytics_ready(cluster.id):
+            return cluster
+
+    return clusters[0] if clusters else None
+
+
+def selected_cluster_from_request() -> ClusterReference | None:
+    from app.prometheus.repository import resolve_instance_for_cluster
+
+    raw_cluster_id = request.args.get('cluster_id', '').strip()
+    clusters = _list_cluster_references()
+    return choose_cluster_reference(
+        raw_cluster_id=raw_cluster_id,
+        clusters=clusters,
+        is_analytics_ready=lambda cluster_id: resolve_instance_for_cluster(cluster_id) is not None,
+    )
 
 
 def resolve_materialized_request(
@@ -212,15 +95,9 @@ def resolve_materialized_request(
     parameters: dict[str, Any],
 ) -> MaterializedRequest:
     cluster = selected_cluster_from_request()
-    normalized = canonical_parameters(dataset_key, parameters)
+    normalized = normalize_parameters(parameters)
     if cluster is None:
-        return MaterializedRequest(
-            SnapshotResult(None, None, 'missing', False),
-            None,
-            normalized,
-            False,
-            dependency_blocker=cluster_required_blocker(),
-        )
+        return MaterializedRequest(SnapshotResult(None, None, 'missing', False), None, normalized, False)
 
     normalized['cluster_id'] = str(cluster.id)
     result = read_snapshot(
@@ -228,20 +105,6 @@ def resolve_materialized_request(
         dataset_key=dataset_key,
         parameters=normalized,
     )
-    dependency_blocker = _dependency_blocker(
-        dataset_key=dataset_key,
-        cluster=cluster,
-        parameters=normalized,
-    )
-    if dependency_blocker is not None:
-        return MaterializedRequest(
-            result,
-            cluster,
-            normalized,
-            False,
-            dependency_blocker=dependency_blocker,
-        )
-
     dispatched = False
     dispatch_error = None
     if not result.available or result.stale:
@@ -277,11 +140,4 @@ def resolve_materialized_request(
                 cluster.id,
             )
             dispatch_error = 'Analytics preparation could not be queued. Retry after worker capacity is available.'
-    return MaterializedRequest(
-        result,
-        cluster,
-        normalized,
-        dispatched,
-        dispatch_error,
-        dependency_blocker,
-    )
+    return MaterializedRequest(result, cluster, normalized, dispatched, dispatch_error)
