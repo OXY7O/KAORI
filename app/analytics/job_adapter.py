@@ -26,9 +26,6 @@ def _eligible_clusters() -> list[Cluster]:
 
 def _range_freshness_minutes(value: str | None, base_minutes: int) -> int:
     minimum_by_range = {
-        '1h': 5,
-        '6h': 10,
-        '12h': 15,
         '24h': 20,
         '7d': 60,
         '30d': 180,
@@ -85,20 +82,8 @@ def _analytics_work_items(
                 'stale_grace_minutes': stale_grace_minutes,
             }
         ]
-    ranges = _configured_values(
-        policy,
-        'time_ranges',
-        ['1h', '6h', '12h', '24h', '7d', '30d', '60d'],
-    )
-    trend_range_by_hours = {
-        '1': '1h',
-        '6': '6h',
-        '12': '12h',
-        '24': '24h',
-        '168': '7d',
-        '720': '30d',
-        '1440': '60d',
-    }
+    ranges = _configured_values(policy, 'time_ranges', ['24h', '7d', '30d', '60d'])
+    trend_range_by_hours = {'24': '24h', '168': '7d', '720': '30d', '1440': '60d'}
     work_items: list[dict[str, Any]] = []
     for cluster in clusters:
         for dataset in list_analytics_datasets():
@@ -249,6 +234,20 @@ def _dispatch(
         scope_type=scope_type,
         scope_key=scope_key,
         max_attempts=2,
+        soft_time_limit_seconds=int(
+            current_app.config[
+                'FORECASTING_TASK_SOFT_TIME_LIMIT_SECONDS'
+                if forecasting
+                else 'ANALYTICS_TASK_SOFT_TIME_LIMIT_SECONDS'
+            ]
+        ),
+        hard_time_limit_seconds=int(
+            current_app.config[
+                'FORECASTING_TASK_HARD_TIME_LIMIT_SECONDS'
+                if forecasting
+                else 'ANALYTICS_TASK_HARD_TIME_LIMIT_SECONDS'
+            ]
+        ),
     )
     return RegisteredJobDispatchResult(
         status='queued' if created else 'active',

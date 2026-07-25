@@ -1,5 +1,3 @@
-# ruff: noqa: E402
-
 from hashlib import sha256
 
 from flask import Blueprint, redirect, render_template, request, session, url_for
@@ -171,6 +169,8 @@ def _build_prometheus_failure_feedback(payload: dict) -> str:
     return _render_operational_toast(feedback)
 
 
+
+
 @analytics_bp.get('/materialization/status')
 @permission_required('analytics.view')
 def materialization_status():
@@ -181,7 +181,9 @@ def materialization_status():
     dataset_key = request.args.get('dataset_key', '').strip()
     cluster_id = request.args.get('cluster_id', '').strip()
     parameters = {
-        key: value for key, value in request.args.items() if key not in {'dataset_key', 'return_url'} and value != ''
+        key: value
+        for key, value in request.args.items()
+        if key not in {'dataset_key', 'return_url'} and value != ''
     }
     if not dataset_key or not cluster_id:
         return '', 400
@@ -195,11 +197,25 @@ def materialization_status():
         response.headers['HX-Refresh'] = 'true'
         return response
     snapshot = result.snapshot
+    materialization_error = snapshot.last_error if snapshot else None
+    if snapshot is not None and snapshot.last_job_execution_id is not None and not materialization_error:
+        from app.models.job import JobExecution
+
+        job = JobExecution.query.get(snapshot.last_job_execution_id)
+        if job is not None and job.is_terminal and snapshot.status != 'ready':
+            materialization_error = (
+                job.error_message
+                or (
+                    'The background job completed without producing the requested analytics snapshot.'
+                    if job.status in {'succeeded', 'partial'}
+                    else f'Analytics preparation ended with status {job.status.replace("_", " ").title()}.'
+                )
+            )
     return render_template(
         'analytics/materialization/_pending.html',
         materialization_status_url=request.full_path,
         materialization_return_url=request.args.get('return_url', '').strip() or url_for('analytics.overview'),
-        materialization_error=snapshot.last_error if snapshot else None,
+        materialization_error=materialization_error,
     )
 
 

@@ -27,6 +27,8 @@ def enqueue_canonical_job(
     scope_key: str | None = None,
     max_attempts: int = 3,
     priority: int | None = None,
+    soft_time_limit_seconds: int | None = None,
+    hard_time_limit_seconds: int | None = None,
 ) -> tuple[JobExecution, bool]:
     """Create or attach to one idempotent job and dispatch it exactly once.
 
@@ -55,12 +57,17 @@ def enqueue_canonical_job(
     if not job.celery_task_id:
         raise RuntimeError('Canonical job does not have a Celery task identifier.')
     try:
-        cast(Task, task).apply_async(
-            kwargs={**task_kwargs, 'job_execution_id': job.id},
-            task_id=job.celery_task_id,
-            queue=queue_name,
-            priority=job.priority,
-        )
+        apply_options: dict[str, Any] = {
+            'kwargs': {**task_kwargs, 'job_execution_id': job.id},
+            'task_id': job.celery_task_id,
+            'queue': queue_name,
+            'priority': job.priority,
+        }
+        if soft_time_limit_seconds is not None:
+            apply_options['soft_time_limit'] = max(int(soft_time_limit_seconds), 1)
+        if hard_time_limit_seconds is not None:
+            apply_options['time_limit'] = max(int(hard_time_limit_seconds), 1)
+        cast(Task, task).apply_async(**apply_options)
     except Exception as exc:
         mark_job_failed(job.celery_task_id, error=exc, error_code='dispatch_failed')
         raise

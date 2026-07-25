@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 from urllib.parse import urlencode
 
+from billiard.exceptions import SoftTimeLimitExceeded
 from celery import shared_task
 from flask import current_app
 
@@ -17,6 +18,29 @@ def _task_id(job_execution_id: int, fallback_task_id: str | None) -> str:
 
     job = JobExecution.query.get(job_execution_id)
     return str(job.celery_task_id if job and job.celery_task_id else fallback_task_id or '')
+
+
+def _fail_unfinished_work_items(
+    *,
+    work_items: list[dict[str, Any]],
+    job_execution_id: int,
+    error: Exception | str,
+) -> None:
+    for item in work_items:
+        try:
+            fail_snapshot(
+                cluster_id=str(item['cluster_id']),
+                dataset_key=str(item['dataset_key']),
+                parameters=normalize_parameters(item.get('parameters')),
+                error=error,
+                job_execution_id=job_execution_id,
+            )
+        except Exception:
+            current_app.logger.exception(
+                'Could not mark timed-out analytics snapshot as failed for %s on cluster %s.',
+                item.get('dataset_key'),
+                item.get('cluster_id'),
+            )
 
 
 def _materialize(
@@ -83,6 +107,15 @@ def _materialize(
     except JobCancellationRequested:
         lifecycle.canceled()
         return {'status': 'canceled', 'succeeded': succeeded, 'failed': failed}
+    except SoftTimeLimitExceeded as exc:
+        message = 'Analytics materialization exceeded its worker time limit.'
+        _fail_unfinished_work_items(
+            work_items=work_items,
+            job_execution_id=job_execution_id,
+            error=message,
+        )
+        lifecycle.fail(message, error_code='analytics_materialization_timeout')
+        raise exc
     except Exception as exc:
         lifecycle.fail(exc, error_code='analytics_materialization_failed')
         raise

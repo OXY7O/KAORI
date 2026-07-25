@@ -308,6 +308,18 @@ class Config:
     )
     ANALYTICS_CELERY_QUEUE = _env_str('ANALYTICS_CELERY_QUEUE', 'analytics-batch').strip() or 'analytics-batch'
     FORECASTING_CELERY_QUEUE = _env_str('FORECASTING_CELERY_QUEUE', 'forecasting').strip() or 'forecasting'
+    ANALYTICS_TASK_SOFT_TIME_LIMIT_SECONDS = _bounded_env_int(
+        'ANALYTICS_TASK_SOFT_TIME_LIMIT_SECONDS', 900, 60, 7200
+    )
+    ANALYTICS_TASK_HARD_TIME_LIMIT_SECONDS = _bounded_env_int(
+        'ANALYTICS_TASK_HARD_TIME_LIMIT_SECONDS', 960, 120, 7260
+    )
+    FORECASTING_TASK_SOFT_TIME_LIMIT_SECONDS = _bounded_env_int(
+        'FORECASTING_TASK_SOFT_TIME_LIMIT_SECONDS', 2700, 300, 14400
+    )
+    FORECASTING_TASK_HARD_TIME_LIMIT_SECONDS = _bounded_env_int(
+        'FORECASTING_TASK_HARD_TIME_LIMIT_SECONDS', 2760, 360, 14460
+    )
     JOB_MAINTENANCE_CELERY_QUEUE = _env_str('JOB_MAINTENANCE_CELERY_QUEUE', 'maintenance').strip() or 'maintenance'
     RESOLVER_EXECUTION_CELERY_QUEUE = (
         _env_str('RESOLVER_EXECUTION_CELERY_QUEUE', 'resolver-execution').strip() or 'resolver-execution'

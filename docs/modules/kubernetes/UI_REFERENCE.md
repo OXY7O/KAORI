@@ -21,6 +21,8 @@ This document contains Kubernetes-specific presentation decisions that must not 
 - Resource-specific columns, metrics, nested objects, and actions are maintained by the owning inventory specification or route README.
 - Cluster, namespace, role, workload type, update strategy, object counts, labels, and annotations are descriptive metadata.
 - Readiness, lifecycle, pressure, scheduling, collection availability, quota state, and other dynamic conditions use semantic labels.
+- Workload Inventory is a resource-specific exception: the `State` column uses ordinary table text rather than a semantic label, while detailed runtime state may retain richer semantic presentation.
+- The Workload name cell uses a compact 28 px icon container with a 16 px Lucide icon so the resource marker does not dominate the data row.
 - UUIDs, IP addresses, and runtime identifiers use sans-serif with safe wrapping in ordinary detail cards.
 - Missing data never renders as healthy.
 
