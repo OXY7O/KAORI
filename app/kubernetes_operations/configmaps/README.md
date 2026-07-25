@@ -64,7 +64,6 @@ Impact context can lag behind the live object. The UI must label it as inventory
 - Landing, Create, Update, and Delete use solid KAORI violet heroes with the Inventory Overview geometry.
 - Create keeps Target location and Create guardrails side by side.
 - Update and Delete mirror the same layout: selector and guardrails first, live editor/impact review below, then final actions.
-- After a successful Delete, the cluster, namespace, and ConfigMap selectors are reloaded from the live API; the deleted target is removed immediately and the target/action state is cleared.
 - Form controls use 44 px height, 8 px radius, sentence-case labels, shared surface/outline tokens, and violet focus states.
 - Descriptive values use compact rectangular labels. Immutable, validation, and destructive conditions use semantic treatments.
 - ConfigMap payload fields retain monospace typography.
@@ -75,3 +74,11 @@ Impact context can lag behind the live object. The UI must label it as inventory
 - `kubernetes_configmaps.create`
 - `kubernetes_configmaps.update`
 - `kubernetes_configmaps.delete`
+
+## Validated mutation flow
+
+- Create and update forms use the shared validation gate in `app/static/js/validated_operations.js`.
+- The final mutation button stays disabled until the latest form state passes validation. Any input or target change invalidates that UI state.
+- The server never trusts the browser gate: final create and update requests run Kubernetes server-side validation again immediately before mutation through `validate_then_apply`.
+- Successful create, update, and delete operations redirect to a clean page state so cluster, namespace, ConfigMap, entries, and confirmation values do not remain stale.
+- Validation failures preserve the current form and are surfaced through the KAORI notification pipeline without Flask flash messages.

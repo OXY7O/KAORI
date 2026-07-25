@@ -37,7 +37,9 @@
             </div>
         </section>
         <div id="configmap-operation-feedback" class="hidden" aria-hidden="true"></div>
-        <form method="post"
+        <form id="configmap-update-form"
+              data-validation-gated
+              method="post"
               hx-post="{{ url_for('kubernetes_operations.update_configmap') }}"
               hx-target="#configmap-operation-feedback"
               hx-swap="innerHTML"
@@ -75,6 +77,10 @@
                                     class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-kaori-primary/25 bg-kaori-soft px-5 text-sm font-semibold text-kaori-primary transition hover:border-kaori-primary/40 hover:bg-kaori-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus cursor-pointer disabled:cursor-not-allowed"><i data-lucide="scan-search" class="h-4 w-4"></i>Preview &amp; Validate</button>
                             <button name="operation"
                                     value="update"
+                                    data-validation-apply
+                                    disabled
+                                    aria-disabled="true"
+                                    title="Run validation after the latest input change before applying this operation"
                                     class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus cursor-pointer disabled:cursor-not-allowed"><i data-lucide="save" class="h-4 w-4"></i>Apply Update</button>
                         </div>
                     </section>
@@ -108,4 +114,5 @@
             </div>
         </form>
     </div>
+<script src="{{ url_for('static', filename='js/validated_operations.js') }}"></script>
 {% endblock dashboard_content %}

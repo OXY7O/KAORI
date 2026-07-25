@@ -177,3 +177,12 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 - A successful mutation reloads the workflow from live Kubernetes state, clearing stale target selectors, secret payload inputs, validation state, and deleted resources.
 - Secret workflows do not use Flask flash messages. Operational outcomes are recorded through the notification and Activity Log pipeline.
 - Forms use `hx-sync="this:drop"` and `hx-disabled-elt="find button"` to prevent duplicate concurrent submissions.
+
+## Validated mutation flow
+
+- Create, replace, and delete forms use the shared validation gate in `app/static/js/validated_operations.js`.
+- The final mutation button stays disabled until the latest form state passes validation. Any input, uploaded payload, or selected target change invalidates that UI state.
+- The server never trusts the browser gate: each final mutation runs Kubernetes validation again immediately before apply through `validate_then_apply`.
+- Uploaded Secret streams are rewound between validation and mutation so the exact same payload is applied.
+- Successful create, replace, and delete operations redirect to a clean page state, clearing filters, target selection, confirmation values, and sensitive payload inputs.
+- Validation failures preserve the current form and use persistent KAORI notifications instead of Flask flash messages.

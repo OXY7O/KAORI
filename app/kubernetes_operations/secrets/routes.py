@@ -47,6 +47,7 @@ from app.kubernetes_operations.secrets.service import (
     preview_uploaded_pair,
 )
 from app.models.user import User
+from app.kubernetes_operations.operation_flow import validate_then_apply
 from app.notifications.service import (
     create_notification,
     get_navigation_notification_context,
@@ -199,6 +200,14 @@ def _safe_secret_submission(form: Any) -> dict[str, str]:
     return {key: form.get(key, '') for key in _SAFE_SUBMITTED_FIELDS if form.get(key) is not None}
 
 
+def _rewind_uploaded_files(files: Any) -> None:
+    """Reset uploaded streams so validation and mutation can consume the same payload."""
+    for storage in files.values():
+        stream = getattr(storage, 'stream', None)
+        if stream is not None and hasattr(stream, 'seek'):
+            stream.seek(0)
+
+
 def _safe_opaque_entries(form: Any) -> list[dict[str, Any]]:
     keys = [value.strip() for value in form.getlist('generic_key')]
     normalized = [{'key': key, 'value': '', 'visible': False} for key in keys if key]
@@ -267,7 +276,15 @@ def create_secret():
             if operation not in {'validate', 'create'}:
                 raise ValueError('Unsupported Secret action.')
 
-            result = execute_secret_operation(request.form, request.files, dry_run=dry_run)
+            result = (
+                execute_secret_operation(request.form, request.files, dry_run=True)
+                if dry_run
+                else validate_then_apply(
+                    validate=lambda: execute_secret_operation(request.form, request.files, dry_run=True),
+                    prepare_apply=lambda: _rewind_uploaded_files(request.files),
+                    apply=lambda: execute_secret_operation(request.form, request.files, dry_run=False),
+                )
+            )
             event_type = 'kubernetes_secret_validation' if dry_run else 'kubernetes_secret_created'
             feedback = _record_secret_activity(
                 event_type=event_type,
@@ -282,7 +299,7 @@ def create_secret():
             if not dry_run and result.status == 'success':
                 redirect_url = url_for('kubernetes_operations.create_secret')
                 if is_htmx:
-                    response = make_response('', 204)
+                    response = make_response('', 200)
                     response.headers['HX-Redirect'] = redirect_url
                     return response
                 return redirect(redirect_url)
@@ -327,10 +344,13 @@ def create_secret():
 
         if is_htmx:
             operation_feedback = _notification_response_context(feedback)
-            return render_template(
+            response = make_response(render_template(
                 'kubernetes_operations/secrets/_create_operation_result.html',
                 operation_feedback=operation_feedback,
-            )
+            ))
+            if dry_run and feedback.get('status') == 'success':
+                response.headers['HX-Trigger'] = '{"kaori:operation-validated":{"formId":"secret-create-form"}}'
+            return response
 
     return render_template(
         'kubernetes_operations/secrets/create.html',
@@ -407,7 +427,15 @@ def replace_secret():
             if operation not in {'validate', 'replace'}:
                 raise ValueError('Unsupported Secret replacement action.')
 
-            result = execute_secret_replacement(request.form, request.files, dry_run=dry_run)
+            result = (
+                execute_secret_replacement(request.form, request.files, dry_run=True)
+                if dry_run
+                else validate_then_apply(
+                    validate=lambda: execute_secret_replacement(request.form, request.files, dry_run=True),
+                    prepare_apply=lambda: _rewind_uploaded_files(request.files),
+                    apply=lambda: execute_secret_replacement(request.form, request.files, dry_run=False),
+                )
+            )
             feedback = _record_secret_activity(
                 event_type=(
                     'kubernetes_secret_replacement_validation' if dry_run else 'kubernetes_secret_data_replaced'
@@ -433,7 +461,7 @@ def replace_secret():
             if not dry_run and result.status == 'success':
                 redirect_url = url_for('kubernetes_operations.replace_secret')
                 if is_htmx:
-                    response = make_response('', 204)
+                    response = make_response('', 200)
                     response.headers['HX-Redirect'] = redirect_url
                     return response
                 return redirect(redirect_url)
@@ -480,10 +508,13 @@ def replace_secret():
 
         if is_htmx:
             operation_feedback = _notification_response_context(feedback)
-            return render_template(
+            response = make_response(render_template(
                 'kubernetes_operations/secrets/_replace_operation_result.html',
                 operation_feedback=operation_feedback,
-            )
+            ))
+            if dry_run and feedback.get('status') == 'success':
+                response.headers['HX-Trigger'] = '{"kaori:operation-validated":{"formId":"replace-secret-form"}}'
+            return response
 
     return render_template(
         'kubernetes_operations/secrets/replace.html',
@@ -537,7 +568,14 @@ def delete_secret():
             _validate_secret_operation_csrf()
             if operation not in {'validate', 'delete'}:
                 raise ValueError('Unsupported Secret deletion action.')
-            result = execute_secret_deletion(request.form, dry_run=dry_run)
+            result = (
+                execute_secret_deletion(request.form, dry_run=True)
+                if dry_run
+                else validate_then_apply(
+                    validate=lambda: execute_secret_deletion(request.form, dry_run=True),
+                    apply=lambda: execute_secret_deletion(request.form, dry_run=False),
+                )
+            )
             feedback = _record_secret_activity(
                 event_type=('kubernetes_secret_deletion_validation' if dry_run else 'kubernetes_secret_deleted'),
                 status=result.status,
@@ -560,7 +598,7 @@ def delete_secret():
             if not dry_run and result.status == 'success':
                 redirect_url = url_for('kubernetes_operations.delete_secret')
                 if is_htmx:
-                    response = make_response('', 204)
+                    response = make_response('', 200)
                     response.headers['HX-Redirect'] = redirect_url
                     return response
                 return redirect(redirect_url)
@@ -607,10 +645,13 @@ def delete_secret():
 
         if is_htmx:
             operation_feedback = _notification_response_context(feedback)
-            return render_template(
+            response = make_response(render_template(
                 'kubernetes_operations/secrets/_delete_operation_result.html',
                 operation_feedback=operation_feedback,
-            )
+            ))
+            if dry_run and feedback.get('status') == 'success':
+                response.headers['HX-Trigger'] = '{"kaori:operation-validated":{"formId":"delete-secret-form"}}'
+            return response
 
     return render_template(
         'kubernetes_operations/secrets/delete.html',
