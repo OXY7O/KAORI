@@ -34,3 +34,7 @@ This document contains Kubernetes-specific presentation decisions that must not 
 - Destructive and security-sensitive actions use their established confirmation, permission, CSRF, audit, and notification flows.
 
 Detailed page fields, table columns, and action names belong in the relevant Kubernetes module README rather than this summary.
+
+## Kubernetes Operations Dashboard Expandable Defaults
+
+All expandable dashboard sections are open on initial render. Users may collapse a section after reviewing it, but navigating to the dashboard or loading a tab must not hide operational data behind a closed default state.
