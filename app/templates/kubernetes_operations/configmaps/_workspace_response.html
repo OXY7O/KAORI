@@ -1,4 +1,4 @@
-{% import "kubernetes_operations/configmaps/_components.html" as configmap_ui %}
+{% import "kubernetes_operations/_components.html" as configmap_ui %}
 {% include 'kubernetes_operations/configmaps/_workspace.html' %}
 {% if workspace_mode == 'delete' %}
     <div id="configmap-delete-target" hx-swap-oob="innerHTML">

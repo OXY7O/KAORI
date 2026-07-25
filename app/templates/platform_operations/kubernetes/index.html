@@ -1,0 +1,70 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "components/table_label.html" as table_label %}
+{% import "platform_operations/kubernetes/_tabs.html" as kubernetes_admin_tabs %}
+{% block title %}Kubernetes Administration{% endblock title %}
+{% block dashboard_content %}
+    <div class="space-y-6">
+        <section class="{{ page_hero.shell_classes() }}">
+            <div class="{{ page_hero.layout_classes() }}">
+                <div class="{{ page_hero.content_classes() }}">
+                    {% call page_hero.intro('workflow', 'Platform Operations', 'server-cog') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Kubernetes Administration</h1>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Configure advanced Kubernetes operational controls that sit above routine resource management and require explicit security boundaries.</p>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('server', cluster_count ~ ' Clusters') }}
+                            {{ page_hero.meta_label('badge-check', ready_cluster_count ~ ' Reveal Ready') }}
+                            {{ page_hero.meta_label('boxes', enabled_namespace_count ~ ' Protected Namespaces') }}
+                        </div>
+                    {% endcall %}
+                </div>
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="Kubernetes administration posture">
+                    <div class="{{ page_hero.context_panel_classes() }}">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="min-w-0">
+                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Advanced Control Plane</p>
+                                <h2 class="{{ page_hero.context_panel_title_classes() }}">Kubernetes Security Setup</h2>
+                            </div>
+                            {{ table_label.status_label('Available', 'info', 'shield-check') }}
+                        </div>
+                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                            {{ page_hero.context_metric('scan-eye', 'Secret Reveal', 'Configured' if global_reveal_enabled else 'Disabled') }}
+                            {{ page_hero.context_metric('badge-check', 'Ready Clusters', ready_cluster_count) }}
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </section>
+        {{ kubernetes_admin_tabs.render('overview') }}
+        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+            <header class="flex items-start gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:px-6">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="scan-eye" class="h-4 w-4"></i></span>
+                <div>
+                    <h2 class="text-sm font-semibold text-content-primary">Protected Secret Reveal</h2>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Manage cluster readiness and namespace-level access policy before operators can request one-time Secret values.</p>
+                </div>
+            </header>
+            <div class="grid gap-4 p-5 sm:p-6 lg:grid-cols-[1fr_auto] lg:items-center">
+                <div class="grid gap-3 sm:grid-cols-3">
+                    <div class="rounded-lg border border-outline-default bg-surface-hover p-4">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">Global State</p>
+                        <p class="mt-2 text-sm font-semibold text-content-primary">{{ 'Enabled' if global_reveal_enabled else 'Disabled' }}</p>
+                    </div>
+                    <div class="rounded-lg border border-outline-default bg-surface-hover p-4">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">Ready Clusters</p>
+                        <p class="mt-2 text-sm font-semibold text-content-primary">{{ ready_cluster_count }} of {{ cluster_count }}</p>
+                    </div>
+                    <div class="rounded-lg border border-outline-default bg-surface-hover p-4">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">Protected Namespaces</p>
+                        <p class="mt-2 text-sm font-semibold text-content-primary">{{ enabled_namespace_count }}</p>
+                    </div>
+                </div>
+                <a href="{{ url_for('platform_operations.kubernetes.secret_reveal.index') }}"
+                   class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+                    <i data-lucide="settings-2" class="h-4 w-4"></i>
+                    Configure Secret Reveal
+                </a>
+            </div>
+        </section>
+    </div>
+{% endblock dashboard_content %}

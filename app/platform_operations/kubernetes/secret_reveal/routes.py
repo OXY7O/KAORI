@@ -23,7 +23,7 @@ from app.kubernetes_operations.secrets.reveal_policy import (
 from app.models import Cluster
 from app.notifications.service import record_operational_activity
 from app.rbac.decorators import permission_required
-from app.settings.secret_reveal.service import build_secret_reveal_settings_context
+from app.platform_operations.kubernetes.secret_reveal.service import build_secret_reveal_settings_context
 
 bp = Blueprint('secret_reveal', __name__)
 
@@ -41,7 +41,7 @@ def _settings_redirect(cluster_id: str):
         value = (request.form.get(key) or '').strip()
         if value:
             redirect_args[key] = value
-    return redirect(url_for('settings.secret_reveal.index', **redirect_args))
+    return redirect(url_for('platform_operations.kubernetes.secret_reveal.index', **redirect_args))
 
 
 def _cluster_or_error(cluster_id: str) -> Cluster:
@@ -65,9 +65,9 @@ def _record_settings_activity(
         status=status,
         title=title,
         message=message,
-        action_url=url_for('settings.secret_reveal.index'),
-        action_label='Open Secret Reveal Settings',
-        action_icon='settings',
+        action_url=url_for('platform_operations.kubernetes.secret_reveal.index'),
+        action_label='Open Kubernetes Administration',
+        action_icon='server-cog',
         metadata={
             **metadata,
             'secret_value_recorded': False,
@@ -87,7 +87,7 @@ def index():
         page=request.args.get('page'),
         per_page=request.args.get('per_page'),
     )
-    return render_template('settings/secret_reveal/index.html', **context)
+    return render_template('platform_operations/kubernetes/secret_reveal/index.html', **context)
 
 
 @bp.route('/workspace')
@@ -103,7 +103,7 @@ def workspace():
     context['workspace_partial'] = True
     response = make_response(
         render_template(
-            'settings/secret_reveal/_cluster_workspace.html',
+            'platform_operations/kubernetes/secret_reveal/_cluster_workspace.html',
             **context,
         )
     )
@@ -118,7 +118,7 @@ def workspace():
     if selected_cluster is not None:
         push_args['cluster_id'] = selected_cluster.id
     response.headers['HX-Push-Url'] = url_for(
-        'settings.secret_reveal.index',
+        'platform_operations.kubernetes.secret_reveal.index',
         **push_args,
     )
     return response

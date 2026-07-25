@@ -26,16 +26,6 @@
     </div>
 {%- endmacro %}
 
-{% macro workflow_step(number, title, text) -%}
-    <div class="flex items-start gap-3">
-        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface-strong text-xs font-semibold text-brand-foreground">{{ number }}</span>
-        <span class="min-w-0">
-            <strong class="block text-xs font-semibold text-brand-foreground">{{ title }}</strong>
-            <span class="mt-0.5 block text-xs leading-5 text-brand-foreground-muted">{{ text }}</span>
-        </span>
-    </div>
-{%- endmacro %}
-
 {% macro neutral_metric(icon, label, value, supporting='') -%}
     <div class="rounded-lg border border-outline-default bg-surface-card px-3 py-2.5">
         <div class="flex items-center gap-2 text-kaori-primary">
@@ -46,6 +36,22 @@
                 title="{{ value }}">{{ value }}</strong>
         {% if supporting %}<span class="mt-0.5 block text-[10px] leading-4 text-content-muted">{{ supporting }}</span>{% endif %}
     </div>
+{%- endmacro %}
+
+
+{% macro summary_item(icon, label, value='', tone='brand', supporting='', caller=None) -%}
+    <article class="rounded-xl border {{ 'border-status-normal-border bg-status-normal-soft' if tone == 'normal' else 'border-status-warning-border bg-status-warning-soft' if tone == 'warning' else 'border-status-critical-border bg-status-critical-soft' if tone == 'critical' else 'border-status-info-border bg-status-info-soft' if tone == 'info' else 'border-outline-default bg-surface-hover' }} p-3.5">
+        <div class="flex items-start gap-3">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ 'bg-status-normal-soft text-status-normal-text' if tone == 'normal' else 'bg-status-warning-soft text-status-warning-text' if tone == 'warning' else 'bg-status-critical-soft text-status-critical-text' if tone == 'critical' else 'bg-status-info-soft text-status-info-text' if tone == 'info' else 'bg-kaori-soft text-kaori-primary' }}" aria-hidden="true">
+                <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">{{ label }}</p>
+                <p class="mt-1 text-sm font-semibold text-content-primary">{% if caller is not none %}{{ caller() }}{% else %}{{ value }}{% endif %}</p>
+                {% if supporting %}<p class="mt-1 text-xs leading-5 text-content-muted">{{ supporting }}</p>{% endif %}
+            </div>
+        </div>
+    </article>
 {%- endmacro %}
 
 {% macro empty_state(icon, title, text, tone='brand') -%}

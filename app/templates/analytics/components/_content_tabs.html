@@ -1,0 +1,26 @@
+{% macro render(tabset_id, tabs, aria_label) %}
+    <div class="rounded-xl border border-outline-default bg-surface-card p-2 shadow-sm">
+        <div class="flex gap-2 overflow-x-auto"
+             role="tablist"
+             aria-label="{{ aria_label }}">
+            {% for tab_id, tab_label, tab_icon in tabs %}
+                <button type="button"
+                        id="{{ tabset_id }}-tab-{{ tab_id }}"
+                        role="tab"
+                        aria-controls="{{ tabset_id }}-panel-{{ tab_id }}"
+                        :aria-selected="activeTab === '{{ tab_id }}' ? 'true' : 'false'"
+                        :tabindex="activeTab === '{{ tab_id }}' ? 0 : -1"
+                        :class="activeTab === '{{ tab_id }}'
+                            ? 'border-kaori-primary bg-kaori-soft text-kaori-primary'
+                            : 'border-transparent bg-surface-card text-content-secondary hover:border-outline-default hover:bg-surface-hover hover:text-content-primary'"
+                        class="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card"
+                        @click="setTab('{{ tab_id }}'); $nextTick(() => { window.dispatchEvent(new Event('resize')); if (window.renderKaoriIcons) window.renderKaoriIcons(); })"
+                        @keydown.right.prevent="if ($el.nextElementSibling) $el.nextElementSibling.focus()"
+                        @keydown.left.prevent="if ($el.previousElementSibling) $el.previousElementSibling.focus()">
+                    <i data-lucide="{{ tab_icon }}" class="h-4 w-4"></i>
+                    <span>{{ tab_label }}</span>
+                </button>
+            {% endfor %}
+        </div>
+    </div>
+{% endmacro %}

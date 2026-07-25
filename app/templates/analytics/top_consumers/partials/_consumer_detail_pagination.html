@@ -39,7 +39,7 @@
                 consumers
             </span>
             <select name="per_page"
-                    onchange="this.form.requestSubmit()"
+                    data-kaori-auto-submit
                     class="{{ pagination_ui.page_size_classes() }}">
                 {% for value in allowed_per_page_values %}
                     <option value="{{ value }}" {% if per_page == value %}selected{% endif %}>{{ value }}</option>

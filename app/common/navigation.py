@@ -61,11 +61,12 @@ _ENDPOINT_LABELS: dict[str, str] = {
     # Platform operations
     'jobs.executions': 'Executions',
     'jobs.configuration': 'Job Configuration',
+    'platform_operations.kubernetes.index': 'Kubernetes Administration',
+    'platform_operations.kubernetes.secret_reveal.index': 'Secret Reveal',
     # Settings
     'settings.general': 'General',
     'settings.account': 'Account',
     'settings.data_lifecycle.index': 'Data Lifecycle',
-    'settings.secret_reveal.index': 'Secret Reveal',
     # Access
     'users.index': 'User Management',
     'settings.roles': 'Roles & Access',
@@ -167,6 +168,13 @@ def build_navigation_breadcrumb(endpoint: str | None, path: str = '') -> list[di
             BreadcrumbItem('Platform Operations', 'workflow'),
             BreadcrumbItem(_leaf(endpoint, 'Jobs & Executions')),
         ]
+    elif endpoint.startswith('platform_operations.kubernetes.'):
+        items = [
+            BreadcrumbItem('Platform Operations', 'workflow'),
+            BreadcrumbItem('Kubernetes Administration'),
+        ]
+        if endpoint != 'platform_operations.kubernetes.index':
+            items.append(BreadcrumbItem(_leaf(endpoint, 'Secret Reveal')))
     elif endpoint.startswith('prometheus.') or 'prometheus' in endpoint:
         items = [BreadcrumbItem('Integrations', 'plug'), BreadcrumbItem('Prometheus')]
         items = _append_workflow(items, endpoint)

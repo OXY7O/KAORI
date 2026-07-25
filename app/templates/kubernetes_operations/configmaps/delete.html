@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
-{% import "kubernetes_operations/configmaps/_components.html" as configmap_ui %}
+{% import "kubernetes_operations/_components.html" as configmap_ui %}
+{% import "components/info_flow.html" as info_flow %}
 {% block title %}Delete ConfigMap{% endblock title %}
 {% block dashboard_content %}
     <div class="grid gap-6">
@@ -17,8 +18,8 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ configmap_ui.hero_context('Delete Boundary',
-                                'Destructive Action',
+                {{ configmap_ui.hero_context('Delete Workflow',
+                                'Protected Deletion',
                                 'Critical Action',
                                 'critical',
                                 'shield-alert',
@@ -75,21 +76,21 @@
                     </div>
                 </section>
                 <aside class="self-start xl:sticky xl:top-6 xl:col-start-2 xl:row-start-2">
-                    <section class="rounded-xl border border-brand-outline bg-kaori-primary-dark p-5 text-brand-foreground shadow-sm">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-foreground-muted">Delete Flow</p>
-                                <h2 class="mt-1.5 text-base font-semibold text-brand-foreground">Inspect Before Removing</h2>
-                            </div>
-                            <span class="flex h-10 w-10 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface text-kaori-accent"><i data-lucide="workflow" class="h-5 w-5"></i></span>
-                        </div>
-                        <div class="mt-5 grid gap-4">
-                            {{ configmap_ui.workflow_step(1, 'Select Object', 'Choose the existing live ConfigMap.') }}
-                            {{ configmap_ui.workflow_step(2, 'Review Impact', 'Inspect key count and known consumers.') }}
-                            {{ configmap_ui.workflow_step(3, 'Validate', 'Verify live identity, confirmation, and delete RBAC.') }}
-                            {{ configmap_ui.workflow_step(4, 'Confirm and Delete', 'Enter the exact name and remove it.') }}
-                        </div>
-                    </section>
+                    {% set configmap_delete_flow = [
+                        ('Select Object', 'Choose the registered cluster, live namespace, and existing ConfigMap target.'),
+                        ('Review Impact', 'Inspect live identity, key count, and best-effort workload consumers before continuing.'),
+                        ('Validate Deletion', 'Verify the exact name, live resource version, and effective delete RBAC without sending DELETE.'),
+                        ('Confirm and Delete', 'Use the short-lived validation receipt to remove the same live object once.')
+                    ] %}
+                    {{ info_flow.render(
+                        'ConfigMap Delete Flow',
+                        'How a destructive ConfigMap request reaches final execution.',
+                        configmap_delete_flow,
+                        icon='workflow',
+                        note='Validation is non-destructive. Final deletion is irreversible from KAORI and must target the same resource version.',
+                        note_icon='shield-alert',
+                        open_by_default=true
+                    ) }}
                 </aside>
                 {% call configmap_ui.action_bar('shield-alert', 'Validate Before Deletion', 'Validation is non-destructive. The final delete action is irreversible from this workflow.', 'Delete ConfigMap Actions') %}
                     {% set oob = false %}

@@ -1,39 +1,69 @@
-<section class="rounded-xl border border-outline-default bg-surface-card shadow-sm ">
-    <div class="border-b border-outline-default px-6 py-4 ">
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+{% import "analytics/components/_content_tabs.html" as analytics_content_tabs %}
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <div class="border-b border-outline-default px-6 py-4">
+        <div class="flex items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <i data-lucide="hard-drive" class="h-5 w-5"></i>
+            </span>
             <div>
-                <div class="flex items-center gap-2">
-                    <h2 class="text-lg font-semibold text-content-primary">Storage Capacity &amp; Utilization</h2>
-                    <i data-lucide="info" class="h-4 w-4 text-content-muted"></i>
-                </div>
-                <p class="mt-1 text-sm text-content-muted ">
-                    Review node filesystem usage, persistent volume capacity, PVC requests, and storage health signals.
-                </p>
-            </div>
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-end">
-                <label class="block">
-                    <span class="text-xs font-medium text-content-muted ">Node Filesystem</span>
-                    <select name="storage_node"
-                            class="mt-1 w-full rounded-xl border border-outline-strong bg-surface-card px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/10 sm:w-64"
-                            hx-get="{{ url_for('analytics.storage_filesystem_summary') }}"
-                            hx-trigger="change"
-                            hx-target="#storage-filesystem-panel"
-                            hx-swap="outerHTML"
-                            hx-include="#storage-analysis-filter-form, [name='storage_node']"
-                            hx-indicator="#storage-refresh-indicator">
-                        <option value="" {% if not selected_storage_node %}selected{% endif %}>All Nodes</option>
-                        {% for node in storage_summary.node_filesystem.available_nodes %}
-                            <option value="{{ node }}"
-                                    {% if selected_storage_node == node %}selected{% endif %}>{{ node }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
+                <h2 class="text-lg font-semibold text-content-primary">Storage Capacity &amp; Utilization</h2>
+                <p class="mt-1 text-sm leading-6 text-content-muted">Review node filesystems, persistent storage, and actionable storage findings by category.</p>
             </div>
         </div>
     </div>
-    <div class="space-y-6 p-6">
-        {% include "analytics/storage/partials/_filesystem_panel.html" %}
-        {% include "analytics/storage/partials/_persistent_storage_panel.html" %}
+    <div class="p-6">
+        <section x-data="kaoriAnalyticsTabs('filesystem', ['filesystem', 'persistent', 'recommendations'])" class="space-y-6">
+            {% set storage_tabs = [
+                ('filesystem', 'Node Filesystem', 'server'),
+                ('persistent', 'Persistent Storage', 'database'),
+                ('recommendations', 'Recommendations', 'list-checks')
+            ] %}
+            {{ analytics_content_tabs.render('storage-content', storage_tabs, 'Storage Analysis Content') }}
+            <div id="storage-content-panel-filesystem"
+                 role="tabpanel"
+                 aria-labelledby="storage-content-tab-filesystem"
+                 x-show="activeTab === 'filesystem'"
+                 class="space-y-6">
+                <div class="rounded-xl border border-outline-default bg-surface-subtle p-4">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Filesystem Scope</p>
+                            <p class="mt-1 text-sm text-content-secondary">Select a node to narrow filesystem usage without changing the persistent-storage scope.</p>
+                        </div>
+                        <label class="block sm:w-72">
+                            <span class="text-xs font-semibold text-content-secondary">Node Filesystem</span>
+                            <select name="storage_node"
+                                    class="mt-1.5 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary outline-none transition hover:border-outline-strong focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10"
+                                    hx-get="{{ url_for('analytics.storage_filesystem_summary') }}"
+                                    hx-trigger="change"
+                                    hx-target="#storage-filesystem-panel"
+                                    hx-swap="outerHTML"
+                                    hx-include="#storage-analysis-filter-form, [name='storage_node']"
+                                    hx-indicator="#storage-refresh-indicator">
+                                <option value="" {% if not selected_storage_node %}selected{% endif %}>All Nodes</option>
+                                {% for node in storage_summary.node_filesystem.available_nodes %}
+                                    <option value="{{ node }}" {% if selected_storage_node == node %}selected{% endif %}>{{ node }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                    </div>
+                </div>
+                {% include "analytics/storage/partials/_filesystem_panel.html" %}
+            </div>
+            <div id="storage-content-panel-persistent"
+                 role="tabpanel"
+                 aria-labelledby="storage-content-tab-persistent"
+                 x-show="activeTab === 'persistent'"
+                 x-cloak
+                 class="space-y-6">
+                {% include "analytics/storage/partials/_persistent_storage_panel.html" %}
+            </div>
+            <div id="storage-content-panel-recommendations"
+                 role="tabpanel"
+                 aria-labelledby="storage-content-tab-recommendations"
+                 x-show="activeTab === 'recommendations'"
+                 x-cloak
+                 class="space-y-6">
         <section class="rounded-xl border border-outline-default bg-surface-card shadow-sm ">
             <details class="group">
                 <summary class="flex cursor-pointer list-none flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
@@ -98,6 +128,8 @@
                     {% endif %}
                 </div>
             </details>
+        </section>
+            </div>
         </section>
     </div>
 </section>

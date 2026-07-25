@@ -13,8 +13,8 @@
                 </div>
             </div>
             <form method="get"
-                  action="{{ url_for('settings.secret_reveal.index') }}"
-                  hx-get="{{ url_for('settings.secret_reveal.workspace') }}"
+                  action="{{ url_for('platform_operations.kubernetes.secret_reveal.index') }}"
+                  hx-get="{{ url_for('platform_operations.kubernetes.secret_reveal.workspace') }}"
                   hx-target="#secret-reveal-cluster-workspace"
                   hx-swap="outerHTML"
                   hx-indicator="#secret-reveal-cluster-loading"
@@ -32,7 +32,7 @@
                 <label class="sr-only" for="secret-reveal-cluster">Cluster</label>
                 <select id="secret-reveal-cluster"
                         name="cluster_id"
-                        onchange="this.form.requestSubmit()"
+                        data-kaori-auto-submit
                         class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3.5 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
                     {% if not clusters %}<option value="">No cluster registered</option>{% endif %}
                     {% for cluster in clusters %}
@@ -62,7 +62,7 @@
                         {{ table_label.status_label('Ready' if selected_cluster_ready else 'Blocked', 'normal' if selected_cluster_ready else 'warning', 'check' if selected_cluster_ready else 'shield-alert') }}
                     </div>
                     <form method="post"
-                          action="{{ url_for('settings.secret_reveal.update_readiness', cluster_id=selected_cluster.id) }}">
+                          action="{{ url_for('platform_operations.kubernetes.secret_reveal.update_readiness', cluster_id=selected_cluster.id) }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <input type="hidden"
                                name="namespace_q"
@@ -175,6 +175,6 @@
         {% endif %}
     </section>
     {% if selected_cluster %}
-        {% include "settings/secret_reveal/_namespace_policy_section.html" %}
+        {% include "platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html" %}
     {% endif %}
 </div>

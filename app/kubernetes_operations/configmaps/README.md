@@ -97,6 +97,7 @@ Impact context can lag behind the live object. The UI must label it as inventory
 - Create and Update use the reusable validation action bar. Final mutation actions stay neutral and disabled until the latest payload passes validation.
 - Dynamic entry handling and cluster/namespace dependency behavior live in `app/static/js/configmap_editor.js`; templates no longer embed imperative `onchange` handlers or per-partial scripts.
 - The right hero panel contains only status and concise metrics, with no descriptive helper text.
+- Create, Update, and Delete use the canonical `components/info_flow.html` timeline for operational steps. Custom dark workflow cards and domain-specific workflow-step markup are not retained.
 
 ### Shared action-bar wrapper contract
 

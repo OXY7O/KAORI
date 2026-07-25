@@ -1,16 +1,30 @@
 {% set jobs_active = request.endpoint and request.endpoint.startswith('jobs.') %}
-<details class="sidebar-menu-group group" {% if jobs_active %}open{% endif %}>
-    <summary class="sidebar-parent-link {{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if jobs_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} flex min-h-11 cursor-pointer list-none items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12px] font-semibold transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2">
-        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ 'bg-white/15 text-white' if jobs_active else 'bg-white/5 text-brand-foreground-muted group-hover:bg-white/10 group-hover:text-white' }} transition"><i data-lucide="workflow" class="h-4 w-4"></i></span>
+{% set kubernetes_admin_active = request.endpoint and request.endpoint.startswith('platform_operations.kubernetes.') %}
+{% set platform_operations_active = jobs_active or kubernetes_admin_active %}
+{% set can_jobs = current_user.is_authenticated and current_user.has_permission('jobs.view') %}
+{% set can_kubernetes_admin = current_user.is_authenticated and current_user.has_permission('kubernetes_secrets.manage_reveal') %}
+<details class="sidebar-menu-group group" {% if platform_operations_active %}open{% endif %}>
+    <summary class="sidebar-parent-link {{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if platform_operations_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} flex min-h-11 cursor-pointer list-none items-center gap-2.5 rounded-lg px-2.5 py-2 text-[12px] font-semibold transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2">
+        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ 'bg-white/15 text-white' if platform_operations_active else 'bg-white/5 text-brand-foreground-muted group-hover:bg-white/10 group-hover:text-white' }} transition"><i data-lucide="workflow" class="h-4 w-4"></i></span>
         <span class="sidebar-expanded-only min-w-0 flex-1 truncate whitespace-nowrap">Platform Operations</span>
-        <i data-lucide="chevron-down" class="sidebar-expanded-only h-3.5 w-3.5 transition group-open:rotate-180 {{ 'text-kaori-accent' if jobs_active else 'text-white/[0.35]' }}"></i>
+        <i data-lucide="chevron-down" class="sidebar-expanded-only h-3.5 w-3.5 transition group-open:rotate-180 {{ 'text-kaori-accent' if platform_operations_active else 'text-white/[0.35]' }}"></i>
     </summary>
     <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
-        <a href="{{ url_for('jobs.executions') }}"
-           class="{{ 'bg-white/[0.08] text-kaori-accent' if jobs_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
-            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if jobs_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
-            <i data-lucide="list-checks" class="h-3.5 w-3.5"></i>
-            <span>Jobs &amp; Executions</span>
-        </a>
+        {% if can_jobs %}
+            <a href="{{ url_for('jobs.executions') }}"
+               class="{{ 'bg-white/[0.08] text-kaori-accent' if jobs_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
+                <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if jobs_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+                <i data-lucide="list-checks" class="h-3.5 w-3.5"></i>
+                <span>Jobs &amp; Executions</span>
+            </a>
+        {% endif %}
+        {% if can_kubernetes_admin %}
+            <a href="{{ url_for('platform_operations.kubernetes.index') }}"
+               class="{{ 'bg-white/[0.08] text-kaori-accent' if kubernetes_admin_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
+                <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if kubernetes_admin_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+                <i data-lucide="server-cog" class="h-3.5 w-3.5"></i>
+                <span>Kubernetes Administration</span>
+            </a>
+        {% endif %}
     </div>
 </details>

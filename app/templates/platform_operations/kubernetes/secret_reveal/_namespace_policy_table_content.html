@@ -56,7 +56,7 @@
                     </td>
                     <td class="px-5 py-3 align-middle">
                         <form method="post"
-                              action="{{ url_for('settings.secret_reveal.update_namespace_policy', cluster_id=selected_cluster.id) }}"
+                              action="{{ url_for('platform_operations.kubernetes.secret_reveal.update_namespace_policy', cluster_id=selected_cluster.id) }}"
                               class="ml-auto flex w-full max-w-md items-center justify-end gap-3">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="namespace" value="{{ row.namespace }}">
@@ -117,8 +117,8 @@
             {{ 'namespace' if namespace_pagination.total_items == 1 else 'namespaces' }}
         </div>
         <form method="get"
-              action="{{ url_for('settings.secret_reveal.index') }}"
-              hx-get="{{ url_for('settings.secret_reveal.index') }}"
+              action="{{ url_for('platform_operations.kubernetes.secret_reveal.index') }}"
+              hx-get="{{ url_for('platform_operations.kubernetes.secret_reveal.index') }}"
               hx-target="#secret-reveal-namespace-table-content"
               hx-select="#secret-reveal-namespace-table-content"
               hx-swap="innerHTML"
@@ -135,7 +135,7 @@
             <input type="hidden" name="page" value="1">
             <select name="per_page"
                     aria-label="Rows per page"
-                    onchange="this.form.requestSubmit()"
+                    data-kaori-auto-submit
                     class="{{ pagination_ui.page_size_classes() }}">
                 {% for option in namespace_per_page_options %}
                     <option value="{{ option }}"
@@ -146,7 +146,7 @@
     </div>
     <div class="flex flex-wrap items-center gap-2">
         {% if namespace_pagination.has_prev %}
-            {% set prev_url = url_for('settings.secret_reveal.index', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.prev_page, per_page=namespace_pagination.per_page) %}
+            {% set prev_url = url_for('platform_operations.kubernetes.secret_reveal.index', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.prev_page, per_page=namespace_pagination.per_page) %}
             <a href="{{ prev_url }}"
                hx-get="{{ prev_url }}"
                hx-target="#secret-reveal-namespace-table-content"
@@ -162,7 +162,7 @@
         {% endif %}
         {{ pagination_ui.numeric_pages(namespace_pagination.page, namespace_pagination.total_pages) }}
         {% if namespace_pagination.has_next %}
-            {% set next_url = url_for('settings.secret_reveal.index', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.next_page, per_page=namespace_pagination.per_page) %}
+            {% set next_url = url_for('platform_operations.kubernetes.secret_reveal.index', cluster_id=selected_cluster.id, namespace_q=namespace_filters.query, namespace_policy=namespace_filters.policy, page=namespace_pagination.next_page, per_page=namespace_pagination.per_page) %}
             <a href="{{ next_url }}"
                hx-get="{{ next_url }}"
                hx-target="#secret-reveal-namespace-table-content"

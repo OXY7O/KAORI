@@ -1,4 +1,5 @@
 {% extends "layouts/app.html" %}
+{% import "analytics/components/_content_tabs.html" as analytics_content_tabs %}
 {% block title %}Workload Analysis{% endblock title %}
 {% block dashboard_content %}
     <div id="workload-page"
@@ -31,9 +32,37 @@
             </div>
         {% endif %}
         {% if cluster and not dependency_blocker %}
-            {% include "analytics/workload/partials/_tenant_quota_section.html" %}
-            {% include "analytics/workload/partials/_workload_mapping_section.html" %}
-            {% include "analytics/workload/partials/_recommendations.html" %}
+            <section x-data="kaoriAnalyticsTabs('quotas', ['quotas', 'mapping', 'recommendations'])" class="space-y-6">
+                {% set workload_tabs = [
+                    ('quotas', 'Tenant Quotas', 'badge-gauge'),
+                    ('mapping', 'Resource Mapping', 'network'),
+                    ('recommendations', 'Recommendations', 'list-checks')
+                ] %}
+                {{ analytics_content_tabs.render('workload-content', workload_tabs, 'Workload Analysis Content') }}
+                <div id="workload-content-panel-quotas"
+                     role="tabpanel"
+                     aria-labelledby="workload-content-tab-quotas"
+                     x-show="activeTab === 'quotas'"
+                     class="space-y-6">
+                    {% include "analytics/workload/partials/_tenant_quota_section.html" %}
+                </div>
+                <div id="workload-content-panel-mapping"
+                     role="tabpanel"
+                     aria-labelledby="workload-content-tab-mapping"
+                     x-show="activeTab === 'mapping'"
+                     x-cloak
+                     class="space-y-6">
+                    {% include "analytics/workload/partials/_workload_mapping_section.html" %}
+                </div>
+                <div id="workload-content-panel-recommendations"
+                     role="tabpanel"
+                     aria-labelledby="workload-content-tab-recommendations"
+                     x-show="activeTab === 'recommendations'"
+                     x-cloak
+                     class="space-y-6">
+                    {% include "analytics/workload/partials/_recommendations.html" %}
+                </div>
+            </section>
         {% endif %}
     </div>
 {% endblock dashboard_content %}

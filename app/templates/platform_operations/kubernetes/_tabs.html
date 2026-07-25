@@ -1,0 +1,20 @@
+{% macro render(active_tab) -%}
+    <nav class="rounded-xl border border-outline-default bg-surface-card p-2 shadow-sm"
+         aria-label="Kubernetes Administration Tabs">
+        <div class="grid gap-2 sm:grid-cols-2">
+            {% set tabs = [
+                ('overview', 'platform_operations.kubernetes.index', 'layout-dashboard', 'Overview'),
+                ('secret-reveal', 'platform_operations.kubernetes.secret_reveal.index', 'scan-eye', 'Secret Reveal')
+            ] %}
+            {% for key, endpoint, icon, label in tabs %}
+                {% set active = active_tab == key %}
+                <a href="{{ url_for(endpoint) }}"
+                   {% if active %}aria-current="page"{% endif %}
+                   class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus {{ 'border-kaori-primary bg-kaori-soft text-kaori-primary shadow-sm' if active else 'border-transparent bg-surface-card text-content-secondary hover:border-outline-default hover:bg-surface-hover hover:text-content-primary' }}">
+                    <i data-lucide="{{ icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                    {{ label }}
+                </a>
+            {% endfor %}
+        </div>
+    </nav>
+{%- endmacro %}

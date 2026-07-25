@@ -202,6 +202,9 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 - Validation, primary, secondary, destructive, and disabled actions use shared button macros so state changes do not alter geometry or produce thick borders.
 - Workflow section headers use one icon container, title hierarchy, description scale, outline, and surface treatment across Create, Replace, Delete, Reveal, and TLS rotation.
 - Legacy inline page-size submission handlers are replaced by the global `data-kaori-auto-submit` behavior.
+- Secret Type choices render as one five-card row at desktop widths, with native-radio selected styling and a visible Selected indicator.
+- Creation Summary uses reusable operation summary items, while Sensitive Data Policy and Replacement Semantics use the canonical information-guide component.
+- Delete, Protected Reveal, and TLS Rotation use the canonical `components/info_flow.html` timeline instead of custom dark workflow cards.
 
 ### Shared action-bar wrapper contract
 

@@ -21,8 +21,7 @@
                 <span class="text-xs font-medium text-content-muted ">Cluster</span>
                 <select id="alerts-cluster-select"
                         name="cluster_id"
-                        onchange="this.form.querySelector('[name=namespace]').value = ''; this.form.querySelector('[name=search]').value = ''; this.form.querySelector('[name=page]').value = '1';"
-                        hx-on::config-request="event.detail.parameters.namespace = ''; event.detail.parameters.search = ''; event.detail.parameters.page = '1';"
+                        data-kaori-reset-fields="namespace=,search=,page=1"
                         class="mt-1 w-full rounded-xl border border-outline-strong bg-surface-card px-3 py-2 pr-9 text-sm font-semibold text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 ">
                     {% for cluster in clusters %}
                         <option value="{{ cluster.id }}"

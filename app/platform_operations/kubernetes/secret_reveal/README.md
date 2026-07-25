@@ -1,6 +1,6 @@
-# Secret Reveal Settings
+# Kubernetes Secret Reveal Administration
 
-This Settings domain owns governance configuration for Protected Kubernetes Secret Reveal. It does not read Secret values and does not execute reveal requests.
+This Platform Operations domain owns governance configuration for Protected Kubernetes Secret Reveal. It does not read Secret values and does not execute reveal requests.
 
 ## Hierarchy
 
@@ -20,9 +20,9 @@ Namespace policy is explicit and default-deny. No policy row means Reveal is dis
 ## Ownership
 
 - `app/kubernetes_operations/secrets/reveal_policy.py`: canonical policy and readiness rules.
-- `app/settings/secret_reveal/service.py`: Settings page context and summaries.
-- `app/settings/secret_reveal/routes.py`: RBAC, CSRF, activity, toast, and save actions.
-- `app/templates/settings/secret_reveal/index.html`: cluster selector, readiness controls, and namespace policy table.
+- `app/platform_operations/kubernetes/secret_reveal/service.py`: Settings page context and summaries.
+- `app/platform_operations/kubernetes/secret_reveal/routes.py`: RBAC, CSRF, activity, toast, and save actions.
+- `app/templates/platform_operations/kubernetes/secret_reveal/index.html`: cluster selector, readiness controls, and namespace policy table.
 - `secret_reveal_namespace_policies`: one unique policy per cluster and namespace.
 
 Every save action emits a toast/notification and Operational Activity record containing only cluster, namespace, readiness, policy, and outcome. It must never contain kubeconfig or Secret data.
@@ -51,10 +51,10 @@ The namespace policy list is intentionally server-side filtered and paginated so
 The canonical namespace table partial is:
 
 ```text
-app/templates/settings/secret_reveal/_namespace_policy_section.html
+app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html
 ```
 
-Filtering and pagination are prepared by `app/settings/secret_reveal/service.py`; do not move this logic back to client-only DOM filtering because that would still render every namespace in the browser.
+Filtering and pagination are prepared by `app/platform_operations/kubernetes/secret_reveal/service.py`; do not move this logic back to client-only DOM filtering because that would still render every namespace in the browser.
 
 ## Namespace table visual contract
 
@@ -73,10 +73,10 @@ The `Allow Reveal per Namespace` section follows the established Node Inventory 
 Template ownership is split as follows:
 
 ```text
-app/templates/settings/secret_reveal/_namespace_policy_section.html
+app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_section.html
     card header, loading indicator, filters, and content target
 
-app/templates/settings/secret_reveal/_namespace_policy_table_content.html
+app/templates/platform_operations/kubernetes/secret_reveal/_namespace_policy_table_content.html
     data table, row controls, empty state, page-size selector, and pagination
 ```
 

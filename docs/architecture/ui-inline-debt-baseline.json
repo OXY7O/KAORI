@@ -10,18 +10,13 @@
       "inline_scripts": 1,
       "inline_styles": 0
     },
-    "app/templates/analytics/alerts/partials/_filters.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
-      "inline_styles": 0
-    },
     "app/templates/analytics/capacity/index.html": {
       "inline_event_handlers": 0,
       "inline_scripts": 1,
       "inline_styles": 0
     },
     "app/templates/analytics/forecast/index.html": {
-      "inline_event_handlers": 1,
+      "inline_event_handlers": 0,
       "inline_scripts": 1,
       "inline_styles": 0
     },
@@ -46,13 +41,8 @@
       "inline_styles": 0
     },
     "app/templates/analytics/top_consumers/index.html": {
-      "inline_event_handlers": 1,
+      "inline_event_handlers": 0,
       "inline_scripts": 1,
-      "inline_styles": 0
-    },
-    "app/templates/analytics/top_consumers/partials/_consumer_detail_pagination.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
       "inline_styles": 0
     },
     "app/templates/analytics/utilization/partials/_trend.html": {
@@ -63,11 +53,6 @@
     "app/templates/analytics/workload/index.html": {
       "inline_event_handlers": 0,
       "inline_scripts": 1,
-      "inline_styles": 0
-    },
-    "app/templates/analytics/workload/partials/_hero.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
       "inline_styles": 0
     },
     "app/templates/components/integration_coverage_content.html": {
@@ -85,28 +70,8 @@
       "inline_scripts": 0,
       "inline_styles": 3
     },
-    "app/templates/governance/tls_certificates/partials/_bulk_target_table.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
-      "inline_styles": 0
-    },
-    "app/templates/governance/tls_certificates/partials/_page_content.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 1,
-      "inline_styles": 0
-    },
-    "app/templates/governance/tls_certificates/partials/_table.html": {
-      "inline_event_handlers": 2,
-      "inline_scripts": 0,
-      "inline_styles": 0
-    },
     "app/templates/integrations/alertmanager/partials/_inventory_content.html": {
       "inline_event_handlers": 1,
-      "inline_scripts": 0,
-      "inline_styles": 0
-    },
-    "app/templates/jobs/executions/partials/_registry.html": {
-      "inline_event_handlers": 4,
       "inline_scripts": 0,
       "inline_styles": 0
     },
@@ -175,39 +140,9 @@
       "inline_scripts": 2,
       "inline_styles": 0
     },
-    "app/templates/inventory/workloads/partials/_table_content.html": {
-      "inline_event_handlers": 1,
+    "app/templates/jobs/executions/partials/_registry.html": {
+      "inline_event_handlers": 4,
       "inline_scripts": 0,
-      "inline_styles": 0
-    },
-    "app/templates/kubernetes_operations/configmaps/_entries_editor.html": {
-      "inline_event_handlers": 0,
-      "inline_scripts": 1,
-      "inline_styles": 0
-    },
-    "app/templates/kubernetes_operations/configmaps/_namespace_options.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
-      "inline_styles": 0
-    },
-    "app/templates/kubernetes_operations/configmaps/create.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
-      "inline_styles": 0
-    },
-    "app/templates/kubernetes_operations/secrets/_bulk_target_table.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
-      "inline_styles": 0
-    },
-    "app/templates/kubernetes_operations/secrets/_reveal_request_status.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
-      "inline_styles": 0
-    },
-    "app/templates/kubernetes_operations/secrets/_reveal_value.html": {
-      "inline_event_handlers": 0,
-      "inline_scripts": 1,
       "inline_styles": 0
     },
     "app/templates/layouts/app.html": {
@@ -248,16 +183,6 @@
     "app/templates/settings/general/partials/_time_locale.html": {
       "inline_event_handlers": 0,
       "inline_scripts": 1,
-      "inline_styles": 0
-    },
-    "app/templates/settings/secret_reveal/_cluster_workspace.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
-      "inline_styles": 0
-    },
-    "app/templates/settings/secret_reveal/_namespace_policy_table_content.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
       "inline_styles": 0
     },
     "app/templates/users/partials/_delete_modal.html": {

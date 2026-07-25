@@ -1,5 +1,6 @@
 {% import "components/progress_bar.html" as progress_bar %}
 {% extends "layouts/app.html" %}
+{% import "analytics/components/_content_tabs.html" as analytics_content_tabs %}
 {% block title %}Resource Utilization{% endblock title %}
 {% block dashboard_content %}
     {% import "components/table_label.html" as table_label %}
@@ -57,6 +58,21 @@
                     </div>
                 </div>
             {% endif %}
+            <script src="{{ url_for('static', filename='vendor/chartjs/chart.umd.min.js') }}"></script>
+            {% include "analytics/materialization/_freshness.html" %}
+            <section x-data="kaoriAnalyticsTabs('summary', ['summary', 'trend', 'nodes', 'recommendations'])" class="space-y-6">
+                {% set utilization_tabs = [
+                    ('summary', 'Utilization Summary', 'gauge'),
+                    ('trend', 'Trend Analysis', 'line-chart'),
+                    ('nodes', 'Node Detail', 'server-crash'),
+                    ('recommendations', 'Recommendations', 'list-checks')
+                ] %}
+                {{ analytics_content_tabs.render('utilization-content', utilization_tabs, 'Resource Utilization Content') }}
+                <div id="utilization-content-panel-summary"
+                     role="tabpanel"
+                     aria-labelledby="utilization-content-tab-summary"
+                     x-show="activeTab === 'summary'"
+                     class="space-y-6">
             {% set ready_ratio = ((cluster_info.ready_nodes / cluster_info.total_nodes) * 100) if cluster_info.total_nodes else 0 %}
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                 <div class="p-5">
@@ -155,9 +171,13 @@
                     {% endfor %}
                 </div>
             </section>
-            {% include "analytics/utilization/partials/_recommendations.html" %}
-            <script src="{{ url_for('static', filename='vendor/chartjs/chart.umd.min.js') }}"></script>
-            {% include "analytics/materialization/_freshness.html" %}
+                </div>
+                <div id="utilization-content-panel-trend"
+                     role="tabpanel"
+                     aria-labelledby="utilization-content-tab-trend"
+                     x-show="activeTab === 'trend'"
+                     x-cloak
+                     class="space-y-6">
             {% if trend_materialization_pending %}
                 <div hx-get="{{ url_for('analytics.utilization_trend', cluster_id=cluster.id, trend_hours=trend_hours, trend_node=selected_trend_node) }}"
                      hx-trigger="load, every 2s"
@@ -176,6 +196,13 @@
             {% else %}
                 {% include "analytics/utilization/partials/_trend.html" %}
             {% endif %}
+                </div>
+                <div id="utilization-content-panel-nodes"
+                     role="tabpanel"
+                     aria-labelledby="utilization-content-tab-nodes"
+                     x-show="activeTab === 'nodes'"
+                     x-cloak
+                     class="space-y-6">
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                 <div class="border-b border-outline-subtle p-5">
                     <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
@@ -215,6 +242,16 @@
                     </div>
                 </div>
                 <div id="node-detail-panel">{% include "analytics/utilization/partials/_node_detail.html" %}</div>
+            </section>
+                </div>
+                <div id="utilization-content-panel-recommendations"
+                     role="tabpanel"
+                     aria-labelledby="utilization-content-tab-recommendations"
+                     x-show="activeTab === 'recommendations'"
+                     x-cloak
+                     class="space-y-6">
+                    {% include "analytics/utilization/partials/_recommendations.html" %}
+                </div>
             </section>
         {% endif %}
     </div>

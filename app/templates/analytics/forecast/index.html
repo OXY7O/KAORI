@@ -101,7 +101,7 @@
                         <label class="block min-w-0">
                             <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Cluster</span>
                             <select name="cluster_id"
-                                    onchange="this.form.querySelector('[name=namespace]').value = '';"
+                                    data-kaori-reset-fields="namespace="
                                     class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 pr-9 py-2 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
                                 {% for item in clusters %}
                                     <option value="{{ item.id }}"

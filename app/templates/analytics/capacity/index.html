@@ -1,5 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "components/progress_bar.html" as progress_bar %}
+{% import "analytics/components/_content_tabs.html" as analytics_content_tabs %}
 {% block title %}Capacity Analysis{% endblock title %}
 {% block dashboard_content %}
     {% macro capacity_width(value) %}
@@ -42,6 +43,19 @@
             </div>
         {% endif %}
         {% if cluster and not dependency_blocker %}
+            <section x-data="kaoriAnalyticsTabs('summary', ['summary', 'allocation', 'risk', 'recommendations'])" class="space-y-6">
+                {% set capacity_tabs = [
+                    ('summary', 'Worker Summary', 'server-cog'),
+                    ('allocation', 'Allocation & Headroom', 'activity'),
+                    ('risk', 'Risk & Governance', 'shield-alert'),
+                    ('recommendations', 'Recommendations', 'list-checks')
+                ] %}
+                {{ analytics_content_tabs.render('capacity-content', capacity_tabs, 'Capacity Analysis Content') }}
+                <div id="capacity-content-panel-summary"
+                     role="tabpanel"
+                     aria-labelledby="capacity-content-tab-summary"
+                     x-show="activeTab === 'summary'"
+                     class="space-y-6">
             <!-- Worker Capacity Summary -->
             {% set cpu_headroom = capacity_summary.cpu.headroom|default(0) %}
             {% set memory_headroom = capacity_summary.memory.headroom|default(0) %}
@@ -131,8 +145,13 @@
                     {% endfor %}
                 </div>
             </section>
-            <!-- Allocation and Risk -->
-            <div class="grid gap-6 xl:grid-cols-[1.35fr_1fr]">
+                </div>
+                <div id="capacity-content-panel-allocation"
+                     role="tabpanel"
+                     aria-labelledby="capacity-content-tab-allocation"
+                     x-show="activeTab === 'allocation'"
+                     x-cloak
+                     class="space-y-6">
                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm ">
                     <div class="border-b border-outline-default px-6 py-5 ">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -252,6 +271,13 @@
                         </div>
                     </div>
                 </section>
+                </div>
+                <div id="capacity-content-panel-risk"
+                     role="tabpanel"
+                     aria-labelledby="capacity-content-tab-risk"
+                     x-show="activeTab === 'risk'"
+                     x-cloak
+                     class="space-y-6">
                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm ">
                     <div class="relative overflow-hidden bg-kaori-primary px-6 py-5 text-white">
                         <div class="absolute -right-12 -top-14 h-36 w-36 rounded-full bg-surface-card/10 blur-3xl"></div>
@@ -390,8 +416,16 @@
                         </div>
                     </div>
                 </section>
-            </div>
+                </div>
+                <div id="capacity-content-panel-recommendations"
+                     role="tabpanel"
+                     aria-labelledby="capacity-content-tab-recommendations"
+                     x-show="activeTab === 'recommendations'"
+                     x-cloak
+                     class="space-y-6">
             {% include "analytics/capacity/partials/_recommendations.html" %}
+                </div>
+            </section>
         {% endif %}
     </div>
     {% block scripts %}

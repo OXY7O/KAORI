@@ -71,21 +71,16 @@
         }
     }
 
-    function bindAutoSubmit(root = document) {
-        root.querySelectorAll('[data-kaori-auto-submit]').forEach((control) => {
-            if (control.dataset.kaoriAutoSubmitBound === 'true') return;
-            control.dataset.kaoriAutoSubmitBound = 'true';
-            control.addEventListener('change', () => {
-                if (control.form) control.form.requestSubmit();
-            });
-        });
-    }
-
     function renderAll(root = document) {
         root.querySelectorAll('[data-kaori-numeric-pagination]').forEach(render);
-        bindAutoSubmit(root);
         if (window.htmx) window.htmx.process(root);
     }
+
+    document.addEventListener('change', (event) => {
+        const control = event.target.closest('[data-kaori-auto-submit]');
+        if (!control || !control.form) return;
+        control.form.requestSubmit();
+    });
 
     document.addEventListener('DOMContentLoaded', () => renderAll());
     document.addEventListener('htmx:afterSwap', (event) => renderAll(event.detail.target));

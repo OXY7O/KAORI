@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
-{% import "kubernetes_operations/configmaps/_components.html" as configmap_ui %}
+{% import "kubernetes_operations/_components.html" as configmap_ui %}
+{% import "components/info_flow.html" as info_flow %}
 {% block title %}View & Update ConfigMap{% endblock title %}
 {% block dashboard_content %}
     <div class="grid gap-6">
@@ -17,17 +18,17 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ configmap_ui.hero_context('Update Boundary',
+                {{ configmap_ui.hero_context('Update Workflow',
                                 'Read Before Write',
-                                'Validated',
+                                'Controlled',
                                 'info',
                                 'shield-check',
                                 'radio-tower',
                                 'Source',
                                 'Live Object',
-                                'lock-keyhole',
-                                'Guardrail',
-                                'Immutable Blocked',
+                                'git-compare-arrows',
+                                'Mutation',
+                                'Merge or Replace',
                                 url_for('kubernetes_operations.configmap_management'),
                                 'ConfigMap Management',
                                 'arrow-left'
@@ -71,21 +72,21 @@
                     {% endcall %}
                 </div>
                 <aside class="space-y-6 self-start xl:sticky xl:top-6">
-                    <section class="rounded-xl border border-brand-outline bg-kaori-primary-dark p-5 text-brand-foreground shadow-sm">
-                        <div class="flex items-start justify-between gap-4">
-                            <div>
-                                <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-foreground-muted">KAORI Flow</p>
-                                <h2 class="mt-1.5 text-base font-semibold text-brand-foreground">Controlled ConfigMap Update</h2>
-                            </div>
-                            <span class="flex h-10 w-10 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface text-kaori-accent"><i data-lucide="workflow" class="h-5 w-5"></i></span>
-                        </div>
-                        <div class="mt-5 grid gap-4">
-                            {{ configmap_ui.workflow_step(1, 'Select Object', 'Choose the existing live ConfigMap.') }}
-                            {{ configmap_ui.workflow_step(2, 'Review Context', 'Inspect current values and known consumers.') }}
-                            {{ configmap_ui.workflow_step(3, 'Preview Diff', 'Validate the effective merge or replacement.') }}
-                            {{ configmap_ui.workflow_step(4, 'Apply Update', 'Submit the approved change to Kubernetes.') }}
-                        </div>
-                    </section>
+                    {% set configmap_update_flow = [
+                        ('Select Object', 'Choose the registered cluster, live namespace, and existing ConfigMap target.'),
+                        ('Review Current State', 'Load current values, immutable state, resource version, and best-effort workload context.'),
+                        ('Preview and Validate', 'Review the effective merge or replacement diff and run Kubernetes server-side dry-run.'),
+                        ('Apply Update', 'Patch the same validated live object with resource-version protection against concurrent changes.')
+                    ] %}
+                    {{ info_flow.render(
+                        'Controlled ConfigMap Update',
+                        'How a live ConfigMap change is reviewed and safely applied.',
+                        configmap_update_flow,
+                        icon='workflow',
+                        note='Changing the target, update mode, or proposed entries invalidates the previous preview and disables Apply Update.',
+                        note_icon='circle-alert',
+                        open_by_default=true
+                    ) }}
                     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                         {{ configmap_ui.section_header('shield-check', 'Update Guardrails', 'KAORI validates the live object and proposed change before write access is allowed.') }}
                         <div class="grid gap-4 p-5">

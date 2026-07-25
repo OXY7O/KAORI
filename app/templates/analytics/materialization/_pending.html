@@ -1,4 +1,5 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/progress_bar.html" as progress_bar %}
 <section id="analytics-materialization-status"
          class="overflow-hidden rounded-xl border border-brand-outline bg-surface-card shadow-sm"
          {% if not materialization_error %}
@@ -23,14 +24,22 @@
         </div>
     </header>
     <div class="p-5">
-        <div class="h-1 overflow-hidden rounded-full bg-kaori-soft">
-            {% if materialization_progress_percent is not none %}
-                <div class="h-full rounded-full bg-kaori-primary transition-all"
-                     style="width: {{ materialization_progress_percent }}%"></div>
-            {% else %}
+        {% if materialization_progress_percent is not none %}
+            {{ progress_bar.bar(
+                materialization_progress_percent,
+                track_classes='h-1 overflow-hidden rounded-full bg-kaori-soft',
+                fill_classes='h-full rounded-full bg-kaori-primary transition-all',
+                label='Analytics data preparation progress'
+            ) }}
+        {% else %}
+            <div class="h-1 overflow-hidden rounded-full bg-kaori-soft"
+                 role="progressbar"
+                 aria-label="Analytics data preparation in progress"
+                 aria-valuemin="0"
+                 aria-valuemax="100">
                 <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
-            {% endif %}
-        </div>
+            </div>
+        {% endif %}
         {% if materialization_error %}
             <div class="mt-4 flex flex-col gap-3 rounded-lg border border-status-critical-border bg-status-critical-soft p-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>

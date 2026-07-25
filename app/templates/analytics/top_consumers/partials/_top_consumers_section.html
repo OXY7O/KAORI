@@ -1,4 +1,5 @@
 {% import "components/progress_bar.html" as progress_bar %}
+{% import "analytics/components/_content_tabs.html" as analytics_content_tabs %}
 {% set payload = consumer_payload %}
 {% set summary = payload.summary %}
 {% set overview = payload.overview %}
@@ -6,7 +7,18 @@
 {% if render_dependency_blocker|default(false) and dependency_blocker %}
     {% include "components/dependencies/_blocker.html" %}
 {% elif not dependency_blocker %}
-    <div class="space-y-6">
+    <div class="space-y-6" x-data="kaoriAnalyticsTabs('overview', ['overview', 'detail', 'recommendations'])">
+        {% set consumer_tabs = [
+            ('overview', 'Consumer Overview', 'bar-chart-3'),
+            ('detail', 'Consumer Detail', 'list-filter'),
+            ('recommendations', 'Recommendations', 'list-checks')
+        ] %}
+        {{ analytics_content_tabs.render('top-consumers-content', consumer_tabs, 'Top Consumers Content') }}
+        <div id="top-consumers-content-panel-overview"
+             role="tabpanel"
+             aria-labelledby="top-consumers-content-tab-overview"
+             x-show="activeTab === 'overview'"
+             class="space-y-6">
         <section class="rounded-xl border border-outline-default bg-surface-card shadow-sm ">
             <div class="border-b border-outline-default px-6 py-4 ">
                 <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -293,7 +305,21 @@
                 </aside>
             </div>
         </section>
+        </div>
+        <div id="top-consumers-content-panel-detail"
+             role="tabpanel"
+             aria-labelledby="top-consumers-content-tab-detail"
+             x-show="activeTab === 'detail'"
+             x-cloak
+             class="space-y-6">
         {% include "analytics/top_consumers/partials/_consumer_detail_section.html" %}
+        </div>
+        <div id="top-consumers-content-panel-recommendations"
+             role="tabpanel"
+             aria-labelledby="top-consumers-content-tab-recommendations"
+             x-show="activeTab === 'recommendations'"
+             x-cloak
+             class="space-y-6">
         <section class="rounded-xl border border-outline-default bg-surface-card shadow-sm ">
             <details class="group">
                 <summary class="flex cursor-pointer list-none flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
@@ -364,5 +390,7 @@
                 </div>
             </details>
         </section>
+        </div>
     </div>
+
 {% endif %}

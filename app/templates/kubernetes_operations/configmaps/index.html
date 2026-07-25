@@ -1,6 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
-{% import "kubernetes_operations/configmaps/_components.html" as configmap_ui %}
+{% import "kubernetes_operations/_components.html" as configmap_ui %}
 {% block title %}ConfigMap Management{% endblock title %}
 {% block dashboard_content %}
     {% set can_create = current_user.has_permission('kubernetes_configmaps.create') %}
@@ -20,7 +20,7 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ configmap_ui.hero_context('Operational Boundary', 'Controlled Configuration Changes', 'Controlled', 'info', 'shield-check', 'radio-tower', 'Source', 'Live Kubernetes API', 'shield-check', 'Validation', 'Dry-Run First', url_for('integrations.kubernetes'), 'Manage Clusters', 'server-cog') }}
+                {{ configmap_ui.hero_context('ConfigMap Operations', 'Validated Change Control', 'Live', 'info', 'radio-tower', 'server-cog', 'Source', 'Kubernetes API', 'shield-check', 'Validation', 'Required', url_for('integrations.kubernetes'), 'Manage Clusters', 'server-cog') }}
             </div>
         </section>
         <section class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm sm:p-6">
