@@ -8,8 +8,6 @@ This document contains Kubernetes-specific presentation decisions that must not 
 - Live Prometheus and Alertmanager signals require a selected cluster and must be explained explicitly.
 - CPU may use Violet and memory Blue inside approved analytics visualizations.
 - Cluster health is the primary non-collapsed operational table and may expose resource values, active alerts, source availability, and freshness context.
-- Kubernetes Operations Dashboard groups detailed sections into four no-reload tabs: Operations Overview, Capacity & Demand, Signals & Actions, and Reporting.
-- Dashboard sections use lazy HTMX loading when their tab becomes visible so hidden categories do not generate unnecessary requests.
 
 ## Topology
 
@@ -35,21 +33,7 @@ This document contains Kubernetes-specific presentation decisions that must not 
 
 Detailed page fields, table columns, and action names belong in the relevant Kubernetes module README rather than this summary.
 
-## Kubernetes Operations Dashboard Expandable Defaults
 
-All expandable dashboard sections are open on initial render. Users may collapse a section after reviewing it, but navigating to the dashboard or loading a tab must not hide operational data behind a closed default state.
-- The Signals & Actions tab places Alert Interpretation & Response beside Alerts Summary. The guidance box is open by default and explains severity meaning, source/freshness validation, triage order, evidence review, approved remediation, rollback, and recovery verification.
+### ConfigMap Management Title Case Audit
 
-### Kubernetes Operations Dashboard Guidance Pairing
-
-- Alerts Summary is paired with Alert Interpretation & Response in an equal-width two-column layout.
-- Alert handling uses a compact directional process flow: Validate → Triage → Investigate → Respond → Verify → Record.
-- Reporting Summary is paired with Reporting Interpretation & Next Steps in an equal-width two-column layout.
-- Both guidance panels are expandable and open by default, matching the dashboard section behavior.
-
-### Kubernetes Operations Dashboard — Reporting Tab
-
-- Reporting Summary displays up to five recent generated reports.
-- The adjacent Reporting Interpretation panel uses the same compact two-row arrow-flow pattern as Alert Interpretation so both dashboard columns remain visually balanced.
-- Controlled Reporting Flow: Validate → Select → Generate → Review → Schedule → Retain.
-- Flow descriptions use standard KAORI supporting typography (`text-xs`, `leading-5`).
+ConfigMap Management uses Title Case for hero titles, context-panel labels, section and card titles, workflow-step titles, guardrail titles, action buttons, and action-oriented select options. Descriptions, helper text, field labels, validation messages, empty-state explanations, and toast messages remain Sentence case.

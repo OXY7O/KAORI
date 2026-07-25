@@ -19,18 +19,18 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ configmap_ui.hero_context('Create boundary',
+                {{ configmap_ui.hero_context('Create Boundary',
                                 'New objects only',
                                 'Controlled',
                                 'info',
                                 'shield-plus',
                                 'file-plus-2',
                                 'Create mode',
-                                'No overwrite',
+                                'No Overwrite',
                                 'Existing objects stay unchanged',
                                 'scan-search',
                                 'Validation',
-                                'Dry-run required',
+                                'Dry-Run Required',
                                 'Validated before creation',
                                 url_for('kubernetes_operations.configmap_management') ,
                 'ConfigMap Management',
@@ -47,7 +47,7 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
                 <section class="flex h-full flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-1 xl:row-start-1">
-                    {{ configmap_ui.section_header('map-pin', 'Target location', 'Select the live cluster and namespace where the new ConfigMap will be created.') }}
+                    {{ configmap_ui.section_header('map-pin', 'Target Location', 'Select the live cluster and namespace where the new ConfigMap will be created.') }}
                     <div class="flex-1 p-5 sm:p-6">
                         <div class="grid gap-5 lg:grid-cols-3">
                             <label class="block min-w-0">
@@ -85,16 +85,16 @@
                         </div>
                     </div>
                     <div class="mt-auto grid gap-3 border-t border-outline-default bg-surface-hover px-5 py-3 sm:grid-cols-2 sm:px-6">
-                        {{ configmap_ui.guardrail('git-branch', 'Scoped namespace', 'Namespace choices always follow the selected live cluster.') }}
-                        {{ configmap_ui.guardrail('shield-check', 'Safe create', 'An existing ConfigMap is never overwritten by this workflow.') }}
+                        {{ configmap_ui.guardrail('git-branch', 'Scoped Namespace', 'Namespace choices always follow the selected live cluster.') }}
+                        {{ configmap_ui.guardrail('shield-check', 'Safe Create', 'An existing ConfigMap is never overwritten by this workflow.') }}
                     </div>
                 </section>
                 <section class="h-full overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-2 xl:row-start-1">
-                    {{ configmap_ui.section_header('shield-check', 'Create guardrails', 'Validation and identity checks applied before the write request.') }}
+                    {{ configmap_ui.section_header('shield-check', 'Create Guardrails', 'Validation and identity checks applied before the write request.') }}
                     <div class="grid gap-4 p-5">
-                        {{ configmap_ui.guardrail('radio-tower', 'Live target source', 'Namespaces are loaded directly from Kubernetes.') }}
-                        {{ configmap_ui.guardrail('scan-search', 'Dry-run required', 'Kubernetes validates the object before creation.') }}
-                        {{ configmap_ui.guardrail('ban', 'No overwrite', 'Name conflicts stop the workflow without changing data.') }}
+                        {{ configmap_ui.guardrail('radio-tower', 'Live Target Source', 'Namespaces are loaded directly from Kubernetes.') }}
+                        {{ configmap_ui.guardrail('scan-search', 'Dry-Run Required', 'Kubernetes validates the object before creation.') }}
+                        {{ configmap_ui.guardrail('ban', 'No Overwrite', 'Name conflicts stop the workflow without changing data.') }}
                     </div>
                 </section>
                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-1 xl:row-start-2">
@@ -129,8 +129,8 @@
                             <span class="flex h-10 w-10 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface text-kaori-accent"><i data-lucide="workflow" class="h-5 w-5"></i></span>
                         </div>
                         <div class="mt-5 grid gap-4">
-                            {{ configmap_ui.workflow_step(1, 'Select target', 'Choose the cluster and live namespace.') }}
-                            {{ configmap_ui.workflow_step(2, 'Define entries', 'Add text or base64 binary values.') }}
+                            {{ configmap_ui.workflow_step(1, 'Select Target', 'Choose the cluster and live namespace.') }}
+                            {{ configmap_ui.workflow_step(2, 'Define Entries', 'Add text or base64 binary values.') }}
                             {{ configmap_ui.workflow_step(3, 'Validate', 'Run Kubernetes server-side dry-run.') }}
                             {{ configmap_ui.workflow_step(4, 'Create', 'Submit the approved object.') }}
                         </div>

@@ -17,18 +17,18 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ configmap_ui.hero_context('Update boundary',
-                                'Read before write',
+                {{ configmap_ui.hero_context('Update Boundary',
+                                'Read Before Write',
                                 'Validated',
                                 'info',
                                 'shield-check',
                                 'radio-tower',
                                 'Source',
-                                'Live object',
+                                'Live Object',
                                 'Current values loaded first',
                                 'lock-keyhole',
                                 'Guardrail',
-                                'Immutable blocked',
+                                'Immutable Blocked',
                                 'Dry-run before apply',
                                 url_for('kubernetes_operations.configmap_management') ,
                 'ConfigMap Management',
@@ -54,15 +54,15 @@
                     </div>
                 </section>
                 <section class="h-full overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-2 xl:row-start-1">
-                    {{ configmap_ui.section_header('shield-check', 'Update guardrails', 'Controls applied before the selected object can be changed.') }}
+                    {{ configmap_ui.section_header('shield-check', 'Update Guardrails', 'Controls applied before the selected object can be changed.') }}
                     <div class="grid gap-4 p-5">
-                        {{ configmap_ui.guardrail('eye', 'Live read first', 'Current values are loaded directly from Kubernetes.') }}
-                        {{ configmap_ui.guardrail('git-compare-arrows', 'Effective diff', 'Added, changed, and removed keys are reviewed before apply.') }}
-                        {{ configmap_ui.guardrail('lock-keyhole', 'Immutable protection', 'Immutable ConfigMaps cannot be modified.') }}
+                        {{ configmap_ui.guardrail('eye', 'Live Read First', 'Current values are loaded directly from Kubernetes.') }}
+                        {{ configmap_ui.guardrail('git-compare-arrows', 'Effective Diff', 'Added, changed, and removed keys are reviewed before apply.') }}
+                        {{ configmap_ui.guardrail('lock-keyhole', 'Immutable Protection', 'Immutable ConfigMaps cannot be modified.') }}
                     </div>
                 </section>
                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-1 xl:row-start-2">
-                    {{ configmap_ui.section_header('diff', 'Current values & proposed changes', 'Edit entries, select merge or replacement behavior, and review workload impact.') }}
+                    {{ configmap_ui.section_header('diff', 'Current Values & Proposed Changes', 'Edit entries, select merge or replacement behavior, and review workload impact.') }}
                     <div id="configmap-editor" class="p-5 sm:p-6">
                         {% if target or target_error %}
                             {% include 'kubernetes_operations/configmaps/_editor.html' %}
@@ -81,10 +81,10 @@
                             <span class="flex h-10 w-10 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface text-kaori-accent"><i data-lucide="workflow" class="h-5 w-5"></i></span>
                         </div>
                         <div class="mt-5 grid gap-4">
-                            {{ configmap_ui.workflow_step(1, 'Select object', 'Choose the existing live ConfigMap.') }}
-                            {{ configmap_ui.workflow_step(2, 'Review context', 'Inspect values and known consumers.') }}
-                            {{ configmap_ui.workflow_step(3, 'Preview diff', 'Validate the effective merge or replacement.') }}
-                            {{ configmap_ui.workflow_step(4, 'Apply update', 'Submit the approved change.') }}
+                            {{ configmap_ui.workflow_step(1, 'Select Object', 'Choose the existing live ConfigMap.') }}
+                            {{ configmap_ui.workflow_step(2, 'Review Context', 'Inspect values and known consumers.') }}
+                            {{ configmap_ui.workflow_step(3, 'Preview Diff', 'Validate the effective merge or replacement.') }}
+                            {{ configmap_ui.workflow_step(4, 'Apply Update', 'Submit the approved change.') }}
                         </div>
                     </section>
                 </aside>

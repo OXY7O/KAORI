@@ -9,9 +9,9 @@
     <input type="hidden" name="target_configmap_name" value="{{ target.name }}">
     <div class="space-y-5">
         <div class="grid gap-3 lg:grid-cols-3">
-            {{ configmap_ui.neutral_metric('file-cog', 'Live target', target.name, target.cluster.name ~ ' / ' ~ target.namespace) }}
-            {{ configmap_ui.neutral_metric('key-round', 'Current data', (live.data|length + live.binary_data|length) ~ ' live keys', 'Read directly from Kubernetes') }}
-            {{ configmap_ui.neutral_metric('network', 'Impact context', impacts|length ~ ' workload references', 'Best effort from inventory snapshot') }}
+            {{ configmap_ui.neutral_metric('file-cog', 'Live Target', target.name, target.cluster.name ~ ' / ' ~ target.namespace) }}
+            {{ configmap_ui.neutral_metric('key-round', 'Current Data', (live.data|length + live.binary_data|length) ~ ' live keys', 'Read directly from Kubernetes') }}
+            {{ configmap_ui.neutral_metric('network', 'Impact Context', impacts|length ~ ' workload references', 'Best effort from inventory snapshot') }}
         </div>
         <div class="flex items-start gap-3 rounded-lg border border-status-critical-border bg-status-critical-soft p-4 text-status-critical-text">
             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card/50"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>
