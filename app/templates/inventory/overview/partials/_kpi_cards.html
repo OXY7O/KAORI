@@ -61,32 +61,59 @@
     </div>
 
     <div class="grid border-t border-outline-subtle lg:grid-cols-3 lg:divide-x lg:divide-outline-subtle">
-        <div class="space-y-4 p-5">
-            <div class="flex items-center justify-between gap-4 text-xs font-semibold text-content-secondary">
-                <span>Collection Coverage</span>
-                <span>{{ coverage_score }}%</span>
-            </div>
-            {{ progress_bar.bar(coverage_score, track_classes="h-2 overflow-hidden rounded-full bg-kaori-soft", fill_classes="h-full rounded-full bg-kaori-primary", label="Inventory collection coverage") }}
-            <div class="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-content-muted">
-                <span class="inline-flex items-center gap-1.5">
-                    <i data-lucide="calculator" class="h-3.5 w-3.5 text-kaori-primary"></i>
-                    {{ cluster_average }} Average Objects Per Cluster
-                </span>
-                <span class="inline-flex items-center gap-1.5">
-                    <i data-lucide="clock-3" class="h-3.5 w-3.5 text-kaori-primary"></i>
-                    Freshness Window {{ overview.health.freshness_window_hours or 24 }} Hours
+        <article class="p-5">
+            <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0 flex-1">
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-kaori-primary">Collection Coverage</p>
+                    <p class="mt-2 text-xl font-semibold text-content-primary">{{ coverage_score }}%</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Current committed inventory coverage.</p>
+                </div>
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="scan-search" class="h-4 w-4"></i>
                 </span>
             </div>
-        </div>
-        <div class="border-t border-outline-subtle p-5 lg:border-t-0 {% if healthy_clusters == overview.total_clusters and overview.total_clusters > 0 %}bg-status-normal-soft{% elif overview.total_clusters > 0 %}bg-status-warning-soft{% else %}bg-status-unknown-soft{% endif %}">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] {% if healthy_clusters == overview.total_clusters and overview.total_clusters > 0 %}text-status-normal-text{% elif overview.total_clusters > 0 %}text-status-warning-text{% else %}text-status-unknown-text{% endif %}">Healthy Targets</p>
-            <p class="mt-2 text-xl font-semibold text-content-primary">{{ healthy_clusters }}/{{ overview.total_clusters }}</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Connected inventory targets.</p>
-        </div>
-        <div class="border-t border-outline-subtle p-5 lg:border-t-0 {% if fresh_clusters == overview.total_clusters and overview.total_clusters > 0 %}bg-status-normal-soft{% elif overview.total_clusters > 0 %}bg-status-warning-soft{% else %}bg-status-unknown-soft{% endif %}">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] {% if fresh_clusters == overview.total_clusters and overview.total_clusters > 0 %}text-status-normal-text{% elif overview.total_clusters > 0 %}text-status-warning-text{% else %}text-status-unknown-text{% endif %}">Fresh Collections</p>
-            <p class="mt-2 text-xl font-semibold text-content-primary">{{ fresh_clusters }}/{{ overview.total_clusters }}</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Committed within the freshness window.</p>
-        </div>
+            <div class="mt-4">
+                {{ progress_bar.bar(coverage_score, track_classes="h-2 overflow-hidden rounded-full bg-kaori-soft", fill_classes="h-full rounded-full bg-kaori-primary", label="Inventory collection coverage") }}
+            </div>
+            <dl class="mt-4 grid gap-px overflow-hidden rounded-md border border-outline-subtle bg-outline-subtle sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                <div class="bg-surface-card px-3 py-2.5">
+                    <dt class="text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">Average Objects</dt>
+                    <dd class="mt-1 text-sm font-semibold text-content-primary">{{ cluster_average }}</dd>
+                    <p class="mt-0.5 text-[10px] leading-4 text-content-muted">Per Cluster</p>
+                </div>
+                <div class="bg-surface-card px-3 py-2.5">
+                    <dt class="text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">Freshness Window</dt>
+                    <dd class="mt-1 text-sm font-semibold text-content-primary">{{ overview.health.freshness_window_hours or 24 }} Hours</dd>
+                    <p class="mt-0.5 text-[10px] leading-4 text-content-muted">Collection Age Limit</p>
+                </div>
+            </dl>
+        </article>
+        <article class="border-t border-outline-subtle p-5 lg:border-t-0 {% if healthy_clusters == overview.total_clusters and overview.total_clusters > 0 %}bg-status-normal-soft{% elif overview.total_clusters > 0 %}bg-status-warning-soft{% else %}bg-status-unknown-soft{% endif %}">
+            <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0 flex-1">
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] {% if healthy_clusters == overview.total_clusters and overview.total_clusters > 0 %}text-status-normal-text{% elif overview.total_clusters > 0 %}text-status-warning-text{% else %}text-status-unknown-text{% endif %}">Healthy Targets</p>
+                    <p class="mt-2 text-xl font-semibold text-content-primary">{{ healthy_clusters }}/{{ overview.total_clusters }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Connected inventory targets.</p>
+                </div>
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md {% if healthy_clusters == overview.total_clusters and overview.total_clusters > 0 %}bg-status-normal-soft text-status-normal-text{% elif overview.total_clusters > 0 %}bg-status-warning-soft text-status-warning-text{% else %}bg-status-unknown-soft text-status-unknown-text{% endif %}"
+                      aria-hidden="true">
+                    <i data-lucide="heart-pulse" class="h-4 w-4"></i>
+                </span>
+            </div>
+        </article>
+        <article class="border-t border-outline-subtle p-5 lg:border-t-0 {% if fresh_clusters == overview.total_clusters and overview.total_clusters > 0 %}bg-status-normal-soft{% elif overview.total_clusters > 0 %}bg-status-warning-soft{% else %}bg-status-unknown-soft{% endif %}">
+            <div class="flex items-start justify-between gap-4">
+                <div class="min-w-0 flex-1">
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] {% if fresh_clusters == overview.total_clusters and overview.total_clusters > 0 %}text-status-normal-text{% elif overview.total_clusters > 0 %}text-status-warning-text{% else %}text-status-unknown-text{% endif %}">Fresh Collections</p>
+                    <p class="mt-2 text-xl font-semibold text-content-primary">{{ fresh_clusters }}/{{ overview.total_clusters }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Committed within the freshness window.</p>
+                </div>
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md {% if fresh_clusters == overview.total_clusters and overview.total_clusters > 0 %}bg-status-normal-soft text-status-normal-text{% elif overview.total_clusters > 0 %}bg-status-warning-soft text-status-warning-text{% else %}bg-status-unknown-soft text-status-unknown-text{% endif %}"
+                      aria-hidden="true">
+                    <i data-lucide="clock-check" class="h-4 w-4"></i>
+                </span>
+            </div>
+        </article>
     </div>
 </section>
