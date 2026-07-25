@@ -168,3 +168,12 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 - Descriptive metadata uses compact rectangular violet labels.
 - Validation, approval, expiry, readiness, and destructive states use semantic colors.
 - Secret material never appears in hero context, operation summaries, notifications, or audit metadata.
+
+## Operation feedback and refresh contract
+
+- Validation is non-mutating and returns an HTMX toast without replacing the form or rendering an inline success/error card.
+- Create, replace, and delete mutations use POST/Redirect/GET. HTMX mutation responses set `HX-Redirect`; non-HTMX responses use a normal redirect.
+- Mutation feedback is queued before redirect so the persistent KAORI toast survives the reload.
+- A successful mutation reloads the workflow from live Kubernetes state, clearing stale target selectors, secret payload inputs, validation state, and deleted resources.
+- Secret workflows do not use Flask flash messages. Operational outcomes are recorded through the notification and Activity Log pipeline.
+- Forms use `hx-sync="this:drop"` and `hx-disabled-elt="find button"` to prevent duplicate concurrent submissions.

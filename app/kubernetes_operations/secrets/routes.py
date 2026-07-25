@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from flask import current_app, flash, make_response, redirect, render_template, request, session, url_for
+from flask import current_app, make_response, redirect, render_template, request, session, url_for
 from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
 from wtforms.validators import ValidationError
@@ -245,7 +245,6 @@ def secret_namespace_options():
 
 @permission_required('kubernetes_secrets.create')
 def create_secret():
-    operation_result = None
     operation_feedback = None
     submitted = _safe_secret_submission(request.form) if request.method == 'POST' else {}
     context = get_secret_create_context()
@@ -269,7 +268,6 @@ def create_secret():
                 raise ValueError('Unsupported Secret action.')
 
             result = execute_secret_operation(request.form, request.files, dry_run=dry_run)
-            operation_result = result.__dict__
             event_type = 'kubernetes_secret_validation' if dry_run else 'kubernetes_secret_created'
             feedback = _record_secret_activity(
                 event_type=event_type,
@@ -279,8 +277,15 @@ def create_secret():
                 metadata=result.metadata,
                 action_url=url_for('kubernetes_operations.create_secret'),
                 action_label='Open Create Secret',
-                queue_feedback=not is_htmx,
+                queue_feedback=(not is_htmx or not dry_run),
             )
+            if not dry_run and result.status == 'success':
+                redirect_url = url_for('kubernetes_operations.create_secret')
+                if is_htmx:
+                    response = make_response('', 204)
+                    response.headers['HX-Redirect'] = redirect_url
+                    return response
+                return redirect(redirect_url)
         except ValueError as exc:
             title = 'Secret validation failed' if dry_run else 'Secret creation failed'
             feedback = _record_secret_activity(
@@ -299,13 +304,6 @@ def create_secret():
                 action_label='Review Secret form',
                 queue_feedback=not is_htmx,
             )
-            operation_result = {
-                'status': 'error',
-                'title': title,
-                'message': str(exc),
-                'detail': None,
-                'metadata': {},
-            }
         except Exception:
             current_app.logger.exception('Unexpected Kubernetes Secret operation failure.')
             title = 'Secret validation failed' if dry_run else 'Secret creation failed'
@@ -326,25 +324,16 @@ def create_secret():
                 action_label='Review Secret form',
                 queue_feedback=not is_htmx,
             )
-            operation_result = {
-                'status': 'error',
-                'title': title,
-                'message': message,
-                'detail': None,
-                'metadata': {},
-            }
 
         if is_htmx:
             operation_feedback = _notification_response_context(feedback)
             return render_template(
                 'kubernetes_operations/secrets/_create_operation_result.html',
-                operation_result=operation_result,
                 operation_feedback=operation_feedback,
             )
 
     return render_template(
         'kubernetes_operations/secrets/create.html',
-        operation_result=operation_result,
         operation_feedback=operation_feedback,
         submitted=submitted,
         opaque_entries=opaque_entries,
@@ -393,9 +382,7 @@ def replace_secret_content():
 
 @permission_required('kubernetes_secrets.replace')
 def replace_secret():
-    operation_result = None
     operation_feedback = None
-    reset_replace_form = False
     is_htmx = request.headers.get('HX-Request') == 'true'
     source = request.form if request.method == 'POST' else request.args
     selected_cluster_id = source.get('cluster_id', '')
@@ -421,8 +408,6 @@ def replace_secret():
                 raise ValueError('Unsupported Secret replacement action.')
 
             result = execute_secret_replacement(request.form, request.files, dry_run=dry_run)
-            operation_result = result.__dict__
-            reset_replace_form = not dry_run
             feedback = _record_secret_activity(
                 event_type=(
                     'kubernetes_secret_replacement_validation' if dry_run else 'kubernetes_secret_data_replaced'
@@ -438,13 +423,20 @@ def replace_secret():
                     secret_name=result.metadata.get('secret_name'),
                 ),
                 action_label='Open Replace Secret Data',
-                queue_feedback=not is_htmx,
+                queue_feedback=(not is_htmx or not dry_run),
             )
             target_context = get_replace_target_context(
                 result.metadata.get('cluster_id'),
                 result.metadata.get('namespace'),
                 result.metadata.get('secret_name'),
             )
+            if not dry_run and result.status == 'success':
+                redirect_url = url_for('kubernetes_operations.replace_secret')
+                if is_htmx:
+                    response = make_response('', 204)
+                    response.headers['HX-Redirect'] = redirect_url
+                    return response
+                return redirect(redirect_url)
         except ValueError as exc:
             title = 'Secret replacement validation failed' if dry_run else 'Secret data replacement failed'
             feedback = _record_secret_activity(
@@ -464,13 +456,6 @@ def replace_secret():
                 action_label='Review replacement form',
                 queue_feedback=not is_htmx,
             )
-            operation_result = {
-                'status': 'error',
-                'title': title,
-                'message': str(exc),
-                'detail': None,
-                'metadata': {},
-            }
         except Exception:
             current_app.logger.exception('Unexpected Kubernetes Secret replacement failure.')
             title = 'Secret replacement validation failed' if dry_run else 'Secret data replacement failed'
@@ -492,27 +477,16 @@ def replace_secret():
                 action_label='Review replacement form',
                 queue_feedback=not is_htmx,
             )
-            operation_result = {
-                'status': 'error',
-                'title': title,
-                'message': message,
-                'detail': None,
-                'metadata': {},
-            }
 
         if is_htmx:
             operation_feedback = _notification_response_context(feedback)
             return render_template(
                 'kubernetes_operations/secrets/_replace_operation_result.html',
-                operation_result=operation_result,
                 operation_feedback=operation_feedback,
-                reset_replace_form=reset_replace_form,
-                **target_context,
             )
 
     return render_template(
         'kubernetes_operations/secrets/replace.html',
-        operation_result=operation_result,
         operation_feedback=operation_feedback,
         **target_context,
         **workspace_context,
@@ -547,7 +521,6 @@ def delete_secret_target():
 
 @permission_required('kubernetes_secrets.delete')
 def delete_secret():
-    operation_result = None
     operation_feedback = None
     is_htmx = request.headers.get('HX-Request') == 'true'
     source = request.form if request.method == 'POST' else request.args
@@ -565,7 +538,6 @@ def delete_secret():
             if operation not in {'validate', 'delete'}:
                 raise ValueError('Unsupported Secret deletion action.')
             result = execute_secret_deletion(request.form, dry_run=dry_run)
-            operation_result = result.__dict__
             feedback = _record_secret_activity(
                 event_type=('kubernetes_secret_deletion_validation' if dry_run else 'kubernetes_secret_deleted'),
                 status=result.status,
@@ -583,17 +555,17 @@ def delete_secret():
                     else url_for('kubernetes_operations.delete_secret')
                 ),
                 action_label='Open Delete Secret',
-                queue_feedback=not is_htmx,
+                queue_feedback=(not is_htmx or not dry_run),
             )
+            if not dry_run and result.status == 'success':
+                redirect_url = url_for('kubernetes_operations.delete_secret')
+                if is_htmx:
+                    response = make_response('', 204)
+                    response.headers['HX-Redirect'] = redirect_url
+                    return response
+                return redirect(redirect_url)
         except ValueError as exc:
             title = 'Secret deletion validation failed' if dry_run else 'Secret deletion failed'
-            operation_result = {
-                'status': 'error',
-                'title': title,
-                'message': str(exc),
-                'detail': None,
-                'metadata': {},
-            }
             feedback = _record_secret_activity(
                 event_type='kubernetes_secret_deletion_failed',
                 status='error',
@@ -615,13 +587,6 @@ def delete_secret():
             current_app.logger.exception('Unexpected Kubernetes Secret deletion failure.')
             title = 'Secret deletion validation failed' if dry_run else 'Secret deletion failed'
             message = 'KAORI could not complete the Secret deletion because of an unexpected internal error.'
-            operation_result = {
-                'status': 'error',
-                'title': title,
-                'message': message,
-                'detail': None,
-                'metadata': {},
-            }
             feedback = _record_secret_activity(
                 event_type='kubernetes_secret_deletion_failed',
                 status='error',
@@ -644,13 +609,11 @@ def delete_secret():
             operation_feedback = _notification_response_context(feedback)
             return render_template(
                 'kubernetes_operations/secrets/_delete_operation_result.html',
-                operation_result=operation_result,
                 operation_feedback=operation_feedback,
             )
 
     return render_template(
         'kubernetes_operations/secrets/delete.html',
-        operation_result=operation_result,
         operation_feedback=operation_feedback,
         **workspace_context,
         **target_context,
@@ -1187,7 +1150,15 @@ def tls_secret_rotate(certificate_id: int):
 
     record = get_tls_certificate_detail(certificate_id)
     if record is None:
-        flash('TLS certificate record was not found.', 'warning')
+        _record_secret_activity(
+            event_type='kubernetes_tls_secret_not_found',
+            status='warning',
+            title='TLS Secret Not Found',
+            message='The selected TLS certificate record is no longer available.',
+            action_url=url_for('governance.tls_certificates'),
+            action_label='Open TLS Secrets',
+            queue_feedback=True,
+        )
         return redirect(url_for('governance.tls_certificates'))
 
     return render_template(
@@ -1200,7 +1171,15 @@ def tls_secret_rotate(certificate_id: int):
 def tls_secret_rotate_preview(certificate_id: int):
     record = get_tls_certificate_detail(certificate_id)
     if record is None:
-        flash('TLS certificate record was not found.', 'warning')
+        _record_secret_activity(
+            event_type='kubernetes_tls_secret_not_found',
+            status='warning',
+            title='TLS Secret Not Found',
+            message='The selected TLS certificate record is no longer available.',
+            action_url=url_for('governance.tls_certificates'),
+            action_label='Open TLS Secrets',
+            queue_feedback=True,
+        )
         return redirect(url_for('governance.tls_certificates'))
 
     payload = preview_uploaded_pair(request.files, [certificate_id])
