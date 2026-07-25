@@ -17,7 +17,7 @@ Celery queue selected by workload class
       ↓
 Dedicated worker pool
       ↓
-Progress heartbeat, result reference, toast, and Activity Audit
+Progress heartbeat, result reference, requester feedback, and Activity Audit
 ```
 
 PostgreSQL is the source of truth for lifecycle state. Redis remains responsible for Celery broker traffic, fast distributed locks, resource slots, and short-lived polling metadata.
@@ -38,6 +38,8 @@ app/models/job.py
 `JobExecutionSubscriber` records every user observing one shared execution. If two users request the same active validation or analytics job, KAORI dispatches one Celery task and subscribes both users to the same job.
 
 `JobPolicy` stores the database-backed automatic execution policy for one registered job and scope. The first policy is `kubernetes.inventory.sync` for the all-cluster Kubernetes inventory fleet. Policy edits do not restart Celery Beat.
+
+Automatic executions are system-owned. They remain visible in Jobs & Executions and Activity Audit, but they do not create or restore user toast feedback. Manual inventory synchronization feedback is scoped to the user who initiated the execution; other users do not inherit the same global toast.
 
 ## Multi-user deduplication
 
@@ -136,19 +138,6 @@ Small summaries may be stored in `result_summary_json`. Large outputs must use `
 - **Job Configuration** provides the registered job catalog, automatic policy controls, manual execution, recent execution history, and domain safety boundaries.
 
 Inventory Sync is the first registered configuration. Future report, analytics, forecasting, retention, and reconciliation jobs must register here rather than introducing a new Settings page or parallel scheduler.
-
-### Job Configuration HTMX replacement boundary
-
-The Job Configuration catalog and the selected-job panel have separate layout ownership. The outer `<main>` element owns the `xl:col-span-8` grid placement and must never be replaced by a selected-job HTMX response. Only the inner `#job-configuration-workspace` fragment is a replacement boundary. This keeps Run Now, policy updates, catalog selection, and active-execution polling from removing the grid-span class and collapsing the selected-job panel into one column.
-
-The DOM must contain exactly one `job-configuration-workspace` identifier:
-
-```text
-configuration/_workspace.html
-└── main.min-w-0.xl:col-span-8        # persistent grid owner
-    └── configuration/_job_workspace.html
-        └── #job-configuration-workspace  # HTMX outerHTML boundary
-```
 
 ## Implementation boundaries
 

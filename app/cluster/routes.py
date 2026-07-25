@@ -19,6 +19,7 @@ from app.cluster.quick_sync import (
     render_enqueue_error as _render_enqueue_error,
     render_sync_snapshot as _render_sync_snapshot,
     run_global_inventory_sync,
+    sync_snapshot_visible_to_user,
 )
 from app.cluster.registration import issue_cluster_registration_proof, verify_cluster_registration_proof
 from app.cluster.service import (
@@ -71,6 +72,8 @@ def active_sync_all_status() -> ResponseReturnValue:
             return ''
 
         snapshot = build_cluster_sync_snapshot(task_id)
+        if not sync_snapshot_visible_to_user(snapshot, user_id=int(current_user.id)):
+            return ''
         if not snapshot['is_active'] and is_cluster_sync_result_dismissed(
             task_id=task_id,
             user_id=current_user.id,
@@ -210,6 +213,9 @@ def sync_all_status(task_id: str) -> ResponseReturnValue:
             detail='The Celery task may still be running. Verify Redis connectivity and reload the page.',
             response_status=503,
         )
+
+    if not sync_snapshot_visible_to_user(snapshot, user_id=int(current_user.id)):
+        return ''
 
     return _render_sync_snapshot(
         snapshot,

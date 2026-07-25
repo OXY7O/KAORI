@@ -19,6 +19,20 @@ from app.notifications.service import create_notification, get_navigation_notifi
 logger = logging.getLogger(__name__)
 
 
+def sync_snapshot_visible_to_user(snapshot: dict, *, user_id: int) -> bool:
+    """Return whether a fleet-sync toast belongs to the current user.
+
+    Scheduled inventory synchronization has no requesting user and remains
+    observable through Jobs & Executions and Activity Audit only. Manual fleet
+    synchronization is restored only for the user who started it.
+    """
+    requester = snapshot.get('requested_by_user_id')
+    try:
+        return requester is not None and int(requester) == int(user_id)
+    except (TypeError, ValueError):
+        return False
+
+
 def render_sync_snapshot(snapshot: dict, *, response_status: int = 200) -> ResponseReturnValue:
     if snapshot['is_active']:
         return (
@@ -41,7 +55,10 @@ def render_sync_snapshot(snapshot: dict, *, response_status: int = 200) -> Respo
             duration_seconds=snapshot.get('duration_seconds'),
             completed_label='Completed just now',
             notification_context=get_navigation_notification_context(user_id=current_user.id),
-            notification_saved=(snapshot.get('requested_by_user_id') == current_user.id),
+            notification_saved=sync_snapshot_visible_to_user(
+                snapshot,
+                user_id=int(current_user.id),
+            ),
         ),
         response_status,
     )

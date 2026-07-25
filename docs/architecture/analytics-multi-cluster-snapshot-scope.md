@@ -1,34 +1,55 @@
 # Analytics Multi-Cluster Snapshot Scope
 
-## Selection contract
+## Selection Contract
 
-Analytics pages must scope every request to one Kubernetes cluster. An explicit
-`cluster_id` is authoritative even when that cluster has incomplete Prometheus
-readiness, allowing KAORI to show a blocker for the selected cluster only.
+Analytics pages scope every request to one Kubernetes cluster. An explicit
+`cluster_id` is authoritative even when that cluster has incomplete integration
+readiness, allowing KAORI to show the blocker for the selected cluster only.
 
-When an analytics URL does not include `cluster_id`, KAORI prefers the first
-registered cluster with an eligible Prometheus binding. If no cluster is
-analytics-ready, KAORI falls back to the first registered cluster and presents
-its setup/readiness blocker.
+When an analytics URL does not include `cluster_id`, KAORI evaluates readiness
+against the dataset being requested. Forecast, capacity, utilization, storage,
+workload, and top-consumer pages prefer the first cluster whose bound Prometheus
+source satisfies that dataset's binding and technical capability contract.
+Alert datasets prefer a cluster with an eligible requested alert source.
 
-This prevents an unrelated unready cluster from becoming the implicit default
-and blocking access to another ready cluster.
+If no cluster is eligible, KAORI falls back to the first registered cluster and
+presents its scoped setup, connection, or capability blocker. An unrelated
+unready Cluster A therefore cannot become the implicit blocker for ready
+Cluster B.
 
-## Snapshot presentation contract
+## Materialized Request Contract
+
+`MaterializedRequest` is the shared boundary between analytics routes and the
+snapshot subsystem. It always exposes:
+
+- the committed snapshot result;
+- an immutable cluster reference;
+- canonical snapshot parameters;
+- dispatch state and dispatch error;
+- an optional dependency blocker.
+
+Routes may render a committed snapshot together with a current readiness
+blocker, or render a full blocked state when no committed snapshot exists. A
+blocked request must not dispatch another materialization job.
+
+Snapshot parameters are canonicalized through the analytics dataset catalog.
+View-only selectors such as forecast horizon, projection method, display
+resource, search, pagination, and local filters must not create additional
+snapshot fingerprints.
+
+## Snapshot Presentation Contract
 
 Committed analytics snapshots are read-only presentation payloads. Cluster
-identities inside snapshot payloads are decoded into immutable scalar
-references (`id`, `name`, `environment`, and `status`), never SQLAlchemy ORM
-entities.
+identities inside snapshot payloads decode into immutable scalar references
+(`id`, `name`, `environment`, and `status`), never SQLAlchemy ORM entities.
+This prevents background dispatch commits or scoped-session teardown from
+causing `DetachedInstanceError` during Jinja rendering.
 
-This boundary prevents background job dispatch commits or scoped-session
-teardown from producing detached ORM objects during Jinja rendering. Existing
-snapshots that only contain a cluster ID remain readable through a scalar-column
-compatibility lookup.
+## Operational Behavior
 
-## Operational behavior
-
-- Explicit Cluster A selection + incomplete readiness: only Cluster A is blocked.
-- Explicit Cluster B selection + ready Prometheus: Cluster B analytics remain available.
-- No cluster in the URL: the first analytics-ready cluster is selected.
+- Explicit Cluster A + incomplete readiness: only Cluster A is blocked.
+- Explicit Cluster B + ready source: Cluster B analytics remain available.
+- No cluster in URL: KAORI selects the first dataset-ready cluster.
+- No eligible cluster: KAORI shows the first cluster's scoped blocker.
+- Dependency blocker present: no on-demand materialization is dispatched.
 - Snapshot refresh dispatch cannot detach the cluster object used by the page.

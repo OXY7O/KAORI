@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
+from app.cluster.quick_sync import sync_snapshot_visible_to_user
 from app.jobs.policies import service
 
 
@@ -66,3 +67,17 @@ def test_update_policy_rejects_unsafe_interval(monkeypatch) -> None:
         except ValueError:
             continue
         raise AssertionError(f'Expected interval {interval} to be rejected.')
+
+
+def test_scheduled_inventory_sync_is_not_visible_as_user_toast() -> None:
+    assert sync_snapshot_visible_to_user(
+        {'requested_by_user_id': None},
+        user_id=7,
+    ) is False
+
+
+def test_manual_inventory_sync_toast_is_scoped_to_requester() -> None:
+    snapshot = {'requested_by_user_id': 7}
+
+    assert sync_snapshot_visible_to_user(snapshot, user_id=7) is True
+    assert sync_snapshot_visible_to_user(snapshot, user_id=8) is False
