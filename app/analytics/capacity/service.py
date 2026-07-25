@@ -1100,95 +1100,32 @@ def get_capacity_snapshot(
     cluster_id: str,
     time_range: str = '24h',
 ) -> dict[str, Any]:
-    cluster = Cluster.query.filter_by(
-        id=cluster_id,
-    ).first()
+    from app.analytics.materialization.service import read_snapshot
 
-    if not cluster:
+    result = read_snapshot(
+        cluster_id=cluster_id,
+        dataset_key='analytics.capacity',
+        parameters={'cluster_id': str(cluster_id), 'time_range': time_range},
+    )
+    context = result.context or {}
+    capacity_summary = context.get('capacity_summary')
+    if not isinstance(capacity_summary, dict):
         return _empty_capacity_snapshot()
-
-    try:
-        prometheus = PrometheusService(
-            cluster,
-        )
-
-        utilization_service = UtilizationService(
-            prometheus,
-        )
-
-        capacity_service = CapacityService(
-            utilization_service,
-            PrometheusConsumer(cluster),
-        )
-
-        capacity_payload = capacity_service.get_capacity_analysis(
-            time_range=time_range,
-        )
-
-        capacity_summary = capacity_payload.get(
-            'capacity_summary',
-            {},
-        )
-
-        actionable_recommendations = capacity_payload.get(
-            'actionable_recommendations',
-            [],
-        )
-
-        cpu_summary = _as_dict(
-            capacity_summary.get(
-                'cpu',
-                {},
-            )
-        )
-        memory_summary = _as_dict(
-            capacity_summary.get(
-                'memory',
-                {},
-            )
-        )
-        pods_summary = _as_dict(
-            capacity_summary.get(
-                'pods',
-                {},
-            )
-        )
-
-        return {
-            'cpu_headroom': _safe_int(
-                cpu_summary.get(
-                    'available',
-                    0,
-                )
-            ),
-            'cpu_unit': 'Cores',
-            'memory_headroom': _safe_int(
-                memory_summary.get(
-                    'available',
-                    0,
-                )
-            ),
-            'memory_unit': 'GiB',
-            'pod_capacity_remaining': _safe_int(
-                pods_summary.get(
-                    'available',
-                    0,
-                )
-            ),
-            'pod_unit': 'Pods',
-            'recommendation_count': count_actionable_recommendations(
-                actionable_recommendations
-                if isinstance(
-                    actionable_recommendations,
-                    list,
-                )
-                else []
-            ),
-        }
-
-    except Exception:
-        return _empty_capacity_snapshot()
-
+    cpu_summary = _as_dict(capacity_summary.get('cpu', {}))
+    memory_summary = _as_dict(capacity_summary.get('memory', {}))
+    pods_summary = _as_dict(capacity_summary.get('pods', {}))
+    recommendations = context.get('actionable_recommendations')
+    return {
+        'cpu_headroom': _safe_int(cpu_summary.get('available', 0)),
+        'cpu_unit': 'Cores',
+        'memory_headroom': _safe_int(memory_summary.get('available', 0)),
+        'memory_unit': 'GiB',
+        'pod_capacity_remaining': _safe_int(pods_summary.get('available', 0)),
+        'pod_unit': 'Pods',
+        'recommendation_count': count_actionable_recommendations(
+            recommendations if isinstance(recommendations, list) else []
+        ),
+    }
 
 def _empty_capacity_snapshot() -> dict[str, Any]:
     return {

@@ -158,6 +158,7 @@ class PromQLProfileAuditor:
             'node_filesystem_identity': ('storage.filesystem',),
             'pvc_usage': ('storage.pvc',),
             'workload_metrics': ('workload.namespace', 'workload.owner', 'workload.qos'),
+            'resource_requests_limits': ('workload.resources',),
         }
         for capability_key, contract_keys in mapping.items():
             assessment = by_key.get(capability_key)
@@ -680,9 +681,10 @@ class PromQLProfileAuditor:
                 'label': labels.get(
                     domain, domain.replace('app.analytics.', '').replace('app.', '').replace('_', ' ').title()
                 ),
-                'status': 'ready'
-                if blocked == 0
-                else ('unavailable' if values.get('ready_count', 0) == 0 else 'degraded'),
+                # A module query-contract gap is a degraded feature state. Source
+                # availability is represented by integration runtime/readiness and must
+                # not be reported as unavailable while Prometheus itself is operational.
+                'status': 'ready' if blocked == 0 else 'degraded',
                 'ready_count': values.get('ready_count', 0),
                 'query_count': values.get('query_count', 0),
                 'blocked_count': blocked,

@@ -24,12 +24,7 @@ class JobPolicyForm(FlaskForm):
     )
     forecast_history_windows = SelectMultipleField(
         'History Windows',
-        choices=[('30d', '30 Days'), ('90d', '90 Days')],
-        validators=[Optional()],
-    )
-    forecast_horizons = SelectMultipleField(
-        'Forecast Horizons',
-        choices=[('90d', '90 Days'), ('180d', '180 Days'), ('365d', '365 Days')],
+        choices=[('7d', '7 Days'), ('30d', '30 Days'), ('90d', '90 Days')],
         validators=[Optional()],
     )
     freshness_minutes = IntegerField(

@@ -27,6 +27,7 @@ def pending_page_context(
     title: str,
     description: str,
     icon: str,
+    page_id: str | None = None,
 ) -> dict[str, Any]:
     parameters = dict(materialized.parameters)
     return_url = request.full_path.rstrip('?')
@@ -43,9 +44,29 @@ def pending_page_context(
         'materialization_title': title,
         'materialization_description': description,
         'materialization_icon': icon,
+        'materialization_page_id': page_id or 'analytics-materialization-page',
         'materialization_cluster': materialized.cluster,
         'materialization_state': materialized.result.state,
         'materialization_error': materialized.dispatch_error or (snapshot.last_error if snapshot else None),
         'materialization_status_url': f'{url_for("analytics.materialization_status")}?{status_query}',
         'materialization_return_url': return_url,
+    }
+
+
+def blocked_page_context(
+    *,
+    materialized: MaterializedRequest,
+    title: str,
+    description: str,
+    icon: str,
+    page_id: str,
+) -> dict[str, Any]:
+    """Build a full-page dependency state without invoking an integration client."""
+    return {
+        'materialization_title': title,
+        'materialization_description': description,
+        'materialization_icon': icon,
+        'materialization_page_id': page_id,
+        'materialization_cluster': materialized.cluster,
+        'dependency_blocker': materialized.dependency_blocker,
     }

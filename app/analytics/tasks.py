@@ -74,6 +74,30 @@ def _materialize(
                 query_string = urlencode(parameters)
                 with current_app.test_request_context(f'/analytics/materialize?{query_string}'):
                     context = dataset.builder(parameters)
+                blocker = context.get('dependency_blocker') if isinstance(context, dict) else None
+                if blocker:
+                    if isinstance(blocker, dict):
+                        blocker_title = str(
+                            blocker.get('title') or 'Analytics dependency unavailable'
+                        )
+                        blocker_detail = str(
+                            blocker.get('diagnostic_detail')
+                            or blocker.get('description')
+                            or blocker.get('badge')
+                            or ''
+                        )
+                    else:
+                        blocker_title = str(
+                            getattr(blocker, 'title', '') or 'Analytics dependency unavailable'
+                        )
+                        blocker_detail = str(
+                            getattr(blocker, 'diagnostic_detail', '')
+                            or getattr(blocker, 'description', '')
+                            or getattr(blocker, 'badge', '')
+                        )
+                    raise RuntimeError(
+                        f'{blocker_title}: {blocker_detail}'.rstrip(': ')
+                    )
                 store_snapshot(
                     cluster_id=cluster_id,
                     dataset_key=dataset_key,

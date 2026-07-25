@@ -56,7 +56,6 @@ def _configuration_context(
         configuration = policy.configuration_json or {}
         form.analytics_time_ranges.data = list(configuration.get('time_ranges') or [])
         form.forecast_history_windows.data = list(configuration.get('history_windows') or [])
-        form.forecast_horizons.data = list(configuration.get('forecast_horizons') or [])
         form.freshness_minutes.data = configuration.get('freshness_minutes')
         form.stale_grace_minutes.data = configuration.get('stale_grace_minutes')
     context.update(
@@ -218,8 +217,9 @@ def update_policy(job_key: str) -> ResponseReturnValue:
         elif job_key == 'analytics.forecast.materialize':
             configuration.update(
                 {
-                    'history_windows': list(form.forecast_history_windows.data or ['30d', '90d']),
-                    'forecast_horizons': list(form.forecast_horizons.data or ['90d', '180d', '365d']),
+                    'history_windows': list(
+                        form.forecast_history_windows.data or ['7d', '30d', '90d']
+                    ),
                     'freshness_minutes': int(form.freshness_minutes.data or 120),
                     'stale_grace_minutes': int(form.stale_grace_minutes.data or 4320),
                 }
@@ -296,7 +296,36 @@ def run_now(job_key: str) -> ResponseReturnValue:
             trigger_type='manual',
             requested_by_user_id=int(current_user.id),
         )
-    except (CeleryError, JobQuotaExceeded, KombuOperationalError, OSError, RuntimeError, SQLAlchemyError):
+    except JobQuotaExceeded as exc:
+        db.session.rollback()
+        feedback = record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='job_manual_dispatch',
+            status='warning',
+            title=f'{definition.name} Could Not Start',
+            message=str(exc),
+            detail=(
+                'Wait for the active heavy job to reach a terminal state, or cancel it '
+                'before starting another heavy execution.'
+            ),
+            action_url=_jobs_execution_url(
+                search=definition.operation,
+                queue=definition.queue_name,
+            ),
+            action_label='Review Active Work',
+            action_icon='activity',
+            metadata={
+                'job_key': job_key,
+                'trigger_type': 'manual',
+                'reason': 'quota_exceeded',
+                'workload_class': definition.workload_class,
+            },
+            queue_feedback=not is_htmx,
+        )
+        if is_htmx:
+            return _render_configuration_job(job_key, operation_feedback=feedback)
+        return redirect(url_for('jobs.configuration', job_key=job_key))
+    except (CeleryError, KombuOperationalError, OSError, RuntimeError, SQLAlchemyError):
         db.session.rollback()
         logger.exception('Could not dispatch registered job %s.', job_key)
         feedback = record_operational_activity(

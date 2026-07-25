@@ -63,7 +63,7 @@
                     {% if recommendation_cards %}
                         <div class="grid gap-4 lg:grid-cols-2">
                             {% for item in recommendation_cards %}
-                                <a href="{{ item.href if item.href else url_for('analytics.storage', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, time_range=selected_time_range) }}"
+                                <a href="{{ item.href if item.href else url_for('analytics.storage', cluster_id=cluster.id if cluster else '', namespace=selected_namespace) }}"
                                    class="group/card flex h-full flex-col justify-between gap-4 rounded-xl border border-outline-default p-4 transition hover:border-brand-outline hover:bg-kaori-soft dark:hover:border-brand-outline hover:bg-kaori-soft">
                                     <div class="flex items-start gap-4">
                                         <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl {{ item.icon_class }}">

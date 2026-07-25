@@ -1,26 +1,14 @@
 {% extends "jobs/configuration/definitions/_materialization_job.html" %}
 {% block materialization_options %}
-<div class="grid gap-4 sm:grid-cols-2">
-    <div>
-        <p class="text-xs font-semibold text-content-secondary">History Windows</p>
-        <div class="mt-2 space-y-2">
-            {% for value, label in policy_form.forecast_history_windows.choices %}
-                <label class="flex items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary">
-                    <input type="checkbox" name="forecast_history_windows" value="{{ value }}" {% if value in (policy_form.forecast_history_windows.data or []) %}checked{% endif %} class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary"> {{ label }}
-                </label>
-            {% endfor %}
-        </div>
-    </div>
-    <div>
-        <p class="text-xs font-semibold text-content-secondary">Forecast Horizons</p>
-        <div class="mt-2 space-y-2">
-            {% for value, label in policy_form.forecast_horizons.choices %}
-                <label class="flex items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary">
-                    <input type="checkbox" name="forecast_horizons" value="{{ value }}" {% if value in (policy_form.forecast_horizons.data or []) %}checked{% endif %} class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary"> {{ label }}
-                </label>
-            {% endfor %}
-        </div>
+<div>
+    <p class="text-xs font-semibold text-content-secondary">Materialized History Windows</p>
+    <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+        {% for value, label in policy_form.forecast_history_windows.choices %}
+            <label class="flex items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary">
+                <input type="checkbox" name="forecast_history_windows" value="{{ value }}" {% if value in (policy_form.forecast_history_windows.data or []) %}checked{% endif %} class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary"> {{ label }}
+            </label>
+        {% endfor %}
     </div>
 </div>
-<p class="text-xs leading-5 text-content-muted">Forecast pages never execute range queries in the web process. KAORI always retains the 30-day history / 90-day horizon snapshot required by the Kubernetes Operations Dashboard; alternate requests remain deduplicated on the forecasting worker.</p>
+<p class="text-xs leading-5 text-content-muted">Forecast workers materialize historical Prometheus windows only. KAORI always retains the 30-day history required by the Kubernetes Operations Dashboard. Forecast horizon, resource, and method are projected locally from the committed history and do not create additional worker queries.</p>
 {% endblock materialization_options %}

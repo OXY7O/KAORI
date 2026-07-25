@@ -54,7 +54,7 @@
                             </span>
                         </div>
                     </div>
-                    <div class="grid gap-3 lg:grid-cols-2 xl:grid-cols-4 xl:items-end">
+                    <div class="grid gap-3 lg:grid-cols-3 xl:items-end">
                         <label class="block">
                             <span class="text-xs font-medium text-content-muted ">Cluster</span>
                             <select name="cluster_id"
@@ -88,18 +88,6 @@
                                 {% for item in resource_options %}
                                     <option value="{{ item.value }}"
                                             {% if selected_resource == item.value %}selected{% endif %}>
-                                        {{ item.label }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                        <label class="block">
-                            <span class="text-xs font-medium text-content-muted ">Time Range</span>
-                            <select name="time_range"
-                                    class="mt-1 w-full rounded-xl border border-outline-strong bg-surface-card px-3 pr-9 py-2 text-sm font-semibold text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 dark:focus:border-kaori-primary dark:focus:ring-kaori-primary/10">
-                                {% for item in allowed_time_ranges %}
-                                    <option value="{{ item.value }}"
-                                            {% if selected_time_range == item.value %}selected{% endif %}>
                                         {{ item.label }}
                                     </option>
                                 {% endfor %}

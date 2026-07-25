@@ -180,13 +180,22 @@ def materialization_status():
 
     dataset_key = request.args.get('dataset_key', '').strip()
     cluster_id = request.args.get('cluster_id', '').strip()
-    parameters = {
-        key: value
-        for key, value in request.args.items()
-        if key not in {'dataset_key', 'return_url'} and value != ''
-    }
     if not dataset_key or not cluster_id:
         return '', 400
+
+    from app.analytics.materialization.catalog import canonical_parameters
+
+    try:
+        parameters = canonical_parameters(
+            dataset_key,
+            {
+                key: value
+                for key, value in request.args.items()
+                if key not in {'dataset_key', 'return_url'} and value != ''
+            },
+        )
+    except LookupError:
+        return '', 404
     result = read_snapshot(
         cluster_id=cluster_id,
         dataset_key=dataset_key,
@@ -239,7 +248,7 @@ def overview():
     payload = get_analytics_overview(
         selected_cluster_id=selected_cluster_id,
         time_range=selected_time_range,
-        hydrate_live_sections=False,
+        hydrate_snapshot_sections=False,
     )
     _, _, _, dependency_context = build_analysis_utilization_context(
         request.args,

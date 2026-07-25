@@ -8,7 +8,7 @@ from typing import Any
 from flask import current_app
 from sqlalchemy.exc import IntegrityError
 
-from app.analytics.materialization.catalog import get_dataset
+from app.analytics.materialization.catalog import canonical_parameters, get_dataset
 from app.analytics.materialization.serialization import decode_value, encode_value
 from app.extensions.db import db
 from app.models import AnalyticsSnapshot
@@ -54,10 +54,11 @@ def get_snapshot(
     dataset_key: str,
     parameters: dict[str, Any] | None,
 ) -> AnalyticsSnapshot | None:
+    normalized = canonical_parameters(dataset_key, parameters)
     return AnalyticsSnapshot.query.filter_by(
         cluster_id=cluster_id,
         dataset_key=dataset_key,
-        parameter_fingerprint=parameter_fingerprint(parameters),
+        parameter_fingerprint=parameter_fingerprint(normalized),
     ).first()
 
 
@@ -91,6 +92,12 @@ def read_snapshot(
     if not isinstance(context, dict):
         current_app.logger.error('Analytics snapshot %s did not decode to a context mapping.', snapshot.id)
         return SnapshotResult(None, snapshot, 'invalid', False)
+    if context.get('dependency_blocker'):
+        current_app.logger.warning(
+            'Analytics snapshot %s contains a dependency blocker and will not be served as ready data.',
+            snapshot.id,
+        )
+        return SnapshotResult(None, snapshot, 'blocked', False)
     return SnapshotResult(context, snapshot, 'stale' if now > expires_at else 'fresh', now > expires_at)
 
 
@@ -101,7 +108,7 @@ def mark_snapshot_pending(
     parameters: dict[str, Any] | None,
     job_execution_id: int | None,
 ) -> AnalyticsSnapshot:
-    normalized = normalize_parameters(parameters)
+    normalized = canonical_parameters(dataset_key, parameters)
     fingerprint = parameter_fingerprint(normalized)
     snapshot = AnalyticsSnapshot.query.filter_by(
         cluster_id=cluster_id,
@@ -141,6 +148,10 @@ def store_snapshot(
     freshness_minutes: int | None = None,
     stale_grace_minutes: int | None = None,
 ) -> AnalyticsSnapshot:
+    if context.get('dependency_blocker'):
+        raise ValueError(
+            f'Analytics snapshot {dataset_key} contains a dependency blocker and cannot be committed.'
+        )
     dataset = get_dataset(dataset_key)
     now = utcnow()
     snapshot = mark_snapshot_pending(

@@ -25,7 +25,6 @@
                    value="{{ cluster.id if cluster else '' }}">
             <input type="hidden" name="namespace" value="{{ selected_namespace }}">
             <input type="hidden" name="resource" value="{{ selected_resource }}">
-            <input type="hidden" name="time_range" value="{{ selected_time_range }}">
             <input type="hidden" name="search" value="{{ selected_search }}">
             <input type="hidden" name="sort" value="{{ selected_sort }}">
             <input type="hidden" name="focus" value="{{ selected_focus }}">
@@ -49,8 +48,8 @@
         </form>
         <div class="flex items-center justify-end gap-2">
             {% if has_prev and prev_page >= 1 %}
-                {% set prev_page_url = url_for('analytics.top_consumers', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, resource=selected_resource, time_range=selected_time_range, search=selected_search, sort=selected_sort, focus=selected_focus, page=prev_page, per_page=per_page) %}
-                {% set prev_table_url = url_for('analytics.top_consumers_table', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, resource=selected_resource, time_range=selected_time_range, search=selected_search, sort=selected_sort, focus=selected_focus, page=prev_page, per_page=per_page) %}
+                {% set prev_page_url = url_for('analytics.top_consumers', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, resource=selected_resource, search=selected_search, sort=selected_sort, focus=selected_focus, page=prev_page, per_page=per_page) %}
+                {% set prev_table_url = url_for('analytics.top_consumers_table', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, resource=selected_resource, search=selected_search, sort=selected_sort, focus=selected_focus, page=prev_page, per_page=per_page) %}
                 <a href="{{ prev_page_url }}"
                    hx-get="{{ prev_table_url }}"
                    hx-target="#consumer-detail-section"
@@ -68,8 +67,8 @@
             {% endif %}
             {{ pagination_ui.numeric_pages(current_page, total_pages) }}
             {% if has_next and next_page <= total_pages %}
-                {% set next_page_url = url_for('analytics.top_consumers', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, resource=selected_resource, time_range=selected_time_range, search=selected_search, sort=selected_sort, focus=selected_focus, page=next_page, per_page=per_page) %}
-                {% set next_table_url = url_for('analytics.top_consumers_table', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, resource=selected_resource, time_range=selected_time_range, search=selected_search, sort=selected_sort, focus=selected_focus, page=next_page, per_page=per_page) %}
+                {% set next_page_url = url_for('analytics.top_consumers', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, resource=selected_resource, search=selected_search, sort=selected_sort, focus=selected_focus, page=next_page, per_page=per_page) %}
+                {% set next_table_url = url_for('analytics.top_consumers_table', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, resource=selected_resource, search=selected_search, sort=selected_sort, focus=selected_focus, page=next_page, per_page=per_page) %}
                 <a href="{{ next_page_url }}"
                    hx-get="{{ next_table_url }}"
                    hx-target="#consumer-detail-section"

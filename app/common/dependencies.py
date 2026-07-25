@@ -35,7 +35,7 @@ def cluster_required_blocker() -> DependencyBlocker:
         'stage': 1,
         'badge': 'Cluster Required',
         'title': 'Kubernetes Cluster Required',
-        'description': 'Add or select a Kubernetes cluster before loading analytics data.',
+        'description': 'Add or select a Kubernetes cluster before loading worker-prepared analytics data.',
         'diagnostic_detail': None,
         'icon': 'server-cog',
         'action_label': 'Add Cluster',
@@ -51,7 +51,7 @@ def prometheus_setup_blocker(cluster: Cluster) -> DependencyBlocker:
         'badge': 'Prometheus Required',
         'title': 'Prometheus Setup Required',
         'description': (
-            f'Prometheus is not configured for {cluster.name}. Configure the integration to load live analytics.'
+            f'Prometheus is not configured for {cluster.name}. Configure the integration so KAORI workers can prepare analytics snapshots.'
         ),
         'diagnostic_detail': None,
         'icon': 'activity',

@@ -89,7 +89,7 @@
               hx-indicator="#storage-refresh-indicator"
               class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
             <div class="p-5">
-                <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_repeat(3,minmax(180px,240px))] xl:items-center">
+                <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_repeat(2,minmax(180px,240px))] xl:items-center">
                     <section class="rounded-lg border border-outline-default bg-surface-subtle px-4 py-3">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div class="min-w-0">
@@ -120,16 +120,6 @@
                             {% for namespace in namespace_options %}
                                 <option value="{{ namespace }}"
                                         {% if selected_namespace == namespace %}selected{% endif %}>{{ namespace }}</option>
-                            {% endfor %}
-                        </select>
-                    </label>
-                    <label class="block">
-                        <span class="text-xs font-semibold text-content-secondary">Time Range</span>
-                        <select name="time_range"
-                                class="mt-1.5 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary shadow-sm outline-none transition hover:border-outline-strong focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
-                            {% for item in allowed_time_ranges %}
-                                <option value="{{ item.value }}"
-                                        {% if selected_time_range == item.value %}selected{% endif %}>{{ item.label }}</option>
                             {% endfor %}
                         </select>
                     </label>

@@ -24,8 +24,6 @@ from app.intelligence.recommendation_engine import (
     count_actionable_recommendations,
     format_recommendation_cards,
 )
-from app.models import Cluster
-from app.prometheus.service import PrometheusService
 
 CPU_ALLOCATABLE_QUERY = get_query_expression('analytics.top_consumers.queries.CPU_ALLOCATABLE_QUERY')
 CPU_LIMIT_BY_CONTAINER_NAMESPACE_QUERY = get_query_expression(
@@ -98,16 +96,6 @@ RESOURCE_OPTIONS: list[dict[str, str]] = [
     {'value': 'memory', 'label': 'Memory'},
     {'value': 'pods', 'label': 'Pods'},
     {'value': 'pvc', 'label': 'PVC'},
-]
-
-TOP_CONSUMERS_TIME_RANGE_OPTIONS: list[dict[str, str]] = [
-    {'value': '1h', 'label': '1h'},
-    {'value': '6h', 'label': '6h'},
-    {'value': '12h', 'label': '12h'},
-    {'value': '24h', 'label': '24h'},
-    {'value': '7d', 'label': '7d'},
-    {'value': '30d', 'label': '30d'},
-    {'value': '60d', 'label': '60d'},
 ]
 
 SORT_OPTIONS: list[dict[str, str]] = [
@@ -194,23 +182,6 @@ def get_selected_sort(
         return 'usage_percent'
 
     return selected_sort
-
-
-def get_selected_top_consumers_time_range(
-    query_args: Mapping[str, Any],
-) -> str:
-    selected_time_range = get_query_value(
-        query_args=query_args,
-        name='time_range',
-        default='24h',
-    )
-
-    allowed_values = {item['value'] for item in TOP_CONSUMERS_TIME_RANGE_OPTIONS}
-
-    if selected_time_range not in allowed_values:
-        return '24h'
-
-    return selected_time_range
 
 
 def get_selected_focus(
@@ -1243,9 +1214,7 @@ def get_top_consumers_context(
     selected_resource = get_selected_resource(
         query_args=query_args,
     )
-    selected_time_range = get_selected_top_consumers_time_range(
-        query_args=query_args,
-    )
+    selected_time_range = 'current'
     selected_search = get_query_value(
         query_args=query_args,
         name='search',
@@ -1278,7 +1247,7 @@ def get_top_consumers_context(
             'selected_sort': selected_sort,
             'resource_options': RESOURCE_OPTIONS,
             'sort_options': SORT_OPTIONS,
-            'allowed_time_ranges': TOP_CONSUMERS_TIME_RANGE_OPTIONS,
+            'allowed_time_ranges': (),
             'allowed_per_page_values': ALLOWED_PER_PAGE_VALUES,
             'namespace_options': [],
             'consumer_payload': get_empty_top_consumers_payload(
@@ -1959,72 +1928,26 @@ def get_top_consumers_snapshot(
     cluster_id: str,
     time_range: str = '24h',
 ) -> TopConsumersSnapshot:
-    _ = time_range
+    from app.analytics.materialization.service import read_snapshot
 
-    cluster = Cluster.query.filter_by(
-        id=cluster_id,
-    ).first()
-
-    if not cluster:
+    result = read_snapshot(
+        cluster_id=cluster_id,
+        dataset_key='analytics.top_consumers',
+        parameters={'cluster_id': str(cluster_id)},
+    )
+    payload = (result.context or {}).get('consumer_payload') if result.available else None
+    if not isinstance(payload, dict):
         return _empty_top_consumers_snapshot()
-
-    try:
-        prometheus = PrometheusService(
-            cluster,
-        )
-
-        utilization_service = UtilizationService(
-            prometheus,
-        )
-
-        top_consumers_service = TopConsumersService(
-            utilization_service=utilization_service,
-        )
-
-        cpu_rows = top_consumers_service.get_cpu_consumer_rows(
-            selected_namespace='',
-        )
-        memory_rows = top_consumers_service.get_memory_consumer_rows(
-            selected_namespace='',
-        )
-        pvc_rows = top_consumers_service.get_pvc_consumer_rows(
-            selected_namespace='',
-        )
-
-        actionable_recommendations = build_top_consumers_actionable_recommendations(
-            {
-                'all_rows': cpu_rows + memory_rows + pvc_rows,
-                'rows': cpu_rows + memory_rows + pvc_rows,
-            }
-        )
-
-        return {
-            'cpu': _build_top_consumer_items(
-                rows=cpu_rows,
-                name_key='pod',
-                fallback_name_key='workload',
-                limit=5,
-            ),
-            'memory': _build_top_consumer_items(
-                rows=memory_rows,
-                name_key='pod',
-                fallback_name_key='workload',
-                limit=5,
-            ),
-            'storage': _build_top_consumer_items(
-                rows=pvc_rows,
-                name_key='workload',
-                fallback_name_key='workload',
-                limit=5,
-            ),
-            'recommendation_count': count_actionable_recommendations(
-                actionable_recommendations,
-            ),
-        }
-
-    except Exception:
-        return _empty_top_consumers_snapshot()
-
+    rows = list(payload.get('all_rows') or [])
+    cpu_rows = [row for row in rows if row.get('resource_type') == 'cpu']
+    memory_rows = [row for row in rows if row.get('resource_type') == 'memory']
+    pvc_rows = [row for row in rows if row.get('resource_type') == 'pvc']
+    return {
+        'cpu': _build_top_consumer_items(rows=cpu_rows, name_key='pod', fallback_name_key='workload', limit=5),
+        'memory': _build_top_consumer_items(rows=memory_rows, name_key='pod', fallback_name_key='workload', limit=5),
+        'storage': _build_top_consumer_items(rows=pvc_rows, name_key='workload', fallback_name_key='workload', limit=5),
+        'recommendation_count': _safe_int(payload.get('recommendation_count', 0)),
+    }
 
 def _empty_top_consumers_snapshot() -> TopConsumersSnapshot:
     return {
@@ -2183,3 +2106,88 @@ def _raw_percent(
         100.0,
         value / total * 100,
     )
+
+
+def present_top_consumers_materialized_context(
+    context: dict[str, Any],
+    query_args: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Apply lightweight table controls to a committed consumer snapshot."""
+    from copy import deepcopy
+
+    presented = deepcopy(context)
+    selected_namespace = get_query_value(query_args=query_args, name='namespace', default='')
+    selected_resource = get_selected_resource(query_args)
+    selected_time_range = 'current'
+    selected_search = get_query_value(query_args=query_args, name='search', default='')
+    selected_sort = get_selected_sort(query_args)
+    selected_focus = get_selected_focus(query_args)
+    page = get_positive_int_arg(query_args=query_args, name='page', default=1)
+    per_page = get_per_page_arg(query_args=query_args, name='per_page', default=5)
+
+    namespace_options = list(presented.get('namespace_options') or [])
+    if selected_namespace and selected_namespace not in namespace_options:
+        selected_namespace = ''
+
+    payload = deepcopy(presented.get('consumer_payload') or {})
+    all_rows = list(payload.get('all_rows') or [])
+    if selected_namespace:
+        all_rows = [
+            row for row in all_rows
+            if str(row.get('namespace') or '') == selected_namespace
+        ]
+
+    service = TopConsumersService.__new__(TopConsumersService)
+    filtered_rows = service.filter_rows(
+        rows=all_rows,
+        selected_search=selected_search,
+        selected_resource=selected_resource,
+        selected_focus=selected_focus,
+    )
+    sorted_rows = service.sort_rows(rows=filtered_rows, selected_sort=selected_sort)
+    ranked_rows = [dict(row, rank=index) for index, row in enumerate(sorted_rows, start=1)]
+    page_payload = AnalyticsBaseService().paginate_rows_with_options(
+        rows=ranked_rows,
+        page=page,
+        per_page=per_page,
+        allowed_per_page=ALLOWED_PER_PAGE_VALUES,
+        default_per_page=5,
+    )
+
+    payload.update(
+        {
+            'has_data': bool(all_rows),
+            'rows': page_payload['rows'],
+            'all_rows': all_rows,
+            'pagination': page_payload['pagination'],
+            'total_rows': len(filtered_rows),
+        }
+    )
+    recommendations = build_top_consumers_actionable_recommendations(payload)
+    recommendation_cards = format_recommendation_cards(
+        recommendations,
+        default_title='Review top consumers',
+        default_description='Review CPU, memory, pod, and PVC consumer hotspots.',
+        default_source='top_consumers',
+        default_action_type='consumer_review',
+    )
+    payload.update(
+        {
+            'actionable_recommendations': recommendations,
+            'recommendation_cards': recommendation_cards,
+            'recommendation_count': count_actionable_recommendations(recommendations),
+            'recommendations': recommendation_cards,
+        }
+    )
+    presented.update(
+        {
+            'selected_namespace': selected_namespace,
+            'selected_resource': selected_resource,
+            'selected_time_range': selected_time_range,
+            'selected_search': selected_search,
+            'selected_focus': selected_focus,
+            'selected_sort': selected_sort,
+            'consumer_payload': payload,
+        }
+    )
+    return presented

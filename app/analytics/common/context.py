@@ -10,10 +10,17 @@ from flask import current_app
 from app.analytics.common.clusters import get_selected_cluster
 from app.analytics.common.params import get_query_value, get_selected_time_range
 from app.analytics.utilization.service import UtilizationService
-from app.common.dependencies import cluster_required_blocker, prometheus_connection_blocker, prometheus_setup_blocker
+from app.common.dependencies import (
+    cluster_required_blocker,
+    prometheus_capability_blocker,
+    prometheus_connection_blocker,
+    prometheus_setup_blocker,
+)
+from app.integrations.prometheus.capabilities import definition as capability_definition
 from app.integrations.prometheus.exceptions import PrometheusError
 from app.models import Cluster
-from app.prometheus.repository import resolve_instance_for_cluster
+from app.prometheus.repository import KUBERNETES_CLUSTER_SCOPE, resolve_instance_for_cluster
+from app.prometheus.resolver import resolve_prometheus_sources
 from app.prometheus.service import PrometheusService
 
 
@@ -89,6 +96,61 @@ def build_analysis_utilization_context(
         base_context['dependency_blocker'] = prometheus_setup_blocker(cluster)
         return clusters, cluster, None, base_context
 
+    if not check_prometheus_connection:
+        resolution = resolve_prometheus_sources(
+            scope_type=KUBERNETES_CLUSTER_SCOPE,
+            scope_key=str(cluster.id),
+            required_binding_capabilities=('metrics',),
+            required_technical_capabilities=('instant_query', 'kubernetes_identity'),
+        )
+        selected = resolution.selected
+        if selected is None:
+            if not resolution.candidates:
+                base_context['dependency_blocker'] = prometheus_setup_blocker(cluster)
+            else:
+                candidate = resolution.candidates[0]
+                if candidate.missing_technical_capabilities:
+                    labels = []
+                    for key in candidate.missing_technical_capabilities:
+                        capability = capability_definition(key)
+                        labels.append(capability.label if capability else key)
+                    base_context['dependency_blocker'] = prometheus_capability_blocker(
+                        cluster,
+                        capability_labels=labels,
+                        feature_label='Kubernetes Analytics Overview',
+                    )
+                else:
+                    base_context['dependency_blocker'] = prometheus_connection_blocker(
+                        cluster,
+                        detail=candidate.decision_reason,
+                    )
+            return clusters, cluster, None, base_context
+
+        if selected.operational_state in {
+            'unhealthy',
+            'ready_not_connected',
+            'degraded_not_connected',
+        }:
+            base_context['dependency_blocker'] = prometheus_connection_blocker(
+                cluster,
+                detail=selected.decision_reason,
+            )
+            return clusters, cluster, None, base_context
+
+        connected = selected.instance.last_status == 'connected'
+        base_context['prometheus_connected'] = connected
+        base_context['prometheus_status'] = {
+            'configured': True,
+            'connected': connected,
+            'response_time_ms': selected.instance.last_response_time_ms,
+            'label': 'Prometheus Ready' if connected else 'Prometheus Readiness Available',
+            'description': (
+                'KAORI is using persisted Prometheus readiness for the overview request.'
+            ),
+            'error': selected.instance.last_error,
+        }
+        return clusters, cluster, None, base_context
+
     try:
         prometheus = PrometheusService(
             cluster,
@@ -129,16 +191,6 @@ def build_analysis_utilization_context(
     utilization_service = UtilizationService(
         prometheus,
     )
-
-    if not check_prometheus_connection:
-        base_context['prometheus_status'] = {
-            'connected': False,
-            'response_time_ms': None,
-            'label': 'Prometheus check pending',
-            'description': 'Connection health is loaded by the dedicated Prometheus status section.',
-            'error': None,
-        }
-        return clusters, cluster, utilization_service, base_context
 
     try:
         prometheus_status = utilization_service.get_prometheus_status()

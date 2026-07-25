@@ -38,9 +38,7 @@ from app.intelligence.recommendation_engine import (
     count_actionable_recommendations,
     format_recommendation_cards,
 )
-from app.models import Cluster
 from app.prometheus.consumer import PrometheusConsumer
-from app.prometheus.service import PrometheusService
 
 NAMESPACE_ACTIVE_QUERY = get_query_expression('analytics.storage.queries.NAMESPACE_ACTIVE_QUERY')
 NODE_ROOT_FILESYSTEM_AVAILABLE_QUERY = get_query_expression(
@@ -611,6 +609,7 @@ class StorageAnalysisService(AnalyticsBaseService):
                         1,
                     ),
                 },
+                'pvc_all_rows': pvc_all_rows,
                 'pvc_rows': pvc_page_payload['rows'],
                 'pvc_pagination': pvc_page_payload['pagination'],
                 'pvc_selected_search': selected_pvc_search,
@@ -618,6 +617,7 @@ class StorageAnalysisService(AnalyticsBaseService):
                 'pvc_storage_class_options': pvc_storage_class_options,
                 'pvc_selected_status': selected_pvc_status,
                 'pvc_selected_storage_class': selected_pvc_storage_class,
+                'pv_all_rows': pv_all_rows,
                 'pv_rows': pv_page_payload['rows'],
                 'pv_pagination': pv_page_payload['pagination'],
                 'pv_selected_search': selected_pv_search,
@@ -939,6 +939,9 @@ class StorageAnalysisService(AnalyticsBaseService):
                     'free': self.format_bytes(
                         free_value,
                     ),
+                    'requested_bytes': requested_value,
+                    'used_bytes': used_value,
+                    'free_bytes': free_value,
                     'usage_percent': safe_round(
                         usage_percent,
                         1,
@@ -989,6 +992,7 @@ class StorageAnalysisService(AnalyticsBaseService):
                     'capacity': self.format_bytes(
                         capacity,
                     ),
+                    'capacity_bytes': capacity,
                     'storage_class': storage_classes.get(
                         volume,
                         'No StorageClass',
@@ -1319,120 +1323,36 @@ def get_storage_analysis_context(
 def get_storage_snapshot(
     cluster_id: str,
 ) -> dict[str, Any]:
-    cluster = Cluster.query.filter_by(
-        id=cluster_id,
-    ).first()
+    from app.analytics.materialization.service import read_snapshot
 
-    if not cluster:
+    result = read_snapshot(
+        cluster_id=cluster_id,
+        dataset_key='analytics.storage',
+        parameters={'cluster_id': str(cluster_id)},
+    )
+    context = result.context or {}
+    storage_summary = _as_dict(context.get('storage_summary', {}))
+    persistent_storage = _as_dict(storage_summary.get('persistent_storage', {}))
+    pvc_summary = _as_dict(persistent_storage.get('pvc', {}))
+    pvc_rows = _as_list(persistent_storage.get('pvc_all_rows') or persistent_storage.get('pvc_rows', []))
+    if not storage_summary:
         return _empty_storage_snapshot()
-
-    try:
-        prometheus = PrometheusService(
-            cluster,
-        )
-
-        utilization_service = UtilizationService(
-            prometheus,
-        )
-
-        storage_service = StorageAnalysisService(
-            utilization_service,
-            PrometheusConsumer(cluster),
-        )
-
-        storage_summary = storage_service.get_storage_capacity_summary(
-            selected_namespace='',
-            selected_node='',
-            selected_pvc_search='',
-            selected_pvc_status='',
-            selected_pvc_storage_class='',
-            pvc_page=1,
-            pvc_per_page=1000,
-            selected_pv_search='',
-            selected_pv_status='',
-            selected_pv_storage_class='',
-            pv_page=1,
-            pv_per_page=1000,
-        )
-
-        actionable_recommendations = build_storage_actionable_recommendations(
-            {
-                'storage_summary': storage_summary,
-            }
-        )
-
-        persistent_storage = _as_dict(
-            storage_summary.get(
-                'persistent_storage',
-                {},
-            )
-        )
-
-        pvc_summary = _as_dict(
-            persistent_storage.get(
-                'pvc',
-                {},
-            )
-        )
-
-        pvc_rows = _as_list(
-            persistent_storage.get(
-                'pvc_rows',
-                [],
-            )
-        )
-
-        pvc_risk_count = _count_pvc_risks(
-            pvc_rows,
-        )
-
-        top_namespace = _get_top_storage_namespace(
-            pvc_rows,
-        )
-
-        used_percent = _safe_int(
-            pvc_summary.get(
-                'used_percent',
-                0,
-            )
-        )
-
-        free_percent = max(
-            0,
-            100 - used_percent,
-        )
-
-        return {
-            'pvc_requested': str(
-                pvc_summary.get(
-                    'requested',
-                    '0 GiB',
-                )
-            ),
-            'pvc_used': str(
-                pvc_summary.get(
-                    'used',
-                    '0 GiB',
-                )
-            ),
-            'pvc_free': str(
-                pvc_summary.get(
-                    'free',
-                    '0 GiB',
-                )
-            ),
-            'pvc_risk_count': pvc_risk_count,
-            'used_percent': used_percent,
-            'free_percent': free_percent,
-            'top_namespace': top_namespace,
-            'recommendation_count': count_actionable_recommendations(
-                actionable_recommendations,
-            ),
-        }
-
-    except Exception:
-        return _empty_storage_snapshot()
-
+    risk_count = _count_pvc_risks(pvc_rows)
+    used_percent = _safe_int(pvc_summary.get('used_percent', 0))
+    return {
+        'pvc_requested': str(pvc_summary.get('requested', '0 GiB')),
+        'pvc_used': str(pvc_summary.get('used', '0 GiB')),
+        'pvc_free': str(pvc_summary.get('free', '0 GiB')),
+        'pvc_risk_count': risk_count,
+        'used_percent': used_percent,
+        'free_percent': max(0, 100 - used_percent),
+        'top_namespace': _get_top_storage_namespace(pvc_rows),
+        'recommendation_count': count_actionable_recommendations(
+            context.get('actionable_recommendations')
+            if isinstance(context.get('actionable_recommendations'), list)
+            else []
+        ),
+    }
 
 def _empty_storage_snapshot() -> dict[str, Any]:
     return {
@@ -1590,3 +1510,163 @@ def _parse_storage_display_to_gib(
         unit,
         1,
     )
+
+
+def present_storage_materialized_context(
+    context: dict[str, Any],
+    query_args: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Apply storage table filters and pagination to a committed snapshot."""
+    from copy import deepcopy
+
+    presented = deepcopy(context)
+    selected_namespace = get_query_value(query_args=query_args, name='namespace', default='')
+    selected_storage_node = get_query_value(query_args=query_args, name='storage_node', default='')
+    selected_storage_tab = get_selected_storage_tab(query_args)
+    selected_pvc_search = get_query_value(query_args=query_args, name='pvc_search', default='')
+    selected_pvc_status = get_query_value(query_args=query_args, name='pvc_status', default='')
+    selected_pvc_storage_class = get_query_value(
+        query_args=query_args,
+        name='pvc_storage_class',
+        default='',
+    )
+    selected_pv_search = get_query_value(query_args=query_args, name='pv_search', default='')
+    selected_pv_status = get_query_value(query_args=query_args, name='pv_status', default='')
+    selected_pv_storage_class = get_query_value(
+        query_args=query_args,
+        name='pv_storage_class',
+        default='',
+    )
+
+    storage_summary = deepcopy(presented.get('storage_summary') or {})
+    node_filesystem = deepcopy(storage_summary.get('node_filesystem') or {})
+    available_nodes = list(node_filesystem.get('available_nodes') or [])
+    if selected_storage_node and selected_storage_node not in available_nodes:
+        selected_storage_node = ''
+    node_rows = list(node_filesystem.get('rows') or [])
+    if selected_storage_node:
+        node_rows = [
+            row for row in node_rows
+            if str(row.get('node') or '') == selected_storage_node
+        ]
+    node_filesystem['rows'] = node_rows
+    node_filesystem['selected_node'] = selected_storage_node
+    node_capacity = sum(_safe_float(row.get('capacity_bytes')) for row in node_rows)
+    node_used = sum(_safe_float(row.get('used_bytes')) for row in node_rows)
+    node_free = sum(_safe_float(row.get('free_bytes')) for row in node_rows)
+    highest_row = max(
+        node_rows,
+        key=lambda row: _safe_float(row.get('usage_percent')),
+        default=None,
+    )
+    formatter = StorageAnalysisService.__new__(StorageAnalysisService)
+    node_filesystem['summary'] = {
+        'capacity': formatter.format_bytes(node_capacity),
+        'used': formatter.format_bytes(node_used),
+        'free': formatter.format_bytes(node_free),
+        'usage_percent': safe_round(raw_percent(node_used, node_capacity), 1),
+        'free_percent': safe_round(raw_percent(node_free, node_capacity), 1),
+        'highest_usage': _safe_float(highest_row.get('usage_percent')) if highest_row else 0.0,
+        'highest_node': str(highest_row.get('node') or '-') if highest_row else '-',
+    }
+
+    persistent = deepcopy(storage_summary.get('persistent_storage') or {})
+    pvc_all_rows = list(persistent.get('pvc_all_rows') or persistent.get('pvc_rows') or [])
+    pv_all_rows = list(persistent.get('pv_all_rows') or persistent.get('pv_rows') or [])
+    if selected_namespace:
+        pvc_all_rows = [
+            row for row in pvc_all_rows
+            if str(row.get('namespace') or '') == selected_namespace
+        ]
+
+    service = StorageAnalysisService.__new__(StorageAnalysisService)
+    pvc_filtered = service.filter_storage_rows(
+        pvc_all_rows,
+        selected_search=selected_pvc_search,
+        selected_status=selected_pvc_status,
+        selected_storage_class=selected_pvc_storage_class,
+    )
+    pv_filtered = service.filter_storage_rows(
+        pv_all_rows,
+        selected_search=selected_pv_search,
+        selected_status=selected_pv_status,
+        selected_storage_class=selected_pv_storage_class,
+    )
+    paginator = AnalyticsBaseService()
+    pvc_page = paginator.paginate_rows_with_options(
+        rows=pvc_filtered,
+        page=get_positive_int_arg(query_args=query_args, name='pvc_page', default=1),
+        per_page=get_per_page_arg(query_args=query_args, name='pvc_per_page', default=5),
+        allowed_per_page=ALLOWED_PER_PAGE_VALUES,
+        default_per_page=5,
+    )
+    pv_page = paginator.paginate_rows_with_options(
+        rows=pv_filtered,
+        page=get_positive_int_arg(query_args=query_args, name='pv_page', default=1),
+        per_page=get_per_page_arg(query_args=query_args, name='pv_per_page', default=5),
+        allowed_per_page=ALLOWED_PER_PAGE_VALUES,
+        default_per_page=5,
+    )
+    pvc_requested = sum(_safe_float(row.get('requested_bytes')) for row in pvc_all_rows)
+    pvc_used = sum(_safe_float(row.get('used_bytes')) for row in pvc_all_rows)
+    pvc_free = sum(_safe_float(row.get('free_bytes')) for row in pvc_all_rows)
+    pv_capacity = sum(_safe_float(row.get('capacity_bytes')) for row in pv_all_rows)
+    persistent.update(
+        {
+            'pv': {
+                'count': len(pv_all_rows),
+                'capacity': formatter.format_bytes(pv_capacity),
+                'used': formatter.format_bytes(pvc_used),
+                'free': formatter.format_bytes(pvc_free),
+                'used_percent': safe_round(raw_percent(pvc_used, pv_capacity), 1),
+                'free_percent': safe_round(raw_percent(pvc_free, pv_capacity), 1),
+            },
+            'pvc': {
+                'count': len(pvc_all_rows),
+                'requested': formatter.format_bytes(pvc_requested),
+                'used': formatter.format_bytes(pvc_used),
+                'free': formatter.format_bytes(pvc_free),
+                'used_percent': safe_round(raw_percent(pvc_used, pvc_requested), 1),
+                'free_percent': safe_round(raw_percent(pvc_free, pvc_requested), 1),
+            },
+            'pvc_all_rows': pvc_all_rows,
+            'pvc_rows': pvc_page['rows'],
+            'pvc_pagination': pvc_page['pagination'],
+            'pvc_selected_search': selected_pvc_search,
+            'pvc_selected_status': selected_pvc_status,
+            'pvc_selected_storage_class': selected_pvc_storage_class,
+            'pvc_status_options': service.get_unique_options(pvc_all_rows, 'status'),
+            'pvc_storage_class_options': service.get_unique_options(pvc_all_rows, 'storage_class'),
+            'pv_all_rows': pv_all_rows,
+            'pv_rows': pv_page['rows'],
+            'pv_pagination': pv_page['pagination'],
+            'pv_selected_search': selected_pv_search,
+            'pv_selected_status': selected_pv_status,
+            'pv_selected_storage_class': selected_pv_storage_class,
+            'pv_status_options': service.get_unique_options(pv_all_rows, 'status'),
+            'pv_storage_class_options': service.get_unique_options(pv_all_rows, 'storage_class'),
+        }
+    )
+    storage_summary['node_filesystem'] = node_filesystem
+    storage_summary['persistent_storage'] = persistent
+    recommendations = build_storage_actionable_recommendations({'storage_summary': storage_summary})
+    presented.update(
+        {
+            'selected_namespace': selected_namespace,
+            'selected_time_range': 'current',
+            'allowed_time_ranges': (),
+            'selected_storage_node': selected_storage_node,
+            'selected_storage_tab': selected_storage_tab,
+            'selected_pvc_search': selected_pvc_search,
+            'selected_pvc_status': selected_pvc_status,
+            'selected_pvc_storage_class': selected_pvc_storage_class,
+            'selected_pv_search': selected_pv_search,
+            'selected_pv_status': selected_pv_status,
+            'selected_pv_storage_class': selected_pv_storage_class,
+            'storage_summary': storage_summary,
+            'actionable_recommendations': recommendations,
+            'recommendation_cards': format_recommendation_cards(recommendations),
+            'recommendation_count': count_actionable_recommendations(recommendations),
+        }
+    )
+    return presented

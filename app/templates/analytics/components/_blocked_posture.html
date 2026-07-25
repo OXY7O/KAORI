@@ -1,7 +1,13 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
-{% set blocker_tone = 'warning' if dependency_blocker.kind in ['cluster_required', 'prometheus_setup', 'alert_source_setup'] else 'critical' %}
-{% set blocker_status = 'Setup Required' if blocker_tone == 'warning' else 'Unavailable' %}
+{% set blocker_tone = 'warning' if dependency_blocker.kind in ['cluster_required', 'prometheus_setup', 'prometheus_capability', 'alert_source_setup'] else 'critical' %}
+{% if dependency_blocker.kind == 'prometheus_capability' %}
+    {% set blocker_status = 'Capability Incomplete' %}
+{% elif blocker_tone == 'warning' %}
+    {% set blocker_status = 'Setup Required' %}
+{% else %}
+    {% set blocker_status = 'Unavailable' %}
+{% endif %}
 {% set blocked_step = dependency_blocker.stage|int %}
 {% set completed_step = blocked_step - 1 %}
 {% set step_labels = {1: 'Kubernetes', 2: 'Prometheus', 3: 'Alertmanager'} %}
@@ -31,5 +37,4 @@
             value_classes='text-lg font-bold leading-5'
         ) }}
     </div>
-    {{ page_hero.context_info('info', 'Complete the current readiness step to unlock analytics.') }}
 </div>

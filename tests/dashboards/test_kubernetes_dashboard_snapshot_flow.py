@@ -121,7 +121,7 @@ def test_alert_materialization_builds_compact_worker_payload(monkeypatch) -> Non
     assert context['source_connected'] is True
 
 
-def test_scheduled_analytics_work_items_include_dashboard_alert_snapshot() -> None:
+def test_scheduled_analytics_work_items_include_dashboard_and_page_alert_snapshots(monkeypatch) -> None:
     policy = SimpleNamespace(
         configuration_json={
             'time_ranges': ['24h'],
@@ -131,6 +131,8 @@ def test_scheduled_analytics_work_items_include_dashboard_alert_snapshot() -> No
     )
     cluster = SimpleNamespace(id='cluster-1')
 
+    monkeypatch.setattr(job_adapter, '_dataset_eligible', lambda *_args: True)
+
     work_items = job_adapter._analytics_work_items(
         policy,
         None,
@@ -138,12 +140,23 @@ def test_scheduled_analytics_work_items_include_dashboard_alert_snapshot() -> No
         only_due=False,
     )
 
-    alert_items = [item for item in work_items if item['dataset_key'] == 'dashboard.kubernetes.alerts']
-    assert len(alert_items) == 1
+    alert_items = [
+        item for item in work_items
+        if item['dataset_key'] in {'dashboard.kubernetes.alerts', 'analytics.alerts'}
+    ]
+    assert [item['dataset_key'] for item in alert_items] == [
+        'dashboard.kubernetes.alerts',
+        'analytics.alerts',
+    ]
     assert alert_items[0]['parameters'] == {'cluster_id': 'cluster-1'}
+    assert alert_items[1]['parameters'] == {
+        'cluster_id': 'cluster-1',
+        'source': 'auto',
+    }
+    assert [item['stale_grace_minutes'] for item in alert_items] == [30, 30]
 
 
-def test_alertmanager_only_cluster_schedules_only_dashboard_alert_snapshot() -> None:
+def test_alertmanager_only_cluster_schedules_alert_snapshots(monkeypatch) -> None:
     policy = SimpleNamespace(
         configuration_json={
             'time_ranges': ['24h'],
@@ -153,6 +166,8 @@ def test_alertmanager_only_cluster_schedules_only_dashboard_alert_snapshot() -> 
     )
     cluster = SimpleNamespace(id='alert-only')
 
+    monkeypatch.setattr(job_adapter, '_dataset_eligible', lambda *_args: True)
+
     work_items = job_adapter._analytics_work_items(
         policy,
         None,
@@ -161,10 +176,13 @@ def test_alertmanager_only_cluster_schedules_only_dashboard_alert_snapshot() -> 
         prometheus_cluster_ids=set(),
     )
 
-    assert [item['dataset_key'] for item in work_items] == ['dashboard.kubernetes.alerts']
+    assert [item['dataset_key'] for item in work_items] == [
+        'dashboard.kubernetes.alerts',
+        'analytics.alerts',
+    ]
 
 
-def test_dashboard_required_analytics_ranges_are_materialized_even_when_not_selected() -> None:
+def test_dashboard_required_analytics_snapshots_use_canonical_dimensions(monkeypatch) -> None:
     policy = SimpleNamespace(
         configuration_json={
             'time_ranges': ['7d'],
@@ -174,6 +192,8 @@ def test_dashboard_required_analytics_ranges_are_materialized_even_when_not_sele
     )
     cluster = SimpleNamespace(id='cluster-1')
 
+    monkeypatch.setattr(job_adapter, '_dataset_eligible', lambda *_args: True)
+
     work_items = job_adapter._analytics_work_items(
         policy,
         None,
@@ -181,25 +201,55 @@ def test_dashboard_required_analytics_ranges_are_materialized_even_when_not_sele
         only_due=False,
     )
 
-    keys_and_ranges = {
-        (item['dataset_key'], item['parameters'].get('time_range'))
+    by_key = {}
+    for item in work_items:
+        by_key.setdefault(item['dataset_key'], []).append(item['parameters'])
+
+    assert {'cluster_id': 'cluster-1', 'time_range': '24h'} in by_key['analytics.capacity']
+    assert by_key['analytics.storage'] == [{'cluster_id': 'cluster-1'}]
+    assert by_key['analytics.top_consumers'] == [{'cluster_id': 'cluster-1'}]
+
+
+def test_analytics_policy_precomputes_only_selected_utilization_trends(monkeypatch) -> None:
+    policy = SimpleNamespace(
+        configuration_json={
+            'time_ranges': ['24h'],
+            'freshness_minutes': 20,
+            'stale_grace_minutes': 1440,
+        }
+    )
+    cluster = SimpleNamespace(id='cluster-1')
+
+    monkeypatch.setattr(job_adapter, '_dataset_eligible', lambda *_args: True)
+
+    work_items = job_adapter._analytics_work_items(
+        policy,
+        None,
+        clusters=[cluster],
+        only_due=False,
+    )
+
+    trend_parameters = [
+        item['parameters']
         for item in work_items
-    }
-    assert ('analytics.capacity', '24h') in keys_and_ranges
-    assert ('analytics.top_consumers', '24h') in keys_and_ranges
-    assert ('analytics.storage', '24h') not in keys_and_ranges
+        if item['dataset_key'] == 'analytics.utilization.trend'
+    ]
+    assert trend_parameters == [
+        {'cluster_id': 'cluster-1', 'trend_hours': '24'},
+    ]
 
 
-def test_dashboard_required_forecast_pair_is_always_materialized() -> None:
+def test_forecast_history_snapshots_are_materialized_without_ui_projection_dimensions(monkeypatch) -> None:
     policy = SimpleNamespace(
         configuration_json={
             'history_windows': ['90d'],
-            'forecast_horizons': ['365d'],
             'freshness_minutes': 120,
             'stale_grace_minutes': 4320,
         }
     )
     cluster = SimpleNamespace(id='cluster-1')
+
+    monkeypatch.setattr(job_adapter, '_prometheus_dataset_eligible', lambda *_args: True)
 
     work_items = job_adapter._forecast_work_items(
         policy,
@@ -208,12 +258,10 @@ def test_dashboard_required_forecast_pair_is_always_materialized() -> None:
         only_due=False,
     )
 
-    parameter_pairs = {
-        (item['parameters']['history_window'], item['parameters']['forecast_horizon'])
-        for item in work_items
-    }
-    assert ('30d', '90d') in parameter_pairs
-    assert ('90d', '365d') in parameter_pairs
+    assert [item['parameters'] for item in work_items] == [
+        {'cluster_id': 'cluster-1', 'history_window': '30d'},
+        {'cluster_id': 'cluster-1', 'history_window': '90d'},
+    ]
 
 
 def test_cluster_health_preloads_visible_inventory_with_two_set_queries(monkeypatch) -> None:

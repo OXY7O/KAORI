@@ -1530,167 +1530,57 @@ def get_forecast_snapshot(
     cluster_id: str,
     time_range: str = '30d',
 ) -> dict[str, Any]:
-    cluster = Cluster.query.filter_by(
-        id=cluster_id,
-    ).first()
+    from app.analytics.materialization.service import read_snapshot
 
-    if not cluster:
-        return _empty_forecast_snapshot()
-
-    history_window = _normalize_forecast_history_window(
-        time_range,
+    history_window = _normalize_forecast_history_window(time_range)
+    result = read_snapshot(
+        cluster_id=cluster_id,
+        dataset_key='analytics.forecast',
+        parameters={
+            'cluster_id': str(cluster_id),
+            'history_window': history_window,
+        },
     )
-
-    try:
-        prometheus = PrometheusService(
-            cluster,
-        )
-
-        utilization_service = UtilizationService(
-            prometheus,
-        )
-
-        forecast_service = ForecastAnalysisService(
-            utilization_service=utilization_service,
-            cluster=cluster,
-        )
-
-        forecast_payload = forecast_service.get_forecast_analysis(
-            namespace='',
-            history_window=history_window,
-            forecast_horizon='30d',
-            resource='all',
-            method='linear',
-        )
-
-        items = _as_list(
-            forecast_payload.get(
-                'items',
-                [],
-            )
-        )
-
-        summary = _as_dict(
-            forecast_payload.get(
-                'summary',
-                {},
-            )
-        )
-
-        item_map = _build_forecast_item_map(
-            items,
-        )
-
-        cpu_item = item_map.get(
-            'cpu',
-            {},
-        )
-        memory_item = item_map.get(
-            'memory',
-            {},
-        )
-        storage_item = item_map.get(
-            'storage',
-            {},
-        )
-        pod_item = item_map.get(
-            'pods',
-            {},
-        )
-
-        forecast_risk = _resolve_forecast_risk(
-            summary=summary,
-            items=items,
-        )
-
-        warning_count = _safe_int(
-            summary.get(
-                'warning_count',
-                0,
-            )
-        )
-        critical_count = _safe_int(
-            summary.get(
-                'critical_count',
-                0,
-            )
-        )
-        risk_count = warning_count + critical_count
-
-        risk_note = (
-            f'{risk_count} metric(s) may breach warning thresholds in the forecast window.'
-            if risk_count > 0
-            else 'No forecast risk detected in the selected time range.'
-        )
-
-        actionable_recommendations = build_forecast_actionable_recommendations(
-            forecast_payload,
-        )
-
-        return {
-            'cpu_trend': _get_forecast_trend_label(
-                cpu_item,
-            ),
-            'cpu_trend_value': _get_forecast_trend_value(
-                cpu_item,
-            ),
-            'memory_trend': _get_forecast_trend_label(
-                memory_item,
-            ),
-            'memory_trend_value': _get_forecast_trend_value(
-                memory_item,
-            ),
-            'storage_trend': _get_forecast_trend_label(
-                storage_item,
-            ),
-            'storage_trend_value': _get_forecast_trend_value(
-                storage_item,
-            ),
-            'pod_trend': _get_forecast_trend_label(
-                pod_item,
-            ),
-            'pod_trend_value': _get_forecast_trend_value(
-                pod_item,
-            ),
-            'forecast_risk': forecast_risk,
-            'forecast_horizon': '30 days',
-            'risk_count': risk_count,
-            'risk_note': risk_note,
-            'highest_projected_resource': str(
-                summary.get(
-                    'highest_projected_label',
-                    'N/A',
-                )
-            ),
-            'highest_projected_percent': _safe_int(
-                summary.get(
-                    'highest_projected_percent',
-                    0,
-                )
-            ),
-            'nearest_warning': _as_dict(
-                summary.get(
-                    'nearest_warning',
-                    {},
-                )
-            ),
-            'nearest_critical': _as_dict(
-                summary.get(
-                    'nearest_critical',
-                    {},
-                )
-            ),
-            'series': _build_forecast_snapshot_series(
-                items,
-            ),
-            'recommendation_count': count_actionable_recommendations(
-                actionable_recommendations,
-            ),
-        }
-
-    except Exception:
+    context = result.context or {}
+    forecast_payload = context.get('forecast_payload')
+    if not isinstance(forecast_payload, dict):
         return _empty_forecast_snapshot()
-
+    items = _as_list(forecast_payload.get('items', []))
+    summary = _as_dict(forecast_payload.get('summary', {}))
+    item_map = _build_forecast_item_map(items)
+    cpu_item = item_map.get('cpu', {})
+    memory_item = item_map.get('memory', {})
+    storage_item = item_map.get('storage', {})
+    pod_item = item_map.get('pods', {})
+    forecast_risk = _resolve_forecast_risk(summary=summary, items=items)
+    risk_count = _safe_int(summary.get('warning_count', 0)) + _safe_int(summary.get('critical_count', 0))
+    return {
+        'cpu_trend': _get_forecast_trend_label(cpu_item),
+        'cpu_trend_value': _get_forecast_trend_value(cpu_item),
+        'memory_trend': _get_forecast_trend_label(memory_item),
+        'memory_trend_value': _get_forecast_trend_value(memory_item),
+        'storage_trend': _get_forecast_trend_label(storage_item),
+        'storage_trend_value': _get_forecast_trend_value(storage_item),
+        'pod_trend': _get_forecast_trend_label(pod_item),
+        'pod_trend_value': _get_forecast_trend_value(pod_item),
+        'risk_count': risk_count,
+        'risk_note': (
+            f'{risk_count} metric(s) may breach warning thresholds in the forecast window.'
+            if risk_count > 0 else 'No forecast risk detected in the selected time range.'
+        ),
+        'forecast_risk': forecast_risk,
+        'forecast_horizon': str(forecast_payload.get('forecast_horizon') or '90d'),
+        'highest_projected_resource': summary.get('highest_projected_label', 'N/A'),
+        'highest_projected_percent': _safe_int(summary.get('highest_projected_percent', 0)),
+        'nearest_warning': summary.get('nearest_warning', {}),
+        'nearest_critical': summary.get('nearest_critical', {}),
+        'series': _build_forecast_snapshot_series(items),
+        'recommendation_count': count_actionable_recommendations(
+            forecast_payload.get('actionable_recommendations')
+            if isinstance(forecast_payload.get('actionable_recommendations'), list)
+            else []
+        ),
+    }
 
 def _empty_forecast_snapshot() -> dict[str, Any]:
     return {
@@ -2117,3 +2007,183 @@ def _clamp_percent(
             100.0,
         ),
     )
+
+
+def _present_forecast_item(
+    item: dict[str, Any],
+    *,
+    horizon_days: int,
+    method: str,
+) -> dict[str, Any]:
+    from copy import deepcopy
+
+    updated = deepcopy(item)
+    historical_points: list[ForecastPoint] = []
+    for point in item.get('historical_points') or []:
+        try:
+            timestamp = datetime.strptime(str(point.get('date') or ''), '%Y-%m-%d').replace(tzinfo=UTC)
+            historical_points.append(
+                ForecastPoint(timestamp=timestamp, value=_safe_float(point.get('value')))
+            )
+        except (TypeError, ValueError):
+            continue
+
+    result = _calculate_forecast(values=historical_points, horizon_days=horizon_days, method=method)
+    capacity = _safe_float(item.get('capacity'))
+    current_value = _safe_float(result.get('current_value'))
+    projected_value = _safe_float(result.get('projected_value'))
+    slope = _safe_float(result.get('slope_per_day'))
+    current_percent = _percentage(current_value, capacity)
+    projected_percent = _percentage(projected_value, capacity)
+    unit = str(item.get('unit') or '')
+    history_count = len(historical_points)
+
+    updated.update(
+        {
+            'forecast_method': method,
+            'method_label': result['method_label'],
+            'method_description': result['method_description'],
+            'has_data': history_count >= 2 and capacity > 0,
+            'history_points_count': history_count,
+            'capacity_missing': capacity <= 0,
+            'empty_reason': _resolve_forecast_empty_reason(
+                history_points_count=history_count,
+                capacity=capacity,
+            ),
+            'status': _resolve_status(projected_percent),
+            'status_label': _resolve_status(projected_percent).title(),
+            'current_value': current_value,
+            'current_display': _format_value(current_value, unit),
+            'projected_value': projected_value,
+            'projected_display': _format_value(projected_value, unit),
+            'growth_per_day': slope,
+            'growth_per_week': slope * 7,
+            'growth_display': _format_growth(slope, unit),
+            'current_percent': round(current_percent, 2),
+            'projected_percent': round(projected_percent, 2),
+            'warning_eta': _calculate_eta(
+                current_value=current_value,
+                slope_per_day=slope,
+                capacity=capacity,
+                threshold=WARNING_THRESHOLD,
+            ),
+            'critical_eta': _calculate_eta(
+                current_value=current_value,
+                slope_per_day=slope,
+                capacity=capacity,
+                threshold=CRITICAL_THRESHOLD,
+            ),
+            'confidence': result['confidence'],
+            'confidence_reason': result['confidence_reason'],
+            'forecast_points': [
+                {
+                    'date': point.timestamp.strftime('%Y-%m-%d'),
+                    'value': point.value,
+                    'percent': round(_percentage(point.value, capacity), 2),
+                }
+                for point in result['forecast_points']
+            ],
+        }
+    )
+    return updated
+
+
+def present_forecast_materialized_context(
+    context: dict[str, Any],
+    query_args: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Reproject a committed history snapshot without issuing a new Prometheus query."""
+    from copy import deepcopy
+
+    presented = deepcopy(context)
+    selected_namespace = get_query_value(query_args=query_args, name='namespace', default='')
+    selected_history_window = _normalize_option(
+        get_query_value(query_args=query_args, name='history_window', default='30d'),
+        '30d',
+        {item['value'] for item in HISTORY_WINDOW_OPTIONS},
+    )
+    selected_horizon = _normalize_option(
+        get_query_value(query_args=query_args, name='forecast_horizon', default='90d'),
+        '90d',
+        {item['value'] for item in FORECAST_HORIZON_OPTIONS},
+    )
+    selected_resource = _normalize_option(
+        get_query_value(query_args=query_args, name='resource', default='all'),
+        'all',
+        {item['value'] for item in RESOURCE_OPTIONS},
+    )
+    selected_method = _normalize_option(
+        get_query_value(query_args=query_args, name='method', default='linear'),
+        'linear',
+        {item['value'] for item in FORECAST_METHOD_OPTIONS},
+    )
+    horizon_days = _parse_days(selected_horizon, default=90)
+    method_meta = _get_forecast_method_meta(selected_method)
+
+    namespace_options = list(presented.get('namespace_options') or [])
+    if selected_namespace and selected_namespace not in namespace_options:
+        selected_namespace = ''
+
+    payload = deepcopy(presented.get('forecast_payload') or {})
+    source_items = list(payload.get('items') or [])
+    if selected_resource != 'all':
+        source_items = [item for item in source_items if str(item.get('key') or '') == selected_resource]
+    items = [
+        _present_forecast_item(item, horizon_days=horizon_days, method=selected_method)
+        for item in source_items
+    ]
+    summary = _build_summary(items)
+    recommendation_payload = {
+        'namespace': selected_namespace or 'All Namespaces',
+        'history_window': selected_history_window,
+        'forecast_horizon': selected_horizon,
+        'history_days': _parse_days(selected_history_window, default=30),
+        'horizon_days': horizon_days,
+        'forecast_method': selected_method,
+        'forecast_method_label': method_meta['label'],
+        'items': items,
+        'summary': summary,
+    }
+    recommendations = build_forecast_actionable_recommendations(recommendation_payload)
+    recommendation_cards = format_recommendation_cards(
+        recommendations,
+        default_title='Continue forecast monitoring',
+        default_description=(
+            'No actionable forecast recommendation was generated from the current projection. '
+            'Continue monitoring forecast trend and threshold ETA.'
+        ),
+        default_source='forecast',
+        default_action_type='forecast_review',
+    )
+    has_data = any(item.get('has_data') for item in items)
+    payload.update(
+        {
+            'has_data': has_data,
+            'message': None if has_data else _build_no_forecast_data_message(items),
+            'namespace': selected_namespace,
+            'history_window': selected_history_window,
+            'forecast_horizon': selected_horizon,
+            'history_days': _parse_days(selected_history_window, default=30),
+            'horizon_days': horizon_days,
+            'forecast_method': selected_method,
+            'method_label': method_meta['label'],
+            'method_description': method_meta['description'],
+            'items': items,
+            'summary': summary,
+            'chart': _build_chart_payload(items),
+            'actionable_recommendations': recommendations,
+            'recommendation_cards': recommendation_cards,
+            'recommendation_count': count_actionable_recommendations(recommendations),
+        }
+    )
+    presented.update(
+        {
+            'selected_namespace': selected_namespace,
+            'selected_history_window': selected_history_window,
+            'selected_forecast_horizon': selected_horizon,
+            'selected_resource': selected_resource,
+            'selected_method': selected_method,
+            'forecast_payload': payload,
+        }
+    )
+    return presented

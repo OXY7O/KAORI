@@ -17,16 +17,13 @@ def capacity_parameters(cluster_id: str) -> dict[str, str]:
 
 
 def top_consumers_parameters(cluster_id: str) -> dict[str, str]:
-    return {'cluster_id': cluster_id, 'time_range': '24h'}
+    return {'cluster_id': cluster_id}
 
 
 def forecast_parameters(cluster_id: str) -> dict[str, str]:
     return {
         'cluster_id': cluster_id,
         'history_window': '30d',
-        'forecast_horizon': '90d',
-        'resource': 'all',
-        'method': 'linear',
     }
 
 

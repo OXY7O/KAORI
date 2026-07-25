@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, cast
 
 from flask import current_app
 
@@ -13,6 +13,11 @@ from app.common.dependencies import (
     prometheus_connection_blocker,
 )
 from app.integrations.prometheus.exceptions import PrometheusError
+from app.intelligence.recommendation_engine import (
+    build_utilization_actionable_recommendations,
+    count_actionable_recommendations,
+    format_recommendation_cards,
+)
 
 ALLOWED_TREND_HOURS = (1, 6, 12, 24, 168, 720, 1440)
 TREND_STEP_MAP = {
@@ -55,26 +60,186 @@ def _empty_summary() -> dict[str, int | float]:
     }
 
 
-def get_utilization_trend_context(query_args: Mapping[str, Any]) -> dict[str, Any]:
-    _, cluster, service, dependency_context = build_analysis_utilization_context(query_args)
-    dependency_blocker = dependency_context.get('dependency_blocker')
-    if dependency_blocker:
-        return {'dependency_blocker': dependency_blocker}
-    if cluster is None or service is None:
-        return {'dependency_blocker': cluster_required_blocker()}
-    if not isinstance(service, UtilizationService):
-        return {'dependency_blocker': prometheus_connection_blocker(cluster, detail='Utilization service unavailable.')}
+def _empty_cluster_info() -> dict[str, int | float | str]:
+    return {
+        'kubernetes_version': '-',
+        'total_nodes': 0,
+        'ready_nodes': 0,
+        'not_ready_nodes': 0,
+        'worker_nodes': 0,
+        'master_nodes': 0,
+        'cpu_capacity': 0,
+        'memory_capacity': 0,
+        'pod_capacity': 0,
+    }
 
+
+def _empty_risk_assessment() -> dict[str, dict[str, int | float | str]]:
+    return {
+        resource: {
+            'status': 'Normal',
+            'reason': 'No utilization data available',
+            'pressure_nodes': 0,
+            'utilization': 0,
+        }
+        for resource in ('cpu', 'memory', 'storage', 'pods')
+    }
+
+
+def _recommendation_context(
+    risk_assessment: dict[str, dict[str, int | float | str]],
+    top_cpu_consumers: list[dict[str, Any]],
+    top_memory_consumers: list[dict[str, Any]],
+) -> dict[str, Any]:
+    recommendations = build_utilization_actionable_recommendations(
+        {
+            'risk_assessment': risk_assessment,
+            'top_cpu_consumers': top_cpu_consumers,
+            'top_memory_consumers': top_memory_consumers,
+        }
+    )
+    return {
+        'actionable_recommendations': recommendations,
+        'recommendation_cards': format_recommendation_cards(
+            recommendations,
+            default_title='Continue utilization monitoring',
+            default_description=(
+                'No actionable utilization recommendation was generated from the current risk signals. '
+                'Continue monitoring CPU, memory, storage, pods, and recurring hotspots.'
+            ),
+            default_source='utilization',
+            default_action_type='utilization_review',
+        ),
+        'recommendation_count': count_actionable_recommendations(recommendations),
+        'top_cpu_consumers': top_cpu_consumers,
+        'top_memory_consumers': top_memory_consumers,
+    }
+
+
+def _dependency_context(query_args: Mapping[str, Any]) -> tuple[Any, UtilizationService | None, dict[str, Any]]:
+    _, cluster, service, context = build_analysis_utilization_context(
+        query_args,
+        check_prometheus_connection=False,
+    )
+    blocker = context.get('dependency_blocker')
+    if blocker:
+        return cluster, None, context
+    if cluster is None:
+        context['dependency_blocker'] = cluster_required_blocker()
+        return None, None, context
+    if not isinstance(service, UtilizationService):
+        context['dependency_blocker'] = prometheus_connection_blocker(
+            cluster,
+            detail='Utilization service unavailable.',
+        )
+        return cluster, None, context
     requirements = service.requirements()
     if not requirements.ok:
         missing = list((requirements.payload or {}).get('missing_capabilities', []))
-        return {
-            'dependency_blocker': prometheus_capability_blocker(
-                cluster,
-                feature_label='Utilization Analytics',
-                missing_capabilities=missing,
+        context['dependency_blocker'] = prometheus_capability_blocker(
+            cluster,
+            feature_label='Utilization Analytics',
+            missing_capabilities=missing,
+        )
+        return cluster, None, context
+    return cluster, service, context
+
+
+def get_utilization_summary_context(query_args: Mapping[str, Any]) -> dict[str, Any]:
+    cluster, service, context = _dependency_context(query_args)
+    summary = _empty_summary()
+    detail_summary = _empty_summary()
+    cluster_info = _empty_cluster_info()
+    risk_assessment = _empty_risk_assessment()
+    detail_risk_assessment = _empty_risk_assessment()
+    base = {
+        **context,
+        'cluster': cluster,
+        'summary': summary,
+        'summary_table': [],
+        'detail_summary': detail_summary,
+        'cluster_info': cluster_info,
+        'risk_assessment': risk_assessment,
+        'detail_risk_assessment': detail_risk_assessment,
+        'available_nodes': [],
+        'available_worker_nodes': [],
+        'selected_node': '',
+        'selected_trend_node': '',
+        'error': None,
+        'prometheus_connected': False,
+        'prometheus_status': context.get('prometheus_status') or {
+            'connected': False,
+            'response_time_ms': None,
+            'label': 'Prometheus Unavailable',
+            'description': 'No successful Prometheus observation is available.',
+        },
+        **_recommendation_context(risk_assessment, [], []),
+    }
+    if cluster is None or service is None:
+        return base
+
+    try:
+        prometheus_status = service.get_prometheus_status()
+        if not prometheus_status.get('connected', False):
+            raise PrometheusError(
+                str(
+                    prometheus_status.get('error')
+                    or prometheus_status.get('description')
+                    or 'Prometheus did not report a healthy connection.'
+                )
             )
-        }
+        available_nodes = service.get_node_names()
+        available_worker_nodes = service.get_worker_node_names()
+        summary = service.get_summary()
+        cluster_info = service.get_cluster_info(summary)
+        summary_table = service.get_summary_table(summary)
+        detail_summary = service.get_detail_summary(node_name=None)
+        risk_assessment = service.get_capacity_pressure_risk(
+            cast(dict[str, int | float], summary)
+        )
+        detail_risk_assessment = service.get_capacity_pressure_risk(
+            cast(dict[str, int | float], detail_summary)
+        )
+        top_cpu_consumers = service.get_top_cpu_consumers()[:5]
+        top_memory_consumers = service.get_top_memory_consumers()[:5]
+        base.update(
+            {
+                'summary': summary,
+                'summary_table': summary_table,
+                'detail_summary': detail_summary,
+                'cluster_info': cluster_info,
+                'risk_assessment': risk_assessment,
+                'detail_risk_assessment': detail_risk_assessment,
+                'available_nodes': available_nodes,
+                'available_worker_nodes': available_worker_nodes,
+                'prometheus_status': prometheus_status,
+                'prometheus_connected': True,
+                'dependency_blocker': None,
+                **_recommendation_context(
+                    risk_assessment,
+                    top_cpu_consumers,
+                    top_memory_consumers,
+                ),
+            }
+        )
+    except PrometheusError as exc:
+        base['dependency_blocker'] = prometheus_connection_blocker(cluster, detail=str(exc))
+    except Exception as exc:
+        current_app.logger.exception(
+            'Unable to materialize utilization summary for cluster %s.',
+            cluster.name,
+        )
+        base['dependency_blocker'] = prometheus_connection_blocker(cluster, detail=str(exc))
+    return base
+
+
+def get_utilization_trend_context(query_args: Mapping[str, Any]) -> dict[str, Any]:
+    cluster, service, context = _dependency_context(query_args)
+    dependency_blocker = context.get('dependency_blocker')
+    if dependency_blocker:
+        return {'cluster': cluster, 'dependency_blocker': dependency_blocker}
+    if cluster is None or service is None:
+        return {'dependency_blocker': cluster_required_blocker()}
 
     trend_hours = _trend_hours(query_args)
     selected_trend_node = str(query_args.get('trend_node', '') or '')
@@ -96,10 +261,10 @@ def get_utilization_trend_context(query_args: Mapping[str, Any]) -> dict[str, An
             node_name=selected_trend_node or None,
         )
     except PrometheusError as exc:
-        return {'dependency_blocker': prometheus_connection_blocker(cluster, detail=str(exc))}
+        return {'cluster': cluster, 'dependency_blocker': prometheus_connection_blocker(cluster, detail=str(exc))}
     except Exception as exc:
         current_app.logger.exception('Unable to materialize utilization trend for cluster %s.', cluster.name)
-        return {'dependency_blocker': prometheus_connection_blocker(cluster, detail=str(exc))}
+        return {'cluster': cluster, 'dependency_blocker': prometheus_connection_blocker(cluster, detail=str(exc))}
 
     return {
         'cluster': cluster,
@@ -109,6 +274,44 @@ def get_utilization_trend_context(query_args: Mapping[str, Any]) -> dict[str, An
         'allowed_trend_hours': list(ALLOWED_TREND_HOURS),
         'available_worker_nodes': available_worker_nodes,
         'selected_trend_node': selected_trend_node,
+        'error': None,
+        'dependency_blocker': None,
+    }
+
+
+def get_utilization_node_context(query_args: Mapping[str, Any]) -> dict[str, Any]:
+    cluster, service, context = _dependency_context(query_args)
+    dependency_blocker = context.get('dependency_blocker')
+    if dependency_blocker:
+        return {'cluster': cluster, 'dependency_blocker': dependency_blocker}
+    if cluster is None or service is None:
+        return {'dependency_blocker': cluster_required_blocker()}
+
+    selected_node = str(query_args.get('node', '') or '')
+    try:
+        available_nodes = service.get_node_names()
+        if selected_node not in available_nodes:
+            selected_node = ''
+        detail_summary = service.get_detail_summary(node_name=selected_node or None)
+        detail_risk_assessment = service.get_capacity_pressure_risk(
+            cast(dict[str, int | float], detail_summary),
+            selected_node or None,
+        )
+    except PrometheusError as exc:
+        return {'cluster': cluster, 'dependency_blocker': prometheus_connection_blocker(cluster, detail=str(exc))}
+    except Exception as exc:
+        current_app.logger.exception(
+            'Unable to materialize utilization node detail for cluster %s.',
+            cluster.name,
+        )
+        return {'cluster': cluster, 'dependency_blocker': prometheus_connection_blocker(cluster, detail=str(exc))}
+
+    return {
+        'cluster': cluster,
+        'detail_summary': detail_summary,
+        'detail_risk_assessment': detail_risk_assessment,
+        'available_nodes': available_nodes,
+        'selected_node': selected_node,
         'error': None,
         'dependency_blocker': None,
     }

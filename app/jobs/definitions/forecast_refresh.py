@@ -34,8 +34,7 @@ FORECAST_REFRESH_DEFINITION = JobDefinition(
         'remains available during refresh.'
     ),
     default_configuration={
-        'history_windows': ['30d', '90d'],
-        'forecast_horizons': ['90d', '180d', '365d'],
+        'history_windows': ['7d', '30d', '90d'],
         'freshness_minutes': 120,
         'stale_grace_minutes': 4320,
     },

@@ -28,19 +28,49 @@ _CORE_CAPABILITIES = {
 
 _MODULE_REQUIREMENTS: dict[str, tuple[str, ...]] = {
     'app.prometheus': ('instant_query', 'kubernetes_identity'),
-    'app.analytics.utilization': ('instant_query', 'range_query', 'utilization_metrics'),
-    'app.analytics.capacity': ('instant_query', 'range_query', 'capacity_metrics', 'resource_requests_limits'),
-    'app.analytics.storage': ('instant_query', 'range_query', 'pvc_usage', 'node_filesystem_identity'),
-    'app.analytics.workload': ('instant_query', 'range_query', 'workload_metrics'),
-    'app.analytics.forecast': ('range_query', 'long_term_history'),
-    'app.analytics.top_consumers': ('instant_query', 'resource_requests_limits', 'workload_metrics'),
+    'app.analytics.utilization': (
+        'instant_query',
+        'range_query',
+        'kubernetes_identity',
+        'utilization_metrics',
+        'node_filesystem_identity',
+    ),
+    'app.analytics.capacity': (
+        'instant_query',
+        'range_query',
+        'kubernetes_identity',
+        'capacity_metrics',
+        'resource_requests_limits',
+    ),
+    'app.analytics.storage': (
+        'instant_query',
+        'kubernetes_identity',
+        'pvc_usage',
+        'node_filesystem_identity',
+    ),
+    'app.analytics.workload': (
+        'instant_query',
+        'range_query',
+        'kubernetes_identity',
+        'workload_metrics',
+        'resource_requests_limits',
+    ),
+    'app.analytics.forecast': ('range_query', 'long_term_history', 'capacity_metrics'),
+    'app.analytics.top_consumers': (
+        'instant_query',
+        'kubernetes_identity',
+        'workload_metrics',
+        'resource_requests_limits',
+        'capacity_metrics',
+        'pvc_usage',
+    ),
 }
 
 _MODULE_DESCRIPTIONS: dict[str, str] = {
     'app.prometheus': 'Kubernetes overview and metric-source context.',
     'app.analytics.utilization': 'Current and historical CPU, memory, pod, and pressure utilization.',
     'app.analytics.capacity': 'Worker capacity, requests, limits, overcommit, and headroom.',
-    'app.analytics.storage': 'PVC usage, node filesystem capacity, and storage trends.',
+    'app.analytics.storage': 'Current PVC usage and node filesystem capacity from committed worker snapshots.',
     'app.analytics.workload': 'Workload ownership, quota, QoS, placement, and right-sizing.',
     'app.analytics.forecast': 'Long-range trend windows and forecast inputs.',
     'app.analytics.top_consumers': 'Ranked workload and namespace consumption analysis.',
@@ -59,35 +89,72 @@ _RESOLUTION_CONSUMERS: tuple[dict[str, Any], ...] = (
         'label': 'Utilization Analytics',
         'icon': 'gauge',
         'binding_capabilities': ('metrics', 'utilization'),
-        'technical_capabilities': ('instant_query', 'range_query', 'utilization_metrics'),
+        'technical_capabilities': (
+            'instant_query',
+            'range_query',
+            'kubernetes_identity',
+            'utilization_metrics',
+            'node_filesystem_identity',
+        ),
     },
     {
         'key': 'capacity',
         'label': 'Capacity Analytics',
         'icon': 'cpu',
         'binding_capabilities': ('metrics', 'capacity'),
-        'technical_capabilities': ('instant_query', 'range_query', 'capacity_metrics'),
+        'technical_capabilities': (
+            'instant_query',
+            'range_query',
+            'kubernetes_identity',
+            'capacity_metrics',
+            'resource_requests_limits',
+        ),
     },
     {
         'key': 'storage',
         'label': 'Storage Analytics',
         'icon': 'database',
         'binding_capabilities': ('metrics', 'storage'),
-        'technical_capabilities': ('instant_query', 'range_query', 'pvc_usage', 'node_filesystem_identity'),
+        'technical_capabilities': (
+            'instant_query',
+            'kubernetes_identity',
+            'pvc_usage',
+            'node_filesystem_identity',
+        ),
     },
     {
         'key': 'workload',
         'label': 'Workload Analytics',
         'icon': 'boxes',
         'binding_capabilities': ('metrics', 'workload'),
-        'technical_capabilities': ('instant_query', 'range_query', 'workload_metrics'),
+        'technical_capabilities': (
+            'instant_query',
+            'range_query',
+            'kubernetes_identity',
+            'workload_metrics',
+            'resource_requests_limits',
+        ),
     },
     {
         'key': 'forecast',
         'label': 'Forecast',
         'icon': 'chart-spline',
         'binding_capabilities': ('metrics', 'forecast'),
-        'technical_capabilities': ('range_query', 'long_term_history'),
+        'technical_capabilities': ('range_query', 'long_term_history', 'capacity_metrics'),
+    },
+    {
+        'key': 'top_consumers',
+        'label': 'Top Consumers',
+        'icon': 'list-ordered',
+        'binding_capabilities': ('metrics', 'top_consumers'),
+        'technical_capabilities': (
+            'instant_query',
+            'kubernetes_identity',
+            'workload_metrics',
+            'resource_requests_limits',
+            'capacity_metrics',
+            'pvc_usage',
+        ),
     },
 )
 
@@ -312,13 +379,13 @@ def _module_readiness_rows(
     for domain, required in _MODULE_REQUIREMENTS.items():
         state = module_state.get(domain) or {}
         missing = [key for key in required if key not in available_capabilities]
+        blocked_count = int(state.get('blocked_count') or 0)
         if not instance.last_validated_at:
-            default_status = 'not_observed'
-        else:
-            default_status = 'ready' if not missing else 'degraded'
-        status = str(state.get('status') or default_status)
-        if instance.last_validated_at and missing and status == 'ready':
+            status = 'not_observed'
+        elif missing or blocked_count:
             status = 'degraded'
+        else:
+            status = 'ready'
         rows.append(
             {
                 'key': domain,
@@ -338,7 +405,11 @@ def _module_readiness_rows(
                     else (
                         'No action is required. Revalidate after metrics, labels, query rules, retention, or endpoint behavior changes.'
                         if not missing and status == 'ready'
-                        else f'Restore the missing capability evidence, then rerun Full Validation: {", ".join(_capability_label(key) for key in missing) or "review blocked query contracts"}.'
+                        else (
+                            f'Restore the missing capability evidence, then rerun Full Validation: {", ".join(_capability_label(key) for key in missing)}.'
+                            if missing
+                            else 'Review the blocked registered queries and rerun Full Validation after correcting the PromQL or metric-label contract.'
+                        )
                     )
                 ),
                 'ready_count': state.get('ready_count', 0),

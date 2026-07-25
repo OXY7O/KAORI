@@ -13,14 +13,12 @@
                                     'analytics.storage_persistent_summary',
                                     cluster_id=cluster.id if cluster else '',
                                     namespace=selected_namespace,
-                                    time_range=selected_time_range,
                                     storage_tab='pvc'
                                 ) %}
                 {% set pv_tab_url = url_for(
                                     'analytics.storage_persistent_summary',
                                     cluster_id=cluster.id if cluster else '',
                                     namespace=selected_namespace,
-                                    time_range=selected_time_range,
                                     storage_tab='pv'
                                 ) %}
                 <a href="{{ pvc_tab_url }}"
@@ -90,7 +88,6 @@
                        name="cluster_id"
                        value="{{ cluster.id if cluster else '' }}" />
                 <input type="hidden" name="namespace" value="{{ selected_namespace }}" />
-                <input type="hidden" name="time_range" value="{{ selected_time_range }}" />
                 <input type="hidden" name="storage_tab" value="pvc" />
                 <input type="hidden" name="pvc_page" value="1" />
                 <input type="text"
@@ -241,7 +238,6 @@
                        name="cluster_id"
                        value="{{ cluster.id if cluster else '' }}" />
                 <input type="hidden" name="namespace" value="{{ selected_namespace }}" />
-                <input type="hidden" name="time_range" value="{{ selected_time_range }}" />
                 <input type="hidden" name="storage_tab" value="pv" />
                 <input type="hidden" name="pv_page" value="1" />
                 <input type="text"

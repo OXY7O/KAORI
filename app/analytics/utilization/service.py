@@ -1085,10 +1085,7 @@ class UtilizationService:
 def get_prometheus_status_snapshot(
     cluster_id: str,
 ) -> dict[str, Any]:
-    cluster = get_selected_cluster(
-        cluster_id,
-    )
-
+    cluster = get_selected_cluster(cluster_id)
     if not cluster:
         return {
             'configured': False,
@@ -1100,107 +1097,55 @@ def get_prometheus_status_snapshot(
             'response_time_ms': None,
             'message': 'Cluster is not available.',
         }
-
-    try:
-        service = _build_utilization_service(
-            cluster,
-        )
-
-        status = service.get_prometheus_status()
-        connected = bool(
-            status.get(
-                'connected',
-                False,
-            )
-        )
-
+    instance = resolve_instance_for_cluster(cluster.id)
+    if instance is None or not instance.endpoint.strip():
         return {
-            'configured': True,
-            'connected': connected,
-            'status': 'connected' if connected else 'disconnected',
-            'status_label': 'Connected' if connected else 'Disconnected',
-            'status_tone': 'green' if connected else 'red',
-            'endpoint': _get_cluster_prometheus_endpoint(
-                cluster,
-            ),
-            'response_time_ms': status.get(
-                'response_time_ms',
-            ),
-            'message': str(
-                status.get(
-                    'description',
-                    'Prometheus query completed successfully.',
-                )
-            ),
-        }
-
-    except Exception as exc:
-        return {
-            'configured': True,
+            'configured': False,
             'connected': False,
-            'status': 'error',
-            'status_label': 'Disconnected',
-            'status_tone': 'red',
-            'endpoint': _get_cluster_prometheus_endpoint(
-                cluster,
-            ),
+            'status': 'not_configured',
+            'status_label': 'Not configured',
+            'status_tone': 'gray',
+            'endpoint': '',
             'response_time_ms': None,
-            'message': str(
-                exc,
-            ),
+            'message': 'Prometheus is not configured for the selected cluster.',
         }
-
+    connected = str(instance.last_status or '').lower() == 'connected'
+    return {
+        'configured': True,
+        'connected': connected,
+        'status': 'connected' if connected else str(instance.last_status or 'disconnected'),
+        'status_label': 'Connected' if connected else 'Disconnected',
+        'status_tone': 'green' if connected else 'red',
+        'endpoint': instance.endpoint,
+        'response_time_ms': instance.last_response_time_ms,
+        'message': str(
+            instance.validation_message
+            or instance.last_error
+            or ('Latest persisted runtime observation is connected.' if connected else 'Latest persisted runtime observation is not connected.')
+        ),
+    }
 
 def get_utilization_snapshot(
     cluster_id: str,
     time_range: str = '24h',
 ) -> dict[str, float]:
     _ = time_range
+    from app.analytics.materialization.service import read_snapshot
 
-    cluster = get_selected_cluster(
-        cluster_id,
+    result = read_snapshot(
+        cluster_id=cluster_id,
+        dataset_key='analytics.utilization.summary',
+        parameters={'cluster_id': str(cluster_id)},
     )
-
-    if not cluster:
+    summary = (result.context or {}).get('summary') if result.available else None
+    if not isinstance(summary, dict):
         return _empty_utilization_snapshot()
-
-    try:
-        service = _build_utilization_service(
-            cluster,
-        )
-
-        summary = service.get_summary()
-
-        return {
-            'cpu_percent': _safe_float(
-                summary.get(
-                    'cpu_utilization',
-                    0,
-                )
-            ),
-            'memory_percent': _safe_float(
-                summary.get(
-                    'memory_utilization',
-                    0,
-                )
-            ),
-            'storage_percent': _safe_float(
-                summary.get(
-                    'storage_utilization',
-                    0,
-                )
-            ),
-            'pod_percent': _safe_float(
-                summary.get(
-                    'pod_utilization',
-                    0,
-                )
-            ),
-        }
-
-    except Exception:
-        return _empty_utilization_snapshot()
-
+    return {
+        'cpu_percent': _safe_float(summary.get('cpu_utilization', 0)),
+        'memory_percent': _safe_float(summary.get('memory_utilization', 0)),
+        'storage_percent': _safe_float(summary.get('storage_utilization', 0)),
+        'pod_percent': _safe_float(summary.get('pod_utilization', 0)),
+    }
 
 def _empty_utilization_snapshot() -> dict[str, float]:
     return {

@@ -5,24 +5,25 @@ from typing import Any
 
 from flask import current_app
 
-from app.alertmanager.bindings import resolve_sources
 from app.alertmanager.consumer import KUBERNETES_CLUSTER_SCOPE
-from app.analytics.materialization.catalog import FORECAST_DATASET, list_analytics_datasets
+from app.alertmanager.resolver import resolve_alertmanager_sources
+from app.analytics.materialization.catalog import (
+    FORECAST_DATASET,
+    canonical_parameters,
+    get_dataset,
+    list_analytics_datasets,
+)
 from app.analytics.materialization.service import get_snapshot, normalize_parameters
 from app.analytics.tasks import materialize_analytics_snapshots, materialize_forecast_snapshots
-from app.dashboards.kubernetes.snapshots import (
-    ALERTS_DATASET_KEY,
-    CAPACITY_DATASET_KEY,
-    TOP_CONSUMERS_DATASET_KEY,
-)
+from app.dashboards.kubernetes.snapshots import CAPACITY_DATASET_KEY
 from app.jobs.definitions.base import RegisteredJobDispatchResult
 from app.jobs.dispatcher import enqueue_canonical_job
 from app.models import AnalyticsSnapshot, Cluster
 from app.models.job import JobExecution, JobPolicy
 from app.prometheus.repository import resolve_instance_for_cluster
+from app.prometheus.resolver import resolve_prometheus_sources
 
-_DASHBOARD_REQUIRED_24H_DATASETS = {CAPACITY_DATASET_KEY, TOP_CONSUMERS_DATASET_KEY}
-_DASHBOARD_FORECAST_PAIR = ('30d', '90d')
+_DASHBOARD_REQUIRED_24H_DATASETS = {CAPACITY_DATASET_KEY}
 
 
 def _registered_clusters() -> list[Cluster]:
@@ -38,6 +39,68 @@ def _prometheus_eligible_clusters(clusters: list[Cluster] | None = None) -> list
     ]
 
 
+def _prometheus_dataset_eligible(cluster: Cluster, dataset_key: str) -> bool:
+    dataset = get_dataset(dataset_key)
+    try:
+        resolution = resolve_prometheus_sources(
+            scope_type=KUBERNETES_CLUSTER_SCOPE,
+            scope_key=str(cluster.id),
+            required_binding_capabilities=dataset.required_binding_capabilities,
+            required_technical_capabilities=dataset.required_capabilities,
+        )
+    except Exception:
+        return False
+    return resolution.selected is not None
+
+
+def _alert_dataset_eligible(
+    cluster: Cluster,
+    dataset_key: str,
+    parameters: dict[str, Any] | None = None,
+) -> bool:
+    dataset = get_dataset(dataset_key)
+    source = canonical_parameters(dataset_key, parameters).get('source', 'auto').lower()
+
+    if source in {'auto', 'alertmanager'}:
+        try:
+            alertmanager = resolve_alertmanager_sources(
+                scope_type=KUBERNETES_CLUSTER_SCOPE,
+                scope_key=str(cluster.id),
+            )
+        except Exception:
+            alertmanager = None
+        if alertmanager is not None and alertmanager.selected is not None:
+            return True
+
+    if source in {'auto', 'prometheus'}:
+        try:
+            prometheus = resolve_prometheus_sources(
+                scope_type=KUBERNETES_CLUSTER_SCOPE,
+                scope_key=str(cluster.id),
+                required_binding_capabilities=dataset.required_binding_capabilities,
+                required_technical_capabilities=('instant_query', 'kubernetes_identity'),
+            )
+        except Exception:
+            prometheus = None
+        if prometheus is not None and prometheus.selected is not None:
+            return True
+
+    return False
+
+
+def _dataset_eligible(
+    cluster: Cluster,
+    dataset_key: str,
+    parameters: dict[str, Any] | None = None,
+) -> bool:
+    dataset = get_dataset(dataset_key)
+    if dataset.source_kind == 'prometheus':
+        return _prometheus_dataset_eligible(cluster, dataset_key)
+    if dataset.source_kind == 'alert':
+        return _alert_dataset_eligible(cluster, dataset_key, parameters)
+    return True
+
+
 def _analytics_eligible_clusters() -> tuple[list[Cluster], set[str]]:
     clusters = _registered_clusters()
     prometheus_clusters = _prometheus_eligible_clusters(clusters)
@@ -47,11 +110,7 @@ def _analytics_eligible_clusters() -> tuple[list[Cluster], set[str]]:
         cluster_id = str(cluster.id)
         if cluster_id in prometheus_ids:
             continue
-        try:
-            sources = resolve_sources(scope_type=KUBERNETES_CLUSTER_SCOPE, scope_key=cluster_id)
-        except Exception:
-            sources = []
-        if sources:
+        if _alert_dataset_eligible(cluster, 'analytics.alerts', {'source': 'alertmanager'}):
             eligible.append(cluster)
     return eligible, prometheus_ids
 
@@ -67,7 +126,7 @@ def _range_freshness_minutes(value: str | None, base_minutes: int) -> int:
 
 
 def _forecast_freshness_minutes(history_window: str, base_minutes: int) -> int:
-    minimum_by_history = {'30d': 120, '90d': 360}
+    minimum_by_history = {'7d': 60, '30d': 120, '90d': 360}
     return max(base_minutes, minimum_by_history.get(history_window, base_minutes))
 
 
@@ -113,26 +172,61 @@ def _analytics_work_items(
         eligible_cluster_ids = {str(cluster.id) for cluster in clusters}
         if cluster_id not in eligible_cluster_ids:
             return []
-        if dataset_key != ALERTS_DATASET_KEY and cluster_id not in prometheus_cluster_ids:
+        dataset = get_dataset(dataset_key)
+        if dataset.source_kind == 'prometheus' and cluster_id not in prometheus_cluster_ids:
             return []
+        cluster = next((item for item in clusters if str(item.id) == cluster_id), None)
+        snapshot_parameters = canonical_parameters(
+            dataset_key,
+            parameters.get('snapshot_parameters'),
+        )
+        if cluster is None or not _dataset_eligible(cluster, dataset_key, snapshot_parameters):
+            return []
+        selected_range = snapshot_parameters.get('time_range')
+        if dataset.key == 'analytics.utilization.trend':
+            selected_range = {
+                '1': '1h',
+                '6': '6h',
+                '12': '12h',
+                '24': '24h',
+                '168': '7d',
+                '720': '30d',
+                '1440': '60d',
+            }.get(snapshot_parameters.get('trend_hours', ''))
         return [
             {
                 'cluster_id': cluster_id,
                 'dataset_key': dataset_key,
-                'parameters': normalize_parameters(parameters.get('snapshot_parameters')),
-                'freshness_minutes': freshness_minutes,
-                'stale_grace_minutes': stale_grace_minutes,
+                'parameters': snapshot_parameters,
+                'freshness_minutes': _range_freshness_minutes(
+                    selected_range,
+                    max(freshness_minutes, dataset.freshness_minutes),
+                ),
+                'stale_grace_minutes': min(
+                    stale_grace_minutes,
+                    dataset.stale_grace_minutes,
+                ),
             }
         ]
     ranges = _configured_values(policy, 'time_ranges', ['24h', '7d', '30d', '60d'])
-    trend_range_by_hours = {'24': '24h', '168': '7d', '720': '30d', '1440': '60d'}
+    trend_range_by_hours = {
+        '1': '1h',
+        '6': '6h',
+        '12': '12h',
+        '24': '24h',
+        '168': '7d',
+        '720': '30d',
+        '1440': '60d',
+    }
     work_items: list[dict[str, Any]] = []
     for cluster in clusters:
         cluster_id = str(cluster.id)
         for dataset in list_analytics_datasets():
-            if dataset.key != ALERTS_DATASET_KEY and cluster_id not in prometheus_cluster_ids:
+            if dataset.source_kind == 'prometheus' and cluster_id not in prometheus_cluster_ids:
                 continue
             for default_parameters in dataset.default_parameters:
+                if not _dataset_eligible(cluster, dataset.key, default_parameters):
+                    continue
                 time_range = default_parameters.get('time_range')
                 trend_range = trend_range_by_hours.get(str(default_parameters.get('trend_hours') or ''))
                 selected_range = time_range or trend_range
@@ -141,11 +235,17 @@ def _analytics_work_items(
                 )
                 if selected_range and selected_range not in ranges and not dashboard_required_range:
                     continue
-                snapshot_parameters = {
-                    'cluster_id': str(cluster.id),
-                    **default_parameters,
-                }
-                item_freshness = _range_freshness_minutes(selected_range, freshness_minutes)
+                snapshot_parameters = canonical_parameters(
+                    dataset.key,
+                    {
+                        'cluster_id': str(cluster.id),
+                        **default_parameters,
+                    },
+                )
+                item_freshness = _range_freshness_minutes(
+                    selected_range,
+                    max(freshness_minutes, dataset.freshness_minutes),
+                )
                 if only_due and not _snapshot_due(
                     cluster_id=cluster.id,
                     dataset_key=dataset.key,
@@ -158,7 +258,10 @@ def _analytics_work_items(
                         'dataset_key': dataset.key,
                         'parameters': snapshot_parameters,
                         'freshness_minutes': item_freshness,
-                        'stale_grace_minutes': stale_grace_minutes,
+                        'stale_grace_minutes': min(
+                            stale_grace_minutes,
+                            dataset.stale_grace_minutes,
+                        ),
                     }
                 )
     return work_items
@@ -175,30 +278,57 @@ def _forecast_work_items(
     freshness_minutes = int(configuration.get('freshness_minutes') or 120)
     stale_grace_minutes = int(configuration.get('stale_grace_minutes') or 4320)
     if parameters and parameters.get('dataset_key') and parameters.get('cluster_id'):
+        cluster_id = str(parameters['cluster_id'])
+        cluster = next((item for item in clusters if str(item.id) == cluster_id), None)
+        if cluster is None or not _prometheus_dataset_eligible(cluster, FORECAST_DATASET.key):
+            return []
+        snapshot_parameters = canonical_parameters(
+            FORECAST_DATASET.key,
+            parameters.get('snapshot_parameters'),
+        )
+        history_window = snapshot_parameters.get('history_window', '30d')
         return [
             {
-                'cluster_id': str(parameters['cluster_id']),
+                'cluster_id': cluster_id,
                 'dataset_key': FORECAST_DATASET.key,
-                'parameters': normalize_parameters(parameters.get('snapshot_parameters')),
-                'freshness_minutes': freshness_minutes,
-                'stale_grace_minutes': stale_grace_minutes,
+                'parameters': snapshot_parameters,
+                'freshness_minutes': _forecast_freshness_minutes(
+                    history_window,
+                    freshness_minutes,
+                ),
+                'stale_grace_minutes': min(
+                    stale_grace_minutes,
+                    FORECAST_DATASET.stale_grace_minutes,
+                ),
             }
         ]
-    history_windows = _configured_values(policy, 'history_windows', ['30d', '90d'])
-    horizons = _configured_values(policy, 'forecast_horizons', ['90d', '180d', '365d'])
-    parameter_pairs = [(history_window, horizon) for history_window in history_windows for horizon in horizons]
-    if _DASHBOARD_FORECAST_PAIR not in parameter_pairs:
-        parameter_pairs.insert(0, _DASHBOARD_FORECAST_PAIR)
+    configured_history = {
+        value
+        for value in _configured_values(
+            policy,
+            'history_windows',
+            ['7d', '30d', '90d'],
+        )
+        if value in {'7d', '30d', '90d'}
+    }
+    configured_history.add('30d')
+    history_windows = [
+        value
+        for value in ('7d', '30d', '90d')
+        if value in configured_history
+    ]
     work_items: list[dict[str, Any]] = []
     for cluster in clusters:
-        for history_window, horizon in parameter_pairs:
-            snapshot_parameters = {
-                'cluster_id': str(cluster.id),
-                'history_window': history_window,
-                'forecast_horizon': horizon,
-                'resource': 'all',
-                'method': 'linear',
-            }
+        if not _prometheus_dataset_eligible(cluster, FORECAST_DATASET.key):
+            continue
+        for history_window in history_windows:
+            snapshot_parameters = canonical_parameters(
+                FORECAST_DATASET.key,
+                {
+                    'cluster_id': str(cluster.id),
+                    'history_window': history_window,
+                },
+            )
             if only_due and not _snapshot_due(
                 cluster_id=cluster.id,
                 dataset_key=FORECAST_DATASET.key,
@@ -214,7 +344,10 @@ def _forecast_work_items(
                         history_window,
                         freshness_minutes,
                     ),
-                    'stale_grace_minutes': stale_grace_minutes,
+                    'stale_grace_minutes': min(
+                        stale_grace_minutes,
+                        FORECAST_DATASET.stale_grace_minutes,
+                    ),
                 }
             )
     return work_items
@@ -242,7 +375,6 @@ def _dispatch(
 
     if forecasting:
         clusters = _prometheus_eligible_clusters()
-        prometheus_cluster_ids = {str(cluster.id) for cluster in clusters}
     else:
         clusters, prometheus_cluster_ids = _analytics_eligible_clusters()
     if not clusters:
@@ -264,8 +396,12 @@ def _dispatch(
     )
     if not work_items:
         return RegisteredJobDispatchResult(
-            status='current',
-            message='All configured snapshots are still within their freshness windows.',
+            status='current' if only_due else 'blocked',
+            message=(
+                'All configured snapshots are still within their freshness windows.'
+                if only_due
+                else 'No configured dataset has an eligible source and capability contract.'
+            ),
         )
     task = materialize_forecast_snapshots if forecasting else materialize_analytics_snapshots
     queue_name = current_app.config['FORECASTING_CELERY_QUEUE' if forecasting else 'ANALYTICS_CELERY_QUEUE']

@@ -2,207 +2,78 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.analytics.alerts.anomalies import load_prometheus_anomaly_metrics
 from app.analytics.alerts.contracts import (
     AlertSelectedClusterSignalOverview,
     AlertSourceStatus,
     AlertsSnapshot,
     NormalizedAlert,
 )
-from app.analytics.alerts.health import build_integration_status, build_source_health
 from app.analytics.alerts.inhibition import build_inhibition_summary
-from app.analytics.alerts.ownership import build_empty_ownership_summary, build_ownership_summary
-from app.analytics.alerts.readiness import (
-    build_empty_incident_readiness,
-    build_incident_readiness,
-)
-from app.analytics.alerts.routing import build_empty_routing_summary, build_routing_summary
-from app.analytics.alerts.selection import get_selected_cluster
-from app.analytics.alerts.signals import build_selected_cluster_signal_overview
-from app.analytics.alerts.silences import build_empty_silence_summary, build_silence_summary
-from app.analytics.alerts.sources import load_alerts_by_source
-from app.intelligence.recommendation_engine import (
-    build_alerts_actionable_recommendations,
-    count_actionable_recommendations,
-)
+from app.analytics.alerts.ownership import build_empty_ownership_summary
+from app.analytics.alerts.readiness import build_empty_incident_readiness
+from app.analytics.alerts.routing import build_empty_routing_summary
+from app.analytics.alerts.silences import build_empty_silence_summary
+from app.intelligence.recommendation_engine import count_actionable_recommendations
 
 
 def get_alerts_snapshot(
     cluster_id: str,
 ) -> AlertsSnapshot:
-    selected_cluster = get_selected_cluster(
+    from app.analytics.materialization.service import read_snapshot
+
+    result = read_snapshot(
         cluster_id=cluster_id,
+        dataset_key='analytics.alerts',
+        parameters={'cluster_id': str(cluster_id), 'source': 'auto'},
     )
-
-    if selected_cluster is None:
+    context = result.context or {}
+    if not result.available:
         return _empty_alerts_snapshot()
-
-    try:
-        alerts, source_status = load_alerts_by_source(
-            cluster=selected_cluster,
-            source='auto',
-        )
-
-        anomalies = load_prometheus_anomaly_metrics(
-            cluster=selected_cluster,
-        )
-
-        signal_overview = build_selected_cluster_signal_overview(
-            cluster=selected_cluster,
-            alerts=alerts,
-            anomalies=anomalies,
-            source_status=source_status,
-        )
-
-        firing_alerts = _count_alerts_by_status(
-            alerts=alerts,
-            statuses=[
-                'firing',
-                'active',
-            ],
-        )
-
-        pending_alerts = _count_alerts_by_status(
-            alerts=alerts,
-            statuses=[
-                'pending',
-            ],
-        )
-
-        critical_alerts = _count_alerts_by_severity(
-            alerts=alerts,
-            severity='critical',
-        )
-
-        warning_alerts = _count_alerts_by_severity(
-            alerts=alerts,
-            severity='warning',
-        )
-
-        highest_alert = _get_highest_severity_alert(
-            alerts,
-        )
-
-        highest_severity = _resolve_highest_severity(
+    alerts = list(context.get('all_alerts') or [])
+    anomalies = list(context.get('all_anomalies') or [])
+    source_status = context.get('source_status') or _empty_source_status()
+    signal_overview = context.get('selected_cluster_signal_overview') or {}
+    firing_alerts = _count_alerts_by_status(alerts=alerts, statuses=['firing', 'active'])
+    pending_alerts = _count_alerts_by_status(alerts=alerts, statuses=['pending'])
+    critical_alerts = _count_alerts_by_severity(alerts=alerts, severity='critical')
+    warning_alerts = _count_alerts_by_severity(alerts=alerts, severity='warning')
+    highest_alert = _get_highest_severity_alert(alerts)
+    recommendations = context.get('actionable_recommendations') or []
+    return {
+        'firing_alerts': firing_alerts,
+        'pending_alerts': pending_alerts,
+        'critical_alerts': critical_alerts,
+        'warning_alerts': warning_alerts,
+        'recent_anomalies': len(anomalies),
+        'highest_severity': _resolve_highest_severity(
             critical_alerts=critical_alerts,
             warning_alerts=warning_alerts,
             anomalies=anomalies,
-        )
-
-        highest_severity_description = _resolve_highest_severity_description(
+        ),
+        'highest_severity_description': _resolve_highest_severity_description(
             highest_alert=highest_alert,
             anomalies=anomalies,
             signal_overview=signal_overview,
-        )
-
-        actionable_recommendations = build_alerts_actionable_recommendations(
-            {
-                'alerts': alerts,
-                'all_alerts': alerts,
-                'anomalies': anomalies,
-                'all_anomalies': anomalies,
-                'source_status': source_status,
-                'selected_cluster_signal_overview': signal_overview,
-            }
-        )
-
-        integration_status = build_integration_status(
-            cluster=selected_cluster,
-            source_status=source_status,
-        )
-
-        source_health = build_source_health(
-            cluster=selected_cluster,
-            source_status=source_status,
-            integration_status=integration_status,
-        )
-
-        routing_summary = build_routing_summary(
-            alerts=alerts,
-            source_status=source_status,
-        )
-
-        silence_summary = build_silence_summary(
-            cluster=selected_cluster,
-            alerts=alerts,
-            source_status=source_status,
-        )
-
-        inhibition_summary = build_inhibition_summary(
-            alerts=alerts,
-            source_status=source_status,
-        )
-
-        ownership_summary = build_ownership_summary(
-            alerts=alerts,
-            source_status=source_status,
-        )
-
-        incident_readiness = build_incident_readiness(
-            signal_overview=signal_overview,
-            source_health=source_health,
-            routing_summary=routing_summary,
-            silence_summary=silence_summary,
-            inhibition_summary=inhibition_summary,
-            ownership_summary=ownership_summary,
-        )
-
-        return {
-            'firing_alerts': firing_alerts,
-            'pending_alerts': pending_alerts,
-            'critical_alerts': critical_alerts,
-            'warning_alerts': warning_alerts,
-            'recent_anomalies': len(
-                anomalies,
-            ),
-            'highest_severity': highest_severity,
-            'highest_severity_description': highest_severity_description,
-            'source': source_status.get(
-                'resolved_source',
-                'none',
-            ),
-            'resolved_source': source_status.get(
-                'resolved_source',
-                'none',
-            ),
-            'fallback_used': bool(
-                source_status.get(
-                    'fallback_used',
-                    False,
-                )
-            ),
-            'fallback_reason': source_status.get(
-                'fallback_reason',
-                None,
-            ),
-            'source_connected': bool(
-                source_status.get(
-                    'connected',
-                    False,
-                )
-            ),
-            'source_health': source_health,
-            'routing_summary': routing_summary,
-            'silence_summary': silence_summary,
-            'inhibition_summary': inhibition_summary,
-            'ownership_summary': ownership_summary,
-            'incident_readiness': incident_readiness,
-            'priority': signal_overview.get(
-                'priority',
-                {},
-            ),
-            'insight': signal_overview.get(
-                'insight',
-                {},
-            ),
-            'recommendation_count': count_actionable_recommendations(
-                actionable_recommendations,
-            ),
-        }
-
-    except Exception:
-        return _empty_alerts_snapshot()
-
+        ),
+        'source': source_status.get('resolved_source', 'none'),
+        'resolved_source': source_status.get('resolved_source', 'none'),
+        'fallback_used': bool(source_status.get('fallback_used', False)),
+        'fallback_reason': source_status.get('fallback_reason'),
+        'source_connected': bool(source_status.get('connected', False)),
+        'source_health': context.get('source_health') or {},
+        'routing_summary': context.get('routing_summary') or build_empty_routing_summary(),
+        'silence_summary': context.get('silence_summary') or build_empty_silence_summary(),
+        'inhibition_summary': context.get('inhibition_summary') or build_inhibition_summary(
+            alerts=[], source_status=_empty_source_status()
+        ),
+        'ownership_summary': context.get('ownership_summary') or build_empty_ownership_summary(),
+        'incident_readiness': context.get('incident_readiness') or build_empty_incident_readiness(),
+        'priority': signal_overview.get('priority', {}),
+        'insight': signal_overview.get('insight', {}),
+        'recommendation_count': count_actionable_recommendations(
+            recommendations if isinstance(recommendations, list) else []
+        ),
+    }
 
 def _empty_alerts_snapshot() -> AlertsSnapshot:
     return {

@@ -33,8 +33,7 @@
                            value="{{ cluster.id if cluster else '' }}">
                     <input type="hidden" name="namespace" value="{{ selected_namespace }}">
                     <input type="hidden" name="resource" value="{{ selected_resource }}">
-                    <input type="hidden" name="time_range" value="{{ selected_time_range }}">
-                    <input type="hidden" name="focus" value="{{ selected_focus }}">
+                            <input type="hidden" name="focus" value="{{ selected_focus }}">
                     <input type="hidden" name="page" value="1">
                     <label class="relative block min-w-0">
                         <span class="sr-only">Search consumers</span>
@@ -74,7 +73,6 @@
                                     cluster_id=cluster.id if cluster else '',
                                     namespace=selected_namespace,
                                     resource='all',
-                                    time_range=selected_time_range,
                                     search='',
                                     sort=selected_sort,
                                     page=1,
@@ -85,7 +83,6 @@
                                     cluster_id=cluster.id if cluster else '',
                                     namespace=selected_namespace,
                                     resource='all',
-                                    time_range=selected_time_range,
                                     search='',
                                     sort=selected_sort,
                                     page=1,
@@ -346,7 +343,7 @@
                 <div class="rounded-xl border border-dashed border-outline-strong bg-surface-subtle ">
                     {% set empty_state_icon = "list-filter" %}
                     {% set empty_state_title = "No Consumer Rows Available" %}
-                    {% set empty_state_description = "Adjust the namespace, resource, time range, or search filters to find matching consumer data." %}
+                    {% set empty_state_description = "Adjust the namespace, resource, focus, or search filters to find matching consumer data." %}
                     {% set empty_state_min_height = "min-h-[280px]" %}
                     {% include "components/states/_empty_state.html" %}
                 </div>

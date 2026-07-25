@@ -10,6 +10,6 @@
             </label>
         {% endfor %}
     </div>
-    <p class="mt-2 text-xs leading-5 text-content-muted">Configured ranges are shared across users. KAORI always retains the 24h Capacity and Top Consumers snapshots required by the Kubernetes Operations Dashboard, while missing or stale data is prepared once by the Analytics Worker.</p>
+    <p class="mt-2 text-xs leading-5 text-content-muted">Configured ranges apply to Capacity, Workload, and Utilization Trend snapshots shared across users. KAORI always retains the 24-hour Capacity snapshot required by the Kubernetes Operations Dashboard. Storage and Top Consumers use one current snapshot, while missing or stale data is prepared once by the Analytics Worker.</p>
 </div>
 {% endblock materialization_options %}

@@ -52,6 +52,16 @@ flask db downgrade 20260724_inventory_sync
 
 The downgrade restores the Inventory Sync singleton policy and removes the two new permissions. Do not downgrade after adding additional registered job policies unless their configuration has been exported first, because the legacy table can retain only Inventory Sync.
 
+## Job Cancellation Grace Period
+
+Configure `JOB_CANCEL_GRACE_SECONDS` to control how long KAORI waits for an analytics or forecasting worker to honor cooperative cancellation before the maintenance task escalates with Celery `SIGTERM`.
+
+```env
+JOB_CANCEL_GRACE_SECONDS=120
+```
+
+The maintenance worker and the target analytics or forecasting workers must share the same Celery control plane. After changing the value, restart web, Beat, maintenance, analytics, and forecasting processes so all components load the same configuration.
+
 ## Kubernetes Operations Dashboard Worker Snapshots
 
 The dashboard web process reads committed inventory and analytics snapshots only. This release adds the `dashboard.kubernetes.alerts` dataset and removes live Capacity, Top Consumers, Forecast, and Alerts execution from dashboard HTTP requests.
@@ -76,10 +86,11 @@ Run one manual refresh after deployment:
 The Analytics policy always retains:
 
 - `dashboard.kubernetes.alerts` with `cluster_id`;
+- `analytics.alerts` with `source=auto`;
 - `analytics.capacity` with `time_range=24h`;
-- `analytics.top_consumers` with `time_range=24h`.
+- `analytics.top_consumers` with the current cluster scope only.
 
-The Forecast policy always retains `analytics.forecast` with `history_window=30d`, `forecast_horizon=90d`, `resource=all`, and `method=linear`.
+The Forecast policy always retains `analytics.forecast` with `history_window=30d`. Forecast horizon, resource, and method are projected locally from committed historical input and do not create additional provider queries or snapshot rows.
 
 Verify committed rows:
 

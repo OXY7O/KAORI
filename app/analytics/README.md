@@ -79,10 +79,49 @@ target boundary now; it does not perform the move.
   `AlertmanagerClient` or read Alertmanager persistence models directly.
 - Inventory data supplies identity and snapshot context only.
 - Avoid live Kubernetes API fallback in analytics pages.
-- Global or "All clusters" views use stored snapshot data; live metric and
-  Alertmanager queries require a selected cluster or an explicit asset binding.
+- Web requests must read committed `AnalyticsSnapshot` generations. Prometheus
+  and Alertmanager network calls belong to analytics or forecasting workers.
+- Global or "All clusters" views use stored snapshot data. A selected cluster
+  scopes the committed generation; it does not authorize a live web fallback.
 - Analytics enriches and interprets provider data. It does not replace
   Prometheus, Alertmanager, Thanos, or the Kubernetes API.
+
+## Worker snapshot request boundary
+
+The Kubernetes Analytics request path is worker-first:
+
+```text
+Prometheus / Alertmanager
+        ↓
+Analytics or forecasting worker
+        ↓
+Committed AnalyticsSnapshot
+        ↓
+Web route and local presentation filters
+        ↓
+HTMX or full-page response
+```
+
+The browser request is not allowed to run a heavy provider query. Storage and
+Top Consumers use one current committed snapshot because their previous time
+range selectors did not alter the PromQL contract. Workload and Capacity retain
+materialized time-range dimensions because those ranges change the worker query.
+Forecast materializes historical windows only; forecast horizon, resource, and
+method selectors reproject the committed history in the web process without
+calling Prometheus again.
+
+Snapshot fingerprints contain only provider-query dimensions. Pagination,
+search, status, focus, and other presentation filters must never create a new
+snapshot generation. A missing snapshot renders a stable pending page with the
+same HTMX replacement ID as the requested workspace. A dependency failure
+renders a blocked state; it must never be stored as a ready snapshot payload.
+
+Prometheus connection readiness and analytics feature readiness are separate
+contracts. A Prometheus instance may be connected and generally Ready while a
+specific analytics workspace is Capability Incomplete because exact metrics,
+labels, range history, or request/limit evidence is missing. Module readiness,
+source resolution, worker admission, and the workspace blocker must use the same
+capability tuple as the owning analytics service.
 
 ## Current directory responsibilities
 
@@ -122,15 +161,22 @@ handling, pagination rules, or selected-cluster behavior across workspaces.
 
 ## UI and query contract
 
-Supported time ranges are:
+Materialized time ranges for Capacity and Workload are:
 
 ```text
 1h, 6h, 12h, 24h, 7d, 30d, 60d
 ```
 
+Utilization trend uses its own hour-based snapshot dimension. Forecast history
+uses `7d`, `30d`, and `90d`; its horizon selector is a local projection and does
+not create additional worker snapshots. Storage and Top Consumers show current
+snapshot scope and must not expose a time-range control that does not change the
+provider query.
+
 Use one HTMX loading indicator and preserve filter state across pagination and
-refresh. Capacity Analysis must retain the agreed Cluster → Node selector
-hierarchy.
+refresh. A pending or blocked response must retain the page wrapper selected by
+`hx-select` so the workspace never becomes a blank replacement. Capacity
+Analysis must retain the agreed Cluster → Node selector hierarchy.
 
 ## Analytics overview Prometheus status flow
 
@@ -201,23 +247,19 @@ they must not add asset-specific branches to this package.
 ## Data flow
 
 ```text
-Kubernetes cluster selection
+Analytics worker resolves Alertmanager and Prometheus source contracts
         ↓
-Resolve Alertmanager and Prometheus readiness
+Retrieve Alertmanager alerts, silences, and Prometheus anomaly series
         ↓
-Retrieve Alertmanager alerts and silences
+Normalize and enrich Kubernetes identity, ownership, runbook, and contact data
         ↓
-Retrieve Prometheus alert/anomaly series when required
+Commit `analytics.alerts` and `dashboard.kubernetes.alerts` snapshots
         ↓
-Normalize source-specific payloads
+Web request reads the committed generation
         ↓
-Enrich with Kubernetes labels, namespace, resource, owner, runbook, and contact
+Filter and paginate operator-facing views locally
         ↓
-Build routing, silence, inhibition, ownership, and readiness summaries
-        ↓
-Filter and paginate operator-facing views
-        ↓
-Render Alerts & Anomalies and provide dashboard/report snapshots
+Render Alerts & Anomalies, dashboard sections, and report inputs
 ```
 
 ## Files inside `app/analytics/alerts`
@@ -447,8 +489,9 @@ Heavy Prometheus range queries are not executed independently for every web requ
 
 - `analytics.materialize` uses the `analytics-batch` queue for Capacity, Storage, Workload, Top Consumers, long-range Utilization trends, and the compact `dashboard.kubernetes.alerts` dataset.
 - `analytics.forecast.materialize` uses the dedicated `forecasting` queue for all forecast range queries.
-- Kubernetes Operations always retains the `24h` Capacity and Top Consumers snapshots plus the `30d` history / `90d` horizon Forecast snapshot, even when an operator narrows optional materialization ranges.
-- Alert-only clusters remain eligible for `dashboard.kubernetes.alerts`; Prometheus-backed datasets are never scheduled for those clusters.
+- Kubernetes Operations always retains the `24h` Capacity snapshot, one current Top Consumers snapshot, and the `30d` Forecast history required by dashboard consumers, even when an operator narrows optional materialization ranges.
+- Forecast horizon, resource, and method are projected locally from committed history and never create additional worker queries or snapshot fingerprints.
+- Alert-only clusters remain eligible for both `dashboard.kubernetes.alerts` and `analytics.alerts`; Prometheus-backed datasets are never scheduled for those clusters.
 - Automatic policies are configured under **Platform Operations → Jobs & Executions → Job Configuration**.
 - A stale successful snapshot remains readable during refresh or temporary Prometheus failure.
 - Scheduled executions create `JobExecution` and `AuditEvent` records only; they do not create user notifications or toasts.
@@ -465,4 +508,6 @@ The generic scheduler may inspect Analytics policy every 30 minutes and Forecast
 - 30-day forecast history: at least 120 minutes
 - 90-day forecast history: at least 360 minutes
 
-Manual execution intentionally refreshes all configured combinations. On-demand requests join an active fleet materialization when one exists, preventing a page request from duplicating work already running on the worker.
+Manual execution intentionally refreshes all configured combinations. Scheduled Utilization trend work follows only the configured time ranges; a missing unconfigured trend can still be materialized once on demand. On-demand requests join an active fleet materialization when one exists, preventing a page request from duplicating work already running on the worker. Per-dataset stale-grace limits cap a broad policy value so alert snapshots cannot remain acceptable for the same duration as long-range analytics.
+
+Analytics Overview reads committed database generations directly and does not add a second web or Redis TTL cache. This prevents a fresh worker commit from being hidden behind another presentation cache. Legacy `forecast_horizons` policy JSON is ignored and is removed the next time the Forecast policy is saved.

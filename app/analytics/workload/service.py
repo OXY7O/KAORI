@@ -30,8 +30,6 @@ from app.intelligence.recommendation_engine import (
     count_actionable_recommendations,
     format_recommendation_cards,
 )
-from app.models import Cluster
-from app.prometheus.service import PrometheusService
 
 NAMESPACE_ACTIVE_QUERY = get_query_expression('analytics.workload.queries.NAMESPACE_ACTIVE_QUERY')
 TENANT_CPU_ACTUAL_QUERY = get_query_expression('analytics.workload.queries.TENANT_CPU_ACTUAL_QUERY')
@@ -2307,142 +2305,49 @@ def get_workload_snapshot(
     cluster_id: str,
     time_range: str = '24h',
 ) -> dict[str, Any]:
-    cluster = Cluster.query.filter_by(
-        id=cluster_id,
-    ).first()
+    from app.analytics.materialization.service import read_snapshot
 
-    if not cluster:
+    result = read_snapshot(
+        cluster_id=cluster_id,
+        dataset_key='analytics.workload',
+        parameters={'cluster_id': str(cluster_id), 'time_range': time_range},
+    )
+    context = result.context or {}
+    rows = _as_list(context.get('workload_mapping_rows', []))
+    if not result.available:
         return _empty_workload_snapshot()
-
-    try:
-        prometheus = PrometheusService(
-            cluster,
-        )
-
-        utilization_service = UtilizationService(
-            prometheus,
-        )
-
-        workload_service = WorkloadAnalysisService(
-            utilization_service,
-        )
-
-        workload_mapping_payload = workload_service.get_workload_mapping_payload(
-            selected_namespace='',
-            time_range=time_range,
-        )
-
-        workload_rows = _as_list(
-            workload_mapping_payload.get(
-                'rows',
-                [],
-            )
-        )
-
-        missing_cpu_requests = 0
-        missing_memory_requests = 0
-        missing_cpu_limits = 0
-        missing_memory_limits = 0
-        over_provisioned = 0
-        under_provisioned = 0
-
-        for row in workload_rows:
-            row_dict = _as_dict(
-                row,
-            )
-
-            cpu_request = _safe_float(
-                row_dict.get(
-                    'cpu_request_raw',
-                    0,
-                )
-            )
-            memory_request = _safe_float(
-                row_dict.get(
-                    'memory_request_raw',
-                    0,
-                )
-            )
-            cpu_limit = _safe_float(
-                row_dict.get(
-                    'cpu_limit_raw',
-                    0,
-                )
-            )
-            memory_limit = _safe_float(
-                row_dict.get(
-                    'memory_limit_raw',
-                    0,
-                )
-            )
-
-            recommendation = str(
-                row_dict.get(
-                    'recommendation',
-                    '',
-                )
-            ).lower()
-
-            if cpu_request <= 0:
-                missing_cpu_requests += 1
-
-            if memory_request <= 0:
-                missing_memory_requests += 1
-
-            if cpu_limit <= 0:
-                missing_cpu_limits += 1
-
-            if memory_limit <= 0:
-                missing_memory_limits += 1
-
-            if 'reduce' in recommendation:
-                over_provisioned += 1
-
-            if 'increase' in recommendation:
-                under_provisioned += 1
-
-        tenant_quota_summary = workload_service.get_tenant_quota_summary(
-            selected_namespace='',
-        )
-
-        tenant_quota_rows = _as_list(
-            tenant_quota_summary.get(
-                'rows',
-                [],
-            )
-        )
-
-        governance_findings = workload_service.get_governance_findings(
-            tenant_quota_rows=tenant_quota_rows,
-            workload_mapping_rows=workload_rows,
-        )
-
-        actionable_recommendations = build_workload_actionable_recommendations(
-            {
-                'tenant_quota_summary': tenant_quota_summary,
-                'tenant_quota_rows': tenant_quota_rows,
-                'workload_mapping_payload': workload_mapping_payload,
-                'workload_mapping_rows': workload_rows,
-                'governance_findings': governance_findings,
-                'selected_time_range': time_range,
-            }
-        )
-
-        return {
-            'missing_cpu_requests': missing_cpu_requests,
-            'missing_memory_requests': missing_memory_requests,
-            'missing_cpu_limits': missing_cpu_limits,
-            'missing_memory_limits': missing_memory_limits,
-            'over_provisioned': over_provisioned,
-            'under_provisioned': under_provisioned,
-            'recommendation_count': count_actionable_recommendations(
-                actionable_recommendations,
-            ),
-        }
-
-    except Exception:
-        return _empty_workload_snapshot()
-
+    missing_cpu_requests = 0
+    missing_memory_requests = 0
+    missing_cpu_limits = 0
+    missing_memory_limits = 0
+    over_provisioned = 0
+    under_provisioned = 0
+    for row in rows:
+        item = _as_dict(row)
+        if _safe_float(item.get('cpu_request_raw', 0)) <= 0:
+            missing_cpu_requests += 1
+        if _safe_float(item.get('memory_request_raw', 0)) <= 0:
+            missing_memory_requests += 1
+        if _safe_float(item.get('cpu_limit_raw', 0)) <= 0:
+            missing_cpu_limits += 1
+        if _safe_float(item.get('memory_limit_raw', 0)) <= 0:
+            missing_memory_limits += 1
+        recommendation = str(item.get('recommendation', '')).lower()
+        over_provisioned += int('reduce' in recommendation)
+        under_provisioned += int('increase' in recommendation)
+    return {
+        'missing_cpu_requests': missing_cpu_requests,
+        'missing_memory_requests': missing_memory_requests,
+        'missing_cpu_limits': missing_cpu_limits,
+        'missing_memory_limits': missing_memory_limits,
+        'over_provisioned': over_provisioned,
+        'under_provisioned': under_provisioned,
+        'recommendation_count': count_actionable_recommendations(
+            context.get('actionable_recommendations')
+            if isinstance(context.get('actionable_recommendations'), list)
+            else []
+        ),
+    }
 
 def _empty_workload_snapshot() -> dict[str, Any]:
     return {
@@ -2454,3 +2359,196 @@ def _empty_workload_snapshot() -> dict[str, Any]:
         'under_provisioned': 0,
         'recommendation_count': 0,
     }
+
+
+def present_workload_materialized_context(
+    context: dict[str, Any],
+    query_args: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Apply namespace, table filters, and pagination without querying Prometheus again."""
+    from copy import deepcopy
+
+    presented = deepcopy(context)
+    selected_namespace = get_query_value(query_args=query_args, name='namespace', default='')
+    selected_tenant_search = get_query_value(query_args=query_args, name='tenant_search', default='')
+    selected_tenant_quota_status = get_query_value(
+        query_args=query_args,
+        name='tenant_quota_status',
+        default='',
+    )
+    selected_tenant_risk = get_query_value(query_args=query_args, name='tenant_risk', default='')
+    selected_workload_search = get_query_value(query_args=query_args, name='workload_search', default='')
+    selected_workload_type = get_query_value(query_args=query_args, name='workload_type', default='')
+    selected_workload_resource_status = get_query_value(
+        query_args=query_args,
+        name='workload_resource_status',
+        default='',
+    )
+    selected_workload_qos = get_query_value(query_args=query_args, name='workload_qos', default='')
+    selected_workload_risk = get_query_value(query_args=query_args, name='workload_risk', default='')
+
+    namespace_options = list(presented.get('namespace_options') or [])
+    if selected_namespace and selected_namespace not in namespace_options:
+        selected_namespace = ''
+
+    tenant_all_rows = list(presented.get('tenant_quota_rows') or [])
+    workload_all_rows = list(presented.get('workload_mapping_rows') or [])
+    if selected_namespace:
+        tenant_all_rows = [row for row in tenant_all_rows if str(row.get('namespace') or '') == selected_namespace]
+        workload_all_rows = [
+            row for row in workload_all_rows if str(row.get('namespace') or '') == selected_namespace
+        ]
+
+    tenant_filtered = filter_tenant_quota_rows(
+        rows=tenant_all_rows,
+        selected_search=selected_tenant_search,
+        selected_quota_status=selected_tenant_quota_status,
+        selected_risk=selected_tenant_risk,
+    )
+    workload_filtered = filter_workload_rows(
+        rows=workload_all_rows,
+        selected_search=selected_workload_search,
+        selected_type=selected_workload_type,
+        selected_resource_status=selected_workload_resource_status,
+        selected_qos=selected_workload_qos,
+        selected_risk=selected_workload_risk,
+    )
+
+    paginator = AnalyticsBaseService()
+    tenant_page = paginator.paginate_rows_with_options(
+        rows=tenant_filtered,
+        page=get_positive_int_arg(query_args=query_args, name='quota_page', default=1),
+        per_page=get_per_page_arg(query_args=query_args, name='quota_per_page', default=5),
+        allowed_per_page=ALLOWED_PER_PAGE_VALUES,
+    )
+    workload_page = paginator.paginate_rows_with_options(
+        rows=workload_filtered,
+        page=get_positive_int_arg(query_args=query_args, name='workload_page', default=1),
+        per_page=get_per_page_arg(query_args=query_args, name='workload_per_page', default=5),
+        allowed_per_page=ALLOWED_PER_PAGE_VALUES,
+    )
+
+    tenant_summary = deepcopy(presented.get('tenant_quota_summary') or {})
+    tenant_summary['rows'] = tenant_page['rows']
+    tenant_summary['pagination'] = tenant_page['pagination']
+
+    mapping_payload = deepcopy(presented.get('workload_mapping_payload') or {})
+    mapping_payload['rows'] = workload_page['rows']
+    mapping_payload['pagination'] = workload_page['pagination']
+    mapping_payload['workload_type_options'] = sorted(
+        {str(row.get('type') or '') for row in workload_all_rows if row.get('type')}
+    )
+    mapping_payload['resource_status_options'] = sorted(
+        {
+            str((row.get('resource_status') or {}).get('label') or '')
+            for row in workload_all_rows
+            if row.get('resource_status')
+        }
+    )
+    mapping_payload['qos_options'] = sorted(
+        {
+            str((row.get('qos') or {}).get('label') or '')
+            for row in workload_all_rows
+            if row.get('qos')
+        }
+    )
+    mapping_payload['risk_options'] = sorted(
+        {
+            str((row.get('risk') or {}).get('label') or '')
+            for row in workload_all_rows
+            if row.get('risk')
+        }
+    )
+
+    quota_status_options = sorted(
+        {
+            str((row.get('quota_status') or {}).get('label') or '')
+            for row in tenant_all_rows
+            if row.get('quota_status')
+        }
+    )
+    tenant_risk_options = sorted(
+        {
+            str((row.get('risk') or {}).get('label') or '')
+            for row in tenant_all_rows
+            if row.get('risk')
+        }
+    )
+
+    governance_findings = [
+        finding
+        for finding in list(presented.get('governance_findings') or [])
+        if not selected_namespace or str(finding.get('namespace') or '') in {'', selected_namespace}
+    ]
+    recommendation_payload = {
+        'tenant_quota_summary': {**tenant_summary, 'rows': tenant_all_rows},
+        'tenant_quota_rows': tenant_all_rows,
+        'workload_mapping_payload': {**mapping_payload, 'rows': workload_all_rows},
+        'workload_mapping_rows': workload_all_rows,
+        'governance_findings': governance_findings,
+        'selected_namespace': selected_namespace,
+        'selected_time_range': presented.get('selected_time_range', '24h'),
+    }
+    recommendations = build_workload_actionable_recommendations(recommendation_payload)
+    recommendation_cards = format_recommendation_cards(
+        recommendations,
+        default_title='Continue workload governance monitoring',
+        default_description=(
+            'No actionable workload recommendation was generated from the current '
+            'quota, request, limit, QoS, and right-sizing signals.'
+        ),
+        default_source='workload_baseline',
+        default_action_type='workload_governance',
+    )
+    critical_count = sum(1 for item in governance_findings if item.get('severity') == 'critical')
+    warning_count = sum(1 for item in governance_findings if item.get('severity') == 'warning')
+    if critical_count:
+        workload_posture = {
+            'value': 'Critical',
+            'description': 'Critical findings need immediate review.',
+            'tone': 'critical',
+            'icon': 'shield-alert',
+        }
+    elif warning_count:
+        workload_posture = {
+            'value': 'Watch',
+            'description': 'Review quota, limits, and QoS posture.',
+            'tone': 'warning',
+            'icon': 'triangle-alert',
+        }
+    else:
+        workload_posture = {
+            'value': 'Healthy',
+            'description': 'Workload signals are stable.',
+            'tone': 'normal',
+            'icon': 'circle-check',
+        }
+
+    presented.update(
+        {
+            'selected_namespace': selected_namespace,
+            'selected_tenant_search': selected_tenant_search,
+            'selected_tenant_quota_status': selected_tenant_quota_status,
+            'selected_tenant_risk': selected_tenant_risk,
+            'selected_workload_search': selected_workload_search,
+            'selected_workload_type': selected_workload_type,
+            'selected_workload_resource_status': selected_workload_resource_status,
+            'selected_workload_qos': selected_workload_qos,
+            'selected_workload_risk': selected_workload_risk,
+            'tenant_quota_summary': tenant_summary,
+            'tenant_quota_rows': tenant_all_rows,
+            'quota_status_options': quota_status_options,
+            'tenant_risk_options': tenant_risk_options,
+            'workload_mapping_payload': mapping_payload,
+            'workload_mapping_rows': workload_all_rows,
+            'governance_findings': governance_findings,
+            'actionable_recommendations': recommendations,
+            'recommendation_cards': recommendation_cards,
+            'recommendation_count': count_actionable_recommendations(recommendations),
+            'workload_count_display': f'{len(workload_all_rows)} workloads',
+            'recommendation_count_display': f'{count_actionable_recommendations(recommendations)} actionable',
+            'finding_count_display': f'{len(governance_findings)} findings',
+            'workload_posture': workload_posture,
+        }
+    )
+    return presented

@@ -287,3 +287,131 @@ def get_alerts_context(
             UTC,
         ),
     }
+
+
+def get_alerts_materialization_context(query_args) -> dict[str, Any]:
+    """Build one unfiltered alert-source snapshot for a cluster/source pair."""
+    return get_alerts_context(
+        cluster_id=str(query_args.get('cluster_id') or '') or None,
+        source=str(query_args.get('source') or 'auto'),
+        severity='all',
+        status='all',
+        namespace='',
+        search='',
+        page=1,
+        alerts_per_page=50,
+        anomalies_per_page=50,
+    )
+
+
+def present_alerts_materialized_context(
+    context: dict[str, Any],
+    *,
+    severity: str | None,
+    status: str | None,
+    namespace: str | None,
+    search: str | None,
+    page: str | int | None,
+    alerts_per_page: str | int | None,
+    anomalies_per_page: str | int | None,
+) -> dict[str, Any]:
+    """Apply cheap UI filtering and pagination to an already materialized alert payload."""
+    from copy import deepcopy
+
+    presented = deepcopy(context)
+    selected_severity = normalize_option(severity, allowed=SEVERITY_OPTIONS, default='all')
+    selected_status = normalize_option(status, allowed=STATUS_OPTIONS, default='all')
+    selected_namespace = normalize_string(namespace)
+    selected_search = normalize_string(search)
+    selected_page = normalize_page(page)
+    selected_alerts_per_page = normalize_per_page(alerts_per_page)
+    selected_anomalies_per_page = normalize_per_page(anomalies_per_page)
+
+    raw_alerts = list(presented.get('all_alerts') or [])
+    raw_anomalies = list(presented.get('all_anomalies') or [])
+    namespace_options = list(presented.get('namespace_options') or [])
+    if selected_namespace and selected_namespace not in namespace_options:
+        selected_namespace = ''
+
+    filtered_alerts = filter_items(
+        raw_alerts,
+        severity=selected_severity,
+        status=selected_status,
+        namespace=selected_namespace,
+        search=selected_search,
+    )
+    filtered_anomalies = filter_anomalies(
+        raw_anomalies,
+        severity=selected_severity,
+        namespace=selected_namespace,
+        search=selected_search,
+    )
+    alert_rows, alert_pagination = paginate_items(
+        filtered_alerts,
+        page=selected_page,
+        per_page=selected_alerts_per_page,
+    )
+    anomaly_rows, anomaly_pagination = paginate_items(
+        filtered_anomalies,
+        page=1,
+        per_page=selected_anomalies_per_page,
+    )
+
+    source_status = presented.get('source_status') or {}
+    summary = build_summary(
+        alerts=filtered_alerts,
+        anomalies=filtered_anomalies,
+        source_status=source_status,
+    )
+    signal_overview = build_selected_cluster_signal_overview(
+        cluster=presented.get('selected_cluster'),
+        alerts=raw_alerts,
+        anomalies=raw_anomalies,
+        source_status=source_status,
+    )
+    recommendations = build_alerts_actionable_recommendations(
+        {
+            'alerts': filtered_alerts,
+            'all_alerts': filtered_alerts,
+            'anomalies': filtered_anomalies,
+            'all_anomalies': filtered_anomalies,
+            'summary': summary,
+            'source_status': source_status,
+            'selected_cluster_signal_overview': signal_overview,
+        }
+    )
+    recommendation_cards = format_recommendation_cards(
+        recommendations,
+        default_title='Continue alert and anomaly monitoring',
+        default_description=(
+            'No actionable alert or anomaly recommendation was generated. '
+            'Continue monitoring alert source health, active signals, and anomaly candidates.'
+        ),
+        default_source='alerts',
+        default_action_type='alert_review',
+    )
+
+    presented.update(
+        {
+            'selected_severity': selected_severity,
+            'selected_status': selected_status,
+            'selected_namespace': selected_namespace,
+            'selected_search': selected_search,
+            'selected_alerts_per_page': selected_alerts_per_page,
+            'selected_anomalies_per_page': selected_anomalies_per_page,
+            'selected_per_page': selected_alerts_per_page,
+            'alerts': alert_rows,
+            'all_alerts': filtered_alerts,
+            'alerts_pagination': alert_pagination,
+            'anomalies': anomaly_rows,
+            'all_anomalies': filtered_anomalies,
+            'anomalies_pagination': anomaly_pagination,
+            'summary': summary,
+            'selected_cluster_signal_overview': signal_overview,
+            'actionable_recommendations': recommendations,
+            'recommendation_cards': recommendation_cards,
+            'recommendation_count': count_actionable_recommendations(recommendations),
+            'recommendations': recommendation_cards,
+        }
+    )
+    return presented
