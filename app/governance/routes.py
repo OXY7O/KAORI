@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask import Blueprint, redirect, render_template, request, url_for
+from flask_login import current_user
 
 from app.cluster.onboarding import has_registered_clusters
 from app.governance.tls_certificates.routes import (
@@ -8,6 +9,7 @@ from app.governance.tls_certificates.routes import (
     tls_certificates_index,
     tls_certificates_sync,
 )
+from app.notifications.service import record_operational_activity
 from app.rbac.decorators import permission_required
 
 governance_bp = Blueprint(
@@ -31,7 +33,15 @@ def block_clusterless_governance_actions():
     if request.headers.get('HX-Request') == 'true':
         return render_template('components/cluster/_onboarding_banner.html')
 
-    flash('Add a Kubernetes cluster before using TLS Secret governance actions.', 'warning')
+    record_operational_activity(
+        user_id=current_user.id,
+        event_type='governance_tls_cluster_required',
+        status='warning',
+        title='Kubernetes cluster setup required',
+        message='Add a Kubernetes cluster before using TLS certificate governance actions in KAORI.',
+        action_url=url_for('integrations.kubernetes'),
+        queue_feedback=True,
+    )
     return redirect(url_for('governance.tls_certificates'))
 
 

@@ -71,7 +71,7 @@
             </option>
             {% for item in configmaps|default([]) %}
                 <option value="{{ item.name }}"
-                        {{ 'selected' if item.name == selected_configmap_name else '' }}>{{ item.name }}{{ ' · immutable' if item.immutable else '' }}
+                        {{ 'selected' if item.name == selected_configmap_name else '' }}>{{ item.name }}{{ ' · Immutable' if item.immutable else '' }}
                 </option>
             {% endfor %}
         </select>

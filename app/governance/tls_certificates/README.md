@@ -30,3 +30,12 @@ X.509 parsing and certificate/private-key matching live in `app/kubernetes/secre
 ## UI boundary
 
 The Kubernetes TLS Secret governance UI follows the KAORI violet design standard across overview, detail, and bulk update pages. Structural surfaces and actions use KAORI brand tokens; certificate validity and expiry states remain semantic. Gradients and decorative blue/cyan treatments are not used. Governance remains read-oriented posture and relationship context, while certificate/private-key mutation is executed through the controlled Kubernetes Operations TLS rotation workflow.
+
+## KAORI presentation and workflow contract
+
+- TLS certificate inventory, detail, and rotation entry points use neutral structural surfaces with semantic status colors reserved for healthy, warning, critical, expired, and invalid states.
+- Inventory actions use the shared expandable-row behavior in `components/details/_expandable_row.html` and `app/static/js/detail_rows.js`; TLS tables do not maintain a separate inline toggle implementation.
+- Page-size selectors use the global `data-kaori-auto-submit` behavior. Sync progress is owned by `app/static/js/tls_certificate_management.js` rather than inline template JavaScript.
+- Hero context panels contain status and compact metrics only. Certificate explanations remain in the page description or content blocks.
+- Governance remains read-oriented. Bulk and single TLS Secret mutation actions link to Secret Management, and obsolete Governance-owned mutation templates are not retained.
+- TLS Governance does not use Flask flash messages; missing-record and cluster-setup feedback use the KAORI notification and Activity Log pipeline.

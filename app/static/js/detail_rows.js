@@ -17,7 +17,7 @@
         const row = rowId ? document.getElementById(rowId) : null
 
         if (target) {
-            target.innerHTML = ''
+            if (target.dataset.detailStatic !== 'true') target.innerHTML = ''
             target.dataset.open = 'false'
         }
         if (row) row.classList.add('hidden')

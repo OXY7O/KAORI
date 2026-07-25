@@ -89,3 +89,11 @@ Impact context can lag behind the live object. The UI must label it as inventory
 - Final mutation buttons render in the neutral disabled state until validation succeeds.
 - The controller accepts both direct and nested HTMX trigger payloads and also verifies the `HX-Trigger` response header after each request, preventing a successful validation from leaving the final action disabled.
 - Any subsequent form input or selection change invalidates the prior validation and disables the final action again.
+
+## Unified KAORI presentation contract
+
+- ConfigMap Management uses the shared Kubernetes operation macros in `app/templates/kubernetes_operations/_components.html` for workflow headers, guardrails, action bars, permission labels, and button states.
+- Landing workflow cards mirror Secret Management geometry and hierarchy; destructive actions use semantic critical treatment without changing card dimensions.
+- Create and Update use the reusable validation action bar. Final mutation actions stay neutral and disabled until the latest payload passes validation.
+- Dynamic entry handling and cluster/namespace dependency behavior live in `app/static/js/configmap_editor.js`; templates no longer embed imperative `onchange` handlers or per-partial scripts.
+- The right hero panel contains only status and concise metrics, with no descriptive helper text.

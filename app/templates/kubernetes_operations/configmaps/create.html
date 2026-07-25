@@ -13,34 +13,33 @@
                         <h1 class="{{ page_hero.title_classes() }}">Create Kubernetes ConfigMap</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">Define text or binary entries, validate them against Kubernetes, and create a new object without overwriting an existing ConfigMap.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('radio-tower', 'Live namespace source') }}
-                            {{ page_hero.meta_label('scan-search', 'Server-side dry-run') }}
-                            {{ page_hero.meta_label('scroll-text', 'Audited creation') }}
+                            {{ page_hero.meta_label('radio-tower', 'Live Namespace Source') }}
+                            {{ page_hero.meta_label('scan-search', 'Server-Side Dry-Run') }}
+                            {{ page_hero.meta_label('scroll-text', 'Audited Creation') }}
                         </div>
                     {% endcall %}
                 </div>
                 {{ configmap_ui.hero_context('Create Boundary',
-                                'New objects only',
+                                'New Objects Only',
                                 'Controlled',
                                 'info',
                                 'shield-plus',
                                 'file-plus-2',
-                                'Create mode',
+                                'Create Mode',
                                 'No Overwrite',
-                                'Existing objects stay unchanged',
                                 'scan-search',
                                 'Validation',
                                 'Dry-Run Required',
-                                'Validated before creation',
-                                url_for('kubernetes_operations.configmap_management') ,
-                'ConfigMap Management',
-                'arrow-left'
+                                url_for('kubernetes_operations.configmap_management'),
+                                'ConfigMap Management',
+                                'arrow-left'
                 ) }}
             </div>
         </section>
         <div id="configmap-operation-feedback" class="hidden" aria-hidden="true"></div>
         <form id="configmap-create-form"
               data-validation-gated
+              data-configmap-editor-form
               method="post"
               hx-post="{{ url_for('kubernetes_operations.create_configmap') }}"
               hx-target="#configmap-operation-feedback"
@@ -61,7 +60,7 @@
                                             hx-target="#configmap-namespace-field"
                                             hx-swap="outerHTML"
                                             hx-include="this"
-                                            onchange="const field=document.getElementById('configmap-name'); if(field){field.disabled=true; field.value=''; field.placeholder='Select namespace first';}"
+                                            data-configmap-cluster
                                             class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
                                         <option value="">Select cluster</option>
                                         {% for cluster in clusters %}<option value="{{ cluster.id }}">{{ cluster.name }}</option>{% endfor %}
@@ -114,24 +113,10 @@
                             {% include 'kubernetes_operations/configmaps/_entries_editor.html' %}
                         </div>
                     </section>
-                    <section class="flex flex-col gap-4 rounded-xl border border-outline-default bg-surface-card px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:px-6">
-                        <div>
-                            <p class="text-sm font-semibold text-content-primary">Ready to validate the manifest?</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Validate first, then create after Kubernetes accepts the payload.</p>
-                        </div>
-                        <div class="flex flex-wrap gap-3 sm:justify-end">
-                            <button name="operation"
-                                    value="validate"
-                                    class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-kaori-primary/25 bg-kaori-soft px-5 text-sm font-semibold text-kaori-primary transition hover:border-kaori-primary/40 hover:bg-kaori-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus cursor-pointer disabled:cursor-not-allowed"><i data-lucide="scan-search" class="h-4 w-4"></i>Validate</button>
-                            <button name="operation"
-                                    value="create"
-                                    data-validation-apply
-                                    disabled
-                                    aria-disabled="true"
-                                    title="Run validation after the latest input change before applying this operation"
-                                    class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-transparent bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus cursor-pointer disabled:cursor-not-allowed disabled:border-outline-default disabled:bg-surface-hover disabled:text-content-disabled disabled:shadow-none disabled:hover:bg-surface-hover disabled:hover:text-content-disabled"><i data-lucide="file-plus-2" class="h-4 w-4"></i>Create ConfigMap</button>
-                        </div>
-                    </section>
+                    {% call configmap_ui.action_bar('scan-search', 'Validate Before Creation', 'Run Kubernetes server-side dry-run first, then create the ConfigMap after the manifest is confirmed.') %}
+                        <button name="operation" value="validate" class="{{ configmap_ui.validate_button_classes() }}"><i data-lucide="scan-search" class="h-4 w-4"></i>Validate</button>
+                        <button name="operation" value="create" data-validation-apply disabled aria-disabled="true" title="Run validation after the latest input change before applying this operation" class="{{ configmap_ui.primary_button_classes() }}"><i data-lucide="file-plus-2" class="h-4 w-4"></i>Create ConfigMap</button>
+                    {% endcall %}
                 </div>
                 <aside class="space-y-6 self-start xl:sticky xl:top-6">
                     <section class="rounded-xl border border-brand-outline bg-kaori-primary-dark p-5 text-brand-foreground shadow-sm">
@@ -162,5 +147,6 @@
             </div>
         </form>
     </div>
+<script src="{{ url_for('static', filename='js/configmap_editor.js') }}"></script>
 <script src="{{ url_for('static', filename='js/validated_operations.js') }}"></script>
 {% endblock dashboard_content %}

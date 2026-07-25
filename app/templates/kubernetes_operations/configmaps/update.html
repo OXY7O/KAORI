@@ -11,9 +11,9 @@
                         <h1 class="{{ page_hero.title_classes() }}">View &amp; Update ConfigMap</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">Load current Kubernetes values, review consumers, preview the effective diff, and apply a validated merge or replacement.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('radio-tower', 'Live Kubernetes values') }}
-                            {{ page_hero.meta_label('git-compare-arrows', 'Effective diff preview') }}
-                            {{ page_hero.meta_label('scroll-text', 'Audited update') }}
+                            {{ page_hero.meta_label('radio-tower', 'Live Kubernetes Values') }}
+                            {{ page_hero.meta_label('git-compare-arrows', 'Effective Diff Preview') }}
+                            {{ page_hero.meta_label('scroll-text', 'Audited Update') }}
                         </div>
                     {% endcall %}
                 </div>
@@ -25,20 +25,19 @@
                                 'radio-tower',
                                 'Source',
                                 'Live Object',
-                                'Current values loaded first',
                                 'lock-keyhole',
                                 'Guardrail',
                                 'Immutable Blocked',
-                                'Dry-run before apply',
-                                url_for('kubernetes_operations.configmap_management') ,
-                'ConfigMap Management',
-                'arrow-left'
+                                url_for('kubernetes_operations.configmap_management'),
+                                'ConfigMap Management',
+                                'arrow-left'
                 ) }}
             </div>
         </section>
         <div id="configmap-operation-feedback" class="hidden" aria-hidden="true"></div>
         <form id="configmap-update-form"
               data-validation-gated
+              data-configmap-editor-form
               method="post"
               hx-post="{{ url_for('kubernetes_operations.update_configmap') }}"
               hx-target="#configmap-operation-feedback"
@@ -66,24 +65,10 @@
                             {% endif %}
                         </div>
                     </section>
-                    <section class="flex flex-col gap-4 rounded-xl border border-outline-default bg-surface-card px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:px-6">
-                        <div>
-                            <p class="text-sm font-semibold text-content-primary">Review the effective change before applying</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Preview validates the request without modifying the selected ConfigMap.</p>
-                        </div>
-                        <div class="flex flex-wrap gap-3 sm:justify-end">
-                            <button name="operation"
-                                    value="validate"
-                                    class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-kaori-primary/25 bg-kaori-soft px-5 text-sm font-semibold text-kaori-primary transition hover:border-kaori-primary/40 hover:bg-kaori-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus cursor-pointer disabled:cursor-not-allowed"><i data-lucide="scan-search" class="h-4 w-4"></i>Preview &amp; Validate</button>
-                            <button name="operation"
-                                    value="update"
-                                    data-validation-apply
-                                    disabled
-                                    aria-disabled="true"
-                                    title="Run validation after the latest input change before applying this operation"
-                                    class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-transparent bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus cursor-pointer disabled:cursor-not-allowed disabled:border-outline-default disabled:bg-surface-hover disabled:text-content-disabled disabled:shadow-none disabled:hover:bg-surface-hover disabled:hover:text-content-disabled"><i data-lucide="save" class="h-4 w-4"></i>Apply Update</button>
-                        </div>
-                    </section>
+                    {% call configmap_ui.action_bar('git-compare-arrows', 'Validate Before Update', 'Preview the effective diff first, then apply the update after Kubernetes accepts the proposed change.') %}
+                        <button name="operation" value="validate" class="{{ configmap_ui.validate_button_classes() }}"><i data-lucide="scan-search" class="h-4 w-4"></i>Preview and Validate</button>
+                        <button name="operation" value="update" data-validation-apply disabled aria-disabled="true" title="Run validation after the latest input change before applying this operation" class="{{ configmap_ui.primary_button_classes() }}"><i data-lucide="save" class="h-4 w-4"></i>Apply Update</button>
+                    {% endcall %}
                 </div>
                 <aside class="space-y-6 self-start xl:sticky xl:top-6">
                     <section class="rounded-xl border border-brand-outline bg-kaori-primary-dark p-5 text-brand-foreground shadow-sm">
@@ -114,5 +99,6 @@
             </div>
         </form>
     </div>
+<script src="{{ url_for('static', filename='js/configmap_editor.js') }}"></script>
 <script src="{{ url_for('static', filename='js/validated_operations.js') }}"></script>
 {% endblock dashboard_content %}

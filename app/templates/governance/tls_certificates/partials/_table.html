@@ -2,6 +2,7 @@
 {% from 'inventory/components/_detail_macros.html' import detail_card, detail_row, detail_tip %}
 {% import 'components/detail_object.html' as detail_object %}
 {% import 'components/table_label.html' as table_label %}
+{% import 'components/details/_expandable_row.html' as expandable %}
 <div id="tls-certificates-table-card"
      class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
     <div class="border-b border-outline-default px-6 py-5">
@@ -11,8 +12,8 @@
                     <i data-lucide="lock-keyhole" class="h-5 w-5"></i>
                 </div>
                 <div>
-                    <h2 class="text-lg font-semibold text-content-primary">Kubernetes TLS Secret Inventory</h2>
-                    <p class="mt-1 text-sm text-content-muted">Certificate lifecycle, domain coverage, and Ingress usage from Kubernetes TLS Secrets.</p>
+                    <h2 class="text-base font-semibold text-content-primary">Kubernetes TLS Secret Inventory</h2>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Certificate lifecycle, domain coverage, and Ingress usage from Kubernetes TLS Secrets.</p>
                 </div>
             </div>
         </div>
@@ -21,7 +22,7 @@
             <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
         </div>
     </div>
-    <div class="border-b border-outline-default bg-kaori-soft/40 px-6 py-4">
+    <div class="border-b border-outline-default bg-surface-hover px-6 py-4">
         {% include "governance/tls_certificates/partials/_filters.html" %}
     </div>
     <div class="overflow-x-auto">
@@ -33,13 +34,13 @@
                     <th class="px-4 py-2 text-left">Secret</th>
                     <th class="px-4 py-2 text-left">Expiry</th>
                     <th class="px-4 py-2 text-left">Status</th>
-                    <th class="px-4 py-2 text-left">Details</th>
+                    <th class="px-4 py-2 text-right">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 {% for record in payload.records %}
                     <tr id="tls-secret-row-{{ record.id }}"
-                        class="border-t border-outline-subtle text-sm transition hover:bg-kaori-soft/35">
+                        class="border-t border-outline-subtle text-sm transition hover:bg-surface-hover">
                         <td class="px-4 py-2 text-left align-middle">
                             {{ table_label.metadata_label(record.cluster.name if record.cluster else record.cluster_id, 'building-2') }}
                         </td>
@@ -59,7 +60,7 @@
                             {% if record.not_after %}
                                 <div class="text-sm font-medium text-content-primary">{{ record.days_remaining }} days</div>
                             {% else %}
-                                <div class="font-medium text-rose-600 dark:text-rose-300">Invalid</div>
+                                <div class="font-medium text-status-critical-text">Invalid</div>
                                 <div class="mt-1 max-w-[220px] truncate text-xs text-content-muted"
                                      title="{{ record.parse_error or 'Unable to parse certificate' }}">{{ record.parse_error or 'Unable to parse certificate' }}</div>
                             {% endif %}
@@ -69,22 +70,11 @@
                                 {% include "governance/tls_certificates/partials/_status_badge.html" %}
                             {% endwith %}
                         </td>
-                        <td class="px-4 py-2 text-left align-middle">
-                            <button type="button"
-                                    data-tls-toggle="true"
-                                    data-tls-id="{{ record.id }}"
-                                    class="inline-flex min-h-8 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-kaori-primary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft"
-                                    onclick="const target = document.getElementById('tls-secret-detail-content-{{ record.id }}'); const detailRow = document.getElementById('tls-secret-detail-row-{{ record.id }}'); const isOpen = target.dataset.open === 'true'; document.querySelectorAll('[id^=tls-secret-detail-content-]').forEach((item) => { if (item.id !== target.id) { item.dataset.open = 'false'; } }); document.querySelectorAll('[id^=tls-secret-detail-row-]').forEach((row) => { if (row.id !== 'tls-secret-detail-row-{{ record.id }}') { row.classList.add('hidden'); } }); document.querySelectorAll('[data-tls-toggle=true]').forEach((button) => { if (button.dataset.tlsId !== '{{ record.id }}') { const label = button.querySelector('[data-tls-toggle-label]'); const icon = button.querySelector('[data-lucide]'); if (label) label.textContent = 'View More'; if (icon) icon.setAttribute('data-lucide', 'chevron-down'); } }); if (isOpen) { target.dataset.open = 'false'; if (detailRow) detailRow.classList.add('hidden'); const label = this.querySelector('[data-tls-toggle-label]'); const icon = this.querySelector('[data-lucide]'); if (label) label.textContent = 'View More'; if (icon) icon.setAttribute('data-lucide', 'chevron-down'); } else { if (detailRow) detailRow.classList.remove('hidden'); target.dataset.open = 'true'; const label = this.querySelector('[data-tls-toggle-label]'); const icon = this.querySelector('[data-lucide]'); if (label) label.textContent = 'Hide Details'; if (icon) icon.setAttribute('data-lucide', 'chevron-up'); } if (window.lucide) window.lucide.createIcons();">
-                                <i data-lucide="chevron-down" class="h-4 w-4"></i>
-                                <span data-tls-toggle-label>View More</span>
-                            </button>
+                        <td class="px-4 py-2 text-right align-middle">
+                            {{ expandable.toggle_button('tls-certificate-inventory', record.id, none, 'tls-secret-detail-content-' ~ record.id, 'tls-secret-detail-row-' ~ record.id) }}
                         </td>
                     </tr>
-                    <tr id="tls-secret-detail-row-{{ record.id }}" class="hidden border-0">
-                        <td colspan="6" class="p-0 leading-none align-top">
-                            <div id="tls-secret-detail-content-{{ record.id }}"
-                                 data-open="false"
-                                 class="border-t border-outline-default bg-surface-hover px-6 py-5 text-left">
+                    {% call expandable.static_detail_row('tls-secret-detail-row-' ~ record.id, 'tls-secret-detail-content-' ~ record.id, 6, 'border-t border-outline-default bg-surface-hover px-6 py-5 text-left') %}
                                 <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                                     <div class="flex flex-col gap-3 border-b border-outline-default bg-kaori-soft p-4 sm:flex-row sm:items-start sm:justify-between">
                                         <div class="flex min-w-0 items-start gap-3 text-left">
@@ -92,7 +82,7 @@
                                                 <i data-lucide="shield-check" class="h-5 w-5"></i>
                                             </span>
                                             <div class="min-w-0">
-                                                <p class="text-xs font-medium text-content-muted">TLS Secret details</p>
+                                                <p class="text-xs font-medium text-content-muted">TLS Secret Details</p>
                                                 <p class="mt-1 break-all text-sm font-semibold text-content-primary">{{ record.secret_name }}</p>
                                                 <p class="mt-1 text-xs leading-5 text-content-muted">Issuer, usage mapping, SAN coverage, and Kubernetes Secret metadata.</p>
                                             </div>
@@ -209,15 +199,15 @@
                                         {% call detail_card(
                                             'Secret metadata',
                                             'boxes',
-                                            'bg-violet-50 text-violet-600 dark:bg-violet-950/40 dark:text-violet-300',
+                                            'bg-kaori-soft text-kaori-primary',
                                             ((record.dns_names or [])|length) ~ ' SANs',
-                                            'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-300'
+                                            'bg-kaori-soft text-kaori-primary'
                                             ) %}
                                             {{ detail_row('Type', record.secret_type or 'kubernetes.io/tls', tone='violet') }}
                                             {{ detail_row('SAN Count', (record.dns_names or []) |length, tone='violet') }}
                                             {{ detail_row('Ingress Hosts', (record.ingress_hosts or []) |length, tone='violet') }}
                                             {% if record.parse_error %}
-                                                <div class="rounded-lg border border-outline-default bg-rose-50 px-3 py-2.5 text-xs text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">{{ record.parse_error }}</div>
+                                                <div class="rounded-lg border border-outline-default bg-status-critical-soft px-3 py-2.5 text-xs text-status-critical-text">{{ record.parse_error }}</div>
                                             {% endif %}
                                             {% call detail_object.stack() %}
                                                 <div class="rounded-lg border border-outline-default bg-kaori-soft p-3">
@@ -247,9 +237,7 @@
                                         {% endcall %}
                                     </div>
                                 </div>
-                            </div>
-                        </td>
-                    </tr>
+                    {% endcall %}
                 {% else %}
                     <tr>
                         <td colspan="6" class="px-6 py-16 text-center">
@@ -295,7 +283,7 @@
                 <input type="hidden" name="status" value="{{ payload.filters.status }}">
                 <input type="hidden" name="search" value="{{ payload.filters.search }}">
                 <select name="per_page"
-                        onchange="this.form.requestSubmit()"
+                        data-kaori-auto-submit
                         class="{{ pagination_ui.page_size_classes() }}">
                     {% for option in payload.pagination.allowed_per_page %}
                         <option value="{{ option }}"

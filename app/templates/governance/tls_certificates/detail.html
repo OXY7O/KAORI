@@ -3,6 +3,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/detail_object.html" as detail_object %}
 {% import "components/detail_tip.html" as detail_tip %}
+{% import "kubernetes_operations/_components.html" as operation_ui %}
 {% block title %}Kubernetes TLS Secret Record{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6">
@@ -30,12 +31,12 @@
                     {% endcall %}
                 </div>
                 <aside class="{{ page_hero.aside_classes() }}"
-                       aria-label="Certificate posture">
+                       aria-label="Certificate Posture">
                     <div class="{{ page_hero.context_panel_classes() }}">
                         <div class="flex items-start justify-between gap-4">
                             <div>
-                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Certificate posture</p>
-                                <h2 class="mt-1 text-base font-semibold text-brand-foreground">Validity and identity</h2>
+                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Certificate Posture</p>
+                                <h2 class="mt-1 text-base font-semibold text-brand-foreground">Validity and Identity</h2>
                             </div>
                             {{ table_label.status_label(hero_status_label, hero_status_tone, 'shield-check' if hero_status_tone == 'normal' else 'triangle-alert') }}
                         </div>
@@ -43,18 +44,16 @@
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <div class="flex items-center gap-2 text-brand-foreground">
                                     <i data-lucide="calendar-clock" class="h-3.5 w-3.5"></i>
-                                    <p class="text-[11px] font-semibold">Days remaining</p>
+                                    <p class="text-[11px] font-semibold">Days Remaining</p>
                                 </div>
                                 <p class="mt-1.5 text-sm font-semibold text-brand-foreground">{{ record.days_remaining if record.days_remaining is not none else 'N/A' }}</p>
-                                <p class="{{ page_hero.context_metric_helper_classes() }}">{{ record.not_after|user_date("Expiry unavailable") }}</p>
                             </div>
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <div class="flex items-center gap-2 text-brand-foreground">
                                     <i data-lucide="globe-2" class="h-3.5 w-3.5"></i>
-                                    <p class="text-[11px] font-semibold">SAN coverage</p>
+                                    <p class="text-[11px] font-semibold">SAN Coverage</p>
                                 </div>
                                 <p class="mt-1.5 text-sm font-semibold text-brand-foreground">{{ (record.dns_names or [])|length }} names</p>
-                                <p class="{{ page_hero.context_metric_helper_classes() }}">{{ (record.used_by or [])|length }} Ingress references</p>
                             </div>
                         </div>
                         <div class="mt-3 grid grid-cols-2 gap-2">
@@ -75,7 +74,7 @@
                     </div>
                     <div>
                         <p class="text-xs font-medium text-content-muted">Common Name</p>
-                        <p class="mt-1 max-w-[14rem] truncate text-sm font-bold text-content-primary">{{ record.common_name or 'N/A' }}</p>
+                        <p class="mt-1 max-w-[14rem] truncate text-sm font-semibold text-content-primary">{{ record.common_name or 'N/A' }}</p>
                     </div>
                 </div>
             </div>
@@ -85,8 +84,8 @@
                         <i data-lucide="calendar-clock" class="h-5 w-5"></i>
                     </div>
                     <div>
-                        <p class="text-xs font-medium text-content-muted">Valid from</p>
-                        <p class="mt-1 text-sm font-bold text-content-primary">{{ record.not_before|user_date("N/A") }}</p>
+                        <p class="text-xs font-medium text-content-muted">Valid From</p>
+                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ record.not_before|user_date("N/A") }}</p>
                     </div>
                 </div>
             </div>
@@ -96,8 +95,8 @@
                         <i data-lucide="route" class="h-5 w-5"></i>
                     </div>
                     <div>
-                        <p class="text-xs font-medium text-content-muted">Ingress references</p>
-                        <p class="mt-1 text-sm font-bold text-content-primary">{{ (record.used_by or [])|length }} consumers</p>
+                        <p class="text-xs font-medium text-content-muted">Ingress References</p>
+                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ (record.used_by or [])|length }} consumers</p>
                     </div>
                 </div>
             </div>
@@ -107,18 +106,18 @@
                         <i data-lucide="fingerprint" class="h-5 w-5"></i>
                     </div>
                     <div class="min-w-0">
-                        <p class="text-xs font-medium text-content-muted">SHA-256 fingerprint</p>
-                        <p class="mt-1 max-w-[14rem] truncate font-mono text-xs font-bold text-content-primary">{{ record.fingerprint_sha256 or 'N/A' }}</p>
+                        <p class="text-xs font-medium text-content-muted">SHA-256 Fingerprint</p>
+                        <p class="mt-1 max-w-[14rem] truncate font-mono text-xs font-semibold text-content-primary">{{ record.fingerprint_sha256 or 'N/A' }}</p>
                     </div>
                 </div>
             </div>
         </section>
         <section class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr] xl:items-stretch">
             <div class="space-y-6 xl:contents">
-                <div class="flex h-full flex-col overflow-hidden rounded-xl border border-kaori-primary/20 bg-surface-card shadow-sm xl:col-start-1 xl:row-start-1">
-                    <div class="flex flex-col gap-3 border-b border-kaori-primary/15 bg-kaori-soft px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex h-full flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-1 xl:row-start-1">
+                    <div class="flex flex-col gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex items-center gap-3">
-                            <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-primary text-white">
+                            <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                                 <i data-lucide="badge-check" class="h-5 w-5"></i>
                             </span>
                             <div>
@@ -131,17 +130,17 @@
                     <div class="flex flex-1 flex-col p-5">
                         {% if record.common_name or record.serial_number or record.issuer or record.fingerprint_sha256 %}
                             <div class="grid gap-3 sm:grid-cols-2">
-                                <div class="rounded-lg border border-kaori-primary/15 bg-kaori-soft p-4">
+                                <div class="rounded-lg border border-outline-default bg-surface-hover p-4">
                                     <div class="flex items-center gap-2 text-kaori-primary">
                                         <i data-lucide="badge-check" class="h-4 w-4"></i>
                                         <p class="text-xs font-medium">Common Name</p>
                                     </div>
                                     <p class="mt-2 break-words text-sm font-semibold text-content-primary">{{ record.common_name or 'N/A' }}</p>
                                 </div>
-                                <div class="rounded-lg border border-kaori-primary/15 bg-kaori-soft p-4">
+                                <div class="rounded-lg border border-outline-default bg-surface-hover p-4">
                                     <div class="flex items-center gap-2 text-kaori-primary">
                                         <i data-lucide="hash" class="h-4 w-4"></i>
-                                        <p class="text-xs font-medium">Serial number</p>
+                                        <p class="text-xs font-medium">Serial Number</p>
                                     </div>
                                     <p class="mt-2 break-all font-mono text-xs leading-5 text-content-secondary">{{ record.serial_number or 'N/A' }}</p>
                                 </div>
@@ -169,10 +168,10 @@
                         {% endcall %}
                     </div>
                 </div>
-                <div class="flex flex-col overflow-hidden rounded-xl border border-kaori-primary/20 bg-surface-card shadow-sm xl:col-start-1 xl:row-start-2 xl:self-start">
-                    <div class="flex flex-col gap-3 border-b border-kaori-primary/15 bg-kaori-soft px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-1 xl:row-start-2 xl:self-start">
+                    <div class="flex flex-col gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex items-center gap-3">
-                            <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-primary text-white">
+                            <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                                 <i data-lucide="globe-2" class="h-5 w-5"></i>
                             </span>
                             <div>
@@ -203,10 +202,10 @@
                         {% endcall %}
                     </div>
                 </div>
-                <div class="flex flex-col overflow-hidden rounded-xl border border-kaori-primary/20 bg-surface-card shadow-sm xl:col-start-1 xl:row-start-3 xl:self-start">
-                    <div class="flex flex-col gap-3 border-b border-kaori-primary/15 bg-kaori-soft px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-1 xl:row-start-3 xl:self-start">
+                    <div class="flex flex-col gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex items-center gap-3">
-                            <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-primary text-white">
+                            <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                                 <i data-lucide="route" class="h-5 w-5"></i>
                             </span>
                             <div>
@@ -222,13 +221,13 @@
                                 {% for consumer in record.used_by %}
                                     {% call detail_object.card(consumer.name, consumer.namespace, 'route') %}
                                         <div>
-                                            <p class="text-xs text-content-muted">Mapped hosts</p>
+                                            <p class="text-xs text-content-muted">Mapped Hosts</p>
                                             <div class="mt-2 flex flex-wrap gap-2">
                                                 {% for host in consumer.hosts or [] %}
                                                     <a href="https://{{ host }}"
                                                        target="_blank"
                                                        rel="noopener noreferrer"
-                                                       class="inline-flex items-center gap-1.5 rounded-md border border-kaori-primary/15 bg-surface-card px-2.5 py-1 text-xs font-medium text-kaori-primary transition hover:bg-kaori-soft">
+                                                       class="inline-flex items-center gap-1.5 rounded-md border border-outline-default bg-surface-card px-2.5 py-1 text-xs font-medium text-kaori-primary transition hover:border-kaori-primary/30 hover:bg-kaori-soft">
                                                         <span>{{ host }}</span>
                                                         <i data-lucide="external-link" class="h-3 w-3"></i>
                                                     </a>
@@ -244,16 +243,16 @@
                             {{ detail_object.empty('No Ingress mapping found', 'This TLS Secret is not currently referenced by an inventoried Ingress resource.', 'route-off') }}
                         {% endif %}
                         {% call detail_object.stack() %}
-                            {{ detail_tip.tip('Ingress references come from the latest inventory snapshot and may not include external consumers.', 'route') }}
+                            {{ detail_tip.tip('Ingress References come from the latest inventory snapshot and may not include external consumers.', 'route') }}
                         {% endcall %}
                     </div>
                 </div>
             </div>
             <div class="space-y-6 xl:contents">
-                <div class="flex h-full flex-col overflow-hidden rounded-xl border border-kaori-primary/20 bg-surface-card shadow-sm xl:col-start-2 xl:row-start-1">
-                    <div class="border-b border-kaori-primary/15 bg-kaori-soft px-5 py-4">
+                <div class="flex h-full flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-2 xl:row-start-1">
+                    <div class="border-b border-outline-default bg-surface-hover px-5 py-4">
                         <div class="flex items-center gap-3">
-                            <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-primary text-white">
+                            <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                                 <i data-lucide="calendar-clock" class="h-5 w-5"></i>
                             </span>
                             <div>
@@ -263,11 +262,11 @@
                         </div>
                     </div>
                     <div class="flex flex-1 flex-col p-5">
-                        <div class="rounded-lg bg-kaori-primary-dark p-4 text-brand-foreground shadow-sm">
+                        <div class="rounded-lg border border-outline-default bg-surface-hover p-4">
                             <div class="flex items-end justify-between gap-4">
                                 <div>
-                                    <p class="text-xs text-brand-foreground-muted">Remaining validity</p>
-                                    <p class="mt-1 text-3xl font-bold">
+                                    <p class="text-xs text-content-muted">Remaining Validity</p>
+                                    <p class="mt-1 text-3xl font-semibold text-content-primary">
                                         {{ record.days_remaining if record.days_remaining is not none else 'N/A' }}
                                         {% if record.days_remaining is not none %}<span class="ml-1 text-base font-medium">days</span>{% endif %}
                                     </p>
@@ -279,17 +278,17 @@
                         </div>
                         {% if record.not_before or record.not_after %}
                             <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                                <div class="rounded-lg border border-kaori-primary/15 bg-kaori-soft p-4">
+                                <div class="rounded-lg border border-outline-default bg-surface-hover p-4">
                                     <div class="flex items-center gap-2 text-kaori-primary">
                                         <i data-lucide="calendar-check" class="h-4 w-4"></i>
-                                        <p class="text-xs font-medium">Valid from</p>
+                                        <p class="text-xs font-medium">Valid From</p>
                                     </div>
                                     <p class="mt-2 text-sm font-semibold text-content-primary">{{ record.not_before|user_datetime("N/A") }}</p>
                                 </div>
-                                <div class="rounded-lg border border-kaori-primary/15 bg-kaori-soft p-4">
+                                <div class="rounded-lg border border-outline-default bg-surface-hover p-4">
                                     <div class="flex items-center gap-2 text-kaori-primary">
                                         <i data-lucide="calendar-x" class="h-4 w-4"></i>
-                                        <p class="text-xs font-medium">Expires at</p>
+                                        <p class="text-xs font-medium">Expires At</p>
                                     </div>
                                     <p class="mt-2 text-sm font-semibold text-content-primary">{{ record.not_after|user_datetime("N/A") }}</p>
                                 </div>
@@ -303,22 +302,22 @@
                     </div>
                 </div>
                 <div id="update-secret"
-                     class="rounded-xl border border-kaori-primary/20 bg-surface-card p-6 shadow-sm xl:col-start-2 xl:row-start-2 xl:self-start ">
+                     class="rounded-xl border border-outline-default bg-surface-card p-6 shadow-sm xl:col-start-2 xl:row-start-2 xl:self-start ">
                     <div class="flex items-start gap-3">
                         <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                             <i data-lucide="rotate-cw" class="h-5 w-5"></i>
                         </div>
                         <div>
-                            <h2 class="text-base font-bold text-content-primary">Rotate TLS Secret</h2>
+                            <h2 class="text-base font-semibold text-content-primary">Rotate TLS Secret</h2>
                             <p class="mt-1 text-sm leading-6 text-content-muted">Governance identifies certificate posture. The controlled replacement workflow is performed under Kubernetes Operations.</p>
                         </div>
                     </div>
                     <a href="{{ url_for('kubernetes_operations.tls_secret_rotate', certificate_id=record.id) }}"
-                       class="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-kaori-primary-hover">
+                       class="mt-5 {{ operation_ui.primary_button_classes(true) }}">
                         <i data-lucide="key-round" class="h-4 w-4"></i>
-                        Open TLS rotation workflow
+                        Open TLS Rotation Workflow
                     </a>
-                    <p class="mt-4 rounded-lg bg-kaori-soft p-4 text-xs leading-5 text-content-muted">Certificate files and private keys are validated and applied by Secret Management. Governance retains only posture, relationship, and audit context.</p>
+                    <p class="mt-4 rounded-lg border border-outline-default bg-surface-hover p-4 text-xs leading-5 text-content-muted">Certificate files and private keys are validated and applied by Secret Management. Governance retains only posture, relationship, and audit context.</p>
                 </div>
             </div>
         </section>

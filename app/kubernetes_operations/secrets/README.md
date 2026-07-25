@@ -193,3 +193,12 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 - Final mutation buttons render in the neutral disabled state until validation succeeds.
 - The controller accepts both direct and nested HTMX trigger payloads and also verifies the `HX-Trigger` response header after each request, preventing a successful validation from leaving the final action disabled.
 - Any subsequent form input or selection change invalidates the prior validation and disables the final action again.
+
+## Unified KAORI presentation contract
+
+- Secret Management landing cards, create/replace/delete forms, Protected Reveal surfaces, and TLS rotation use the shared macros in `app/templates/kubernetes_operations/_components.html`.
+- The right side of every hero contains only status and compact metrics; descriptive helper sentences remain in the left hero description or content sections.
+- Secret Type selection uses an explicit `is-selected`/`data-selected` contract. The active card has a violet border, selected surface, persistent violet icon, and a visible `Selected` badge in both light and dark appearance.
+- Validation, primary, secondary, destructive, and disabled actions use shared button macros so state changes do not alter geometry or produce thick borders.
+- Workflow section headers use one icon container, title hierarchy, description scale, outline, and surface treatment across Create, Replace, Delete, Reveal, and TLS rotation.
+- Legacy inline page-size submission handlers are replaced by the global `data-kaori-auto-submit` behavior.

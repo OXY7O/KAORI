@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flask import flash, redirect, render_template, request, url_for
+from flask import redirect, render_template, request, url_for
 from flask_login import current_user
 
 from app.cluster.onboarding import has_registered_clusters
@@ -46,7 +46,16 @@ def tls_certificates_detail(certificate_id: int):
 
     record = get_tls_certificate_detail(certificate_id)
     if record is None:
-        flash('TLS certificate record was not found.', 'warning')
+        record_operational_activity(
+            user_id=current_user.id,
+            event_type='governance_tls_certificate_record_missing',
+            status='warning',
+            title='TLS certificate record was not found',
+            message='The requested TLS certificate record is no longer available. Refresh the inventory and select a current record.',
+            action_url=url_for('governance.tls_certificates'),
+            metadata={'certificate_id': certificate_id},
+            queue_feedback=True,
+        )
         return redirect(url_for('governance.tls_certificates'))
 
     return render_template(

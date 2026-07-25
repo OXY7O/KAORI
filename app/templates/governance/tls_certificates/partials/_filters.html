@@ -27,7 +27,7 @@
         <span class="text-sm font-semibold text-content-primary">Namespace</span>
         <select name="namespace"
                 class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-            <option value="">All namespaces</option>
+            <option value="">All Namespaces</option>
             {% for namespace in payload.namespaces %}
                 <option value="{{ namespace }}"
                         {% if payload.filters.namespace == namespace %}selected{% endif %}>{{ namespace }}</option>

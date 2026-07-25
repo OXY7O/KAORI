@@ -9,7 +9,7 @@
     <button type="submit"
             name="operation"
             value="validate"
-            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-kaori-primary/25 bg-kaori-soft px-5 text-sm font-semibold text-kaori-primary transition hover:border-kaori-primary/40 hover:bg-kaori-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus cursor-pointer disabled:cursor-not-allowed">
+            class="{{ configmap_ui.validate_button_classes() }}">
         <i data-lucide="scan-search" class="h-4 w-4"></i>
         {{ 'Revalidate Deletion' if delete_validation_token else 'Validate Deletion' }}
     </button>
@@ -17,7 +17,7 @@
             name="operation"
             value="delete"
             {% if not delete_validation_token %}disabled aria-disabled="true" title="Validate deletion before applying the final delete action"{% endif %}
-            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-status-critical px-5 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-critical cursor-pointer disabled:cursor-not-allowed disabled:opacity-50">
+            class="{{ configmap_ui.destructive_button_classes() }}">
         <i data-lucide="trash-2" class="h-4 w-4"></i>
         Delete ConfigMap
     </button>

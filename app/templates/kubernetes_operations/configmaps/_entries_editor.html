@@ -50,6 +50,3 @@
         </button>
     </div>
 </template>
-<script>
-(function(){const root=document.currentScript.parentElement;root.querySelector('[data-add-entry]')?.addEventListener('click',()=>{root.querySelector('#configmap-entries').append(root.querySelector('#configmap-entry-template').content.cloneNode(true));window.renderKaoriIcons?.();});root.addEventListener('click',e=>{const button=e.target.closest('[data-remove-entry]');if(button&&root.querySelectorAll('.configmap-entry').length>1)button.closest('.configmap-entry').remove();});})();
-</script>
