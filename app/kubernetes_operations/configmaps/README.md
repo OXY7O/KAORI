@@ -82,3 +82,10 @@ Impact context can lag behind the live object. The UI must label it as inventory
 - The server never trusts the browser gate: final create and update requests run Kubernetes server-side validation again immediately before mutation through `validate_then_apply`.
 - Successful create, update, and delete operations redirect to a clean page state so cluster, namespace, ConfigMap, entries, and confirmation values do not remain stale.
 - Validation failures preserve the current form and are surfaced through the KAORI notification pipeline without Flask flash messages.
+
+### Validation-gated action state
+
+- Validation-gated ConfigMap actions use `validated_operations.js` as the single client-side state controller.
+- Final mutation buttons render in the neutral disabled state until validation succeeds.
+- The controller accepts both direct and nested HTMX trigger payloads and also verifies the `HX-Trigger` response header after each request, preventing a successful validation from leaving the final action disabled.
+- Any subsequent form input or selection change invalidates the prior validation and disables the final action again.

@@ -186,3 +186,10 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 - Uploaded Secret streams are rewound between validation and mutation so the exact same payload is applied.
 - Successful create, replace, and delete operations redirect to a clean page state, clearing filters, target selection, confirmation values, and sensitive payload inputs.
 - Validation failures preserve the current form and use persistent KAORI notifications instead of Flask flash messages.
+
+### Validation-gated action state
+
+- Validation-gated Secret actions use `validated_operations.js` as the single client-side state controller.
+- Final mutation buttons render in the neutral disabled state until validation succeeds.
+- The controller accepts both direct and nested HTMX trigger payloads and also verifies the `HX-Trigger` response header after each request, preventing a successful validation from leaving the final action disabled.
+- Any subsequent form input or selection change invalidates the prior validation and disables the final action again.
