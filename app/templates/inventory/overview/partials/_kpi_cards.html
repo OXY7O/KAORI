@@ -16,7 +16,7 @@
 ] %}
 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
          aria-labelledby="inventory-footprint-title">
-    <header class="border-b border-outline-subtle px-5 py-4">
+    <header class="border-b border-outline-subtle bg-surface-hover px-5 py-4">
         <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
@@ -43,9 +43,9 @@
         </div>
     </header>
 
-    <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
         {% for card in cards %}
-            <article class="flex min-w-0 items-start justify-between gap-4 p-5 {% if loop.index > 4 %}xl:border-t xl:border-outline-subtle{% endif %}">
+            <article class="flex min-w-0 items-start justify-between gap-4 bg-surface-card p-5 transition hover:bg-surface-hover">
                 <div class="min-w-0 flex-1">
                     <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ card.title }}</p>
                     <p class="mt-2 text-2xl font-semibold tracking-tight text-content-primary">{{ card.value }}</p>
