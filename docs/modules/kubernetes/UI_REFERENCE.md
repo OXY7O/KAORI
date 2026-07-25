@@ -36,3 +36,12 @@ Detailed page fields, table columns, and action names belong in the relevant Kub
 ### ConfigMap View & Update Sidebar
 
 The View & Update ConfigMap page uses a dedicated sticky right rail on desktop. The right rail contains the KAORI Flow panel followed by the standard Update Guardrails panel. Both panels remain visible while the operator reviews or edits long ConfigMap content. The KAORI Flow communicates the controlled update sequence; Update Guardrails uses the standard neutral KAORI section header and compact guardrail rows. The main selection, editor, and action surfaces remain in the left content column.
+
+
+### ConfigMap Create and Update Sidebar Layout
+
+- **Create Kubernetes ConfigMap** and **View & Update ConfigMap** use the same two-column operational layout.
+- The left column is an independent `space-y-6` content stack so adjacent workflow cards keep a fixed 24 px vertical gap and are not stretched by the right sidebar.
+- The right column contains **KAORI Flow** followed by the operation-specific **Create Guardrails** or **Update Guardrails** panel.
+- The complete right sidebar uses `xl:sticky xl:top-6`; sticky positioning is applied to the sidebar wrapper, not to individual grid rows.
+- Do not use a multi-row spanning sidebar for these pages because spanning content can influence grid track sizing and create excessive vertical distance between left-column sections.
