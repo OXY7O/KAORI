@@ -137,6 +137,19 @@ Small summaries may be stored in `result_summary_json`. Large outputs must use `
 
 Inventory Sync is the first registered configuration. Future report, analytics, forecasting, retention, and reconciliation jobs must register here rather than introducing a new Settings page or parallel scheduler.
 
+### Job Configuration HTMX replacement boundary
+
+The Job Configuration catalog and the selected-job panel have separate layout ownership. The outer `<main>` element owns the `xl:col-span-8` grid placement and must never be replaced by a selected-job HTMX response. Only the inner `#job-configuration-workspace` fragment is a replacement boundary. This keeps Run Now, policy updates, catalog selection, and active-execution polling from removing the grid-span class and collapsing the selected-job panel into one column.
+
+The DOM must contain exactly one `job-configuration-workspace` identifier:
+
+```text
+configuration/_workspace.html
+└── main.min-w-0.xl:col-span-8        # persistent grid owner
+    └── configuration/_job_workspace.html
+        └── #job-configuration-workspace  # HTMX outerHTML boundary
+```
+
 ## Implementation boundaries
 
 ```text
@@ -160,15 +173,3 @@ Provider and feature domains own their collectors, report builders, analytics pr
 ## Celery priority contract
 
 KAORI uses Redis-compatible Celery priorities from 0 through 9. Lower values are processed first: runtime `2`, validation `3`, standard `5`, analytics `6`, and forecasting `7`. Queue isolation remains the primary protection; priority only orders work inside one queue.
-
-## Cooperative cancellation escalation
-
-Heavy analytics and forecasting executions first use cooperative cancellation. The web process records
-`cancel_requested` and the worker exits at its next lifecycle checkpoint. The cancellation request must
-not update `heartbeat_at`; that timestamp remains worker-owned and continues to represent worker liveness.
-
-`JOB_CANCEL_GRACE_SECONDS` controls the cooperative grace period and defaults to 120 seconds. The job
-maintenance recovery task escalates a cancellation that remains pending beyond this period by revoking the
-Celery task with `terminate=True` and `SIGTERM`, then terminalizing the execution as `canceled`. This releases
-the active deduplication key and prevents an unresponsive execution from remaining permanently in Active Work.
-Repeated cancellation requests are rejected once the execution is already in `cancel_requested` state.
