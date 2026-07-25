@@ -8,6 +8,8 @@ This document contains Kubernetes-specific presentation decisions that must not 
 - Live Prometheus and Alertmanager signals require a selected cluster and must be explained explicitly.
 - CPU may use Violet and memory Blue inside approved analytics visualizations.
 - Cluster health is the primary non-collapsed operational table and may expose resource values, active alerts, source availability, and freshness context.
+- Kubernetes Operations Dashboard groups detailed sections into four no-reload tabs: Operations Overview, Capacity & Demand, Signals & Actions, and Reporting.
+- Dashboard sections use lazy HTMX loading when their tab becomes visible so hidden categories do not generate unnecessary requests.
 
 ## Topology
 
@@ -32,14 +34,3 @@ This document contains Kubernetes-specific presentation decisions that must not 
 - Destructive and security-sensitive actions use their established confirmation, permission, CSRF, audit, and notification flows.
 
 Detailed page fields, table columns, and action names belong in the relevant Kubernetes module README rather than this summary.
-
-### Inventory table row presentation
-
-- Inventory table bodies follow the Resources By Cluster reference: ordinary row values use `text-sm` with `leading-5`, primary resource names use `text-sm font-semibold`, supporting context uses `text-xs`, and compact metadata or semantic labels retain the shared 10 px label contract.
-- Every inventory Cluster cell uses the shared two-line cluster identity from Resources By Cluster: 32 × 32 px server icon, cluster name as the primary line, and the normalized environment as supporting text. Cluster identity is not rendered as a metadata label.
-- Single-line resource-name cells use a 28 × 28 px icon container with a 16 × 16 px Lucide icon. Supporting text must not be added merely to fill icon height.
-- Workload type remains violet descriptive metadata, while update strategy uses the blue Info semantic treatment so the two adjacent labels are visually distinguishable. Workload state is rendered as ordinary text.
-- Ingress host data is available in expandable details and is not duplicated in the main inventory table.
-- Storage capacity is ordinary text without a label or icon.
-- Configuration type remains violet descriptive metadata. Immutable is Warning/amber and Mutable is Normal/green so mutability is distinct from object type.
-- Node resource cells follow the same single-line name-cell geometry as other inventory pages. Hostname context remains in details instead of creating inconsistent two-line rows.
