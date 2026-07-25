@@ -33,10 +33,6 @@ This document contains Kubernetes-specific presentation decisions that must not 
 
 Detailed page fields, table columns, and action names belong in the relevant Kubernetes module README rather than this summary.
 
-### ConfigMap Delete Validation Boundary
+### Analytics Overview Category Tabs
 
-- Final ConfigMap deletion is a two-step operation: `Validate Deletion` must complete before `Delete ConfigMap` is enabled.
-- Validation creates a signed, target-bound receipt valid for ten minutes and records the live `resourceVersion`.
-- The final delete request performs exactly one Kubernetes delete call; it does not repeat the dry-run delete in the same request.
-- If the target identity or `resourceVersion` changes after validation, KAORI blocks deletion and requires revalidation.
-- After successful deletion, the HTMX response clears the stale target panel and disables the final delete action while the success toast and Activity Audit entry remain available.
+The Analytics Overview keeps Analytics Health Summary above the category navigation and groups the remaining sections into four tabs: Resource & Capacity, Workloads & Storage, Forecast & Signals, and Actions & Recommendations. The first tab is active by default. Expandable analytics overview sections, including all Top Consumers groups, open by default so operational evidence is visible immediately after a category is selected.

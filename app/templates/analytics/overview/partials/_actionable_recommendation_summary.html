@@ -4,7 +4,7 @@
 {% set summary_icon = {'green': 'circle-check', 'amber': 'triangle-alert', 'red': 'shield-alert', 'gray': 'circle-help'}.get(summary.tone, 'circle-help') %}
 {% set top_sources = summary.sources|sort(attribute='count', reverse=true) %}
 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <details class="group">
+    <details class="group" open>
         <summary class="flex cursor-pointer list-none flex-col gap-4 px-5 py-5 transition hover:bg-surface-hover lg:flex-row lg:items-center lg:justify-between">
             <div class="flex items-start gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="list-checks" class="h-5 w-5"></i></span>

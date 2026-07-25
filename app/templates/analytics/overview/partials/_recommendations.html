@@ -4,7 +4,7 @@
 {% set critical_count = actionable_summary.priority_summary.critical|default(0) %}
 {% set warning_count = actionable_summary.priority_summary.warning|default(0) %}
 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <details class="group">
+    <details class="group" open>
         <summary class="flex cursor-pointer list-none flex-col gap-4 px-5 py-5 transition hover:bg-surface-hover sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="clipboard-check" class="h-5 w-5"></i></span>

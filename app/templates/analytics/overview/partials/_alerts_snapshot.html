@@ -3,7 +3,7 @@
 {% set alert_tone = 'warning' if alerts.firing_alerts > 0 or alerts.warning_alerts > 0 else 'normal' %}
 {% set alert_icon = 'triangle-alert' if alert_tone == 'warning' else 'circle-check' %}
 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <details class="group">
+    <details class="group" open>
         <summary class="flex cursor-pointer list-none flex-col gap-4 px-5 py-5 transition hover:bg-surface-hover lg:flex-row lg:items-center lg:justify-between">
             <div class="flex items-start gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg {% if alert_tone == 'warning' %}bg-status-warning-soft text-status-warning{% else %}bg-status-normal-soft text-status-normal{% endif %}">

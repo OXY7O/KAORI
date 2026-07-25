@@ -35,8 +35,7 @@
                             'maintenance': 'bg-kaori-primary',
                             'normal': 'bg-status-normal'
                         }.get(group.tone, 'bg-kaori-primary') %}
-            <details class="group overflow-hidden rounded-lg border border-outline-default bg-surface-card"
-                     {% if loop.first %}open{% endif %}>
+            <details class="group overflow-hidden rounded-lg border border-outline-default bg-surface-card" open>
                 <summary class="cursor-pointer list-none px-4 py-4 transition hover:bg-surface-hover">
                     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div class="flex min-w-0 items-start gap-3">
