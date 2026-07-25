@@ -43,8 +43,8 @@
               hx-swap="innerHTML"
               class="space-y-6">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-                <section class="h-full overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-1 xl:row-start-1">
+            <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-1 xl:row-start-1">
                     {{ configmap_ui.section_header('search', 'Select ConfigMap', 'Choose the cluster, namespace, and live ConfigMap to load current state.') }}
                     <div class="p-5 sm:p-6">
                         <div id="configmap-workspace">
@@ -53,38 +53,39 @@
                         </div>
                     </div>
                 </section>
-                <section class="h-full overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-2 xl:row-start-1">
-                    {{ configmap_ui.section_header('shield-check', 'Update Guardrails', 'Controls applied before the selected object can be changed.') }}
-                    <div class="grid gap-4 p-5">
-                        {{ configmap_ui.guardrail('eye', 'Live Read First', 'Current values are loaded directly from Kubernetes.') }}
-                        {{ configmap_ui.guardrail('git-compare-arrows', 'Effective Diff', 'Added, changed, and removed keys are reviewed before apply.') }}
-                        {{ configmap_ui.guardrail('lock-keyhole', 'Immutable Protection', 'Immutable ConfigMaps cannot be modified.') }}
-                    </div>
-                </section>
                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-1 xl:row-start-2">
                     {{ configmap_ui.section_header('diff', 'Current Values & Proposed Changes', 'Edit entries, select merge or replacement behavior, and review workload impact.') }}
                     <div id="configmap-editor" class="p-5 sm:p-6">
                         {% if target or target_error %}
                             {% include 'kubernetes_operations/configmaps/_editor.html' %}
                         {% else %}
-                            {{ configmap_ui.empty_state('file-search', 'Select a ConfigMap to begin', 'Current keys and workload context will appear here.') }}
+                            {{ configmap_ui.empty_state('file-search', 'Select a ConfigMap to Begin', 'Current keys and workload context will appear here.') }}
                         {% endif %}
                     </div>
                 </section>
-                <aside class="self-start xl:sticky xl:top-6 xl:col-start-2 xl:row-start-2">
+                <aside class="space-y-6 self-start xl:sticky xl:top-6 xl:col-start-2 xl:row-span-3 xl:row-start-1">
                     <section class="rounded-xl border border-brand-outline bg-kaori-primary-dark p-5 text-brand-foreground shadow-sm">
                         <div class="flex items-start justify-between gap-4">
                             <div>
-                                <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-foreground-muted">Update flow</p>
-                                <h2 class="mt-1.5 text-base font-semibold text-brand-foreground">Inspect Before Changing</h2>
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-brand-foreground-muted">KAORI Flow</p>
+                                <h2 class="mt-1.5 text-base font-semibold text-brand-foreground">Controlled ConfigMap Update</h2>
                             </div>
                             <span class="flex h-10 w-10 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface text-kaori-accent"><i data-lucide="workflow" class="h-5 w-5"></i></span>
                         </div>
                         <div class="mt-5 grid gap-4">
                             {{ configmap_ui.workflow_step(1, 'Select Object', 'Choose the existing live ConfigMap.') }}
-                            {{ configmap_ui.workflow_step(2, 'Review Context', 'Inspect values and known consumers.') }}
+                            {{ configmap_ui.workflow_step(2, 'Review Context', 'Inspect current values and known consumers.') }}
                             {{ configmap_ui.workflow_step(3, 'Preview Diff', 'Validate the effective merge or replacement.') }}
-                            {{ configmap_ui.workflow_step(4, 'Apply Update', 'Submit the approved change.') }}
+                            {{ configmap_ui.workflow_step(4, 'Apply Update', 'Submit the approved change to Kubernetes.') }}
+                        </div>
+                    </section>
+                    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                        {{ configmap_ui.section_header('shield-check', 'Update Guardrails', 'KAORI validates the live object and proposed change before write access is allowed.') }}
+                        <div class="grid gap-4 p-5">
+                            {{ configmap_ui.guardrail('eye', 'Live Read First', 'Current values are loaded directly from Kubernetes before editing.') }}
+                            {{ configmap_ui.guardrail('git-compare-arrows', 'Effective Diff', 'Added, changed, and removed keys are reviewed before apply.') }}
+                            {{ configmap_ui.guardrail('scan-search', 'Dry-Run Validation', 'KAORI validates the proposed update before modifying the live object.') }}
+                            {{ configmap_ui.guardrail('lock-keyhole', 'Immutable Protection', 'Immutable ConfigMaps are blocked from update operations.', 'warning') }}
                         </div>
                     </section>
                 </aside>

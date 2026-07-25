@@ -33,7 +33,6 @@ This document contains Kubernetes-specific presentation decisions that must not 
 
 Detailed page fields, table columns, and action names belong in the relevant Kubernetes module README rather than this summary.
 
+### ConfigMap View & Update Sidebar
 
-### ConfigMap Management Title Case Audit
-
-ConfigMap Management uses Title Case for hero titles, context-panel labels, section and card titles, workflow-step titles, guardrail titles, action buttons, and action-oriented select options. Descriptions, helper text, field labels, validation messages, empty-state explanations, and toast messages remain Sentence case.
+The View & Update ConfigMap page uses a dedicated sticky right rail on desktop. The right rail contains the KAORI Flow panel followed by the standard Update Guardrails panel. Both panels remain visible while the operator reviews or edits long ConfigMap content. The KAORI Flow communicates the controlled update sequence; Update Guardrails uses the standard neutral KAORI section header and compact guardrail rows. The main selection, editor, and action surfaces remain in the left content column.
