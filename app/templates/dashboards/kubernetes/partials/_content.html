@@ -150,10 +150,15 @@
                 <div x-cloak
                      x-show="activeTab === 'reporting'"
                      role="tabpanel">
-                    <div class="max-w-4xl">
-                        {% with section_open_default=true %}
-                            {% include "dashboards/kubernetes/partials/_reporting_summary.html" %}
-                        {% endwith %}
+                    <div class="grid items-stretch gap-5 xl:grid-cols-12">
+                        <div class="xl:col-span-6">
+                            {% with section_open_default=true %}
+                                {% include "dashboards/kubernetes/partials/_reporting_summary.html" %}
+                            {% endwith %}
+                        </div>
+                        <div class="xl:col-span-6">
+                            {% include "dashboards/kubernetes/partials/_reporting_guidance.html" %}
+                        </div>
                     </div>
                 </div>
             </div>

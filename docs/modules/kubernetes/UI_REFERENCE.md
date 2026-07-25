@@ -39,3 +39,17 @@ Detailed page fields, table columns, and action names belong in the relevant Kub
 
 All expandable dashboard sections are open on initial render. Users may collapse a section after reviewing it, but navigating to the dashboard or loading a tab must not hide operational data behind a closed default state.
 - The Signals & Actions tab places Alert Interpretation & Response beside Alerts Summary. The guidance box is open by default and explains severity meaning, source/freshness validation, triage order, evidence review, approved remediation, rollback, and recovery verification.
+
+### Kubernetes Operations Dashboard Guidance Pairing
+
+- Alerts Summary is paired with Alert Interpretation & Response in an equal-width two-column layout.
+- Alert handling uses a compact directional process flow: Validate → Triage → Investigate → Respond → Verify → Record.
+- Reporting Summary is paired with Reporting Interpretation & Next Steps in an equal-width two-column layout.
+- Both guidance panels are expandable and open by default, matching the dashboard section behavior.
+
+### Kubernetes Operations Dashboard — Reporting Tab
+
+- Reporting Summary displays up to five recent generated reports.
+- The adjacent Reporting Interpretation panel uses the same compact two-row arrow-flow pattern as Alert Interpretation so both dashboard columns remain visually balanced.
+- Controlled Reporting Flow: Validate → Select → Generate → Review → Schedule → Retain.
+- Flow descriptions use standard KAORI supporting typography (`text-xs`, `leading-5`).
