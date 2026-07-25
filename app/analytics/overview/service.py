@@ -6,7 +6,6 @@ from typing import Any, SupportsFloat, SupportsIndex
 
 from sqlalchemy import select
 
-from app.analytics.common.cache import get_or_set_cache
 from app.analytics.common.coercion import as_dict as _as_dict
 from app.analytics.overview.schema import (
     build_empty_overview_payload,
@@ -28,7 +27,7 @@ def get_analytics_overview(
     *,
     selected_cluster_id: str | None,
     time_range: str = '24h',
-    hydrate_live_sections: bool = False,
+    hydrate_snapshot_sections: bool = False,
 ) -> dict[str, Any]:
     payload = build_empty_overview_payload()
 
@@ -47,8 +46,8 @@ def get_analytics_overview(
     cluster_id = str(payload['selected_cluster_id'])
     selected_time_range = str(payload['selected_time_range'])
 
-    if hydrate_live_sections:
-        _hydrate_overview_live_sections(
+    if hydrate_snapshot_sections:
+        _hydrate_overview_snapshot_sections(
             payload=payload,
             cluster_id=cluster_id,
             time_range=selected_time_range,
@@ -57,48 +56,48 @@ def get_analytics_overview(
     return payload
 
 
-def _hydrate_overview_live_sections(
+def _hydrate_overview_snapshot_sections(
     *,
     payload: dict[str, Any],
     cluster_id: str,
     time_range: str,
 ) -> dict[str, Any]:
-    payload['prometheus'] = _cached_snapshot(
+    payload['prometheus'] = _read_committed_snapshot(
         key=f'overview:prometheus:{cluster_id}',
         ttl_seconds=30,
         loader=lambda: _get_prometheus_status(cluster_id=cluster_id),
     )
-    payload['resource_snapshot'] = _cached_snapshot(
+    payload['resource_snapshot'] = _read_committed_snapshot(
         key=f'overview:resource:{cluster_id}:{time_range}',
         ttl_seconds=45,
         loader=lambda: _get_resource_snapshot(cluster_id=cluster_id, time_range=time_range),
     )
-    payload['capacity_snapshot'] = _cached_snapshot(
+    payload['capacity_snapshot'] = _read_committed_snapshot(
         key=f'overview:capacity:{cluster_id}:{time_range}',
         ttl_seconds=60,
         loader=lambda: _get_capacity_snapshot(cluster_id=cluster_id, time_range=time_range),
     )
-    payload['storage_snapshot'] = _cached_snapshot(
+    payload['storage_snapshot'] = _read_committed_snapshot(
         key=f'overview:storage:{cluster_id}',
         ttl_seconds=60,
         loader=lambda: _get_storage_snapshot(cluster_id=cluster_id),
     )
-    payload['workload_snapshot'] = _cached_snapshot(
+    payload['workload_snapshot'] = _read_committed_snapshot(
         key=f'overview:workload:{cluster_id}',
         ttl_seconds=60,
         loader=lambda: _get_workload_snapshot(cluster_id=cluster_id),
     )
-    payload['top_consumers'] = _cached_snapshot(
+    payload['top_consumers'] = _read_committed_snapshot(
         key=f'overview:top-consumers:{cluster_id}:{time_range}',
         ttl_seconds=60,
         loader=lambda: _get_top_consumers_snapshot(cluster_id=cluster_id, time_range=time_range),
     )
-    payload['forecast_snapshot'] = _cached_snapshot(
+    payload['forecast_snapshot'] = _read_committed_snapshot(
         key=f'overview:forecast:{cluster_id}:{time_range}',
         ttl_seconds=300,
         loader=lambda: _get_forecast_snapshot(cluster_id=cluster_id, time_range=time_range),
     )
-    payload['alerts_snapshot'] = _cached_snapshot(
+    payload['alerts_snapshot'] = _read_committed_snapshot(
         key=f'overview:alerts:{cluster_id}',
         ttl_seconds=20,
         loader=lambda: _get_alerts_snapshot(cluster_id=cluster_id),
@@ -120,7 +119,7 @@ def get_analytics_overview_section(
     payload = get_analytics_overview(
         selected_cluster_id=selected_cluster_id,
         time_range=time_range,
-        hydrate_live_sections=False,
+        hydrate_snapshot_sections=False,
     )
 
     cluster_id = str(payload['selected_cluster_id'])
@@ -143,7 +142,7 @@ def get_analytics_overview_section(
     elif section == 'alerts-snapshot':
         _hydrate_alerts_section(payload, cluster_id)
     else:
-        _hydrate_overview_live_sections(
+        _hydrate_overview_snapshot_sections(
             payload=payload,
             cluster_id=cluster_id,
             time_range=selected_time_range,
@@ -156,7 +155,7 @@ def get_analytics_overview_section(
 
 
 def _hydrate_prometheus_section(payload: dict[str, Any], cluster_id: str) -> None:
-    payload['prometheus'] = _cached_snapshot(
+    payload['prometheus'] = _read_committed_snapshot(
         key=f'overview:prometheus:{cluster_id}',
         ttl_seconds=30,
         loader=lambda: _get_prometheus_status(cluster_id=cluster_id),
@@ -164,12 +163,12 @@ def _hydrate_prometheus_section(payload: dict[str, Any], cluster_id: str) -> Non
 
 
 def _hydrate_resource_section(payload: dict[str, Any], cluster_id: str, time_range: str) -> None:
-    payload['prometheus'] = _cached_snapshot(
+    payload['prometheus'] = _read_committed_snapshot(
         key=f'overview:prometheus:{cluster_id}',
         ttl_seconds=30,
         loader=lambda: _get_prometheus_status(cluster_id=cluster_id),
     )
-    payload['resource_snapshot'] = _cached_snapshot(
+    payload['resource_snapshot'] = _read_committed_snapshot(
         key=f'overview:resource:{cluster_id}:{time_range}',
         ttl_seconds=45,
         loader=lambda: _get_resource_snapshot(cluster_id=cluster_id, time_range=time_range),
@@ -177,7 +176,7 @@ def _hydrate_resource_section(payload: dict[str, Any], cluster_id: str, time_ran
 
 
 def _hydrate_capacity_section(payload: dict[str, Any], cluster_id: str, time_range: str) -> None:
-    payload['capacity_snapshot'] = _cached_snapshot(
+    payload['capacity_snapshot'] = _read_committed_snapshot(
         key=f'overview:capacity:{cluster_id}:{time_range}',
         ttl_seconds=60,
         loader=lambda: _get_capacity_snapshot(cluster_id=cluster_id, time_range=time_range),
@@ -185,7 +184,7 @@ def _hydrate_capacity_section(payload: dict[str, Any], cluster_id: str, time_ran
 
 
 def _hydrate_storage_section(payload: dict[str, Any], cluster_id: str) -> None:
-    payload['storage_snapshot'] = _cached_snapshot(
+    payload['storage_snapshot'] = _read_committed_snapshot(
         key=f'overview:storage:{cluster_id}',
         ttl_seconds=60,
         loader=lambda: _get_storage_snapshot(cluster_id=cluster_id),
@@ -193,7 +192,7 @@ def _hydrate_storage_section(payload: dict[str, Any], cluster_id: str) -> None:
 
 
 def _hydrate_workload_section(payload: dict[str, Any], cluster_id: str) -> None:
-    payload['workload_snapshot'] = _cached_snapshot(
+    payload['workload_snapshot'] = _read_committed_snapshot(
         key=f'overview:workload:{cluster_id}',
         ttl_seconds=60,
         loader=lambda: _get_workload_snapshot(cluster_id=cluster_id),
@@ -201,7 +200,7 @@ def _hydrate_workload_section(payload: dict[str, Any], cluster_id: str) -> None:
 
 
 def _hydrate_top_consumers_section(payload: dict[str, Any], cluster_id: str, time_range: str) -> None:
-    payload['top_consumers'] = _cached_snapshot(
+    payload['top_consumers'] = _read_committed_snapshot(
         key=f'overview:top-consumers:{cluster_id}:{time_range}',
         ttl_seconds=60,
         loader=lambda: _get_top_consumers_snapshot(cluster_id=cluster_id, time_range=time_range),
@@ -209,7 +208,7 @@ def _hydrate_top_consumers_section(payload: dict[str, Any], cluster_id: str, tim
 
 
 def _hydrate_forecast_section(payload: dict[str, Any], cluster_id: str, time_range: str) -> None:
-    payload['forecast_snapshot'] = _cached_snapshot(
+    payload['forecast_snapshot'] = _read_committed_snapshot(
         key=f'overview:forecast:{cluster_id}:{time_range}',
         ttl_seconds=300,
         loader=lambda: _get_forecast_snapshot(cluster_id=cluster_id, time_range=time_range),
@@ -217,24 +216,22 @@ def _hydrate_forecast_section(payload: dict[str, Any], cluster_id: str, time_ran
 
 
 def _hydrate_alerts_section(payload: dict[str, Any], cluster_id: str) -> None:
-    payload['alerts_snapshot'] = _cached_snapshot(
+    payload['alerts_snapshot'] = _read_committed_snapshot(
         key=f'overview:alerts:{cluster_id}',
         ttl_seconds=20,
         loader=lambda: _get_alerts_snapshot(cluster_id=cluster_id),
     )
 
 
-def _cached_snapshot(
+def _read_committed_snapshot(
     *,
     key: str,
     ttl_seconds: int,
     loader: Any,
 ) -> dict[str, Any]:
-    return get_or_set_cache(
-        key=key,
-        ttl_seconds=ttl_seconds,
-        loader=loader,
-    )
+    """Read the latest committed worker generation without a web-cache TTL."""
+    del key, ttl_seconds
+    return loader()
 
 
 def _utc_now_display() -> str:
