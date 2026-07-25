@@ -147,6 +147,7 @@ class TopConsumersSnapshot(TypedDict):
     cpu: list[dict[str, Any]]
     memory: list[dict[str, Any]]
     storage: list[dict[str, Any]]
+    pods: list[dict[str, Any]]
     recommendation_count: int
 
 
@@ -1942,10 +1943,22 @@ def get_top_consumers_snapshot(
     cpu_rows = [row for row in rows if row.get('resource_type') == 'cpu']
     memory_rows = [row for row in rows if row.get('resource_type') == 'memory']
     pvc_rows = [row for row in rows if row.get('resource_type') == 'pvc']
+    pod_rows = [row for row in rows if row.get('resource_type') == 'pods']
     return {
         'cpu': _build_top_consumer_items(rows=cpu_rows, name_key='pod', fallback_name_key='workload', limit=5),
         'memory': _build_top_consumer_items(rows=memory_rows, name_key='pod', fallback_name_key='workload', limit=5),
-        'storage': _build_top_consumer_items(rows=pvc_rows, name_key='workload', fallback_name_key='workload', limit=5),
+        'storage': _build_top_consumer_items(
+            rows=pvc_rows,
+            name_key='workload',
+            fallback_name_key='workload',
+            limit=5,
+        ),
+        'pods': _build_top_consumer_items(
+            rows=pod_rows,
+            name_key='namespace',
+            fallback_name_key='workload',
+            limit=5,
+        ),
         'recommendation_count': _safe_int(payload.get('recommendation_count', 0)),
     }
 
@@ -1954,6 +1967,7 @@ def _empty_top_consumers_snapshot() -> TopConsumersSnapshot:
         'cpu': [],
         'memory': [],
         'storage': [],
+        'pods': [],
         'recommendation_count': 0,
     }
 

@@ -200,6 +200,37 @@ def get_dataset(dataset_key: str) -> AnalyticsDataset:
         raise LookupError(f'Unknown analytics dataset: {dataset_key}') from exc
 
 
+def source_binding_capabilities(dataset_key: str) -> tuple[str, ...]:
+    """Return the minimum binding scope required to execute a dataset.
+
+    Domain-specific binding capabilities remain part of Operational Domain
+    Readiness, but they must not prevent a connected metrics binding from
+    attempting the actual worker query. The query result is the authoritative
+    runtime evidence for materialization.
+    """
+
+    dataset = get_dataset(dataset_key)
+    if dataset.source_kind == 'prometheus':
+        return ('metrics',)
+    return dataset.required_binding_capabilities
+
+
+def source_technical_capabilities(dataset_key: str) -> tuple[str, ...]:
+    """Return transport capabilities required before the worker may query.
+
+    High-level domain capabilities such as ``workload_metrics`` and
+    ``node_filesystem_identity`` are advisory readiness evidence. Instant and
+    range query support are the execution boundary enforced before dispatch.
+    """
+
+    dataset = get_dataset(dataset_key)
+    return tuple(
+        capability
+        for capability in dataset.required_capabilities
+        if capability in {'instant_query', 'range_query'}
+    )
+
+
 def list_analytics_datasets() -> tuple[AnalyticsDataset, ...]:
     return ANALYTICS_DATASETS
 

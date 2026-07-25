@@ -39,3 +39,12 @@ Detailed page fields, table columns, and action names belong in the relevant Kub
 - Top Consumers uses a responsive two-column grid on desktop.
 - The overview exposes four consumer groups: Top CPU, Top Memory, Top Storage, and Top Pods.
 - Top Pods ranks namespaces by observed pod count from the committed Top Consumers snapshot.
+
+
+### Kubernetes Analytics Reliability States
+
+- Committed snapshot data remains visible when current Prometheus domain evidence is incomplete or the source becomes temporarily unavailable.
+- Advisory readiness gaps use the inline **Snapshot Available · Readiness Evidence Incomplete** notice; they do not replace tables or charts with a full blocker.
+- Full blockers are reserved for missing cluster scope, missing integration setup, unusable runtime health, or unavailable instant/range query transport.
+- Missing snapshots render a stable worker-preparation state and poll for completion; no Analytics selector may produce a blank white workspace.
+- Implicit multi-cluster access prefers a cluster with committed analytics data, while an explicit cluster selection remains authoritative.

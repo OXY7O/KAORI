@@ -24,6 +24,7 @@
               class="space-y-6">
             <input type="hidden" name="page" value="1">
             {% include "analytics/alerts/partials/_hero.html" %}
+            {% include "analytics/materialization/_freshness.html" %}
             {% if dependency_blocker %}
                 {% include "components/dependencies/_blocker.html" %}
             {% endif %}

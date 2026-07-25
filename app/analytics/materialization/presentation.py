@@ -17,6 +17,7 @@ def snapshot_meta(materialized: MaterializedRequest) -> dict[str, Any]:
         'generated_at': snapshot.generated_at if snapshot else None,
         'expires_at': snapshot.expires_at if snapshot else None,
         'last_error': snapshot.last_error if snapshot else None,
+        'source_warning': materialized.source_warning,
     }
 
 

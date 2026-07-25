@@ -10,7 +10,12 @@ from kombu.exceptions import OperationalError as KombuOperationalError
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.alertmanager.resolver import resolve_alertmanager_sources
-from app.analytics.materialization.catalog import canonical_parameters, get_dataset
+from app.analytics.materialization.catalog import (
+    canonical_parameters,
+    get_dataset,
+    source_binding_capabilities,
+    source_technical_capabilities,
+)
 from app.analytics.materialization.serialization import ClusterReference
 from app.analytics.materialization.service import SnapshotResult, read_snapshot
 from app.common.dependencies import (
@@ -45,6 +50,7 @@ class MaterializedRequest:
     dispatched: bool
     dispatch_error: str | None = None
     dependency_blocker: DependencyBlocker | None = None
+    source_warning: DependencyBlocker | None = None
 
 
 def _list_cluster_references() -> list[ClusterReference]:
@@ -103,13 +109,26 @@ def _candidate_is_usable(candidate: Any | None) -> bool:
     )
 
 
-def _prometheus_resolution(*, dataset_key: str, cluster_id: str):
+def _prometheus_resolution(
+    *,
+    dataset_key: str,
+    cluster_id: str,
+    strict: bool = False,
+):
     dataset = get_dataset(dataset_key)
     return resolve_prometheus_sources(
         scope_type=KUBERNETES_CLUSTER_SCOPE,
         scope_key=str(cluster_id),
-        required_binding_capabilities=dataset.required_binding_capabilities,
-        required_technical_capabilities=dataset.required_capabilities,
+        required_binding_capabilities=(
+            dataset.required_binding_capabilities
+            if strict
+            else source_binding_capabilities(dataset_key)
+        ),
+        required_technical_capabilities=(
+            dataset.required_capabilities
+            if strict
+            else source_technical_capabilities(dataset_key)
+        ),
     )
 
 
@@ -121,8 +140,8 @@ def _alert_resolutions(*, cluster_id: str):
     prometheus_resolution = resolve_prometheus_sources(
         scope_type=KUBERNETES_CLUSTER_SCOPE,
         scope_key=str(cluster_id),
-        required_binding_capabilities=('metrics', 'alert_metrics'),
-        required_technical_capabilities=('instant_query', 'kubernetes_identity'),
+        required_binding_capabilities=('metrics',),
+        required_technical_capabilities=('instant_query',),
     )
     return alertmanager_resolution, prometheus_resolution
 
@@ -157,6 +176,23 @@ def _dataset_source_is_ready(
     return True
 
 
+def _cluster_has_snapshot(
+    *,
+    dataset_key: str,
+    cluster_id: str,
+    parameters: Mapping[str, str],
+) -> bool:
+    normalized = canonical_parameters(
+        dataset_key,
+        {**parameters, 'cluster_id': cluster_id},
+    )
+    return read_snapshot(
+        cluster_id=cluster_id,
+        dataset_key=dataset_key,
+        parameters=normalized,
+    ).available
+
+
 def selected_cluster_from_request(
     *,
     dataset_key: str | None = None,
@@ -172,10 +208,17 @@ def selected_cluster_from_request(
         readiness = lambda cluster_id: resolve_instance_for_cluster(cluster_id) is not None
     else:
         normalized = parameters or {}
-        readiness = lambda cluster_id: _dataset_source_is_ready(
-            dataset_key=dataset_key,
-            cluster=cluster_by_id[cluster_id],
-            parameters=normalized,
+        readiness = lambda cluster_id: (
+            _cluster_has_snapshot(
+                dataset_key=dataset_key,
+                cluster_id=cluster_id,
+                parameters=normalized,
+            )
+            or _dataset_source_is_ready(
+                dataset_key=dataset_key,
+                cluster=cluster_by_id[cluster_id],
+                parameters=normalized,
+            )
         )
 
     return choose_cluster_reference(
@@ -197,42 +240,83 @@ def _capability_labels(keys: tuple[str, ...]) -> list[str]:
     return labels
 
 
-def _prometheus_dependency_blocker(
+def _prometheus_dependency_state(
     *,
     dataset_key: str,
     cluster: ClusterReference,
-) -> DependencyBlocker | None:
-    dataset = get_dataset(dataset_key)
-    resolution = _prometheus_resolution(
+) -> tuple[DependencyBlocker | None, DependencyBlocker | None]:
+    """Return a hard execution blocker and an optional readiness warning.
+
+    A connected metrics source with instant/range query support is sufficient
+    for the worker to attempt materialization. Missing high-level domain
+    evidence remains visible as a warning, but does not suppress committed data
+    or prevent the worker from collecting authoritative runtime evidence.
+    """
+
+    execution = _prometheus_resolution(
         dataset_key=dataset_key,
         cluster_id=cluster.id,
+        strict=False,
     )
-    if not resolution.candidates:
-        return prometheus_setup_blocker(cluster)
+    if not execution.candidates:
+        return prometheus_setup_blocker(cluster), None
 
-    selected = resolution.selected
-    if selected is not None:
-        if selected.operational_state in _UNUSABLE_OPERATIONAL_STATES:
-            return prometheus_connection_blocker(
+    selected = execution.selected
+    if selected is None:
+        candidate = execution.candidates[0]
+        missing_capabilities = (
+            *candidate.missing_binding_capabilities,
+            *candidate.missing_technical_capabilities,
+        )
+        if missing_capabilities:
+            return (
+                prometheus_capability_blocker(
+                    cluster,
+                    capability_labels=_capability_labels(missing_capabilities),
+                    feature_label=get_dataset(dataset_key).label,
+                ),
+                None,
+            )
+        return (
+            prometheus_connection_blocker(
+                cluster,
+                detail=candidate.decision_reason,
+            ),
+            None,
+        )
+
+    if selected.operational_state in _UNUSABLE_OPERATIONAL_STATES:
+        return (
+            prometheus_connection_blocker(
                 cluster,
                 detail=selected.decision_reason,
-            )
-        return None
+            ),
+            None,
+        )
 
-    candidate = resolution.candidates[0]
+    strict = _prometheus_resolution(
+        dataset_key=dataset_key,
+        cluster_id=cluster.id,
+        strict=True,
+    )
+    if strict.selected is not None:
+        return None, None
+
+    candidate = strict.candidates[0] if strict.candidates else selected
     missing_capabilities = (
         *candidate.missing_binding_capabilities,
         *candidate.missing_technical_capabilities,
     )
-    if missing_capabilities:
-        return prometheus_capability_blocker(
+    if not missing_capabilities:
+        return None, None
+
+    return (
+        None,
+        prometheus_capability_blocker(
             cluster,
             capability_labels=_capability_labels(missing_capabilities),
-            feature_label=dataset.label,
-        )
-    return prometheus_connection_blocker(
-        cluster,
-        detail=candidate.decision_reason,
+            feature_label=get_dataset(dataset_key).label,
+        ),
     )
 
 
@@ -313,24 +397,27 @@ def _alert_dependency_blocker(
     )
 
 
-def _dependency_blocker(
+def _dependency_state(
     *,
     dataset_key: str,
     cluster: ClusterReference,
     parameters: dict[str, str],
-) -> DependencyBlocker | None:
+) -> tuple[DependencyBlocker | None, DependencyBlocker | None]:
     dataset = get_dataset(dataset_key)
     if dataset.source_kind == 'prometheus':
-        return _prometheus_dependency_blocker(
+        return _prometheus_dependency_state(
             dataset_key=dataset_key,
             cluster=cluster,
         )
     if dataset.source_kind == 'alert':
-        return _alert_dependency_blocker(
-            cluster=cluster,
-            selected_source=parameters.get('source', 'auto'),
+        return (
+            _alert_dependency_blocker(
+                cluster=cluster,
+                selected_source=parameters.get('source', 'auto'),
+            ),
+            None,
         )
-    return None
+    return None, None
 
 
 def resolve_materialized_request(
@@ -359,11 +446,14 @@ def resolve_materialized_request(
         dataset_key=dataset_key,
         parameters=normalized,
     )
-    dependency_blocker = _dependency_blocker(
+    dependency_blocker, source_warning = _dependency_state(
         dataset_key=dataset_key,
         cluster=cluster,
         parameters=normalized,
     )
+    if dependency_blocker is not None and result.available:
+        source_warning = dependency_blocker
+        dependency_blocker = None
     if dependency_blocker is not None:
         return MaterializedRequest(
             result,
@@ -371,6 +461,7 @@ def resolve_materialized_request(
             normalized,
             False,
             dependency_blocker=dependency_blocker,
+            source_warning=source_warning,
         )
 
     dispatched = False
@@ -419,4 +510,5 @@ def resolve_materialized_request(
         dispatched,
         dispatch_error,
         dependency_blocker,
+        source_warning,
     )

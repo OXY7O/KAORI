@@ -9,7 +9,6 @@ from app.analytics.alerts.routes import (
     anomalies_table,
 )
 from app.analytics.capacity.routes import capacity
-from app.analytics.common.context import build_analysis_utilization_context
 from app.analytics.forecast.routes import (
     forecast,
     forecast_section,
@@ -35,7 +34,7 @@ from app.analytics.workload.routes import (
     workload_resource_mapping,
     workload_tenant_quota,
 )
-from app.common.dependencies import render_dependency_blocker
+from app.common.dependencies import cluster_required_blocker
 from app.common.integration_errors import describe_integration_failure
 from app.notifications.service import (
     get_navigation_notification_context,
@@ -207,24 +206,42 @@ def materialization_status():
         return response
     snapshot = result.snapshot
     materialization_error = snapshot.last_error if snapshot else None
-    if snapshot is not None and snapshot.last_job_execution_id is not None and not materialization_error:
+    progress_message = None
+    progress_percent = None
+    if snapshot is not None and snapshot.last_job_execution_id is not None:
         from app.models.job import JobExecution
 
         job = JobExecution.query.get(snapshot.last_job_execution_id)
-        if job is not None and job.is_terminal and snapshot.status != 'ready':
-            materialization_error = (
-                job.error_message
-                or (
-                    'The background job completed without producing the requested analytics snapshot.'
-                    if job.status in {'succeeded', 'partial'}
-                    else f'Analytics preparation ended with status {job.status.replace("_", " ").title()}.'
+        if job is not None:
+            progress_message = job.progress_message
+            if job.progress_total and job.progress_total > 0:
+                progress_percent = min(
+                    100,
+                    max(
+                        0,
+                        round(
+                            (job.progress_current or 0)
+                            / job.progress_total
+                            * 100
+                        ),
+                    ),
                 )
-            )
+            if job.is_terminal and snapshot.status != 'ready' and not materialization_error:
+                materialization_error = (
+                    job.error_message
+                    or (
+                        'The background job completed without producing the requested analytics snapshot.'
+                        if job.status in {'succeeded', 'partial'}
+                        else f'Analytics preparation ended with status {job.status.replace("_", " ").title()}.'
+                    )
+                )
     return render_template(
         'analytics/materialization/_pending.html',
         materialization_status_url=request.full_path,
         materialization_return_url=request.args.get('return_url', '').strip() or url_for('analytics.overview'),
         materialization_error=materialization_error,
+        materialization_progress_message=progress_message,
+        materialization_progress_percent=progress_percent,
     )
 
 
@@ -250,15 +267,14 @@ def overview():
         time_range=selected_time_range,
         hydrate_snapshot_sections=False,
     )
-    _, _, _, dependency_context = build_analysis_utilization_context(
-        request.args,
-        check_prometheus_connection=False,
-    )
-
     return render_template(
         'analytics/overview/index.html',
         payload=payload,
-        dependency_blocker=dependency_context['dependency_blocker'],
+        dependency_blocker=(
+            cluster_required_blocker()
+            if payload.get('selected_cluster') is None
+            else None
+        ),
     )
 
 
@@ -305,17 +321,6 @@ def overview_section(section: str):
                 cluster_id=request.args.get('cluster_id'),
                 time_range=selected_time_range,
             )
-        )
-
-    _, _, _, dependency_context = build_analysis_utilization_context(
-        request.args,
-        check_prometheus_connection=False,
-    )
-    dependency_blocker = dependency_context['dependency_blocker']
-
-    if dependency_blocker:
-        return render_dependency_blocker(
-            dependency_blocker,
         )
 
     payload = get_analytics_overview_section(

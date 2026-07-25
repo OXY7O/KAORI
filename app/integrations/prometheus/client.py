@@ -80,10 +80,12 @@ class PrometheusClient:
 
     def _request_timeout(self) -> tuple[int, int]:
         configured_timeout = self.request_timeout_seconds
+        explicit_timeout = configured_timeout is not None
         if configured_timeout is None:
             configured_timeout = self.config.timeout
         normalized_timeout = int(configured_timeout) if configured_timeout is not None else 5
-        read_timeout = min(max(normalized_timeout, 1), 120)
+        maximum_timeout = 300 if explicit_timeout else 120
+        read_timeout = min(max(normalized_timeout, 1), maximum_timeout)
         connect_timeout = min(max(read_timeout, 2), 5)
         return connect_timeout, read_timeout
 

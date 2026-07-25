@@ -101,7 +101,7 @@ def build_analysis_utilization_context(
             scope_type=KUBERNETES_CLUSTER_SCOPE,
             scope_key=str(cluster.id),
             required_binding_capabilities=('metrics',),
-            required_technical_capabilities=('instant_query', 'kubernetes_identity'),
+            required_technical_capabilities=('instant_query',),
         )
         selected = resolution.selected
         if selected is None:
@@ -117,7 +117,7 @@ def build_analysis_utilization_context(
                     base_context['dependency_blocker'] = prometheus_capability_blocker(
                         cluster,
                         capability_labels=labels,
-                        feature_label='Kubernetes Analytics Overview',
+                        feature_label='Kubernetes Analytics Query Transport',
                     )
                 else:
                     base_context['dependency_blocker'] = prometheus_connection_blocker(
@@ -137,6 +137,28 @@ def build_analysis_utilization_context(
             )
             return clusters, cluster, None, base_context
 
+        try:
+            prometheus = PrometheusService(cluster)
+            utilization_service = UtilizationService(prometheus)
+        except Exception as exc:
+            current_app.logger.exception(
+                'Prometheus service initialization failed for cluster %s.',
+                cluster.name,
+            )
+            message = str(exc) or 'Prometheus service initialization failed.'
+            base_context['dependency_blocker'] = prometheus_connection_blocker(
+                cluster,
+                detail=message,
+            )
+            base_context['prometheus_status'] = {
+                'connected': False,
+                'response_time_ms': None,
+                'label': 'Prometheus Error',
+                'description': message,
+                'error': message,
+            }
+            return clusters, cluster, None, base_context
+
         connected = selected.instance.last_status == 'connected'
         base_context['prometheus_connected'] = connected
         base_context['prometheus_status'] = {
@@ -145,11 +167,11 @@ def build_analysis_utilization_context(
             'response_time_ms': selected.instance.last_response_time_ms,
             'label': 'Prometheus Ready' if connected else 'Prometheus Readiness Available',
             'description': (
-                'KAORI is using persisted Prometheus readiness for the overview request.'
+                'KAORI is using persisted Prometheus runtime readiness while the worker executes queries.'
             ),
             'error': selected.instance.last_error,
         }
-        return clusters, cluster, None, base_context
+        return clusters, cluster, utilization_service, base_context
 
     try:
         prometheus = PrometheusService(

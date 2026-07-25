@@ -4,6 +4,7 @@ from copy import deepcopy
 from datetime import UTC, datetime
 from typing import Any, SupportsFloat, SupportsIndex
 
+from flask import current_app, has_app_context
 from sqlalchemy import select
 
 from app.analytics.common.coercion import as_dict as _as_dict
@@ -18,6 +19,7 @@ from app.intelligence.recommendation_engine import (
     build_utilization_actionable_recommendations,
     count_actionable_recommendations,
 )
+from app.models.analytics import AnalyticsSnapshot
 from app.models.cluster import Cluster
 
 FloatLike = str | bytes | SupportsFloat | SupportsIndex
@@ -261,6 +263,41 @@ def _resolve_selected_cluster(
         for cluster in clusters:
             if str(cluster.get('id')) == str(selected_cluster_id):
                 return cluster
+
+    try:
+        ready_cluster_ids = {
+            str(cluster_id)
+            for cluster_id in db.session.scalars(
+                select(AnalyticsSnapshot.cluster_id)
+                .where(
+                    AnalyticsSnapshot.status == 'ready',
+                    AnalyticsSnapshot.payload_json.is_not(None),
+                )
+                .distinct()
+            ).all()
+        }
+    except Exception:
+        ready_cluster_ids = set()
+
+    for cluster in clusters:
+        if str(cluster.get('id')) in ready_cluster_ids:
+            return cluster
+
+    try:
+        from app.integrations.prometheus.scope import KUBERNETES_CLUSTER_SCOPE
+        from app.prometheus.resolver import resolve_prometheus_sources
+
+        for cluster in clusters:
+            resolution = resolve_prometheus_sources(
+                scope_type=KUBERNETES_CLUSTER_SCOPE,
+                scope_key=str(cluster.get('id')),
+                required_binding_capabilities=('metrics',),
+                required_technical_capabilities=('instant_query',),
+            )
+            if resolution.selected is not None:
+                return cluster
+    except Exception:
+        pass
 
     return clusters[0]
 
@@ -1731,6 +1768,20 @@ def _build_health_summary(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _log_optional_snapshot_failure(
+    *,
+    module_path: str,
+    function_name: str | None,
+) -> None:
+    if not has_app_context():
+        return
+    current_app.logger.exception(
+        'Analytics Overview could not load committed snapshot presenter %s%s.',
+        module_path,
+        f'.{function_name}' if function_name else '',
+    )
+
+
 def _call_optional_snapshot(
     *,
     module_path: str,
@@ -1740,6 +1791,10 @@ def _call_optional_snapshot(
     try:
         module = __import__(module_path, fromlist=['*'])
     except Exception:
+        _log_optional_snapshot_failure(
+            module_path=module_path,
+            function_name=None,
+        )
         return None
 
     for function_name in function_names:
@@ -1754,8 +1809,16 @@ def _call_optional_snapshot(
             try:
                 result = func(kwargs.get('cluster_id'))
             except Exception:
+                _log_optional_snapshot_failure(
+                    module_path=module_path,
+                    function_name=function_name,
+                )
                 continue
         except Exception:
+            _log_optional_snapshot_failure(
+                module_path=module_path,
+                function_name=function_name,
+            )
             continue
 
         if isinstance(result, dict):

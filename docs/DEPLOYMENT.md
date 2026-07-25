@@ -133,3 +133,26 @@ Runtime verification:
 - Missing rows intentionally render an unavailable worker-snapshot state. The dashboard does not perform a live fallback.
 
 Rollback does not require data cleanup. Revert the application commit and redeploy the previous image to web, beat, analytics worker, and forecasting worker. Existing `dashboard.kubernetes.alerts` rows may remain in `analytics_snapshots` because they do not alter the database schema.
+
+
+## Kubernetes Analytics Dataset Timeouts
+
+KAORI isolates each analytics dataset inside the worker batch so one expensive or unresponsive Prometheus query cannot freeze every following snapshot.
+
+```env
+ANALYTICS_DATASET_TIMEOUT_SECONDS=300
+FORECASTING_DATASET_TIMEOUT_SECONDS=600
+PROMETHEUS_ANALYTICS_QUERY_TIMEOUT_SECONDS=30
+PROMETHEUS_ANALYTICS_RANGE_QUERY_TIMEOUT_SECONDS=120
+```
+
+`ANALYTICS_DATASET_TIMEOUT_SECONDS` applies to utilization, capacity, storage, workload, top-consumer, and alert materialization. `FORECASTING_DATASET_TIMEOUT_SECONDS` applies to one forecast history snapshot. The Prometheus query timeouts bound each individual instant or range request so a multi-query dataset cannot wait indefinitely on one provider call. Keep dataset limits below their corresponding Celery task soft limits. After changing them, recreate or restart the analytics and forecasting workers.
+
+Deployment validation:
+
+1. Run Prometheus Full Validation.
+2. Run Analytics Data Refresh and confirm a failed dataset does not stop later work items.
+3. Run Forecast Data Refresh after the analytics job reaches a terminal state.
+4. Open every Kubernetes Analytics page for a ready cluster and for an explicitly selected incomplete cluster.
+5. Confirm committed data remains visible with an advisory readiness notice rather than a blank or full-page blocker.
+

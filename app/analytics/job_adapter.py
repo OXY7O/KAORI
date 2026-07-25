@@ -12,6 +12,8 @@ from app.analytics.materialization.catalog import (
     canonical_parameters,
     get_dataset,
     list_analytics_datasets,
+    source_binding_capabilities,
+    source_technical_capabilities,
 )
 from app.analytics.materialization.service import get_snapshot, normalize_parameters
 from app.analytics.tasks import materialize_analytics_snapshots, materialize_forecast_snapshots
@@ -45,8 +47,8 @@ def _prometheus_dataset_eligible(cluster: Cluster, dataset_key: str) -> bool:
         resolution = resolve_prometheus_sources(
             scope_type=KUBERNETES_CLUSTER_SCOPE,
             scope_key=str(cluster.id),
-            required_binding_capabilities=dataset.required_binding_capabilities,
-            required_technical_capabilities=dataset.required_capabilities,
+            required_binding_capabilities=source_binding_capabilities(dataset_key),
+            required_technical_capabilities=source_technical_capabilities(dataset_key),
         )
     except Exception:
         return False
@@ -77,8 +79,8 @@ def _alert_dataset_eligible(
             prometheus = resolve_prometheus_sources(
                 scope_type=KUBERNETES_CLUSTER_SCOPE,
                 scope_key=str(cluster.id),
-                required_binding_capabilities=dataset.required_binding_capabilities,
-                required_technical_capabilities=('instant_query', 'kubernetes_identity'),
+                required_binding_capabilities=('metrics',),
+                required_technical_capabilities=('instant_query',),
             )
         except Exception:
             prometheus = None
@@ -353,6 +355,35 @@ def _forecast_work_items(
     return work_items
 
 
+def _job_contains_requested_work_item(
+    job: JobExecution,
+    parameters: dict[str, Any] | None,
+) -> bool:
+    if not parameters or not parameters.get('cluster_id') or not parameters.get('dataset_key'):
+        return False
+    requested_cluster = str(parameters['cluster_id'])
+    requested_dataset = str(parameters['dataset_key'])
+    requested_parameters = canonical_parameters(
+        requested_dataset,
+        parameters.get('snapshot_parameters'),
+    )
+    payload = job.payload_json or {}
+    for item in payload.get('work_items') or []:
+        if not isinstance(item, dict):
+            continue
+        if str(item.get('cluster_id')) != requested_cluster:
+            continue
+        if str(item.get('dataset_key')) != requested_dataset:
+            continue
+        existing_parameters = canonical_parameters(
+            requested_dataset,
+            item.get('parameters'),
+        )
+        if existing_parameters == requested_parameters:
+            return True
+    return False
+
+
 def _dispatch(
     *,
     policy: JobPolicy,
@@ -365,10 +396,13 @@ def _dispatch(
     job_type = 'forecast_materialization' if forecasting else 'analytics_materialization'
     if trigger_type == 'on_demand':
         fleet_job = _active_job(job_type, scope_key='all')
-        if fleet_job is not None:
+        if fleet_job is not None and _job_contains_requested_work_item(
+            fleet_job,
+            parameters,
+        ):
             return RegisteredJobDispatchResult(
                 status='active',
-                message='A fleet materialization job is already preparing this dataset family.',
+                message='The active fleet materialization job already includes this snapshot.',
                 job=fleet_job,
                 created=False,
             )

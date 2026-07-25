@@ -25,15 +25,18 @@ The Storage and Workload readiness maps had drifted from their owning services:
 
 Storage incorrectly required `range_query`, even though its current analysis did
 not use a time-range query. Workload omitted Kubernetes identity and request/limit
-evidence from the readiness presentation. The Prometheus module matrix, source
-resolution view, materialization catalog, and worker admission now use the same
-feature contract.
+evidence from the readiness presentation. The Prometheus module matrix and
+materialization catalog retain the complete domain contract, while worker
+admission enforces only the query transport required to collect runtime evidence.
 
 A connected Prometheus source can therefore remain **Ready** while one workspace
-is **Capability Incomplete**. Missing binding scope such as `storage` or
-`workload`, missing technical evidence, and blocked registered queries are all
-feature-contract gaps. They must not be presented as a Prometheus connection
-failure. This is an expected, actionable state rather than a source outage.
+is **Capability Incomplete**. Missing domain evidence such as storage identity,
+workload ownership, or request/limit coverage is advisory to runtime collection:
+the worker is allowed to execute the exact registered query when the binding can
+perform the required instant or range operation. Operational Domain Readiness
+continues to show the incomplete evidence, while the analytics page displays the
+last committed snapshot and a concise readiness warning. Only missing query
+transport, unusable runtime health, or missing binding setup is a hard blocker.
 
 ### Web routes still performed provider work
 
@@ -146,16 +149,41 @@ Overview section endpoints hydrate only the requested snapshot-backed section.
 ## Failure and readiness behavior
 
 1. No selected cluster: render the cluster dependency state.
-2. No eligible provider binding: render setup guidance; do not queue work.
-3. Connected source but missing feature capabilities: render **Capability
-   Incomplete** with the exact missing capability labels.
-4. Missing snapshot with eligible dependencies: queue one deduplicated worker
-   materialization and render Pending.
-5. Fresh snapshot: render immediately.
+2. No eligible provider binding or missing instant/range query transport:
+   render setup/runtime guidance and do not queue work.
+3. Connected source with incomplete domain evidence: queue materialization,
+   retain the evidence gap as an advisory warning, and do not replace available
+   data with a blocker.
+4. Missing snapshot with executable dependencies: queue one exact,
+   deduplicated worker materialization and render Pending.
+5. Fresh snapshot: render immediately, including while current source readiness
+   is temporarily degraded.
 6. Stale snapshot inside grace: render stale data and queue a refresh.
 7. Expired or invalid snapshot: render Pending until regenerated.
-8. Builder returns a dependency blocker: fail the snapshot attempt. Never store
-   the blocker as a ready payload.
+8. Builder returns a hard dependency blocker: fail the snapshot attempt. Never
+   store the blocker as a ready payload.
+9. One dataset exceeds its bounded execution time: mark only that snapshot
+   failed and continue the remaining batch work items.
+
+## Reliability guardrails
+
+- Web routes never run Prometheus or Alertmanager provider queries.
+- Missing snapshots persist a pending record before the builder starts, allowing the page to show the current JobExecution message and progress instead of an indefinite generic loader.
+- Explicit cluster selection is authoritative. Without a cluster ID, KAORI
+  prefers a cluster with a committed snapshot, then a source capable of the
+  required query transport.
+- A current provider outage does not hide an already committed snapshot. The
+  page remains readable and displays a source warning.
+- On-demand requests attach to an active fleet job only when that job contains
+  the exact cluster, dataset, and canonical snapshot parameters. An unrelated
+  fleet job can no longer leave a page polling forever.
+- Analytics builders are bounded by `ANALYTICS_DATASET_TIMEOUT_SECONDS`; forecast
+  builders use `FORECASTING_DATASET_TIMEOUT_SECONDS`. A timeout is isolated to
+  one dataset and produces a partial batch result instead of freezing all
+  following snapshots.
+- Full domain capability evidence is still visible in Prometheus Operational
+  Domain Readiness. It is not silently discarded or misrepresented as a source
+  outage.
 
 ## Operational validation
 

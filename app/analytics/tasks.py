@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import signal
+from collections.abc import Iterator
+from contextlib import contextmanager
+from threading import current_thread, main_thread
 from typing import Any
 from urllib.parse import urlencode
 
@@ -8,9 +12,68 @@ from celery import shared_task
 from flask import current_app
 
 from app.analytics.materialization.catalog import get_dataset
-from app.analytics.materialization.service import fail_snapshot, normalize_parameters, store_snapshot
+from app.analytics.materialization.service import (
+    fail_snapshot,
+    mark_snapshot_pending,
+    normalize_parameters,
+    store_snapshot,
+)
+from app.extensions.db import db
 from app.jobs.execution import JobCancellationRequested, JobExecutionContext
 from app.models import Cluster
+
+
+class AnalyticsDatasetTimeoutError(TimeoutError):
+    pass
+
+
+def _dataset_timeout_seconds(dataset_key: str) -> int:
+    config_key = (
+        'FORECASTING_DATASET_TIMEOUT_SECONDS'
+        if dataset_key == 'analytics.forecast'
+        else 'ANALYTICS_DATASET_TIMEOUT_SECONDS'
+    )
+    default = 600 if dataset_key == 'analytics.forecast' else 300
+    return int(current_app.config.get(config_key, default))
+
+
+@contextmanager
+def _dataset_time_limit(
+    *,
+    dataset_key: str,
+    timeout_seconds: int,
+) -> Iterator[None]:
+    """Bound one dataset builder without terminating the whole batch.
+
+    Celery workers run the task inside a Linux fork child where SIGALRM can
+    interrupt a blocked HTTP read or an unexpectedly long local transform. If
+    the runtime does not support SIGALRM, the global Celery soft limit remains
+    the fallback boundary.
+    """
+
+    if (
+        timeout_seconds <= 0
+        or current_thread() is not main_thread()
+        or not hasattr(signal, 'SIGALRM')
+        or not hasattr(signal, 'setitimer')
+    ):
+        yield
+        return
+
+    previous_handler = signal.getsignal(signal.SIGALRM)
+
+    def handle_timeout(_signum, _frame) -> None:
+        raise AnalyticsDatasetTimeoutError(
+            f'{dataset_key} exceeded its {timeout_seconds}-second execution limit.'
+        )
+
+    signal.signal(signal.SIGALRM, handle_timeout)
+    signal.setitimer(signal.ITIMER_REAL, timeout_seconds)
+    try:
+        yield
+    finally:
+        signal.setitimer(signal.ITIMER_REAL, 0)
+        signal.signal(signal.SIGALRM, previous_handler)
 
 
 def _task_id(job_execution_id: int, fallback_task_id: str | None) -> str:
@@ -55,9 +118,11 @@ def _materialize(
     succeeded = 0
     failed = 0
     failures: list[dict[str, str]] = []
+    current_index = 0
 
     try:
         for index, item in enumerate(work_items, start=1):
+            current_index = index
             cluster_id = str(item['cluster_id'])
             dataset_key = str(item['dataset_key'])
             parameters = normalize_parameters(item.get('parameters'))
@@ -70,10 +135,23 @@ def _materialize(
                 total=len(work_items),
                 message=f'Generating {dataset.label} for {cluster_name}',
             )
+            mark_snapshot_pending(
+                cluster_id=cluster_id,
+                dataset_key=dataset_key,
+                parameters=parameters,
+                job_execution_id=job_execution_id,
+            )
             try:
                 query_string = urlencode(parameters)
-                with current_app.test_request_context(f'/analytics/materialize?{query_string}'):
-                    context = dataset.builder(parameters)
+                timeout_seconds = _dataset_timeout_seconds(dataset_key)
+                with _dataset_time_limit(
+                    dataset_key=dataset_key,
+                    timeout_seconds=timeout_seconds,
+                ):
+                    with current_app.test_request_context(
+                        f'/analytics/materialize?{query_string}'
+                    ):
+                        context = dataset.builder(parameters)
                 blocker = context.get('dependency_blocker') if isinstance(context, dict) else None
                 if blocker:
                     if isinstance(blocker, dict):
@@ -108,7 +186,10 @@ def _materialize(
                     stale_grace_minutes=int(item.get('stale_grace_minutes') or dataset.stale_grace_minutes),
                 )
                 succeeded += 1
+            except SoftTimeLimitExceeded:
+                raise
             except Exception as exc:
+                db.session.rollback()
                 current_app.logger.exception(
                     'Analytics materialization failed for %s on cluster %s.',
                     dataset_key,
@@ -134,7 +215,7 @@ def _materialize(
     except SoftTimeLimitExceeded as exc:
         message = 'Analytics materialization exceeded its worker time limit.'
         _fail_unfinished_work_items(
-            work_items=work_items,
+            work_items=work_items[max(current_index - 1, 0):],
             job_execution_id=job_execution_id,
             error=message,
         )

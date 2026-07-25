@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from flask import current_app, has_app_context
+
 from app.integrations.consumer.contracts import ConsumerDiagnostic, ConsumerResult, ConsumerSource
 from app.integrations.prometheus.exceptions import PrometheusError
 from app.integrations.registry import get_integration
@@ -10,6 +12,7 @@ from app.prometheus.resolver import ResolvedPrometheusSource, resolve_prometheus
 
 DEFAULT_QUERY_CAPABILITIES = ('instant_query',)
 DEFAULT_RANGE_CAPABILITIES = ('range_query',)
+_EXECUTION_CAPABILITIES = frozenset((*DEFAULT_QUERY_CAPABILITIES, *DEFAULT_RANGE_CAPABILITIES))
 
 
 class PrometheusConsumer:
@@ -41,8 +44,11 @@ class PrometheusConsumer:
         *,
         required_capabilities: tuple[str, ...] = DEFAULT_QUERY_CAPABILITIES,
     ) -> dict[str, Any]:
-        source = self._source_for(required_capabilities)
-        return self._build_client(source).query(promql)
+        source = self._source_for(DEFAULT_QUERY_CAPABILITIES)
+        return self._build_client(
+            source,
+            request_timeout_seconds=self._query_timeout_seconds(range_query=False),
+        ).query(promql)
 
     def query_at(
         self,
@@ -51,8 +57,11 @@ class PrometheusConsumer:
         *,
         required_capabilities: tuple[str, ...] = DEFAULT_QUERY_CAPABILITIES,
     ) -> dict[str, Any]:
-        source = self._source_for(required_capabilities)
-        return self._build_client(source).query_at(promql, timestamp)
+        source = self._source_for(DEFAULT_QUERY_CAPABILITIES)
+        return self._build_client(
+            source,
+            request_timeout_seconds=self._query_timeout_seconds(range_query=False),
+        ).query_at(promql, timestamp)
 
     def query_range(
         self,
@@ -63,8 +72,11 @@ class PrometheusConsumer:
         *,
         required_capabilities: tuple[str, ...] = DEFAULT_RANGE_CAPABILITIES,
     ) -> dict[str, Any]:
-        source = self._source_for(required_capabilities)
-        return self._build_client(source).query_range(promql, start, end, step)
+        source = self._source_for(DEFAULT_RANGE_CAPABILITIES)
+        return self._build_client(
+            source,
+            request_timeout_seconds=self._query_timeout_seconds(range_query=True),
+        ).query_range(promql, start, end, step)
 
     def execute_query(
         self,
@@ -73,8 +85,12 @@ class PrometheusConsumer:
         required_capabilities: tuple[str, ...] = DEFAULT_QUERY_CAPABILITIES,
     ) -> ConsumerResult[dict[str, Any]]:
         return self._execute(
-            lambda source: self._build_client(source).query(promql),
+            lambda source: self._build_client(
+                source,
+                request_timeout_seconds=self._query_timeout_seconds(range_query=False),
+            ).query(promql),
             required_capabilities=required_capabilities,
+            execution_capabilities=DEFAULT_QUERY_CAPABILITIES,
         )
 
     def execute_range_query(
@@ -87,31 +103,47 @@ class PrometheusConsumer:
         required_capabilities: tuple[str, ...] = DEFAULT_RANGE_CAPABILITIES,
     ) -> ConsumerResult[dict[str, Any]]:
         return self._execute(
-            lambda source: self._build_client(source).query_range(promql, start, end, step),
+            lambda source: self._build_client(
+                source,
+                request_timeout_seconds=self._query_timeout_seconds(range_query=True),
+            ).query_range(promql, start, end, step),
             required_capabilities=required_capabilities,
+            execution_capabilities=DEFAULT_RANGE_CAPABILITIES,
         )
 
     def requirements(
         self,
         required_capabilities: tuple[str, ...],
     ) -> ConsumerResult[dict[str, Any]]:
-        """Evaluate the same capability-aware source contract used by query execution."""
+        """Evaluate the bounded execution contract for an analytics query.
+
+        Operational Domain Readiness remains the authoritative place for full
+        metric, identity, and label evidence. Runtime analytics must only be
+        hard-blocked when the Prometheus transport cannot execute the required
+        instant or range operation. Missing domain evidence is returned as
+        advisory metadata so the worker can run the exact query and collect
+        authoritative evidence.
+        """
+        execution_capabilities = self._execution_capabilities(required_capabilities)
         try:
-            selected = self._source_for(required_capabilities)
+            selected = self._source_for(execution_capabilities)
         except PrometheusError as exc:
             return ConsumerResult(
                 ok=False,
                 payload={
                     'readiness': self.config.readiness_status,
-                    'missing_capabilities': list(required_capabilities),
+                    'missing_capabilities': list(execution_capabilities),
+                    'advisory_missing_capabilities': list(
+                        self._missing_capabilities(required_capabilities)
+                    ),
                 },
                 source=self._source(),
                 diagnostics=(
                     ConsumerDiagnostic(
-                        code='capability_requirements_not_satisfied',
-                        message='No bound Prometheus source satisfies the requested analytics capabilities.',
+                        code='query_transport_requirements_not_satisfied',
+                        message='No bound Prometheus source can execute the required analytics query.',
                         category='capability',
-                        remediation='Review binding priority and capability evidence, then run Full Validation.',
+                        remediation='Restore instant or range query capability, then retry materialization.',
                         source_owner='Prometheus / Thanos metrics pipeline',
                         detail=str(exc),
                     ),
@@ -123,15 +155,19 @@ class PrometheusConsumer:
             payload={
                 'readiness': selected.instance.readiness_status,
                 'missing_capabilities': [],
+                'advisory_missing_capabilities': list(
+                    self._missing_capabilities(required_capabilities)
+                ),
             },
             source=self._source_from(selected),
             required_capabilities=required_capabilities,
         )
 
     def status(self) -> ConsumerResult[dict[str, Any]]:
-        missing = self._missing_capabilities(())
         configured = bool(self.config.endpoint)
         source = self._source()
+        last_status = str(self.config.last_status or '').strip().lower()
+        runtime_unhealthy = last_status in {'unhealthy', 'error', 'failed', 'disconnected'}
         diagnostics: tuple[ConsumerDiagnostic, ...] = ()
         if not configured:
             diagnostics = (
@@ -143,20 +179,21 @@ class PrometheusConsumer:
                     source_owner='KAORI Prometheus integration',
                 ),
             )
-        elif self.config.readiness_status in {'blocked', 'validation_required'}:
+        elif runtime_unhealthy:
             diagnostics = (
                 ConsumerDiagnostic(
-                    code='not_ready',
+                    code='runtime_unhealthy',
                     message=(
-                        self.config.validation_message or 'Prometheus integration is not validated for analytics.'
+                        self.config.last_error
+                        or 'The latest Prometheus runtime observation is unhealthy.'
                     ),
-                    category='readiness',
-                    remediation='Run full validation and resolve capability findings.',
+                    category='provider_runtime',
+                    remediation='Review Runtime Health, restore connectivity, then retry materialization.',
                     source_owner='Prometheus / Thanos metrics pipeline',
                 ),
             )
         return ConsumerResult(
-            ok=configured and not diagnostics and not missing,
+            ok=configured and not runtime_unhealthy,
             payload={
                 'configured': configured,
                 'readiness': self.config.readiness_status,
@@ -167,7 +204,9 @@ class PrometheusConsumer:
             },
             source=source,
             diagnostics=diagnostics,
-            metadata={'missing_capabilities': list(missing)},
+            metadata={
+                'readiness_advisory': self.config.readiness_status,
+            },
         )
 
     def _execute(
@@ -175,9 +214,10 @@ class PrometheusConsumer:
         operation,
         *,
         required_capabilities: tuple[str, ...],
+        execution_capabilities: tuple[str, ...],
     ) -> ConsumerResult[dict[str, Any]]:
         try:
-            selected = self._source_for(required_capabilities)
+            selected = self._source_for(execution_capabilities)
             payload = operation(selected)
         except PrometheusError as exc:
             return ConsumerResult(
@@ -206,30 +246,59 @@ class PrometheusConsumer:
             required_capabilities=required_capabilities,
         )
 
+    @staticmethod
+    def _execution_capabilities(
+        required_capabilities: tuple[str, ...],
+    ) -> tuple[str, ...]:
+        return tuple(
+            capability
+            for capability in required_capabilities
+            if capability in _EXECUTION_CAPABILITIES
+        )
+
     def _source_for(
         self,
         required_capabilities: tuple[str, ...],
     ) -> ResolvedPrometheusSource:
+        execution_capabilities = self._execution_capabilities(required_capabilities)
         resolution = resolve_prometheus_sources(
             scope_type='kubernetes_cluster',
             scope_key=self.cluster.id,
-            required_technical_capabilities=required_capabilities,
+            required_technical_capabilities=execution_capabilities,
         )
         selected = resolution.selected
         if selected is not None:
             return selected
         reasons = '; '.join(candidate.decision_reason for candidate in resolution.candidates)
-        labels = ', '.join(required_capabilities)
+        labels = ', '.join(execution_capabilities)
         requirement = f' Required capabilities: {labels}.' if labels else ''
         raise PrometheusError(
             (reasons or 'No canonical Prometheus runtime is eligible for this operation.') + requirement
         )
 
-    def _build_client(self, source: ResolvedPrometheusSource):
+    @staticmethod
+    def _query_timeout_seconds(*, range_query: bool) -> int | None:
+        if not has_app_context():
+            return None
+        config_key = (
+            'PROMETHEUS_ANALYTICS_RANGE_QUERY_TIMEOUT_SECONDS'
+            if range_query
+            else 'PROMETHEUS_ANALYTICS_QUERY_TIMEOUT_SECONDS'
+        )
+        default = 120 if range_query else 30
+        return int(current_app.config.get(config_key, default))
+
+    def _build_client(
+        self,
+        source: ResolvedPrometheusSource,
+        *,
+        request_timeout_seconds: int | None = None,
+    ):
         return get_integration('prometheus').execute(
             'client.build',
             source.instance,
             scope_selector=source.binding.selector_json,
+            request_timeout_seconds=request_timeout_seconds,
         )
 
     def _require_capabilities(self, required_capabilities: tuple[str, ...]) -> None:
