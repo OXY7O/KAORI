@@ -7,7 +7,12 @@
 {% macro hero_context(eyebrow, title, status_label, status_tone, status_icon, first_icon, first_label, first_value, second_icon, second_label, second_value, action_url, action_label, action_icon='server-cog') %}{{ shared.hero_context(eyebrow, title, status_label, status_tone, status_icon, first_icon, first_label, first_value, second_icon, second_label, second_value, action_url, action_label, action_icon) }}{% endmacro %}
 {% macro permission_label(allowed, protected=false) %}{{ shared.permission_label(allowed, protected) }}{% endmacro %}
 {% macro workflow_header(icon, eyebrow, title, description, boundary_text) %}{{ shared.workflow_header(icon, eyebrow, title, description, boundary_text) }}{% endmacro %}
-{% macro action_bar(icon, title, description, aria_label='Operation Actions') %}{% call shared.action_bar(icon, title, description, aria_label) %}{{ caller() }}{% endcall %}{% endmacro %}
+{% macro action_bar(icon, title, description, aria_label='Operation Actions', caller=None) %}
+    {% set action_content = caller() if caller is not none else '' %}
+    {% call shared.action_bar(icon, title, description, aria_label) %}
+        {{ action_content }}
+    {% endcall %}
+{% endmacro %}
 {% macro validate_button_classes() %}{{ shared.validate_button_classes() }}{% endmacro %}
 {% macro primary_button_classes(full=false) %}{{ shared.primary_button_classes(full) }}{% endmacro %}
 {% macro destructive_button_classes(full=false) %}{{ shared.destructive_button_classes(full) }}{% endmacro %}

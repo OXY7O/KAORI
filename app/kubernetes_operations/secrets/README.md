@@ -202,3 +202,9 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 - Validation, primary, secondary, destructive, and disabled actions use shared button macros so state changes do not alter geometry or produce thick borders.
 - Workflow section headers use one icon container, title hierarchy, description scale, outline, and surface treatment across Create, Replace, Delete, Reveal, and TLS rotation.
 - Legacy inline page-size submission handlers are replaced by the global `data-kaori-auto-submit` behavior.
+
+### Shared action-bar wrapper contract
+
+- Domain wrapper macros must declare `caller=None`, capture the outer call-block output before invoking the shared `action_bar` macro, and then pass the captured markup into the shared call block.
+- Calling `caller()` directly inside a nested `{% call shared.action_bar(...) %}` block is prohibited because the nested call shadows the outer caller and can raise `jinja2.exceptions.UndefinedError: No caller defined` at runtime.
+- The ConfigMap and Secret wrappers share a regression contract test in `tests/contracts/kubernetes/test_operation_component_caller_contract.py`.
