@@ -88,37 +88,69 @@
                 </div>
             </div>
         </div>
-        <div class="rounded-xl border border-outline-default p-4">
-            <div class="mb-4">
-                <h3 class="text-sm font-semibold text-content-primary">Trend Summary</h3>
-                <p class="mt-1 text-xs text-content-muted">Current trend direction for each core resource.</p>
+        <div class="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-2">
+            <div class="h-full rounded-xl border border-outline-default p-4">
+                <div class="mb-4">
+                    <h3 class="text-sm font-semibold text-content-primary">Trend Summary</h3>
+                    <p class="mt-1 text-xs text-content-muted">Current trend direction for each core resource.</p>
+                </div>
+                <div class="space-y-2">
+                    {% set trends = [
+                                        {'label': 'CPU Trend', 'value': payload.forecast_snapshot.cpu_trend, 'icon': 'cpu'},
+                                        {'label': 'Memory Trend', 'value': payload.forecast_snapshot.memory_trend, 'icon': 'memory-stick'},
+                                        {'label': 'Storage Trend', 'value': payload.forecast_snapshot.storage_trend, 'icon': 'database'},
+                                        {'label': 'Pod Trend', 'value': payload.forecast_snapshot.pod_trend, 'icon': 'boxes'}
+                                    ] %}
+                    {% for trend in trends %}
+                        {% set trend_value = trend.value|lower %}
+                        {% if trend_value == 'increasing' %}
+                            {% set trend_tone = "warning" %}{% set trend_icon = "trending-up" %}
+                        {% elif trend_value == 'decreasing' %}
+                            {% set trend_tone = "normal" %}{% set trend_icon = "trending-down" %}
+                        {% elif trend_value == 'stable' %}
+                            {% set trend_tone = "info" %}{% set trend_icon = "minus" %}
+                        {% else %}
+                            {% set trend_tone = "unknown" %}{% set trend_icon = "circle-help" %}
+                        {% endif %}
+                        <div class="flex items-center justify-between rounded-lg border border-outline-default px-3 py-2.5">
+                            <span class="inline-flex items-center gap-2 text-sm font-semibold text-content-secondary">
+                                <span class="flex h-7 w-7 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="{{ trend.icon }}" class="h-3.5 w-3.5"></i></span>
+                                {{ trend.label }}
+                            </span>
+                            {{ table_label.status_label(trend.value, trend_tone, trend_icon) }}
+                        </div>
+                    {% endfor %}
+                </div>
             </div>
-            <div class="space-y-2">
-                {% set trends = [
-                                    {'label': 'CPU Trend', 'value': payload.forecast_snapshot.cpu_trend, 'icon': 'cpu'},
-                                    {'label': 'Memory Trend', 'value': payload.forecast_snapshot.memory_trend, 'icon': 'memory-stick'},
-                                    {'label': 'Storage Trend', 'value': payload.forecast_snapshot.storage_trend, 'icon': 'database'},
-                                    {'label': 'Pod Trend', 'value': payload.forecast_snapshot.pod_trend, 'icon': 'boxes'}
-                                ] %}
-                {% for trend in trends %}
-                    {% set trend_value = trend.value|lower %}
-                    {% if trend_value == 'increasing' %}
-                        {% set trend_tone = "warning" %}{% set trend_icon = "trending-up" %}
-                    {% elif trend_value == 'decreasing' %}
-                        {% set trend_tone = "normal" %}{% set trend_icon = "trending-down" %}
-                    {% elif trend_value == 'stable' %}
-                        {% set trend_tone = "info" %}{% set trend_icon = "minus" %}
-                    {% else %}
-                        {% set trend_tone = "unknown" %}{% set trend_icon = "circle-help" %}
-                    {% endif %}
-                    <div class="flex items-center justify-between rounded-lg border border-outline-default px-3 py-2.5">
-                        <span class="inline-flex items-center gap-2 text-sm font-semibold text-content-secondary">
-                            <span class="flex h-7 w-7 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="{{ trend.icon }}" class="h-3.5 w-3.5"></i></span>
-                            {{ trend.label }}
-                        </span>
-                        {{ table_label.status_label(trend.value, trend_tone, trend_icon) }}
+            <div class="h-full rounded-xl border border-outline-default bg-kaori-soft p-4">
+                <div class="mb-4 flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-surface-card text-kaori-primary">
+                        <i data-lucide="route" class="h-4 w-4"></i>
+                    </span>
+                    <div>
+                        <h3 class="text-sm font-semibold text-content-primary">Trend Interpretation</h3>
+                        <p class="mt-1 text-xs text-content-muted">Use direction together with current utilization and forecast risk.</p>
                     </div>
-                {% endfor %}
+                </div>
+                <div class="space-y-3">
+                    {% set guidance = [
+                        ('Increasing', 'Prioritize resources already near warning or critical thresholds.', 'trending-up', 'warning'),
+                        ('Stable', 'Continue observation and validate that headroom remains sufficient.', 'minus', 'info'),
+                        ('Decreasing', 'Confirm the reduction is expected and not caused by missing telemetry.', 'trending-down', 'normal'),
+                        ('Unknown', 'Check snapshot freshness and Prometheus analytics readiness before acting.', 'circle-help', 'unknown')
+                    ] %}
+                    {% for label, description, icon, tone in guidance %}
+                        <div class="flex items-start gap-3 rounded-lg border border-outline-default bg-surface-card px-3 py-2.5">
+                            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
+                                <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-secondary">{{ label }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </div>

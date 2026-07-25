@@ -218,6 +218,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
             'cpu': [],
             'memory': [],
             'storage': [],
+            'pods': [],
             'href': '/analytics/top-consumers',
             'recommendation_count': 0,
         },

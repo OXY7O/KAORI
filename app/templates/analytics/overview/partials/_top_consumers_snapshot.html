@@ -8,7 +8,7 @@
             </span>
             <div>
                 <h2 class="text-base font-semibold text-content-primary">Top Consumers</h2>
-                <p class="mt-1 text-sm text-content-muted">Highest resource consumers by CPU, memory, and storage.</p>
+                <p class="mt-1 text-sm text-content-muted">Highest resource consumers by CPU, memory, storage, and pod density.</p>
             </div>
         </div>
         <a href="{{ payload.top_consumers.href }}?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}"
@@ -20,20 +20,23 @@
     {% set groups = [
             {'title': 'Top CPU', 'description': 'Highest CPU usage contributors.', 'consumers': payload.top_consumers.cpu, 'tone': 'info', 'icon': 'cpu'},
             {'title': 'Top Memory', 'description': 'Highest memory working set contributors.', 'consumers': payload.top_consumers.memory, 'tone': 'maintenance', 'icon': 'memory-stick'},
-            {'title': 'Top Storage', 'description': 'Highest persistent storage consumers.', 'consumers': payload.top_consumers.storage, 'tone': 'normal', 'icon': 'database'}
+            {'title': 'Top Storage', 'description': 'Highest persistent storage consumers.', 'consumers': payload.top_consumers.storage, 'tone': 'normal', 'icon': 'database'},
+            {'title': 'Top Pods', 'description': 'Namespaces with the highest running pod count.', 'consumers': payload.top_consumers.pods, 'tone': 'pending', 'icon': 'boxes'}
         ] %}
-    <div class="space-y-3">
+    <div class="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
         {% for group in groups %}
             {% set top_item = group.consumers[0] if group.consumers else none %}
             {% set icon_class = {
                             'info': 'bg-status-info-soft text-status-info',
                             'maintenance': 'bg-status-maintenance-soft text-status-maintenance',
-                            'normal': 'bg-status-normal-soft text-status-normal'
+                            'normal': 'bg-status-normal-soft text-status-normal',
+                            'pending': 'bg-status-pending-soft text-status-pending'
                         }.get(group.tone, 'bg-kaori-soft text-kaori-primary') %}
             {% set bar_class = {
                             'info': 'bg-status-info',
                             'maintenance': 'bg-kaori-primary',
-                            'normal': 'bg-status-normal'
+                            'normal': 'bg-status-normal',
+                            'pending': 'bg-status-pending'
                         }.get(group.tone, 'bg-kaori-primary') %}
             <details class="group overflow-hidden rounded-lg border border-outline-default bg-surface-card" open>
                 <summary class="cursor-pointer list-none px-4 py-4 transition hover:bg-surface-hover">
@@ -69,7 +72,7 @@
                 </summary>
                 <div class="border-t border-outline-subtle bg-surface-card p-4">
                     {% if group.consumers %}
-                        <div class="space-y-3">
+                        <div class="grid grid-cols-1 items-start gap-4 xl:grid-cols-2">
                             {% for item in group.consumers %}
                                 <div class="rounded-lg border border-outline-default p-3">
                                     <div class="mb-2 flex items-center justify-between gap-3 text-xs">

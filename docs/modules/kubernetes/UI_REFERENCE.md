@@ -33,6 +33,9 @@ This document contains Kubernetes-specific presentation decisions that must not 
 
 Detailed page fields, table columns, and action names belong in the relevant Kubernetes module README rather than this summary.
 
-### Analytics Overview Category Tabs
+### Analytics Overview Trend and Top Consumer Presentation
 
-The Analytics Overview keeps Analytics Health Summary above the category navigation and groups the remaining sections into four tabs: Resource & Capacity, Workloads & Storage, Forecast & Signals, and Actions & Recommendations. The first tab is active by default. Expandable analytics overview sections, including all Top Consumers groups, open by default so operational evidence is visible immediately after a category is selected.
+- Trend Summary is paired with a same-height Trend Interpretation guidance panel.
+- Top Consumers uses a responsive two-column grid on desktop.
+- The overview exposes four consumer groups: Top CPU, Top Memory, Top Storage, and Top Pods.
+- Top Pods ranks namespaces by observed pod count from the committed Top Consumers snapshot.
