@@ -22,7 +22,8 @@ This document contains Kubernetes-specific presentation decisions that must not 
 - Cluster, namespace, role, workload type, update strategy, object counts, labels, and annotations are descriptive metadata.
 - Readiness, lifecycle, pressure, scheduling, collection availability, quota state, and other dynamic conditions use semantic labels.
 - Workload Inventory is a resource-specific exception: the `State` column uses ordinary table text rather than a semantic label, while detailed runtime state may retain richer semantic presentation.
-- The Workload name cell uses a compact 28 × 28 px violet resource icon container with a 16 × 16 px `boxes` icon, followed by the semibold workload name.
+- Primary resource cells use a compact `28 × 28 px` icon container when the row title has one text line. A `32 × 32 px` container is reserved for cells that can render a second supporting line, such as a node hostname.
+- Workload, Namespace, Pod, Service, Ingress, Storage, and Configuration resource-name cells use the compact single-line icon treatment. Node rows retain the two-line icon treatment because hostname may appear below the node name.
 - UUIDs, IP addresses, and runtime identifiers use sans-serif with safe wrapping in ordinary detail cards.
 - Missing data never renders as healthy.
 

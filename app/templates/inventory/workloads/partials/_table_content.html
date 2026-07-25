@@ -21,8 +21,10 @@
                     <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(workload.cluster_name, 'server') }}</td>
                     <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(workload.namespace, 'folder-tree') }}</td>
                     <td class="max-w-[260px] px-3 py-3.5 align-top">
-                        <div class="flex items-center gap-2">
-                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="boxes" class="h-4 w-4"></i></span>
+                        <div class="flex min-w-0 items-center gap-2">
+                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
+                                <i data-lucide="boxes" class="h-4 w-4"></i>
+                            </span>
                             <span class="truncate text-sm font-semibold leading-5 text-content-primary"
                                   title="{{ workload.name }}">{{ workload.name }}</span>
                         </div>

@@ -21,7 +21,7 @@
                     <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(item.cluster_name, 'server') }}</td>
                     <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(item.namespace, 'folder-tree') }}</td>
                     <td class="max-w-[320px] px-3 py-3.5 align-top">
-                        <div class="flex min-w-0 items-center gap-2"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="{{ 'key-round' if item.type == 'Secret' else 'file-json-2' }}"
+                        <div class="flex min-w-0 items-center gap-2"><span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="{{ 'key-round' if item.type == 'Secret' else 'file-json-2' }}"
    class="h-4 w-4"></i></span><span class="truncate text-sm font-semibold leading-5 text-content-primary"
       title="{{ item.name }}">{{ item.name }}</span></div>
                     </td>
