@@ -2,7 +2,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table.html" as table_ui %}
 <div class="overflow-x-auto">
-    <table class="min-w-full divide-y divide-outline-subtle text-sm">
+    <table class="min-w-full divide-y divide-outline-subtle text-xs leading-5 text-content-secondary">
         <thead class="bg-surface-hover text-xs text-content-muted">
             <tr>
                 <th class="px-4 py-3 text-left font-semibold">Cluster</th>
@@ -23,26 +23,20 @@
                 <tr class="transition hover:bg-surface-hover">
                     <td class="px-4 py-3.5 align-top">{{ table_label.metadata_label(node.cluster_name, 'building-2') }}</td>
                     <td class="px-4 py-3.5 align-top">
-                        <div class="flex max-w-[260px] items-start gap-2.5">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
+                        <div class="flex max-w-[260px] items-center gap-2">
+                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
                                 <i data-lucide="server" class="h-4 w-4"></i>
                             </span>
-                            <div class="min-w-0">
-                                <div class="truncate text-sm font-semibold leading-5 text-content-primary"
-                                     title="{{ node.node_name }}">{{ node.node_name }}</div>
-                                {% if node.hostname_address and node.hostname_address != node.node_name %}
-                                    <div class="mt-0.5 truncate text-xs text-content-muted"
-                                         title="{{ node.hostname_address }}">{{ node.hostname_address }}</div>
-                                {% endif %}
-                            </div>
+                            <span class="min-w-0 truncate text-sm font-semibold leading-5 text-content-primary"
+                                  title="{{ node.node_name }}">{{ node.node_name }}</span>
                         </div>
                     </td>
-                    <td class="px-4 py-3.5 align-top text-content-secondary">{{ node.internal_ip or '-' }}</td>
+                    <td class="px-4 py-3.5 align-top text-xs leading-5 text-content-secondary">{{ node.internal_ip or '-' }}</td>
                     <td class="px-4 py-3.5 align-top">{{ table_label.status_label(node.status_display, status_tone, status_icon) }}</td>
                     <td class="px-4 py-3.5 align-top">{{ table_label.metadata_label(node.role, 'workflow') }}</td>
-                    <td class="px-4 py-3.5 align-top font-semibold text-content-primary">{{ node.cpu or '-' }}</td>
-                    <td class="px-4 py-3.5 align-top text-content-secondary">{{ node.memory_display }}</td>
-                    <td class="px-4 py-3.5 align-top text-content-secondary">{{ node.ephemeral_storage_display }}</td>
+                    <td class="px-4 py-3.5 align-top text-xs font-semibold leading-5 text-content-primary">{{ node.cpu or '-' }}</td>
+                    <td class="px-4 py-3.5 align-top text-xs leading-5 text-content-secondary">{{ node.memory_display }}</td>
+                    <td class="px-4 py-3.5 align-top text-xs leading-5 text-content-secondary">{{ node.ephemeral_storage_display }}</td>
                     <td class="px-4 py-3.5 text-right align-top">
                         <button type="button"
                                 data-node-toggle="true"

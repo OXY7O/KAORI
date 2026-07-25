@@ -2,7 +2,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table.html" as table_ui %}
 <div class="overflow-x-auto overscroll-x-contain">
-    <table class="min-w-[980px] w-full divide-y divide-outline-subtle text-sm">
+    <table class="min-w-[980px] w-full divide-y divide-outline-subtle text-xs leading-5 text-content-secondary">
         <thead class="bg-surface-hover text-xs text-content-muted">
             <tr>
                 <th class="min-w-[160px] px-4 py-3 text-left font-semibold">Cluster</th>
@@ -20,7 +20,7 @@
                 <tr class="transition hover:bg-surface-hover">
                     <td class="px-4 py-3.5 align-top">{{ table_label.metadata_label(namespace.cluster_name, 'building-2') }}</td>
                     <td class="px-4 py-3.5 align-top">
-                        <div class="flex max-w-[280px] items-start gap-2.5">
+                        <div class="flex max-w-[280px] items-center gap-2">
                             <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
                                 <i data-lucide="folder-tree" class="h-4 w-4"></i>
                             </span>

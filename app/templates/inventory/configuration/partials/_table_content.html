@@ -2,7 +2,7 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
 <div class="overflow-x-auto">
-    <table class="min-w-[960px] w-full text-left text-xs text-content-secondary">
+    <table class="min-w-[960px] w-full text-left text-xs leading-5 text-content-secondary">
         <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted">
             <tr>
                 <th class="px-3 py-2.5">Cluster</th>
@@ -29,9 +29,9 @@
                     <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(item.key_count ~ ' keys', 'key-round') }}</td>
                     <td class="px-3 py-3.5 align-top">
                         {% if item.immutable %}
-                            {{ table_label.status_label('Immutable', 'info', 'lock-keyhole') }}
+                            {{ table_label.status_label('Immutable', 'warning', 'lock-keyhole') }}
                         {% else %}
-                            {{ table_label.status_label('Mutable', 'unknown', 'unlock') }}
+                            {{ table_label.status_label('Mutable', 'normal', 'unlock') }}
                         {% endif %}
                     </td>
                     <td class="px-3 py-3.5 text-right align-top">

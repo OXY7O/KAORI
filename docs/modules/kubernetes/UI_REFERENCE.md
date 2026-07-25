@@ -21,9 +21,6 @@ This document contains Kubernetes-specific presentation decisions that must not 
 - Resource-specific columns, metrics, nested objects, and actions are maintained by the owning inventory specification or route README.
 - Cluster, namespace, role, workload type, update strategy, object counts, labels, and annotations are descriptive metadata.
 - Readiness, lifecycle, pressure, scheduling, collection availability, quota state, and other dynamic conditions use semantic labels.
-- Workload Inventory is a resource-specific exception: the `State` column uses ordinary table text rather than a semantic label, while detailed runtime state may retain richer semantic presentation.
-- Primary resource cells use a compact `28 × 28 px` icon container when the row title has one text line. A `32 × 32 px` container is reserved for cells that can render a second supporting line, such as a node hostname.
-- Workload, Namespace, Pod, Service, Ingress, Storage, and Configuration resource-name cells use the compact single-line icon treatment. Node rows retain the two-line icon treatment because hostname may appear below the node name.
 - UUIDs, IP addresses, and runtime identifiers use sans-serif with safe wrapping in ordinary detail cards.
 - Missing data never renders as healthy.
 
@@ -35,3 +32,13 @@ This document contains Kubernetes-specific presentation decisions that must not 
 - Destructive and security-sensitive actions use their established confirmation, permission, CSRF, audit, and notification flows.
 
 Detailed page fields, table columns, and action names belong in the relevant Kubernetes module README rather than this summary.
+
+### Inventory table row presentation
+
+- Inventory table bodies use `text-xs` with `leading-5` for ordinary values. Resource names remain `text-sm font-semibold` as the primary hierarchy, while compact metadata and semantic labels retain the shared 10 px label contract.
+- Single-line resource-name cells use a 28 × 28 px icon container with a 16 × 16 px Lucide icon. Supporting text must not be added merely to fill icon height.
+- Workload type remains violet descriptive metadata, while update strategy uses the blue Info semantic treatment so the two adjacent labels are visually distinguishable. Workload state is rendered as ordinary text.
+- Ingress host data is available in expandable details and is not duplicated in the main inventory table.
+- Storage capacity is ordinary text without a label or icon.
+- Configuration type remains violet descriptive metadata. Immutable is Warning/amber and Mutable is Normal/green so mutability is distinct from object type.
+- Node resource cells follow the same single-line name-cell geometry as other inventory pages. Hostname context remains in details instead of creating inconsistent two-line rows.

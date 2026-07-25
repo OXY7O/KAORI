@@ -2,7 +2,7 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
 <div class="overflow-x-auto">
-    <table class="min-w-[1080px] w-full text-left text-xs text-content-secondary">
+    <table class="min-w-[1080px] w-full text-left text-xs leading-5 text-content-secondary">
         <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted">
             <tr>
                 <th class="px-3 py-3">Cluster</th>
@@ -17,24 +17,31 @@
         </thead>
         <tbody class="divide-y divide-outline-subtle">
             {% for workload in inventory.workloads %}
+                {% if workload.status == 'Running' %}
+                    {% set state_tone = "normal" %}{% set state_icon = "circle-check" %}
+                {% elif workload.status == 'Progressing' %}
+                    {% set state_tone = "pending" %}{% set state_icon = "loader-circle" %}
+                {% elif workload.status == 'Failed' %}
+                    {% set state_tone = "critical" %}{% set state_icon = "circle-x" %}
+                {% elif workload.status == 'Suspended' %}
+                    {% set state_tone = "disabled" %}{% set state_icon = "pause-circle" %}
+                {% else %}
+                    {% set state_tone = "warning" %}{% set state_icon = "triangle-alert" %}
+                {% endif %}
                 <tr class="transition hover:bg-surface-hover">
                     <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(workload.cluster_name, 'server') }}</td>
                     <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(workload.namespace, 'folder-tree') }}</td>
                     <td class="max-w-[260px] px-3 py-3.5 align-top">
-                        <div class="flex min-w-0 items-center gap-2">
-                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
-                                <i data-lucide="boxes" class="h-4 w-4"></i>
-                            </span>
+                        <div class="flex items-center gap-2">
+                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="boxes" class="h-4 w-4"></i></span>
                             <span class="truncate text-sm font-semibold leading-5 text-content-primary"
                                   title="{{ workload.name }}">{{ workload.name }}</span>
                         </div>
                     </td>
                     <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(workload.type, 'box') }}</td>
-                    <td class="px-3 py-3.5 align-top">
-                        <span class="text-sm font-medium leading-5 text-content-secondary">{{ workload.state_display }}</span>
-                    </td>
+                    <td class="px-3 py-3.5 align-top"><span class="text-xs font-medium leading-5 text-content-secondary">{{ workload.state_display }}</span></td>
                     <td class="px-3 py-3.5 align-top font-semibold tabular-nums text-content-primary">{{ workload.pod_count }}</td>
-                    <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(workload.update_strategy, 'refresh-cw') }}</td>
+                    <td class="px-3 py-3.5 align-top">{{ table_label.status_label(workload.update_strategy, 'info', 'refresh-cw') }}</td>
                     <td class="px-3 py-3.5 text-right align-top">
                         <button type="button"
                                 data-workload-toggle="true"
