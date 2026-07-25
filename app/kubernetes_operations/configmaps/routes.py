@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from flask import current_app, redirect, render_template, request, url_for
+from flask import current_app, redirect, render_template, request, session, url_for
 from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from wtforms.validators import ValidationError
 
 from app.kubernetes_operations.configmaps.service import (
@@ -23,6 +24,55 @@ from app.notifications.service import (
     record_operational_activity,
 )
 from app.rbac.decorators import any_permission_required, permission_required
+
+
+
+
+_CONFIGMAP_DELETE_RECEIPT_SESSION_KEY = 'configmap_delete_validation_receipt'
+_CONFIGMAP_DELETE_RECEIPT_MAX_AGE_SECONDS = 600
+
+
+def _delete_receipt_serializer() -> URLSafeTimedSerializer:
+    return URLSafeTimedSerializer(
+        current_app.config['SECRET_KEY'],
+        salt='kaori-configmap-delete-validation',
+    )
+
+
+def _issue_delete_receipt(metadata: dict[str, Any]) -> str:
+    token = _delete_receipt_serializer().dumps(
+        {
+            'cluster_id': str(metadata['cluster_id']),
+            'namespace': metadata['namespace'],
+            'configmap_name': metadata['configmap_name'],
+            'resource_version': metadata['resource_version'],
+        }
+    )
+    session[_CONFIGMAP_DELETE_RECEIPT_SESSION_KEY] = token
+    return token
+
+
+def _verify_delete_receipt(source: Any) -> dict[str, str]:
+    token = (source.get('delete_validation_token') or '').strip()
+    if not token:
+        raise ValueError('Validate the ConfigMap deletion before applying the final delete action.')
+    try:
+        payload = _delete_receipt_serializer().loads(
+            token,
+            max_age=_CONFIGMAP_DELETE_RECEIPT_MAX_AGE_SECONDS,
+        )
+    except SignatureExpired as exc:
+        raise ValueError('The deletion validation expired. Run validation again before deleting.') from exc
+    except BadSignature as exc:
+        raise ValueError('The deletion validation receipt is invalid. Run validation again.') from exc
+
+    cluster_id, namespace, configmap_name = _target_values(source)
+    expected = (str(payload.get('cluster_id') or ''), payload.get('namespace') or '', payload.get('configmap_name') or '')
+    if (cluster_id, namespace, configmap_name) != expected:
+        raise ValueError('The selected ConfigMap changed after validation. Run validation again.')
+    return {
+        'resource_version': str(payload.get('resource_version') or ''),
+    }
 
 
 def _csrf() -> None:
@@ -375,17 +425,32 @@ def update_configmap_page():
 
 @permission_required('kubernetes_configmaps.delete')
 def delete_configmap_page():
+    delete_validation_token = None
+    delete_completed = False
     if request.method == 'POST':
         dry_run = request.form.get('operation') != 'delete'
         try:
             _csrf()
-            metadata = delete_configmap(request.form, dry_run=dry_run)
+            expected_resource_version = None
+            if not dry_run:
+                receipt = _verify_delete_receipt(request.form)
+                expected_resource_version = receipt['resource_version']
+            metadata = delete_configmap(
+                request.form,
+                dry_run=dry_run,
+                expected_resource_version=expected_resource_version,
+            )
+            if dry_run:
+                delete_validation_token = _issue_delete_receipt(metadata)
+            else:
+                session.pop(_CONFIGMAP_DELETE_RECEIPT_SESSION_KEY, None)
+                delete_completed = True
             feedback = _feedback(
                 event_type=('kubernetes_configmap_delete_validated' if dry_run else 'kubernetes_configmap_deleted'),
                 status='success',
-                title=('ConfigMap deletion validated' if dry_run else 'ConfigMap deleted'),
+                title=('ConfigMap Deletion Validated' if dry_run else 'ConfigMap Deleted'),
                 message=(
-                    'Kubernetes accepted the deletion during server-side dry-run.'
+                    'Kubernetes accepted the deletion during server-side dry-run. The final delete action is now available for ten minutes.'
                     if dry_run
                     else f'ConfigMap {metadata["configmap_name"]} was deleted from namespace {metadata["namespace"]}.'
                 ),
@@ -393,10 +458,11 @@ def delete_configmap_page():
                 action_url=url_for('kubernetes_operations.configmap_management'),
             )
         except ValueError as exc:
+            session.pop(_CONFIGMAP_DELETE_RECEIPT_SESSION_KEY, None)
             feedback = _feedback(
                 event_type='kubernetes_configmap_delete_failed',
                 status='error',
-                title=('ConfigMap deletion validation failed' if dry_run else 'ConfigMap deletion failed'),
+                title=('ConfigMap Deletion Validation Failed' if dry_run else 'ConfigMap Deletion Failed'),
                 message=str(exc),
                 metadata={
                     'cluster_id': request.form.get('cluster_id'),
@@ -409,6 +475,8 @@ def delete_configmap_page():
         if request.headers.get('HX-Request') == 'true':
             return render_template(
                 'kubernetes_operations/configmaps/_operation_notification.html',
+                delete_validation_token=delete_validation_token,
+                delete_completed=delete_completed,
                 **_oob(feedback),
             )
         return redirect(
@@ -435,6 +503,18 @@ def delete_configmap_page():
             )
             live = read_configmap(target)
             impacts = get_impact_context(target)
+            delete_validation_token = session.get(_CONFIGMAP_DELETE_RECEIPT_SESSION_KEY)
+            if delete_validation_token:
+                try:
+                    _verify_delete_receipt({
+                        'delete_validation_token': delete_validation_token,
+                        'cluster_id': context['selected_cluster_id'],
+                        'namespace': context['selected_namespace'],
+                        'configmap_name': context['selected_configmap_name'],
+                    })
+                except ValueError:
+                    session.pop(_CONFIGMAP_DELETE_RECEIPT_SESSION_KEY, None)
+                    delete_validation_token = None
         except ValueError as exc:
             target_error = str(exc)
 
@@ -444,5 +524,6 @@ def delete_configmap_page():
         live=live,
         impacts=impacts,
         target_error=target_error,
+        delete_validation_token=delete_validation_token,
         **context,
     )

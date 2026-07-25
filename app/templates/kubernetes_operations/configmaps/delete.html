@@ -17,18 +17,18 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ configmap_ui.hero_context('Delete Boundary',
+                {{ configmap_ui.hero_context('Delete boundary',
                                 'Destructive action',
                                 'Critical action',
                                 'critical',
                                 'shield-alert',
                                 'scan-search',
                                 'Validation',
-                                'Dry-Run Required',
+                                'Dry-run required',
                                 'Checked before deletion',
                                 'keyboard',
                                 'Confirmation',
-                                'Exact Name',
+                                'Exact name',
                                 'Required for final delete',
                                 url_for('kubernetes_operations.configmap_management') ,
                 'ConfigMap Management',
@@ -57,15 +57,15 @@
                     </div>
                 </section>
                 <section class="h-full overflow-hidden rounded-xl border border-kaori-primary/20 bg-surface-card shadow-sm xl:col-start-2 xl:row-start-1">
-                    {{ configmap_ui.section_header('shield-alert', 'Deletion Guardrails', 'Controls required before a ConfigMap can be removed.', 'critical') }}
+                    {{ configmap_ui.section_header('shield-alert', 'Deletion guardrails', 'Controls required before a ConfigMap can be removed.', 'critical') }}
                     <div class="grid gap-4 p-5">
-                        {{ configmap_ui.guardrail('eye', 'Live Object Review', 'The selected target is read directly from Kubernetes.') }}
-                        {{ configmap_ui.guardrail('scan-search', 'Dry-Run Required', 'Kubernetes validates the delete request first.') }}
-                        {{ configmap_ui.guardrail('keyboard', 'Exact Confirmation', 'The live ConfigMap name must be entered exactly.', 'critical') }}
+                        {{ configmap_ui.guardrail('eye', 'Live object review', 'The selected target is read directly from Kubernetes.') }}
+                        {{ configmap_ui.guardrail('scan-search', 'Dry-run required', 'Kubernetes validates the delete request first.') }}
+                        {{ configmap_ui.guardrail('keyboard', 'Exact confirmation', 'The live ConfigMap name must be entered exactly.', 'critical') }}
                     </div>
                 </section>
                 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-1 xl:row-start-2">
-                    {{ configmap_ui.section_header('triangle-alert', 'Deletion Impact Review', 'Confirm identity, live key count, known consumers, and deletion consequences.', 'warning') }}
+                    {{ configmap_ui.section_header('triangle-alert', 'Deletion impact review', 'Confirm identity, live key count, known consumers, and deletion consequences.', 'warning') }}
                     <div id="configmap-delete-target" class="p-5 sm:p-6">
                         {% if target or target_error %}
                             {% include 'kubernetes_operations/configmaps/_delete_target.html' %}
@@ -84,10 +84,10 @@
                             <span class="flex h-10 w-10 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface text-kaori-accent"><i data-lucide="workflow" class="h-5 w-5"></i></span>
                         </div>
                         <div class="mt-5 grid gap-4">
-                            {{ configmap_ui.workflow_step(1, 'Select Object', 'Choose the existing live ConfigMap.') }}
-                            {{ configmap_ui.workflow_step(2, 'Review Impact', 'Inspect key count and known consumers.') }}
+                            {{ configmap_ui.workflow_step(1, 'Select object', 'Choose the existing live ConfigMap.') }}
+                            {{ configmap_ui.workflow_step(2, 'Review impact', 'Inspect key count and known consumers.') }}
                             {{ configmap_ui.workflow_step(3, 'Validate', 'Run Kubernetes deletion dry-run.') }}
-                            {{ configmap_ui.workflow_step(4, 'Confirm & Delete', 'Enter the exact name and remove it.') }}
+                            {{ configmap_ui.workflow_step(4, 'Confirm & delete', 'Enter the exact name and remove it.') }}
                         </div>
                     </section>
                 </aside>
@@ -96,14 +96,8 @@
                         <p class="text-sm font-semibold text-content-primary">Review the deletion target before applying</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">Validation is non-destructive. The final delete action is irreversible from this workflow.</p>
                     </div>
-                    <div class="flex flex-wrap gap-3 sm:justify-end">
-                        <button name="operation"
-                                value="validate"
-                                class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-kaori-primary/25 bg-kaori-soft px-5 text-sm font-semibold text-kaori-primary transition hover:border-kaori-primary/40 hover:bg-kaori-primary/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus cursor-pointer disabled:cursor-not-allowed"><i data-lucide="scan-search" class="h-4 w-4"></i>Validate Deletion</button>
-                        <button name="operation"
-                                value="delete"
-                                class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-status-critical px-5 text-sm font-semibold text-white transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-status-critical cursor-pointer disabled:cursor-not-allowed"><i data-lucide="trash-2" class="h-4 w-4"></i>Delete ConfigMap</button>
-                    </div>
+                    {% set oob = false %}
+                    {% include 'kubernetes_operations/configmaps/_delete_actions.html' %}
                 </section>
             </div>
         </form>

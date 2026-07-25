@@ -476,12 +476,19 @@ def update_configmap(form: Any, *, dry_run: bool) -> dict[str, Any]:
     }
 
 
-def delete_configmap(form: Any, *, dry_run: bool) -> dict[str, Any]:
+def delete_configmap(
+    form: Any,
+    *,
+    dry_run: bool,
+    expected_resource_version: str | None = None,
+) -> dict[str, Any]:
     target = _bound_target(form)
     if form.get('confirm_name') != target.name:
         raise ValueError('Type the exact ConfigMap name to confirm deletion.')
     live = read_configmap(target)
     impacts = get_impact_context(target)
+    if expected_resource_version and live['resource_version'] != expected_resource_version:
+        raise ValueError('The ConfigMap changed after validation. Run deletion validation again.')
     body = client.V1DeleteOptions(
         propagation_policy='Background',
         preconditions=client.V1Preconditions(
@@ -503,9 +510,7 @@ def delete_configmap(form: Any, *, dry_run: bool) -> dict[str, Any]:
         )
 
     try:
-        perform_delete(server_dry_run=True)
-        if not dry_run:
-            perform_delete(server_dry_run=False)
+        perform_delete(server_dry_run=dry_run)
     except ApiException as exc:
         raise _safe_api_error(exc, 'delete operation') from exc
     return {
@@ -515,6 +520,7 @@ def delete_configmap(form: Any, *, dry_run: bool) -> dict[str, Any]:
         'configmap_name': target.name,
         'key_names': sorted([*live['data'].keys(), *live['binary_data'].keys()]),
         'impact_count': len(impacts),
+        'resource_version': live['resource_version'],
         'operation': 'validation' if dry_run else 'deletion',
         'live_target_source': True,
         'inventory_target_gate': False,
