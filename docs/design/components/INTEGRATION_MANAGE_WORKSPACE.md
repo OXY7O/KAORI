@@ -229,3 +229,13 @@ The destructive control remains in a separate `Connection Lifecycle` block so op
 ## Technical Check Presentation
 
 Prometheus and Alertmanager expose executable provider expressions inside expandable **Technical Checks**. Kubernetes follows the same disclosure pattern and provides a runnable `kubectl` shell script that verifies API serving, resource discovery, effective RBAC, and a bounded live read. Explanatory evidence remains normal KAORI typography; only runnable queries, requests, or scripts use monospace and Copy.
+
+### Operational Domain Readiness Interpretation
+
+The Prometheus Analytics Readiness workspace must explain the difference between an individual Technical Check and a complete consumer contract directly inside Operational Domain Readiness.
+
+- A successful Technical Check proves only that one registered PromQL query executed.
+- Domain readiness additionally requires the complete metric, label, identity, and pairing contract consumed by the Analytics module.
+- The Storage Filesystem Contract requires both `node_filesystem_size_bytes` and `node_filesystem_avail_bytes` for the same canonical node identity and mountpoint. `/var` is preferred and `/` is the documented fallback.
+- Accepted canonical node identity labels are `node`, `nodename`, or `kubernetes_node`. `instance` alone is not accepted as a stable Kubernetes node identity.
+- Users must be directed to Analytics Query Contract Evidence for the exact validation queries, observed labels, and remediation guidance.

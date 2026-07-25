@@ -123,6 +123,36 @@
                         </div>
                     {% endfor %}
                 </div>
+                <div class="border-t border-outline-subtle bg-kaori-soft/40 p-4">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary ring-1 ring-inset ring-kaori-border">
+                            <i data-lucide="info" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-content-primary">How Domain Readiness Is Evaluated</p>
+                            <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                A successful Technical Check proves that an individual PromQL query can execute. Domain readiness is stricter: KAORI also verifies that the complete metric, label, identity, and pairing contract required by the Analytics consumer is usable.
+                            </p>
+                            <div class="mt-3 grid gap-2 lg:grid-cols-2">
+                                <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                    <p class="text-xs font-semibold text-content-primary">Storage Filesystem Contract</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                        KAORI requires both <code class="font-mono text-[11px]">node_filesystem_size_bytes</code> and <code class="font-mono text-[11px]">node_filesystem_avail_bytes</code> for the same node and mountpoint. The preferred pair is <code class="font-mono text-[11px]">/var</code>; <code class="font-mono text-[11px]">/</code> is the accepted fallback.
+                                    </p>
+                                </div>
+                                <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                                    <p class="text-xs font-semibold text-content-primary">Canonical Node Identity</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-secondary">
+                                        The matching series must expose <code class="font-mono text-[11px]">node</code>, <code class="font-mono text-[11px]">nodename</code>, or <code class="font-mono text-[11px]">kubernetes_node</code>. An <code class="font-mono text-[11px]">instance</code> label alone is not treated as a stable Kubernetes node identity.
+                                    </p>
+                                </div>
+                            </div>
+                            <p class="mt-3 text-xs leading-5 text-content-muted">
+                                Open <span class="font-semibold text-content-secondary">Analytics Query Contract Evidence</span> below to compare Expected and Observed evidence, inspect the exact validation query, and follow the contract-specific remediation.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             {% else %}
                 <div class="p-4 text-sm text-content-muted">Run Full Validation to calculate domain readiness.</div>
             {% endif %}
