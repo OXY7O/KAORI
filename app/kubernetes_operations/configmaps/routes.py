@@ -186,6 +186,19 @@ def _load_selected_target(source: Any):
     return get_target(cluster_id, namespace, configmap_name)
 
 
+def _refresh_delete_workspace(metadata: dict[str, Any]) -> dict[str, Any]:
+    context = _selection_context(
+        str(metadata['cluster_id']),
+        metadata['namespace'],
+    )
+    context['selected_configmaps'] = [
+        item
+        for item in context['selected_configmaps']
+        if item.name != metadata['configmap_name']
+    ]
+    return context
+
+
 @any_permission_required(
     'kubernetes_configmaps.view',
     'kubernetes_configmaps.create',
@@ -427,31 +440,38 @@ def update_configmap_page():
 def delete_configmap_page():
     delete_validation_token = None
     delete_completed = False
+    delete_workspace_context = None
     if request.method == 'POST':
-        dry_run = request.form.get('operation') != 'delete'
+        validate_only = request.form.get('operation') != 'delete'
         try:
             _csrf()
             expected_resource_version = None
-            if not dry_run:
+            if not validate_only:
                 receipt = _verify_delete_receipt(request.form)
                 expected_resource_version = receipt['resource_version']
+                session.pop(_CONFIGMAP_DELETE_RECEIPT_SESSION_KEY, None)
             metadata = delete_configmap(
                 request.form,
-                dry_run=dry_run,
+                validate_only=validate_only,
                 expected_resource_version=expected_resource_version,
             )
-            if dry_run:
+            if validate_only:
                 delete_validation_token = _issue_delete_receipt(metadata)
             else:
-                session.pop(_CONFIGMAP_DELETE_RECEIPT_SESSION_KEY, None)
                 delete_completed = True
+                delete_workspace_context = _refresh_delete_workspace(metadata)
             feedback = _feedback(
-                event_type=('kubernetes_configmap_delete_validated' if dry_run else 'kubernetes_configmap_deleted'),
+                event_type=(
+                    'kubernetes_configmap_delete_validated'
+                    if validate_only
+                    else 'kubernetes_configmap_deleted'
+                ),
                 status='success',
-                title=('ConfigMap Deletion Validated' if dry_run else 'ConfigMap Deleted'),
+                title=('ConfigMap Deletion Validated' if validate_only else 'ConfigMap Deleted'),
                 message=(
-                    'Kubernetes accepted the deletion during server-side dry-run. The final delete action is now available for ten minutes.'
-                    if dry_run
+                    'Kubernetes confirmed the live target and ConfigMap delete authorization. '
+                    'The final delete action is available for ten minutes.'
+                    if validate_only
                     else f'ConfigMap {metadata["configmap_name"]} was deleted from namespace {metadata["namespace"]}.'
                 ),
                 metadata=metadata,
@@ -462,13 +482,13 @@ def delete_configmap_page():
             feedback = _feedback(
                 event_type='kubernetes_configmap_delete_failed',
                 status='error',
-                title=('ConfigMap Deletion Validation Failed' if dry_run else 'ConfigMap Deletion Failed'),
+                title=('ConfigMap Deletion Validation Failed' if validate_only else 'ConfigMap Deletion Failed'),
                 message=str(exc),
                 metadata={
                     'cluster_id': request.form.get('cluster_id'),
                     'namespace': request.form.get('namespace'),
                     'configmap_name': request.form.get('configmap_name'),
-                    'operation': 'validation' if dry_run else 'delete',
+                    'operation': 'validation' if validate_only else 'delete',
                 },
                 action_url=url_for('kubernetes_operations.delete_configmap'),
             )
@@ -477,11 +497,12 @@ def delete_configmap_page():
                 'kubernetes_operations/configmaps/_operation_notification.html',
                 delete_validation_token=delete_validation_token,
                 delete_completed=delete_completed,
+                delete_workspace_context=delete_workspace_context,
                 **_oob(feedback),
             )
         return redirect(
             url_for('kubernetes_operations.delete_configmap')
-            if not dry_run
+            if not validate_only
             else _target_url(
                 'kubernetes_operations.delete_configmap',
                 request.form,

@@ -12,7 +12,7 @@
                         <p class="mt-2 {{ page_hero.description_classes() }}">Load the live target, review known workload impact, validate the request, and execute an explicitly confirmed deletion.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('radio-tower', 'Live Kubernetes target') }}
-                            {{ page_hero.meta_label('scan-search', 'Server-side dry-run') }}
+                            {{ page_hero.meta_label('shield-check', 'Non-destructive preflight') }}
                             {{ page_hero.meta_label('keyboard', 'Exact-name confirmation') }}
                         </div>
                     {% endcall %}
@@ -22,10 +22,10 @@
                                 'Critical action',
                                 'critical',
                                 'shield-alert',
-                                'scan-search',
+                                'shield-check',
                                 'Validation',
-                                'Dry-run required',
-                                'Checked before deletion',
+                                'Preflight required',
+                                'Live identity and RBAC',
                                 'keyboard',
                                 'Confirmation',
                                 'Exact name',
@@ -41,6 +41,8 @@
               hx-post="{{ url_for('kubernetes_operations.delete_configmap') }}"
               hx-target="#configmap-operation-feedback"
               hx-swap="innerHTML"
+              hx-sync="this:drop"
+              hx-disabled-elt="find button"
               class="space-y-6">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
@@ -60,7 +62,7 @@
                     {{ configmap_ui.section_header('shield-alert', 'Deletion guardrails', 'Controls required before a ConfigMap can be removed.', 'critical') }}
                     <div class="grid gap-4 p-5">
                         {{ configmap_ui.guardrail('eye', 'Live object review', 'The selected target is read directly from Kubernetes.') }}
-                        {{ configmap_ui.guardrail('scan-search', 'Dry-run required', 'Kubernetes validates the delete request first.') }}
+                        {{ configmap_ui.guardrail('shield-check', 'Authorization preflight', 'KAORI verifies live identity and delete RBAC without sending a DELETE request.') }}
                         {{ configmap_ui.guardrail('keyboard', 'Exact confirmation', 'The live ConfigMap name must be entered exactly.', 'critical') }}
                     </div>
                 </section>
@@ -86,7 +88,7 @@
                         <div class="mt-5 grid gap-4">
                             {{ configmap_ui.workflow_step(1, 'Select object', 'Choose the existing live ConfigMap.') }}
                             {{ configmap_ui.workflow_step(2, 'Review impact', 'Inspect key count and known consumers.') }}
-                            {{ configmap_ui.workflow_step(3, 'Validate', 'Run Kubernetes deletion dry-run.') }}
+                            {{ configmap_ui.workflow_step(3, 'Validate', 'Verify live identity, confirmation, and delete RBAC.') }}
                             {{ configmap_ui.workflow_step(4, 'Confirm & delete', 'Enter the exact name and remove it.') }}
                         </div>
                     </section>

@@ -6,6 +6,21 @@
     {% set oob = true %}
     {% include 'kubernetes_operations/configmaps/_delete_actions.html' %}
 {% endif %}
+{% if delete_completed|default(false) and delete_workspace_context %}
+    <div id="configmap-workspace" hx-swap-oob="outerHTML">
+        {% set clusters = delete_workspace_context.clusters %}
+        {% set namespaces = delete_workspace_context.selected_namespaces %}
+        {% set configmaps = delete_workspace_context.selected_configmaps %}
+        {% set selected_cluster_id = delete_workspace_context.selected_cluster_id %}
+        {% set selected_namespace = delete_workspace_context.selected_namespace %}
+        {% set selected_configmap_name = delete_workspace_context.selected_configmap_name %}
+        {% set selection_error = delete_workspace_context.selection_error %}
+        {% set selection_error_title = delete_workspace_context.selection_error_title %}
+        {% set workspace_mode = 'delete' %}
+        {% set delete_target_url = url_for('kubernetes_operations.configmap_delete_target') %}
+        {% include 'kubernetes_operations/configmaps/_workspace.html' %}
+    </div>
+{% endif %}
 {% if delete_completed|default(false) %}
     <div id="configmap-delete-target" hx-swap-oob="innerHTML">
         {{ configmap_ui.empty_state('check-circle-2', 'ConfigMap Deleted', 'The live target was removed. Select another ConfigMap to continue.') }}

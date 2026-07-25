@@ -39,7 +39,9 @@ The visible selectors must match the bound tuple. The object is reread live befo
 ## Mutation guardrails
 
 - Create verifies the submitted namespace live.
-- Create, Update, and Delete enforce Kubernetes server-side dry-run inside the service boundary before the real mutation.
+- Create and Update enforce Kubernetes server-side dry-run inside the service boundary before the real mutation.
+- Delete validation is strictly non-destructive: KAORI rereads the live target, verifies exact-name confirmation, checks ConfigMap delete authorization with `SelfSubjectAccessReview`, and issues a signed ten-minute receipt without calling the Kubernetes DELETE endpoint.
+- Final Delete is the only path that calls `CoreV1Api.delete_namespaced_config_map()`, and it executes once with the validated live `resourceVersion` precondition.
 - Create uses create-only semantics and does not overwrite an existing ConfigMap.
 - Update includes the live `resourceVersion` in the patch.
 - Delete requires exact-name confirmation and uses a `V1Preconditions(resource_version=...)` guard.
@@ -62,6 +64,7 @@ Impact context can lag behind the live object. The UI must label it as inventory
 - Landing, Create, Update, and Delete use solid KAORI violet heroes with the Inventory Overview geometry.
 - Create keeps Target location and Create guardrails side by side.
 - Update and Delete mirror the same layout: selector and guardrails first, live editor/impact review below, then final actions.
+- After a successful Delete, the cluster, namespace, and ConfigMap selectors are reloaded from the live API; the deleted target is removed immediately and the target/action state is cleared.
 - Form controls use 44 px height, 8 px radius, sentence-case labels, shared surface/outline tokens, and violet focus states.
 - Descriptive values use compact rectangular labels. Immutable, validation, and destructive conditions use semantic treatments.
 - ConfigMap payload fields retain monospace typography.

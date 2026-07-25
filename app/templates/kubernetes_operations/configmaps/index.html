@@ -32,9 +32,9 @@
                                 'Source',
                                 'Live Kubernetes API',
                                 'Authoritative object state',
-                                'scan-search',
+                                'shield-check',
                                 'Validation',
-                                'Server-side dry-run',
+                                'Live preflight checks',
                                 'Checked before mutation',
                                 url_for('integrations.kubernetes') ,
                 'Manage Clusters'
@@ -144,7 +144,7 @@
                         </div>
                         <div class="rounded-lg border border-outline-default bg-surface-hover p-3.5">
                             <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-status-critical-text">Delete policy</p>
-                            <p class="mt-1.5 text-xs leading-5 text-content-muted">Exact-name confirmation and Kubernetes dry-run are required.</p>
+                            <p class="mt-1.5 text-xs leading-5 text-content-muted">Exact-name confirmation and non-destructive delete preflight are required.</p>
                         </div>
                     </div>
                     <div class="mt-auto pt-5">
@@ -162,7 +162,7 @@
         </section>
         <section class="grid gap-4 md:grid-cols-3">
             <div class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">{{ configmap_ui.guardrail('scan-search', 'Impact-Aware Workflow', 'Live values and known consumers are reviewed before update or deletion.') }}</div>
-            <div class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">{{ configmap_ui.guardrail('git-compare-arrows', 'Validated Changes', 'Diff preview and Kubernetes server-side dry-run precede writes.') }}</div>
+            <div class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">{{ configmap_ui.guardrail('git-compare-arrows', 'Validated Changes', 'Diff preview and server-side validation precede writes; deletion uses a non-destructive authorization preflight.') }}</div>
             <div class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">{{ configmap_ui.guardrail('scroll-text', 'Audited Outcome', 'Actor, target, operation mode, and final result are recorded centrally.') }}</div>
         </section>
     </div>

@@ -6,7 +6,13 @@ from dataclasses import dataclass
 from typing import Any, cast
 
 from kubernetes import client
-from kubernetes.client import CoreV1Api, V1ConfigMap, V1ConfigMapList, V1NamespaceList
+from kubernetes.client import (
+    AuthorizationV1Api,
+    CoreV1Api,
+    V1ConfigMap,
+    V1ConfigMapList,
+    V1NamespaceList,
+)
 from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
@@ -234,21 +240,37 @@ def _parse_entries(form: Any) -> tuple[dict[str, str], dict[str, bytes]]:
     return data, binary_data
 
 
-def _api(cluster: Cluster) -> CoreV1Api:
-    return (
-        get_integration('kubernetes')
-        .execute(
-            'client.build',
-            connection_for_cluster(cluster),
-        )
-        .core_api()
+def _runtime_client(cluster: Cluster) -> Any:
+    return get_integration('kubernetes').execute(
+        'client.build',
+        connection_for_cluster(cluster),
     )
+
+
+def _api(cluster: Cluster) -> CoreV1Api:
+    return cast(CoreV1Api, _runtime_client(cluster).core_api())
+
+
+def _authorization_api(cluster: Cluster) -> AuthorizationV1Api:
+    return cast(AuthorizationV1Api, _runtime_client(cluster).authorization_api())
 
 
 def _live_call(cluster: Cluster, operation: str, callback: Any) -> Any:
     try:
         with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
             return callback(_api(cluster))
+    except ApiException:
+        raise
+    except ConfigException as exc:
+        raise ValueError('The selected cluster kubeconfig is invalid or incomplete.') from exc
+    except (OSError, Urllib3HTTPError) as exc:
+        raise ValueError(f'KAORI could not reach the Kubernetes API during the ConfigMap {operation}.') from exc
+
+
+def _authorization_call(cluster: Cluster, operation: str, callback: Any) -> Any:
+    try:
+        with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
+            return callback(_authorization_api(cluster))
     except ApiException:
         raise
     except ConfigException as exc:
@@ -476,10 +498,48 @@ def update_configmap(form: Any, *, dry_run: bool) -> dict[str, Any]:
     }
 
 
+def _validate_delete_authorization(target: ConfigMapTarget) -> None:
+    review = client.V1SelfSubjectAccessReview(
+        spec=client.V1SelfSubjectAccessReviewSpec(
+            resource_attributes=client.V1ResourceAttributes(
+                group='',
+                resource='configmaps',
+                verb='delete',
+                namespace=target.namespace,
+                name=target.name,
+            )
+        )
+    )
+    try:
+        response = _authorization_call(
+            target.cluster,
+            'delete authorization preflight',
+            lambda api: api.create_self_subject_access_review(
+                body=review,
+                _request_timeout=10,
+            ),
+        )
+    except ApiException as exc:
+        if exc.status == 401:
+            raise ValueError('Kubernetes authentication failed while validating ConfigMap delete access.') from exc
+        if exc.status == 403:
+            raise ValueError(
+                'Kubernetes denied the delete authorization preflight. '
+                'Verify SelfSubjectAccessReview access for this cluster.'
+            ) from exc
+        raise ValueError('KAORI could not validate ConfigMap delete authorization against Kubernetes.') from exc
+
+    status = getattr(response, 'status', None)
+    if not bool(getattr(status, 'allowed', False)):
+        raise ValueError(
+            'Kubernetes denied ConfigMap deletion for this namespace. Verify ConfigMap delete RBAC.'
+        )
+
+
 def delete_configmap(
     form: Any,
     *,
-    dry_run: bool,
+    validate_only: bool,
     expected_resource_version: str | None = None,
 ) -> dict[str, Any]:
     target = _bound_target(form)
@@ -487,32 +547,35 @@ def delete_configmap(
         raise ValueError('Type the exact ConfigMap name to confirm deletion.')
     live = read_configmap(target)
     impacts = get_impact_context(target)
-    if expected_resource_version and live['resource_version'] != expected_resource_version:
+    resource_version = str(live.get('resource_version') or '')
+    if not resource_version:
+        raise ValueError('Kubernetes did not return a ConfigMap resource version. Reload the target and retry.')
+    if expected_resource_version and resource_version != expected_resource_version:
         raise ValueError('The ConfigMap changed after validation. Run deletion validation again.')
-    body = client.V1DeleteOptions(
-        propagation_policy='Background',
-        preconditions=client.V1Preconditions(
-            resource_version=live['resource_version'],
-        ),
-    )
 
-    def perform_delete(*, server_dry_run: bool) -> None:
-        _live_call(
-            target.cluster,
-            'delete operation',
-            lambda api: api.delete_namespaced_config_map(
-                name=target.name,
-                namespace=target.namespace,
-                body=body,
-                dry_run='All' if server_dry_run else None,
-                _request_timeout=10,
+    if validate_only:
+        _validate_delete_authorization(target)
+    else:
+        body = client.V1DeleteOptions(
+            propagation_policy='Background',
+            preconditions=client.V1Preconditions(
+                resource_version=resource_version,
             ),
         )
+        try:
+            _live_call(
+                target.cluster,
+                'delete operation',
+                lambda api: api.delete_namespaced_config_map(
+                    name=target.name,
+                    namespace=target.namespace,
+                    body=body,
+                    _request_timeout=10,
+                ),
+            )
+        except ApiException as exc:
+            raise _safe_api_error(exc, 'delete operation') from exc
 
-    try:
-        perform_delete(server_dry_run=dry_run)
-    except ApiException as exc:
-        raise _safe_api_error(exc, 'delete operation') from exc
     return {
         'cluster_id': target.cluster.id,
         'cluster_name': target.cluster.name,
@@ -520,8 +583,9 @@ def delete_configmap(
         'configmap_name': target.name,
         'key_names': sorted([*live['data'].keys(), *live['binary_data'].keys()]),
         'impact_count': len(impacts),
-        'resource_version': live['resource_version'],
-        'operation': 'validation' if dry_run else 'deletion',
+        'resource_version': resource_version,
+        'operation': 'validation' if validate_only else 'deletion',
+        'validation_mode': 'authorization_preflight' if validate_only else 'validated_receipt',
         'live_target_source': True,
         'inventory_target_gate': False,
         'impact_context_source': 'inventory_best_effort',
