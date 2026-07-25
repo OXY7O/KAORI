@@ -2,39 +2,41 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
 <div class="overflow-x-auto">
-    <table class="min-w-[960px] w-full text-left text-xs leading-5 text-content-secondary">
+    <table class="min-w-[960px] w-full text-left text-sm leading-5 text-content-secondary">
         <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted">
             <tr>
-                <th class="px-3 py-2.5">Cluster</th>
-                <th class="px-3 py-2.5">Namespace</th>
-                <th class="px-3 py-2.5">Object</th>
-                <th class="px-3 py-2.5">Type</th>
-                <th class="px-3 py-2.5">Keys</th>
-                <th class="px-3 py-2.5">Immutable</th>
-                <th class="px-3 py-2.5 text-right">Details</th>
+                <th class="min-w-[12rem] px-4 py-3">Cluster</th>
+                <th class="px-4 py-3">Namespace</th>
+                <th class="px-4 py-3">Object</th>
+                <th class="px-4 py-3">Type</th>
+                <th class="px-4 py-3">Keys</th>
+                <th class="px-4 py-3">Immutable</th>
+                <th class="px-4 py-3 text-right">Details</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-outline-subtle">
             {% for item in inventory['items'] %}
                 <tr id="configuration-row-{{ item.id }}"
                     class="transition hover:bg-surface-hover">
-                    <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(item.cluster_name, 'server') }}</td>
-                    <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(item.namespace, 'folder-tree') }}</td>
-                    <td class="max-w-[320px] px-3 py-3.5 align-top">
+                    <td class="px-4 py-3.5 align-middle">
+                        {{ table_ui.cluster_identity(item.cluster_name, item.cluster_environment) }}
+                    </td>
+                    <td class="px-4 py-3.5 align-middle">{{ table_label.metadata_label(item.namespace, 'folder-tree') }}</td>
+                    <td class="max-w-[320px] px-4 py-3.5 align-middle">
                         <div class="flex min-w-0 items-center gap-2"><span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="{{ 'key-round' if item.type == 'Secret' else 'file-json-2' }}"
    class="h-4 w-4"></i></span><span class="truncate text-sm font-semibold leading-5 text-content-primary"
       title="{{ item.name }}">{{ item.name }}</span></div>
                     </td>
-                    <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(item.type, 'key-round' if item.type == 'Secret' else 'file-json-2') }}</td>
-                    <td class="px-3 py-3.5 align-top">{{ table_label.metadata_label(item.key_count ~ ' keys', 'key-round') }}</td>
-                    <td class="px-3 py-3.5 align-top">
+                    <td class="px-4 py-3.5 align-middle">{{ table_label.metadata_label(item.type, 'key-round' if item.type == 'Secret' else 'file-json-2') }}</td>
+                    <td class="px-4 py-3.5 align-middle">{{ table_label.metadata_label(item.key_count ~ ' keys', 'key-round') }}</td>
+                    <td class="px-4 py-3.5 align-middle">
                         {% if item.immutable %}
                             {{ table_label.status_label('Immutable', 'warning', 'lock-keyhole') }}
                         {% else %}
                             {{ table_label.status_label('Mutable', 'normal', 'unlock') }}
                         {% endif %}
                     </td>
-                    <td class="px-3 py-3.5 text-right align-top">
+                    <td class="px-4 py-3.5 text-right align-middle">
                         <button type="button"
                                 data-configuration-toggle="true"
                                 data-configuration-id="{{ item.id }}"

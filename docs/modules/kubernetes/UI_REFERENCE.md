@@ -35,7 +35,8 @@ Detailed page fields, table columns, and action names belong in the relevant Kub
 
 ### Inventory table row presentation
 
-- Inventory table bodies use `text-xs` with `leading-5` for ordinary values. Resource names remain `text-sm font-semibold` as the primary hierarchy, while compact metadata and semantic labels retain the shared 10 px label contract.
+- Inventory table bodies follow the Resources By Cluster reference: ordinary row values use `text-sm` with `leading-5`, primary resource names use `text-sm font-semibold`, supporting context uses `text-xs`, and compact metadata or semantic labels retain the shared 10 px label contract.
+- Every inventory Cluster cell uses the shared two-line cluster identity from Resources By Cluster: 32 × 32 px server icon, cluster name as the primary line, and the normalized environment as supporting text. Cluster identity is not rendered as a metadata label.
 - Single-line resource-name cells use a 28 × 28 px icon container with a 16 × 16 px Lucide icon. Supporting text must not be added merely to fill icon height.
 - Workload type remains violet descriptive metadata, while update strategy uses the blue Info semantic treatment so the two adjacent labels are visually distinguishable. Workload state is rendered as ordinary text.
 - Ingress host data is available in expandable details and is not duplicated in the main inventory table.

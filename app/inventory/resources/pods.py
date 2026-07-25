@@ -206,6 +206,9 @@ def get_pod_inventory(
         Cluster.name.label(
             'cluster_name',
         ),
+        Cluster.environment.label(
+            'cluster_environment',
+        ),
     ).join(
         Cluster,
         Cluster.id == PodInventory.cluster_id,
@@ -275,7 +278,7 @@ def get_pod_inventory(
         unique_images.update(reported_images)
 
     pod_data = []
-    for pod, cluster_name in pods:
+    for pod, cluster_name, cluster_environment in pods:
         phase = pod.phase or 'Unknown'
         container_images = pod.container_images or []
         init_container_images = pod.init_container_images or []
@@ -288,6 +291,7 @@ def get_pod_inventory(
             {
                 'id': pod.id,
                 'cluster_name': cluster_name,
+                'cluster_environment': cluster_environment,
                 'namespace': pod.namespace,
                 'name': pod.pod_name,
                 'node': pod.node_name,

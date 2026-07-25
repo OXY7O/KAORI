@@ -55,13 +55,18 @@ def _ingress_tls_secret_count(tls_entries: list[Any]) -> int:
     )
 
 
-def _ingress_inventory_row(ingress: IngressInventory, cluster_name: str) -> dict[str, Any]:
+def _ingress_inventory_row(
+    ingress: IngressInventory,
+    cluster_name: str,
+    cluster_environment: str | None,
+) -> dict[str, Any]:
     details = ingress.details or {}
     ingress_hosts = _ingress_hosts(ingress.host, details)
 
     return {
         'id': ingress.id,
         'cluster_name': cluster_name,
+        'cluster_environment': cluster_environment,
         'namespace': ingress.namespace,
         'name': ingress.ingress_name,
         'class': ingress.ingress_class or '-',
@@ -105,6 +110,7 @@ def get_ingress_inventory(
     query = db.session.query(
         IngressInventory,
         Cluster.name.label('cluster_name'),
+        Cluster.environment.label('cluster_environment'),
     ).join(Cluster, Cluster.id == IngressInventory.cluster_id)
     query = filter_current_generation(query, IngressInventory)
 
@@ -147,7 +153,10 @@ def get_ingress_inventory(
     )
 
     tls_enabled_count, hosts, classes, namespaces = _ingress_summary(summary_rows)
-    ingress_data = [_ingress_inventory_row(ingress, cluster_name) for ingress, cluster_name in ingresses]
+    ingress_data = [
+        _ingress_inventory_row(ingress, cluster_name, cluster_environment)
+        for ingress, cluster_name, cluster_environment in ingresses
+    ]
 
     return {
         'total_ingresses': pagination['total_items'],

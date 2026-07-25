@@ -74,6 +74,9 @@ def get_node_inventory(
         Cluster.name.label(
             'cluster_name',
         ),
+        Cluster.environment.label(
+            'cluster_environment',
+        ),
     ).join(
         Cluster,
         Cluster.id == NodeInventory.cluster_id,
@@ -125,7 +128,7 @@ def get_node_inventory(
 
     nodes_data = []
 
-    for node, cluster_name in nodes:
+    for node, cluster_name, cluster_environment in nodes:
         runtime = node.container_runtime or ''
 
         runtime_display = runtime.split('://')[0] if '://' in runtime else runtime
@@ -136,6 +139,7 @@ def get_node_inventory(
             {
                 'id': node.id,
                 'cluster_name': cluster_name,
+                'cluster_environment': cluster_environment,
                 'node_name': node.node_name,
                 'role': node.role,
                 'status': node_status,

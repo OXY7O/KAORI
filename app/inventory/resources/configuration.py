@@ -34,6 +34,7 @@ def get_configuration_inventory_view(
     query = db.session.query(
         ConfigurationInventory,
         Cluster.name.label('cluster_name'),
+        Cluster.environment.label('cluster_environment'),
     ).join(Cluster, Cluster.id == ConfigurationInventory.cluster_id)
     query = filter_current_generation(query, ConfigurationInventory)
 
@@ -65,6 +66,7 @@ def get_configuration_inventory_view(
         {
             'id': item.id,
             'cluster_name': cluster_name,
+            'cluster_environment': cluster_environment,
             'namespace': item.namespace,
             'name': item.name,
             'type': item.object_type,
@@ -74,7 +76,7 @@ def get_configuration_inventory_view(
             'payload_size': format_byte_count(item.payload_size_bytes),
             'age': format_age(item.created_at),
         }
-        for item, cluster_name in rows
+        for item, cluster_name, cluster_environment in rows
     ]
 
     return {

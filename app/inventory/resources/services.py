@@ -78,6 +78,7 @@ def get_service_inventory(
     query = db.session.query(
         ServiceInventory,
         Cluster.name.label('cluster_name'),
+        Cluster.environment.label('cluster_environment'),
     ).join(Cluster, Cluster.id == ServiceInventory.cluster_id)
     query = filter_current_generation(query, ServiceInventory)
 
@@ -130,7 +131,7 @@ def get_service_inventory(
         service_types[effective_type] = service_types.get(effective_type, 0) + 1
 
     services_data: list[dict[str, Any]] = []
-    for service, cluster_name in services:
+    for service, cluster_name, cluster_environment in services:
         raw_type = service.service_type or 'Unknown'
         effective_type = 'Headless' if raw_type == 'ClusterIP' and service.cluster_ip == 'None' else raw_type
         details = service.details or {}
@@ -150,6 +151,7 @@ def get_service_inventory(
             {
                 'id': service.id,
                 'cluster_name': cluster_name,
+                'cluster_environment': cluster_environment,
                 'namespace': service.namespace,
                 'service_name': service.service_name,
                 'service_type': effective_type,

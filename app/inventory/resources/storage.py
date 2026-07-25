@@ -214,6 +214,7 @@ def get_storage_inventory_view(
     query = db.session.query(
         StorageInventory,
         Cluster.name.label('cluster_name'),
+        Cluster.environment.label('cluster_environment'),
     ).join(Cluster, Cluster.id == StorageInventory.cluster_id)
     query = filter_current_generation(query, StorageInventory)
 
@@ -256,7 +257,7 @@ def get_storage_inventory_view(
             storage_types[summary_type] += 1
 
     data: list[dict[str, Any]] = []
-    for item, cluster_name in items:
+    for item, cluster_name, cluster_environment in items:
         namespace_display = item.namespace
         if item.storage_type in {'StorageClass', 'PersistentVolume'}:
             namespace_display = 'Cluster-wide'
@@ -283,6 +284,7 @@ def get_storage_inventory_view(
             {
                 'id': item.id,
                 'cluster_name': cluster_name,
+                'cluster_environment': cluster_environment,
                 'namespace': namespace_display,
                 'name': item.name,
                 'type': item.storage_type,

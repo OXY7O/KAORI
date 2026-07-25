@@ -349,6 +349,9 @@ def get_workload_inventory(
         Cluster.name.label(
             'cluster_name',
         ),
+        Cluster.environment.label(
+            'cluster_environment',
+        ),
     ).join(
         Cluster,
         Cluster.id == WorkloadInventory.cluster_id,
@@ -386,7 +389,7 @@ def get_workload_inventory(
 
     workload_keys = [
         (workload.cluster_id, workload.namespace, workload.workload_type, workload.name)
-        for workload, _ in workloads
+        for workload, _, _ in workloads
         if workload.workload_type
     ]
     pod_count_map: dict[tuple[str, str, str, str], int] = {}
@@ -423,7 +426,7 @@ def get_workload_inventory(
         status_counts[normalized_status] = status_counts.get(normalized_status, 0) + 1
 
     workloads_data = []
-    for workload, cluster_name in workloads:
+    for workload, cluster_name, cluster_environment in workloads:
         current_type = workload.workload_type or 'Unknown'
         status_name = workload.status or 'Unknown'
         details = workload.details or {}
@@ -448,6 +451,7 @@ def get_workload_inventory(
             {
                 'id': workload.id,
                 'cluster_name': cluster_name,
+                'cluster_environment': cluster_environment,
                 'namespace': workload.namespace,
                 'name': workload.name,
                 'type': current_type,

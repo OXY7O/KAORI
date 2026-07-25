@@ -58,6 +58,9 @@ def get_namespace_inventory(
         Cluster.name.label(
             'cluster_name',
         ),
+        Cluster.environment.label(
+            'cluster_environment',
+        ),
     ).join(
         Cluster,
         Cluster.id == NamespaceInventory.cluster_id,
@@ -97,7 +100,7 @@ def get_namespace_inventory(
         page=page,
         per_page=per_page,
     )
-    namespace_keys = [(row.cluster_id, row.namespace) for row, _ in namespace_records]
+    namespace_keys = [(row.cluster_id, row.namespace) for row, _, _ in namespace_records]
 
     def _namespace_count_map(model) -> dict[tuple[str, str], int]:
         if not namespace_keys:
@@ -130,7 +133,7 @@ def get_namespace_inventory(
     }
 
     inventory_rows: list[dict[str, Any]] = []
-    for namespace, cluster_name in namespace_records:
+    for namespace, cluster_name, cluster_environment in namespace_records:
         namespace_status = namespace.status or 'Unknown'
         key = (
             namespace.cluster_id,
@@ -144,6 +147,7 @@ def get_namespace_inventory(
             {
                 'id': namespace.id,
                 'cluster_name': cluster_name,
+                'cluster_environment': cluster_environment,
                 'namespace': namespace.namespace,
                 'status': namespace_status,
                 'age': format_age(namespace.created_at),
