@@ -121,6 +121,7 @@ class ForecastItem:
     risk: str
     projection: str
     icon: str
+    projected_percent: float | None = None
 
 
 @dataclass(slots=True)
@@ -128,6 +129,7 @@ class ForecastSnapshot:
     items: list[ForecastItem] = field(default_factory=list)
     insight: str = 'Insufficient trend data for reliable forecasting.'
     source_status: str = 'Unavailable'
+    horizon_days: int = 90
 
 
 @dataclass(slots=True)

@@ -42,6 +42,7 @@ def build_forecast_snapshot(*, context: dict[str, Any] | None, unavailable_reaso
                     risk=status,
                     projection=projection,
                     icon=str(item.get('icon') or 'activity'),
+                    projected_percent=float(projected) if isinstance(projected, int | float) else None,
                 )
             )
 
@@ -54,6 +55,7 @@ def build_forecast_snapshot(*, context: dict[str, Any] | None, unavailable_reaso
             else str(payload.get('message') or 'Insufficient trend data for reliable forecasting.')
         ),
         source_status='Available' if has_data else 'Unavailable',
+        horizon_days=horizon_days,
     )
 
 

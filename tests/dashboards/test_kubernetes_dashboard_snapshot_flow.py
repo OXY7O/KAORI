@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from app.analytics import job_adapter
 from app.dashboards.kubernetes import service, snapshot_builder
 from app.dashboards.kubernetes.schema import AlertsSnapshot, CapacityItem, CapacitySnapshot, InventorySnapshot
+from app.dashboards.kubernetes.sections.forecast import build_forecast_snapshot
 from app.dashboards.kubernetes.snapshot_builder import build_dashboard_alerts_context
 
 
@@ -308,3 +309,38 @@ def test_cluster_health_preloads_visible_inventory_with_two_set_queries(monkeypa
     ]
     assert list(captured['nodes_by_cluster']) == ['cluster-1']
     assert list(captured['pods_by_cluster']) == ['cluster-2']
+
+
+def test_dashboard_forecast_snapshot_exposes_chart_values_and_horizon() -> None:
+    snapshot = build_forecast_snapshot(
+        context={
+            'forecast_payload': {
+                'has_data': True,
+                'horizon_days': 60,
+                'summary': {
+                    'highest_projected_label': 'Memory',
+                    'highest_projected_percent': 92,
+                },
+                'items': [
+                    {
+                        'label': 'CPU Growth',
+                        'status_label': 'Warning',
+                        'projected_percent': 78.4,
+                        'icon': 'cpu',
+                    },
+                    {
+                        'label': 'Memory Growth',
+                        'status_label': 'Critical',
+                        'projected_percent': 92,
+                        'icon': 'memory-stick',
+                    },
+                ],
+            }
+        },
+        unavailable_reason='Forecast unavailable.',
+    )
+
+    assert snapshot.source_status == 'Available'
+    assert snapshot.horizon_days == 60
+    assert [item.projected_percent for item in snapshot.items] == [78.4, 92.0]
+    assert snapshot.insight == 'Memory has the highest 60-day projection at 92%.'
