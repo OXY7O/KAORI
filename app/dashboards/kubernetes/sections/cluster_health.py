@@ -2,8 +2,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.dashboards.kubernetes.repository import query_all
-from app.dashboards.kubernetes.schema import ClusterHealthPagination, ClusterHealthRow
+from app.dashboards.kubernetes.schema import (
+    AlertsSnapshot,
+    CapacitySnapshot,
+    ClusterHealthPagination,
+    ClusterHealthRow,
+)
 from app.dashboards.kubernetes.utils import (
     coerce_datetime,
     get_attr,
@@ -14,8 +18,6 @@ from app.dashboards.kubernetes.utils import (
     normalize_status,
     plural_suffix,
     safe_float,
-    safe_optional_float,
-    safe_optional_int,
 )
 
 
@@ -70,12 +72,17 @@ def build_cluster_health(
     *,
     clusters_raw: list[Any],
     selected_cluster_id: str | None,
-    NodeInventory: Any,
-    PodInventory: Any,
-    hydrate_live_signals: bool = True,
+    nodes_by_cluster: dict[str, list[Any]] | None = None,
+    pods_by_cluster: dict[str, list[Any]] | None = None,
+    capacity_by_cluster: dict[str, CapacitySnapshot] | None = None,
+    alerts_by_cluster: dict[str, AlertsSnapshot] | None = None,
 ) -> list[ClusterHealthRow]:
     rows: list[ClusterHealthRow] = []
     clusters = clusters_raw
+    nodes_by_cluster = nodes_by_cluster or {}
+    pods_by_cluster = pods_by_cluster or {}
+    capacity_by_cluster = capacity_by_cluster or {}
+    alerts_by_cluster = alerts_by_cluster or {}
 
     if selected_cluster_id:
         clusters = [
@@ -84,37 +91,38 @@ def build_cluster_health(
 
     for cluster in clusters:
         cluster_id = str(get_attr(cluster, 'id', default=''))
-        nodes = query_all(NodeInventory, cluster_id) if NodeInventory else []
-        pods = query_all(PodInventory, cluster_id) if PodInventory else []
+        nodes = nodes_by_cluster.get(cluster_id, [])
+        pods = pods_by_cluster.get(cluster_id, [])
 
-        inventory_nodes_total = len(nodes)
-        inventory_nodes_ready = sum(1 for node in nodes if is_ready_node(node))
+        nodes_total = len(nodes)
+        nodes_ready = sum(1 for node in nodes if is_ready_node(node))
         unhealthy_pods = sum(1 for pod in pods if is_unhealthy_pod(pod))
-
-        live_signals = _get_cluster_live_signal_snapshot(cluster) if hydrate_live_signals else None
-        cpu_percent = live_signals.get('cpu') if live_signals else None
-        memory_percent = live_signals.get('memory') if live_signals else None
-        live_nodes_total = safe_optional_int(live_signals.get('nodes_total')) if live_signals else None
-        live_nodes_ready = safe_optional_int(live_signals.get('nodes_ready')) if live_signals else None
-        nodes_total = live_nodes_total if live_nodes_total is not None else inventory_nodes_total
-        nodes_ready = live_nodes_ready if live_nodes_ready is not None else inventory_nodes_ready
         not_ready = max(nodes_total - nodes_ready, 0)
-        nodes_status = 'Live' if live_nodes_total is not None and live_nodes_ready is not None else 'Inventory'
-        cpu_status = 'Live' if cpu_percent is not None else 'Unavailable'
-        memory_status = 'Live' if memory_percent is not None else 'Unavailable'
 
-        alert_summary = _get_cluster_alert_summary(cluster) if hydrate_live_signals else None
-        active_alerts = alert_summary['active'] if alert_summary is not None else None
-        critical_alerts = alert_summary['critical'] if alert_summary is not None else 0
-        warning_alerts = alert_summary['warning'] if alert_summary is not None else 0
-        alerts_status = 'Live' if alert_summary is not None else 'Unavailable'
+        capacity = capacity_by_cluster.get(cluster_id)
+        cpu_percent = _capacity_percent(capacity, 'CPU')
+        memory_percent = _capacity_percent(capacity, 'Memory')
+        nodes_status = 'Inventory' if nodes else 'Unavailable'
+        cpu_status = 'Snapshot' if cpu_percent is not None else 'Unavailable'
+        memory_status = 'Snapshot' if memory_percent is not None else 'Unavailable'
+
+        alerts = alerts_by_cluster.get(cluster_id)
+        active_alerts = None
+        critical_alerts = 0
+        warning_alerts = 0
+        alerts_status = 'Unavailable'
+        if alerts is not None and alerts.source_status == 'Available':
+            active_alerts = alerts.critical + alerts.warning + alerts.info
+            critical_alerts = alerts.critical
+            warning_alerts = alerts.warning
+            alerts_status = 'Snapshot'
 
         status = _derive_cluster_status(
             cluster,
             nodes_total=nodes_total,
             not_ready_nodes=not_ready,
             unhealthy_pods=unhealthy_pods,
-            live_nodes_available=nodes_status == 'Live',
+            inventory_nodes_available=bool(nodes),
             active_alerts=active_alerts or 0,
             critical_alerts=critical_alerts,
             cpu_percent=cpu_percent,
@@ -125,7 +133,7 @@ def build_cluster_health(
             nodes_total=nodes_total,
             not_ready_nodes=not_ready,
             unhealthy_pods=unhealthy_pods,
-            live_nodes_available=nodes_status == 'Live',
+            inventory_nodes_available=bool(nodes),
             active_alerts=active_alerts or 0,
             critical_alerts=critical_alerts,
             warning_alerts=warning_alerts,
@@ -136,10 +144,7 @@ def build_cluster_health(
             get_attr(cluster, 'last_check', 'updated_at', 'created_at')
         )
 
-        endpoint = str(get_attr(cluster, 'server', default='') or '').strip()
-        if not endpoint:
-            endpoint = 'Endpoint not detected'
-
+        endpoint = str(get_attr(cluster, 'server', default='') or '').strip() or 'Endpoint not detected'
         rows.append(
             ClusterHealthRow(
                 cluster_id=cluster_id,
@@ -163,41 +168,13 @@ def build_cluster_health(
     return rows
 
 
-def _get_cluster_live_signal_snapshot(cluster: Any) -> dict[str, float | int | None] | None:
-    try:
-        from app.analytics.utilization.service import UtilizationService
-        from app.prometheus.service import PrometheusService
-
-        utilization = UtilizationService(PrometheusService(cluster))
-        return {
-            'cpu': safe_optional_float(utilization.get_cpu_utilization()),
-            'memory': safe_optional_float(utilization.get_memory_utilization()),
-            'nodes_total': safe_optional_int(utilization.get_total_nodes()),
-            'nodes_ready': safe_optional_int(utilization.get_ready_nodes()),
-        }
-    except Exception:
+def _capacity_percent(snapshot: CapacitySnapshot | None, label: str) -> float | None:
+    if snapshot is None or snapshot.source_status != 'Available':
         return None
-
-
-def _get_cluster_alert_summary(cluster: Any) -> dict[str, int] | None:
-    try:
-        from app.analytics.alerts.sources import load_alerts_by_source
-
-        alerts, source_status = load_alerts_by_source(cluster=cluster, source='auto')
-        if not source_status.get('connected'):
-            return None
-
-        active_alerts = [
-            item for item in alerts if str(item.get('status', 'active')).lower() in {'active', 'firing', 'pending'}
-        ]
-
-        return {
-            'active': len(active_alerts),
-            'critical': sum(1 for item in active_alerts if str(item.get('severity', '')).lower() == 'critical'),
-            'warning': sum(1 for item in active_alerts if str(item.get('severity', '')).lower() == 'warning'),
-        }
-    except Exception:
-        return None
+    for item in snapshot.items:
+        if item.label.lower() == label.lower():
+            return item.used_percent
+    return None
 
 
 def _derive_cluster_status(
@@ -206,7 +183,7 @@ def _derive_cluster_status(
     nodes_total: int,
     not_ready_nodes: int,
     unhealthy_pods: int,
-    live_nodes_available: bool,
+    inventory_nodes_available: bool,
     active_alerts: int,
     critical_alerts: int,
     cpu_percent: float | None,
@@ -214,7 +191,7 @@ def _derive_cluster_status(
 ) -> str:
     raw_status = normalize_status(get_attr(cluster, 'status', 'connection_status', 'health', default=''))
 
-    if not live_nodes_available:
+    if not inventory_nodes_available:
         if critical_alerts > 0:
             return 'Critical'
         if active_alerts > 0 or unhealthy_pods > 0:
@@ -247,7 +224,7 @@ def _derive_cluster_status_reason(
     nodes_total: int,
     not_ready_nodes: int,
     unhealthy_pods: int,
-    live_nodes_available: bool,
+    inventory_nodes_available: bool,
     active_alerts: int,
     critical_alerts: int,
     warning_alerts: int,
@@ -256,12 +233,12 @@ def _derive_cluster_status_reason(
 ) -> str:
     raw_status = normalize_status(get_attr(cluster, 'status', 'connection_status', 'health', default=''))
 
-    if not live_nodes_available:
+    if not inventory_nodes_available:
         if critical_alerts > 0:
-            return f'{critical_alerts} critical alert{plural_suffix(critical_alerts)} detected; Prometheus node signal unavailable'  # noqa: E501
+            return f'{critical_alerts} critical alert{plural_suffix(critical_alerts)} detected; node inventory snapshot unavailable'  # noqa: E501
         if active_alerts > 0:
-            return f'{active_alerts} active alert{plural_suffix(active_alerts)} detected; Prometheus node signal unavailable'
-        return 'Prometheus node signal unavailable'
+            return f'{active_alerts} active alert{plural_suffix(active_alerts)} detected; node inventory snapshot unavailable'
+        return 'Node inventory snapshot unavailable'
     if raw_status in {'offline', 'failed', 'unreachable', 'critical'}:
         return f'Cluster connection status is {raw_status}'
     if critical_alerts > 0:

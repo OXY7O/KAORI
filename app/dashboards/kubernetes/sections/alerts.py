@@ -16,53 +16,27 @@ def alerts_snapshot_with_message(
     return snapshot
 
 
-def build_alerts_snapshot(*, live_cluster: Any | None) -> AlertsSnapshot:
-    if live_cluster is None:
-        return alerts_snapshot_with_message(
-            'Select a specific cluster to load AlertManager or Prometheus alert snapshots.'
+def build_alerts_snapshot(*, context: dict[str, Any] | None, unavailable_reason: str) -> AlertsSnapshot:
+    if not context:
+        return alerts_snapshot_with_message(unavailable_reason)
+
+    raw_items = context.get('items') or []
+    items = [
+        AlertItem(
+            title=str(item.get('title') or 'Unknown Alert'),
+            description=str(item.get('description') or '-'),
+            severity=str(item.get('severity') or 'None'),
+            age=str(item.get('age') or ''),
         )
-
-    try:
-        from app.analytics.alerts.sources import load_alerts_by_source
-
-        alerts, source_status = load_alerts_by_source(cluster=live_cluster, source='auto')
-    except Exception as exc:
-        return alerts_snapshot_with_message(f'Alert snapshot unavailable: {exc}')
-
-    active_alerts = [
-        item for item in alerts if str(item.get('status', 'active')).lower() in {'active', 'firing', 'pending'}
+        for item in raw_items[:3]
+        if isinstance(item, dict)
     ]
-    critical = sum(1 for item in active_alerts if str(item.get('severity', '')).lower() == 'critical')
-    warning = sum(1 for item in active_alerts if str(item.get('severity', '')).lower() == 'warning')
-    info = sum(1 for item in active_alerts if str(item.get('severity', '')).lower() in {'info', 'none', ''})
-
-    snapshot_items = []
-    for item in active_alerts[:3]:
-        name = str(item.get('name') or item.get('alertname') or 'Unknown Alert')
-        namespace = str(item.get('namespace') or '-')
-        target = str(item.get('target') or '-')
-        description = str(item.get('summary') or item.get('description') or f'{namespace} / {target}')
-        snapshot_items.append(
-            AlertItem(
-                title=name,
-                description=description,
-                severity=str(item.get('severity') or 'none').title(),
-                age=str(item.get('starts_at') or ''),
-            )
-        )
-
-    connected = bool(source_status.get('connected'))
-    resolved_source = str(source_status.get('resolved_source') or source_status.get('source') or 'alert source')
-
-    snapshot = AlertsSnapshot()
-    snapshot.critical = critical
-    snapshot.warning = warning
-    snapshot.info = info
-    snapshot.items = snapshot_items
-    snapshot.source_status = 'Available' if connected or active_alerts else 'Unavailable'
-    snapshot.message = (
-        f'Loaded from {resolved_source.title()}.'
-        if connected
-        else str(source_status.get('error') or 'Alert source unavailable.')
+    connected = bool(context.get('source_connected'))
+    return AlertsSnapshot(
+        critical=int(context.get('critical') or 0),
+        warning=int(context.get('warning') or 0),
+        info=int(context.get('info') or 0),
+        items=items,
+        source_status='Available' if connected else 'Unavailable',
+        message=str(context.get('message') or unavailable_reason),
     )
-    return snapshot

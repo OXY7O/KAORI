@@ -17,36 +17,21 @@ def top_consumers_snapshot_with_message(
     return snapshot
 
 
-def build_top_consumers_snapshot(*, live_cluster: Any | None) -> TopConsumersSnapshot:
-    if live_cluster is None:
-        return top_consumers_snapshot_with_message('Select a specific cluster to load top consumer snapshots.')
+def build_top_consumers_snapshot(
+    *, context: dict[str, Any] | None, unavailable_reason: str
+) -> TopConsumersSnapshot:
+    if not context:
+        return top_consumers_snapshot_with_message(unavailable_reason)
 
-    try:
-        from app.analytics.top_consumers.service import TopConsumersService
-        from app.analytics.utilization.service import UtilizationService
-        from app.prometheus.service import PrometheusService
-
-        utilization = UtilizationService(PrometheusService(live_cluster))
-        service = TopConsumersService(utilization)
-        payload = service.get_top_consumers_payload(
-            selected_namespace='',
-            selected_resource='all',
-            selected_search='',
-            selected_sort='usage_percent',
-            selected_focus='',
-            page=1,
-            per_page=10,
-        )
-    except Exception as exc:
-        return top_consumers_snapshot_with_message(f'Top consumers snapshot unavailable: {exc}')
-
+    payload = context.get('consumer_payload') or {}
+    if not isinstance(payload, dict):
+        return top_consumers_snapshot_with_message('Committed top consumers snapshot has an invalid payload.')
     rows = payload.get('all_rows') or payload.get('rows') or []
     if not isinstance(rows, list):
         rows = []
 
-    cpu_rows = [row for row in rows if str(row.get('resource_type')) == 'cpu']
-    memory_rows = [row for row in rows if str(row.get('resource_type')) == 'memory']
-
+    cpu_rows = [row for row in rows if isinstance(row, dict) and str(row.get('resource_type')) == 'cpu']
+    memory_rows = [row for row in rows if isinstance(row, dict) and str(row.get('resource_type')) == 'memory']
     insight = _build_top_consumers_insight(rows=rows, cpu_rows=cpu_rows, memory_rows=memory_rows)
 
     snapshot = TopConsumersSnapshot()
@@ -54,7 +39,9 @@ def build_top_consumers_snapshot(*, live_cluster: Any | None) -> TopConsumersSna
     snapshot.memory = _consumer_items(memory_rows[:3])
     snapshot.source_status = 'Available' if rows else 'Unavailable'
     snapshot.message = (
-        'Top consumers loaded from Prometheus.' if rows else 'No top consumer rows returned by Prometheus.'
+        'Top consumers loaded from the latest committed worker snapshot.'
+        if rows
+        else str(payload.get('message') or 'The committed snapshot contains no top consumer rows.')
     )
     snapshot.insight_title = str(insight['title'])
     snapshot.insight_description = str(insight['description'])

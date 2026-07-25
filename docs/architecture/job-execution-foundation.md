@@ -160,3 +160,15 @@ Provider and feature domains own their collectors, report builders, analytics pr
 ## Celery priority contract
 
 KAORI uses Redis-compatible Celery priorities from 0 through 9. Lower values are processed first: runtime `2`, validation `3`, standard `5`, analytics `6`, and forecasting `7`. Queue isolation remains the primary protection; priority only orders work inside one queue.
+
+## Cooperative cancellation escalation
+
+Heavy analytics and forecasting executions first use cooperative cancellation. The web process records
+`cancel_requested` and the worker exits at its next lifecycle checkpoint. The cancellation request must
+not update `heartbeat_at`; that timestamp remains worker-owned and continues to represent worker liveness.
+
+`JOB_CANCEL_GRACE_SECONDS` controls the cooperative grace period and defaults to 120 seconds. The job
+maintenance recovery task escalates a cancellation that remains pending beyond this period by revoking the
+Celery task with `terminate=True` and `SIGTERM`, then terminalizing the execution as `canceled`. This releases
+the active deduplication key and prevents an unresponsive execution from remaining permanently in Active Work.
+Repeated cancellation requests are rejected once the execution is already in `cancel_requested` state.

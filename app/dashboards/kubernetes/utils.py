@@ -158,7 +158,7 @@ def forecast_insight(payload: dict[str, Any]) -> str:
 
 def kpi_metric_description(live_cluster: Any | None, fallback: str) -> str:
     if live_cluster is None:
-        return 'Select a cluster for live metric'
+        return 'Select a cluster for a worker snapshot'
     return fallback
 
 

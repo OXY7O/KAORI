@@ -11,7 +11,7 @@
              hx-target="this"
              hx-swap="outerHTML"
              hx-indicator="#dashboard-loading-bar">
-            {% with title="Cluster Health Summary", description="Preparing per-cluster live health, metrics, and alert source signals.", icon="heart-pulse" %}
+            {% with title="Cluster Health Summary", description="Preparing per-cluster inventory health and committed worker signal snapshots.", icon="heart-pulse" %}
                 {% include "dashboards/kubernetes/partials/_section_loading.html" %}
             {% endwith %}
         </div>
@@ -75,7 +75,7 @@
                      hx-target="this"
                      hx-swap="outerHTML"
                      hx-indicator="#dashboard-loading-bar">
-                    {% with title="Data Freshness", description="Preparing source readiness and live-data freshness signals.", icon="refresh-cw" %}
+                    {% with title="Data Freshness", description="Preparing inventory and worker snapshot freshness signals.", icon="refresh-cw" %}
                         {% include "dashboards/kubernetes/partials/_section_loading.html" %}
                     {% endwith %}
                 </div>

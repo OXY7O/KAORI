@@ -445,8 +445,10 @@ latency labels, and posture values from Python rather than deriving them in Jinj
 
 Heavy Prometheus range queries are not executed independently for every web request. KAORI stores reusable results in `analytics_snapshots` and dispatches generation through the canonical job registry:
 
-- `analytics.materialize` uses the `analytics-batch` queue for Capacity, Storage, Workload, Top Consumers, and long-range Utilization trends.
+- `analytics.materialize` uses the `analytics-batch` queue for Capacity, Storage, Workload, Top Consumers, long-range Utilization trends, and the compact `dashboard.kubernetes.alerts` dataset.
 - `analytics.forecast.materialize` uses the dedicated `forecasting` queue for all forecast range queries.
+- Kubernetes Operations always retains the `24h` Capacity and Top Consumers snapshots plus the `30d` history / `90d` horizon Forecast snapshot, even when an operator narrows optional materialization ranges.
+- Alert-only clusters remain eligible for `dashboard.kubernetes.alerts`; Prometheus-backed datasets are never scheduled for those clusters.
 - Automatic policies are configured under **Platform Operations → Jobs & Executions → Job Configuration**.
 - A stale successful snapshot remains readable during refresh or temporary Prometheus failure.
 - Scheduled executions create `JobExecution` and `AuditEvent` records only; they do not create user notifications or toasts.

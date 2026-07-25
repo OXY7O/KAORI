@@ -33,7 +33,7 @@
             {% set blocked_state_icon = "server-off" %}
             {% set blocked_state_label = "Cluster Required" %}
             {% set blocked_state_title = "Select Cluster" %}
-            {% set blocked_state_description = "Select a cluster to view live worker-node capacity and headroom from Prometheus." %}
+            {% set blocked_state_description = "Select a cluster to view committed worker-node capacity and headroom snapshots." %}
             {% set blocked_state_tone = "warning" %}
             {% include 'components/states/_blocked_state.html' %}
         {% else %}

@@ -10,6 +10,7 @@ from app.analytics.storage.service import get_storage_analysis_context
 from app.analytics.top_consumers.service import get_top_consumers_context
 from app.analytics.utilization.materialization import get_utilization_trend_context
 from app.analytics.workload.service import get_workload_analysis_context
+from app.dashboards.kubernetes.snapshot_builder import build_dashboard_alerts_context
 
 ContextBuilder = Callable[[Mapping[str, Any]], dict[str, Any]]
 
@@ -25,6 +26,14 @@ class AnalyticsDataset:
 
 
 ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
+    AnalyticsDataset(
+        key='dashboard.kubernetes.alerts',
+        label='Kubernetes Dashboard Alerts',
+        builder=build_dashboard_alerts_context,
+        default_parameters=({},),
+        freshness_minutes=20,
+        stale_grace_minutes=120,
+    ),
     AnalyticsDataset(
         key='analytics.utilization.trend',
         label='Utilization Trend',

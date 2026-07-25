@@ -367,7 +367,9 @@ def request_job_cancel(job: JobExecution) -> JobExecution:
         return job
     job.status = 'cancel_requested'
     job.cancel_requested_at = _now()
-    job.heartbeat_at = job.cancel_requested_at
+    # A cancellation request is recorded by the control plane, not the worker.
+    # Preserve the last worker heartbeat so an unresponsive task is not made to
+    # look healthy and can be escalated after the configured grace period.
     db.session.commit()
     return job
 
@@ -402,7 +404,10 @@ def mark_job_canceled(task_id: str, *, message: str = 'Canceled') -> JobExecutio
 
 
 def job_can_cancel(job: JobExecution) -> bool:
-    return bool(job.status == 'queued' or (job.is_active and job.workload_class in HEAVY_WORKLOAD_CLASSES))
+    return bool(
+        job.status == 'queued'
+        or (job.status in {'running', 'retrying'} and job.workload_class in HEAVY_WORKLOAD_CLASSES)
+    )
 
 
 def cancel_job_execution(job: JobExecution, *, terminate: bool = False) -> JobExecution:
@@ -483,10 +488,32 @@ def recover_stale_jobs() -> dict[str, int]:
     now = _now()
     running_cutoff = now - timedelta(seconds=_config_int('JOB_RUNNING_STALE_SECONDS', 7200))
     queued_cutoff = now - timedelta(seconds=_config_int('JOB_QUEUED_STALE_SECONDS', 1800))
+    cancel_cutoff = now - timedelta(seconds=_config_int('JOB_CANCEL_GRACE_SECONDS', 120))
     candidates = JobExecution.query.filter(JobExecution.status.in_(ACTIVE_JOB_STATUSES)).all()
     recovered = 0
     expired = 0
+    canceled = 0
     for job in candidates:
+        if (
+            job.status == 'cancel_requested'
+            and job.cancel_requested_at is not None
+            and job.cancel_requested_at < cancel_cutoff
+        ):
+            if job.celery_task_id:
+                current_app.extensions['celery'].control.revoke(
+                    job.celery_task_id,
+                    terminate=True,
+                    signal='SIGTERM',
+                )
+            _terminalize(job, 'canceled')
+            job.error_code = None
+            job.error_message = None
+            job.progress_message = 'Force canceled after cooperative cancellation timeout'
+            _append_automatic_terminal_audit(job)
+            recovered += 1
+            canceled += 1
+            continue
+
         stale = False
         if job.status == 'queued':
             # A healthy forecasting backlog can legitimately stay queued for a
@@ -496,7 +523,7 @@ def recover_stale_jobs() -> dict[str, int]:
                 (job.expires_at is not None and job.expires_at < now)
                 or (job.celery_task_id is None and job.queued_at < queued_cutoff)
             )
-        elif job.status in {'running', 'retrying', 'cancel_requested'}:
+        elif job.status in {'running', 'retrying'}:
             heartbeat = job.heartbeat_at or job.started_at or job.queued_at
             stale = heartbeat < running_cutoff
         if not stale:
@@ -509,4 +536,5 @@ def recover_stale_jobs() -> dict[str, int]:
         expired += 1
     if recovered:
         db.session.commit()
-    return {'recovered': recovered, 'expired': expired}
+    return {'recovered': recovered, 'expired': expired, 'canceled': canceled}
+

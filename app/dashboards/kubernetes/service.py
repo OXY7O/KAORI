@@ -1,71 +1,62 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
 from datetime import UTC, datetime
+from typing import Any
 
-from app.dashboards.kubernetes.repository import load_models, query_all
-from app.dashboards.kubernetes.schema import (
-    DashboardClusterOption,
-    DashboardOverview,
-    ForecastSnapshot,
-    InventorySnapshot,
+from app.dashboards.kubernetes.repository import (
+    count_records,
+    count_records_with_values,
+    latest_record_timestamp,
+    load_models,
+    query_all,
+    query_for_clusters,
 )
+from app.dashboards.kubernetes.schema import DashboardClusterOption, DashboardOverview, InventorySnapshot
 from app.dashboards.kubernetes.sections import (
-    alerts_snapshot_with_message,
     build_alerts_snapshot,
     build_capacity_snapshot,
     build_cluster_health,
     build_data_freshness,
     build_forecast_snapshot,
-    build_hero_integration_meta,
     build_kpis,
     build_recommendations,
     build_reporting_snapshot,
     build_top_consumers_snapshot,
-    default_forecast_items,
-    empty_capacity_snapshot,
     paginate_sequence,
-    top_consumers_snapshot_with_message,
 )
-from app.dashboards.kubernetes.utils import (
-    get_attr,
-    get_live_cluster,
-    human_time,
-    is_ready_node,
-    is_unhealthy_pod,
-    latest_timestamp,
-    normalize_selected_cluster,
-    normalize_status,
+from app.dashboards.kubernetes.snapshots import (
+    ALERTS_DATASET_KEY,
+    CAPACITY_DATASET_KEY,
+    FORECAST_DATASET_KEY,
+    TOP_CONSUMERS_DATASET_KEY,
+    alerts_parameters,
+    capacity_parameters,
+    forecast_parameters,
+    read_dashboard_snapshot,
+    top_consumers_parameters,
+    unavailable_message,
 )
+from app.dashboards.kubernetes.utils import coerce_datetime, get_attr, get_live_cluster, human_time, normalize_selected_cluster
+
+_INVENTORY_MODEL_NAMES = (
+    'NodeInventory',
+    'NamespaceInventory',
+    'WorkloadInventory',
+    'PodInventory',
+    'ServiceInventory',
+    'IngressInventory',
+    'StorageInventory',
+)
+_READY_NODE_STATES = {'ready', 'true', 'active', 'healthy'}
+_RUNNING_POD_STATES = {'running'}
+_UNHEALTHY_POD_STATES = {'pending', 'failed', 'unknown', 'crashloopbackoff', 'imagepullbackoff', 'error'}
 
 
-def get_dashboard_overview(
-    selected_cluster_id: str | None = None,
-    cluster_health_page: str | int | None = 1,
-    *,
-    hydrate_live_sections: bool = True,
-    live_sections: Iterable[str] | None = None,
-) -> DashboardOverview:
+def _scope(
+    selected_cluster_id: str | None,
+) -> tuple[dict[str, Any], list[Any], list[DashboardClusterOption], str | None, Any | None]:
     models = load_models()
-
     Cluster = models.get('Cluster')
-    NodeInventory = models.get('NodeInventory')
-    NamespaceInventory = models.get('NamespaceInventory')
-    WorkloadInventory = models.get('WorkloadInventory')
-    PodInventory = models.get('PodInventory')
-    ServiceInventory = models.get('ServiceInventory')
-    IngressInventory = models.get('IngressInventory')
-    StorageInventory = models.get('StorageInventory')
-
-    live_section_set = {str(section) for section in (live_sections or [])}
-
-    def should_hydrate(*section_names: str) -> bool:
-        if not hydrate_live_sections:
-            return False
-        if not live_section_set:
-            return True
-        return any(section_name in live_section_set for section_name in section_names)
-
     clusters_raw = query_all(Cluster) if Cluster else []
     clusters = [
         DashboardClusterOption(
@@ -74,145 +65,261 @@ def get_dashboard_overview(
         )
         for cluster in clusters_raw
     ]
+    normalized = normalize_selected_cluster(selected_cluster_id, clusters)
+    selected = get_live_cluster(clusters_raw=clusters_raw, selected_cluster_id=normalized)
+    return models, clusters_raw, clusters, normalized, selected
 
-    selected_cluster_id = normalize_selected_cluster(selected_cluster_id, clusters)
-    live_cluster = get_live_cluster(clusters_raw=clusters_raw, selected_cluster_id=selected_cluster_id)
 
-    nodes = query_all(NodeInventory, selected_cluster_id) if NodeInventory else []
-    namespaces = query_all(NamespaceInventory, selected_cluster_id) if NamespaceInventory else []
-    workloads = query_all(WorkloadInventory, selected_cluster_id) if WorkloadInventory else []
-    pods = query_all(PodInventory, selected_cluster_id) if PodInventory else []
-    services = query_all(ServiceInventory, selected_cluster_id) if ServiceInventory else []
-    ingresses = query_all(IngressInventory, selected_cluster_id) if IngressInventory else []
-    storage_items = query_all(StorageInventory, selected_cluster_id) if StorageInventory else []
-
-    capacity_snapshot = (
-        build_capacity_snapshot(live_cluster=live_cluster, selected_cluster_id=selected_cluster_id)
-        if should_hydrate('capacity', 'capacity_snapshot', 'kpi_cards', 'data_freshness', 'recommended_actions', 'hero')
-        else empty_capacity_snapshot(insight='Live capacity snapshot will load after the dashboard shell is ready.')
-    )
-    alerts_snapshot = (
-        build_alerts_snapshot(live_cluster=live_cluster)
-        if should_hydrate('alerts', 'alerts_summary', 'kpi_cards', 'data_freshness', 'recommended_actions', 'hero')
-        else alerts_snapshot_with_message('Live alert snapshot will load after the dashboard shell is ready.')
-    )
-    top_consumers_snapshot = (
-        build_top_consumers_snapshot(live_cluster=live_cluster)
-        if should_hydrate('top_consumers', 'data_freshness')
-        else top_consumers_snapshot_with_message('Top consumer snapshot will load after the dashboard shell is ready.')
-    )
-    forecast_snapshot = (
-        build_forecast_snapshot(live_cluster=live_cluster)
-        if should_hydrate('forecast', 'forecast_risk', 'data_freshness')
-        else ForecastSnapshot(
-            items=default_forecast_items('Pending', 'Waiting for trend snapshot'),
-            insight='Forecast snapshot will load after the dashboard shell is ready.',
-            source_status='Unavailable',
-        )
-    )
-    reporting_snapshot = build_reporting_snapshot(selected_cluster_id=selected_cluster_id)
-
-    nodes_total = len(nodes)
-    nodes_ready = sum(1 for node in nodes if is_ready_node(node))
-    not_ready_nodes = max(nodes_total - nodes_ready, 0)
-    running_pods = sum(1 for pod in pods if normalize_status(get_attr(pod, 'status', 'phase', default='')) == 'running')
-    unhealthy_pods = sum(1 for pod in pods if is_unhealthy_pod(pod))
-
-    active_alerts = alerts_snapshot.critical + alerts_snapshot.warning + alerts_snapshot.info
-    active_alerts_label = str(active_alerts) if live_cluster is not None else 'N/A'
-    active_alerts_description = (
-        f'{alerts_snapshot.critical} Critical • {alerts_snapshot.warning} Warning'
-        if live_cluster is not None
-        else 'Select a cluster to view live alert signals'
-    )
-    has_prometheus_data = (
-        capacity_snapshot.source_status == 'Available'
-        or top_consumers_snapshot.source_status == 'Available'
-        or forecast_snapshot.source_status == 'Available'
-    )
-    has_alertmanager_data = alerts_snapshot.source_status == 'Available'
-
-    clusters_for_health = clusters_raw
-    if selected_cluster_id:
-        clusters_for_health = [
-            cluster for cluster in clusters_raw if str(get_attr(cluster, 'id', default='')) == selected_cluster_id
-        ]
-
-    health_clusters_page, cluster_health_pagination = paginate_sequence(
-        items=clusters_for_health,
-        page=cluster_health_page,
-        per_page=5,
-    )
-    cluster_health = build_cluster_health(
-        clusters_raw=health_clusters_page,
-        selected_cluster_id=None,
-        NodeInventory=NodeInventory,
-        PodInventory=PodInventory,
-        hydrate_live_signals=should_hydrate('cluster_health'),
-    )
-
-    inventory_snapshot = InventorySnapshot(
-        namespaces=len(namespaces),
-        workloads=len(workloads),
-        pods=len(pods),
-        services=len(services),
-        ingresses=len(ingresses),
-        storage=len(storage_items),
-        running_pods=running_pods,
-        unhealthy_pods=unhealthy_pods,
-    )
-
-    kpis = build_kpis(
-        clusters_raw=clusters_raw,
-        clusters=clusters,
-        nodes_total=nodes_total,
-        nodes_ready=nodes_ready,
-        not_ready_nodes=not_ready_nodes,
-        namespaces_total=len(namespaces),
-        workloads_total=len(workloads),
-        pods_total=len(pods),
-        running_pods=running_pods,
-        unhealthy_pods=unhealthy_pods,
-        capacity_snapshot=capacity_snapshot,
-        alerts_snapshot=alerts_snapshot,
-        live_cluster=live_cluster,
-        active_alerts_label=active_alerts_label,
-        active_alerts_description=active_alerts_description,
-    )
-
-    latest_sync = latest_timestamp([*nodes, *pods, *workloads, *namespaces, *services, *ingresses, *storage_items])
-    last_updated = human_time(latest_sync) if latest_sync else 'Just now'
-
-    data_freshness = build_data_freshness(
-        latest_inventory_sync=latest_sync,
-        has_prometheus_data=has_prometheus_data,
-        has_alertmanager_data=has_alertmanager_data,
-        reporting_snapshot=reporting_snapshot,
-        live_cluster=live_cluster,
-    )
-    recommendations = (
-        build_recommendations(selected_cluster_id=selected_cluster_id) if should_hydrate('recommended_actions') else []
-    )
-    hero_integration_meta = build_hero_integration_meta(
-        live_cluster=live_cluster,
-        capacity_snapshot=capacity_snapshot,
-        alerts_snapshot=alerts_snapshot,
-    )
-
+def _base_dashboard(
+    *, clusters: list[DashboardClusterOption], selected_cluster_id: str | None
+) -> DashboardOverview:
     return DashboardOverview(
         clusters=clusters,
         selected_cluster_id=selected_cluster_id,
-        last_updated=last_updated,
-        global_kpis=kpis,
-        cluster_health_snapshot=cluster_health,
-        cluster_health_pagination=cluster_health_pagination,
-        capacity_snapshot=capacity_snapshot,
-        alerts_snapshot=alerts_snapshot,
-        top_consumers_snapshot=top_consumers_snapshot,
-        forecast_snapshot=forecast_snapshot,
-        inventory_snapshot=inventory_snapshot,
-        reporting_snapshot=reporting_snapshot,
-        data_freshness=data_freshness,
-        recommended_actions=recommendations,
-        meta={'generated_at': datetime.now(UTC).isoformat(), **hero_integration_meta},
+        meta={'generated_at': datetime.now(UTC).isoformat()},
     )
+
+
+def _capacity_signal(cluster: Any):
+    cluster_id = str(cluster.id)
+    result = read_dashboard_snapshot(
+        cluster_id=cluster_id,
+        dataset_key=CAPACITY_DATASET_KEY,
+        parameters=capacity_parameters(cluster_id),
+    )
+    return build_capacity_snapshot(
+        context=result.context,
+        unavailable_reason=unavailable_message('Capacity', result),
+    ), result
+
+
+def _alerts_signal(cluster: Any):
+    cluster_id = str(cluster.id)
+    result = read_dashboard_snapshot(
+        cluster_id=cluster_id,
+        dataset_key=ALERTS_DATASET_KEY,
+        parameters=alerts_parameters(cluster_id),
+    )
+    return build_alerts_snapshot(
+        context=result.context,
+        unavailable_reason=unavailable_message('Alerts', result),
+    ), result
+
+
+def _top_consumers_signal(cluster: Any):
+    cluster_id = str(cluster.id)
+    result = read_dashboard_snapshot(
+        cluster_id=cluster_id,
+        dataset_key=TOP_CONSUMERS_DATASET_KEY,
+        parameters=top_consumers_parameters(cluster_id),
+    )
+    return build_top_consumers_snapshot(
+        context=result.context,
+        unavailable_reason=unavailable_message('Top consumers', result),
+    ), result
+
+
+def _forecast_signal(cluster: Any):
+    cluster_id = str(cluster.id)
+    result = read_dashboard_snapshot(
+        cluster_id=cluster_id,
+        dataset_key=FORECAST_DATASET_KEY,
+        parameters=forecast_parameters(cluster_id),
+    )
+    return build_forecast_snapshot(
+        context=result.context,
+        unavailable_reason=unavailable_message('Forecast', result),
+    ), result
+
+
+def _inventory_snapshot(models: dict[str, Any], selected_cluster_id: str | None) -> InventorySnapshot:
+    PodInventory = models.get('PodInventory')
+    return InventorySnapshot(
+        namespaces=count_records(models.get('NamespaceInventory'), selected_cluster_id),
+        workloads=count_records(models.get('WorkloadInventory'), selected_cluster_id),
+        pods=count_records(PodInventory, selected_cluster_id),
+        services=count_records(models.get('ServiceInventory'), selected_cluster_id),
+        ingresses=count_records(models.get('IngressInventory'), selected_cluster_id),
+        storage=count_records(models.get('StorageInventory'), selected_cluster_id),
+        running_pods=count_records_with_values(
+            PodInventory,
+            'phase',
+            _RUNNING_POD_STATES,
+            selected_cluster_id,
+        ),
+        unhealthy_pods=count_records_with_values(
+            PodInventory,
+            'phase',
+            _UNHEALTHY_POD_STATES,
+            selected_cluster_id,
+        ),
+    )
+
+
+def _latest_inventory_sync(models: dict[str, Any], selected_cluster_id: str | None):
+    timestamps = [
+        coerce_datetime(latest_record_timestamp(models.get(name), selected_cluster_id))
+        for name in _INVENTORY_MODEL_NAMES
+    ]
+    return max((value for value in timestamps if value is not None), default=None)
+
+
+def _group_by_cluster(rows: list[Any]) -> dict[str, list[Any]]:
+    grouped: dict[str, list[Any]] = {}
+    for row in rows:
+        cluster_id = str(get_attr(row, 'cluster_id', default=''))
+        grouped.setdefault(cluster_id, []).append(row)
+    return grouped
+
+
+def get_dashboard_overview(
+    selected_cluster_id: str | None = None,
+    cluster_health_page: str | int | None = 1,
+    **_: Any,
+) -> DashboardOverview:
+    """Build the database-only dashboard shell; live integrations are never called here."""
+    models, _clusters_raw, clusters, selected_cluster_id, _selected = _scope(selected_cluster_id)
+    dashboard = _base_dashboard(clusters=clusters, selected_cluster_id=selected_cluster_id)
+    dashboard.inventory_snapshot = _inventory_snapshot(models, selected_cluster_id)
+    dashboard.reporting_snapshot = build_reporting_snapshot(selected_cluster_id=selected_cluster_id)
+    latest_sync = _latest_inventory_sync(models, selected_cluster_id)
+    dashboard.last_updated = human_time(latest_sync) if latest_sync else 'No sync yet'
+    _, pagination = paginate_sequence(items=clusters, page=cluster_health_page, per_page=5)
+    dashboard.cluster_health_pagination = pagination
+    return dashboard
+
+
+def get_dashboard_section(
+    section: str,
+    *,
+    selected_cluster_id: str | None = None,
+    cluster_health_page: str | int | None = 1,
+) -> DashboardOverview:
+    """Build one section from inventory tables and committed worker snapshots only."""
+    models, clusters_raw, clusters, selected_cluster_id, selected = _scope(selected_cluster_id)
+    dashboard = _base_dashboard(clusters=clusters, selected_cluster_id=selected_cluster_id)
+
+    if section == 'cluster_health':
+        scoped_clusters = clusters_raw
+        if selected_cluster_id:
+            scoped_clusters = [cluster for cluster in clusters_raw if str(cluster.id) == selected_cluster_id]
+        visible, pagination = paginate_sequence(items=scoped_clusters, page=cluster_health_page, per_page=5)
+        visible_cluster_ids = [str(cluster.id) for cluster in visible]
+        node_rows = query_for_clusters(models.get('NodeInventory'), visible_cluster_ids)
+        pod_rows = query_for_clusters(models.get('PodInventory'), visible_cluster_ids)
+        capacities = {}
+        alerts = {}
+        for cluster in visible:
+            capacity, _ = _capacity_signal(cluster)
+            alert_snapshot, _ = _alerts_signal(cluster)
+            capacities[str(cluster.id)] = capacity
+            alerts[str(cluster.id)] = alert_snapshot
+        dashboard.cluster_health_snapshot = build_cluster_health(
+            clusters_raw=visible,
+            selected_cluster_id=None,
+            nodes_by_cluster=_group_by_cluster(node_rows),
+            pods_by_cluster=_group_by_cluster(pod_rows),
+            capacity_by_cluster=capacities,
+            alerts_by_cluster=alerts,
+        )
+        dashboard.cluster_health_pagination = pagination
+        return dashboard
+
+    if section == 'recommended_actions':
+        dashboard.recommended_actions = build_recommendations(selected_cluster_id=selected_cluster_id)
+        return dashboard
+
+    if section == 'kpi_cards':
+        if selected is not None:
+            dashboard.capacity_snapshot, _ = _capacity_signal(selected)
+            dashboard.alerts_snapshot, _ = _alerts_signal(selected)
+        inventory = _inventory_snapshot(models, selected_cluster_id)
+        NodeInventory = models.get('NodeInventory')
+        nodes_total = count_records(NodeInventory, selected_cluster_id)
+        nodes_ready = count_records_with_values(
+            NodeInventory,
+            'status',
+            _READY_NODE_STATES,
+            selected_cluster_id,
+        )
+        active_alerts = (
+            dashboard.alerts_snapshot.critical
+            + dashboard.alerts_snapshot.warning
+            + dashboard.alerts_snapshot.info
+        )
+        dashboard.global_kpis = build_kpis(
+            clusters_raw=clusters_raw,
+            clusters=clusters,
+            nodes_total=nodes_total,
+            nodes_ready=nodes_ready,
+            not_ready_nodes=max(nodes_total - nodes_ready, 0),
+            namespaces_total=inventory.namespaces,
+            workloads_total=inventory.workloads,
+            pods_total=inventory.pods,
+            running_pods=inventory.running_pods,
+            unhealthy_pods=inventory.unhealthy_pods,
+            capacity_snapshot=dashboard.capacity_snapshot,
+            alerts_snapshot=dashboard.alerts_snapshot,
+            live_cluster=selected,
+            active_alerts_label=str(active_alerts) if selected is not None else 'N/A',
+            active_alerts_description=(
+                f'{dashboard.alerts_snapshot.critical} Critical • {dashboard.alerts_snapshot.warning} Warning'
+                if selected is not None
+                else 'Select a cluster to view committed alert signals'
+            ),
+        )
+        return dashboard
+
+    if section == 'capacity_snapshot':
+        if selected is not None:
+            dashboard.capacity_snapshot, _ = _capacity_signal(selected)
+        return dashboard
+
+    if section == 'alerts_summary':
+        if selected is not None:
+            dashboard.alerts_snapshot, _ = _alerts_signal(selected)
+        return dashboard
+
+    if section == 'top_consumers':
+        if selected is not None:
+            dashboard.top_consumers_snapshot, _ = _top_consumers_signal(selected)
+        return dashboard
+
+    if section == 'forecast_risk':
+        if selected is not None:
+            dashboard.forecast_snapshot, _ = _forecast_signal(selected)
+        return dashboard
+
+    if section == 'data_freshness':
+        capacity_result = alerts_result = top_result = forecast_result = None
+        if selected is not None:
+            dashboard.capacity_snapshot, capacity_result = _capacity_signal(selected)
+            dashboard.alerts_snapshot, alerts_result = _alerts_signal(selected)
+            dashboard.top_consumers_snapshot, top_result = _top_consumers_signal(selected)
+            dashboard.forecast_snapshot, forecast_result = _forecast_signal(selected)
+        latest_sync = _latest_inventory_sync(models, selected_cluster_id)
+        dashboard.reporting_snapshot = build_reporting_snapshot(selected_cluster_id=selected_cluster_id)
+        has_prometheus_data = any(
+            snapshot.source_status == 'Available'
+            for snapshot in (
+                dashboard.capacity_snapshot,
+                dashboard.top_consumers_snapshot,
+                dashboard.forecast_snapshot,
+            )
+        )
+        dashboard.data_freshness = build_data_freshness(
+            latest_inventory_sync=latest_sync,
+            has_prometheus_data=has_prometheus_data,
+            has_alertmanager_data=dashboard.alerts_snapshot.source_status == 'Available',
+            reporting_snapshot=dashboard.reporting_snapshot,
+            live_cluster=selected,
+        )
+        dashboard.meta['snapshot_states'] = {
+            'capacity': getattr(capacity_result, 'state', 'not_applicable'),
+            'alerts': getattr(alerts_result, 'state', 'not_applicable'),
+            'top_consumers': getattr(top_result, 'state', 'not_applicable'),
+            'forecast': getattr(forecast_result, 'state', 'not_applicable'),
+        }
+        return dashboard
+
+    return dashboard

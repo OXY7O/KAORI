@@ -75,9 +75,9 @@ def build_kpis(
             label='CPU Usage',
             value=percent_label(capacity_percent(capacity_snapshot, 'CPU')) if live_cluster is not None else 'N/A',
             description=(
-                kpi_metric_description(live_cluster, 'Current usage snapshot')
+                kpi_metric_description(live_cluster, 'Committed worker snapshot')
                 if live_cluster is not None
-                else 'Select a cluster to view live Prometheus CPU usage'
+                else 'Select a cluster to view committed CPU usage'
             ),
             icon='cpu',
             tone='orange' if live_cluster is not None else 'slate',
@@ -86,9 +86,9 @@ def build_kpis(
             label='Memory Usage',
             value=percent_label(capacity_percent(capacity_snapshot, 'Memory')) if live_cluster is not None else 'N/A',
             description=(
-                kpi_metric_description(live_cluster, 'Current usage snapshot')
+                kpi_metric_description(live_cluster, 'Committed worker snapshot')
                 if live_cluster is not None
-                else 'Select a cluster to view live Prometheus memory usage'
+                else 'Select a cluster to view committed memory usage'
             ),
             icon='memory-stick',
             tone='violet' if live_cluster is not None else 'slate',

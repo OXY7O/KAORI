@@ -11,28 +11,13 @@ from app.dashboards.kubernetes.utils import (
 )
 
 
-def build_capacity_snapshot(*, live_cluster: Any | None, selected_cluster_id: str | None) -> CapacitySnapshot:
-    if live_cluster is None:
-        return empty_capacity_snapshot(
-            insight='Select a specific cluster to show worker-node capacity and headroom from Prometheus.'
-            if not selected_cluster_id
-            else 'Selected cluster is not available for live worker capacity metrics.'
-        )
+def build_capacity_snapshot(*, context: dict[str, Any] | None, unavailable_reason: str) -> CapacitySnapshot:
+    if not context:
+        return empty_capacity_snapshot(insight=unavailable_reason)
 
-    try:
-        from app.analytics.capacity.service import CapacityService
-        from app.analytics.utilization.service import UtilizationService
-        from app.prometheus.consumer import PrometheusConsumer
-        from app.prometheus.service import PrometheusService
-
-        prometheus = PrometheusService(live_cluster)
-        capacity_service = CapacityService(
-            UtilizationService(prometheus),
-            PrometheusConsumer(live_cluster),
-        )
-        summary = capacity_service.get_capacity_summary_from_summary({})
-    except Exception as exc:
-        return empty_capacity_snapshot(insight=f'Prometheus worker capacity snapshot unavailable: {exc}')
+    summary = context.get('capacity_summary') or {}
+    if not isinstance(summary, dict):
+        return empty_capacity_snapshot(insight='Committed capacity snapshot has an invalid payload.')
 
     cpu = _worker_capacity_item(
         label='CPU',
@@ -66,7 +51,7 @@ def build_capacity_snapshot(*, live_cluster: Any | None, selected_cluster_id: st
         insight=insight,
         risk_detail=risk_detail,
         recommended_action=recommended_action,
-        source_status='Available',
+        source_status='Available' if measured_items else 'Unavailable',
     )
 
 

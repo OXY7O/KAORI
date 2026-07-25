@@ -22,5 +22,5 @@
         </div>
     </div>
 </div>
-<p class="text-xs leading-5 text-content-muted">Forecast pages never execute range queries in the web process. Namespace-specific or alternate method requests are deduplicated and sent to the forecasting worker.</p>
+<p class="text-xs leading-5 text-content-muted">Forecast pages never execute range queries in the web process. KAORI always retains the 30-day history / 90-day horizon snapshot required by the Kubernetes Operations Dashboard; alternate requests remain deduplicated on the forecasting worker.</p>
 {% endblock materialization_options %}

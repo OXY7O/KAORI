@@ -5,23 +5,55 @@ from typing import Any
 
 from flask import current_app
 
+from app.alertmanager.bindings import resolve_sources
+from app.alertmanager.consumer import KUBERNETES_CLUSTER_SCOPE
 from app.analytics.materialization.catalog import FORECAST_DATASET, list_analytics_datasets
 from app.analytics.materialization.service import get_snapshot, normalize_parameters
 from app.analytics.tasks import materialize_analytics_snapshots, materialize_forecast_snapshots
+from app.dashboards.kubernetes.snapshots import (
+    ALERTS_DATASET_KEY,
+    CAPACITY_DATASET_KEY,
+    TOP_CONSUMERS_DATASET_KEY,
+)
 from app.jobs.definitions.base import RegisteredJobDispatchResult
 from app.jobs.dispatcher import enqueue_canonical_job
 from app.models import AnalyticsSnapshot, Cluster
 from app.models.job import JobExecution, JobPolicy
 from app.prometheus.repository import resolve_instance_for_cluster
 
+_DASHBOARD_REQUIRED_24H_DATASETS = {CAPACITY_DATASET_KEY, TOP_CONSUMERS_DATASET_KEY}
+_DASHBOARD_FORECAST_PAIR = ('30d', '90d')
 
-def _eligible_clusters() -> list[Cluster]:
-    clusters = Cluster.query.order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
+
+def _registered_clusters() -> list[Cluster]:
+    return Cluster.query.order_by(Cluster.created_at.asc(), Cluster.id.asc()).all()
+
+
+def _prometheus_eligible_clusters(clusters: list[Cluster] | None = None) -> list[Cluster]:
+    candidates = clusters if clusters is not None else _registered_clusters()
     return [
         cluster
-        for cluster in clusters
+        for cluster in candidates
         if (instance := resolve_instance_for_cluster(cluster.id)) is not None and instance.endpoint.strip()
     ]
+
+
+def _analytics_eligible_clusters() -> tuple[list[Cluster], set[str]]:
+    clusters = _registered_clusters()
+    prometheus_clusters = _prometheus_eligible_clusters(clusters)
+    prometheus_ids = {str(cluster.id) for cluster in prometheus_clusters}
+    eligible = list(prometheus_clusters)
+    for cluster in clusters:
+        cluster_id = str(cluster.id)
+        if cluster_id in prometheus_ids:
+            continue
+        try:
+            sources = resolve_sources(scope_type=KUBERNETES_CLUSTER_SCOPE, scope_key=cluster_id)
+        except Exception:
+            sources = []
+        if sources:
+            eligible.append(cluster)
+    return eligible, prometheus_ids
 
 
 def _range_freshness_minutes(value: str | None, base_minutes: int) -> int:
@@ -68,15 +100,25 @@ def _analytics_work_items(
     *,
     clusters: list[Cluster],
     only_due: bool,
+    prometheus_cluster_ids: set[str] | None = None,
 ) -> list[dict[str, Any]]:
     configuration = policy.configuration_json or {}
+    if prometheus_cluster_ids is None:
+        prometheus_cluster_ids = {str(cluster.id) for cluster in clusters}
     freshness_minutes = int(configuration.get('freshness_minutes') or 20)
     stale_grace_minutes = int(configuration.get('stale_grace_minutes') or 1440)
     if parameters and parameters.get('dataset_key') and parameters.get('cluster_id'):
+        cluster_id = str(parameters['cluster_id'])
+        dataset_key = str(parameters['dataset_key'])
+        eligible_cluster_ids = {str(cluster.id) for cluster in clusters}
+        if cluster_id not in eligible_cluster_ids:
+            return []
+        if dataset_key != ALERTS_DATASET_KEY and cluster_id not in prometheus_cluster_ids:
+            return []
         return [
             {
-                'cluster_id': str(parameters['cluster_id']),
-                'dataset_key': str(parameters['dataset_key']),
+                'cluster_id': cluster_id,
+                'dataset_key': dataset_key,
                 'parameters': normalize_parameters(parameters.get('snapshot_parameters')),
                 'freshness_minutes': freshness_minutes,
                 'stale_grace_minutes': stale_grace_minutes,
@@ -86,12 +128,18 @@ def _analytics_work_items(
     trend_range_by_hours = {'24': '24h', '168': '7d', '720': '30d', '1440': '60d'}
     work_items: list[dict[str, Any]] = []
     for cluster in clusters:
+        cluster_id = str(cluster.id)
         for dataset in list_analytics_datasets():
+            if dataset.key != ALERTS_DATASET_KEY and cluster_id not in prometheus_cluster_ids:
+                continue
             for default_parameters in dataset.default_parameters:
                 time_range = default_parameters.get('time_range')
                 trend_range = trend_range_by_hours.get(str(default_parameters.get('trend_hours') or ''))
                 selected_range = time_range or trend_range
-                if selected_range and selected_range not in ranges:
+                dashboard_required_range = (
+                    dataset.key in _DASHBOARD_REQUIRED_24H_DATASETS and selected_range == '24h'
+                )
+                if selected_range and selected_range not in ranges and not dashboard_required_range:
                     continue
                 snapshot_parameters = {
                     'cluster_id': str(cluster.id),
@@ -138,35 +186,37 @@ def _forecast_work_items(
         ]
     history_windows = _configured_values(policy, 'history_windows', ['30d', '90d'])
     horizons = _configured_values(policy, 'forecast_horizons', ['90d', '180d', '365d'])
+    parameter_pairs = [(history_window, horizon) for history_window in history_windows for horizon in horizons]
+    if _DASHBOARD_FORECAST_PAIR not in parameter_pairs:
+        parameter_pairs.insert(0, _DASHBOARD_FORECAST_PAIR)
     work_items: list[dict[str, Any]] = []
     for cluster in clusters:
-        for history_window in history_windows:
-            for horizon in horizons:
-                snapshot_parameters = {
-                    'cluster_id': str(cluster.id),
-                    'history_window': history_window,
-                    'forecast_horizon': horizon,
-                    'resource': 'all',
-                    'method': 'linear',
+        for history_window, horizon in parameter_pairs:
+            snapshot_parameters = {
+                'cluster_id': str(cluster.id),
+                'history_window': history_window,
+                'forecast_horizon': horizon,
+                'resource': 'all',
+                'method': 'linear',
+            }
+            if only_due and not _snapshot_due(
+                cluster_id=cluster.id,
+                dataset_key=FORECAST_DATASET.key,
+                parameters=snapshot_parameters,
+            ):
+                continue
+            work_items.append(
+                {
+                    'cluster_id': cluster.id,
+                    'dataset_key': FORECAST_DATASET.key,
+                    'parameters': snapshot_parameters,
+                    'freshness_minutes': _forecast_freshness_minutes(
+                        history_window,
+                        freshness_minutes,
+                    ),
+                    'stale_grace_minutes': stale_grace_minutes,
                 }
-                if only_due and not _snapshot_due(
-                    cluster_id=cluster.id,
-                    dataset_key=FORECAST_DATASET.key,
-                    parameters=snapshot_parameters,
-                ):
-                    continue
-                work_items.append(
-                    {
-                        'cluster_id': cluster.id,
-                        'dataset_key': FORECAST_DATASET.key,
-                        'parameters': snapshot_parameters,
-                        'freshness_minutes': _forecast_freshness_minutes(
-                            history_window,
-                            freshness_minutes,
-                        ),
-                        'stale_grace_minutes': stale_grace_minutes,
-                    }
-                )
+            )
     return work_items
 
 
@@ -190,17 +240,27 @@ def _dispatch(
                 created=False,
             )
 
-    clusters = _eligible_clusters()
+    if forecasting:
+        clusters = _prometheus_eligible_clusters()
+        prometheus_cluster_ids = {str(cluster.id) for cluster in clusters}
+    else:
+        clusters, prometheus_cluster_ids = _analytics_eligible_clusters()
     if not clusters:
         return RegisteredJobDispatchResult(
             status='blocked',
-            message='No cluster has an eligible Prometheus integration for this job.',
+            message='No cluster has an eligible Prometheus or Alertmanager integration for this job.',
         )
     only_due = trigger_type == 'scheduled'
     work_items = (
         _forecast_work_items(policy, parameters, clusters=clusters, only_due=only_due)
         if forecasting
-        else _analytics_work_items(policy, parameters, clusters=clusters, only_due=only_due)
+        else _analytics_work_items(
+            policy,
+            parameters,
+            clusters=clusters,
+            only_due=only_due,
+            prometheus_cluster_ids=prometheus_cluster_ids,
+        )
     )
     if not work_items:
         return RegisteredJobDispatchResult(
@@ -300,7 +360,7 @@ def _active_job(job_type: str, *, scope_key: str | None = None) -> JobExecution 
 
 
 def _context(policy: JobPolicy, *, forecasting: bool) -> dict[str, Any]:
-    clusters = _eligible_clusters()
+    clusters = _prometheus_eligible_clusters() if forecasting else _analytics_eligible_clusters()[0]
     datasets = (FORECAST_DATASET,) if forecasting else list_analytics_datasets()
     job_type = 'forecast_materialization' if forecasting else 'analytics_materialization'
     operation = 'materialize_forecast' if forecasting else 'materialize_analytics'

@@ -3,7 +3,7 @@ from __future__ import annotations
 from flask import Blueprint, abort, render_template, request
 
 from app.cluster.onboarding import has_registered_clusters
-from app.dashboards.kubernetes.service import get_dashboard_overview
+from app.dashboards.kubernetes.service import get_dashboard_overview, get_dashboard_section
 from app.rbac.decorators import permission_required
 
 kubernetes_dashboard_bp = Blueprint(
@@ -21,17 +21,6 @@ SECTION_TEMPLATES = {
     'forecast_risk': 'dashboards/kubernetes/partials/_forecast_risk.html',
     'data_freshness': 'dashboards/kubernetes/partials/_data_freshness.html',
     'recommended_actions': 'dashboards/kubernetes/partials/_recommended_actions.html',
-}
-
-SECTION_LIVE_MAP = {
-    'kpi_cards': {'kpi_cards'},
-    'cluster_health': {'cluster_health'},
-    'capacity_snapshot': {'capacity_snapshot'},
-    'alerts_summary': {'alerts_summary'},
-    'top_consumers': {'top_consumers'},
-    'forecast_risk': {'forecast_risk'},
-    'data_freshness': {'data_freshness'},
-    'recommended_actions': {'recommended_actions'},
 }
 
 
@@ -54,7 +43,6 @@ def index():
     dashboard = get_dashboard_overview(
         selected_cluster_id=selected_cluster_id,
         cluster_health_page=cluster_health_page,
-        hydrate_live_sections=False,
     )
     template_name = (
         'dashboards/kubernetes/partials/_content.html'
@@ -71,10 +59,9 @@ def section(section: str):
     if template_name is None:
         abort(404)
 
-    dashboard = get_dashboard_overview(
+    dashboard = get_dashboard_section(
+        section,
         selected_cluster_id=request.args.get('cluster_id') or None,
         cluster_health_page=request.args.get('cluster_health_page', '1'),
-        hydrate_live_sections=True,
-        live_sections=SECTION_LIVE_MAP.get(section, {section}),
     )
     return render_template(template_name, dashboard=dashboard)

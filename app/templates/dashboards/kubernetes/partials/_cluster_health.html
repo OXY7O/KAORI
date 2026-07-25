@@ -10,7 +10,7 @@
             <div class="min-w-0">
                 <h2 class="text-sm font-semibold text-content-primary">Cluster Health Summary</h2>
                 <p class="mt-0.5 text-xs leading-5 text-content-muted">
-                    Showing {{ dashboard.cluster_health_pagination.start_item }}–{{ dashboard.cluster_health_pagination.end_item }} of {{ dashboard.cluster_health_pagination.total_items }} clusters. Live Prometheus signals are preferred when available.
+                    Showing {{ dashboard.cluster_health_pagination.start_item }}–{{ dashboard.cluster_health_pagination.end_item }} of {{ dashboard.cluster_health_pagination.total_items }} clusters. Committed worker snapshots are used when available.
                 </p>
             </div>
         </div>
@@ -30,7 +30,7 @@
                     <th class="px-4 py-3 text-left font-semibold">CPU</th>
                     <th class="px-4 py-3 text-left font-semibold">Memory</th>
                     <th class="px-4 py-3 text-left font-semibold">Alerts</th>
-                    <th class="px-5 py-3 text-right font-semibold">Live Sources</th>
+                    <th class="px-5 py-3 text-right font-semibold">Snapshot Sources</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-outline-subtle">
@@ -97,12 +97,16 @@
                             <td class="px-5 py-3.5 text-right align-top">
                                 <div class="ml-auto flex w-fit flex-col items-end gap-1.5 text-xs">
                                     <div class="flex items-center justify-end gap-2">
-                                        <span class="h-2 w-2 rounded-full {% if row.cpu_status == 'Live' or row.memory_status == 'Live' or row.nodes_status == 'Live' %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>
+                                        <span class="h-2 w-2 rounded-full {% if row.nodes_status == 'Inventory' %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>
+                                        <span class="text-content-muted">Inventory</span>
+                                    </div>
+                                    <div class="flex items-center justify-end gap-2">
+                                        <span class="h-2 w-2 rounded-full {% if row.cpu_status == 'Snapshot' or row.memory_status == 'Snapshot' %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>
                                         <span class="text-content-muted">Prometheus</span>
                                     </div>
                                     <div class="flex items-center justify-end gap-2">
-                                        <span class="h-2 w-2 rounded-full {% if row.alerts_status == 'Live' %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>
-                                        <span class="text-content-muted">AlertManager</span>
+                                        <span class="h-2 w-2 rounded-full {% if row.alerts_status == 'Snapshot' %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>
+                                        <span class="text-content-muted">Alert Signals</span>
                                     </div>
                                 </div>
                             </td>
