@@ -20,7 +20,7 @@
         ('Critical or Expired', critical_total, 'siren', 'Invalid, expired, or immediately actionable certificates.')
     ] %}
     {{ summary.metric_grid(summary_cards) }}
-    <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-[1.15fr_0.925fr_0.925fr]">
+    <div class="grid grid-cols-3 gap-px border-t border-outline-subtle bg-outline-subtle">
         {{ summary.progress_card(
             'Healthy Coverage',
             healthy_percent,

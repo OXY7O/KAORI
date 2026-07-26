@@ -75,6 +75,8 @@ The TLS Secret table uses the shared Inventory presentation macros in `component
 
 The content before the TLS Secret table follows the canonical Kubernetes Inventory structure. The page renders one shared inventory summary surface containing the summary header, four primary metrics, healthy coverage, synchronization state, next schedule, and the TLS inventory action bar. `inventory/components/_summary.html` remains the source of truth for summary header, metric, progress, and status presentation. The TLS-specific action bar is nested inside the same summary surface so the page does not introduce a separate oversized synchronization card before the table.
 
+Healthy Coverage, Synchronization, and Next Scheduled use one fixed three-column row inside the summary surface. They must not fall into separate rows at desktop inventory widths; all three cards use an equal-width allocation so the row remains visually balanced.
+
 The order is fixed as:
 
 1. canonical page hero;
