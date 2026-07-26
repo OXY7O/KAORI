@@ -41,7 +41,7 @@ def _settings_redirect(cluster_id: str):
         value = (request.form.get(key) or '').strip()
         if value:
             redirect_args[key] = value
-    return redirect(url_for('platform_operations.kubernetes.secret_reveal.index', **redirect_args))
+    return redirect(url_for('platform_operations.kubernetes.index', tab='secret-reveal', **redirect_args))
 
 
 def _cluster_or_error(cluster_id: str) -> Cluster:
@@ -65,7 +65,7 @@ def _record_settings_activity(
         status=status,
         title=title,
         message=message,
-        action_url=url_for('platform_operations.kubernetes.secret_reveal.index'),
+        action_url=url_for('platform_operations.kubernetes.index', tab='secret-reveal'),
         action_label='Open Kubernetes Administration',
         action_icon='server-cog',
         metadata={
@@ -80,14 +80,12 @@ def _record_settings_activity(
 @bp.route('/')
 @permission_required('kubernetes_secrets.manage_reveal')
 def index():
-    context = build_secret_reveal_settings_context(
-        request.args.get('cluster_id'),
-        namespace_query=request.args.get('namespace_q'),
-        namespace_policy_filter=request.args.get('namespace_policy'),
-        page=request.args.get('page'),
-        per_page=request.args.get('per_page'),
-    )
-    return render_template('platform_operations/kubernetes/secret_reveal/index.html', **context)
+    redirect_args: dict[str, Any] = {'tab': 'secret-reveal'}
+    for key in ('cluster_id', 'namespace_q', 'namespace_policy', 'page', 'per_page'):
+        value = (request.args.get(key) or '').strip()
+        if value:
+            redirect_args[key] = value
+    return redirect(url_for('platform_operations.kubernetes.index', **redirect_args))
 
 
 @bp.route('/workspace')
@@ -118,7 +116,8 @@ def workspace():
     if selected_cluster is not None:
         push_args['cluster_id'] = selected_cluster.id
     response.headers['HX-Push-Url'] = url_for(
-        'platform_operations.kubernetes.secret_reveal.index',
+        'platform_operations.kubernetes.index',
+        tab='secret-reveal',
         **push_args,
     )
     return response

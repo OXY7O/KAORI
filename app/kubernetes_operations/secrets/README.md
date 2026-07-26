@@ -228,3 +228,13 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 - The rotation workflow uses the canonical target card, replacement-pair upload surface, shared guardrails, shared action bar, and sticky controlled-flow panel.
 - Bulk `Target TLS Secrets` uses `components/table.html` and `components/pagination.html` for Inventory-standard header, loading state, filters, Cluster and Namespace identities, semantic status, empty state, Rows Per Page, Previous/Next, and numeric page links.
 - Bulk pagination keeps a normal full-page `href` and a separate HTMX `hx-get` partial URL so fallback navigation remains valid and `outerHTML` swaps reinitialize numeric page links.
+
+### Single TLS rotation validation gate
+
+- Single TLS Secret rotation uses the shared `validated_operations.js` gate: `Validate Rotation` performs certificate parsing, private-key matching, SAN coverage review, and target preview without updating Kubernetes.
+- Successful validation returns `kaori:operation-validated` for `tls-secret-rotate-form`; only then is `Update TLS Secret` enabled.
+- Any certificate or private-key file change invalidates the prior validation and disables Update again.
+- The final update endpoint validates the uploaded pair again before mutation, so the browser gate is never treated as an authorization or integrity boundary.
+- Specialized TLS validation renders certificate evidence inline because operators must review Common Name, new expiry, SAN coverage, and fingerprint before applying the rotation.
+- The right column contains both the controlled flow and the reusable Related Governance Workspace card linking back to the canonical TLS certificate posture.
+- Bulk TLS rotation documents a fifth `Validate Outcome` step: review per-target update results and synchronize TLS inventory to confirm the resulting certificate posture.

@@ -22,7 +22,8 @@ Namespace policy is explicit and default-deny. No policy row means Reveal is dis
 - `app/kubernetes_operations/secrets/reveal_policy.py`: canonical policy and readiness rules.
 - `app/platform_operations/kubernetes/secret_reveal/service.py`: Settings page context and summaries.
 - `app/platform_operations/kubernetes/secret_reveal/routes.py`: RBAC, CSRF, activity, toast, and save actions.
-- `app/templates/platform_operations/kubernetes/secret_reveal/index.html`: cluster selector, readiness controls, and namespace policy table.
+- `app/templates/platform_operations/kubernetes/_secret_reveal_workspace.html`: consolidated tab workspace containing protection posture, cluster readiness, and namespace policy management.
+- `app/templates/platform_operations/kubernetes/index.html`: canonical Kubernetes Administration shell and no-reload tab ownership.
 - `secret_reveal_namespace_policies`: one unique policy per cluster and namespace.
 
 Every save action emits a toast/notification and Operational Activity record containing only cluster, namespace, readiness, policy, and outcome. It must never contain kubeconfig or Secret data.
@@ -39,10 +40,10 @@ Every save action emits a toast/notification and Operational Activity record con
 
 ## Namespace list behavior
 
-The namespace policy list is intentionally server-side filtered and paginated so the Settings page remains usable for clusters with large namespace inventories.
+The namespace policy list is intentionally server-side filtered and paginated so the Kubernetes Administration workspace remains usable for clusters with large namespace inventories.
 
-- default page size: `10`;
-- supported page sizes: `10`, `25`, and `50`;
+- default page size: `5`;
+- supported page sizes: `5`, `10`, `25`, and `50`;
 - filters: namespace text and policy state;
 - pagination/filter updates use HTMX with full-page fallback;
 - policy saves preserve the active search, filter, page, and page-size context;
@@ -94,3 +95,10 @@ The table uses an explicit fixed column contract so row controls do not shift be
 
 The Configure cell keeps the policy selector flexible and the Save button at a fixed width. The primary Save action uses a borderless blue button with a soft focus ring; native or dark hard outlines must not be added.
 
+
+## Consolidated administration tab
+
+- The legacy `/platform-operations/kubernetes/secret-reveal/` route redirects to `/platform-operations/kubernetes/?tab=secret-reveal` and preserves cluster, filter, and pagination arguments.
+- The Secret Reveal tab loads lazily through `platform_operations.kubernetes.secret_reveal_tab_workspace`; opening the Overview tab does not trigger a live namespace lookup.
+- Cluster/filter HTMX responses push the consolidated administration URL, while partial responses continue to target only the Secret Reveal workspace or namespace table.
+- Do not restore a standalone Secret Reveal page hero or a second tab bar. Kubernetes Administration owns the hero, overview surface, and internal tabs.

@@ -1,19 +1,22 @@
 {% macro render(active_tab) -%}
-    <nav class="rounded-xl border border-outline-default bg-surface-card p-2 shadow-sm"
-         aria-label="Kubernetes Administration Tabs">
-        <div class="grid gap-2 sm:grid-cols-2">
+    <nav class="border-b border-outline-default bg-kaori-soft/50 px-5 pt-4"
+         aria-label="Kubernetes Administration Workspaces">
+        <div class="flex gap-2 overflow-x-auto" role="tablist">
             {% set tabs = [
-                ('overview', 'platform_operations.kubernetes.index', 'layout-dashboard', 'Overview'),
-                ('secret-reveal', 'platform_operations.kubernetes.secret_reveal.index', 'scan-eye', 'Secret Reveal')
+                ('overview', 'layout-dashboard', 'Overview'),
+                ('secret-reveal', 'scan-eye', 'Secret Reveal')
             ] %}
-            {% for key, endpoint, icon, label in tabs %}
-                {% set active = active_tab == key %}
-                <a href="{{ url_for(endpoint) }}"
-                   {% if active %}aria-current="page"{% endif %}
-                   class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus {{ 'border-kaori-primary bg-kaori-soft text-kaori-primary shadow-sm' if active else 'border-transparent bg-surface-card text-content-secondary hover:border-outline-default hover:bg-surface-hover hover:text-content-primary' }}">
+            {% for key, icon, label in tabs %}
+                <button type="button"
+                        role="tab"
+                        :aria-selected="activeTab === '{{ key }}'"
+                        aria-controls="kubernetes-administration-{{ key }}-tabpanel"
+                        @click="activeTab='{{ key }}'; history.replaceState(null, '', '{{ url_for('platform_operations.kubernetes.index', tab=key) }}'); {% if key == 'secret-reveal' %}$nextTick(() => window.dispatchEvent(new CustomEvent('kubernetes:load-secret-reveal'))){% endif %}"
+                        class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition"
+                        :class="activeTab === '{{ key }}' ? '-mb-px border-kaori-primary bg-kaori-primary text-white' : 'border-kaori-primary/25 bg-white text-kaori-primary hover:bg-kaori-soft'">
                     <i data-lucide="{{ icon }}" class="h-4 w-4" aria-hidden="true"></i>
                     {{ label }}
-                </a>
+                </button>
             {% endfor %}
         </div>
     </nav>

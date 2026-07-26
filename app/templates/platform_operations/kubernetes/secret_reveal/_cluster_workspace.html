@@ -13,7 +13,7 @@
                 </div>
             </div>
             <form method="get"
-                  action="{{ url_for('platform_operations.kubernetes.secret_reveal.index') }}"
+                  action="{{ url_for('platform_operations.kubernetes.index', tab='secret-reveal') }}"
                   hx-get="{{ url_for('platform_operations.kubernetes.secret_reveal.workspace') }}"
                   hx-target="#secret-reveal-cluster-workspace"
                   hx-swap="outerHTML"

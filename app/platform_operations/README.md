@@ -24,3 +24,11 @@ Operational Secret values remain owned by `app/kubernetes_operations/secrets/`. 
 - Do not create proxy wrapper templates for ConfigMap or Secret UI components; import `kubernetes_operations/_components.html` directly.
 - New advanced Kubernetes controls should use a dedicated tab and domain package under `app/platform_operations/kubernetes/`.
 - Keep operational mutations, setup policy, and live Secret value access in separate modules.
+
+## Kubernetes Administration workspace contract
+
+- The landing page owns the canonical hero, one administration overview surface, and internal Alpine tabs directly below the overview surface.
+- Overview and Secret Reveal tab changes must not reload the page. The selected tab updates browser history with `history.replaceState`; Secret Reveal loads its heavier cluster and namespace workspace lazily through HTMX only when the tab is opened. Both tabs remain directly addressable through `?tab=overview` or `?tab=secret-reveal`.
+- The Secret Reveal legacy route redirects to the consolidated Kubernetes Administration workspace so bookmarks and notification links remain compatible.
+- The Overview tab lists only production-ready controls as available. Recommended future domains are guidance, not enabled features: RBAC posture review, maintenance controls, admission and policy governance, and protected resource actions.
+- New administration domains should become isolated tab workspaces only after their permission, validation, audit, rollback, and ownership boundaries are implemented.
