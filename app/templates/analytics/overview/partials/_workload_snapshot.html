@@ -16,7 +16,7 @@
         </div>
         <a href="{{ payload.workload_snapshot.href }}?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}"
            class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft">
-            View workload analysis
+            View Workload Analysis
             <i data-lucide="arrow-right" class="h-4 w-4"></i>
         </a>
     </div>
@@ -26,8 +26,8 @@
                     {'label': 'Missing Memory Requests', 'value': payload.workload_snapshot.missing_memory_requests, 'icon': 'memory-stick', 'tone': 'critical'},
                     {'label': 'Missing CPU Limits', 'value': payload.workload_snapshot.missing_cpu_limits, 'icon': 'gauge', 'tone': 'warning'},
                     {'label': 'Missing Memory Limits', 'value': payload.workload_snapshot.missing_memory_limits, 'icon': 'gauge-circle', 'tone': 'warning'},
-                    {'label': 'Over-provisioned', 'value': payload.workload_snapshot.over_provisioned, 'icon': 'arrow-up-circle', 'tone': 'normal'},
-                    {'label': 'Under-provisioned', 'value': payload.workload_snapshot.under_provisioned, 'icon': 'arrow-down-circle', 'tone': 'maintenance'}
+                    {'label': 'Over-Provisioned', 'value': payload.workload_snapshot.over_provisioned, 'icon': 'arrow-up-circle', 'tone': 'normal'},
+                    {'label': 'Under-Provisioned', 'value': payload.workload_snapshot.under_provisioned, 'icon': 'arrow-down-circle', 'tone': 'maintenance'}
                 ] %}
         {% for card in cards %}
             {% set icon_class = {

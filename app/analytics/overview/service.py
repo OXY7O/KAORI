@@ -918,7 +918,7 @@ def _build_actionable_recommendation_overview(
 
     capacity_items = _build_actionable_items_from_count(
         count=capacity_count,
-        title='Review capacity actionable findings',
+        title='Review Capacity Actionable Findings',
         description=(
             f'{capacity_count} actionable capacity recommendation(s) were detected. '
             'Open Capacity Analysis to inspect headroom, allocation, and governance findings.'
@@ -932,7 +932,7 @@ def _build_actionable_recommendation_overview(
     )
     storage_items = _build_actionable_items_from_count(
         count=storage_count,
-        title='Review storage actionable findings',
+        title='Review Storage Actionable Findings',
         description=(
             f'{storage_count} actionable storage recommendation(s) were detected. '
             'Open Storage Analysis to inspect filesystem, PVC, PV, and expansion risks.'
@@ -946,7 +946,7 @@ def _build_actionable_recommendation_overview(
     )
     workload_items = _build_actionable_items_from_count(
         count=workload_count,
-        title='Review workload governance findings',
+        title='Review Workload Governance Findings',
         description=(
             f'{workload_count} actionable workload recommendation(s) were detected. '
             'Open Workload Analysis to inspect quota, requests, limits, QoS, and right-sizing signals.'
@@ -960,7 +960,7 @@ def _build_actionable_recommendation_overview(
     )
     forecast_items = _build_actionable_items_from_count(
         count=forecast_count,
-        title='Review forecast capacity findings',
+        title='Review Forecast Capacity Findings',
         description=(
             f'{forecast_count} actionable forecast recommendation(s) were detected. '
             'Open Resource Forecast to inspect projected threshold breaches and growth trends.'
@@ -974,7 +974,7 @@ def _build_actionable_recommendation_overview(
     )
     top_consumers_items = _build_actionable_items_from_count(
         count=top_consumers_count,
-        title='Review top consumer hotspot findings',
+        title='Review Top Consumer Hotspot Findings',
         description=(
             f'{top_consumers_count} actionable top consumer recommendation(s) were detected. '
             'Open Top Consumers to inspect CPU, memory, pod, and PVC hotspots.'
@@ -988,7 +988,7 @@ def _build_actionable_recommendation_overview(
     )
     alerts_items = _build_actionable_items_from_count(
         count=alerts_count,
-        title='Review alert and anomaly findings',
+        title='Review Alert and Anomaly Findings',
         description=(
             f'{alerts_count} actionable alert/anomaly recommendation(s) were detected. '
             'Open Alerts & Anomalies to inspect active alerts, source health, and anomaly candidates.'
@@ -1314,7 +1314,7 @@ def _build_capacity_actionable_items_from_count(
 
     return [
         {
-            'title': 'Review capacity actionable findings',
+            'title': 'Review Capacity Actionable Findings',
             'description': (
                 f'{capacity_count} actionable capacity recommendation(s) were detected from '
                 'Capacity Analysis. Open Capacity Analysis to inspect headroom, allocation, and governance findings.'

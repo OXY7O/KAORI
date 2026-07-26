@@ -181,6 +181,15 @@ refresh. A pending or blocked response must retain the page wrapper selected by
 `hx-select` so the workspace never becomes a blank replacement. Capacity
 Analysis must retain the agreed Cluster → Node selector hierarchy.
 
+## Analytics Overview presentation contract
+
+- Use the shared Analytics content-tab component and `kaoriAnalyticsTabs`; do not maintain a separate Overview-only tab implementation.
+- Snapshot section headers, actions, metric labels, status text, and empty-state titles use Title Case. Descriptive sentences and technical identifiers retain their natural casing.
+- Resource utilization progress bars must receive resolved class strings, clamp width to 0–100%, and update from the committed snapshot percentage. Do not pass nested Jinja expressions inside a quoted macro argument.
+- Top Consumers and Alerts & Anomalies Snapshot are always visible on the Overview page. They must not use `details`, chevrons, or expand/collapse state.
+- Storage Snapshot and Trend Summary end with concise operational tips using the shared `components/detail_tip.html` treatment.
+- Overview redesigns must preserve lazy-section HTMX endpoints, selected cluster/time-range state, and worker-first committed-snapshot boundaries.
+
 ## Analytics overview Prometheus status flow
 
 - The overview shell validates cluster selection and Prometheus configuration

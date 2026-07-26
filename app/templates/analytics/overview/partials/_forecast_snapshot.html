@@ -1,4 +1,5 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/detail_tip.html" as detail_tip %}
 <section class="flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
     <div class="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div class="flex items-start gap-3">
@@ -12,7 +13,7 @@
         </div>
         <a href="{{ payload.forecast_snapshot.href }}?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}"
            class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft">
-            View forecast
+            View Forecast
             <i data-lucide="arrow-right" class="h-4 w-4"></i>
         </a>
     </div>
@@ -22,10 +23,10 @@
                 <div class="rounded-lg border border-outline-default bg-surface-card p-4">
                     <div class="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <p class="text-sm font-semibold text-content-primary">30-day Forecast Projection</p>
+                            <p class="text-sm font-semibold text-content-primary">30-Day Forecast Projection</p>
                             <p class="mt-1 text-xs text-content-muted">Solid line is historical trend; dashed line is projected trend.</p>
                         </div>
-                        {{ table_label.metadata_label(payload.forecast_snapshot.forecast_horizon, 'calendar-range') }}
+                        {{ table_label.metadata_label(payload.forecast_snapshot.forecast_horizon|title, 'calendar-range') }}
                     </div>
                     <div class="relative h-44">
                         <svg viewBox="0 0 100 100"
@@ -75,7 +76,7 @@
                 <div class="flex h-36 items-center justify-center rounded-lg border border-dashed border-outline-strong bg-surface-card">
                     <div class="text-center">
                         <i data-lucide="line-chart" class="mx-auto h-8 w-8 text-kaori-primary"></i>
-                        <p class="mt-2 text-sm font-semibold text-content-secondary">Forecast chart not available</p>
+                        <p class="mt-2 text-sm font-semibold text-content-secondary">Forecast Chart Not Available</p>
                         <p class="mt-1 text-xs text-content-muted">Connect forecast data to show trend visualization.</p>
                     </div>
                 </div>
@@ -89,7 +90,7 @@
             </div>
         </div>
         <div class="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-2">
-            <div class="h-full rounded-xl border border-outline-default p-4">
+            <div class="flex h-full flex-col rounded-xl border border-outline-default p-4">
                 <div class="mb-4">
                     <h3 class="text-sm font-semibold text-content-primary">Trend Summary</h3>
                     <p class="mt-1 text-xs text-content-muted">Current trend direction for each core resource.</p>
@@ -117,9 +118,12 @@
                                 <span class="flex h-7 w-7 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="{{ trend.icon }}" class="h-3.5 w-3.5"></i></span>
                                 {{ trend.label }}
                             </span>
-                            {{ table_label.status_label(trend.value, trend_tone, trend_icon) }}
+                            {{ table_label.status_label(trend.value|replace('_', ' ')|title, trend_tone, trend_icon) }}
                         </div>
                     {% endfor %}
+                </div>
+                <div class="mt-auto pt-4">
+                    {{ detail_tip.tip('Read direction together with current utilization and forecast headroom. An increasing trend becomes actionable when usage is already near warning or critical thresholds.', 'lightbulb') }}
                 </div>
             </div>
             <div class="h-full rounded-xl border border-outline-default bg-kaori-soft p-4">

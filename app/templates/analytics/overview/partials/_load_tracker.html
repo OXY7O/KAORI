@@ -8,12 +8,12 @@
             </div>
             <div>
                 <p class="text-sm font-semibold text-content-primary"
-                   data-overview-load-title>Loading analytics overview</p>
+                   data-overview-load-title>Loading Analytics Overview</p>
                 <p class="text-xs text-content-muted" data-overview-load-description>Loading Prometheus and Alertmanager sections in the background.</p>
             </div>
         </div>
         <div class="text-xs font-semibold text-kaori-primary"
-             data-overview-load-counter>0/0 sections</div>
+             data-overview-load-counter>0/0 Sections</div>
     </div>
     <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-kaori-soft">
         <div class="h-full w-[4%] rounded-full bg-kaori-primary transition-all duration-300 ease-out"
@@ -61,7 +61,7 @@
         tracker.classList.remove('hidden');
 
         if (counter) {
-            counter.textContent = done + '/' + total + ' sections';
+            counter.textContent = done + '/' + total + ' Sections';
         }
         if (progress) {
             progress.style.width = percent + '%';
@@ -69,7 +69,7 @@
 
         if (done >= total) {
             if (title) {
-                title.textContent = 'Analytics overview fully loaded';
+                title.textContent = 'Analytics Overview Fully Loaded';
             }
             if (description) {
                 description.textContent = 'All Prometheus and Alertmanager sections have finished loading.';
@@ -82,7 +82,7 @@
             }, 2200);
         } else {
             if (title) {
-                title.textContent = 'Loading analytics overview';
+                title.textContent = 'Loading Analytics Overview';
             }
             if (description) {
                 description.textContent = 'Loading Prometheus and Alertmanager sections in the background.';

@@ -1,4 +1,5 @@
 {% extends "layouts/app.html" %}
+{% import "analytics/components/_content_tabs.html" as analytics_content_tabs %}
 {% block title %}Analytics Overview{% endblock title %}
 {% block dashboard_content %}
     {% set overview_query = 'cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range %}
@@ -14,34 +15,20 @@
                  hx-trigger="load delay:900ms"
                  hx-swap="innerHTML">{% include "analytics/overview/partials/_section_loading.html" %}</div>
 
-            <section x-data="{ activeTab: 'resource-capacity' }"
+            <section x-data="kaoriAnalyticsTabs('resource-capacity', ['resource-capacity', 'workload-storage', 'forecast-signals', 'actions'])"
                      class="space-y-6">
-                <div class="rounded-xl border border-outline-default bg-surface-card p-2 shadow-sm">
-                    <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4"
-                         role="tablist"
-                         aria-label="Analytics Overview Categories">
-                        {% set analytics_tabs = [
-                            ('resource-capacity', 'Resource & Capacity', 'gauge'),
-                            ('workload-storage', 'Workloads & Storage', 'boxes'),
-                            ('forecast-signals', 'Forecast & Signals', 'chart-no-axes-combined'),
-                            ('actions', 'Actions & Recommendations', 'list-checks')
-                        ] %}
-                        {% for tab_id, tab_label, tab_icon in analytics_tabs %}
-                            <button type="button"
-                                    role="tab"
-                                    @click="activeTab = '{{ tab_id }}'"
-                                    :aria-selected="activeTab === '{{ tab_id }}'"
-                                    :class="activeTab === '{{ tab_id }}' ? 'border-kaori-primary bg-kaori-soft text-kaori-primary' : 'border-transparent bg-surface-card text-content-secondary hover:border-outline-default hover:bg-surface-hover'"
-                                    class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-semibold transition">
-                                <i data-lucide="{{ tab_icon }}" class="h-4 w-4"></i>
-                                <span>{{ tab_label }}</span>
-                            </button>
-                        {% endfor %}
-                    </div>
-                </div>
+                {% set analytics_tabs = [
+                    ('resource-capacity', 'Resource & Capacity', 'gauge'),
+                    ('workload-storage', 'Workloads & Storage', 'boxes'),
+                    ('forecast-signals', 'Forecast & Signals', 'chart-no-axes-combined'),
+                    ('actions', 'Actions & Recommendations', 'list-checks')
+                ] %}
+                {{ analytics_content_tabs.render('overview-content', analytics_tabs, 'Analytics Overview Categories') }}
 
-                <div x-show="activeTab === 'resource-capacity'"
+                <div id="overview-content-panel-resource-capacity"
                      role="tabpanel"
+                     aria-labelledby="overview-content-tab-resource-capacity"
+                     x-show="activeTab === 'resource-capacity'"
                      class="space-y-6">
                     <div id="overview-resource-snapshot"
                          hx-target="this"
@@ -55,9 +42,11 @@
                          hx-swap="innerHTML">{% include "analytics/overview/partials/_section_loading.html" %}</div>
                 </div>
 
-                <div x-show="activeTab === 'workload-storage'"
-                     x-cloak
+                <div id="overview-content-panel-workload-storage"
                      role="tabpanel"
+                     aria-labelledby="overview-content-tab-workload-storage"
+                     x-show="activeTab === 'workload-storage'"
+                     x-cloak
                      class="space-y-6">
                     <div class="grid grid-cols-1 items-stretch gap-6 xl:grid-cols-2">
                         <div id="overview-storage-snapshot"
@@ -80,9 +69,11 @@
                          hx-swap="innerHTML">{% include "analytics/overview/partials/_section_loading.html" %}</div>
                 </div>
 
-                <div x-show="activeTab === 'forecast-signals'"
-                     x-cloak
+                <div id="overview-content-panel-forecast-signals"
                      role="tabpanel"
+                     aria-labelledby="overview-content-tab-forecast-signals"
+                     x-show="activeTab === 'forecast-signals'"
+                     x-cloak
                      class="space-y-6">
                     <div id="overview-forecast-snapshot"
                          hx-target="this"
@@ -96,9 +87,11 @@
                          hx-swap="innerHTML">{% include "analytics/overview/partials/_section_loading.html" %}</div>
                 </div>
 
-                <div x-show="activeTab === 'actions'"
-                     x-cloak
+                <div id="overview-content-panel-actions"
                      role="tabpanel"
+                     aria-labelledby="overview-content-tab-actions"
+                     x-show="activeTab === 'actions'"
+                     x-cloak
                      class="space-y-6">
                     <div id="overview-actionable-recommendations"
                          hx-target="this"
