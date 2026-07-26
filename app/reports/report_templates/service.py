@@ -261,7 +261,7 @@ def build_system_template_item(template: dict[str, Any]) -> dict[str, Any]:
         'status_tone': get_status_tone(str(template['status'])),
         'renderer_status': 'Ready' if template_id in IMPLEMENTED_TEMPLATE_IDS else 'Review',
         'renderer_tone': 'green' if template_id in IMPLEMENTED_TEMPLATE_IDS else 'gray',
-        'renderer_label': 'PDF renderer ready' if template_id in IMPLEMENTED_TEMPLATE_IDS else 'Renderer needs review',
+        'renderer_label': 'WeasyPrint renderer ready' if template_id in IMPLEMENTED_TEMPLATE_IDS else 'Renderer needs review',
         'generate_href': build_generate_href(str(template['report_type']), sections),
         'duplicate_href': url_for('reports.duplicate_system_template', template_id=template_id),
         'edit_href': '',
@@ -298,7 +298,7 @@ def build_custom_template_item(template: ReportTemplate) -> dict[str, Any]:
         'status_tone': get_status_tone(status),
         'renderer_status': 'Ready',
         'renderer_tone': 'green',
-        'renderer_label': 'PDF renderer ready',
+        'renderer_label': 'WeasyPrint renderer ready',
         'generate_href': build_generate_href(template.report_type, sections, template.name),
         'duplicate_href': url_for('reports.duplicate_custom_template', template_id=template.id),
         'edit_href': url_for('reports.report_templates', edit_template_id=template.id),
@@ -532,7 +532,7 @@ def get_summary_cards(templates: list[dict[str, Any]]) -> list[dict[str, str]]:
         {
             'label': 'PDF Ready',
             'value': str(ready_templates),
-            'caption': 'Templates mapped to implemented PDF renderers',
+            'caption': 'Templates mapped to the WeasyPrint HTML/PDF renderer',
             'icon': 'file-check-2',
             'tone': 'green',
         },
@@ -668,7 +668,7 @@ def get_renderer_readiness() -> list[dict[str, str]]:
         },
         {
             'label': 'PDF output mapping',
-            'description': 'Template sections are mapped to ReportLab sections and the corresponding report payload builders.',  # noqa: E501
+            'description': 'Template sections are mapped to the HTML/PDF document model and existing report payload builders.',  # noqa: E501
             'status': 'Ready',
             'tone': 'green',
             'icon': 'file-check-2',

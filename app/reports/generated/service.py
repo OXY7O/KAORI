@@ -1054,7 +1054,7 @@ def get_report_detail_status_context(
         'generating': [
             {
                 'label': 'Generation running',
-                'description': 'ReportLab is rendering the selected report sections into a PDF file.',
+                'description': 'The configured PDF renderer is composing the selected template sections into a PDF artifact.',
                 'status': 'Ready',
                 'tone': 'purple',
                 'icon': 'loader-circle',
@@ -1206,8 +1206,8 @@ def get_report_detail_export_readiness(
             'tone': 'blue',
         },
         {
-            'label': 'ReportLab renderer',
-            'description': 'The PDF export workflow can render this report request into a PDF file.',
+            'label': 'HTML/PDF renderer',
+            'description': 'The WeasyPrint HTML/PDF workflow can render this report request into a styled PDF file.',
             'status': renderer_status,
             'tone': renderer_tone,
         },

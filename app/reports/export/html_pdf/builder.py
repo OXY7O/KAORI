@@ -1,0 +1,442 @@
+from __future__ import annotations
+
+from collections.abc import Mapping, Sequence
+from datetime import UTC, datetime
+from typing import Any
+
+from app.reports.export.constants import (
+    DEFAULT_RECOMMENDATIONS,
+    REPORT_DOMAIN_LABELS,
+    REPORT_TYPE_DESCRIPTIONS,
+    REPORT_TYPE_LABELS,
+    REPORT_TYPE_RECOMMENDATIONS,
+    REQUIRES_SINGLE_CLUSTER_REPORT_TYPES,
+    SECTION_LABELS,
+    SOURCE_KIND_LABELS,
+)
+from app.reports.export.helpers import format_period
+from app.reports.export.html_pdf.charts import build_alert_severity_chart, build_forecast_chart
+from app.reports.export.html_pdf.document import (
+    ReportDocument,
+    ReportFinding,
+    ReportMetric,
+    ReportSection,
+)
+from app.reports.export.html_pdf.normalization import (
+    find_first_path,
+    findings_from_value,
+    humanize_key,
+    metrics_from_mapping,
+    sanitize_error_message,
+    sanitize_text,
+    tables_from_value,
+    tone_from_value,
+)
+
+_SECTION_SOURCE_PATHS: dict[str, tuple[str, ...]] = {
+    'analytics_summary': ('health_summary', 'summary'),
+    'resource_snapshot': ('resource_snapshot', 'summary_table', 'summary'),
+    'risk_overview': ('risk_assessment', 'risk_summary', 'health_summary', 'storage_summary'),
+    'cpu_utilization': ('summary.cpu', 'summary_table.cpu', 'cpu'),
+    'memory_utilization': ('summary.memory', 'summary_table.memory', 'memory'),
+    'storage_utilization': ('summary.storage', 'summary_table.storage', 'storage'),
+    'pod_utilization': ('summary.pods', 'summary_table.pods', 'pods'),
+    'node_resource_detail': ('cluster_info', 'summary'),
+    'worker_capacity_summary': ('worker_capacity_summary', 'cluster_info'),
+    'resource_allocation_headroom': ('allocation_summary', 'capacity_summary'),
+    'capacity_pressure_risk': ('risk_summary', 'governance_findings'),
+    'filesystem_summary': ('storage_summary.node_filesystem', 'storage_summary.filesystem_summary'),
+    'persistent_volume_summary': ('storage_summary.persistent_storage.pv', 'storage_summary.pv_rows'),
+    'persistent_volume_claims': ('storage_summary.persistent_storage.pvc', 'storage_summary.pvc_rows'),
+    'storage_risk': ('storage_summary.risk_summary', 'storage_summary'),
+    'tenant_quota_summary': ('tenant_quota_summary', 'tenant_quota_rows'),
+    'request_limit_coverage': ('workload_mapping_payload.summary', 'workload_mapping_rows'),
+    'workload_resource_mapping': ('workload_mapping_rows', 'workload_mapping_payload.rows'),
+    'governance_findings': ('governance_findings',),
+    'forecast_summary': ('forecast_payload.summary', 'forecast_payload'),
+    'forecast_risk_summary': ('forecast_payload.summary',),
+    'resource_trend_summary': ('forecast_payload.items',),
+    'cpu_forecast': ('forecast_payload.items',),
+    'memory_forecast': ('forecast_payload.items',),
+    'storage_forecast': ('forecast_payload.items',),
+    'pod_forecast': ('forecast_payload.items',),
+    'capacity_projection': ('forecast_payload.items',),
+    'forecast_projection': ('forecast_payload.items',),
+    'threshold_eta': ('forecast_payload.items',),
+    'top_namespace_consumers': ('consumer_payload.rows', 'consumer_payload'),
+    'top_workload_consumers': ('consumer_payload.rows',),
+    'top_pod_consumers': ('consumer_payload.rows',),
+    'resource_hotspots': ('consumer_payload.hotspots', 'consumer_payload.rows', 'consumer_payload.summary'),
+    'active_alerts': ('alerts',),
+    'alert_severity_summary': ('summary', 'alerts'),
+    'source_health': ('source_health', 'source_status', 'integration_status'),
+    'routing_grouping': ('routing_summary',),
+    'silence_inhibition': ('silence_summary', 'inhibition_summary'),
+    'ownership_runbook': ('ownership_summary',),
+    'incident_readiness': ('incident_readiness',),
+    'anomaly_context': ('anomalies',),
+    'affected_resources': ('alerts', 'anomalies'),
+}
+
+_SECTION_DESCRIPTIONS: dict[str, str] = {
+    'executive_summary': 'Management-oriented summary of scope, source readiness, data posture, and the most important findings.',
+    'operational_recommendations': 'Prioritized actions derived from the selected report data and KAORI operational guidance.',
+    'resource_snapshot': 'Current resource posture for the selected reporting scope.',
+    'risk_overview': 'Conditions that require attention, including degraded sources, capacity pressure, and active risk signals.',
+    'resource_allocation_headroom': 'Capacity allocation, current consumption, and remaining schedulable headroom.',
+    'capacity_pressure_risk': 'Capacity pressure and governance conditions that may affect workload placement or availability.',
+    'forecast_summary': 'Projected resource growth, threshold exposure, and forecast confidence for the selected horizon.',
+    'alert_severity_summary': 'Distribution of active alert signals by operational severity.',
+    'source_health': 'Connectivity and readiness posture of the alert and analytics source integrations.',
+}
+
+
+def build_report_document(
+    report: Any,
+    payload: Mapping[str, Any],
+    *,
+    classification: str = 'Internal',
+    retention_days: int = 90,
+) -> ReportDocument:
+    generated_at = datetime.now(UTC)
+    selected_sections = list(report.sections_as_list())
+    if not selected_sections:
+        selected_sections = ['executive_summary', 'operational_recommendations']
+
+    source_metrics = _build_source_metrics(report, payload)
+    overall_posture, overall_tone = _derive_overall_posture(payload)
+
+    sections: list[ReportSection] = []
+    if report.report_type in REQUIRES_SINGLE_CLUSTER_REPORT_TYPES and not report.cluster_id:
+        sections.append(
+            ReportSection(
+                key='scope_limitation',
+                number=1,
+                title='Single Cluster Required',
+                description='KAORI blocked a misleading fallback because this report type requires one explicit cluster.',
+                status_label='Action Required',
+                status_tone='warning',
+                findings=(
+                    ReportFinding(
+                        title='Select a Cluster',
+                        description='Regenerate this report with one cluster selected. Analytics Overview remains available for all-cluster reporting.',
+                        tone='warning',
+                    ),
+                ),
+            )
+        )
+    elif payload.get('_error'):
+        sections.append(_build_error_section(payload, number=1))
+    else:
+        for number, section_key in enumerate(selected_sections, start=1):
+            sections.append(_build_section(report, payload, section_key, number))
+
+    generated_by = (
+        getattr(report, 'generated_by_display_name_snapshot', None)
+        or getattr(report, 'generated_by_username_snapshot', None)
+        or 'KAORI Automation'
+    )
+    cluster_scope = _cluster_scope(report, payload)
+    namespace_scope = sanitize_text(getattr(report, 'namespace', None), fallback='All Namespaces')
+
+    return ReportDocument(
+        report_id=str(getattr(report, 'id', '-')),
+        report_name=sanitize_text(getattr(report, 'name', None), fallback='KAORI Operational Report'),
+        report_type_label=REPORT_TYPE_LABELS.get(report.report_type, humanize_key(report.report_type)),
+        report_description=REPORT_TYPE_DESCRIPTIONS.get(
+            report.report_type,
+            'Operational report generated from the current KAORI template configuration.',
+        ),
+        report_domain_label=REPORT_DOMAIN_LABELS.get(
+            getattr(report, 'report_domain', ''),
+            'KAORI Kubernetes Reports',
+        ),
+        source_kind_label=SOURCE_KIND_LABELS.get(getattr(report, 'source_kind', ''), 'Kubernetes'),
+        cluster_scope=cluster_scope,
+        namespace_scope=namespace_scope,
+        period_label=format_period(getattr(report, 'period', '30d')),
+        generated_at=generated_at.strftime('%d %b %Y %H:%M UTC'),
+        data_cutoff=_derive_data_cutoff(payload, generated_at),
+        generated_by=sanitize_text(generated_by),
+        classification=classification,
+        retention_label=f'{max(retention_days, 0)} Days' if retention_days > 0 else 'Policy Managed',
+        overall_posture=overall_posture,
+        overall_tone=overall_tone,
+        source_metrics=source_metrics,
+        sections=tuple(sections),
+        methodology_notes=(
+            'Report content follows the section order saved by the existing KAORI Template System.',
+            'Data is collected before rendering. The HTML template and WeasyPrint renderer do not query external systems directly.',
+            'Unavailable sources are shown as report limitations and are excluded from conclusions that require live evidence.',
+            'Critical operational decisions should be verified against live cluster data and the related JobExecution evidence.',
+        ),
+        template_label=f'{REPORT_TYPE_LABELS.get(report.report_type, humanize_key(report.report_type))} Template',
+        metadata={
+            'section_count': len(sections),
+            'selected_section_keys': selected_sections,
+            'output_format': sanitize_text(getattr(report, 'output_format', 'pdf')).upper(),
+        },
+    )
+
+
+def _build_section(report: Any, payload: Mapping[str, Any], section_key: str, number: int) -> ReportSection:
+    title = SECTION_LABELS.get(section_key, humanize_key(section_key))
+    description = _SECTION_DESCRIPTIONS.get(
+        section_key,
+        f'Operational evidence and interpretation for {title.lower()}.',
+    )
+
+    if section_key == 'executive_summary':
+        return _build_executive_summary(report, payload, number)
+
+    if section_key == 'operational_recommendations':
+        return _build_recommendations_section(report, payload, number)
+
+    value = find_first_path(payload, _SECTION_SOURCE_PATHS.get(section_key, (section_key,)))
+    if value is None:
+        value = {}
+
+    forecast_resource_keys = {
+        'cpu_forecast': 'cpu',
+        'memory_forecast': 'memory',
+        'storage_forecast': 'storage',
+        'pod_forecast': 'pods',
+    }
+    resource_key = forecast_resource_keys.get(section_key)
+    if resource_key and isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        value = [
+            item
+            for item in value
+            if isinstance(item, Mapping) and str(item.get('key', '')).lower() == resource_key
+        ]
+
+    metrics = metrics_from_mapping(value) if isinstance(value, Mapping) else ()
+    tables = tables_from_value(title, value)
+    findings = findings_from_value(value) if not tables or section_key in {'risk_overview', 'capacity_pressure_risk', 'governance_findings', 'resource_hotspots'} else ()
+
+    chart_svg = ''
+    if report.report_type == 'resource_forecast' and section_key in {
+        'forecast_summary',
+        'forecast_risk_summary',
+        'resource_trend_summary',
+        'cpu_forecast',
+        'memory_forecast',
+        'storage_forecast',
+        'pod_forecast',
+        'capacity_projection',
+        'forecast_projection',
+    }:
+        chart_svg = build_forecast_chart(payload)
+    elif report.report_type == 'alerts_anomalies' and section_key == 'alert_severity_summary':
+        chart_svg = build_alert_severity_chart(payload)
+
+    status_label, status_tone = _section_status(value)
+    note = ''
+    if not metrics and not tables and not findings and not chart_svg:
+        note = 'No structured evidence was returned for this section in the current reporting snapshot.'
+
+    return ReportSection(
+        key=section_key,
+        number=number,
+        title=title,
+        description=description,
+        status_label=status_label,
+        status_tone=status_tone,
+        metrics=metrics,
+        findings=findings,
+        tables=tables,
+        chart_svg=chart_svg,
+        note=note,
+        page_orientation='landscape' if any(len(table.columns) > 6 for table in tables) else 'portrait',
+    )
+
+
+def _build_executive_summary(report: Any, payload: Mapping[str, Any], number: int) -> ReportSection:
+    metrics: list[ReportMetric] = [
+        ReportMetric('Cluster Scope', _cluster_scope(report, payload), tone='info'),
+        ReportMetric('Namespace Scope', sanitize_text(getattr(report, 'namespace', None), fallback='All Namespaces')),
+        ReportMetric('Reporting Period', format_period(getattr(report, 'period', '30d'))),
+    ]
+
+    cluster = payload.get('cluster') or payload.get('selected_cluster')
+    if isinstance(cluster, Mapping):
+        environment = cluster.get('environment')
+        if environment:
+            metrics.append(ReportMetric('Environment', sanitize_text(environment), tone='info'))
+
+    for status_key in ('prometheus_status', 'source_status', 'integration_status'):
+        status = payload.get(status_key)
+        if isinstance(status, Mapping):
+            label = status.get('label') or status.get('status_label') or status.get('status')
+            if label:
+                metrics.append(
+                    ReportMetric(
+                        humanize_key(status_key),
+                        sanitize_text(label),
+                        sanitize_text(status.get('description') or status.get('message'), fallback='')[:140],
+                        tone_from_value(label),
+                    )
+                )
+                break
+
+    summary_value = payload.get('summary') or payload.get('health_summary') or payload.get('forecast_payload')
+    summary_metrics = metrics_from_mapping(summary_value, limit=max(0, 8 - len(metrics))) if isinstance(summary_value, Mapping) else ()
+    metrics.extend(summary_metrics)
+
+    findings: list[ReportFinding] = []
+    for key in ('risk_assessment', 'governance_findings', 'source_health', 'incident_readiness'):
+        value = payload.get(key)
+        if value:
+            findings.extend(findings_from_value(value, limit=3))
+        if len(findings) >= 5:
+            break
+
+    posture, tone = _derive_overall_posture(payload)
+    return ReportSection(
+        key='executive_summary',
+        number=number,
+        title='Executive Summary',
+        description='Management-oriented summary of the selected scope, source readiness, and the findings that require attention.',
+        status_label=posture,
+        status_tone=tone,
+        metrics=tuple(metrics[:8]),
+        findings=tuple(findings[:5]),
+    )
+
+
+def _build_recommendations_section(report: Any, payload: Mapping[str, Any], number: int) -> ReportSection:
+    recommendation_value = payload.get('actionable_recommendations') or payload.get('recommendations')
+    forecast_payload = payload.get('forecast_payload')
+    if not recommendation_value and isinstance(forecast_payload, Mapping):
+        recommendation_value = forecast_payload.get('actionable_recommendations')
+    if not recommendation_value:
+        recommendation_value = REPORT_TYPE_RECOMMENDATIONS.get(report.report_type, DEFAULT_RECOMMENDATIONS)
+
+    findings = findings_from_value(recommendation_value, limit=12)
+    return ReportSection(
+        key='operational_recommendations',
+        number=number,
+        title='Operational Recommendations',
+        description='Prioritized follow-up actions based on the evidence available in this report.',
+        status_label=f'{len(findings)} Actions',
+        status_tone='info' if findings else 'neutral',
+        findings=findings,
+        note='Recommendation ownership and due dates should be assigned in the operational workflow before closure.',
+    )
+
+
+def _build_error_section(payload: Mapping[str, Any], *, number: int) -> ReportSection:
+    return ReportSection(
+        key='data_unavailable',
+        number=number,
+        title='Report Data Unavailable',
+        description='KAORI could not collect the required report payload at generation time.',
+        status_label='Limited',
+        status_tone='warning',
+        findings=(
+            ReportFinding(
+                title='Source Data Was Not Available',
+                description=sanitize_error_message(payload.get('_error')),
+                tone='warning',
+            ),
+            ReportFinding(
+                title='Recommended Next Step',
+                description='Review integration readiness, allow automatic recovery to complete, and regenerate the report.',
+                tone='info',
+            ),
+        ),
+    )
+
+
+def _cluster_scope(report: Any, payload: Mapping[str, Any]) -> str:
+    cluster = payload.get('cluster') or payload.get('selected_cluster')
+    if isinstance(cluster, Mapping):
+        name = cluster.get('name')
+        identifier = cluster.get('id')
+        if name:
+            return sanitize_text(name)
+        if identifier:
+            return sanitize_text(identifier)
+    return sanitize_text(getattr(report, 'cluster_id', None), fallback='All Clusters')
+
+
+def _derive_data_cutoff(payload: Mapping[str, Any], generated_at: datetime) -> str:
+    for key in ('generated_at', 'last_analyzed_at', 'collected_at', 'updated_at'):
+        value = payload.get(key)
+        if value:
+            return sanitize_text(value)
+    return generated_at.strftime('%d %b %Y %H:%M UTC')
+
+
+def _build_source_metrics(report: Any, payload: Mapping[str, Any]) -> tuple[ReportMetric, ...]:
+    metrics = [
+        ReportMetric('Template Sections', str(len(report.sections_as_list())), 'Existing template selection', 'info'),
+        ReportMetric('Scope', _cluster_scope(report, payload), 'Selected report target', 'info'),
+    ]
+
+    for label, key in (
+        ('Prometheus', 'prometheus_status'),
+        ('Alert Source', 'source_status'),
+        ('Integration', 'integration_status'),
+    ):
+        value = payload.get(key)
+        if not isinstance(value, Mapping):
+            continue
+        status = value.get('label') or value.get('status_label') or value.get('status') or value.get('connected')
+        metrics.append(
+            ReportMetric(
+                label,
+                sanitize_text(status, fallback='Unknown'),
+                sanitize_text(value.get('description') or value.get('message'), fallback='')[:100],
+                tone_from_value(status),
+            )
+        )
+        if len(metrics) >= 4:
+            break
+
+    while len(metrics) < 4:
+        metrics.append(ReportMetric('Data Source', 'Prepared', 'Renderer input available', 'normal'))
+    return tuple(metrics[:4])
+
+
+def _derive_overall_posture(payload: Mapping[str, Any]) -> tuple[str, str]:
+    if payload.get('_error'):
+        return 'Limited', 'warning'
+
+    candidates: list[Any] = []
+
+    def collect_status_values(value: Any, *, depth: int = 0) -> None:
+        if depth > 4:
+            return
+        if isinstance(value, Mapping):
+            for item_key, item in value.items():
+                key_text = str(item_key).lower()
+                if any(token in key_text for token in ('status', 'risk', 'severity', 'level')):
+                    candidates.append(item)
+                if isinstance(item, (Mapping, list, tuple)):
+                    collect_status_values(item, depth=depth + 1)
+        elif isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+            for item in value[:20]:
+                collect_status_values(item, depth=depth + 1)
+
+    collect_status_values(payload)
+    text = ' '.join(sanitize_text(item, fallback='') for item in candidates).lower()
+    if any(token in text for token in ('critical', 'failed', 'unhealthy', 'expired')):
+        return 'Critical', 'critical'
+    if any(token in text for token in ('warning', 'degraded', 'review', 'stale')):
+        return 'Needs Review', 'warning'
+    return 'Operational', 'normal'
+
+
+def _section_status(value: Any) -> tuple[str, str]:
+    if isinstance(value, Mapping):
+        for key in ('status_label', 'status', 'level', 'risk', 'severity'):
+            status = value.get(key)
+            if status:
+                rendered = sanitize_text(status)
+                return rendered, tone_from_value(rendered)
+        if value.get('has_data') is False:
+            return 'No Data', 'warning'
+    if isinstance(value, Sequence) and not isinstance(value, (str, bytes, bytearray)):
+        return f'{len(value)} Records', 'info'
+    return 'Included', 'normal'

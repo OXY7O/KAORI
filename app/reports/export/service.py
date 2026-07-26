@@ -117,7 +117,7 @@ def generate_pdf_for_report(
             report,
         )
 
-        render_report_pdf(
+        renderer_used = render_report_pdf(
             report,
             staging_path,
         )
@@ -140,17 +140,29 @@ def generate_pdf_for_report(
         if previous_status == 'ready' and previous_artifact_available:
             return (
                 True,
-                'PDF report regenerated successfully. Previous artifact is retained until cleanup policy is enabled.',
+                (
+                    f'PDF report regenerated successfully with {format_renderer_label(renderer_used)}. '
+                    'Previous artifact is retained until cleanup policy is enabled.'
+                ),
             )
 
-        return True, 'PDF report generated successfully.'
+        return True, f'PDF report generated successfully with {format_renderer_label(renderer_used)}.'
 
-    except Exception as exc:
+    except Exception:
+        current_app.logger.exception(
+            'Report PDF generation failed for report %s.',
+            report_id,
+        )
         db.session.rollback()
 
         failed_report = db.session.get(
             Report,
             report_id,
+        )
+
+        user_message = (
+            'KAORI could not render the PDF artifact. Review report scope, integration readiness, '
+            'and worker logs before retrying.'
         )
 
         if failed_report is not None:
@@ -159,20 +171,19 @@ def generate_pdf_for_report(
                 failed_report.file_path = previous_file_path
                 failed_report.file_size_bytes = previous_file_size_bytes
                 failed_report.error_message = (
-                    f'Regeneration failed. Existing ready artifact was retained. Latest error: {exc}'
+                    'Regeneration failed. The existing ready artifact was retained. '
+                    f'{user_message}'
                 )
             else:
                 failed_report.status = 'failed'
-                failed_report.error_message = str(
-                    exc,
-                )
+                failed_report.error_message = user_message
 
             db.session.commit()
 
         if previous_status == 'ready' and previous_artifact_available:
-            return False, f'Failed to regenerate PDF report. Existing artifact was retained: {exc}'
+            return False, f'Regeneration failed. The existing artifact was retained. {user_message}'
 
-        return False, f'Failed to generate PDF report: {exc}'
+        return False, user_message
 
     finally:
         if staging_path is not None and staging_path.exists():
@@ -278,7 +289,30 @@ def get_report_storage_dir() -> Path:
     )
 
 
+
+
 def render_report_pdf(
+    report: Report,
+    output_path: Path,
+) -> str:
+    from app.reports.export.renderers.registry import render_report_pdf as render_with_configured_renderer
+
+    return render_with_configured_renderer(
+        report,
+        output_path,
+    )
+
+
+def format_renderer_label(renderer_name: str) -> str:
+    labels = {
+        'weasyprint': 'WeasyPrint HTML/PDF',
+        'reportlab': 'ReportLab Legacy',
+        'reportlab-fallback': 'ReportLab Legacy fallback',
+    }
+    return labels.get(renderer_name, renderer_name.replace('-', ' ').title())
+
+
+def render_reportlab_pdf(
     report: Report,
     output_path: Path,
 ) -> None:
