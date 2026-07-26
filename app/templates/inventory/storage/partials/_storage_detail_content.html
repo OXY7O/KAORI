@@ -19,13 +19,13 @@
     </section>
 {%- endmacro %}
 {% if item.status in ['Bound','Available','Active'] %}
-    {% set status_tone = "normal" %}{% set status_icon = "circle-check" %}
+    {% set status_tone = "normal" %}
 {% elif item.status in ['Pending','Released'] %}
-    {% set status_tone = "warning" %}{% set status_icon = "triangle-alert" %}
+    {% set status_tone = "warning" %}
 {% elif item.status in ['Failed','Lost'] %}
-    {% set status_tone = "critical" %}{% set status_icon = "circle-x" %}
+    {% set status_tone = "critical" %}
 {% else %}
-    {% set status_tone = "unknown" %}{% set status_icon = "circle-help" %}
+    {% set status_tone = "unknown" %}
 {% endif %}
 <div class="bg-surface-hover px-4 py-4">
     <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-sm">
@@ -40,7 +40,7 @@
                     <p class="mt-1 text-xs leading-5 text-content-muted">Storage identity, capacity, lifecycle, provisioning, and associated resources from the latest inventory snapshot.</p>
                 </div>
             </div>
-            <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">{{ table_label.metadata_label('PV' if item.type == 'PersistentVolume' else 'PVC' if item.type == 'PersistentVolumeClaim' else item.type, 'layers-3') }}{{ table_label.status_label(item.status, status_tone, status_icon) }}</div>
+            <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">{{ table_label.metadata_label('PV' if item.type == 'PersistentVolume' else 'PVC' if item.type == 'PersistentVolumeClaim' else item.type) }}{{ table_label.status_label(item.status, status_tone) }}</div>
         </header>
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
             {% call detail_card('Storage Identity', 'badge-info', item.age, 'min-h-[30rem]') %}
@@ -139,7 +139,7 @@
                             <p class="mt-0.5 text-xs text-content-muted">Claims and Pods resolved from current storage bindings.</p>
                         </div>
                     </div>
-                    <div class="flex flex-wrap gap-2">{{ table_label.metadata_label(item.claim_count ~ ' claims', 'folder') }}{{ table_label.metadata_label(item.pod_count ~ ' Pods', 'package') }}</div>
+                    <div class="flex flex-wrap gap-2">{{ table_label.metadata_label(item.claim_count ~ ' claims') }}{{ table_label.metadata_label(item.pod_count ~ ' Pods') }}</div>
                 </header>
                 <div class="grid gap-4 p-4 lg:grid-cols-2">
                     <div class="rounded-lg border border-outline-default bg-surface-hover p-3">

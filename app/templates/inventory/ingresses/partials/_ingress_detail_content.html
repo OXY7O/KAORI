@@ -25,9 +25,9 @@
     </section>
 {%- endmacro %}
 {% if ingress.tls %}
-    {% set tls_label = "TLS Enabled" %}{% set tls_tone = "normal" %}{% set tls_icon = "shield-check" %}
+    {% set tls_label = "TLS Enabled" %}{% set tls_tone = "normal" %}
 {% else %}
-    {% set tls_label = "No TLS" %}{% set tls_tone = "warning" %}{% set tls_icon = "shield-off" %}
+    {% set tls_label = "No TLS" %}{% set tls_tone = "warning" %}
 {% endif %}
 <div class="bg-surface-hover px-4 py-4">
     <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-sm">
@@ -44,8 +44,8 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-                {{ table_label.metadata_label(ingress.class, 'waypoints') }}
-                {{ table_label.status_label(tls_label, tls_tone, tls_icon) }}
+                {{ table_label.metadata_label(ingress.class) }}
+                {{ table_label.status_label(tls_label, tls_tone) }}
             </div>
         </header>
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">

@@ -2,13 +2,8 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[3]
-COMPACT_RESOURCE_TABLES = (
-    'namespaces',
-    'services',
-    'ingresses',
-    'storage',
-    'configuration',
-)
+COMPACT_RESOURCE_TABLES = ('namespaces',)
+PLAIN_RESOURCE_TABLES = ('services', 'ingresses', 'storage', 'configuration')
 
 
 def _table(resource: str) -> str:
@@ -31,6 +26,14 @@ def test_single_line_inventory_resource_cells_use_compact_icon_container() -> No
         content = _table(resource)
         assert compact in content, resource
         assert oversized not in content, resource
+
+
+def test_plain_inventory_resource_cells_do_not_use_decorative_icon_container() -> None:
+    decorative = 'flex h-7 w-7 shrink-0 items-center justify-center rounded-md'
+
+    for resource in PLAIN_RESOURCE_TABLES:
+        content = _table(resource)
+        assert decorative not in content, resource
 
 
 def test_node_resource_cell_keeps_two_line_icon_container() -> None:

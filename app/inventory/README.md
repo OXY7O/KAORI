@@ -100,3 +100,5 @@ All resource inventory pages use the shared KAORI table block, loading bar, filt
 - Semantic badges inside the four-card View More summaries use the same 12px type scale as adjacent detail labels and values. Table badges retain the compact 10px scale.
 - Decorative icons are omitted from placement values, Host Network state, node-selector values, and section-count labels when the text already provides sufficient meaning.
 
+- Service, Ingress, Storage, and Configuration tables present namespace/type/count fields as plain text; decorative row icons are reserved for cluster identity.
+- Semantic labels remain for lifecycle/status states only, and use tone without decorative icons unless an icon materially improves comprehension.

@@ -33,11 +33,11 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-                {{ table_label.metadata_label(item.type, 'key-round' if item.type == 'Secret' else 'file-json-2') }}
+                {{ table_label.metadata_label(item.type) }}
                 {% if item.immutable %}
-                    {{ table_label.status_label('Immutable', 'info', 'lock-keyhole') }}
+                    {{ table_label.status_label('Immutable', 'warning') }}
                 {% else %}
-                    {{ table_label.status_label('Mutable', 'unknown', 'unlock') }}
+                    {{ table_label.status_label('Mutable', 'normal') }}
                 {% endif %}
             </div>
         </header>

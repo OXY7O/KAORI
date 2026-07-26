@@ -1,6 +1,5 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/pagination.html" as pagination_ui %}
-{% import "components/table_label.html" as table_label %}
 {% import "components/details/_expandable_row.html" as expandable %}
 <div class="overflow-x-auto">
     <table class="min-w-[1080px] w-full text-left text-sm leading-5 text-content-secondary">
@@ -20,32 +19,31 @@
             {% for service in inventory.services %}
                 {% if service.endpoints_reported %}
                     {% if service.not_ready_endpoint_count > 0 %}
-                        {% set endpoint_label = service.endpoint_count ~ ' ready · ' ~ service.not_ready_endpoint_count ~ ' pending' %}
-                        {% set endpoint_tone = "warning" %}{% set endpoint_icon = "triangle-alert" %}
+                        {% set endpoint_label = service.endpoint_count ~ ' Ready · ' ~ service.not_ready_endpoint_count ~ ' Pending' %}
+                        {% set endpoint_tone = "warning" %}
                     {% else %}
-                        {% set endpoint_label = service.endpoint_count ~ ' ready' %}
-                        {% set endpoint_tone = "normal" %}{% set endpoint_icon = "circle-check" %}
+                        {% set endpoint_label = service.endpoint_count ~ ' Ready' %}
+                        {% set endpoint_tone = "normal" %}
                     {% endif %}
                 {% else %}
-                    {% set endpoint_label = "Not reported" %}{% set endpoint_tone = "unknown" %}{% set endpoint_icon = "circle-help" %}
+                    {% set endpoint_label = "Not Reported" %}{% set endpoint_tone = "unknown" %}
                 {% endif %}
                 <tr id="service-row-{{ service.id }}"
                     class="transition hover:bg-surface-hover">
                     <td class="px-4 py-3.5 align-middle">
                         {{ table_ui.cluster_identity(service.cluster_name, service.cluster_environment) }}
                     </td>
-                    <td class="px-4 py-3.5 align-middle">{{ table_label.metadata_label(service.namespace, 'folder-tree') }}</td>
+                    <td class="px-4 py-3.5 align-middle text-sm leading-5 text-content-secondary">{{ service.namespace }}</td>
                     <td class="max-w-[300px] px-4 py-3.5 align-middle">
-                        <div class="flex min-w-0 items-center gap-2">
-                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="network" class="h-4 w-4"></i></span>
-                            <span class="truncate text-sm font-semibold leading-5 text-content-primary"
-                                  title="{{ service.service_name }}">{{ service.service_name }}</span>
-                        </div>
+                        <span class="block truncate text-sm font-semibold leading-5 text-content-primary"
+                              title="{{ service.service_name }}">{{ service.service_name }}</span>
                     </td>
-                    <td class="px-4 py-3.5 align-middle">{{ table_label.metadata_label(service.service_type, 'waypoints') }}</td>
+                    <td class="px-4 py-3.5 align-middle text-sm leading-5 text-content-secondary">{{ service.service_type }}</td>
                     <td class="px-4 py-3.5 align-middle"><span class="font-medium text-content-primary">{{ service.cluster_ip }}</span></td>
-                    <td class="px-4 py-3.5 align-middle">{{ table_label.metadata_label(service.port_summary, 'plug-zap') }}</td>
-                    <td class="px-4 py-3.5 align-middle">{{ table_label.status_label(endpoint_label, endpoint_tone, endpoint_icon) }}</td>
+                    <td class="px-4 py-3.5 align-middle text-sm leading-5 text-content-secondary">{{ service.port_summary }}</td>
+                    <td class="px-4 py-3.5 align-middle">
+                        <span class="text-sm font-medium leading-5 {% if endpoint_tone == 'normal' %}text-status-normal-text{% elif endpoint_tone == 'warning' %}text-status-warning-text{% else %}text-status-unknown-text{% endif %}">{{ endpoint_label }}</span>
+                    </td>
                     <td class="px-4 py-3.5 text-right align-middle">
                         {{ expandable.toggle_button(
                             'inventory-services',

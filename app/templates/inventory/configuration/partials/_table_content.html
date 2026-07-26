@@ -22,19 +22,18 @@
                     <td class="px-4 py-3.5 align-middle">
                         {{ table_ui.cluster_identity(item.cluster_name, item.cluster_environment) }}
                     </td>
-                    <td class="px-4 py-3.5 align-middle">{{ table_label.metadata_label(item.namespace, 'folder-tree') }}</td>
+                    <td class="px-4 py-3.5 align-middle text-sm leading-5 text-content-secondary">{{ item.namespace }}</td>
                     <td class="max-w-[320px] px-4 py-3.5 align-middle">
-                        <div class="flex min-w-0 items-center gap-2"><span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="{{ 'key-round' if item.type == 'Secret' else 'file-json-2' }}"
-   class="h-4 w-4"></i></span><span class="truncate text-sm font-semibold leading-5 text-content-primary"
-      title="{{ item.name }}">{{ item.name }}</span></div>
+                        <span class="block truncate text-sm font-semibold leading-5 text-content-primary"
+                              title="{{ item.name }}">{{ item.name }}</span>
                     </td>
-                    <td class="px-4 py-3.5 align-middle">{{ table_label.metadata_label(item.type, 'key-round' if item.type == 'Secret' else 'file-json-2') }}</td>
-                    <td class="px-4 py-3.5 align-middle">{{ table_label.metadata_label(item.key_count ~ ' keys', 'key-round') }}</td>
+                    <td class="px-4 py-3.5 align-middle text-sm font-semibold leading-5 text-content-primary">{{ item.type }}</td>
+                    <td class="px-4 py-3.5 align-middle text-sm font-semibold leading-5 text-content-primary">{{ item.key_count }} Keys</td>
                     <td class="px-4 py-3.5 align-middle">
                         {% if item.immutable %}
-                            {{ table_label.status_label('Immutable', 'warning', 'lock-keyhole') }}
+                            {{ table_label.status_label('Immutable', 'warning') }}
                         {% else %}
-                            {{ table_label.status_label('Mutable', 'normal', 'unlock') }}
+                            {{ table_label.status_label('Mutable', 'normal') }}
                         {% endif %}
                     </td>
                     <td class="px-4 py-3.5 text-right align-middle">

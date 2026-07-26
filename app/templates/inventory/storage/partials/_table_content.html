@@ -19,37 +19,32 @@
         <tbody class="divide-y divide-outline-subtle">
             {% for item in inventory.storage_items %}
                 {% if item.status in ['Bound', 'Available', 'Active'] %}
-                    {% set status_tone = "normal" %}{% set status_icon = "circle-check" %}
+                    {% set status_tone = "normal" %}
                 {% elif item.status in ['Pending', 'Released'] %}
-                    {% set status_tone = "warning" %}{% set status_icon = "triangle-alert" %}
+                    {% set status_tone = "warning" %}
                 {% elif item.status in ['Failed', 'Lost'] %}
-                    {% set status_tone = "critical" %}{% set status_icon = "circle-x" %}
+                    {% set status_tone = "critical" %}
                 {% else %}
-                    {% set status_tone = "unknown" %}{% set status_icon = "circle-help" %}
+                    {% set status_tone = "unknown" %}
                 {% endif %}
                 <tr id="storage-row-{{ item.id }}"
                     class="transition hover:bg-surface-hover">
                     <td class="px-4 py-3.5 align-middle">
                         {{ table_ui.cluster_identity(item.cluster_name, item.cluster_environment) }}
                     </td>
-                    <td class="px-4 py-3.5 align-middle">{{ table_label.metadata_label(item.namespace, 'globe-2' if item.namespace == 'Cluster-wide' else 'folder-tree') }}</td>
+                    <td class="px-4 py-3.5 align-middle text-sm font-semibold leading-5 text-content-primary">{{ item.namespace }}</td>
                     <td class="max-w-[300px] px-4 py-3.5 align-middle">
                         <div class="flex min-w-0 items-center gap-2">
-                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="database" class="h-4 w-4"></i></span>
-                            <div class="min-w-0">
-                                <div class="flex items-center gap-2">
-                                    <span class="truncate text-sm font-semibold leading-5 text-content-primary"
-                                          title="{{ item.name }}">{{ item.name }}</span>
-                                    {% if item.is_default %}{{ table_label.metadata_label('Default', 'star') }}{% endif %}
-                                </div>
-                            </div>
+                            <span class="truncate text-sm font-semibold leading-5 text-content-primary"
+                                  title="{{ item.name }}">{{ item.name }}</span>
+                            {% if item.is_default %}{{ table_label.metadata_label('Default') }}{% endif %}
                         </div>
                     </td>
-                    <td class="px-4 py-3.5 align-middle">{{ table_label.metadata_label('PV' if item.type == 'PersistentVolume' else 'PVC' if item.type == 'PersistentVolumeClaim' else item.type, 'layers-3') }}</td>
-                    <td class="px-4 py-3.5 align-middle">{{ table_label.status_label(item.status, status_tone, status_icon) }}</td>
-                    <td class="max-w-[220px] px-4 py-3.5 align-middle"><span class="block truncate font-medium text-content-primary"
+                    <td class="px-4 py-3.5 align-middle text-sm font-semibold leading-5 text-content-primary">{{ 'PV' if item.type == 'PersistentVolume' else 'PVC' if item.type == 'PersistentVolumeClaim' else item.type }}</td>
+                    <td class="px-4 py-3.5 align-middle">{{ table_label.status_label(item.status, status_tone) }}</td>
+                    <td class="max-w-[220px] px-4 py-3.5 align-middle"><span class="block truncate font-semibold text-content-primary"
       title="{{ item.storage_class }}">{{ item.storage_class }}</span></td>
-                    <td class="px-4 py-3.5 align-middle"><span class="text-sm font-medium leading-5 text-content-secondary">{{ item.capacity or '-' }}</span></td>
+                    <td class="px-4 py-3.5 align-middle"><span class="text-sm font-semibold leading-5 text-content-primary">{{ item.capacity or '-' }}</span></td>
                     <td class="px-4 py-3.5 text-right align-middle">
                         {{ expandable.toggle_button(
                             'inventory-storage',
