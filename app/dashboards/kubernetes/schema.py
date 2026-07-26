@@ -119,9 +119,13 @@ class TopConsumersSnapshot:
 class ForecastItem:
     label: str
     risk: str
-    projection: str
     icon: str
+    key: str = 'resource'
     projected_percent: float | None = None
+    current_percent: float | None = None
+    trend: str = 'Unknown'
+    historical_points: str = ''
+    forecast_points: str = ''
 
 
 @dataclass(slots=True)
@@ -130,6 +134,12 @@ class ForecastSnapshot:
     insight: str = 'Insufficient trend data for reliable forecasting.'
     source_status: str = 'Unavailable'
     horizon_days: int = 90
+    item_count: int = 0
+    at_risk_count: int = 0
+    critical_count: int = 0
+    highest_projected_label: str = 'N/A'
+    highest_projected_percent: float | None = None
+    has_historical_series: bool = False
 
 
 @dataclass(slots=True)

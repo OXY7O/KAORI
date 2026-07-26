@@ -323,15 +323,39 @@ def test_dashboard_forecast_snapshot_exposes_chart_values_and_horizon() -> None:
                 },
                 'items': [
                     {
+                        'key': 'cpu',
                         'label': 'CPU Growth',
                         'status_label': 'Warning',
+                        'current_percent': 61.0,
                         'projected_percent': 78.4,
+                        'historical_points': [
+                            {'percent': 48.0},
+                            {'percent': 55.0},
+                            {'percent': 61.0},
+                        ],
+                        'forecast_points': [
+                            {'percent': 67.0},
+                            {'percent': 72.0},
+                            {'percent': 78.4},
+                        ],
                         'icon': 'cpu',
                     },
                     {
+                        'key': 'memory',
                         'label': 'Memory Growth',
                         'status_label': 'Critical',
+                        'current_percent': 74.0,
                         'projected_percent': 92,
+                        'historical_points': [
+                            {'percent': 66.0},
+                            {'percent': 70.0},
+                            {'percent': 74.0},
+                        ],
+                        'forecast_points': [
+                            {'percent': 80.0},
+                            {'percent': 86.0},
+                            {'percent': 92.0},
+                        ],
                         'icon': 'memory-stick',
                     },
                 ],
@@ -343,4 +367,13 @@ def test_dashboard_forecast_snapshot_exposes_chart_values_and_horizon() -> None:
     assert snapshot.source_status == 'Available'
     assert snapshot.horizon_days == 60
     assert [item.projected_percent for item in snapshot.items] == [78.4, 92.0]
+    assert [item.current_percent for item in snapshot.items] == [61.0, 74.0]
+    assert all(item.historical_points for item in snapshot.items)
+    assert all(item.forecast_points for item in snapshot.items)
+    assert snapshot.item_count == 2
+    assert snapshot.at_risk_count == 2
+    assert snapshot.critical_count == 1
+    assert snapshot.highest_projected_label == 'Memory'
+    assert snapshot.highest_projected_percent == 92.0
+    assert snapshot.has_historical_series is True
     assert snapshot.insight == 'Memory has the highest 60-day projection at 92%.'
