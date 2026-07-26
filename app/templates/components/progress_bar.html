@@ -1,21 +1,24 @@
 {% macro bar(value, track_classes, fill_classes, label='Progress') -%}
+    {% set safe_value = value | default(0, true) | int %}
     <div class="{{ track_classes }}"
          role="progressbar"
          aria-label="{{ label }}"
          aria-valuemin="0"
          aria-valuemax="100"
-         aria-valuenow="{{ value | int }}">
-        <div class="{{ fill_classes }}" style="width: {{ value }}%"></div>
+         aria-valuenow="{{ safe_value }}">
+        <div class="{{ fill_classes }}" style="width: {{ safe_value }}%"></div>
     </div>
 {%- endmacro %}
 {% macro stacked_bar(primary_value, secondary_value, track_classes, primary_classes, secondary_classes, label='Progress') -%}
+    {% set safe_primary_value = primary_value | default(0, true) | int %}
+    {% set safe_secondary_value = secondary_value | default(0, true) | int %}
     <div class="{{ track_classes }}"
          role="progressbar"
          aria-label="{{ label }}"
          aria-valuemin="0"
          aria-valuemax="100"
-         aria-valuenow="{{ primary_value | int }}">
-        <div class="{{ primary_classes }}" style="width: {{ primary_value }}%"></div>
-        <div class="{{ secondary_classes }}" style="width: {{ secondary_value }}%"></div>
+         aria-valuenow="{{ safe_primary_value }}">
+        <div class="{{ primary_classes }}" style="width: {{ safe_primary_value }}%"></div>
+        <div class="{{ secondary_classes }}" style="width: {{ safe_secondary_value }}%"></div>
     </div>
 {%- endmacro %}

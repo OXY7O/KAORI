@@ -14,6 +14,7 @@ from app.analytics.forecast.routes import (
     forecast_section,
 )
 from app.analytics.overview.service import get_analytics_overview, get_analytics_overview_section
+from app.analytics.materialization.presentation import materialization_progress_context
 from app.analytics.storage.routes import (
     storage,
     storage_filesystem_summary,
@@ -204,45 +205,17 @@ def materialization_status():
         response = make_response('', 204)
         response.headers['HX-Refresh'] = 'true'
         return response
-    snapshot = result.snapshot
-    materialization_error = snapshot.last_error if snapshot else None
-    progress_message = None
-    progress_percent = None
-    if snapshot is not None and snapshot.last_job_execution_id is not None:
-        from app.models.job import JobExecution
-
-        job = JobExecution.query.get(snapshot.last_job_execution_id)
-        if job is not None:
-            progress_message = job.progress_message
-            if job.progress_total and job.progress_total > 0:
-                progress_percent = min(
-                    100,
-                    max(
-                        0,
-                        round(
-                            (job.progress_current or 0)
-                            / job.progress_total
-                            * 100
-                        ),
-                    ),
-                )
-            if job.is_terminal and snapshot.status != 'ready' and not materialization_error:
-                materialization_error = (
-                    job.error_message
-                    or (
-                        'The background job completed without producing the requested analytics snapshot.'
-                        if job.status in {'succeeded', 'partial'}
-                        else f'Analytics preparation ended with status {job.status.replace("_", " ").title()}.'
-                    )
-                )
+    progress = materialization_progress_context(result.snapshot)
     return render_template(
         'analytics/materialization/_pending.html',
         materialization_status_url=request.full_path,
-        materialization_return_url=request.args.get('return_url', '').strip() or url_for('analytics.overview'),
-        materialization_error=materialization_error,
-        materialization_progress_message=progress_message,
-        materialization_progress_percent=progress_percent,
+        materialization_return_url=(
+            request.args.get('return_url', '').strip()
+            or url_for('analytics.overview')
+        ),
+        **progress,
     )
+
 
 
 @analytics_bp.route(

@@ -113,7 +113,10 @@ calling Prometheus again.
 Snapshot fingerprints contain only provider-query dimensions. Pagination,
 search, status, focus, and other presentation filters must never create a new
 snapshot generation. A missing snapshot renders a stable pending page with the
-same HTMX replacement ID as the requested workspace. A dependency failure
+same HTMX replacement ID as the requested workspace. Pending-page context must
+always define error, progress-message, and progress-percent fields, even when no
+JobExecution has reported progress yet; optional progress must render as an
+indeterminate state rather than raising a template error. A dependency failure
 renders a blocked state; it must never be stored as a ready snapshot payload.
 
 Prometheus connection readiness and analytics feature readiness are separate
@@ -511,21 +514,3 @@ The generic scheduler may inspect Analytics policy every 30 minutes and Forecast
 Manual execution intentionally refreshes all configured combinations. Scheduled Utilization trend work follows only the configured time ranges; a missing unconfigured trend can still be materialized once on demand. On-demand requests join an active fleet materialization when one exists, preventing a page request from duplicating work already running on the worker. Per-dataset stale-grace limits cap a broad policy value so alert snapshots cannot remain acceptable for the same duration as long-range analytics.
 
 Analytics Overview reads committed database generations directly and does not add a second web or Redis TTL cache. This prevents a fresh worker commit from being hidden behind another presentation cache. Legacy `forecast_horizons` policy JSON is ignored and is removed the next time the Forecast policy is saved.
-
-## Analytics Navigation and Content Tabs
-
-The Kubernetes Analytics sidebar retains the dedicated Overview, Resource Utilization, Capacity Analysis, Storage Analysis, Workload Analysis, Resource Forecast, Top Consumers, and Alerts & Anomalies menu entries. These routes remain the primary navigation contract and must not be replaced by a cross-page tab bar.
-
-Long analytics pages group their own content with the reusable `app/templates/analytics/components/_content_tabs.html` component. The tabs change only the visible content category inside the current route; they do not duplicate routes, mutate filters, or trigger a second analytics query path.
-
-Current page-owned categories are:
-
-- Resource Utilization: summary, trend analysis, node detail, and recommendations.
-- Capacity Analysis: worker summary, allocation and headroom, risk and governance, and recommendations.
-- Storage Analysis: node filesystem, persistent storage, and recommendations.
-- Workload Analysis: tenant quotas, resource mapping, and recommendations.
-- Resource Forecast: forecast overview, trend analysis, methodology, and recommendations.
-- Top Consumers: consumer overview, consumer detail, and recommendations.
-- Alerts & Anomalies: signal overview, alert details, routing and suppression, ownership and readiness, and recommendations.
-
-Analytics Overview keeps its own overview-category tabs because those tabs group dashboard snapshots inside the Overview route.
