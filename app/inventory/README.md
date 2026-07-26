@@ -67,9 +67,9 @@ All resource inventory pages use the shared KAORI table block, loading bar, filt
 ### Cross-Resource Visual Contract
 
 - Overview and resource summaries use one bordered data block with internal metric cells; do not reintroduce independent decorative cards.
-- Resource-name columns use `text-sm` with optional muted supporting text. Use semibold primary text only where the row identity needs emphasis; Workload and Pod rows use regular-weight text, remain icon-free, and overview rows keep the icon only in the Cluster identity column.
+- Resource-name columns use `text-sm` with optional muted supporting text. Workload and Pod primary values use semibold text, and their namespace cells reuse the compact Namespace identity icon; overview rows keep the icon only in the Cluster identity column.
 - Table row actions use `components/table.html`; semantic labels are compact `rounded-md` labels, never pills. Inventory row labels default to text-only, with tone carrying status meaning instead of decorative icons.
-- Resource type, update strategy, quota, and Pod Security values use plain table text when the value is descriptive metadata rather than an operational state.
+- Resource type, quota, and Pod Security values use plain table text when descriptive. Workload update strategy uses a compact text-only semantic label: Rolling Update is Normal, Recreate is Warning, On Delete is Info, and unknown strategies use Unknown.
 - Inventory loading indicators use `components/loading_bar.html` and sit directly beneath the block header.
 - List services must not compute related-object counts that are not rendered in the current table. Related composition belongs in the detail endpoint.
 
@@ -87,7 +87,7 @@ All resource inventory pages use the shared KAORI table block, loading bar, filt
 - Inventory row identity icons are reserved for cluster identity and section-level context. Routine namespace, workload, Pod, owner, role, status, condition, label, and annotation values should remain text-only unless an icon materially improves identification.
 - Phase, readiness, restart, and lifecycle states may use compact semantic labels without icons. Pod restart tone is Normal at `0`, Warning at `1–4`, and Critical at `5+`, matching the canonical high-restart rule.
 - Kubernetes labels and annotations use compact wrap-safe text labels without decorative icons. Long annotation values must wrap inside the card boundary.
-- Type, image policy, volume type, mounted-container names, namespace, workload name, Pod name, and owner values use regular-weight text unless they are the primary cluster identity.
+- Image policy, volume type, and mounted-container names use regular-weight text. Workload/Pod namespace and primary operational values use semibold text for scanning consistency.
 - Topology detail status values are normalized to Title Case before presentation.
 
 
@@ -97,8 +97,8 @@ All resource inventory pages use the shared KAORI table block, loading bar, filt
 - Namespace Resource Quota and Pod Security values use semibold text, while their detailed Resource Controls content expands naturally without an internal scroll area.
 - Workload and Pod namespace cells reuse the Namespace identity icon without converting the namespace into a semantic badge.
 - Primary workload and Pod operational values use semibold typography; semantic state labels retain their status color.
-- Semantic badges inside the four-card View More summaries use the same 12px type scale as adjacent detail labels and values. Table badges retain the compact 10px scale.
-- Decorative icons are omitted from placement values, Host Network state, node-selector values, and section-count labels when the text already provides sufficient meaning.
+- Semantic and metadata badges inside View More summary cards use the same 12px type scale as adjacent detail labels and values. Table badges retain the compact 10px scale.
+- Decorative icons are omitted from placement values, Host Network state, node-selector values, and section-count labels when the text already provides sufficient meaning. Associated-resource timelines center connector lines on their status markers.
 
 - Service, Ingress, Storage, and Configuration tables present namespace/type/count fields as plain text; decorative row icons are reserved for cluster identity.
 - Semantic labels remain for lifecycle/status states only, and use tone without decorative icons unless an icon materially improves comprehension.

@@ -56,6 +56,7 @@ def test_workload_resource_cell_uses_namespace_identity_and_plain_state() -> Non
     assert "status_label(workload.state_display" not in content
     assert 'font-semibold leading-5 text-content-primary' in content
     assert 'font-semibold tabular-nums text-content-primary' in content
+    assert "status_label(workload.update_strategy or 'Unknown', strategy_tone)" in content
 
 
 def test_pod_resource_cell_uses_namespace_identity_and_semantic_phase() -> None:
@@ -67,6 +68,7 @@ def test_pod_resource_cell_uses_namespace_identity_and_semantic_phase() -> None:
     assert "metadata_label(pod.namespace" not in content
     assert "status_label(pod.status or 'Unknown', phase_tone)" in content
     assert 'font-semibold leading-5 text-content-primary' in content
+    assert 'title="{{ pod.namespace }}">{{ pod.namespace }}</span>' in content
     assert 'phase_icon' not in content
     assert 'ready_icon' not in content
     assert 'restart_tone' in content

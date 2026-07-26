@@ -74,7 +74,7 @@
                                 <div class="min-w-0 flex-1">
                                     <div class="flex items-center justify-between gap-3">
                                         <span class="text-xs font-semibold text-content-primary">Published Hosts</span>
-                                        {{ table_label.metadata_label(ingress.host_count ~ ' hosts') }}
+                                        {{ table_label.metadata_label(ingress.host_count ~ ' hosts', none, false, 'detail') }}
                                     </div>
                                     <div class="mt-2 space-y-1.5">
                                         {% for host in ingress.hosts %}
@@ -107,7 +107,7 @@
                                 <div class="min-w-0 flex-1">
                                     <div class="flex items-center justify-between gap-3">
                                         <span class="text-xs font-semibold text-content-primary">TLS Secret References</span>
-                                        {{ table_label.metadata_label(ingress.tls_entries|length ~ ' entries') }}
+                                        {{ table_label.metadata_label(ingress.tls_entries|length ~ ' entries', none, false, 'detail') }}
                                     </div>
                                     <div class="mt-2 space-y-2">
                                         {% for tls in ingress.tls_entries %}
@@ -136,7 +136,7 @@
                     {% if ingress.finalizers %}
                         {% call detail_object.card('Finalizers', ingress.finalizers|length ~ ' entries', 'lock-keyhole') %}
                             <div class="flex flex-wrap gap-1.5">
-                                {% for finalizer in ingress.finalizers %}{{ table_label.metadata_label(finalizer, 'lock-keyhole') }}{% endfor %}
+                                {% for finalizer in ingress.finalizers %}{{ table_label.metadata_label(finalizer, 'lock-keyhole', false, 'detail') }}{% endfor %}
                             </div>
                         {% endcall %}
                     {% else %}

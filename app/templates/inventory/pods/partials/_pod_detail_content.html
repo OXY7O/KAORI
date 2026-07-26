@@ -99,7 +99,7 @@
                             {% if pod.placement.topology_spread_count %}{{ detail_object.row('Topology spread', pod.placement.topology_spread_count) }}{% endif %}
                             {% if pod.placement.node_selector %}
                                 <div class="flex flex-wrap gap-1.5 pt-1">
-                                    {% for key, value in pod.placement.node_selector.items() %}{{ table_label.metadata_label(key ~ '=' ~ value) }}{% endfor %}
+                                    {% for key, value in pod.placement.node_selector.items() %}{{ table_label.metadata_label(key ~ '=' ~ value, none, false, 'detail') }}{% endfor %}
                                 </div>
                             {% endif %}
                         {% endcall %}
@@ -125,11 +125,11 @@
                                     <span class="truncate text-xs leading-5 text-content-muted"
                                           title="{{ condition.type }}">{{ condition.type }}</span>
                                     {% if condition.status == 'True' %}
-                                        {{ table_label.status_label('True', 'normal') }}
+                                        {{ table_label.status_label('True', 'normal', none, 'detail') }}
                                     {% elif condition.status == 'False' %}
-                                        {{ table_label.status_label('False', 'critical') }}
+                                        {{ table_label.status_label('False', 'critical', none, 'detail') }}
                                     {% else %}
-                                        {{ table_label.status_label(condition.status, 'unknown') }}
+                                        {{ table_label.status_label(condition.status, 'unknown', none, 'detail') }}
                                     {% endif %}
                                 </div>
                             {% endfor %}
@@ -196,15 +196,15 @@
                                     {% endif %}
                                     <tr class="align-top hover:bg-surface-hover">
                                         <td class="px-4 py-3 font-semibold text-content-primary">{{ container.name }}</td>
-                                        <td class="px-4 py-3">{{ table_label.metadata_label(container.kind) }}</td>
+                                        <td class="px-4 py-3">{{ table_label.metadata_label(container.kind, none, false, 'detail') }}</td>
                                         <td class="max-w-[380px] px-4 py-3">
                                             <p class="break-all font-medium leading-5 text-content-secondary"
                                                title="{{ container.image }}">{{ container.image }}</p>
-                                            <div class="mt-1">{{ table_label.metadata_label('Pull ' ~ container.pull_policy) }}</div>
+                                            <div class="mt-1">{{ table_label.metadata_label('Pull ' ~ container.pull_policy, none, false, 'detail') }}</div>
                                         </td>
-                                        <td class="px-4 py-3">{{ table_label.status_label('Ready' if container.ready else 'Not ready', 'normal' if container.ready else 'critical') }}</td>
+                                        <td class="px-4 py-3">{{ table_label.status_label('Ready' if container.ready else 'Not ready', 'normal' if container.ready else 'critical', none, 'detail') }}</td>
                                         <td class="px-4 py-3">
-                                            {{ table_label.status_label(container.state, container_tone) }}
+                                            {{ table_label.status_label(container.state, container_tone, none, 'detail') }}
                                             {% if container.reason %}
                                                 <p class="mt-1 max-w-[190px] break-words text-[10px] leading-4 text-content-muted">{{ container.reason }}</p>
                                             {% endif %}

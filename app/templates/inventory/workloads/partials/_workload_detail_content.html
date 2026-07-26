@@ -90,7 +90,7 @@
                             {% for row in workload.placement_summary_rows %}{{ detail_object.row(row.label, row.value) }}{% endfor %}
                             {% if workload.node_selectors %}
                                 <div class="flex flex-wrap gap-1.5 pt-1">
-                                    {% for selector in workload.node_selectors %}{{ table_label.metadata_label(selector) }}{% endfor %}
+                                    {% for selector in workload.node_selectors %}{{ table_label.metadata_label(selector, none, false, 'detail') }}{% endfor %}
                                 </div>
                             {% endif %}
                         {% endcall %}
@@ -165,8 +165,10 @@
                                 {% set pod_tone = "unknown" %}
                             {% endif %}
                             <div class="relative flex gap-3 pb-5 last:pb-0">
-                                {% if not loop.last %}<span class="absolute left-[5px] top-3 h-full w-px bg-outline-default"></span>{% endif %}
-                                <span class="relative mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full {% if pod_tone == 'normal' %}bg-status-normal-text{% elif pod_tone == 'pending' %}bg-status-pending-text{% elif pod_tone == 'critical' %}bg-status-critical-text{% else %}bg-status-unknown-text{% endif %}"></span>
+                                <div class="relative flex w-3 shrink-0 justify-center">
+                                    {% if not loop.last %}<span class="absolute bottom-0 left-1/2 top-2.5 w-px -translate-x-1/2 bg-outline-default"></span>{% endif %}
+                                    <span class="relative mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full {% if pod_tone == 'normal' %}bg-status-normal-text{% elif pod_tone == 'pending' %}bg-status-pending-text{% elif pod_tone == 'critical' %}bg-status-critical-text{% else %}bg-status-unknown-text{% endif %}"></span>
+                                </div>
                                 <div class="min-w-0 flex-1">
                                     <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                                         <span class="truncate text-xs font-semibold text-content-primary"

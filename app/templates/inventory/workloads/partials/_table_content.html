@@ -27,7 +27,7 @@
                             <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
                                 <i data-lucide="folder-tree" class="h-4 w-4"></i>
                             </span>
-                            <span class="min-w-0 truncate text-sm font-normal leading-5 text-content-secondary"
+                            <span class="min-w-0 truncate text-sm font-semibold leading-5 text-content-primary"
                                   title="{{ workload.namespace }}">{{ workload.namespace }}</span>
                         </div>
                     </td>
@@ -38,7 +38,17 @@
                     <td class="px-4 py-3.5 align-middle text-sm font-semibold leading-5 text-content-primary">{{ workload.type }}</td>
                     <td class="px-4 py-3.5 align-middle"><span class="text-sm font-semibold leading-5 text-content-primary">{{ workload.state_display }}</span></td>
                     <td class="px-4 py-3.5 align-middle text-sm font-semibold tabular-nums text-content-primary">{{ workload.pod_count }}</td>
-                    <td class="px-4 py-3.5 align-middle text-sm font-semibold leading-5 text-content-primary">{{ workload.update_strategy }}</td>
+                    {% set normalized_strategy = workload.update_strategy|default('', true)|lower|replace('_', ' ')|replace('-', ' ') %}
+                    {% if normalized_strategy in ['rollingupdate', 'rolling update'] %}
+                        {% set strategy_tone = 'normal' %}
+                    {% elif normalized_strategy == 'recreate' %}
+                        {% set strategy_tone = 'warning' %}
+                    {% elif normalized_strategy in ['ondelete', 'on delete'] %}
+                        {% set strategy_tone = 'info' %}
+                    {% else %}
+                        {% set strategy_tone = 'unknown' %}
+                    {% endif %}
+                    <td class="px-4 py-3.5 align-middle">{{ table_label.status_label(workload.update_strategy or 'Unknown', strategy_tone) }}</td>
                     <td class="px-4 py-3.5 text-right align-middle">
                         {{ expandable.toggle_button(
                             'inventory-workloads',
