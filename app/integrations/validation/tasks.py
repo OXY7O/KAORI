@@ -12,6 +12,11 @@ from app.extensions.db import db
 from app.integrations.lifecycle import ensure_canonical_instance, ensure_provider_operational
 from app.integrations.registry import execute_integration_operation, get_integration
 from app.integrations.runtime.repository import persist_runtime_state
+from app.integrations.runtime.recovery import (
+    enqueue_recovery_work,
+    is_runtime_recovery,
+    latest_runtime_health,
+)
 from app.integrations.validation.state import (
     claim_validation_job,
     get_active_validation_task_id,
@@ -807,6 +812,7 @@ def refresh_integration_runtime_instance(
         integration = get_integration(provider_type)
         instance = integration.get_instance(instance_id)
         ensure_provider_operational(instance, provider_type=provider_type)
+        previous_health = latest_runtime_health(instance.integration_instance_id)
         result_payload = integration.execute('runtime.health', instance)
         state = integration.adapter.get_state(instance, validation_result=result_payload)
         persist_runtime_state(
@@ -814,6 +820,12 @@ def refresh_integration_runtime_instance(
             trigger_type=trigger_type,
             integration_instance_id=instance.integration_instance_id,
         )
+        recovery_result = None
+        if is_runtime_recovery(previous_health, state.health.status):
+            recovery_result = enqueue_recovery_work(
+                provider_type=provider_type,
+                instance=instance,
+            )
         _update_worker_phase(
             self, current=2, total=3, message='Runtime health evidence was collected; persisting the observation.'
         )
@@ -826,6 +838,7 @@ def refresh_integration_runtime_instance(
             'health_status': state.health.status,
             'health_score': state.health.score,
             'readiness_status': state.readiness,
+            'recovery_refresh': recovery_result,
         }
         feedback = _record_completion(
             requested_by_user_id=requested_by_user_id,

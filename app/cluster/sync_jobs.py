@@ -95,7 +95,8 @@ def enqueue_all_cluster_inventory_sync(
 def enqueue_cluster_inventory_sync(
     *,
     cluster: Cluster,
-    requested_by_user_id: int,
+    requested_by_user_id: int | None,
+    trigger_type: str = 'manual',
 ) -> tuple[JobExecution, bool]:
     acquire_resource_admission_locks(f'kubernetes-cluster:{cluster.id}')
     current_cluster = Cluster.query.filter_by(id=cluster.id).populate_existing().first()
@@ -120,7 +121,7 @@ def enqueue_cluster_inventory_sync(
         scope_key=str(cluster.id),
         resource_group=f'kubernetes-cluster:{cluster.id}',
         parameters={'cluster_id': str(cluster.id), 'scope': 'single_cluster'},
-        payload={'cluster_id': str(cluster.id), 'cluster_name': cluster.name},
+        payload={'cluster_id': str(cluster.id), 'cluster_name': cluster.name, 'trigger_type': trigger_type},
         max_attempts=3,
     )
     created_at = job.queued_at.isoformat() if job.queued_at else _now_iso()
@@ -135,12 +136,13 @@ def enqueue_cluster_inventory_sync(
         'message': f'Synchronizing Kubernetes inventory for {cluster.name}.',
         'job_execution_id': job.id,
     }
-    try:
-        register_individual_sync_task(
-            task_id=str(job.celery_task_id),
-            user_id=requested_by_user_id,
-            metadata=metadata,
-        )
-    except Exception:
-        logger.exception('Could not persist supplemental cluster inventory-sync metadata.')
+    if requested_by_user_id is not None:
+        try:
+            register_individual_sync_task(
+                task_id=str(job.celery_task_id),
+                user_id=requested_by_user_id,
+                metadata=metadata,
+            )
+        except Exception:
+            logger.exception('Could not persist supplemental cluster inventory-sync metadata.')
     return job, created

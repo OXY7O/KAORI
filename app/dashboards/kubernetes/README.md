@@ -50,3 +50,9 @@ Kubernetes Operations Dashboard
 ```
 
 The `analytics.materialize` policy includes both dashboard and full-page alert datasets, always retains the dashboard-required 24-hour Capacity snapshot, and materializes one current Top Consumers snapshot per eligible cluster. `analytics.forecast.materialize` always retains the dashboard-required 30-day history; horizon, resource, and method are projected locally from that committed history.
+## Alert Source Failure Presentation and Recovery
+
+Dashboard alert snapshots never render raw provider exceptions, endpoint hostnames, query strings, or HTTP client traces. Alert source failures are converted into concise operator guidance, while technical evidence remains in server logs and integration runtime observations.
+
+Celery Beat checks enabled Kubernetes, Prometheus, and Alertmanager integrations through the dedicated runtime queue. When an integration transitions from an unhealthy state back to healthy, KAORI queues focused recovery work: Kubernetes recovery triggers a single-cluster inventory sync, while Prometheus or Alertmanager recovery refreshes the dashboard alert snapshot and the Alerts & Anomalies snapshot for each bound cluster. Recovery dispatch is best-effort and cannot turn a successful runtime health observation into a failure.
+

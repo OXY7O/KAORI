@@ -13,6 +13,11 @@ from app.analytics.alerts.ownership import (
     extract_alert_owner_from_payload,
     extract_alert_runbook_from_payload,
 )
+from app.analytics.alerts.source_messages import (
+    friendly_alert_fallback_reason,
+    friendly_alert_source_error,
+    friendly_combined_alert_error,
+)
 from app.integrations.prometheus.exceptions import PrometheusError
 from app.integrations.prometheus.query_profiles import get_query_expression
 from app.models import Cluster
@@ -443,6 +448,13 @@ def load_alertmanager_alerts(
             )
         )
 
+        raw_error = result.get('error')
+        if raw_error and not connected:
+            logger.warning(
+                'Alertmanager alert loading failed for cluster %s: %s',
+                cluster.id,
+                raw_error,
+            )
         source_status: AlertSourceStatus = {
             'source': 'alertmanager',
             'selected_source': 'alertmanager',
@@ -462,8 +474,10 @@ def load_alertmanager_alerts(
             'connected': connected,
             'fallback_used': False,
             'fallback_reason': None,
-            'error': result.get(
-                'error',
+            'error': (
+                friendly_alert_source_error(raw_error, source_label='Alertmanager')
+                if raw_error and not connected
+                else None
             ),
             'response_time_ms': elapsed_ms,
             'last_checked_at': datetime.now(
@@ -490,7 +504,7 @@ def load_alertmanager_alerts(
             'connected': False,
             'fallback_used': False,
             'fallback_reason': None,
-            'error': error_message,
+            'error': friendly_alert_source_error(error_message, source_label='Alertmanager'),
             'response_time_ms': elapsed_ms,
             'last_checked_at': datetime.now(
                 UTC,
@@ -557,6 +571,7 @@ def load_prometheus_alerts(
         }
 
     except PrometheusError as exc:
+        logger.warning('Prometheus alert loading failed for cluster %s: %s', cluster.id, exc)
         return [], {
             'source': 'prometheus',
             'selected_source': 'prometheus',
@@ -566,13 +581,12 @@ def load_prometheus_alerts(
             'connected': False,
             'fallback_used': False,
             'fallback_reason': None,
-            'error': str(
-                exc,
-            ),
+            'error': friendly_alert_source_error(exc, source_label='Prometheus'),
             'response_time_ms': None,
             'last_checked_at': None,
         }
     except Exception as exc:
+        logger.exception('Unexpected Prometheus alert loading failure for cluster %s.', cluster.id)
         return [], {
             'source': 'prometheus',
             'selected_source': 'prometheus',
@@ -582,9 +596,7 @@ def load_prometheus_alerts(
             'connected': False,
             'fallback_used': False,
             'fallback_reason': None,
-            'error': str(
-                exc,
-            ),
+            'error': friendly_alert_source_error(exc, source_label='Prometheus'),
             'response_time_ms': None,
             'last_checked_at': None,
         }
@@ -670,8 +682,9 @@ def load_alerts_by_source(
 
     prometheus_status['selected_source'] = 'auto'
     prometheus_status['fallback_used'] = True
-    prometheus_status['fallback_reason'] = (
-        f'Alertmanager unavailable: {alertmanager_reason}. Using Prometheus ALERTS fallback.'
+    prometheus_status['fallback_reason'] = friendly_alert_fallback_reason(
+        primary_available=False,
+        fallback_available=bool(prometheus_status.get('connected')),
     )
 
     if prometheus_status.get(
@@ -685,6 +698,12 @@ def load_alerts_by_source(
     prometheus_reason = get_source_status_message(
         prometheus_status,
         default='Prometheus fallback is unavailable.',
+    )
+    logger.warning(
+        'All alert sources are unavailable for cluster %s. Alertmanager: %s Prometheus: %s',
+        cluster.id,
+        alertmanager_reason,
+        prometheus_reason,
     )
 
     return [], {
@@ -706,8 +725,11 @@ def load_alerts_by_source(
         ),
         'connected': False,
         'fallback_used': True,
-        'fallback_reason': (f'Alertmanager unavailable: {alertmanager_reason}. Prometheus fallback also unavailable.'),
-        'error': f'{alertmanager_reason} | {prometheus_reason}',
+        'fallback_reason': friendly_alert_fallback_reason(
+            primary_available=False,
+            fallback_available=False,
+        ),
+        'error': friendly_combined_alert_error(),
         'response_time_ms': None,
         'last_checked_at': datetime.now(
             UTC,

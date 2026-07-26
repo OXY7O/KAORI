@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.analytics.alerts.source_messages import friendly_combined_alert_error
 from app.dashboards.kubernetes.schema import AlertItem, AlertsSnapshot
 
 
@@ -32,11 +33,16 @@ def build_alerts_snapshot(*, context: dict[str, Any] | None, unavailable_reason:
         if isinstance(item, dict)
     ]
     connected = bool(context.get('source_connected'))
+    message = (
+        str(context.get('message') or 'Alert source connected.')
+        if connected
+        else friendly_combined_alert_error()
+    )
     return AlertsSnapshot(
         critical=int(context.get('critical') or 0),
         warning=int(context.get('warning') or 0),
         info=int(context.get('info') or 0),
         items=items,
         source_status='Available' if connected else 'Unavailable',
-        message=str(context.get('message') or unavailable_reason),
+        message=message,
     )

@@ -243,7 +243,7 @@ def sync_single_cluster_task(
     self,
     *,
     cluster_id: str,
-    requested_by_user_id: int,
+    requested_by_user_id: int | None,
     job_execution_id: int | None = None,
 ) -> dict[str, Any]:
     task_id = str(self.request.id)
@@ -298,22 +298,23 @@ def sync_single_cluster_task(
             'error_type': type(exc).__name__,
         }
 
-    create_notification(
-        user_id=requested_by_user_id,
-        event_type='kubernetes_inventory_sync',
-        status=result['status'],
-        title=result['title'],
-        message=result['message'],
-        detail=result['detail'],
-        action_url='/integrations/kubernetes',
-        metadata={
-            'task_id': task_id,
-            'job_execution_id': job_execution_id,
-            'cluster_id': cluster_id,
-            'cluster_name': cluster_name,
-            'scope': 'single_cluster',
-            'duration_seconds': result['duration_seconds'],
-        },
-    )
+    if requested_by_user_id is not None:
+        create_notification(
+            user_id=requested_by_user_id,
+            event_type='kubernetes_inventory_sync',
+            status=result['status'],
+            title=result['title'],
+            message=result['message'],
+            detail=result['detail'],
+            action_url='/integrations/kubernetes',
+            metadata={
+                'task_id': task_id,
+                'job_execution_id': job_execution_id,
+                'cluster_id': cluster_id,
+                'cluster_name': cluster_name,
+                'scope': 'single_cluster',
+                'duration_seconds': result['duration_seconds'],
+            },
+        )
     _store_single(task_id, result)
     return result
