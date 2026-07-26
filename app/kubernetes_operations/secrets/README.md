@@ -209,6 +209,7 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 ### Shared action-bar contract
 
 - ConfigMap and Secret templates import `kubernetes_operations/_components.html` directly; domain-specific component wrappers are not retained.
+- Templates that call shared semantic-label macros import `components/table_label.html` explicitly; imported Jinja aliases are not inherited from layouts or sibling partials.
 - The canonical `action_bar` macro owns call-block rendering so validation and mutation controls use one runtime-safe implementation.
 - Direct component ownership and wrapper absence are covered by `tests/contracts/kubernetes/test_operation_component_caller_contract.py`.
 
