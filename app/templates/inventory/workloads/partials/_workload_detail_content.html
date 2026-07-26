@@ -19,7 +19,7 @@
                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
                 {{ title }}
             </div>
-            {% if badge %}{{ table_label.metadata_label(badge) }}{% endif %}
+            {% if badge %}{{ table_label.metadata_label(badge, none, false, 'detail') }}{% endif %}
         </div>
         <div class="flex min-h-0 flex-1 flex-col gap-2.5">{{ caller() }}</div>
     </section>
@@ -90,7 +90,7 @@
                             {% for row in workload.placement_summary_rows %}{{ detail_object.row(row.label, row.value) }}{% endfor %}
                             {% if workload.node_selectors %}
                                 <div class="flex flex-wrap gap-1.5 pt-1">
-                                    {% for selector in workload.node_selectors %}{{ table_label.metadata_label(selector, 'crosshair') }}{% endfor %}
+                                    {% for selector in workload.node_selectors %}{{ table_label.metadata_label(selector) }}{% endfor %}
                                 </div>
                             {% endif %}
                         {% endcall %}
@@ -111,7 +111,7 @@
                             <p class="text-xs leading-5 text-content-muted">Images declared by regular and init containers.</p>
                         </div>
                     </div>
-                    {{ table_label.metadata_label(workload.containers|length ~ ' images', 'image') }}
+                    {{ table_label.metadata_label(workload.containers|length ~ ' images') }}
                 </header>
                 {% if workload.containers %}
                     <div class="overflow-x-auto">

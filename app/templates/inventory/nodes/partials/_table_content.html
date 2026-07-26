@@ -36,12 +36,12 @@
                                   title="{{ node.node_name }}">{{ node.node_name }}</span>
                         </div>
                     </td>
-                    <td class="px-4 py-3.5 align-middle text-sm leading-5 text-content-secondary">{{ node.internal_ip or '-' }}</td>
+                    <td class="px-4 py-3.5 align-middle text-sm font-semibold leading-5 text-content-primary">{{ node.internal_ip or '-' }}</td>
                     <td class="px-4 py-3.5 align-middle">{{ table_label.status_label(node.status_display, status_tone) }}</td>
                     <td class="px-4 py-3.5 align-middle">{{ table_label.status_label(role_display, role_tone) }}</td>
-                    <td class="px-4 py-3.5 align-middle text-sm leading-5 text-content-secondary">{{ node.cpu or '-' }}</td>
-                    <td class="px-4 py-3.5 align-middle text-sm leading-5 text-content-secondary">{{ node.memory_display }}</td>
-                    <td class="px-4 py-3.5 align-middle text-sm leading-5 text-content-secondary">{{ node.ephemeral_storage_display }}</td>
+                    <td class="px-4 py-3.5 align-middle text-sm font-semibold leading-5 text-content-primary">{{ node.cpu or '-' }}</td>
+                    <td class="px-4 py-3.5 align-middle text-sm font-semibold leading-5 text-content-primary">{{ node.memory_display }}</td>
+                    <td class="px-4 py-3.5 align-middle text-sm font-semibold leading-5 text-content-primary">{{ node.ephemeral_storage_display }}</td>
                     <td class="px-4 py-3.5 text-right align-middle">
                         {{ expandable.toggle_button(
                             'inventory-nodes',

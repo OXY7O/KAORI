@@ -34,9 +34,9 @@
             </div>
             {% if badge %}
                 {% if badge_type == 'status' %}
-                    {{ table_label.status_label(badge, badge_tone) }}
+                    {{ table_label.status_label(badge, badge_tone, none, 'detail') }}
                 {% else %}
-                    {{ table_label.metadata_label(badge) }}
+                    {{ table_label.metadata_label(badge, none, false, 'detail') }}
                 {% endif %}
             {% endif %}
         </div>
@@ -78,7 +78,7 @@
                 {{ detail_row('Scheduled Pods', node.scheduled_pod_count) }}
                 <div class="flex items-start justify-between gap-3">
                     <span class="text-xs leading-5 text-content-muted">Network Availability</span>
-                    {{ table_label.status_label(node.network_availability, network_tone) }}
+                    {{ table_label.status_label(node.network_availability, network_tone, none, 'detail') }}
                 </div>
                 {{ detail_tip('Internal IP is the cluster address; External IP may be empty on private nodes.', 'network') }}
             {% endcall %}
@@ -93,18 +93,18 @@
                 {% set scheduling_tone = 'normal' if node.scheduling_display == 'Schedulable' else ('warning' if node.scheduling_display == 'Cordoned' else 'unknown') %}
                 <div class="flex items-start justify-between gap-3">
                     <span class="text-xs leading-5 text-content-muted">Scheduling</span>
-                    {{ table_label.status_label(node.scheduling_display, scheduling_tone) }}
+                    {{ table_label.status_label(node.scheduling_display, scheduling_tone, none, 'detail') }}
                 </div>
                 {% set ready_tone = 'normal' if node.ready_condition == 'Ready' else ('critical' if node.ready_condition == 'Not Ready' else 'unknown') %}
                 <div class="flex items-start justify-between gap-3">
                     <span class="text-xs leading-5 text-content-muted">Ready</span>
-                    {{ table_label.status_label(node.ready_condition, ready_tone) }}
+                    {{ table_label.status_label(node.ready_condition, ready_tone, none, 'detail') }}
                 </div>
                 {% for label, value in [('Memory Pressure', node.memory_pressure), ('Disk Pressure', node.disk_pressure), ('PID Pressure', node.pid_pressure)] %}
                     {% set pressure_tone = 'critical' if value == 'Pressure Detected' else ('normal' if value == 'Normal' else 'unknown') %}
                     <div class="flex items-start justify-between gap-3">
                         <span class="text-xs leading-5 text-content-muted">{{ label }}</span>
-                        {{ table_label.status_label(value, pressure_tone) }}
+                        {{ table_label.status_label(value, pressure_tone, none, 'detail') }}
                     </div>
                 {% endfor %}
                 <div class="pt-1">
@@ -112,11 +112,11 @@
                     {% if node.taints %}
                         <div class="flex flex-wrap gap-1.5">
                             {% for taint in node.taints %}
-                                {{ table_label.status_label(taint, 'warning') }}
+                                {{ table_label.status_label(taint, 'warning', none, 'detail') }}
                             {% endfor %}
                         </div>
                     {% else %}
-                        {{ table_label.metadata_label("No Taints") }}
+                        {{ table_label.metadata_label("No Taints", none, false, 'detail') }}
                     {% endif %}
                 </div>
                 {{ inventory_tip.tip('Conditions show current readiness, pressure, and scheduling state.', 'activity', true) }}

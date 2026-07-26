@@ -1,4 +1,4 @@
-{% macro status_label(text, tone='info', icon=None) -%}
+{% macro status_label(text, tone='info', icon=None, size='compact') -%}
     {% set normalized_tone = tone|default('info', true)|lower|replace(' ', '_') %}
     {% if normalized_tone in ['ready', 'healthy', 'normal', 'success', 'succeeded', 'operational'] %}
         {% set semantic_tone = 'normal' %}
@@ -15,7 +15,7 @@
     {% else %}
         {% set semantic_tone = 'unknown' %}
     {% endif %}
-    <span class="kaori-semantic-label inline-flex min-h-6 items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold leading-4 {% if semantic_tone == 'normal' %}bg-status-normal-soft text-status-normal-text {% elif semantic_tone == 'warning' %}bg-status-warning-soft text-status-warning-text {% elif semantic_tone == 'critical' %}bg-status-critical-soft text-status-critical-text {% elif semantic_tone == 'unknown' %}bg-status-unknown-soft text-status-unknown-text {% elif semantic_tone == 'maintenance' %}bg-kaori-soft text-kaori-primary {% else %}bg-status-info-soft text-status-info-text{% endif %}">
+    <span class="kaori-semantic-label inline-flex min-h-6 items-center gap-1 rounded-md px-2 py-0.5 font-semibold {{ 'text-xs leading-5' if size == 'detail' else 'text-[10px] leading-4' }} {% if semantic_tone == 'normal' %}bg-status-normal-soft text-status-normal-text {% elif semantic_tone == 'warning' %}bg-status-warning-soft text-status-warning-text {% elif semantic_tone == 'critical' %}bg-status-critical-soft text-status-critical-text {% elif semantic_tone == 'unknown' %}bg-status-unknown-soft text-status-unknown-text {% elif semantic_tone == 'maintenance' %}bg-kaori-soft text-kaori-primary {% else %}bg-status-info-soft text-status-info-text{% endif %}">
         {% if icon %}
             <i data-lucide="{{ icon }}"
                class="h-3 w-3 shrink-0 {% if semantic_tone == 'normal' %}text-status-normal{% elif semantic_tone == 'warning' %}text-status-warning{% elif semantic_tone == 'critical' %}text-status-critical{% elif semantic_tone == 'unknown' %}text-status-unknown{% elif semantic_tone == 'maintenance' %}text-kaori-primary{% else %}text-status-info{% endif %}"
@@ -24,8 +24,8 @@
         <span>{{ text }}</span>
     </span>
 {%- endmacro %}
-{% macro metadata_label(text, icon=None, wrap=false) -%}
-    <span class="kaori-semantic-label inline-flex min-h-6 max-w-full items-center gap-1 rounded-md bg-kaori-soft px-2 py-0.5 text-[10px] font-semibold leading-4 text-kaori-primary-dark">
+{% macro metadata_label(text, icon=None, wrap=false, size='compact') -%}
+    <span class="kaori-semantic-label inline-flex min-h-6 max-w-full items-center gap-1 rounded-md bg-kaori-soft px-2 py-0.5 font-semibold {{ 'text-xs leading-5' if size == 'detail' else 'text-[10px] leading-4' }} text-kaori-primary-dark">
         {% if icon %}
             <i data-lucide="{{ icon }}"
                class="h-3 w-3 shrink-0 text-kaori-primary"

@@ -35,13 +35,13 @@
                     <td class="px-4 py-3.5 align-middle">{{ table_label.status_label(namespace.status, status_tone) }}</td>
                     <td class="px-4 py-3.5 align-middle">
                         {% if namespace.quota_count > 0 %}
-                            <span class="text-sm font-normal leading-5 text-content-secondary">Configured{% if namespace.quota_count > 1 %} · {{ namespace.quota_count }}{% endif %}</span>
+                            <span class="text-sm font-semibold leading-5 text-content-primary">Configured{% if namespace.quota_count > 1 %} · {{ namespace.quota_count }}{% endif %}</span>
                         {% else %}
-                            <span class="text-sm font-normal leading-5 text-content-muted">Not Configured</span>
+                            <span class="text-sm font-semibold leading-5 text-content-muted">Not Configured</span>
                         {% endif %}
                     </td>
                     <td class="px-4 py-3.5 align-middle">
-                        <div class="max-w-full space-y-1 text-sm font-normal leading-5 text-content-secondary">
+                        <div class="max-w-full space-y-1 text-sm font-semibold leading-5 text-content-primary">
                             {% if namespace.pod_security_enforce %}
                                 <div>Enforce: {{ namespace.pod_security_enforce|title }}</div>
                             {% endif %}

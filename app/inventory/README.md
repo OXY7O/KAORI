@@ -89,3 +89,14 @@ All resource inventory pages use the shared KAORI table block, loading bar, filt
 - Kubernetes labels and annotations use compact wrap-safe text labels without decorative icons. Long annotation values must wrap inside the card boundary.
 - Type, image policy, volume type, mounted-container names, namespace, workload name, Pod name, and owner values use regular-weight text unless they are the primary cluster identity.
 - Topology detail status values are normalized to Title Case before presentation.
+
+
+### Table and Detail Typography
+
+- Node capacity identity values (Internal IP, CPU, Memory, and Storage) use semibold primary text for fast operational scanning.
+- Namespace Resource Quota and Pod Security values use semibold text, while their detailed Resource Controls content expands naturally without an internal scroll area.
+- Workload and Pod namespace cells reuse the Namespace identity icon without converting the namespace into a semantic badge.
+- Primary workload and Pod operational values use semibold typography; semantic state labels retain their status color.
+- Semantic badges inside the four-card View More summaries use the same 12px type scale as adjacent detail labels and values. Table badges retain the compact 10px scale.
+- Decorative icons are omitted from placement values, Host Network state, node-selector values, and section-count labels when the text already provides sufficient meaning.
+

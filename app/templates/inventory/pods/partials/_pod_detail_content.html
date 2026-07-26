@@ -12,7 +12,7 @@
 {% macro status_row(label, value, tone='unknown', icon=None) -%}
     <div class="flex items-start justify-between gap-3">
         <span class="shrink-0 text-xs font-normal leading-5 text-content-muted">{{ label }}</span>
-        {{ table_label.status_label(value, tone, icon) }}
+        {{ table_label.status_label(value, tone, icon, 'detail') }}
     </div>
 {%- endmacro %}
 {% macro info_box(title, message, icon='info', tone='brand', equal_height=false) -%}
@@ -25,7 +25,7 @@
                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
                 {{ title }}
             </div>
-            {% if badge %}{{ table_label.metadata_label(badge) }}{% endif %}
+            {% if badge %}{{ table_label.metadata_label(badge, none, false, 'detail') }}{% endif %}
         </div>
         <div class="flex min-h-0 flex-1 flex-col gap-2.5">{{ caller() }}</div>
     </section>
@@ -88,7 +88,7 @@
                 {{ detail_row('Priority Class', pod.placement.priority_class) }}
                 {{ detail_row('Topology Spread', pod.placement.topology_spread_count) }}
                 {{ status_row('Affinity', 'Configured' if pod.placement.affinity_configured else 'Not configured', 'info' if pod.placement.affinity_configured else 'unknown') }}
-                {{ status_row('Host network', 'Enabled' if pod.placement.host_network else 'Disabled', 'warning' if pod.placement.host_network else 'disabled', 'network' if pod.placement.host_network else 'circle-minus') }}
+                {{ status_row('Host network', 'Enabled' if pod.placement.host_network else 'Disabled', 'warning' if pod.placement.host_network else 'disabled') }}
                 {% call detail_object.stack() %}
                     {% set placement_constraint_count = (pod.placement.node_selector|length) + (pod.placement.tolerations|length) + (1 if pod.placement.affinity_configured else 0) + pod.placement.topology_spread_count %}
                     {% if placement_constraint_count > 0 %}
@@ -99,7 +99,7 @@
                             {% if pod.placement.topology_spread_count %}{{ detail_object.row('Topology spread', pod.placement.topology_spread_count) }}{% endif %}
                             {% if pod.placement.node_selector %}
                                 <div class="flex flex-wrap gap-1.5 pt-1">
-                                    {% for key, value in pod.placement.node_selector.items() %}{{ table_label.metadata_label(key ~ '=' ~ value, 'scan-search') }}{% endfor %}
+                                    {% for key, value in pod.placement.node_selector.items() %}{{ table_label.metadata_label(key ~ '=' ~ value) }}{% endfor %}
                                 </div>
                             {% endif %}
                         {% endcall %}
@@ -237,7 +237,7 @@
                             <p class="mt-0.5 text-xs text-content-muted">Volume type, source reference, and containers using each mount.</p>
                         </div>
                     </div>
-                    {{ table_label.metadata_label(pod.volumes|length ~ ' volumes', 'database') }}
+                    {{ table_label.metadata_label(pod.volumes|length ~ ' volumes') }}
                 </header>
                 {% if pod.volumes %}
                     <div class="overflow-x-auto">

@@ -42,24 +42,28 @@ def test_node_resource_cell_keeps_two_line_icon_container() -> None:
     assert 'node.hostname_address' not in content
 
 
-def test_workload_resource_cell_uses_text_only_identity_and_plain_state() -> None:
+def test_workload_resource_cell_uses_namespace_identity_and_plain_state() -> None:
     content = _table('workloads')
 
     assert 'data-lucide="boxes"' not in content
-    assert 'flex h-7 w-7 shrink-0 items-center justify-center rounded-md' not in content
+    assert 'data-lucide="folder-tree"' in content
+    assert 'flex h-7 w-7 shrink-0 items-center justify-center rounded-md' in content
+    assert "metadata_label(workload.namespace" not in content
     assert '{{ workload.state_display }}' in content
     assert "status_label(workload.state_display" not in content
-    assert '{{ workload.type }}' in content
-    assert '{{ workload.update_strategy }}' in content
+    assert 'font-semibold leading-5 text-content-primary' in content
+    assert 'font-semibold tabular-nums text-content-primary' in content
 
 
-def test_pod_resource_cell_uses_text_only_identity_and_semantic_phase() -> None:
+def test_pod_resource_cell_uses_namespace_identity_and_semantic_phase() -> None:
     content = _table('pods')
 
     assert 'data-lucide="package"' not in content
-    assert 'flex h-7 w-7 shrink-0 items-center justify-center rounded-md' not in content
+    assert 'data-lucide="folder-tree"' in content
+    assert 'flex h-7 w-7 shrink-0 items-center justify-center rounded-md' in content
     assert "metadata_label(pod.namespace" not in content
     assert "status_label(pod.status or 'Unknown', phase_tone)" in content
+    assert 'font-semibold leading-5 text-content-primary' in content
     assert 'phase_icon' not in content
     assert 'ready_icon' not in content
     assert 'restart_tone' in content

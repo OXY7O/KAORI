@@ -13,7 +13,7 @@
     <section class="flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-4 {{ class_name }}">
         <div class="mb-4 flex items-center justify-between gap-3">
             <div class="flex items-center gap-2 text-sm font-semibold text-content-primary"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>{{ title }}</div>
-            {% if badge %}{{ table_label.metadata_label(badge) }}{% endif %}
+            {% if badge %}{{ table_label.metadata_label(badge, none, false, 'detail') }}{% endif %}
         </div>
         <div class="flex min-h-0 flex-1 flex-col gap-2.5">{{ caller() }}</div>
     </section>
@@ -68,7 +68,7 @@
                     {% if item.conditions %}
                         {% call detail_object.card('Reported conditions', item.conditions|length ~ ' conditions', 'activity') %}
                             {% for condition in item.conditions %}
-                                <div class="flex items-center justify-between gap-3 text-xs leading-5"><span class="truncate text-content-muted">{{ condition.type }}</span>{{ table_label.status_label(condition.status, 'normal' if condition.status in ['True','Bound','Available'] else 'warning' if condition.status in ['False','Pending'] else 'unknown') }}</div>
+                                <div class="flex items-center justify-between gap-3 text-xs leading-5"><span class="truncate text-content-muted">{{ condition.type }}</span>{{ table_label.status_label(condition.status, 'normal' if condition.status in ['True','Bound','Available'] else 'warning' if condition.status in ['False','Pending'] else 'unknown', none, 'detail') }}</div>
                             {% endfor %}
                         {% endcall %}
                     {% else %}
