@@ -5,6 +5,7 @@ from types import SimpleNamespace
 from app.analytics import job_adapter
 from app.dashboards.kubernetes import service, snapshot_builder
 from app.dashboards.kubernetes.schema import AlertsSnapshot, CapacityItem, CapacitySnapshot, InventorySnapshot
+from app.dashboards.kubernetes.sections.cluster_health import build_cluster_health
 from app.dashboards.kubernetes.sections.forecast import build_forecast_snapshot
 from app.dashboards.kubernetes.snapshot_builder import build_dashboard_alerts_context
 
@@ -91,6 +92,34 @@ def test_cluster_health_reads_capacity_and_alert_snapshots_only(monkeypatch) -> 
     assert captured['alerts_by_cluster']['cluster-1'].critical == 1
     assert captured['nodes_by_cluster'] == {}
     assert captured['pods_by_cluster'] == {}
+
+
+def test_cluster_health_reads_endpoint_from_canonical_kubernetes_connection() -> None:
+    cluster = SimpleNamespace(
+        id='cluster-1',
+        name='Primary',
+        status='connected',
+        kubernetes_connection=SimpleNamespace(server='https://k8s.example.test:6443'),
+    )
+
+    rows = build_cluster_health(clusters_raw=[cluster], selected_cluster_id=None)
+
+    assert len(rows) == 1
+    assert rows[0].cluster_endpoint == 'https://k8s.example.test:6443'
+
+
+def test_cluster_health_does_not_read_removed_cluster_server_field() -> None:
+    cluster = SimpleNamespace(
+        id='cluster-1',
+        name='Primary',
+        status='connected',
+        server='https://legacy.example.test:6443',
+        kubernetes_connection=None,
+    )
+
+    rows = build_cluster_health(clusters_raw=[cluster], selected_cluster_id=None)
+
+    assert rows[0].cluster_endpoint == 'Endpoint unavailable'
 
 
 def test_alert_materialization_builds_compact_worker_payload(monkeypatch) -> None:

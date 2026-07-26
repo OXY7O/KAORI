@@ -24,6 +24,7 @@ Examples:
 - Top Consumers reads one top-consumer snapshot only.
 - Forecast reads one forecast snapshot only.
 - Cluster Health uses two set-based inventory queries for the visible clusters, then reads capacity and alert snapshots for those rows.
+- Cluster Health reads the API endpoint from the canonical `Cluster.kubernetes_connection.server` relationship; it never reads the removed legacy `Cluster.server` field. Missing binding metadata is presented as `Endpoint unavailable` and does not independently mark the cluster unhealthy.
 - KPI cards use database count aggregates rather than hydrating full inventory tables.
 - Data Freshness reads database timestamps and snapshot state; it does not execute a health query against an integration.
 - Recommended Actions does not hydrate analytics snapshots.

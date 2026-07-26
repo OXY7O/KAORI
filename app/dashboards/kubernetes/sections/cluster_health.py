@@ -144,7 +144,7 @@ def build_cluster_health(
             get_attr(cluster, 'last_check', 'updated_at', 'created_at')
         )
 
-        endpoint = str(get_attr(cluster, 'server', default='') or '').strip() or 'Endpoint not detected'
+        endpoint = _cluster_endpoint(cluster)
         rows.append(
             ClusterHealthRow(
                 cluster_id=cluster_id,
@@ -166,6 +166,17 @@ def build_cluster_health(
         )
 
     return rows
+
+
+def _cluster_endpoint(cluster: Any) -> str:
+    """Return the API server from the canonical Kubernetes connection."""
+    try:
+        connection = get_attr(cluster, 'kubernetes_connection', default=None)
+        endpoint = str(get_attr(connection, 'server', default='') or '').strip()
+    except Exception:
+        endpoint = ''
+
+    return endpoint or 'Endpoint unavailable'
 
 
 def _capacity_percent(snapshot: CapacitySnapshot | None, label: str) -> float | None:
