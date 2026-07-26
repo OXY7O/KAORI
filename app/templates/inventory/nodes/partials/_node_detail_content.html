@@ -112,7 +112,7 @@
                     {% if node.taints %}
                         <div class="flex flex-wrap gap-1.5">
                             {% for taint in node.taints %}
-                                {{ table_label.status_label(taint, 'warning', 'triangle-alert') }}
+                                {{ table_label.status_label(taint, 'warning') }}
                             {% endfor %}
                         </div>
                     {% else %}

@@ -67,7 +67,7 @@ All resource inventory pages use the shared KAORI table block, loading bar, filt
 ### Cross-Resource Visual Contract
 
 - Overview and resource summaries use one bordered data block with internal metric cells; do not reintroduce independent decorative cards.
-- Resource-name columns use `text-sm`, semibold primary text, and optional muted supporting text. Use an icon tile only where it materially improves identity; workload rows remain text-only and overview rows keep the icon only in the Cluster identity column.
+- Resource-name columns use `text-sm` with optional muted supporting text. Use semibold primary text only where the row identity needs emphasis; Workload and Pod rows use regular-weight text, remain icon-free, and overview rows keep the icon only in the Cluster identity column.
 - Table row actions use `components/table.html`; semantic labels are compact `rounded-md` labels, never pills. Inventory row labels default to text-only, with tone carrying status meaning instead of decorative icons.
 - Resource type, update strategy, quota, and Pod Security values use plain table text when the value is descriptive metadata rather than an operational state.
 - Inventory loading indicators use `components/loading_bar.html` and sit directly beneath the block header.
@@ -80,3 +80,12 @@ All resource inventory pages use the shared KAORI table block, loading bar, filt
 - Detail rows use `components/details/_expandable_row.html` and `app/static/js/detail_rows.js`; page-specific inline toggle scripts are not permitted.
 - Title Case applies to user-facing inventory metadata labels while Kubernetes identifiers and canonical resource names retain their original casing.
 - Remove page-specific partials after their callers migrate to shared components; do not retain unreferenced compatibility templates.
+
+
+## Presentation Contracts
+
+- Inventory row identity icons are reserved for cluster identity and section-level context. Routine namespace, workload, Pod, owner, role, status, condition, label, and annotation values should remain text-only unless an icon materially improves identification.
+- Phase, readiness, restart, and lifecycle states may use compact semantic labels without icons. Pod restart tone is Normal at `0`, Warning at `1–4`, and Critical at `5+`, matching the canonical high-restart rule.
+- Kubernetes labels and annotations use compact wrap-safe text labels without decorative icons. Long annotation values must wrap inside the card boundary.
+- Type, image policy, volume type, mounted-container names, namespace, workload name, Pod name, and owner values use regular-weight text unless they are the primary cluster identity.
+- Topology detail status values are normalized to Title Case before presentation.

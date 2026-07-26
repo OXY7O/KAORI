@@ -581,11 +581,16 @@
 
     const renderValueRows = (fields, type) => {
         const ui = getTypeUi(type)
-        return fields.map((field) => `
-            <div class="flex items-start justify-between gap-3 border-b border-outline-subtle py-2.5 last:border-b-0">
-                <dt class="text-xs font-normal text-content-muted">${escapeHtml(field.label)}</dt>
-                <dd class="max-w-[12rem] break-words text-right text-xs font-medium ${ui.value}">${escapeHtml(field.value)}</dd>
-            </div>`).join('')
+        return fields.map((field) => {
+            const displayValue = String(field.label || '').trim().toLowerCase() === 'status'
+                ? titleCaseText(field.value)
+                : field.value
+            return `
+                <div class="flex items-start justify-between gap-3 border-b border-outline-subtle py-2.5 last:border-b-0">
+                    <dt class="text-xs font-normal text-content-muted">${escapeHtml(field.label)}</dt>
+                    <dd class="max-w-[12rem] break-words text-right text-xs font-medium ${ui.value}">${escapeHtml(displayValue)}</dd>
+                </div>`
+        }).join('')
     }
 
     const renderRelationshipRows = (node) => {
@@ -861,7 +866,7 @@
                         <div class="min-w-0 flex-1">
                             <h4 class="break-words text-sm font-semibold text-content-primary">${escapeHtml(data.label || 'Relationship')}</h4>
                             <p class="mt-1 text-xs text-content-muted">Topology Relationship</p>
-                            <span class="mt-2 inline-flex min-h-6 items-center rounded-md border px-2 py-1 text-[10px] font-semibold ${ui.badge}">${escapeHtml(data.relationship)}</span>
+                            <span class="mt-2 inline-flex min-h-6 items-center rounded-md border px-2 py-1 text-[10px] font-semibold ${ui.badge}">${escapeHtml(titleCaseText(data.relationship))}</span>
                         </div>
                     </div>
                     ${data.description ? `<p class="mt-3 text-xs leading-5 text-content-secondary">${escapeHtml(data.description)}</p>` : ''}

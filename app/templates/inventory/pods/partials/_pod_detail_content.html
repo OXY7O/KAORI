@@ -9,7 +9,7 @@
               title="{{ display_value }}">{{ display_value }}</span>
     </div>
 {%- endmacro %}
-{% macro status_row(label, value, tone='unknown', icon='circle-help') -%}
+{% macro status_row(label, value, tone='unknown', icon=None) -%}
     <div class="flex items-start justify-between gap-3">
         <span class="shrink-0 text-xs font-normal leading-5 text-content-muted">{{ label }}</span>
         {{ table_label.status_label(value, tone, icon) }}
@@ -31,24 +31,24 @@
     </section>
 {%- endmacro %}
 {% if pod.status == 'Running' %}
-    {% set phase_tone = "normal" %}{% set phase_icon = "circle-check" %}
+    {% set phase_tone = "normal" %}
 {% elif pod.status == 'Pending' %}
-    {% set phase_tone = "pending" %}{% set phase_icon = "loader-circle" %}
+    {% set phase_tone = "pending" %}
 {% elif pod.status == 'Succeeded' %}
-    {% set phase_tone = "normal" %}{% set phase_icon = "badge-check" %}
+    {% set phase_tone = "normal" %}
 {% elif pod.status == 'Failed' %}
-    {% set phase_tone = "critical" %}{% set phase_icon = "circle-x" %}
+    {% set phase_tone = "critical" %}
 {% else %}
-    {% set phase_tone = "unknown" %}{% set phase_icon = "circle-help" %}
+    {% set phase_tone = "unknown" %}
 {% endif %}
 {% if pod.ready_total > 0 and pod.ready_count == pod.ready_total %}
-    {% set ready_tone = "normal" %}{% set ready_icon = "circle-check" %}
+    {% set ready_tone = "normal" %}
 {% elif pod.ready_count > 0 %}
-    {% set ready_tone = "warning" %}{% set ready_icon = "triangle-alert" %}
+    {% set ready_tone = "warning" %}
 {% elif pod.ready_total > 0 %}
-    {% set ready_tone = "critical" %}{% set ready_icon = "circle-x" %}
+    {% set ready_tone = "critical" %}
 {% else %}
-    {% set ready_tone = "unknown" %}{% set ready_icon = "circle-help" %}
+    {% set ready_tone = "unknown" %}
 {% endif %}
 <div class="bg-surface-hover px-4 py-4">
     <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-sm">
@@ -65,8 +65,8 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-                {{ table_label.metadata_label(pod.owner_type or 'Standalone', 'git-branch') }}
-                {{ table_label.status_label(pod.status or 'Unknown', phase_tone, phase_icon) }}
+                {{ table_label.metadata_label(pod.owner_type or 'Standalone') }}
+                {{ table_label.status_label(pod.status or 'Unknown', phase_tone) }}
             </div>
         </header>
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
@@ -87,7 +87,7 @@
                 {{ detail_row('Scheduler', pod.placement.scheduler) }}
                 {{ detail_row('Priority Class', pod.placement.priority_class) }}
                 {{ detail_row('Topology Spread', pod.placement.topology_spread_count) }}
-                {{ status_row('Affinity', 'Configured' if pod.placement.affinity_configured else 'Not configured', 'info' if pod.placement.affinity_configured else 'unknown', 'route' if pod.placement.affinity_configured else 'circle-minus') }}
+                {{ status_row('Affinity', 'Configured' if pod.placement.affinity_configured else 'Not configured', 'info' if pod.placement.affinity_configured else 'unknown') }}
                 {{ status_row('Host network', 'Enabled' if pod.placement.host_network else 'Disabled', 'warning' if pod.placement.host_network else 'disabled', 'network' if pod.placement.host_network else 'circle-minus') }}
                 {% call detail_object.stack() %}
                     {% set placement_constraint_count = (pod.placement.node_selector|length) + (pod.placement.tolerations|length) + (1 if pod.placement.affinity_configured else 0) + pod.placement.topology_spread_count %}
@@ -110,8 +110,8 @@
                 {% endcall %}
             {% endcall %}
             {% call detail_card('Pod Conditions', 'activity', pod.ready, 'min-h-[32rem]') %}
-                {{ status_row('Phase', pod.status or 'Unknown', phase_tone, phase_icon) }}
-                {{ status_row('Ready containers', pod.ready, ready_tone, ready_icon) }}
+                {{ status_row('Phase', pod.status or 'Unknown', phase_tone) }}
+                {{ status_row('Ready containers', pod.ready, ready_tone) }}
                 {{ detail_row('Regular Containers', pod.configuration.container_count) }}
                 {{ detail_row('Init Containers', pod.configuration.init_container_count) }}
                 {{ detail_row('Restarts', pod.restarts) }}
@@ -125,11 +125,11 @@
                                     <span class="truncate text-xs leading-5 text-content-muted"
                                           title="{{ condition.type }}">{{ condition.type }}</span>
                                     {% if condition.status == 'True' %}
-                                        {{ table_label.status_label('True', 'normal', 'check') }}
+                                        {{ table_label.status_label('True', 'normal') }}
                                     {% elif condition.status == 'False' %}
-                                        {{ table_label.status_label('False', 'critical', 'x') }}
+                                        {{ table_label.status_label('False', 'critical') }}
                                     {% else %}
-                                        {{ table_label.status_label(condition.status, 'unknown', 'circle-help') }}
+                                        {{ table_label.status_label(condition.status, 'unknown') }}
                                     {% endif %}
                                 </div>
                             {% endfor %}
@@ -148,7 +148,7 @@
                 {{ detail_row('Restart Policy', pod.configuration.restart_policy) }}
                 {{ detail_row('DNS Policy', pod.configuration.dns_policy) }}
                 {{ detail_row('Runtime Class', pod.configuration.runtime_class) }}
-                {{ status_row('Security context', 'Configured' if pod.configuration.security_context_configured else 'Not configured', 'info' if pod.configuration.security_context_configured else 'unknown', 'shield-check' if pod.configuration.security_context_configured else 'circle-minus') }}
+                {{ status_row('Security context', 'Configured' if pod.configuration.security_context_configured else 'Not configured', 'info' if pod.configuration.security_context_configured else 'unknown') }}
                 {{ detail_row('Image Pull Secrets', pod.configuration.image_pull_secret_count) }}
                 {{ detail_row('Volumes', pod.configuration.volume_count) }}
                 {{ detail_row('Regular Containers', pod.configuration.container_count) }}
@@ -167,7 +167,7 @@
                             <p class="mt-0.5 text-xs text-content-muted">Image references, readiness, runtime state, and restart counters for regular and init containers.</p>
                         </div>
                     </div>
-                    {{ table_label.metadata_label(pod.container_statuses|length ~ ' entries', 'boxes') }}
+                    {{ table_label.metadata_label(pod.container_statuses|length ~ ' entries') }}
                 </header>
                 {% if pod.container_statuses %}
                     <div class="overflow-x-auto">
@@ -186,25 +186,25 @@
                             <tbody class="divide-y divide-outline-subtle">
                                 {% for container in pod.container_statuses %}
                                     {% if container.state == 'Running' %}
-                                        {% set container_tone = "normal" %}{% set container_icon = "circle-check" %}
+                                        {% set container_tone = "normal" %}
                                     {% elif container.state == 'Waiting' %}
-                                        {% set container_tone = "pending" %}{% set container_icon = "loader-circle" %}
+                                        {% set container_tone = "pending" %}
                                     {% elif container.state == 'Terminated' %}
-                                        {% set container_tone = "info" %}{% set container_icon = "circle-stop" %}
+                                        {% set container_tone = "info" %}
                                     {% else %}
-                                        {% set container_tone = "unknown" %}{% set container_icon = "circle-help" %}
+                                        {% set container_tone = "unknown" %}
                                     {% endif %}
                                     <tr class="align-top hover:bg-surface-hover">
                                         <td class="px-4 py-3 font-semibold text-content-primary">{{ container.name }}</td>
-                                        <td class="px-4 py-3">{{ table_label.metadata_label(container.kind, 'box') }}</td>
+                                        <td class="px-4 py-3">{{ table_label.metadata_label(container.kind) }}</td>
                                         <td class="max-w-[380px] px-4 py-3">
                                             <p class="break-all font-medium leading-5 text-content-secondary"
                                                title="{{ container.image }}">{{ container.image }}</p>
-                                            <div class="mt-1">{{ table_label.metadata_label('Pull ' ~ container.pull_policy, 'download') }}</div>
+                                            <div class="mt-1">{{ table_label.metadata_label('Pull ' ~ container.pull_policy) }}</div>
                                         </td>
-                                        <td class="px-4 py-3">{{ table_label.status_label('Ready' if container.ready else 'Not ready', 'normal' if container.ready else 'critical', 'check' if container.ready else 'x') }}</td>
+                                        <td class="px-4 py-3">{{ table_label.status_label('Ready' if container.ready else 'Not ready', 'normal' if container.ready else 'critical') }}</td>
                                         <td class="px-4 py-3">
-                                            {{ table_label.status_label(container.state, container_tone, container_icon) }}
+                                            {{ table_label.status_label(container.state, container_tone) }}
                                             {% if container.reason %}
                                                 <p class="mt-1 max-w-[190px] break-words text-[10px] leading-4 text-content-muted">{{ container.reason }}</p>
                                             {% endif %}
@@ -254,15 +254,13 @@
                                 {% for volume in pod.volumes %}
                                     <tr class="hover:bg-surface-hover">
                                         <td class="px-4 py-3 font-semibold text-content-primary">{{ volume.name }}</td>
-                                        <td class="px-4 py-3">{{ table_label.metadata_label(volume.type, 'database') }}</td>
+                                        <td class="px-4 py-3"><span class="text-xs font-normal leading-5 text-content-secondary">{{ volume.type }}</span></td>
                                         <td class="max-w-[380px] break-all px-4 py-3 font-medium leading-5 text-content-secondary">{{ volume.source }}</td>
                                         <td class="px-4 py-3">
                                             {% if volume.mounted_by %}
-                                                <div class="flex flex-wrap gap-1.5">
-                                                    {% for container_name in volume.mounted_by %}{{ table_label.metadata_label(container_name, 'box') }}{% endfor %}
-                                                </div>
+                                                <span class="text-xs font-normal leading-5 text-content-secondary">{{ volume.mounted_by|join(', ') }}</span>
                                             {% else %}
-                                                <span class="text-content-muted">Not mounted</span>
+                                                <span class="text-content-muted">Not Mounted</span>
                                             {% endif %}
                                         </td>
                                     </tr>
@@ -285,11 +283,11 @@
                                 <p class="mt-0.5 text-xs text-content-muted">Descriptive Kubernetes labels from the Pod snapshot.</p>
                             </div>
                         </div>
-                        {{ table_label.metadata_label(pod.labels|length ~ ' labels', 'tags') }}
+                        {{ table_label.metadata_label(pod.labels|length ~ ' labels') }}
                     </div>
                     {% if pod.labels %}
                         <div class="flex max-h-44 flex-wrap gap-1.5 overflow-y-auto pr-1">
-                            {% for key, value in pod.labels.items() %}{{ table_label.metadata_label(key ~ (('=' ~ value) if value not in [None, ''] else ''), 'tag') }}{% endfor %}
+                            {% for key, value in pod.labels.items() %}{{ table_label.metadata_label(key ~ (('=' ~ value) if value not in [None, ''] else ''), none, true) }}{% endfor %}
                         </div>
                     {% else %}
                         {{ info_box('No labels recorded', 'This Pod has no recorded labels.', 'tags') }}
@@ -307,7 +305,7 @@
                                 <p class="mt-0.5 text-xs text-content-muted">Annotation metadata displayed as readable key-value rows.</p>
                             </div>
                         </div>
-                        {{ table_label.metadata_label(pod.annotations|length ~ ' annotations', 'braces') }}
+                        {{ table_label.metadata_label(pod.annotations|length ~ ' annotations') }}
                     </header>
                     {% if pod.annotations %}
                         <div class="max-h-64 overflow-y-auto">

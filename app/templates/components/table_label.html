@@ -24,13 +24,13 @@
         <span>{{ text }}</span>
     </span>
 {%- endmacro %}
-{% macro metadata_label(text, icon=None) -%}
-    <span class="kaori-semantic-label inline-flex min-h-6 items-center gap-1 rounded-md bg-kaori-soft px-2 py-0.5 text-[10px] font-semibold leading-4 text-kaori-primary-dark">
+{% macro metadata_label(text, icon=None, wrap=false) -%}
+    <span class="kaori-semantic-label inline-flex min-h-6 max-w-full items-center gap-1 rounded-md bg-kaori-soft px-2 py-0.5 text-[10px] font-semibold leading-4 text-kaori-primary-dark">
         {% if icon %}
             <i data-lucide="{{ icon }}"
                class="h-3 w-3 shrink-0 text-kaori-primary"
                aria-hidden="true"></i>
         {% endif %}
-        <span>{{ text }}</span>
+        <span class="{{ 'break-all whitespace-normal' if wrap else '' }}">{{ text }}</span>
     </span>
 {%- endmacro %}

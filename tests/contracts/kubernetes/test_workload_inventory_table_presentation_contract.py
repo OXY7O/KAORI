@@ -24,3 +24,11 @@ def test_workload_identity_type_and_strategy_use_plain_table_text() -> None:
     assert '{{ workload.update_strategy }}' in content
     assert "table_label.metadata_label(workload.type" not in content
     assert "table_label.status_label(workload.update_strategy" not in content
+
+
+def test_workload_namespace_name_and_pod_count_are_plain_text() -> None:
+    content = TEMPLATE.read_text()
+
+    assert "metadata_label(workload.namespace" not in content
+    assert 'font-semibold leading-5 text-content-primary' not in content
+    assert 'font-semibold tabular-nums text-content-primary' not in content

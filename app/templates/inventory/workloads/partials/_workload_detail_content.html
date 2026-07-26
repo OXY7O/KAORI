@@ -50,7 +50,7 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-                {{ table_label.metadata_label(workload.type, 'box') }}
+                {{ table_label.metadata_label(workload.type) }}
                 {{ table_label.status_label(workload.state_display, status_tone) }}
             </div>
         </header>
@@ -197,11 +197,11 @@
                             <p class="text-xs leading-5 text-content-muted">Kubernetes labels stored with this workload object.</p>
                         </div>
                     </div>
-                    {{ table_label.metadata_label(workload.labels|length ~ ' labels', 'tags') }}
+                    {{ table_label.metadata_label(workload.labels|length ~ ' labels') }}
                 </div>
                 {% if workload.labels %}
                     <div class="flex flex-wrap gap-1.5">
-                        {% for key, value in workload.labels %}{{ table_label.metadata_label(key ~ ('=' ~ value if value else '') , 'tag') }}{% endfor %}
+                        {% for key, value in workload.labels %}{{ table_label.metadata_label(key ~ ('=' ~ value if value else ''), none, true) }}{% endfor %}
                     </div>
                 {% else %}
                     {{ info_box('No workload labels', 'No workload labels were reported in the latest inventory snapshot.', 'tag') }}
@@ -216,15 +216,15 @@
                         <span class="flex h-8 w-8 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="notebook-tabs" class="h-4 w-4"></i></span>
                         <div>
                             <h4 class="text-sm font-semibold text-content-primary">Workload Annotations</h4>
-                            <p class="text-xs leading-5 text-content-muted">Long metadata is shown as rows instead of labels.</p>
+                            <p class="text-xs leading-5 text-content-muted">Annotation metadata is shown as compact wrap-safe labels.</p>
                         </div>
                     </div>
-                    {{ table_label.metadata_label(workload.annotations|length ~ ' annotations', 'notebook-tabs') }}
+                    {{ table_label.metadata_label(workload.annotations|length ~ ' annotations') }}
                 </header>
                 {% if workload.annotations %}
-                    <div class="max-h-72 overflow-y-auto divide-y divide-outline-subtle">
+                    <div class="flex max-h-72 flex-wrap gap-1.5 overflow-y-auto p-4">
                         {% for key, value in workload.annotations %}
-                            <div class="grid gap-1 px-4 py-3 md:grid-cols-[minmax(14rem,0.7fr)_minmax(0,1.3fr)]"><span class="break-all text-xs font-semibold leading-5 text-content-muted">{{ key }}</span><span class="break-all text-xs font-medium leading-5 text-content-secondary">{{ value or '-' }}</span></div>
+                            {{ table_label.metadata_label(key ~ '=' ~ (value or '-'), none, true) }}
                         {% endfor %}
                     </div>
                 {% else %}

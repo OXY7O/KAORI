@@ -19,43 +19,36 @@
         <tbody class="divide-y divide-outline-subtle">
             {% for pod in inventory.pods %}
                 {% if pod.status == 'Running' %}
-                    {% set phase_tone = "normal" %}{% set phase_icon = "circle-check" %}
+                    {% set phase_tone = "normal" %}
                 {% elif pod.status == 'Pending' %}
-                    {% set phase_tone = "pending" %}{% set phase_icon = "loader-circle" %}
+                    {% set phase_tone = "pending" %}
                 {% elif pod.status == 'Succeeded' %}
-                    {% set phase_tone = "normal" %}{% set phase_icon = "badge-check" %}
+                    {% set phase_tone = "normal" %}
                 {% elif pod.status == 'Failed' %}
-                    {% set phase_tone = "critical" %}{% set phase_icon = "circle-x" %}
+                    {% set phase_tone = "critical" %}
                 {% else %}
-                    {% set phase_tone = "unknown" %}{% set phase_icon = "circle-help" %}
+                    {% set phase_tone = "unknown" %}
                 {% endif %}
-                {% if pod.ready_total > 0 and pod.ready_count == pod.ready_total %}
-                    {% set ready_tone = "normal" %}{% set ready_icon = "circle-check" %}
-                {% elif pod.ready_count > 0 %}
-                    {% set ready_tone = "warning" %}{% set ready_icon = "triangle-alert" %}
-                {% elif pod.ready_total > 0 %}
-                    {% set ready_tone = "critical" %}{% set ready_icon = "circle-x" %}
+                {% if pod.restarts >= 5 %}
+                    {% set restart_tone = "critical" %}
+                {% elif pod.restarts > 0 %}
+                    {% set restart_tone = "warning" %}
                 {% else %}
-                    {% set ready_tone = "unknown" %}{% set ready_icon = "circle-help" %}
+                    {% set restart_tone = "normal" %}
                 {% endif %}
                 <tr id="pod-row-{{ pod.id }}" class="transition hover:bg-surface-hover">
                     <td class="px-4 py-3.5 align-middle">
                         {{ table_ui.cluster_identity(pod.cluster_name, pod.cluster_environment) }}
                     </td>
-                    <td class="px-4 py-3.5 align-middle">{{ table_label.metadata_label(pod.namespace, 'folder-tree') }}</td>
+                    <td class="px-4 py-3.5 align-middle text-sm font-normal leading-5 text-content-secondary">{{ pod.namespace }}</td>
                     <td class="max-w-[300px] px-4 py-3.5 align-middle">
-                        <div class="flex min-w-0 items-center gap-2">
-                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="package" class="h-4 w-4"></i></span>
-                            <span class="truncate text-sm font-semibold leading-5 text-content-primary"
-                                  title="{{ pod.name }}">{{ pod.name }}</span>
-                        </div>
+                        <span class="block truncate text-sm font-normal leading-5 text-content-secondary"
+                              title="{{ pod.name }}">{{ pod.name }}</span>
                     </td>
-                    <td class="px-4 py-3.5 align-middle">{{ table_label.status_label(pod.status or 'Unknown', phase_tone, phase_icon) }}</td>
-                    <td class="px-4 py-3.5 align-middle">{{ table_label.status_label(pod.ready, ready_tone, ready_icon) }}</td>
-                    <td class="px-4 py-3.5 align-middle">{{ table_label.metadata_label(pod.owner_type or 'Standalone', 'git-branch') }}</td>
-                    <td class="px-4 py-3.5 align-middle">
-                        <span class="font-semibold tabular-nums {{ 'text-status-warning-text' if pod.restarts > 0 else 'text-content-primary' }}">{{ pod.restarts }}</span>
-                    </td>
+                    <td class="px-4 py-3.5 align-middle">{{ table_label.status_label(pod.status or 'Unknown', phase_tone) }}</td>
+                    <td class="px-4 py-3.5 align-middle"><span class="text-sm font-normal leading-5 text-content-secondary">{{ pod.ready }}</span></td>
+                    <td class="px-4 py-3.5 align-middle"><span class="text-sm font-normal leading-5 text-content-secondary">{{ pod.owner_type or 'Standalone' }}</span></td>
+                    <td class="px-4 py-3.5 align-middle">{{ table_label.status_label(pod.restarts, restart_tone) }}</td>
                     <td class="px-4 py-3.5 text-right align-middle">
                         {{ expandable.toggle_button(
                             'inventory-pods',

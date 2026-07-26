@@ -4,7 +4,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 COMPACT_RESOURCE_TABLES = (
     'namespaces',
-    'pods',
     'services',
     'ingresses',
     'storage',
@@ -52,3 +51,15 @@ def test_workload_resource_cell_uses_text_only_identity_and_plain_state() -> Non
     assert "status_label(workload.state_display" not in content
     assert '{{ workload.type }}' in content
     assert '{{ workload.update_strategy }}' in content
+
+
+def test_pod_resource_cell_uses_text_only_identity_and_semantic_phase() -> None:
+    content = _table('pods')
+
+    assert 'data-lucide="package"' not in content
+    assert 'flex h-7 w-7 shrink-0 items-center justify-center rounded-md' not in content
+    assert "metadata_label(pod.namespace" not in content
+    assert "status_label(pod.status or 'Unknown', phase_tone)" in content
+    assert 'phase_icon' not in content
+    assert 'ready_icon' not in content
+    assert 'restart_tone' in content
