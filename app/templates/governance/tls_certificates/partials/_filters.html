@@ -1,59 +1,63 @@
+{% import "components/table.html" as table_ui %}
 <form id="tls-certificate-filter-form"
       method="get"
       action="{{ url_for('governance.tls_certificates') }}"
       hx-get="{{ url_for('governance.tls_certificates') }}"
-      hx-target="#tls-certificates-table-card"
+      hx-target="#tls-certificates-inventory-scope"
       hx-swap="outerHTML"
       hx-indicator="#tls-certificates-table-loading"
       hx-trigger="change from:select, keyup changed delay:450ms from:input[name='search']"
-      class="grid grid-cols-1 gap-4 md:grid-cols-4 md:items-end">
+      class="grid gap-4 xl:grid-cols-12 xl:items-end">
     <input type="hidden" name="page" value="1">
-    <input type="hidden"
-           name="per_page"
-           value="{{ payload.pagination.per_page }}">
-    <input type="hidden" name="partial_mode" value="table">
-    <label class="block min-w-0">
-        <span class="text-sm font-semibold text-content-primary">Cluster</span>
-        <select name="cluster_id"
-                class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-            <option value="">All clusters</option>
+    <input type="hidden" name="per_page" value="{{ payload.pagination.per_page }}">
+    <input type="hidden" name="partial_mode" value="inventory_scope">
+    <div class="xl:col-span-3">
+        <label class="{{ table_ui.filter_label_classes() }}" for="tls-cluster-filter">Cluster</label>
+        <select id="tls-cluster-filter"
+                name="cluster_id"
+                class="{{ table_ui.filter_select_classes() }}">
+            <option value="">All Clusters</option>
             {% for cluster in payload.clusters %}
                 <option value="{{ cluster.id }}"
-                        {% if payload.filters.cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                        {% if payload.filters.cluster_id == cluster.id|string or payload.filters.cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
             {% endfor %}
         </select>
-    </label>
-    <label class="block min-w-0">
-        <span class="text-sm font-semibold text-content-primary">Namespace</span>
-        <select name="namespace"
-                class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+    </div>
+    <div class="xl:col-span-3">
+        <label class="{{ table_ui.filter_label_classes() }}" for="tls-namespace-filter">Namespace</label>
+        <select id="tls-namespace-filter"
+                name="namespace"
+                class="{{ table_ui.filter_select_classes() }}">
             <option value="">All Namespaces</option>
             {% for namespace in payload.namespaces %}
                 <option value="{{ namespace }}"
                         {% if payload.filters.namespace == namespace %}selected{% endif %}>{{ namespace }}</option>
             {% endfor %}
         </select>
-    </label>
-    <label class="block min-w-0">
-        <span class="text-sm font-semibold text-content-primary">Status</span>
-        <select name="status"
-                class="mt-2 h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+    </div>
+    <div class="xl:col-span-2">
+        <label class="{{ table_ui.filter_label_classes() }}" for="tls-status-filter">Status</label>
+        <select id="tls-status-filter"
+                name="status"
+                class="{{ table_ui.filter_select_classes() }}">
             {% for status in payload.status_options %}
                 <option value="{{ status }}"
                         {% if payload.filters.status == status %}selected{% endif %}>{{ status.replace('_', ' ') |title }}</option>
             {% endfor %}
         </select>
-    </label>
-    <label class="block min-w-0">
-        <span class="text-sm font-semibold text-content-primary">Search TLS Secret</span>
-        <span class="relative mt-2 block">
+    </div>
+    <div class="xl:col-span-4">
+        <label class="{{ table_ui.filter_label_classes() }}" for="tls-search-filter">Search TLS Secret</label>
+        <div class="relative">
             <i data-lucide="search"
-               class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
-            <input type="search"
+               class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+               aria-hidden="true"></i>
+            <input id="tls-search-filter"
+                   type="search"
                    name="search"
                    value="{{ payload.filters.search }}"
-                   placeholder="Search Secret, namespace, CN, or issuer"
-                   class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary shadow-sm outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
-        </span>
-    </label>
+                   placeholder="Search Secret, Namespace, CN, Or Issuer"
+                   class="{{ table_ui.filter_input_classes() }} pl-10">
+        </div>
+    </div>
 </form>

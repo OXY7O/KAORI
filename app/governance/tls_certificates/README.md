@@ -58,3 +58,15 @@ The web route must never call Kubernetes Secret collection inline. Manual Sync T
 joins a canonical `JobExecution`. Active execution, last successful collection, next scheduled run, and
 freshness are presented from `JobExecution`, `JobPolicy`, and committed `TLSCertificateInventory` rows.
 A successful collection with zero TLS Secrets still establishes freshness through the terminal job record.
+
+## Worker Registration And Recovery
+
+The TLS synchronization task module must be present in `Config.CELERY['imports']`, and the canonical task name must have an explicit route to the `inventory` queue. This is required even though web routes import the dispatch adapter: worker processes build an independent task registry at startup.
+
+After deploying a task-registration change, rebuild or restart the inventory worker. A message previously rejected as an unregistered task has already been discarded by Celery and cannot resume automatically. Cancel the corresponding queued execution in Jobs & Executions, then dispatch a new TLS synchronization after the updated worker reports the task as registered.
+
+## Inventory Filter And Polling Contract
+
+The synchronization panel, summary, filters, table, and pagination share the `tls-certificates-inventory-scope` HTMX boundary. Active synchronization polling replaces that same scope using its current Cluster, Namespace, Status, Search, Page, and Rows Per Page values. Filter changes also replace the same scope. Polling must never be attached to the outer page container while filters replace only the table, because an older polling URL would restore default filter values.
+
+The TLS Secret table uses the shared Inventory presentation macros in `components/table.html` for block geometry, loading state, filter controls, table headers and rows, Cluster identity, Namespace identity, and pagination geometry. Semantic certificate status labels remain text-only.

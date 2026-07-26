@@ -78,7 +78,10 @@ def build_tls_sync_state(*, cluster_id: str | None = None) -> dict[str, Any]:
     stale_after = timedelta(minutes=interval_minutes + min(max(interval_minutes // 4, 15), 180))
     is_stale = freshness_source is not None and datetime.now(UTC) - freshness_source > stale_after
 
-    if active_job is not None:
+    if active_job is not None and active_job.status == 'queued':
+        label, tone, icon = 'Queued', 'pending', 'clock-3'
+        helper = active_job.progress_message or 'Waiting for the inventory worker to start TLS certificate collection.'
+    elif active_job is not None:
         label, tone, icon = 'Syncing', 'pending', 'loader-circle'
         helper = active_job.progress_message or 'TLS certificate collection is running in the inventory worker.'
     elif latest_job is not None and latest_job.status == 'failed':

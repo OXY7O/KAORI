@@ -1,76 +1,57 @@
 {% import "components/pagination.html" as pagination_ui %}
+{% import "components/table.html" as table_ui %}
 {% from 'inventory/components/_detail_macros.html' import detail_card, detail_row, detail_tip %}
 {% import 'components/detail_object.html' as detail_object %}
 {% import 'components/table_label.html' as table_label %}
 {% import 'components/details/_expandable_row.html' as expandable %}
-<div id="tls-certificates-table-card"
-     class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <div class="border-b border-outline-default px-6 py-5">
-        <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-            <div class="flex items-center gap-3 text-left">
-                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="lock-keyhole" class="h-5 w-5"></i>
-                </div>
-                <div>
-                    <h2 class="text-base font-semibold text-content-primary">Kubernetes TLS Secret Inventory</h2>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Certificate lifecycle, domain coverage, and Ingress usage from Kubernetes TLS Secrets.</p>
-                </div>
-            </div>
-        </div>
-        <div id="tls-certificates-table-loading"
-             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
-            <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
-        </div>
-    </div>
-    <div class="border-b border-outline-default bg-surface-hover px-6 py-4">
+<section id="tls-certificates-table-card" class="{{ table_ui.block_classes() }}">
+    {{ table_ui.inventory_block_header('lock-keyhole', 'Kubernetes TLS Secret Inventory', 'Certificate lifecycle, domain coverage, and Ingress usage from Kubernetes TLS Secrets.', 'tls-certificates-table-loading', 'Refreshing Kubernetes TLS Secret Inventory', url_for('integrations.kubernetes')) }}
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% include "governance/tls_certificates/partials/_filters.html" %}
     </div>
-    <div class="overflow-x-auto">
-        <table class="min-w-full text-content-primary">
-            <thead>
-                <tr class="border-b border-outline-default bg-surface-hover text-left text-xs uppercase tracking-wide text-content-muted">
-                    <th class="px-4 py-2 text-left">Cluster</th>
-                    <th class="px-4 py-2 text-left">Namespace</th>
-                    <th class="px-4 py-2 text-left">Secret</th>
-                    <th class="px-4 py-2 text-left">Expiry</th>
-                    <th class="px-4 py-2 text-left">Status</th>
-                    <th class="px-4 py-2 text-right">Actions</th>
+    <div class="overflow-x-auto overscroll-x-contain">
+        <table class="{{ table_ui.table_classes('min-w-[980px]') }}">
+            <thead class="{{ table_ui.head_classes() }}">
+                <tr>
+                    <th class="{{ table_ui.header_cell_classes() }}">Cluster</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Namespace</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Secret</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Expiry</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Status</th>
+                    <th class="{{ table_ui.header_cell_classes(action=true) }}">Actions</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody class="{{ table_ui.body_classes() }}">
                 {% for record in payload.records %}
-                    <tr id="tls-secret-row-{{ record.id }}"
-                        class="border-t border-outline-subtle text-sm transition hover:bg-surface-hover">
-                        <td class="px-4 py-2 text-left align-middle">
-                            {{ table_label.metadata_label(record.cluster.name if record.cluster else record.cluster_id, 'building-2') }}
+                    <tr id="tls-secret-row-{{ record.id }}" class="{{ table_ui.row_classes() }}">
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_ui.cluster_identity(
+                                record.cluster.name if record.cluster else record.cluster_id,
+                                record.cluster.environment if record.cluster else ''
+                            ) }}
                         </td>
-                        <td class="px-4 py-2 text-left align-middle">{{ table_label.metadata_label(record.namespace, 'boxes') }}</td>
-                        <td class="w-[32%] px-4 py-2 text-left align-middle">
-                            <div class="flex min-w-0 items-start gap-2">
-                                <span class="mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                    <i data-lucide="key-round" class="h-3.5 w-3.5"></i>
-                                </span>
-                                <div class="min-w-0">
-                                    <p class="break-all text-sm font-medium text-content-primary"
-                                       title="{{ record.secret_name }}">{{ record.secret_name }}</p>
-                                </div>
-                            </div>
+                        <td class="{{ table_ui.cell_classes() }}">
+                            {{ table_ui.namespace_identity(record.namespace) }}
                         </td>
-                        <td class="px-4 py-2 text-left align-middle">
+                        <td class="{{ table_ui.cell_classes() }} max-w-[320px]">
+                            <span class="block truncate text-sm font-semibold leading-5 text-content-primary"
+                                  title="{{ record.secret_name }}">{{ record.secret_name }}</span>
+                        </td>
+                        <td class="{{ table_ui.cell_classes() }}">
                             {% if record.not_after %}
-                                <div class="text-sm font-medium text-content-primary">{{ record.days_remaining }} days</div>
+                                <span class="text-sm font-semibold leading-5 text-content-primary">{{ record.days_remaining }} Days</span>
                             {% else %}
-                                <div class="font-medium text-status-critical-text">Invalid</div>
+                                <div class="font-semibold text-status-critical-text">Invalid</div>
                                 <div class="mt-1 max-w-[220px] truncate text-xs text-content-muted"
                                      title="{{ record.parse_error or 'Unable to parse certificate' }}">{{ record.parse_error or 'Unable to parse certificate' }}</div>
                             {% endif %}
                         </td>
-                        <td class="px-4 py-2 text-left align-middle">
+                        <td class="{{ table_ui.cell_classes() }}">
                             {% with status=record.status %}
                                 {% include "governance/tls_certificates/partials/_status_badge.html" %}
                             {% endwith %}
                         </td>
-                        <td class="px-4 py-2 text-right align-middle">
+                        <td class="{{ table_ui.cell_classes(action=true) }}">
                             {{ expandable.toggle_button('tls-certificate-inventory', record.id, none, 'tls-secret-detail-content-' ~ record.id, 'tls-secret-detail-row-' ~ record.id) }}
                         </td>
                     </tr>
@@ -95,7 +76,7 @@
                                     </div>
                                     <div class="grid gap-4 bg-surface-hover p-4 xl:grid-cols-4">
                                         {% call detail_card(
-                                            'Certificate identity',
+                                            'Certificate Identity',
                                             'badge-check',
                                             'bg-kaori-soft text-kaori-primary',
                                             record.common_name or 'Certificate',
@@ -111,7 +92,7 @@
                                                         </span>
                                                         <div class="min-w-0 flex-1">
                                                             <p class="text-xs font-semibold text-content-primary">Issuer</p>
-                                                            <p class="mt-2 break-words text-xs font-normal leading-5 text-content-secondary">{{ record.issuer or 'Unknown issuer' }}</p>
+                                                            <p class="mt-2 break-words text-xs font-normal leading-5 text-content-secondary">{{ record.issuer or 'Unknown Issuer' }}</p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -119,15 +100,15 @@
                                             {% endcall %}
                                         {% endcall %}
                                         {% call detail_card(
-                                            'Validity window',
+                                            'Validity Window',
                                             'calendar-clock',
                                             'bg-kaori-soft text-kaori-primary',
-                                            (record.days_remaining ~ ' days') if record.days_remaining is not none else 'Invalid',
+                                            (record.days_remaining ~ ' Days') if record.days_remaining is not none else 'Invalid',
                                             'bg-kaori-soft text-kaori-primary'
                                             ) %}
                                             {{ detail_row('Valid From', record.not_before|user_date , tone='violet') }}
                                             {{ detail_row('Expires At', record.not_after|user_date , tone='violet') }}
-                                            {{ detail_row('Remaining', (record.days_remaining ~ ' days') if record.days_remaining is not none else '-', tone='violet') }}
+                                            {{ detail_row('Remaining', (record.days_remaining ~ ' Days') if record.days_remaining is not none else '-', tone='violet') }}
                                             {% call detail_object.stack() %}
                                                 <div class="rounded-lg border border-outline-default bg-kaori-soft p-3">
                                                     <div class="flex items-start gap-2.5">
@@ -144,7 +125,7 @@
                                             {% endcall %}
                                         {% endcall %}
                                         {% call detail_card(
-                                            'Ingress usage',
+                                            'Ingress Usage',
                                             'route',
                                             'bg-kaori-soft text-kaori-primary',
                                             ((record.ingress_hosts or [])|length) ~ ' hosts',
@@ -165,13 +146,13 @@
                                                             <div class="border-t border-dashed border-kaori-primary/20 pt-2 first:border-t-0 first:pt-0 ">
                                                                 <div class="grid grid-cols-[5rem_minmax(0,1fr)] items-start gap-x-2 gap-y-1">
                                                                     <span class="text-[10px] font-medium text-kaori-primary">Ingress</span>
-                                                                    <span class="min-w-0 break-words text-right font-medium">{{ item.name or item.get('name', 'Unknown ingress') }}</span>
+                                                                    <span class="min-w-0 break-words text-right font-medium">{{ item.name or item.get('name', 'Unknown Ingress') }}</span>
                                                                     <span class="text-[10px] font-medium text-kaori-primary">Namespace</span>
                                                                     <span class="min-w-0 break-words text-right text-content-muted">{{ item.namespace or item.get('namespace', record.namespace) }}</span>
                                                                 </div>
                                                                 {% if hosts %}
                                                                     <div class="mt-1.5">
-                                                                        <p class="text-[10px] font-medium text-kaori-primary">Mapped hosts</p>
+                                                                        <p class="text-[10px] font-medium text-kaori-primary">Mapped Hosts</p>
                                                                         <div class="mt-0.5 flex flex-col gap-0.5">
                                                                             {% for host in hosts %}
                                                                                 <a href="https://{{ host }}"
@@ -189,7 +170,7 @@
                                                         {% endfor %}
                                                     </div>
                                                 {% else %}
-                                                    <p class="mt-1.5 text-content-muted">No Ingress mapping found.</p>
+                                                    <p class="mt-1.5 text-content-muted">No Ingress Mapping Found.</p>
                                                 {% endif %}
                                             </div>
                                             <div class="mt-auto pt-2">
@@ -197,7 +178,7 @@
                                             </div>
                                         {% endcall %}
                                         {% call detail_card(
-                                            'Secret metadata',
+                                            'Secret Metadata',
                                             'boxes',
                                             'bg-kaori-soft text-kaori-primary',
                                             ((record.dns_names or [])|length) ~ ' SANs',
@@ -240,39 +221,31 @@
                     {% endcall %}
                 {% else %}
                     <tr>
-                        <td colspan="6" class="px-6 py-16 text-center">
-                            <div class="flex flex-col items-center gap-3 text-content-muted">
-                                <div class="flex h-12 w-12 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                    <i data-lucide="shield-check" class="h-6 w-6"></i>
-                                </div>
-                                <div>
-                                    <p class="font-semibold text-content-primary">No Kubernetes TLS Secrets found</p>
-                                    <p class="mt-1 text-sm">Run Sync TLS to collect Kubernetes TLS Secrets from registered clusters.</p>
-                                </div>
-                            </div>
+                        <td colspan="6" class="p-0">
+                            {% set empty_state_icon = 'shield-check' %}
+                            {% set empty_state_title = 'No Kubernetes TLS Secrets Found' %}
+                            {% set empty_state_description = 'Adjust filters or run Sync TLS to collect Kubernetes TLS Secrets from registered clusters.' %}
+                            {% set empty_state_min_height = 'min-h-[190px]' %}
+                            {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    <div class="flex flex-col gap-4 border-t border-outline-default bg-surface-hover px-6 py-4 text-left text-sm text-content-muted lg:flex-row lg:items-center lg:justify-between">
+    <footer class="flex flex-col gap-4 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs text-content-muted lg:flex-row lg:items-center lg:justify-between">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-            <div class="text-left">
-                Showing
-                <span class="font-semibold text-content-primary">{{ payload.pagination.start_item }}</span>
-                -
-                <span class="font-semibold text-content-primary">{{ payload.pagination.end_item }}</span>
-                of
-                <span class="font-semibold text-content-primary">{{ payload.pagination.total_items }}</span>
+            <p>
+                Showing <span class="font-semibold text-content-primary">{{ payload.pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ payload.pagination.end_item }}</span>
+                of <span class="font-semibold text-content-primary">{{ payload.pagination.total_items }}</span>
                 {{ 'TLS Secret' if payload.pagination.total_items == 1 else 'TLS Secrets' }}
-            </div>
+            </p>
             <form hx-get="{{ url_for('governance.tls_certificates') }}"
-                  hx-target="#tls-certificates-table-card"
+                  hx-target="#tls-certificates-inventory-scope"
                   hx-swap="outerHTML"
                   hx-indicator="#tls-certificates-table-loading"
                   class="flex items-center gap-2 text-left">
-                <input type="hidden" name="partial_mode" value="table">
+                <input type="hidden" name="partial_mode" value="inventory_scope">
                 <input type="hidden" name="page" value="1">
                 <input type="hidden"
                        name="cluster_id"
@@ -294,10 +267,10 @@
         </div>
         <div class="flex flex-wrap items-center justify-start gap-2">
             {% if payload.pagination.has_prev %}
-                {% set prev_url = url_for('governance.tls_certificates', cluster_id=payload.filters.cluster_id, namespace=payload.filters.namespace, status=payload.filters.status, search=payload.filters.search, per_page=payload.pagination.per_page, page=payload.pagination.prev_page, partial_mode='table') %}
+                {% set prev_url = url_for('governance.tls_certificates', cluster_id=payload.filters.cluster_id, namespace=payload.filters.namespace, status=payload.filters.status, search=payload.filters.search, per_page=payload.pagination.per_page, page=payload.pagination.prev_page, partial_mode='inventory_scope') %}
                 <a href="{{ prev_url }}"
                    hx-get="{{ prev_url }}"
-                   hx-target="#tls-certificates-table-card"
+                   hx-target="#tls-certificates-inventory-scope"
                    hx-swap="outerHTML"
                    hx-indicator="#tls-certificates-table-loading"
                    class="{{ pagination_ui.navigation_classes(disabled=false) }}">
@@ -312,10 +285,10 @@
             {% endif %}
             {{ pagination_ui.numeric_pages(payload.pagination.page, payload.pagination.total_pages) }}
             {% if payload.pagination.has_next %}
-                {% set next_url = url_for('governance.tls_certificates', cluster_id=payload.filters.cluster_id, namespace=payload.filters.namespace, status=payload.filters.status, search=payload.filters.search, per_page=payload.pagination.per_page, page=payload.pagination.next_page, partial_mode='table') %}
+                {% set next_url = url_for('governance.tls_certificates', cluster_id=payload.filters.cluster_id, namespace=payload.filters.namespace, status=payload.filters.status, search=payload.filters.search, per_page=payload.pagination.per_page, page=payload.pagination.next_page, partial_mode='inventory_scope') %}
                 <a href="{{ next_url }}"
                    hx-get="{{ next_url }}"
-                   hx-target="#tls-certificates-table-card"
+                   hx-target="#tls-certificates-inventory-scope"
                    hx-swap="outerHTML"
                    hx-indicator="#tls-certificates-table-loading"
                    class="{{ pagination_ui.navigation_classes(disabled=false) }}">
@@ -329,5 +302,5 @@
                 </span>
             {% endif %}
         </div>
-    </div>
-</div>
+    </footer>
+</section>

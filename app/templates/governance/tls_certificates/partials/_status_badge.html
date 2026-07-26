@@ -1,13 +1,13 @@
 {% import "components/table_label.html" as table_label %}
 {% set status = status or 'unknown' %}
 {% if status == 'healthy' %}
-    {{ table_label.status_label('Healthy', 'normal', 'check') }}
+    {{ table_label.status_label('Healthy', 'normal') }}
 {% elif status == 'warning' %}
-    {{ table_label.status_label('Expiring soon', 'warning', 'clock') }}
+    {{ table_label.status_label('Expiring Soon', 'warning') }}
 {% elif status in ['critical', 'expired'] %}
-    {{ table_label.status_label('Expired', 'critical', 'circle-x') }}
+    {{ table_label.status_label('Expired', 'critical') }}
 {% elif status == 'invalid' %}
-    {{ table_label.status_label('Invalid', 'critical', 'triangle-alert') }}
+    {{ table_label.status_label('Invalid', 'critical') }}
 {% else %}
-    {{ table_label.status_label(status.replace('_', ' ') |title, 'unknown', 'circle-help') }}
+    {{ table_label.status_label(status.replace('_', ' ') |title, 'unknown') }}
 {% endif %}

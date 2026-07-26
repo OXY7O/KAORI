@@ -33,7 +33,7 @@ def _render_sync_response(
     payload = get_tls_certificate_page(filter_args)
     return (
         render_template(
-            'governance/tls_certificates/partials/_page_content.html',
+            'governance/tls_certificates/partials/_inventory_scope.html',
             payload=payload,
             sync_feedback={
                 **feedback,
@@ -54,6 +54,12 @@ def tls_certificates_index():
     if partial_mode == 'content':
         return render_template(
             'governance/tls_certificates/partials/_page_content.html',
+            payload=payload,
+        )
+
+    if partial_mode == 'inventory_scope':
+        return render_template(
+            'governance/tls_certificates/partials/_inventory_scope.html',
             payload=payload,
         )
 
