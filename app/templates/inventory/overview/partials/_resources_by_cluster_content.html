@@ -28,9 +28,9 @@
                     </td>
                     <td class="px-4 py-3.5">
                         {% if cluster.status == 'connected' %}
-                            {{ status_label('Connected', 'normal', 'circle-check') }}
+                            {{ status_label('Connected', 'normal') }}
                         {% else %}
-                            {{ status_label('Disconnected', 'critical', 'circle-x') }}
+                            {{ status_label('Disconnected', 'critical') }}
                         {% endif %}
                     </td>
                     <td class="px-4 py-3.5 font-semibold text-content-primary">{{ cluster.node_count or 0 }}</td>
@@ -45,14 +45,14 @@
                             {% if synced_at %}
                                 <span class="whitespace-nowrap text-xs font-medium text-content-secondary">{{ synced_at|user_datetime }}</span>
                             {% else %}
-                                <span class="text-xs font-medium text-content-disabled">Not collected</span>
+                                <span class="text-xs font-medium text-content-disabled">Not Collected</span>
                             {% endif %}
                             {% if cluster.sync_status_tone == 'green' %}
-                                {{ status_label(cluster.sync_status_label, 'normal') }}
+                                {{ status_label(cluster.sync_status_label|title, 'normal') }}
                             {% elif cluster.sync_status_tone == 'amber' %}
-                                {{ status_label(cluster.sync_status_label, 'warning') }}
+                                {{ status_label(cluster.sync_status_label|title, 'warning') }}
                             {% else %}
-                                {{ status_label(cluster.sync_status_label, 'unknown') }}
+                                {{ status_label(cluster.sync_status_label|title, 'unknown') }}
                             {% endif %}
                         </div>
                     </td>
@@ -60,18 +60,18 @@
                         <div class="ml-auto flex min-w-[10rem] flex-wrap justify-end gap-1.5">
                             {% for hint in cluster.risk_hints %}
                                 {% if hint.tone == 'green' %}
-                                    {{ status_label(hint.label, 'normal', hint.icon) }}
+                                    {{ status_label(hint.label|title, 'normal') }}
                                 {% elif hint.tone == 'amber' %}
-                                    {{ status_label(hint.label, 'warning', hint.icon) }}
+                                    {{ status_label(hint.label|title, 'warning') }}
                                 {% elif hint.tone == 'red' %}
-                                    {{ status_label(hint.label, 'critical', hint.icon) }}
+                                    {{ status_label(hint.label|title, 'critical') }}
                                 {% elif hint.tone == 'blue' %}
-                                    {{ status_label(hint.label, 'info', hint.icon) }}
+                                    {{ status_label(hint.label|title, 'info') }}
                                 {% else %}
-                                    {{ status_label(hint.label, 'unknown', hint.icon) }}
+                                    {{ status_label(hint.label|title, 'unknown') }}
                                 {% endif %}
                             {% else %}
-                                <span class="text-xs text-content-muted">No risk hints</span>
+                                <span class="text-xs text-content-muted">No Risk Hints</span>
                             {% endfor %}
                         </div>
                     </td>

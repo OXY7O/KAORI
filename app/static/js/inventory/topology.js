@@ -121,6 +121,11 @@
         service: 'Service', ingress: 'Ingress', configmap: 'ConfigMap', secret: 'Secret', pvc: 'PVC', pv: 'PV',
     }[value] || value)
 
+    const titleCaseText = (value) => String(value ?? '')
+        .replaceAll('_', ' ')
+        .replaceAll('-', ' ')
+        .replace(/\b[a-z]/g, (character) => character.toUpperCase())
+
     const statusDotSvg = (tone) => {
         const normalized = ['healthy', 'warning', 'critical', 'info'].includes(tone) ? tone : 'unknown'
         const color = statusDotColor(normalized)
@@ -597,7 +602,7 @@
                 <button type="button" data-topology-related-node="${escapeHtml(peer.id())}" class="flex w-full items-start gap-3 rounded-lg border border-outline-subtle bg-surface-card px-3 py-3 text-left transition hover:border-outline-focus hover:bg-kaori-soft">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${ui.badge}"><i data-lucide="${ui.icon}" class="h-4 w-4"></i></span>
                     <span class="min-w-0 flex-1">
-                        <span class="flex flex-wrap items-center gap-2"><span class="text-[10px] font-medium uppercase tracking-wide text-content-muted">${sourceSelected ? 'Outbound' : 'Inbound'}</span><span class="inline-flex min-h-6 items-center rounded-md border px-2 py-1 text-[10px] font-semibold ${ui.badge}">${escapeHtml(edgeData.label || edgeData.relationship)}</span></span>
+                        <span class="flex flex-wrap items-center gap-2"><span class="text-[10px] font-medium uppercase tracking-wide text-content-muted">${sourceSelected ? 'Outbound' : 'Inbound'}</span><span class="inline-flex min-h-6 items-center rounded-md border px-2 py-1 text-[10px] font-semibold ${ui.badge}">${escapeHtml(titleCaseText(edgeData.label || edgeData.relationship))}</span></span>
                         <span class="mt-1 block break-words text-xs font-medium text-content-primary">${escapeHtml(peer.data('label') || peer.id())}</span>
                         <span class="mt-1 block text-[10px] text-content-muted">${escapeHtml(humanizeType(peer.data('type')))}</span>
                     </span>
@@ -756,7 +761,7 @@
             <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
                 <div class="flex items-center justify-between gap-3">
                     <h5 class="text-xs font-semibold text-content-primary">Resource Context</h5>
-                    <span class="inline-flex min-h-6 items-center rounded-md border px-2 py-1 text-[10px] font-semibold ${ui.badge}">${connectedCount} relationships</span>
+                    <span class="inline-flex min-h-6 items-center rounded-md border px-2 py-1 text-[10px] font-semibold ${ui.badge}">${connectedCount} ${connectedCount === 1 ? 'Relationship' : 'Relationships'}</span>
                 </div>
                 <dl class="mt-3">
                     <div class="flex items-start justify-between gap-3 border-b border-outline-subtle py-2.5"><dt class="text-xs text-content-muted">Cluster</dt><dd class="max-w-[12rem] break-words text-right text-xs font-medium ${ui.value}">${escapeHtml(data.cluster_name || 'Not reported')}</dd></div>
@@ -789,7 +794,7 @@
                             <p class="mt-1 text-xs text-content-muted">${escapeHtml(data.kind || humanizeType(data.type))}</p>
                             <div class="mt-2 flex flex-wrap gap-2">
                                 <span class="inline-flex min-h-6 items-center rounded-md border px-2 py-1 text-[10px] font-semibold ${ui.badge}">${escapeHtml(humanizeType(data.type))}</span>
-                                <span class="inline-flex min-h-6 items-center rounded-md border px-2 py-1 text-[10px] font-semibold ${statusClass}">${escapeHtml(data.status || 'Unknown')}</span>
+                                <span class="inline-flex min-h-6 items-center rounded-md border px-2 py-1 text-[10px] font-semibold ${statusClass}">${escapeHtml(titleCaseText(data.status || 'Unknown'))}</span>
                             </div>
                         </div>
                     </div>

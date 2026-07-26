@@ -67,8 +67,9 @@ All resource inventory pages use the shared KAORI table block, loading bar, filt
 ### Cross-Resource Visual Contract
 
 - Overview and resource summaries use one bordered data block with internal metric cells; do not reintroduce independent decorative cards.
-- Resource-name columns use `text-sm`, semibold primary text, optional muted supporting text, and a `rounded-md` icon tile.
-- Table row actions use `components/table.html`; semantic labels are compact `rounded-md` labels, never pills.
+- Resource-name columns use `text-sm`, semibold primary text, and optional muted supporting text. Use an icon tile only where it materially improves identity; workload rows remain text-only and overview rows keep the icon only in the Cluster identity column.
+- Table row actions use `components/table.html`; semantic labels are compact `rounded-md` labels, never pills. Inventory row labels default to text-only, with tone carrying status meaning instead of decorative icons.
+- Resource type, update strategy, quota, and Pod Security values use plain table text when the value is descriptive metadata rather than an operational state.
 - Inventory loading indicators use `components/loading_bar.html` and sit directly beneath the block header.
 - List services must not compute related-object counts that are not rendered in the current table. Related composition belongs in the detail endpoint.
 

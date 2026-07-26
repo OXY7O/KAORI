@@ -20,7 +20,9 @@
         <tbody class="divide-y divide-outline-subtle">
             {% for node in inventory.nodes %}
                 {% set status_tone = 'normal' if node.status == 'Ready' else ('critical' if node.status == 'NotReady' else 'warning') %}
-                {% set status_icon = 'circle-check' if node.status == 'Ready' else ('octagon-alert' if node.status == 'NotReady' else 'triangle-alert') %}
+                {% set role_key = node.role|default('Unknown', true)|lower %}
+                {% set role_tone = 'maintenance' if role_key in ['control-plane', 'master'] else ('info' if role_key == 'worker' else ('warning' if role_key in ['infrastructure', 'infra'] else 'unknown')) %}
+                {% set role_display = 'Control Plane' if role_key in ['control-plane', 'master'] else (node.role|default('Unknown', true)|replace('_', ' ')|replace('-', ' ')|title) %}
                 <tr class="transition hover:bg-surface-hover">
                     <td class="px-4 py-3.5 align-middle">
                         {{ table_ui.cluster_identity(node.cluster_name, node.cluster_environment) }}
@@ -35,8 +37,8 @@
                         </div>
                     </td>
                     <td class="px-4 py-3.5 align-middle text-sm leading-5 text-content-secondary">{{ node.internal_ip or '-' }}</td>
-                    <td class="px-4 py-3.5 align-middle">{{ table_label.status_label(node.status_display, status_tone, status_icon) }}</td>
-                    <td class="px-4 py-3.5 align-middle">{{ table_label.metadata_label(node.role, 'workflow') }}</td>
+                    <td class="px-4 py-3.5 align-middle">{{ table_label.status_label(node.status_display, status_tone) }}</td>
+                    <td class="px-4 py-3.5 align-middle">{{ table_label.status_label(role_display, role_tone) }}</td>
                     <td class="px-4 py-3.5 align-middle text-sm leading-5 text-content-secondary">{{ node.cpu or '-' }}</td>
                     <td class="px-4 py-3.5 align-middle text-sm leading-5 text-content-secondary">{{ node.memory_display }}</td>
                     <td class="px-4 py-3.5 align-middle text-sm leading-5 text-content-secondary">{{ node.ephemeral_storage_display }}</td>

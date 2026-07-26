@@ -4,7 +4,6 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 COMPACT_RESOURCE_TABLES = (
     'namespaces',
-    'workloads',
     'pods',
     'services',
     'ingresses',
@@ -44,10 +43,12 @@ def test_node_resource_cell_keeps_two_line_icon_container() -> None:
     assert 'node.hostname_address' not in content
 
 
-def test_workload_resource_cell_keeps_compact_icon_and_plain_state_text() -> None:
+def test_workload_resource_cell_uses_text_only_identity_and_plain_state() -> None:
     content = _table('workloads')
 
-    assert 'data-lucide="boxes"' in content
-    assert 'flex h-7 w-7 shrink-0 items-center justify-center rounded-md' in content
+    assert 'data-lucide="boxes"' not in content
+    assert 'flex h-7 w-7 shrink-0 items-center justify-center rounded-md' not in content
     assert '{{ workload.state_display }}' in content
     assert "status_label(workload.state_display" not in content
+    assert '{{ workload.type }}' in content
+    assert '{{ workload.update_strategy }}' in content

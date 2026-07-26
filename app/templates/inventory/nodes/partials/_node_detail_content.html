@@ -1,7 +1,6 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/detail_tip.html" as inventory_tip %}
 {% set node_status_tone = 'normal' if node.status == 'Ready' else ('critical' if node.status == 'NotReady' else 'warning') %}
-{% set node_status_icon = 'circle-check' if node.status == 'Ready' else ('octagon-alert' if node.status == 'NotReady' else 'triangle-alert') %}
 {% set has_pressure = node.memory_pressure == 'Pressure Detected' or node.disk_pressure == 'Pressure Detected' or node.pid_pressure == 'Pressure Detected' %}
 {% if node.status == 'NotReady' or node.ready_condition == 'Not Ready' %}
     {% set condition_posture = "Critical" %}
@@ -62,7 +61,7 @@
                     <p class="mt-1 text-xs leading-5 text-content-muted">{{ node.role_description }}</p>
                 </div>
             </div>
-            <div class="self-start sm:self-auto">{{ table_label.status_label(node.status_display, node_status_tone, node_status_icon) }}</div>
+            <div class="self-start sm:self-auto">{{ table_label.status_label(node.status_display, node_status_tone) }}</div>
         </header>
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
             {% call detail_card('Node Identity', 'badge-info', node.role, 'metadata', 'unknown', 'min-h-80') %}

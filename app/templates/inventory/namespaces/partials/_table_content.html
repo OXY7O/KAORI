@@ -17,7 +17,6 @@
         <tbody class="divide-y divide-outline-subtle">
             {% for namespace in inventory.namespaces %}
                 {% set status_tone = 'normal' if namespace.status == 'Active' else ('warning' if namespace.status == 'Terminating' else 'unknown') %}
-                {% set status_icon = 'circle-check' if namespace.status == 'Active' else ('triangle-alert' if namespace.status == 'Terminating' else 'circle-help') %}
                 <tr class="transition hover:bg-surface-hover">
                     <td class="px-4 py-3.5 align-middle">
                         {{ table_ui.cluster_identity(namespace.cluster_name, namespace.cluster_environment) }}
@@ -33,27 +32,27 @@
                             </div>
                         </div>
                     </td>
-                    <td class="px-4 py-3.5 align-middle">{{ table_label.status_label(namespace.status, status_tone, status_icon) }}</td>
+                    <td class="px-4 py-3.5 align-middle">{{ table_label.status_label(namespace.status, status_tone) }}</td>
                     <td class="px-4 py-3.5 align-middle">
                         {% if namespace.quota_count > 0 %}
-                            {{ table_label.status_label('Configured' ~ (' · ' ~ namespace.quota_count if namespace.quota_count > 1 else ''), 'normal', 'circle-check') }}
+                            <span class="text-sm font-normal leading-5 text-content-secondary">Configured{% if namespace.quota_count > 1 %} · {{ namespace.quota_count }}{% endif %}</span>
                         {% else %}
-                            {{ table_label.status_label('Not Configured', 'disabled', 'circle-minus') }}
+                            <span class="text-sm font-normal leading-5 text-content-muted">Not Configured</span>
                         {% endif %}
                     </td>
                     <td class="px-4 py-3.5 align-middle">
-                        <div class="flex max-w-full flex-wrap gap-1.5">
+                        <div class="max-w-full space-y-1 text-sm font-normal leading-5 text-content-secondary">
                             {% if namespace.pod_security_enforce %}
-                                {{ table_label.metadata_label('Enforce ' ~ namespace.pod_security_enforce, 'shield') }}
+                                <div>Enforce: {{ namespace.pod_security_enforce|title }}</div>
                             {% endif %}
                             {% if namespace.pod_security_audit %}
-                                {{ table_label.metadata_label('Audit ' ~ namespace.pod_security_audit, 'file-search') }}
+                                <div>Audit: {{ namespace.pod_security_audit|title }}</div>
                             {% endif %}
                             {% if namespace.pod_security_warn %}
-                                {{ table_label.metadata_label('Warn ' ~ namespace.pod_security_warn, 'triangle-alert') }}
+                                <div>Warn: {{ namespace.pod_security_warn|title }}</div>
                             {% endif %}
                             {% if not namespace.pod_security_enforce and not namespace.pod_security_audit and not namespace.pod_security_warn %}
-                                {{ table_label.status_label('Not Configured', 'disabled', 'circle-minus') }}
+                                <div class="text-content-muted">Not Configured</div>
                             {% endif %}
                         </div>
                     </td>

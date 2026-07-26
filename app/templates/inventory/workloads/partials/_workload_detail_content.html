@@ -25,15 +25,15 @@
     </section>
 {%- endmacro %}
 {% if workload.status == 'Running' %}
-    {% set status_tone = "normal" %}{% set status_icon = "circle-check" %}
+    {% set status_tone = "normal" %}
 {% elif workload.status == 'Progressing' %}
-    {% set status_tone = "pending" %}{% set status_icon = "loader-circle" %}
+    {% set status_tone = "pending" %}
 {% elif workload.status == 'Failed' %}
-    {% set status_tone = "critical" %}{% set status_icon = "circle-x" %}
+    {% set status_tone = "critical" %}
 {% elif workload.status == 'Suspended' %}
-    {% set status_tone = "disabled" %}{% set status_icon = "pause-circle" %}
+    {% set status_tone = "disabled" %}
 {% else %}
-    {% set status_tone = "warning" %}{% set status_icon = "triangle-alert" %}
+    {% set status_tone = "warning" %}
 {% endif %}
 <div class="bg-surface-hover px-4 py-4">
     <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-sm">
@@ -51,7 +51,7 @@
             </div>
             <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
                 {{ table_label.metadata_label(workload.type, 'box') }}
-                {{ table_label.status_label(workload.state_display, status_tone, status_icon) }}
+                {{ table_label.status_label(workload.state_display, status_tone) }}
             </div>
         </header>
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
@@ -128,9 +128,9 @@
                                 {% for container in workload.containers %}
                                     <tr>
                                         <td class="px-4 py-3 font-semibold text-content-primary">{{ container.name }}</td>
-                                        <td class="px-4 py-3">{{ table_label.metadata_label(container.kind, 'box') }}</td>
+                                        <td class="px-4 py-3 font-normal text-content-secondary">{{ container.kind }}</td>
                                         <td class="max-w-[680px] break-all px-4 py-3 font-medium text-content-secondary">{{ container.image }}</td>
-                                        <td class="px-4 py-3">{{ table_label.metadata_label(container.pull_policy, 'download') }}</td>
+                                        <td class="px-4 py-3 font-normal text-content-secondary">{{ container.pull_policy }}</td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
@@ -150,19 +150,19 @@
                             <p class="text-xs leading-5 text-content-muted">Pods currently mapped to this workload snapshot.</p>
                         </div>
                     </div>
-                    {{ table_label.metadata_label(workload.pod_count ~ ' pods', 'boxes') }}
+                    {{ table_label.metadata_label(workload.pod_count ~ ' pods') }}
                 </div>
                 {% if workload.pods %}
                     <div>
                         {% for pod in workload.pods %}
                             {% if pod.status in ['Running', 'Succeeded'] %}
-                                {% set pod_tone = "normal" %}{% set pod_icon = "circle-check" %}
+                                {% set pod_tone = "normal" %}
                             {% elif pod.status == 'Pending' %}
-                                {% set pod_tone = "pending" %}{% set pod_icon = "loader-circle" %}
+                                {% set pod_tone = "pending" %}
                             {% elif pod.status == 'Failed' %}
-                                {% set pod_tone = "critical" %}{% set pod_icon = "circle-x" %}
+                                {% set pod_tone = "critical" %}
                             {% else %}
-                                {% set pod_tone = "unknown" %}{% set pod_icon = "circle-help" %}
+                                {% set pod_tone = "unknown" %}
                             {% endif %}
                             <div class="relative flex gap-3 pb-5 last:pb-0">
                                 {% if not loop.last %}<span class="absolute left-[5px] top-3 h-full w-px bg-outline-default"></span>{% endif %}
@@ -171,7 +171,7 @@
                                     <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                                         <span class="truncate text-xs font-semibold text-content-primary"
                                               title="{{ pod.name }}">{{ pod.name }}</span>
-                                        {{ table_label.status_label(pod.status, pod_tone, pod_icon) }}
+                                        {{ table_label.status_label(pod.status, pod_tone) }}
                                     </div>
                                     <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs leading-5 text-content-muted"><span>Node {{ pod.node }}</span><span>Ready {{ pod.ready }}</span><span>{{ pod.container_count }} containers</span><span>Age {{ pod.age }}</span></div>
                                 </div>

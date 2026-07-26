@@ -15,9 +15,12 @@ def test_workload_state_uses_plain_table_text() -> None:
     assert 'text-sm font-medium leading-5 text-content-secondary' in content
 
 
-def test_workload_name_icon_uses_compact_row_scale() -> None:
+def test_workload_identity_type_and_strategy_use_plain_table_text() -> None:
     content = TEMPLATE.read_text()
 
-    assert 'flex h-7 w-7 shrink-0 items-center justify-center rounded-md' in content
-    assert 'data-lucide="boxes" class="h-4 w-4"' in content
-    assert 'flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="boxes"' not in content
+    assert 'data-lucide="boxes"' not in content
+    assert 'flex h-7 w-7 shrink-0 items-center justify-center rounded-md' not in content
+    assert '{{ workload.type }}' in content
+    assert '{{ workload.update_strategy }}' in content
+    assert "table_label.metadata_label(workload.type" not in content
+    assert "table_label.status_label(workload.update_strategy" not in content

@@ -52,52 +52,46 @@ def _build_inventory_risk_hints(
     if not connected:
         hints.append(
             {
-                'label': 'Connection risk',
+                'label': 'Connection Risk',
                 'tone': 'red',
-                'icon': 'unlink',
             }
         )
 
     if synced_at is None:
         hints.append(
             {
-                'label': 'Never synced',
+                'label': 'Never Synced',
                 'tone': 'amber',
-                'icon': 'triangle-alert',
             }
         )
     elif _is_stale_inventory(synced_at):
         hints.append(
             {
-                'label': 'Stale sync',
+                'label': 'Stale Sync',
                 'tone': 'amber',
-                'icon': 'clock-alert',
             }
         )
     else:
         hints.append(
             {
-                'label': 'Fresh sync',
+                'label': 'Fresh Sync',
                 'tone': 'green',
-                'icon': 'check-circle-2',
             }
         )
 
     if pod_count >= 100 or workload_count >= 50:
         hints.append(
             {
-                'label': 'High density',
+                'label': 'High Density',
                 'tone': 'blue',
-                'icon': 'activity',
             }
         )
 
     if node_count > 0 and storage_count == 0:
         hints.append(
             {
-                'label': 'No storage data',
+                'label': 'No Storage Data',
                 'tone': 'slate',
-                'icon': 'hard-drive',
             }
         )
 
@@ -173,7 +167,7 @@ def _cluster_resource_counts(cluster_id: str) -> dict[str, int]:
 
 def _sync_status(synced_at: datetime | None) -> tuple[str, str]:
     if synced_at is None:
-        return 'Never synced', 'amber'
+        return 'Never Synced', 'amber'
     if _is_stale_inventory(synced_at):
         return 'Stale', 'amber'
     return 'Fresh', 'green'
