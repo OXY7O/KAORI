@@ -28,22 +28,23 @@
                             'server-cog'
                         ) }}
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                            {{ page_hero.context_metric('blocks', 'Available Controls', 1, 'Production-ready administration workspaces') }}
-                            {{ page_hero.context_metric('badge-check', 'Ready Clusters', ready_cluster_count ~ ' / ' ~ cluster_count, 'Secret Reveal security prerequisites') }}
+                            {{ page_hero.context_metric('blocks', 'Available Controls', 1, 'Production-ready workspaces') }}
+                            {{ page_hero.context_metric('badge-check', 'Ready Clusters', ready_cluster_count ~ ' / ' ~ cluster_count, 'Reveal prerequisites verified') }}
                         </div>
+                        {{ page_hero.context_info('shield-check', 'Control Status: Protected Secret Reveal Available') }}
                     </div>
                 </aside>
             </div>
         </section>
 
-        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm" aria-labelledby="kubernetes-administration-overview-title">
             <header class="flex flex-col gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                 <div class="flex min-w-0 items-start gap-3">
                     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
                         <i data-lucide="layout-dashboard" class="h-5 w-5" aria-hidden="true"></i>
                     </span>
                     <div class="min-w-0">
-                        <h2 class="text-base font-semibold text-content-primary">Administration Overview</h2>
+                        <h2 id="kubernetes-administration-overview-title" class="text-base font-semibold text-content-primary">Administration Overview</h2>
                         <p class="mt-0.5 text-xs leading-5 text-content-muted">Current administrative coverage and readiness across connected Kubernetes clusters.</p>
                     </div>
                 </div>
@@ -71,7 +72,9 @@
                     </article>
                 {% endfor %}
             </div>
+        </section>
 
+        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm" aria-label="Kubernetes Administration Workspaces">
             {{ kubernetes_admin_tabs.render(active_tab) }}
             <div class="p-5 sm:p-6">
                 <div id="kubernetes-administration-overview-tabpanel"
