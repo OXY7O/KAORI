@@ -217,5 +217,5 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 - The Secret Management hero links to Kubernetes cluster management.
 - Create, replace, delete, reveal, and bulk TLS rotation workflow heroes return to Secret Management.
 - Secret creation uses a compact summary list rather than nested summary cards.
-- Delete guardrails remain in the right column directly below Inspect Before Removing.
+- Delete flow and guardrails are grouped inside one sticky right-column wrapper. They must never be separate grid rows, because a sticky flow card would overlap guardrails while the page scrolls.
 - Bulk TLS rotation places validation actions below the upload panel; the combined left workflow column aligns with the right rotation-flow panel.

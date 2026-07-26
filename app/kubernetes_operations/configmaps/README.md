@@ -109,4 +109,4 @@ Impact context can lag behind the live object. The UI must label it as inventory
 
 - The ConfigMap Management hero links to Kubernetes cluster management.
 - Create, update, and delete workflow heroes return to ConfigMap Management.
-- Delete guardrails remain in the right column directly below the ConfigMap delete flow.
+- Delete flow and guardrails are grouped inside one sticky right-column wrapper. They must never be separate grid rows, because a sticky flow card would overlap guardrails while the page scrolls.
