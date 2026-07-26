@@ -1,19 +1,49 @@
 from __future__ import annotations
 
+import logging
+
+from celery.exceptions import CeleryError
 from flask import redirect, render_template, request, url_for
 from flask_login import current_user
+from kombu.exceptions import OperationalError as KombuOperationalError
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.cluster.onboarding import has_registered_clusters
 from app.governance.tls_certificates.service import (
     get_tls_certificate_detail,
     get_tls_certificate_page,
-    sync_tls_certificates,
 )
+from app.jobs.dispatcher import dispatch_registered_job
+from app.jobs.service import JobQuotaExceeded
 from app.notifications.service import (
     get_navigation_notification_context,
     record_operational_activity,
 )
 from app.rbac.decorators import permission_required
+
+logger = logging.getLogger(__name__)
+
+
+def _render_sync_response(
+    *,
+    filter_args: dict[str, str],
+    feedback: dict[str, object],
+    status_code: int = 202,
+):
+    payload = get_tls_certificate_page(filter_args)
+    return (
+        render_template(
+            'governance/tls_certificates/partials/_page_content.html',
+            payload=payload,
+            sync_feedback={
+                **feedback,
+                'notification_context': get_navigation_notification_context(
+                    user_id=int(current_user.id),
+                ),
+            },
+        ),
+        status_code,
+    )
 
 
 @permission_required('tls_certificates.view')
@@ -23,7 +53,7 @@ def tls_certificates_index():
 
     if partial_mode == 'content':
         return render_template(
-            'governance/tls_certificates/partials/_content.html',
+            'governance/tls_certificates/partials/_page_content.html',
             payload=payload,
         )
 
@@ -66,55 +96,93 @@ def tls_certificates_detail(certificate_id: int):
 
 @permission_required('tls_certificates.sync')
 def tls_certificates_sync():
-    cluster_id = request.form.get('cluster_id') or None
-    result = sync_tls_certificates(cluster_id)
-    has_errors = bool(result['errors'])
-    status = 'warning' if has_errors else 'success'
-    title = 'TLS Secret sync completed with warnings' if has_errors else 'TLS Secret sync completed'
-    message = (
-        f'{result["total"]} Kubernetes TLS Secrets were collected. '
-        f'{len(result["errors"])} cluster syncs require review.'
-        if has_errors
-        else f'{result["total"]} Kubernetes TLS Secrets were collected successfully.'
-    )
-    detail = '; '.join(result['errors']) if has_errors else None
+    filter_args = {
+        key: (request.form.get(key) or '').strip()
+        for key in ('cluster_id', 'namespace', 'status', 'search', 'page', 'per_page')
+    }
+    cluster_id = filter_args['cluster_id'] or None
+    is_htmx = request.headers.get('HX-Request') == 'true'
 
-    selected_cluster_name = result['results'][0]['cluster'] if cluster_id and result['results'] else None
+    try:
+        outcome = dispatch_registered_job(
+            job_key='governance.tls_certificates.sync',
+            trigger_type='manual',
+            requested_by_user_id=int(current_user.id),
+            parameters={'cluster_id': cluster_id} if cluster_id else None,
+        )
+    except JobQuotaExceeded as exc:
+        feedback = record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='governance_tls_secret_sync_dispatch',
+            status='warning',
+            title='TLS Secret Sync Could Not Start',
+            message=str(exc),
+            detail='Wait for the active inventory job to finish or review Jobs & Executions.',
+            action_url=url_for('jobs.executions', queue='inventory', search='tls_certificate_sync'),
+            action_label='Review Active Jobs',
+            action_icon='activity',
+            metadata={'cluster_id': cluster_id, 'reason': 'quota_exceeded'},
+            queue_feedback=not is_htmx,
+        )
+        if is_htmx:
+            return _render_sync_response(filter_args=filter_args, feedback=feedback, status_code=409)
+        return redirect(url_for('governance.tls_certificates', **filter_args))
+    except (CeleryError, KombuOperationalError, OSError, RuntimeError, SQLAlchemyError):
+        logger.exception('Could not enqueue TLS certificate synchronization.')
+        feedback = record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='governance_tls_secret_sync_dispatch',
+            status='error',
+            title='TLS Secret Sync Could Not Start',
+            message='KAORI could not dispatch TLS certificate synchronization to the inventory worker.',
+            detail='Verify PostgreSQL, Redis, Celery Beat, and the inventory worker before retrying.',
+            action_url=url_for('jobs.executions', queue='inventory', search='tls_certificate_sync'),
+            action_label='Review Job Executions',
+            action_icon='list-checks',
+            metadata={'cluster_id': cluster_id, 'reason': 'dispatch_failed'},
+            queue_feedback=not is_htmx,
+        )
+        if is_htmx:
+            return _render_sync_response(filter_args=filter_args, feedback=feedback, status_code=503)
+        return redirect(url_for('governance.tls_certificates', **filter_args))
 
-    is_htmx = bool(request.headers.get('HX-Request'))
+    if not outcome.accepted or outcome.job is None:
+        feedback = record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='governance_tls_secret_sync_dispatch',
+            status='warning',
+            title='TLS Secret Sync Blocked',
+            message=outcome.message,
+            detail='Enable a canonical Kubernetes binding for the selected scope before retrying.',
+            action_url=url_for('integrations.kubernetes'),
+            action_label='Review Kubernetes Connections',
+            action_icon='server-cog',
+            metadata={'cluster_id': cluster_id, 'dispatch_status': outcome.status},
+            queue_feedback=not is_htmx,
+        )
+        if is_htmx:
+            return _render_sync_response(filter_args=filter_args, feedback=feedback, status_code=409)
+        return redirect(url_for('governance.tls_certificates', **filter_args))
+
     feedback = record_operational_activity(
-        user_id=current_user.id,
-        event_type='governance_tls_secret_sync',
-        status=status,
-        title=title,
-        message=message,
-        detail=detail,
-        action_url=url_for('governance.tls_certificates', cluster_id=cluster_id or ''),
+        user_id=int(current_user.id),
+        event_type='governance_tls_secret_sync_dispatch',
+        status='success' if outcome.created else 'info',
+        title='TLS Secret Sync Queued' if outcome.created else 'TLS Secret Sync Already Active',
+        message=outcome.message,
+        detail='The inventory worker collects TLS Secrets and Ingress usage outside the web request.',
+        action_url=url_for('jobs.executions', queue='inventory', search='tls_certificate_sync'),
+        action_label='Review Job Progress',
+        action_icon='activity',
         metadata={
             'cluster_id': cluster_id,
-            'cluster_name': selected_cluster_name,
-            'cluster_scope': 'selected_cluster' if cluster_id else 'all_clusters',
-            'collected_count': result['total'],
-            'failed_cluster_count': len(result['errors']),
+            'job_execution_id': outcome.job.id,
+            'job_public_id': outcome.job.public_id,
+            'trigger_type': 'manual',
+            'created': outcome.created,
         },
         queue_feedback=not is_htmx,
     )
-
     if is_htmx:
-        payload = get_tls_certificate_page({'cluster_id': cluster_id or ''})
-        return render_template(
-            'governance/tls_certificates/partials/_page_content.html',
-            payload=payload,
-            sync_feedback={
-                **feedback,
-                'status': status,
-                'title': title,
-                'message': message,
-                'detail': detail,
-                'notification_context': get_navigation_notification_context(
-                    user_id=current_user.id,
-                ),
-            },
-        )
-
-    return redirect(url_for('governance.tls_certificates', cluster_id=cluster_id or ''))
+        return _render_sync_response(filter_args=filter_args, feedback=feedback)
+    return redirect(url_for('governance.tls_certificates', **filter_args))

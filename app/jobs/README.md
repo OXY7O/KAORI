@@ -69,3 +69,10 @@ Celery Beat runs `app.jobs.tasks.dispatch_scheduled_jobs` every minute on the ma
 The registry includes `analytics.materialize` and `analytics.forecast.materialize`. Both definitions use database-backed `JobPolicy`, canonical `JobExecution`, worker-specific queues, shared deduplication, and Activity Audit records for automatic runs. Scheduled jobs have no user subscriber and therefore do not produce notification-center items or toasts.
 
 Analytics and Forecast policies are freshness-aware. A due policy check may complete with `current` and create no `JobExecution` when every configured snapshot is still reusable. This avoids periodic Prometheus queries that do not improve the data served to users.
+
+### TLS Certificate Sync
+
+`governance.tls_certificates.sync` refreshes Kubernetes TLS Secret certificate inventory through the
+existing inventory worker. It defaults to a six-hour database-backed interval, supports manual execution,
+and uses the same canonical deduplication and terminal audit behavior as other registered jobs. The owning
+domain permission is `tls_certificates.sync`.

@@ -43,11 +43,11 @@
                 'TLS governance context',
                 'Inventory Posture',
                 'Certificate Coverage and Risk',
-                'Needs Review' if risk_total > 0 else 'Healthy',
-                'warning' if risk_total > 0 else 'normal',
+                'Needs Review' if risk_total > 0 or payload.sync_state.tone != 'normal' else 'Healthy',
+                'warning' if risk_total > 0 or payload.sync_state.tone != 'normal' else 'normal',
                 [
                     ('shield-check', 'Coverage', coverage_percent ~ '%', healthy_total ~ '/' ~ total_secrets ~ ' healthy'),
-                    ('calendar-clock', 'Needs Review', risk_total, 'Certificate records')
+                    ('clock-3', 'Freshness', payload.sync_state.label, payload.sync_state.last_success_label, true)
                 ],
                 'Manage TLS Inventory',
                 '#tls-registry-actions',

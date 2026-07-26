@@ -261,3 +261,15 @@ remain timezone-neutral; user preferences affect presentation only.
 ## Template normalization rule
 
 Integration Runtime templates render presentation-ready values only. Datetime conversion, canonical-key labels, counters, units, latency strings, and health-score strings are produced in Python. Jinja templates must not call `strftime`, timezone filters, `replace(...).title()`, or construct unit/plural display strings for runtime data. When a touched template still performs such formatting, normalize it in the same change.
+
+### Kubernetes Recovery Data Refresh
+
+When a Kubernetes runtime transitions from an unhealthy state to healthy, recovery dispatch now queues two
+independent, targeted jobs for the recovered cluster:
+
+1. Kubernetes resource inventory synchronization.
+2. TLS certificate inventory synchronization.
+
+Both jobs are best-effort and deduplicated. Failure to enqueue either recovery job does not invalidate the
+successful runtime health observation. TLS recovery uses `governance.tls_certificates.sync` on the inventory
+queue and does not run Kubernetes API collection inside the runtime worker.

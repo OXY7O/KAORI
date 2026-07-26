@@ -39,3 +39,22 @@ The Kubernetes TLS Secret governance UI follows the KAORI violet design standard
 - TLS inventory and certificate-detail heroes use the canonical `page_hero.context_card()` posture panel with a semantic status, two certificate metrics, and one contextual CTA. Sync and bulk-update mutations remain in the content toolbar; the hero CTA only navigates to the relevant workspace.
 - Governance remains read-oriented. Bulk and single TLS Secret mutation actions link to Secret Management, and obsolete Governance-owned mutation templates are not retained.
 - TLS Governance does not use Flask flash messages; missing-record and cluster-setup feedback use the KAORI notification and Activity Log pipeline.
+
+## Automatic TLS Certificate Inventory Synchronization
+
+TLS certificate inventory is owned by the canonical registered job `governance.tls_certificates.sync`.
+The definition runs on the existing `inventory` queue and is enabled by default with a six-hour interval.
+Celery Beat only claims due `job_policies`; the inventory worker performs Kubernetes API collection and
+commits each cluster independently.
+
+Supported triggers:
+
+- scheduled fleet collection from the database-backed job policy;
+- manual fleet or selected-cluster enqueue from Kubernetes TLS Secret;
+- manual fleet execution from Jobs → Configure Jobs;
+- selected-cluster recovery collection when a Kubernetes integration transitions back to healthy.
+
+The web route must never call Kubernetes Secret collection inline. Manual Sync TLS only dispatches or
+joins a canonical `JobExecution`. Active execution, last successful collection, next scheduled run, and
+freshness are presented from `JobExecution`, `JobPolicy`, and committed `TLSCertificateInventory` rows.
+A successful collection with zero TLS Secrets still establishes freshness through the terminal job record.

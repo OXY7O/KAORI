@@ -13,8 +13,8 @@
               <svg class="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle class="opacity-25" cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3"></circle><path class="opacity-90" fill="currentColor" d="M21 12a9 9 0 0 0-9-9v3a6 6 0 0 1 6 6h3Z"></path></svg>
             </span>
             <div class="min-w-0 flex-1 pr-7">
-              <p class="text-sm font-semibold text-content-primary">TLS Secret sync in progress</p>
-              <p class="mt-1 text-xs leading-5 text-content-muted">KAORI is collecting Kubernetes TLS Secrets and certificate metadata.</p>
+              <p class="text-sm font-semibold text-content-primary">TLS Secret sync request</p>
+              <p class="mt-1 text-xs leading-5 text-content-muted">KAORI is queuing TLS certificate collection in the inventory worker.</p>
             </div>
             <button type="button" data-tls-sync-toast-close class="absolute right-3 top-3 z-20 rounded-lg p-1 text-content-muted transition hover:bg-kaori-soft hover:text-kaori-primary" aria-label="Close progress notification">
               <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>

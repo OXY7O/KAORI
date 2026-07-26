@@ -381,6 +381,7 @@ class Config:
             'app.integrations.runtime.tasks',
             'app.integrations.validation.tasks',
             'app.jobs.tasks',
+            'app.governance.tls_certificates.tasks',
             'app.resolver.tasks',
         ),
         'task_routes': {
@@ -394,6 +395,9 @@ class Config:
                 'queue': 'inventory',
             },
             'app.cluster.tasks.sync_single_cluster': {
+                'queue': 'inventory',
+            },
+            'app.governance.tls_certificates.tasks.sync_tls_certificates': {
                 'queue': 'inventory',
             },
             'app.retention.tasks.run_domain_retention': {

@@ -199,6 +199,8 @@ def get_tls_certificate_page(args: Any) -> dict[str, Any]:
     )
     records = query.offset((pagination['page'] - 1) * pagination['per_page']).limit(pagination['per_page']).all()
 
+    from app.governance.tls_certificates.sync_state import build_tls_sync_state
+
     return {
         'records': records,
         'clusters': clusters,
@@ -207,6 +209,7 @@ def get_tls_certificate_page(args: Any) -> dict[str, Any]:
         'pagination': pagination,
         'summary': _summary(_base_query({**filters, 'page': 1})),
         'status_options': TLS_STATUS_OPTIONS,
+        'sync_state': build_tls_sync_state(cluster_id=filters['cluster_id'] or None),
     }
 
 
@@ -261,26 +264,6 @@ def sync_tls_certificates_for_cluster(cluster: Cluster) -> tuple[int, str | None
 
     db.session.commit()
     return len(records), None
-
-
-def sync_tls_certificates(cluster_id: str | None = None) -> dict[str, Any]:
-    query = Cluster.query
-    if cluster_id:
-        query = query.filter(Cluster.id == cluster_id)
-
-    clusters = query.order_by(Cluster.name.asc()).all()
-    results = []
-    total = 0
-    errors: list[str] = []
-
-    for cluster in clusters:
-        count, error = sync_tls_certificates_for_cluster(cluster)
-        total += count
-        results.append({'cluster': cluster.name, 'count': count, 'error': error})
-        if error:
-            errors.append(f'{cluster.name}: {error}')
-
-    return {'total': total, 'results': results, 'errors': errors}
 
 
 def _read_uploaded_pair(files: Any) -> tuple[bytes, bytes]:

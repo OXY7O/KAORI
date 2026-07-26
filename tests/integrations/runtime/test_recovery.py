@@ -73,26 +73,38 @@ def test_alert_provider_recovery_queues_dashboard_and_alerts_snapshots(monkeypat
     assert all(call['trigger_type'] == 'recovery' for call in calls)
 
 
-def test_kubernetes_recovery_queues_single_cluster_inventory_sync(monkeypatch) -> None:
+def test_kubernetes_recovery_queues_inventory_and_tls_sync(monkeypatch) -> None:
     import sys
     from types import ModuleType
 
-    calls: list[dict[str, object]] = []
+    inventory_calls: list[dict[str, object]] = []
+    tls_calls: list[dict[str, object]] = []
     cluster = SimpleNamespace(id='cluster-1')
 
-    sync_jobs = ModuleType('app.cluster.sync_jobs')
+    inventory_jobs = ModuleType('app.cluster.sync_jobs')
 
     def enqueue_cluster_inventory_sync(**kwargs):
-        calls.append(kwargs)
+        inventory_calls.append(kwargs)
         return SimpleNamespace(), True
 
-    sync_jobs.enqueue_cluster_inventory_sync = enqueue_cluster_inventory_sync
+    inventory_jobs.enqueue_cluster_inventory_sync = enqueue_cluster_inventory_sync
+
+    tls_jobs = ModuleType('app.governance.tls_certificates.sync_jobs')
+
+    def enqueue_tls_certificate_sync(**kwargs):
+        tls_calls.append(kwargs)
+        return SimpleNamespace(), True
+
+    tls_jobs.enqueue_tls_certificate_sync = enqueue_tls_certificate_sync
     cluster_module = ModuleType('app.models.cluster')
     cluster_module.Cluster = SimpleNamespace(query=SimpleNamespace(get=lambda cluster_id: cluster))
 
     monkeypatch.setitem(sys.modules, 'app', ModuleType('app'))
     monkeypatch.setitem(sys.modules, 'app.cluster', ModuleType('app.cluster'))
-    monkeypatch.setitem(sys.modules, 'app.cluster.sync_jobs', sync_jobs)
+    monkeypatch.setitem(sys.modules, 'app.cluster.sync_jobs', inventory_jobs)
+    monkeypatch.setitem(sys.modules, 'app.governance', ModuleType('app.governance'))
+    monkeypatch.setitem(sys.modules, 'app.governance.tls_certificates', ModuleType('app.governance.tls_certificates'))
+    monkeypatch.setitem(sys.modules, 'app.governance.tls_certificates.sync_jobs', tls_jobs)
     monkeypatch.setitem(sys.modules, 'app.models', ModuleType('app.models'))
     monkeypatch.setitem(sys.modules, 'app.models.cluster', cluster_module)
 
@@ -101,11 +113,18 @@ def test_kubernetes_recovery_queues_single_cluster_inventory_sync(monkeypatch) -
         instance=SimpleNamespace(cluster_id='cluster-1'),
     )
 
-    assert result['queued'] == 1
-    assert calls == [
+    assert result['queued'] == 2
+    assert inventory_calls == [
         {
             'cluster': cluster,
             'requested_by_user_id': None,
             'trigger_type': 'recovery',
+        }
+    ]
+    assert tls_calls == [
+        {
+            'requested_by_user_id': None,
+            'trigger_type': 'recovery',
+            'cluster_id': 'cluster-1',
         }
     ]

@@ -64,15 +64,17 @@ def enqueue_recovery_work(*, provider_type: str, instance: Any) -> dict[str, obj
 
     if provider_type == 'kubernetes':
         from app.cluster.sync_jobs import enqueue_cluster_inventory_sync
+        from app.governance.tls_certificates.sync_jobs import enqueue_tls_certificate_sync
         from app.models.cluster import Cluster
 
         for cluster_id in cluster_ids:
             cluster = Cluster.query.get(cluster_id)
             if cluster is None:
-                result['skipped'] = int(result['skipped']) + 1
+                result['skipped'] = int(result['skipped']) + 2
                 continue
+
             try:
-                _, created = enqueue_cluster_inventory_sync(
+                _, inventory_created = enqueue_cluster_inventory_sync(
                     cluster=cluster,
                     requested_by_user_id=None,
                     trigger_type='recovery',
@@ -81,8 +83,21 @@ def enqueue_recovery_work(*, provider_type: str, instance: Any) -> dict[str, obj
                 logger.exception('Could not queue recovery inventory sync for cluster %s.', cluster_id)
                 result['skipped'] = int(result['skipped']) + 1
             else:
-                result['queued'] = int(result['queued']) + int(created)
-                result['skipped'] = int(result['skipped']) + int(not created)
+                result['queued'] = int(result['queued']) + int(inventory_created)
+                result['skipped'] = int(result['skipped']) + int(not inventory_created)
+
+            try:
+                _, tls_created = enqueue_tls_certificate_sync(
+                    requested_by_user_id=None,
+                    trigger_type='recovery',
+                    cluster_id=cluster_id,
+                )
+            except Exception:
+                logger.exception('Could not queue recovery TLS sync for cluster %s.', cluster_id)
+                result['skipped'] = int(result['skipped']) + 1
+            else:
+                result['queued'] = int(result['queued']) + int(tls_created)
+                result['skipped'] = int(result['skipped']) + int(not tls_created)
         return result
 
     if provider_type not in {'prometheus', 'alertmanager'}:
