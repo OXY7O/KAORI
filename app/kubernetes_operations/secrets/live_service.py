@@ -5,7 +5,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Any, cast
 
-from kubernetes.client import CoreV1Api, V1NamespaceList, V1Secret, V1SecretList
+from kubernetes.client import AuthorizationV1Api, CoreV1Api, V1NamespaceList, V1Secret, V1SecretList
 from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
@@ -68,6 +68,17 @@ def core_api(cluster: Cluster) -> CoreV1Api:
             connection_for_cluster(cluster),
         )
         .core_api()
+    )
+
+
+def authorization_api(cluster: Cluster) -> AuthorizationV1Api:
+    return (
+        get_integration('kubernetes')
+        .execute(
+            'client.build',
+            connection_for_cluster(cluster),
+        )
+        .authorization_api()
     )
 
 

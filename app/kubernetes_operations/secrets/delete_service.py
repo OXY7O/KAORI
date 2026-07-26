@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from kubernetes import client
 from kubernetes.client import V1DeleteOptions, V1Preconditions
 from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
@@ -12,6 +13,7 @@ from app.integrations.kubernetes.resolver import tls_policy_for_cluster
 from app.integrations.kubernetes.tls import weak_tls_context
 from app.kubernetes_operations.secrets.live_service import (
     LiveSecretSnapshot,
+    authorization_api,
     core_api,
     list_live_namespaces,
     list_live_secrets,
@@ -95,7 +97,10 @@ def get_secret_impact_context(target: LiveSecretSnapshot) -> list[dict[str, str]
     impacts: dict[tuple[str, str], dict[str, str]] = {}
     for pod in pods:
         references = pod.configuration_references or []
-        if not any(ref.get('type') == 'Secret' and ref.get('name') == target.name for ref in references):
+        if not any(
+            ref.get('type') == 'Secret' and ref.get('name') == target.name
+            for ref in references
+        ):
             continue
         kind = pod.workload_type or 'Pod'
         name = pod.workload_name or pod.pod_name
@@ -152,7 +157,8 @@ def _bound_target(form: Any) -> LiveSecretSnapshot:
     )
     if selected != bound:
         raise ValueError(
-            'The Secret selection changed after the deletion review was loaded. Reload the target and retry.'
+            'The Secret selection changed after the deletion review was loaded. '
+            'Reload the target and retry.'
         )
     return read_live_secret(*bound, blocked_types=BLOCKED_DELETE_TYPES)
 
@@ -172,45 +178,115 @@ def _api_error_message(exc: ApiException) -> str:
     return 'Kubernetes API could not complete the Secret deletion.'
 
 
-def execute_secret_deletion(form: Any, *, dry_run: bool) -> SecretDeletionResult:
+def _validate_delete_authorization(target: LiveSecretSnapshot) -> None:
+    review = client.V1SelfSubjectAccessReview(
+        spec=client.V1SelfSubjectAccessReviewSpec(
+            resource_attributes=client.V1ResourceAttributes(
+                group='',
+                resource='secrets',
+                verb='delete',
+                namespace=target.namespace,
+                name=target.name,
+            )
+        )
+    )
+    try:
+        with weak_tls_context(enabled=tls_policy_for_cluster(target.cluster)[1]):
+            response = authorization_api(
+                target.cluster
+            ).create_self_subject_access_review(
+                body=review,
+                _request_timeout=10,
+            )
+    except ApiException as exc:
+        if exc.status == 401:
+            raise ValueError(
+                'Kubernetes authentication failed while validating Secret delete access.'
+            ) from exc
+        if exc.status == 403:
+            raise ValueError(
+                'Kubernetes denied the delete authorization preflight. '
+                'Verify SelfSubjectAccessReview access for this cluster.'
+            ) from exc
+        raise ValueError(
+            'KAORI could not validate Secret delete authorization against Kubernetes.'
+        ) from exc
+    except ConfigException as exc:
+        raise ValueError('The selected cluster kubeconfig is invalid or incomplete.') from exc
+    except (OSError, Urllib3HTTPError) as exc:
+        raise ValueError(
+            'KAORI could not reach the Kubernetes API while validating Secret delete access.'
+        ) from exc
+
+    status = getattr(response, 'status', None)
+    if not bool(getattr(status, 'allowed', False)):
+        raise ValueError(
+            'Kubernetes denied Secret deletion for this namespace. Verify Secret delete RBAC.'
+        )
+
+
+def execute_secret_deletion(
+    form: Any,
+    *,
+    validate_only: bool,
+    expected_resource_version: str | None = None,
+) -> SecretDeletionResult:
     target = _bound_target(form)
     if _required(form.get('confirm_name'), 'Exact Secret name') != target.name:
         raise ValueError('Type the exact live Secret name to confirm deletion.')
 
-    impacts = get_secret_impact_context(target)
-    body = V1DeleteOptions(
-        propagation_policy='Background',
-        preconditions=V1Preconditions(resource_version=target.resource_version),
-    )
+    resource_version = str(target.resource_version or '')
+    if not resource_version:
+        raise ValueError(
+            'Kubernetes did not return a Secret resource version. Reload the target and retry.'
+        )
+    if expected_resource_version and resource_version != expected_resource_version:
+        raise ValueError('The Secret changed after validation. Run deletion validation again.')
 
-    def perform_delete(*, server_dry_run: bool) -> None:
-        with weak_tls_context(enabled=tls_policy_for_cluster(target.cluster)[1]):
-            core_api(target.cluster).delete_namespaced_secret(
-                name=target.name,
-                namespace=target.namespace,
-                body=body,
-                dry_run='All' if server_dry_run else None,
-                _request_timeout=10,
-            )
+    impacts = get_secret_impact_context(target)
 
     try:
-        perform_delete(server_dry_run=True)
-        if not dry_run:
-            perform_delete(server_dry_run=False)
+        if validate_only:
+            # Validation deliberately avoids the Secret DELETE endpoint. Some older
+            # or proxied Kubernetes environments do not enforce DELETE dryRun
+            # consistently, so authorization is checked through SSAR instead.
+            _validate_delete_authorization(target)
+        else:
+            body = V1DeleteOptions(
+                propagation_policy='Background',
+                preconditions=V1Preconditions(resource_version=resource_version),
+            )
+            with weak_tls_context(enabled=tls_policy_for_cluster(target.cluster)[1]):
+                core_api(target.cluster).delete_namespaced_secret(
+                    name=target.name,
+                    namespace=target.namespace,
+                    body=body,
+                    _request_timeout=10,
+                )
     except ApiException as exc:
         raise ValueError(_api_error_message(exc)) from exc
     except ConfigException as exc:
         raise ValueError('The selected cluster kubeconfig is invalid or incomplete.') from exc
     except (OSError, Urllib3HTTPError) as exc:
-        raise ValueError('KAORI could not reach the Kubernetes API while deleting the live Secret.') from exc
+        operation = (
+            'validating Secret delete access'
+            if validate_only
+            else 'deleting the live Secret'
+        )
+        raise ValueError(f'KAORI could not reach the Kubernetes API while {operation}.') from exc
 
-    operation = 'validation' if dry_run else 'deletion'
+    operation = 'validation' if validate_only else 'deletion'
     return SecretDeletionResult(
         status='success',
-        title=('Secret deletion validation completed' if dry_run else 'Secret deleted'),
+        title=(
+            'Secret deletion validation completed'
+            if validate_only
+            else 'Secret deleted'
+        ),
         message=(
-            f'Kubernetes accepted the deletion request for {target.name} during server-side dry-run.'
-            if dry_run
+            'KAORI verified the live Secret identity, resource version, and effective '
+            'delete authorization without sending a DELETE request.'
+            if validate_only
             else f'{target.name} was deleted from {target.cluster_name}/{target.namespace}.'
         ),
         detail=None,
@@ -223,7 +299,11 @@ def execute_secret_deletion(form: Any, *, dry_run: bool) -> SecretDeletionResult
             'key_names': list(target.key_names),
             'key_count': target.key_count,
             'impact_count': len(impacts),
+            'resource_version': resource_version,
             'operation': operation,
+            'validation_mode': (
+                'authorization_preflight' if validate_only else 'validated_receipt'
+            ),
             'live_target_source': True,
             'secret_value_recorded': False,
         },

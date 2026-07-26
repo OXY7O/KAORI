@@ -43,7 +43,7 @@ Replace and Delete bind this tuple when the live editor/review is loaded. The su
 
 ## Mandatory mutation guardrails
 
-1. Every create, replace, or delete execution performs Kubernetes server-side dry-run inside the service boundary immediately before the real operation.
+1. Create and replace execution perform Kubernetes server-side dry-run inside the service boundary immediately before mutation. Delete validation never calls the Secret DELETE endpoint; it uses live identity review plus SelfSubjectAccessReview authorization preflight.
 2. Create uses create-only semantics and never silently overwrites an existing Secret.
 3. Replace patches only submitted keys and includes the live `resourceVersion` to detect concurrent changes.
 4. Delete requires exact-name confirmation and a live `resourceVersion` precondition.
@@ -107,8 +107,9 @@ Protected Reveal is the only plaintext-read workflow. It decodes one approved ke
 - The selected target is reread before validation/execution.
 - Workload references from Pod inventory are best-effort impact context only.
 - Exact-name confirmation is mandatory.
-- Validation performs a dry-run delete.
-- Delete performs dry-run and actual deletion with the same live identity and resource-version precondition.
+- Validation rereads the live Secret, verifies exact-name confirmation, records the resource version, and checks effective delete authorization with SelfSubjectAccessReview without calling `delete_namespaced_secret()`.
+- Successful validation issues a signed, session-bound receipt valid for ten minutes and tied to cluster, namespace, Secret name, and resource version.
+- Final Delete requires and consumes that receipt, rereads the same live target, rejects resource-version drift, and calls `delete_namespaced_secret()` exactly once with a resource-version precondition.
 - Service-account token Secrets are excluded from this generic workflow.
 
 ### TLS Secret Rotation
@@ -182,7 +183,7 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 
 - Create, replace, and delete forms use the shared validation gate in `app/static/js/validated_operations.js`.
 - The final mutation button stays disabled until the latest form state passes validation. Any input, uploaded payload, or selected target change invalidates that UI state.
-- The server never trusts the browser gate: each final mutation runs Kubernetes validation again immediately before apply through `validate_then_apply`.
+- The server never trusts the browser gate. Create and replace rerun Kubernetes dry-run through `validate_then_apply`; Delete requires a signed, session-bound validation receipt and rejects target or resource-version drift.
 - Uploaded Secret streams are rewound between validation and mutation so the exact same payload is applied.
 - Successful create, replace, and delete operations redirect to a clean page state, clearing filters, target selection, confirmation values, and sensitive payload inputs.
 - Validation failures preserve the current form and use persistent KAORI notifications instead of Flask flash messages.
