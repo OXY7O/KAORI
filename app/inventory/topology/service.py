@@ -66,7 +66,7 @@ def _iso_datetime(value: datetime | None) -> str | None:
     return normalized.isoformat() if normalized else None
 
 
-def _display(value: Any, empty: str = 'Not reported') -> str:
+def _display(value: Any, empty: str = 'Not Reported') -> str:
     if value is None:
         return empty
     if isinstance(value, bool):
@@ -131,7 +131,7 @@ def _status_tone(value: str | None, resource_type: str) -> str:
     return 'info'
 
 
-def _field(label: str, value: Any, *, empty: str = 'Not reported') -> dict[str, str]:
+def _field(label: str, value: Any, *, empty: str = 'Not Reported') -> dict[str, str]:
     return {
         'label': label,
         'value': _display(value, empty),
@@ -551,8 +551,8 @@ def build_topology_graph(
                 fields=[
                     _field('Environment', get_environment_label(cluster.environment)),
                     _field('Status', cluster.status),
-                    _field('API server', server_for_cluster(cluster)),
-                    _field('Kubernetes version', inventory_row.kubernetes_version if inventory_row else None),
+                    _field('API Server', server_for_cluster(cluster)),
+                    _field('Kubernetes Version', inventory_row.kubernetes_version if inventory_row else None),
                     _field('Nodes', cluster.node_count),
                 ],
                 collected_at=inventory_row.collected_at if inventory_row else cluster.updated_at,
@@ -617,8 +617,8 @@ def build_topology_graph(
                         _field('Role', item.role),
                         _field('Status', item.status),
                         _field('Internal IP', item.internal_ip),
-                        _field('Operating system', item.os_image),
-                        _field('Kubelet version', item.kubelet_version),
+                        _field('Operating System', item.os_image),
+                        _field('Kubelet Version', item.kubelet_version),
                     ],
                     collected_at=item.collected_at,
                     action_url=url_for(
@@ -694,7 +694,7 @@ def build_topology_graph(
                         _field('Cluster IP', item.cluster_ip),
                         _field('External IP', item.external_ip),
                         _field('Ports', item.ports),
-                        _field('Selector labels', len(item.selector or {}), empty='0'),
+                        _field('Selector Labels', len(item.selector or {}), empty='0'),
                     ],
                     collected_at=item.collected_at,
                     action_url=url_for(
@@ -720,7 +720,7 @@ def build_topology_graph(
                     label=item.ingress_name,
                     resource_type='ingress',
                     kind='Ingress',
-                    status='Configured' if item.backend_paths else 'No backends',
+                    status='Configured' if item.backend_paths else 'No Backends',
                     status_tone='info' if item.backend_paths else 'warning',
                     cluster_id=item.cluster_id,
                     cluster_name=cluster.name,
@@ -728,10 +728,10 @@ def build_topology_graph(
                     parent=parent,
                     fields=[
                         _field('Host', item.host),
-                        _field('Ingress class', item.ingress_class),
+                        _field('Ingress Class', item.ingress_class),
                         _field('Address', item.address),
-                        _field('TLS enabled', item.tls_enabled),
-                        _field('Backend paths', len(item.backend_paths or []), empty='0'),
+                        _field('TLS Enabled', item.tls_enabled),
+                        _field('Backend Paths', len(item.backend_paths or []), empty='0'),
                     ],
                     collected_at=item.collected_at,
                     action_url=url_for(
@@ -768,11 +768,11 @@ def build_topology_graph(
                     namespace=item.namespace,
                     parent=parent,
                     fields=[
-                        _field('Object type', object_type),
-                        _field('Secret type', item.secret_type),
+                        _field('Object Type', object_type),
+                        _field('Secret Type', item.secret_type),
                         _field('Keys', item.key_count, empty='0'),
                         _field('Immutable', item.immutable),
-                        _field('Payload bytes', item.payload_size_bytes, empty='0'),
+                        _field('Payload Bytes', item.payload_size_bytes, empty='0'),
                     ],
                     collected_at=item.collected_at,
                     action_url=url_for(
@@ -837,9 +837,9 @@ def build_topology_graph(
                     parent=parent,
                     fields=[
                         _field('Status', item.status),
-                        _field('Storage class', item.storage_class),
+                        _field('Storage Class', item.storage_class),
                         _field('Capacity', item.capacity),
-                        _field('Bound volume', details.get('volume_name')),
+                        _field('Bound Volume', details.get('volume_name')),
                         _field('Claim', details.get('claim_name')),
                     ],
                     collected_at=item.collected_at,

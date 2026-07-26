@@ -1,22 +1,9 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/details/_detail_content.html" as detail %}
 {% import "components/detail_object.html" as detail_object %}
 {% import "components/detail_tip.html" as inventory_tip %}
-{% macro detail_row(label, value='-', break_all=false) -%}
-    {% set display_value = value if value not in [None,''] else '-' %}
-    <div class="flex items-start justify-between gap-3"><span class="shrink-0 text-xs font-normal leading-5 text-content-muted">{{ label }}</span><span class="max-w-[68%] {{ 'break-all' if break_all else 'break-words' }} text-right text-xs font-medium leading-5 text-content-secondary"
-      title="{{ display_value }}">{{ display_value }}</span></div>
-{%- endmacro %}
 {% macro info_box(title, message, icon='info', tone='brand', equal_height=false) -%}
     {{ inventory_tip.info_box(title, message, icon, tone, equal_height) }}
-{%- endmacro %}
-{% macro detail_card(title, icon, badge=None, class_name='') -%}
-    <section class="flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-4 {{ class_name }}">
-        <div class="mb-4 flex items-center justify-between gap-3">
-            <div class="flex items-center gap-2 text-sm font-semibold text-content-primary"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>{{ title }}</div>
-            {% if badge %}{{ table_label.metadata_label(badge, none, false, 'detail') }}{% endif %}
-        </div>
-        <div class="flex min-h-0 flex-1 flex-col gap-2.5">{{ caller() }}</div>
-    </section>
 {%- endmacro %}
 <div class="bg-surface-hover px-4 py-4">
     <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-sm">
@@ -42,39 +29,39 @@
             </div>
         </header>
         <div class="grid gap-4 p-5 lg:grid-cols-3">
-            {% call detail_card('Object Identity','badge-info',item.age,'min-h-[26rem]') %}
-                {{ detail_row('Cluster',item.cluster_name) }}{{ detail_row('Namespace',item.namespace) }}{{ detail_row('Type',item.type) }}
-                {% if item.type == 'Secret' %}{{ detail_row('Secret Type',item.secret_type) }}{% endif %}
-                {{ detail_row('Immutable','Yes' if item.immutable else 'No') }}{{ detail_row('Age',item.age) }}
+            {% call detail.detail_card('Object Identity', 'badge-info', item.age, class_name='min-h-[26rem]') %}
+                {{ detail.detail_row('Cluster',item.cluster_name) }}{{ detail.detail_row('Namespace',item.namespace) }}{{ detail.detail_row('Type',item.type) }}
+                {% if item.type == 'Secret' %}{{ detail.detail_row('Secret Type',item.secret_type) }}{% endif %}
+                {{ detail.detail_row('Immutable','Yes' if item.immutable else 'No') }}{{ detail.detail_row('Age',item.age) }}
                 <div class="mt-auto pt-3">
                     {% if item.type == 'Secret' %}
-                        {{ info_box('Secret safety', 'Metadata and key names only; Secret values are never collected or displayed.', 'shield-check') }}
+                        {{ info_box('Secret Safety', 'Metadata and key names only; Secret values are never collected or displayed.', 'shield-check') }}
                     {% else %}
-                        {{ info_box('Inventory identity', 'ConfigMap metadata and key names from the latest inventory snapshot.', 'file-json-2') }}
+                        {{ info_box('Inventory Identity', 'ConfigMap metadata and key names from the latest inventory snapshot.', 'file-json-2') }}
                     {% endif %}
                 </div>
             {% endcall %}
-            {% call detail_card('Key Metadata','key-round',item.key_count ~ ' keys','min-h-[26rem]') %}
-                {{ detail_row('Recorded Keys',item.key_count) }}
+            {% call detail.detail_card('Key Metadata', 'key-round', table_label.count_text(item.key_count, 'Key'), class_name='min-h-[26rem]') %}
+                {{ detail.detail_row('Recorded Keys',item.key_count) }}
                 {% call detail_object.stack() %}
                     {% if item.key_names %}
-                        {% call detail_object.card('Key names',item.key_count ~ ' keys','key-round') %}
+                        {% call detail_object.card('Key Names',table_label.count_text(item.key_count, 'Key'),'key-round') %}
                             <div class="flex max-h-44 flex-wrap gap-1.5 overflow-y-auto pr-1">
                                 {% for key_name in item.key_names %}<span class="inline-flex max-w-full rounded-md border border-outline-default bg-surface-card px-2 py-1 text-[10px] font-semibold leading-4 text-kaori-primary"
       title="{{ key_name }}"><span class="break-all">{{ key_name }}</span></span>{% endfor %}
                             </div>
                         {% endcall %}
                     {% else %}
-                        {{ detail_object.empty('No keys recorded', 'No key name is available in the latest metadata snapshot.', 'key-round') }}
+                        {{ detail_object.empty('No Keys Recorded', 'No key name is available in the latest metadata snapshot.', 'key-round') }}
                     {% endif %}
-                    {{ info_box('Metadata boundary', 'Key names are visible; configuration and Secret values are excluded.', 'shield-check') }}
+                    {{ info_box('Metadata Boundary', 'Key names are visible; configuration and Secret values are excluded.', 'shield-check') }}
                 {% endcall %}
             {% endcall %}
-            {% call detail_card('Used By Pods','package-check',item.used_by_count ~ ' Pods','min-h-[26rem]') %}
-                {{ detail_row('Pod References',item.used_by_count) }}
+            {% call detail.detail_card('Used By Pods', 'package-check', table_label.count_text(item.used_by_count, 'Pod'), class_name='min-h-[26rem]') %}
+                {{ detail.detail_row('Pod References',item.used_by_count) }}
                 {% call detail_object.stack() %}
                     {% if item.used_by %}
-                        {% call detail_object.card('Current consumers',item.used_by_count ~ ' Pods','package-check') %}
+                        {% call detail_object.card('Current Consumers',table_label.count_text(item.used_by_count, 'Pod'),'package-check') %}
                             {% for pod in item.used_by %}
                                 {% if pod.status in ['Running','Succeeded'] %}
                                     {% set pod_tone = "normal" %}
@@ -100,9 +87,9 @@
                             <p class="text-xs text-content-muted">Showing the first 8 Pods.</p>
                         {% endif %}
                     {% else %}
-                        {{ detail_object.empty('No Pod references', 'No Pod reference is recorded in the latest inventory snapshot.', 'package-check') }}
+                        {{ detail_object.empty('No Pod References', 'No Pod reference is recorded in the latest inventory snapshot.', 'package-check') }}
                     {% endif %}
-                    {{ info_box('Reference boundary', 'Consumers reflect environment and mounted configuration references in the current snapshot.', 'package-check') }}
+                    {{ info_box('Reference Boundary', 'Consumers reflect environment and mounted configuration references in the current snapshot.', 'package-check') }}
                 {% endcall %}
             {% endcall %}
         </div>

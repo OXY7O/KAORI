@@ -1,22 +1,9 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/details/_detail_content.html" as detail %}
 {% import "components/detail_object.html" as detail_object %}
 {% import "components/detail_tip.html" as inventory_tip %}
-{% macro detail_row(label, value='-', break_all=false) -%}
-    {% set display_value = value if value not in [None, ''] else '-' %}
-    <div class="flex items-start justify-between gap-3"><span class="shrink-0 text-xs font-normal leading-5 text-content-muted">{{ label }}</span><span class="max-w-[68%] {{ 'break-all' if break_all else 'break-words' }} text-right text-xs font-medium leading-5 text-content-secondary"
-      title="{{ display_value }}">{{ display_value }}</span></div>
-{%- endmacro %}
 {% macro info_box(title, message, icon='info', tone='brand', equal_height=false) -%}
     {{ inventory_tip.info_box(title, message, icon, tone, equal_height) }}
-{%- endmacro %}
-{% macro detail_card(title, icon, badge=None, class_name='') -%}
-    <section class="flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-4 {{ class_name }}">
-        <div class="mb-4 flex items-center justify-between gap-3">
-            <div class="flex items-center gap-2 text-sm font-semibold text-content-primary"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>{{ title }}</div>
-            {% if badge %}{{ table_label.metadata_label(badge, none, false, 'detail') }}{% endif %}
-        </div>
-        <div class="flex min-h-0 flex-1 flex-col gap-2.5">{{ caller() }}</div>
-    </section>
 {%- endmacro %}
 {% if item.status in ['Bound','Available','Active'] %}
     {% set status_tone = "normal" %}
@@ -35,7 +22,7 @@
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h3 class="truncate text-sm font-semibold text-content-primary">{{ item.name }}</h3>
-                        {{ table_label.metadata_label(item.cluster_name, 'server') }}{{ table_label.metadata_label(item.namespace, 'globe-2' if item.namespace == 'Cluster-wide' else 'folder-tree') }}
+                        {{ table_label.metadata_label(item.cluster_name, 'server') }}{{ table_label.metadata_label(item.namespace, 'globe-2' if item.namespace == 'Cluster-Wide' else 'folder-tree') }}
                     </div>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Storage identity, capacity, lifecycle, provisioning, and associated resources from the latest inventory snapshot.</p>
                 </div>
@@ -43,60 +30,60 @@
             <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">{{ table_label.metadata_label('PV' if item.type == 'PersistentVolume' else 'PVC' if item.type == 'PersistentVolumeClaim' else item.type) }}{{ table_label.status_label(item.status, status_tone) }}</div>
         </header>
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail_card('Storage Identity', 'badge-info', item.age, 'min-h-[30rem]') %}
-                {{ detail_row('Cluster', item.cluster_name) }}{{ detail_row('Namespace Scope', item.namespace) }}{{ detail_row('Type', item.type) }}{{ detail_row('Storage Class', item.storage_class) }}{{ detail_row('Kubernetes UID', item.uid, true) }}{{ detail_row('Created', item.created_at|user_datetime) }}{{ detail_row('Collected', item.collected_at|user_datetime) }}
-                <div class="mt-auto pt-3">{{ info_box('Inventory identity', item.type_description, 'lightbulb') }}</div>
+            {% call detail.detail_card('Storage Identity', 'badge-info', item.age, class_name='min-h-[30rem]') %}
+                {{ detail.detail_row('Cluster', item.cluster_name) }}{{ detail.detail_row('Namespace Scope', item.namespace) }}{{ detail.detail_row('Type', item.type) }}{{ detail.detail_row('Storage Class', item.storage_class) }}{{ detail.detail_row('Kubernetes UID', item.uid, true) }}{{ detail.detail_row('Created', item.created_at|user_datetime) }}{{ detail.detail_row('Collected', item.collected_at|user_datetime) }}
+                <div class="mt-auto pt-3">{{ info_box('Inventory Identity', item.type_description, 'lightbulb') }}</div>
             {% endcall %}
-            {% call detail_card('Capacity & Mode', 'hard-drive', item.capacity, 'min-h-[30rem]') %}
-                {{ detail_row('Status', item.status) }}{{ detail_row('Capacity', item.capacity) }}
-                {% if item.type == 'PersistentVolumeClaim' %}{{ detail_row('Requested Storage', item.requested_storage) }}{% endif %}
-                {{ detail_row('Access Modes', item.access_modes|join(', ') if item.access_modes else '-') }}{{ detail_row('Volume Mode', item.volume_mode) }}{{ detail_row('Storage Class', item.storage_class) }}
+            {% call detail.detail_card('Capacity & Mode', 'hard-drive', item.capacity, class_name='min-h-[30rem]') %}
+                {{ detail.detail_row('Status', item.status) }}{{ detail.detail_row('Capacity', item.capacity) }}
+                {% if item.type == 'PersistentVolumeClaim' %}{{ detail.detail_row('Requested Storage', item.requested_storage) }}{% endif %}
+                {{ detail.detail_row('Access Modes', item.access_modes|join(', ') if item.access_modes else '-') }}{{ detail.detail_row('Volume Mode', item.volume_mode) }}{{ detail.detail_row('Storage Class', item.storage_class) }}
                 {% call detail_object.stack() %}
                     {% if item.mount_options %}
-                        {% call detail_object.card('Mount options', item.mount_options|length ~ ' options', 'list-checks') %}
+                        {% call detail_object.card('Mount Options', table_label.count_text(item.mount_options|length, 'Option'), 'list-checks') %}
                             {% for option in item.mount_options %}{{ detail_object.row('Option ' ~ loop.index, option) }}{% endfor %}
                         {% endcall %}
                     {% else %}
-                        {{ detail_object.empty('No mount options', 'No mount option is recorded for this storage object.', 'list-checks') }}
+                        {{ detail_object.empty('No Mount Options', 'No mount option is recorded for this storage object.', 'list-checks') }}
                     {% endif %}
-                    {{ info_box('Capacity boundary', 'Declared capacity only; filesystem utilization remains in Storage Analysis.', 'database') }}
+                    {{ info_box('Capacity Boundary', 'Declared capacity only; filesystem utilization remains in Storage Analysis.', 'database') }}
                 {% endcall %}
             {% endcall %}
-            {% call detail_card('Binding & Lifecycle', 'link-2', item.reclaim_policy, 'min-h-[34rem]') %}
-                {{ detail_row('Binding', item.binding_reference) }}{{ detail_row('Reclaim Policy', item.reclaim_policy) }}{{ detail_row('Binding Mode', item.binding_mode) }}{{ detail_row('Expansion', 'Allowed' if item.allow_expansion else 'Not enabled') }}{{ detail_row('Default Class', 'Yes' if item.is_default else 'No') }}{{ detail_row('Node Affinity', 'Configured' if item.node_affinity_configured else 'Not configured') }}{{ detail_row('Finalizers', item.finalizers|length) }}
+            {% call detail.detail_card('Binding & Lifecycle', 'link-2', item.reclaim_policy, class_name='min-h-[34rem]') %}
+                {{ detail.detail_row('Binding', item.binding_reference) }}{{ detail.detail_row('Reclaim Policy', item.reclaim_policy) }}{{ detail.detail_row('Binding Mode', item.binding_mode) }}{{ detail.detail_row('Expansion', 'Allowed' if item.allow_expansion else 'Not Enabled') }}{{ detail.detail_row('Default Class', 'Yes' if item.is_default else 'No') }}{{ detail.detail_row('Node Affinity', 'Configured' if item.node_affinity_configured else 'Not Configured') }}{{ detail.detail_row('Finalizers', item.finalizers|length) }}
                 {% call detail_object.stack() %}
                     {% if item.conditions %}
-                        {% call detail_object.card('Reported conditions', item.conditions|length ~ ' conditions', 'activity') %}
+                        {% call detail_object.card('Reported Conditions', table_label.count_text(item.conditions|length, 'Condition'), 'activity') %}
                             {% for condition in item.conditions %}
                                 <div class="flex items-center justify-between gap-3 text-xs leading-5"><span class="truncate text-content-muted">{{ condition.type }}</span>{{ table_label.status_label(condition.status, 'normal' if condition.status in ['True','Bound','Available'] else 'warning' if condition.status in ['False','Pending'] else 'unknown', none, 'detail') }}</div>
                             {% endfor %}
                         {% endcall %}
                     {% else %}
-                        {{ detail_object.empty('No conditions reported', 'The current snapshot does not contain storage condition records.', 'activity') }}
+                        {{ detail_object.empty('No Conditions Reported', 'The current snapshot does not contain storage condition records.', 'activity') }}
                     {% endif %}
-                    {{ info_box('Lifecycle boundary', 'Bindings and lifecycle controls reflect the current Kubernetes object state.', 'link-2') }}
+                    {{ info_box('Lifecycle Boundary', 'Bindings and lifecycle controls reflect the current Kubernetes object state.', 'link-2') }}
                 {% endcall %}
             {% endcall %}
             {% set provisioning_badge = item.provisioner if item.type == 'StorageClass' else item.source.type if item.source else '-' %}
-            {% call detail_card('Provisioning Details', 'settings-2', provisioning_badge, 'min-h-[34rem]') %}
+            {% call detail.detail_card('Provisioning Details', 'settings-2', provisioning_badge, class_name='min-h-[34rem]') %}
                 {% if item.type == 'StorageClass' %}
-                    {{ detail_row('Provisioner', item.provisioner) }}{{ detail_row('Parameters', item.parameters|length) }}{{ detail_row('Allowed Topologies', item.allowed_topology_count) }}{{ detail_row('Mount Options', item.mount_options|length) }}
+                    {{ detail.detail_row('Provisioner', item.provisioner) }}{{ detail.detail_row('Parameters', item.parameters|length) }}{{ detail.detail_row('Allowed Topologies', item.allowed_topology_count) }}{{ detail.detail_row('Mount Options', item.mount_options|length) }}
                 {% elif item.type == 'PersistentVolume' %}
-                    {{ detail_row('Volume Source', item.source.type if item.source else '-') }}{{ detail_row('CSI Driver', item.source.driver if item.source and item.source.driver is defined else '-') }}{{ detail_row('Volume Handle', item.source.volume_handle if item.source and item.source.volume_handle is defined else '-', true) }}{{ detail_row('Filesystem Type', item.source.fs_type if item.source and item.source.fs_type is defined else '-') }}{{ detail_row('Read Only', 'Yes' if item.source and item.source.read_only else 'No') }}
-                    {% if item.source and item.source.path is defined %}{{ detail_row('Path', item.source.path, true) }}{% endif %}
-                    {% if item.source and item.source.server is defined %}{{ detail_row('Server', item.source.server) }}{% endif %}
+                    {{ detail.detail_row('Volume Source', item.source.type if item.source else '-') }}{{ detail.detail_row('CSI Driver', item.source.driver if item.source and item.source.driver is defined else '-') }}{{ detail.detail_row('Volume Handle', item.source.volume_handle if item.source and item.source.volume_handle is defined else '-', true) }}{{ detail.detail_row('Filesystem Type', item.source.fs_type if item.source and item.source.fs_type is defined else '-') }}{{ detail.detail_row('Read Only', 'Yes' if item.source and item.source.read_only else 'No') }}
+                    {% if item.source and item.source.path is defined %}{{ detail.detail_row('Path', item.source.path, true) }}{% endif %}
+                    {% if item.source and item.source.server is defined %}{{ detail.detail_row('Server', item.source.server) }}{% endif %}
                 {% else %}
-                    {{ detail_row('Selector Labels', item.selector|length) }}{{ detail_row('Data Source Kind', item.data_source.kind if item.data_source else '-') }}{{ detail_row('Data Source Name', item.data_source.name if item.data_source else '-') }}
+                    {{ detail.detail_row('Selector Labels', item.selector|length) }}{{ detail.detail_row('Data Source Kind', item.data_source.kind if item.data_source else '-') }}{{ detail.detail_row('Data Source Name', item.data_source.name if item.data_source else '-') }}
                 {% endif %}
                 {% call detail_object.stack() %}
                     {% if item.type == 'PersistentVolumeClaim' and item.selector %}
-                        {% call detail_object.card('Claim selector', item.selector|length ~ ' labels', 'tags') %}
+                        {% call detail_object.card('Claim Selector', table_label.count_text(item.selector|length, 'Label'), 'tags') %}
                             {% for key,value in item.selector %}{{ detail_object.row(key, value or '-') }}{% endfor %}
                         {% endcall %}
                     {% elif item.type == 'PersistentVolumeClaim' %}
-                        {{ detail_object.empty('No claim selector', 'This claim does not define a volume selector.', 'tags') }}
+                        {{ detail_object.empty('No Claim Selector', 'This claim does not define a volume selector.', 'tags') }}
                     {% endif %}
-                    {{ info_box('Provisioning boundary', 'Provisioning metadata is shown without credentials or Secret content.', 'shield-check') }}
+                    {{ info_box('Provisioning Boundary', 'Provisioning metadata is shown without credentials or Secret content.', 'shield-check') }}
                 {% endcall %}
             {% endcall %}
         </div>
@@ -111,7 +98,7 @@
                                 <p class="mt-0.5 text-xs text-content-muted">Provisioner options captured from the StorageClass specification.</p>
                             </div>
                         </div>
-                        {{ table_label.metadata_label(item.parameters|length ~ ' parameters', 'sliders-horizontal') }}
+                        {{ table_label.metadata_label(table_label.count_text(item.parameters|length, 'Parameter'), 'sliders-horizontal') }}
                     </header>
                     <div class="p-4">
                         {% if item.parameters %}
@@ -124,7 +111,7 @@
                                 {% endfor %}
                             </div>
                         {% else %}
-                            {{ detail_object.empty('No parameters configured', 'This StorageClass does not define provisioner parameters.', 'sliders-horizontal') }}
+                            {{ detail_object.empty('No Parameters Configured', 'This StorageClass does not define provisioner parameters.', 'sliders-horizontal') }}
                         {% endif %}
                     </div>
                     {% if item.parameters %}{{ inventory_tip.footer('Parameters are provisioner configuration; credentials are never shown.', 'sliders-horizontal') }}{% endif %}
@@ -139,7 +126,7 @@
                             <p class="mt-0.5 text-xs text-content-muted">Claims and Pods resolved from current storage bindings.</p>
                         </div>
                     </div>
-                    <div class="flex flex-wrap gap-2">{{ table_label.metadata_label(item.claim_count ~ ' claims') }}{{ table_label.metadata_label(item.pod_count ~ ' Pods') }}</div>
+                    <div class="flex flex-wrap gap-2">{{ table_label.metadata_label(table_label.count_text(item.claim_count, 'Claim')) }}{{ table_label.metadata_label(table_label.count_text(item.pod_count, 'Pod')) }}</div>
                 </header>
                 <div class="grid gap-4 p-4 lg:grid-cols-2">
                     <div class="rounded-lg border border-outline-default bg-surface-hover p-3">
@@ -156,7 +143,7 @@
                             </div>
                             {% if item.claims_truncated %}<p class="mt-2 text-xs text-content-muted">Showing the first 8 claims.</p>{% endif %}
                         {% else %}
-                            {{ detail_object.empty('No claim relationship', 'No claim is resolved for this storage object.', 'folder') }}
+                            {{ detail_object.empty('No Claim Relationship', 'No claim is resolved for this storage object.', 'folder') }}
                         {% endif %}
                     </div>
                     <div class="rounded-lg border border-outline-default bg-surface-hover p-3">
@@ -186,7 +173,7 @@
                                 <p class="mt-2 text-xs text-content-muted">Showing the first 8 bound Pods.</p>
                             {% endif %}
                         {% else %}
-                            {{ detail_object.empty('No bound Pods', 'No Pod is resolved to this storage object.', 'package') }}
+                            {{ detail_object.empty('No Bound Pods', 'No Pod is resolved to this storage object.', 'package') }}
                         {% endif %}
                     </div>
                 </div>
@@ -214,7 +201,7 @@
                     </div>
                     <div class="mt-4">{{ inventory_tip.tip('Labels describe storage identity and selection metadata.', 'tags') }}</div>
                 {% else %}
-                    {{ detail_object.empty('No labels recorded', 'This storage object has no inventory labels.', 'tags') }}
+                    {{ detail_object.empty('No Labels Recorded', 'This storage object has no inventory labels.', 'tags') }}
                 {% endif %}
             </section>
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
@@ -239,7 +226,7 @@
                     </div>
                     {{ inventory_tip.footer('Annotations may be managed by provisioners or controllers.', 'notebook-tabs') }}
                 {% else %}
-                    <div class="p-4">{{ detail_object.empty('No annotations recorded', 'This storage object has no inventory annotations.', 'notebook-tabs') }}</div>
+                    <div class="p-4">{{ detail_object.empty('No Annotations Recorded', 'This storage object has no inventory annotations.', 'notebook-tabs') }}</div>
                 {% endif %}
             </section>
             {{ inventory_tip.tip('Point-in-time inventory only; usage, pressure, growth, and recommendations remain in Storage Analysis and Intelligence.', 'info') }}

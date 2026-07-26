@@ -1,9 +1,9 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/details/_expandable_row.html" as expandable %}
-<div class="overflow-x-auto">
-    <table class="min-w-[980px] w-full text-left text-sm leading-5 text-content-secondary">
-        <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted">
+<div class="overflow-x-auto overscroll-x-contain">
+    <table class="{{ table_ui.table_classes('min-w-[980px]') }}">
+        <thead class="{{ table_ui.head_classes() }}">
             <tr>
                 <th class="min-w-[12rem] px-4 py-3">Cluster</th>
                 <th class="px-4 py-3">Namespace</th>
@@ -14,14 +14,16 @@
                 <th class="px-4 py-3 text-right">Details</th>
             </tr>
         </thead>
-        <tbody class="divide-y divide-outline-subtle">
+        <tbody class="{{ table_ui.body_classes() }}">
             {% for ingress in inventory.ingresses %}
                 <tr id="ingress-row-{{ ingress.id }}"
-                    class="transition hover:bg-surface-hover">
+                    class="{{ table_ui.row_classes() }}">
                     <td class="px-4 py-3.5 align-middle">
                         {{ table_ui.cluster_identity(ingress.cluster_name, ingress.cluster_environment) }}
                     </td>
-                    <td class="px-4 py-3.5 align-middle text-sm leading-5 text-content-secondary">{{ ingress.namespace }}</td>
+                    <td class="px-4 py-3.5 align-middle">
+                        {{ table_ui.namespace_identity(ingress.namespace) }}
+                    </td>
                     <td class="max-w-[300px] px-4 py-3.5 align-middle">
                         <span class="block truncate text-sm font-semibold leading-5 text-content-primary"
                               title="{{ ingress.name }}">{{ ingress.name }}</span>

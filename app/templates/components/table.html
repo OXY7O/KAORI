@@ -1,3 +1,4 @@
+{% import "components/loading_bar.html" as loading_bar %}
 {#
   KAORI shared table presentation contract.
 
@@ -71,6 +72,17 @@
         </div>
     </div>
 {%- endmacro %}
+{% macro namespace_identity(name, class_name='max-w-[220px]') -%}
+    <div class="flex min-w-0 items-center gap-2 {{ class_name }}">
+        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
+              aria-hidden="true">
+            <i data-lucide="folder-tree" class="h-4 w-4"></i>
+        </span>
+        <span class="min-w-0 truncate text-sm font-semibold leading-5 text-content-primary"
+              title="{{ name or '-' }}">{{ name or '-' }}</span>
+    </div>
+{%- endmacro %}
+
 {% macro cluster_identity(name, environment='') -%}
     {% set environment_label = environment|environment_name(empty='Environment not specified') %}
     <div class="flex min-w-[12rem] items-start gap-2.5">
@@ -88,4 +100,42 @@
 {%- endmacro %}
 {% macro action_classes(destructive=false) -%}
     inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 {{ 'border-status-critical/30 bg-surface-card text-status-critical-text hover:bg-status-critical-soft focus-visible:ring-status-critical/30' if destructive else 'border-outline-default bg-surface-card text-content-secondary hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:ring-outline-focus' }}
+{%- endmacro %}
+
+{% macro inventory_block_header(icon, title, description, loading_id, loading_label, action_href, action_label='Manage Clusters') -%}
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ block_icon_classes() }}" aria-hidden="true">
+                    <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 class="{{ block_title_classes() }}">{{ title }}</h2>
+                    <p class="{{ block_description_classes() }}">{{ description }}</p>
+                </div>
+            </div>
+            <a href="{{ action_href }}" class="{{ action_classes() }}">
+                <i data-lucide="server-cog" class="h-4 w-4" aria-hidden="true"></i>
+                {{ action_label }}
+            </a>
+        </div>
+        {{ loading_bar.render(loading_id, label=loading_label) }}
+    </header>
+{%- endmacro %}
+
+{% macro inventory_filter_bar_classes() -%}
+    border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6
+{%- endmacro %}
+
+{% macro search_field(name, value, placeholder) -%}
+    <div class="relative">
+        <i data-lucide="search"
+           class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"
+           aria-hidden="true"></i>
+        <input type="search"
+               name="{{ name }}"
+               value="{{ value }}"
+               placeholder="{{ placeholder }}"
+               class="{{ filter_input_classes() }} pl-10" />
+    </div>
 {%- endmacro %}

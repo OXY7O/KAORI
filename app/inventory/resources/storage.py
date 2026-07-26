@@ -86,7 +86,7 @@ def get_storage_detail(storage_id: int) -> dict[str, Any] | None:
     item, cluster_name = result
     namespace = item.namespace
     if item.storage_type in {'StorageClass', 'PersistentVolume'}:
-        namespace = 'Cluster-wide'
+        namespace = 'Cluster-Wide'
 
     bound_pods, claims = _storage_bound_pods(item)
     details = dict(item.details or {})
@@ -260,7 +260,7 @@ def get_storage_inventory_view(
     for item, cluster_name, cluster_environment in items:
         namespace_display = item.namespace
         if item.storage_type in {'StorageClass', 'PersistentVolume'}:
-            namespace_display = 'Cluster-wide'
+            namespace_display = 'Cluster-Wide'
         elif not namespace_display:
             namespace_display = '-'
 

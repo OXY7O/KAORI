@@ -1,52 +1,13 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/details/_detail_content.html" as detail %}
 {% import "components/detail_tip.html" as inventory_tip %}
 {% set namespace_status_tone = 'normal' if namespace.status == 'Active' else ('warning' if namespace.status == 'Terminating' else 'unknown') %}
-{% set psa_enforce_display = 'No Namespace Policy' if namespace.pod_security_enforce in [None, '', 'Not configured', 'Not Configured'] else namespace.pod_security_enforce|title %}
-{% set psa_audit_display = 'No Namespace Policy' if namespace.pod_security_audit in [None, '', 'Not configured', 'Not Configured'] else namespace.pod_security_audit|title %}
-{% set psa_warn_display = 'No Namespace Policy' if namespace.pod_security_warn in [None, '', 'Not configured', 'Not Configured'] else namespace.pod_security_warn|title %}
+{% set psa_enforce_display = 'No Namespace Policy' if namespace.pod_security_enforce in [None, '', 'Not Configured', 'Not Configured'] else namespace.pod_security_enforce|title %}
+{% set psa_audit_display = 'No Namespace Policy' if namespace.pod_security_audit in [None, '', 'Not Configured', 'Not Configured'] else namespace.pod_security_audit|title %}
+{% set psa_warn_display = 'No Namespace Policy' if namespace.pod_security_warn in [None, '', 'Not Configured', 'Not Configured'] else namespace.pod_security_warn|title %}
 {% set psa_configured_count = (1 if psa_enforce_display != 'No Namespace Policy' else 0)
     + (1 if psa_audit_display != 'No Namespace Policy' else 0)
 + (1 if psa_warn_display != 'No Namespace Policy' else 0) %}
-{% macro detail_row(label, value='-', break_all=False) -%}
-    {% set display_value = value if value not in [None, ''] else '-' %}
-    <div class="flex items-start justify-between gap-3">
-        <span class="shrink-0 text-xs leading-5 text-content-muted">{{ label }}</span>
-        <span class="max-w-[68%] {{ 'break-all' if break_all else 'break-words' }} text-right text-xs font-medium leading-5 text-content-primary"
-              title="{{ display_value }}">{{ display_value }}</span>
-    </div>
-{%- endmacro %}
-{% macro status_row(label, value, tone='unknown') -%}
-    <div class="flex items-start justify-between gap-3">
-        <span class="shrink-0 text-xs leading-5 text-content-muted">{{ label }}</span>
-        <span class="max-w-[68%] text-right">{{ table_label.status_label(value, tone, none, 'detail') }}</span>
-    </div>
-{%- endmacro %}
-{% macro metadata_row(label, value) -%}
-    <div class="flex items-start justify-between gap-3">
-        <span class="shrink-0 text-xs leading-5 text-content-muted">{{ label }}</span>
-        <span class="max-w-[68%] text-right">{{ table_label.metadata_label(value, none, false, 'detail') }}</span>
-    </div>
-{%- endmacro %}
-{% macro detail_card(title, icon, badge=None, badge_type='metadata', badge_tone='unknown', badge_icon=None, class_name='') -%}
-    <section class="flex h-full flex-col rounded-xl border border-outline-subtle bg-surface-card p-4 {{ class_name }}">
-        <div class="mb-4 flex items-center justify-between gap-3">
-            <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                </span>
-                {{ title }}
-            </div>
-            {% if badge %}
-                {% if badge_type == 'status' %}
-                    {{ table_label.status_label(badge, badge_tone, badge_icon, 'detail') }}
-                {% else %}
-                    {{ table_label.metadata_label(badge, badge_icon, false, 'detail') }}
-                {% endif %}
-            {% endif %}
-        </div>
-        <div class="flex min-h-0 flex-1 flex-col gap-2.5">{{ caller() }}</div>
-    </section>
-{%- endmacro %}
 {% macro detail_tip(message, icon='info', push_to_bottom=True) -%}
     {{ inventory_tip.tip(message, icon, push_to_bottom) }}
 {%- endmacro %}
@@ -91,22 +52,22 @@
             <div class="self-start sm:self-auto">{{ table_label.status_label(namespace.status, namespace_status_tone) }}</div>
         </header>
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail_card('Namespace Identity', 'badge-info', namespace.age, 'metadata', 'unknown', None, 'min-h-96') %}
-                {{ status_row('Status', namespace.status, namespace_status_tone) }}
-                {{ detail_row('Age', namespace.age) }}
-                {{ detail_row('UID', namespace.uid, True) }}
-                {{ detail_row('Created', namespace.created_at|user_datetime if namespace.created_at else '-') }}
-                {{ detail_row('Collected', namespace.collected_at|user_datetime) }}
+            {% call detail.detail_card('Namespace Identity', 'badge-info', namespace.age, 'metadata', 'unknown', None, 'min-h-96') %}
+                {{ detail.status_row('Status', namespace.status, namespace_status_tone) }}
+                {{ detail.detail_row('Age', namespace.age) }}
+                {{ detail.detail_row('UID', namespace.uid, True) }}
+                {{ detail.detail_row('Created', namespace.created_at|user_datetime if namespace.created_at else '-') }}
+                {{ detail.detail_row('Collected', namespace.collected_at|user_datetime) }}
                 {{ detail_tip('Age comes from creation time; Collected is the latest KAORI snapshot.', 'clock-3') }}
             {% endcall %}
-            {% call detail_card('Resource Inventory', 'boxes', namespace.object_counts.tracked_total ~ ' tracked', 'metadata', 'unknown', None, 'min-h-[28rem]') %}
-                {{ detail_row('Pods', namespace.object_counts.pods) }}
-                {{ detail_row('Services', namespace.object_counts.services) }}
-                {{ detail_row('Ingresses', namespace.object_counts.ingresses) }}
-                {{ detail_row('PVCs', namespace.object_counts.persistent_volume_claims) }}
+            {% call detail.detail_card('Resource Inventory', 'boxes', table_label.count_text(namespace.object_counts.tracked_total, 'Tracked Object'), 'metadata', 'unknown', None, 'min-h-[28rem]') %}
+                {{ detail.detail_row('Pods', namespace.object_counts.pods) }}
+                {{ detail.detail_row('Services', namespace.object_counts.services) }}
+                {{ detail.detail_row('Ingresses', namespace.object_counts.ingresses) }}
+                {{ detail.detail_row('PVCs', namespace.object_counts.persistent_volume_claims) }}
                 <div class="mt-auto space-y-3 pt-3">
                     {% if namespace.object_counts.workloads > 0 %}
-                        {% call namespace_object_card('Workload Composition', namespace.object_counts.workloads ~ ' workloads', 'layout-grid') %}
+                        {% call namespace_object_card('Workload Composition', table_label.count_text(namespace.object_counts.workloads, 'Workload'), 'layout-grid') %}
                             {% if namespace.workload_breakdown.deployments %}{{ namespace_object_row('Deployments', namespace.workload_breakdown.deployments) }}{% endif %}
                             {% if namespace.workload_breakdown.statefulsets %}{{ namespace_object_row('StatefulSets', namespace.workload_breakdown.statefulsets) }}{% endif %}
                             {% if namespace.workload_breakdown.daemonsets %}{{ namespace_object_row('DaemonSets', namespace.workload_breakdown.daemonsets) }}{% endif %}
@@ -125,20 +86,20 @@
             {% endcall %}
             {% set quota_badge = 'Configured' if namespace.quota_count > 0 else 'Not Configured' %}
             {% set quota_tone = 'normal' if namespace.quota_count > 0 else 'disabled' %}
-            {% call detail_card('Resource Controls', 'sliders-horizontal', quota_badge, 'status', quota_tone, None, 'min-h-[28rem]') %}
-                {{ status_row('ResourceQuota', ('Configured · ' ~ namespace.quota_count) if namespace.quota_count > 0 else 'Not Configured', 'normal' if namespace.quota_count > 0 else 'disabled') }}
+            {% call detail.detail_card('Resource Controls', 'sliders-horizontal', quota_badge, 'status', quota_tone, None, 'min-h-[28rem]') %}
+                {{ detail.status_row('ResourceQuota', ('Configured · ' ~ namespace.quota_count) if namespace.quota_count > 0 else 'Not Configured', 'normal' if namespace.quota_count > 0 else 'disabled') }}
                 {% if namespace.limit_range_count is none %}
-                    {{ status_row('LimitRange', 'Not Reported', 'unknown') }}
+                    {{ detail.status_row('LimitRange', 'Not Reported', 'unknown') }}
                 {% elif namespace.limit_range_count > 0 %}
-                    {{ status_row('LimitRange', 'Configured · ' ~ namespace.limit_range_count, 'normal') }}
+                    {{ detail.status_row('LimitRange', 'Configured · ' ~ namespace.limit_range_count, 'normal') }}
                 {% else %}
-                    {{ status_row('LimitRange', 'Not Configured', 'disabled') }}
+                    {{ detail.status_row('LimitRange', 'Not Configured', 'disabled') }}
                 {% endif %}
                 <div class="mt-auto space-y-3 pt-3">
                     {% if namespace.quotas %}
                         <div class="space-y-2">
                             {% for quota in namespace.quotas %}
-                                {% call namespace_object_card(quota.name, quota.resource_count ~ ' limits', 'sliders-horizontal') %}
+                                {% call namespace_object_card(quota.name, table_label.count_text(quota.resource_count, 'Limit'), 'sliders-horizontal') %}
                                     {% for resource in quota.resources %}
                                         {{ namespace_object_row(resource.name, resource.hard) }}
                                     {% endfor %}
@@ -159,19 +120,19 @@
                     {{ detail_tip('Quota and limit data show configured constraints; usage remains in Analytics.', 'info', False) }}
                 </div>
             {% endcall %}
-            {% call detail_card('Security & Access', 'shield-check', psa_configured_count ~ '/3 PSA labels', 'metadata', 'unknown', None, 'min-h-[28rem]') %}
-                {{ detail_row('NetworkPolicies', namespace.network_policy_count if namespace.network_policy_count is not none else 'Not Reported') }}
-                {{ detail_row('ServiceAccounts', namespace.service_account_count if namespace.service_account_count is not none else 'Not Reported') }}
+            {% call detail.detail_card('Security & Access', 'shield-check', psa_configured_count ~ '/3 PSA Labels', 'metadata', 'unknown', None, 'min-h-[28rem]') %}
+                {{ detail.detail_row('NetworkPolicies', namespace.network_policy_count if namespace.network_policy_count is not none else 'Not Reported') }}
+                {{ detail.detail_row('ServiceAccounts', namespace.service_account_count if namespace.service_account_count is not none else 'Not Reported') }}
                 {% set default_sa_tone = 'normal' if namespace.default_service_account == 'Present' else ('critical' if namespace.default_service_account == 'Missing' else 'unknown') %}
-                {{ status_row('Default ServiceAccount', namespace.default_service_account, default_sa_tone) }}
-                {{ detail_row('Secrets', namespace.object_counts.secrets) }}
-                {{ detail_row('ConfigMaps', namespace.object_counts.config_maps) }}
+                {{ detail.status_row('Default ServiceAccount', namespace.default_service_account, default_sa_tone) }}
+                {{ detail.detail_row('Secrets', namespace.object_counts.secrets) }}
+                {{ detail.detail_row('ConfigMaps', namespace.object_counts.config_maps) }}
                 <div class="mt-auto space-y-3 pt-3">
                     {% if psa_configured_count > 0 %}
-                        {% call namespace_object_card('Pod Security Admission', psa_configured_count ~ '/3 configured', 'shield-check') %}
-                            {{ metadata_row('Enforce', psa_enforce_display) }}
-                            {{ metadata_row('Audit', psa_audit_display) }}
-                            {{ metadata_row('Warn', psa_warn_display) }}
+                        {% call namespace_object_card('Pod Security Admission', psa_configured_count ~ '/3 Configured', 'shield-check') %}
+                            {{ detail.metadata_row('Enforce', psa_enforce_display) }}
+                            {{ detail.metadata_row('Audit', psa_audit_display) }}
+                            {{ detail.metadata_row('Warn', psa_warn_display) }}
                         {% endcall %}
                     {% else %}
                         <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-3 text-center">

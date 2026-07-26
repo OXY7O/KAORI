@@ -216,9 +216,9 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
     elif node.unschedulable is False:
         scheduling_display = 'Schedulable'
     else:
-        scheduling_display = 'Not reported'
+        scheduling_display = 'Not Reported'
 
-    network_availability = 'Not reported'
+    network_availability = 'Not Reported'
     if node.network_unavailable == 'True':
         network_availability = 'Unavailable'
     elif node.network_unavailable == 'False':
@@ -241,13 +241,13 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
     operating_system_display = (
         operating_system.title() if operating_system.lower() in {'linux', 'windows'} else operating_system
     )
-    architecture = node.architecture or node_labels.get('kubernetes.io/arch') or 'Not reported'
+    architecture = node.architecture or node_labels.get('kubernetes.io/arch') or 'Not Reported'
 
     return {
         'id': node.id,
         'cluster_name': cluster_name,
         'node_name': node.node_name,
-        'system_uuid': node.system_uuid or 'Not reported',
+        'system_uuid': node.system_uuid or 'Not Reported',
         'role': role,
         'age': format_age(node.created_at),
         'role_description': NODE_ROLE_DESCRIPTIONS.get(
@@ -274,8 +274,8 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
         ),
         'operating_system_display': operating_system_display,
         'architecture': architecture,
-        'kubelet_version': node.kubelet_version or 'Not reported',
-        'kube_proxy_version': node.kube_proxy_version or 'Not reported',
+        'kubelet_version': node.kubelet_version or 'Not Reported',
+        'kube_proxy_version': node.kube_proxy_version or 'Not Reported',
         'cpu': node.cpu,
         'memory_display': format_kubernetes_size(node.memory),
         'ephemeral_storage_display': format_kubernetes_size(node.ephemeral_storage),

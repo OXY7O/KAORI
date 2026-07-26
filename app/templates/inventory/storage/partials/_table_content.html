@@ -2,21 +2,21 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/details/_expandable_row.html" as expandable %}
-<div class="overflow-x-auto">
-    <table class="min-w-[1080px] w-full text-left text-sm leading-5 text-content-secondary">
-        <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted">
+<div class="overflow-x-auto overscroll-x-contain">
+    <table class="{{ table_ui.table_classes('min-w-[1080px]') }}">
+        <thead class="{{ table_ui.head_classes() }}">
             <tr>
                 <th class="min-w-[12rem] px-4 py-3">Cluster</th>
                 <th class="px-4 py-3">Namespace</th>
-                <th class="px-4 py-3">Storage object</th>
+                <th class="px-4 py-3">Storage Object</th>
                 <th class="px-4 py-3">Type</th>
                 <th class="px-4 py-3">Status</th>
-                <th class="px-4 py-3">Storage class</th>
+                <th class="px-4 py-3">Storage Class</th>
                 <th class="px-4 py-3">Capacity</th>
                 <th class="px-4 py-3 text-right">Details</th>
             </tr>
         </thead>
-        <tbody class="divide-y divide-outline-subtle">
+        <tbody class="{{ table_ui.body_classes() }}">
             {% for item in inventory.storage_items %}
                 {% if item.status in ['Bound', 'Available', 'Active'] %}
                     {% set status_tone = "normal" %}
@@ -28,11 +28,13 @@
                     {% set status_tone = "unknown" %}
                 {% endif %}
                 <tr id="storage-row-{{ item.id }}"
-                    class="transition hover:bg-surface-hover">
+                    class="{{ table_ui.row_classes() }}">
                     <td class="px-4 py-3.5 align-middle">
                         {{ table_ui.cluster_identity(item.cluster_name, item.cluster_environment) }}
                     </td>
-                    <td class="px-4 py-3.5 align-middle text-sm font-semibold leading-5 text-content-primary">{{ item.namespace }}</td>
+                    <td class="px-4 py-3.5 align-middle">
+                        {{ table_ui.namespace_identity(item.namespace) }}
+                    </td>
                     <td class="max-w-[300px] px-4 py-3.5 align-middle">
                         <div class="flex min-w-0 items-center gap-2">
                             <span class="truncate text-sm font-semibold leading-5 text-content-primary"

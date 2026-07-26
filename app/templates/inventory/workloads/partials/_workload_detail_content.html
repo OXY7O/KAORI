@@ -1,28 +1,9 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/details/_detail_content.html" as detail %}
 {% import "components/detail_object.html" as detail_object %}
 {% import "components/detail_tip.html" as inventory_tip %}
-{% macro detail_row(label, value='-', break_all=false) -%}
-    {% set display_value = value if value not in [None, ''] else '-' %}
-    <div class="flex items-start justify-between gap-3">
-        <span class="shrink-0 text-xs font-normal leading-5 text-content-muted">{{ label }}</span>
-        <span class="max-w-[68%] {{ 'break-all' if break_all else 'break-words' }} text-right text-xs font-medium leading-5 text-content-secondary"
-              title="{{ display_value }}">{{ display_value }}</span>
-    </div>
-{%- endmacro %}
 {% macro info_box(title, message, icon='info', tone='brand', equal_height=false) -%}
     {{ inventory_tip.info_box(title, message, icon, tone, equal_height) }}
-{%- endmacro %}
-{% macro detail_card(title, icon, badge=None, class_name='') -%}
-    <section class="flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-4 {{ class_name }}">
-        <div class="mb-4 flex items-center justify-between gap-3">
-            <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
-                {{ title }}
-            </div>
-            {% if badge %}{{ table_label.metadata_label(badge, none, false, 'detail') }}{% endif %}
-        </div>
-        <div class="flex min-h-0 flex-1 flex-col gap-2.5">{{ caller() }}</div>
-    </section>
 {%- endmacro %}
 {% if workload.status == 'Running' %}
     {% set status_tone = "normal" %}
@@ -55,38 +36,38 @@
             </div>
         </header>
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail_card('Object Identity', 'badge-info', workload.age, 'min-h-96') %}
-                {{ detail_row('Cluster', workload.cluster_name) }}
-                {{ detail_row('Namespace', workload.namespace) }}
-                {{ detail_row('Kind', workload.type) }}
-                {{ detail_row('Age', workload.age) }}
-                {{ detail_row('Kubernetes UID', workload.uid, true) }}
-                {{ detail_row('Created', workload.created_at|user_datetime) }}
-                {{ detail_row('Collected', workload.collected_at|user_datetime) }}
-                <div class="mt-auto pt-3">{{ info_box('Inventory identity', 'Identifies the workload object and the latest snapshot collected by KAORI.', 'lightbulb', 'brand', true) }}</div>
+            {% call detail.detail_card('Object Identity', 'badge-info', workload.age, class_name='min-h-96') %}
+                {{ detail.detail_row('Cluster', workload.cluster_name) }}
+                {{ detail.detail_row('Namespace', workload.namespace) }}
+                {{ detail.detail_row('Kind', workload.type) }}
+                {{ detail.detail_row('Age', workload.age) }}
+                {{ detail.detail_row('Kubernetes UID', workload.uid, true) }}
+                {{ detail.detail_row('Created', workload.created_at|user_datetime) }}
+                {{ detail.detail_row('Collected', workload.collected_at|user_datetime) }}
+                <div class="mt-auto pt-3">{{ info_box('Inventory Identity', 'Identifies the workload object and the latest snapshot collected by KAORI.', 'lightbulb', 'brand', true) }}</div>
             {% endcall %}
-            {% call detail_card('Runtime State', 'activity', workload.state_display, 'min-h-80') %}
-                {% for row in workload.runtime_state_rows %}{{ detail_row(row.label, row.value) }}{% endfor %}
-                {{ detail_row('Managed Pods', workload.pod_count) }}
-                <div class="mt-auto pt-3">{{ info_box('Snapshot boundary', 'Current controller state only; history remains in Analytics.', 'info', 'brand', true) }}</div>
+            {% call detail.detail_card('Runtime State', 'activity', workload.state_display, class_name='min-h-80') %}
+                {% for row in workload.runtime_state_rows %}{{ detail.detail_row(row.label, row.value) }}{% endfor %}
+                {{ detail.detail_row('Managed Pods', workload.pod_count) }}
+                <div class="mt-auto pt-3">{{ info_box('Snapshot Boundary', 'Current controller state only; history remains in Analytics.', 'info', 'brand', true) }}</div>
             {% endcall %}
-            {% call detail_card('Pod Configuration', 'settings-2', workload.container_count ~ ' containers', 'min-h-96') %}
-                {% for row in workload.pod_configuration_rows %}{{ detail_row(row.label, row.value) }}{% endfor %}
+            {% call detail.detail_card('Pod Configuration', 'settings-2', table_label.count_text(workload.container_count, 'Container'), class_name='min-h-96') %}
+                {% for row in workload.pod_configuration_rows %}{{ detail.detail_row(row.label, row.value) }}{% endfor %}
                 <div class="mt-auto pt-3">
                     {% if workload.pod_configuration_reported %}
-                        {{ info_box('Template configuration', 'Pod configuration comes from the workload template. Runtime utilization remains in Analytics.', 'info', 'brand', true) }}
+                        {{ info_box('Template Configuration', 'Pod configuration comes from the workload template. Runtime utilization remains in Analytics.', 'info', 'brand', true) }}
                     {% elif workload.pod_configuration_source == 'associated-pod-fallback' %}
-                        {{ info_box('Fallback source', 'Configuration is inferred from associated Pods. Sync again to collect the workload template.', 'triangle-alert', 'warning', true) }}
+                        {{ info_box('Fallback Source', 'Configuration is inferred from associated Pods. Sync again to collect the workload template.', 'triangle-alert', 'warning', true) }}
                     {% else %}
-                        {{ info_box('Configuration unavailable', 'Pod template metadata is unavailable. Restart the worker and sync this cluster again.', 'triangle-alert', 'warning', true) }}
+                        {{ info_box('Configuration Unavailable', 'Pod template metadata is unavailable. Restart the worker and sync this cluster again.', 'triangle-alert', 'warning', true) }}
                     {% endif %}
                 </div>
             {% endcall %}
-            {% call detail_card('Delivery & Placement', 'route', workload.update_strategy, 'min-h-[28rem]') %}
-                {% for row in workload.delivery_rows %}{{ detail_row(row.label, row.value) }}{% endfor %}
+            {% call detail.detail_card('Delivery & Placement', 'route', workload.update_strategy, class_name='min-h-[28rem]') %}
+                {% for row in workload.delivery_rows %}{{ detail.detail_row(row.label, row.value) }}{% endfor %}
                 {% call detail_object.stack() %}
                     {% if workload.placement_configured %}
-                        {% call detail_object.card('Placement constraints', workload.placement_summary_rows|length ~ ' fields', 'map-pinned') %}
+                        {% call detail_object.card('Placement Constraints', table_label.count_text(workload.placement_summary_rows|length, 'Field'), 'map-pinned') %}
                             {% for row in workload.placement_summary_rows %}{{ detail_object.row(row.label, row.value) }}{% endfor %}
                             {% if workload.node_selectors %}
                                 <div class="flex flex-wrap gap-1.5 pt-1">
@@ -95,7 +76,7 @@
                             {% endif %}
                         {% endcall %}
                     {% else %}
-                        {{ detail_object.empty('No placement constraints', 'No selector, toleration, affinity, or topology spread rule is configured.', 'map-pinned') }}
+                        {{ detail_object.empty('No Placement Constraints', 'No selector, toleration, affinity, or topology spread rule is configured.', 'map-pinned') }}
                     {% endif %}
                     {{ inventory_tip.tip('Placement rules guide scheduling; actual placement is shown in Pod inventory.', 'map-pin') }}
                 {% endcall %}
@@ -111,7 +92,7 @@
                             <p class="text-xs leading-5 text-content-muted">Images declared by regular and init containers.</p>
                         </div>
                     </div>
-                    {{ table_label.metadata_label(workload.containers|length ~ ' images') }}
+                    {{ table_label.metadata_label(table_label.count_text(workload.containers|length, 'Image')) }}
                 </header>
                 {% if workload.containers %}
                     <div class="overflow-x-auto">
@@ -137,7 +118,7 @@
                         </table>
                     </div>
                 {% else %}
-                    <div class="p-4">{{ info_box('Container metadata unavailable', 'Container template metadata has not been collected yet. Sync the cluster to refresh workload details.', 'info') }}</div>
+                    <div class="p-4">{{ info_box('Container Metadata Unavailable', 'Container template metadata has not been collected yet. Sync the cluster to refresh workload details.', 'info') }}</div>
                 {% endif %}
                 {% if workload.containers %}{{ inventory_tip.footer('Image references come from the workload template; runtime health remains in Pod inventory.', 'images') }}{% endif %}
             </section>
@@ -150,7 +131,7 @@
                             <p class="text-xs leading-5 text-content-muted">Pods currently mapped to this workload snapshot.</p>
                         </div>
                     </div>
-                    {{ table_label.metadata_label(workload.pod_count ~ ' pods') }}
+                    {{ table_label.metadata_label(table_label.count_text(workload.pod_count, 'Pod')) }}
                 </div>
                 {% if workload.pods %}
                     <div>
@@ -184,7 +165,7 @@
                         <p class="mt-3 text-xs text-content-muted">Showing the first 8 associated Pods.</p>
                     {% endif %}
                 {% else %}
-                    {{ info_box('No associated Pods', 'No Pods are currently resolved to this workload. Re-sync inventory after rollout or ownership changes.', 'info') }}
+                    {{ info_box('No Associated Pods', 'No Pods are currently resolved to this workload. Re-sync inventory after rollout or ownership changes.', 'info') }}
                 {% endif %}
                 {% if workload.pods %}
                     <div class="mt-4">{{ inventory_tip.tip('Pod mapping reflects current controller ownership in the latest snapshot.', 'git-branch') }}</div>
@@ -199,14 +180,14 @@
                             <p class="text-xs leading-5 text-content-muted">Kubernetes labels stored with this workload object.</p>
                         </div>
                     </div>
-                    {{ table_label.metadata_label(workload.labels|length ~ ' labels') }}
+                    {{ table_label.metadata_label(table_label.count_text(workload.labels|length, 'Label')) }}
                 </div>
                 {% if workload.labels %}
                     <div class="flex flex-wrap gap-1.5">
                         {% for key, value in workload.labels %}{{ table_label.metadata_label(key ~ ('=' ~ value if value else ''), none, true) }}{% endfor %}
                     </div>
                 {% else %}
-                    {{ info_box('No workload labels', 'No workload labels were reported in the latest inventory snapshot.', 'tag') }}
+                    {{ info_box('No Workload Labels', 'No workload labels were reported in the latest inventory snapshot.', 'tag') }}
                 {% endif %}
                 {% if workload.labels %}
                     <div class="mt-4">{{ inventory_tip.tip('Labels support workload organization and selection.', 'tags') }}</div>
@@ -221,7 +202,7 @@
                             <p class="text-xs leading-5 text-content-muted">Annotation metadata is shown as compact wrap-safe labels.</p>
                         </div>
                     </div>
-                    {{ table_label.metadata_label(workload.annotations|length ~ ' annotations') }}
+                    {{ table_label.metadata_label(table_label.count_text(workload.annotations|length, 'Annotation')) }}
                 </header>
                 {% if workload.annotations %}
                     <div class="flex max-h-72 flex-wrap gap-1.5 overflow-y-auto p-4">
@@ -230,11 +211,11 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="p-4">{{ info_box('No workload annotations', 'No workload annotations were reported in the latest inventory snapshot.', 'info') }}</div>
+                    <div class="p-4">{{ info_box('No Workload Annotations', 'No workload annotations were reported in the latest inventory snapshot.', 'info') }}</div>
                 {% endif %}
                 {% if workload.annotations %}{{ inventory_tip.footer('Annotations may be managed by workload controllers and integrations.', 'notebook-tabs') }}{% endif %}
             </section>
-            {{ info_box('Inventory boundary', 'This section contains point-in-time workload inventory data. Utilization, performance trends, anomalies, forecasts, and recommendations remain in Analytics and Intelligence.', 'info') }}
+            {{ info_box('Inventory Boundary', 'This section contains point-in-time workload inventory data. Utilization, performance trends, anomalies, forecasts, and recommendations remain in Analytics and Intelligence.', 'info') }}
         </div>
     </div>
 </div>

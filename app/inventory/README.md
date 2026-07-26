@@ -67,7 +67,7 @@ All resource inventory pages use the shared KAORI table block, loading bar, filt
 ### Cross-Resource Visual Contract
 
 - Overview and resource summaries use one bordered data block with internal metric cells; do not reintroduce independent decorative cards.
-- Resource-name columns use `text-sm` with optional muted supporting text. Workload and Pod primary values use semibold text, and their namespace cells reuse the compact Namespace identity icon; overview rows keep the icon only in the Cluster identity column.
+- Resource-name columns use `text-sm` with optional muted supporting text. Namespaced resource tables use the shared compact Namespace identity icon with semibold text; overview rows keep the icon only in the Cluster identity column.
 - Table row actions use `components/table.html`; semantic labels are compact `rounded-md` labels, never pills. Inventory row labels default to text-only, with tone carrying status meaning instead of decorative icons.
 - Resource type, quota, and Pod Security values use plain table text when descriptive. Workload update strategy uses a compact text-only semantic label: Rolling Update is Normal, Recreate is Warning, On Delete is Info, and unknown strategies use Unknown.
 - Inventory loading indicators use `components/loading_bar.html` and sit directly beneath the block header.
@@ -84,7 +84,7 @@ All resource inventory pages use the shared KAORI table block, loading bar, filt
 
 ## Presentation Contracts
 
-- Inventory row identity icons are reserved for cluster identity and section-level context. Routine namespace, workload, Pod, owner, role, status, condition, label, and annotation values should remain text-only unless an icon materially improves identification.
+- Inventory row identity icons are reserved for Cluster identity, shared Namespace identity, and section-level context. Workload, Pod, owner, role, status, condition, label, and annotation values remain text-only unless an icon materially improves identification.
 - Phase, readiness, restart, and lifecycle states may use compact semantic labels without icons. Pod restart tone is Normal at `0`, Warning at `1–4`, and Critical at `5+`, matching the canonical high-restart rule.
 - Kubernetes labels and annotations use compact wrap-safe text labels without decorative icons. Long annotation values must wrap inside the card boundary.
 - Image policy, volume type, and mounted-container names use regular-weight text. Workload/Pod namespace and primary operational values use semibold text for scanning consistency.
@@ -100,5 +100,19 @@ All resource inventory pages use the shared KAORI table block, loading bar, filt
 - Semantic and metadata badges inside View More summary cards use the same 12px type scale as adjacent detail labels and values. Table badges retain the compact 10px scale.
 - Decorative icons are omitted from placement values, Host Network state, node-selector values, and section-count labels when the text already provides sufficient meaning. Associated-resource timelines center connector lines on their status markers.
 
-- Service, Ingress, Storage, and Configuration tables present namespace/type/count fields as plain text; decorative row icons are reserved for cluster identity.
+- Service, Ingress, Storage, and Configuration tables use the shared Namespace identity treatment. Type/count fields remain plain or semantic text according to their operational meaning, without decorative icons.
 - Semantic labels remain for lifecycle/status states only, and use tone without decorative icons unless an icon materially improves comprehension.
+
+### Canonical Inventory Page Composition
+
+- Inventory Overview and every resource page use `components/page_hero.html::context_card` for the right-side hero posture. Do not rebuild hero metrics, status badges, or the Manage Clusters action with page-local markup.
+- Resource summary blocks use `inventory/components/_summary.html`. The component owns the summary header, four primary metrics, one progress metric, and two supporting status metrics.
+- Resource table cards use `components/table.html::inventory_block_header`, canonical filter labels/controls, and canonical table/head/body/row classes. Page templates remain responsible only for filter fields and route parameters.
+- View More cards use `components/details/_detail_content.html` for card geometry, rows, metadata rows, and status rows. Local copies of `detail_card`, `detail_row`, `metadata_row`, or `status_row` are not permitted.
+- Summary, table, and detail components must remain presentation-only. They must not query data, infer resource state, or own HTMX endpoints.
+
+### Namespace Identity and Title-Case Presentation
+
+- Every namespaced resource table uses the shared `table_ui.namespace_identity(...)` macro. The macro owns the compact Namespace icon, semibold typography, truncation, and empty fallback for Namespace cells across Namespace, Workload, Pod, Service, Ingress, Storage, and Configuration Inventory.
+- Human-facing table headers, detail-card titles, field labels, empty-state titles, status descriptions, and topology detail labels use Title Case. Kubernetes identifiers, annotation keys, label keys, resource names, API values, and controller-specific values remain unchanged.
+- Ingress annotation entries render the annotation key above its value so long controller annotations such as `kubectl.kubernetes.io/last-applied-configuration` remain readable without compressing either field into a side-by-side grid.

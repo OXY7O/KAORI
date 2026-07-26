@@ -3,8 +3,8 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/details/_expandable_row.html" as expandable %}
 <div class="overflow-x-auto overscroll-x-contain">
-    <table class="min-w-[980px] w-full divide-y divide-outline-subtle text-sm leading-5 text-content-secondary">
-        <thead class="bg-surface-hover text-xs text-content-muted">
+    <table class="{{ table_ui.table_classes('min-w-[980px]') }}">
+        <thead class="{{ table_ui.head_classes() }}">
             <tr>
                 <th class="min-w-[12rem] px-4 py-3 text-left font-semibold">Cluster</th>
                 <th class="min-w-[240px] px-4 py-3 text-left font-semibold">Namespace</th>
@@ -14,23 +14,15 @@
                 <th class="w-[132px] min-w-[132px] px-4 py-3 text-right font-semibold">Details</th>
             </tr>
         </thead>
-        <tbody class="divide-y divide-outline-subtle">
+        <tbody class="{{ table_ui.body_classes() }}">
             {% for namespace in inventory.namespaces %}
                 {% set status_tone = 'normal' if namespace.status == 'Active' else ('warning' if namespace.status == 'Terminating' else 'unknown') %}
-                <tr class="transition hover:bg-surface-hover">
+                <tr class="{{ table_ui.row_classes() }}">
                     <td class="px-4 py-3.5 align-middle">
                         {{ table_ui.cluster_identity(namespace.cluster_name, namespace.cluster_environment) }}
                     </td>
                     <td class="px-4 py-3.5 align-middle">
-                        <div class="flex max-w-[280px] items-center gap-2">
-                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
-                                <i data-lucide="folder-tree" class="h-4 w-4"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <div class="truncate text-sm font-semibold leading-5 text-content-primary"
-                                     title="{{ namespace.namespace }}">{{ namespace.namespace }}</div>
-                            </div>
-                        </div>
+                        {{ table_ui.namespace_identity(namespace.namespace, 'max-w-[280px]') }}
                     </td>
                     <td class="px-4 py-3.5 align-middle">{{ table_label.status_label(namespace.status, status_tone) }}</td>
                     <td class="px-4 py-3.5 align-middle">

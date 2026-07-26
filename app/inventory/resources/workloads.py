@@ -64,13 +64,13 @@ def _pod_configuration_rows(
 ) -> list[dict[str, str]]:
     return [
         {'label': 'Containers', 'value': str(pod_template.get('container_count', 0))},
-        {'label': 'Init containers', 'value': str(pod_template.get('init_container_count', 0))},
-        {'label': 'Service account', 'value': str(pod_template.get('service_account') or '-')},
-        {'label': 'Restart policy', 'value': str(pod_template.get('restart_policy') or '-')},
-        {'label': 'Priority class', 'value': str(pod_template.get('priority_class') or '-')},
+        {'label': 'Init Containers', 'value': str(pod_template.get('init_container_count', 0))},
+        {'label': 'Service Account', 'value': str(pod_template.get('service_account') or '-')},
+        {'label': 'Restart Policy', 'value': str(pod_template.get('restart_policy') or '-')},
+        {'label': 'Priority Class', 'value': str(pod_template.get('priority_class') or '-')},
         {'label': 'Scheduler', 'value': str(pod_template.get('scheduler') or '-')},
-        {'label': 'Host network', 'value': _display_boolean(pod_template.get('host_network'))},
-        {'label': 'DNS policy', 'value': str(pod_template.get('dns_policy') or '-')},
+        {'label': 'Host Network', 'value': _display_boolean(pod_template.get('host_network'))},
+        {'label': 'DNS Policy', 'value': str(pod_template.get('dns_policy') or '-')},
         {'label': 'Volumes', 'value': str(pod_template.get('volume_count', 0))},
     ]
 
@@ -83,23 +83,23 @@ def _placement_rows(
 
     return [
         {
-            'label': 'Node selector',
+            'label': 'Node Selector',
             'value': f'{len(node_selector)} rule' + ('s' if len(node_selector) != 1 else ''),
         },
         {
             'label': 'Affinity',
-            'value': 'Configured' if pod_template.get('affinity_configured') else 'Not configured',
+            'value': 'Configured' if pod_template.get('affinity_configured') else 'Not Configured',
         },
         {
             'label': 'Tolerations',
             'value': str(len(tolerations)),
         },
         {
-            'label': 'Topology spread',
+            'label': 'Topology Spread',
             'value': str(pod_template.get('topology_spread_count', 0)),
         },
         {
-            'label': 'Runtime class',
+            'label': 'Runtime Class',
             'value': str(pod_template.get('runtime_class') or '-'),
         },
     ]
@@ -151,7 +151,7 @@ def get_workload_detail(workload_id: int) -> dict[str, Any] | None:
     delivery_rows = _workload_detail_rows(details, 'delivery_rows')
     placement_rows = _placement_rows(pod_template)
     placement_summary_rows = [
-        row for row in placement_rows if row['value'] not in {'0', '0 rules', 'Not configured', '-'}
+        row for row in placement_rows if row['value'] not in {'0', '0 Rules', 'Not Configured', '-'}
     ]
 
     return {
@@ -309,7 +309,7 @@ def _workload_update_strategy(
     delivery_rows = details.get('delivery_rows') or []
 
     if not isinstance(delivery_rows, list):
-        return 'Not reported', 'unknown'
+        return 'Not Reported', 'unknown'
 
     for row in delivery_rows:
         if not isinstance(row, dict):
@@ -332,7 +332,7 @@ def _workload_update_strategy(
             (raw_value, 'other'),
         )
 
-    return 'Not reported', 'unknown'
+    return 'Not Reported', 'unknown'
 
 
 def get_workload_inventory(

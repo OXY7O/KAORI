@@ -1,3 +1,7 @@
+{% macro count_text(count, singular, plural=None) -%}
+    {{- count }} {{ singular if count|int == 1 else (plural or singular ~ 's') -}}
+{%- endmacro %}
+
 {% macro status_label(text, tone='info', icon=None, size='compact') -%}
     {% set normalized_tone = tone|default('info', true)|lower|replace(' ', '_') %}
     {% if normalized_tone in ['ready', 'healthy', 'normal', 'success', 'succeeded', 'operational'] %}

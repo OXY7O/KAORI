@@ -291,7 +291,7 @@ def get_namespace_detail(
     elif namespace.default_service_account_present is False:
         default_service_account = 'Missing'
     else:
-        default_service_account = 'Not reported'
+        default_service_account = 'Not Reported'
 
     return {
         'id': namespace.id,
@@ -320,14 +320,14 @@ def get_namespace_detail(
         'default_service_account': default_service_account,
         'pod_security_enforce': labels.get(
             'pod-security.kubernetes.io/enforce',
-            'Not configured',
+            'Not Configured',
         ),
         'pod_security_audit': labels.get(
             'pod-security.kubernetes.io/audit',
-            'Not configured',
+            'Not Configured',
         ),
         'pod_security_warn': labels.get(
             'pod-security.kubernetes.io/warn',
-            'Not configured',
+            'Not Configured',
         ),
     }
