@@ -197,7 +197,7 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 ## Unified KAORI presentation contract
 
 - Secret Management landing cards, create/replace/delete forms, Protected Reveal surfaces, and TLS rotation use the shared macros in `app/templates/kubernetes_operations/_components.html`.
-- Every Secret Management and protected-reveal hero uses the canonical `page_hero.context_rows()` panel with exactly three horizontal label/value rows. The panel contains no heading, helper sentence, nested metric cards, or hero action; workflow actions remain in the page content.
+- Every Secret Management and protected-reveal hero uses the canonical `page_hero.context_card()` posture panel: one eyebrow/title header, one compact semantic status, two operational metrics, and one full-width contextual CTA. Secret payload material is never rendered in the panel.
 - Secret Type selection uses an explicit `is-selected`/`data-selected` contract. The active card has a violet border, selected surface, persistent violet icon, and a visible `Selected` badge in both light and dark appearance.
 - Validation, primary, secondary, destructive, and disabled actions use shared button macros so state changes do not alter geometry or produce thick borders.
 - Workflow section headers use one icon container, title hierarchy, description scale, outline, and surface treatment across Create, Replace, Delete, Reveal, and TLS rotation.

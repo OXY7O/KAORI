@@ -3,7 +3,7 @@
     {% if cluster_onboarding.is_blocked %}
         {% include "components/cluster/_onboarding_banner.html" %}
     {% else %}
-        <section class="flex flex-col gap-4 rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between" aria-label="TLS certificate actions">
+        <section id="tls-registry-actions" class="flex flex-col gap-4 rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between" aria-label="TLS certificate actions">
             <div class="min-w-0">
                 <h2 class="text-sm font-semibold text-content-primary">TLS Registry Actions</h2>
                 <p class="mt-1 text-xs leading-5 text-content-muted">Refresh certificate posture or open the controlled bulk rotation workflow.</p>

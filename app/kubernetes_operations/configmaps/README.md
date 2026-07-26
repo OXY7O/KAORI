@@ -96,7 +96,7 @@ Impact context can lag behind the live object. The UI must label it as inventory
 - Landing workflow cards mirror Secret Management geometry and hierarchy; destructive actions use semantic critical treatment without changing card dimensions.
 - Create and Update use the reusable validation action bar. Final mutation actions stay neutral and disabled until the latest payload passes validation.
 - Dynamic entry handling and cluster/namespace dependency behavior live in `app/static/js/configmap_editor.js`; templates no longer embed imperative `onchange` handlers or per-partial scripts.
-- Every ConfigMap hero uses the canonical `page_hero.context_rows()` panel with exactly three horizontal label/value rows. The panel contains no heading, helper sentence, nested metric cards, or hero action; navigation and mutations remain in the page content.
+- Every ConfigMap hero uses the canonical `page_hero.context_card()` posture panel: one eyebrow/title header, one compact semantic status, two operational metrics, and one full-width contextual CTA. The panel contains no descriptive paragraph and does not own mutation submission.
 - Create, Update, and Delete use the canonical `components/info_flow.html` timeline for operational steps. Custom dark workflow cards and domain-specific workflow-step markup are not retained.
 
 ### Shared action-bar contract

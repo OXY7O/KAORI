@@ -20,11 +20,20 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ page_hero.context_rows('Create ConfigMap context', [
-                    ('file-plus-2', 'Operation', 'Create Only'),
-                    ('scan-search', 'Validation', 'Dry-Run Required', 'info'),
-                    ('target', 'Target Scope', 'Single ConfigMap')
-                ]) }}
+                {{ page_hero.context_card(
+                    'Create ConfigMap context',
+                    'Create Workflow',
+                    'Controlled ConfigMap Creation',
+                    'Create Only',
+                    'info',
+                    [
+                        ('scan-search', 'Validation', 'Required', 'Server-side dry-run', true),
+                        ('target', 'Target Scope', 'Single', 'Create-only ConfigMap')
+                    ],
+                    'Open Creation Form',
+                    '#configmap-create-form',
+                    'arrow-down'
+                ) }}
             </div>
         </section>
         <div id="configmap-operation-feedback" class="hidden" aria-hidden="true"></div>

@@ -18,11 +18,20 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ page_hero.context_rows('Secret Reveal policy context', [
-                    ('power', 'Global Feature', 'Enabled' if global_reveal_enabled else 'Disabled', 'normal' if global_reveal_enabled else 'warning'),
-                    ('server-cog', 'Protected Clusters', protected_cluster_count ~ ' Configured'),
-                    ('boxes', 'Enabled Namespaces', total_enabled_namespaces)
-                ]) }}
+                {{ page_hero.context_card(
+                    'Secret Reveal policy context',
+                    'Reveal Posture',
+                    'Protected Access Policy',
+                    'Enabled' if global_reveal_enabled else 'Disabled',
+                    'normal' if global_reveal_enabled else 'warning',
+                    [
+                        ('server-cog', 'Protected Clusters', protected_cluster_count, 'Configured policy scope'),
+                        ('boxes', 'Enabled Namespaces', total_enabled_namespaces, 'Admitted reveal namespaces')
+                    ],
+                    'Open Protected Reveal',
+                    url_for('kubernetes_operations.reveal_secret'),
+                    'scan-eye'
+                ) }}
             </div>
         </section>
         {{ kubernetes_admin_tabs.render('secret-reveal') }}
@@ -38,13 +47,8 @@
                             <p class="mt-0.5 text-xs leading-5 text-content-muted">Current feature availability, protected scope, namespace admission, and cluster readiness for one-time Secret reveal.</p>
                         </div>
                     </div>
-                    <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                    <div class="flex shrink-0 items-center justify-end">
                         {{ table_label.status_label('Reveal enabled' if global_reveal_enabled else 'Reveal disabled', 'normal' if global_reveal_enabled else 'warning', 'shield-check' if global_reveal_enabled else 'shield-alert') }}
-                        <a href="{{ url_for('kubernetes_operations.reveal_secret') }}"
-                           class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:border-outline-strong hover:bg-surface-hover">
-                            <i data-lucide="scan-eye" class="h-4 w-4"></i>
-                            Open Protected Reveal
-                        </a>
                     </div>
                 </div>
             </header>

@@ -18,15 +18,25 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ page_hero.context_rows('Delete ConfigMap context', [
-                    ('trash-2', 'Operation', 'Delete', 'critical'),
-                    ('shield-check', 'Validation', 'Preflight Required', 'warning'),
-                    ('keyboard', 'Confirmation', 'Exact Name')
-                ]) }}
+                {{ page_hero.context_card(
+                    'Delete ConfigMap context',
+                    'Delete Workflow',
+                    'Controlled ConfigMap Removal',
+                    'Destructive',
+                    'critical',
+                    [
+                        ('shield-check', 'Validation', 'Required', 'Non-destructive preflight', true),
+                        ('keyboard', 'Confirmation', 'Exact Name', 'Short-lived validation receipt', true)
+                    ],
+                    'Review Deletion Target',
+                    '#configmap-delete-form',
+                    'arrow-down'
+                ) }}
             </div>
         </section>
         <div id="configmap-operation-feedback" class="hidden" aria-hidden="true"></div>
-        <form method="post"
+        <form id="configmap-delete-form"
+              method="post"
               hx-post="{{ url_for('kubernetes_operations.delete_configmap') }}"
               hx-target="#configmap-operation-feedback"
               hx-swap="innerHTML"

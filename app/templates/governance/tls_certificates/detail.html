@@ -30,11 +30,20 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ page_hero.context_rows('Certificate posture context', [
-                    ('shield-check' if hero_status_tone == 'normal' else 'triangle-alert', 'Posture', hero_status_label, hero_status_tone),
-                    ('calendar-clock', 'Days Remaining', record.days_remaining if record.days_remaining is not none else 'N/A'),
-                    ('globe-2', 'SAN Coverage', (record.dns_names or [])|length ~ ' Names')
-                ]) }}
+                {{ page_hero.context_card(
+                    'Certificate posture context',
+                    'Certificate Posture',
+                    'Validity and SAN Coverage',
+                    hero_status_label,
+                    hero_status_tone,
+                    [
+                        ('calendar-clock', 'Days Remaining', record.days_remaining if record.days_remaining is not none else 'N/A', 'Until certificate expiry'),
+                        ('globe-2', 'SAN Coverage', (record.dns_names or [])|length, 'DNS names protected')
+                    ],
+                    'Update TLS Secret',
+                    '#update-secret',
+                    'upload-cloud'
+                ) }}
             </div>
         </section>
         <section class="flex flex-wrap items-center justify-end gap-2" aria-label="Certificate record actions">
@@ -42,11 +51,6 @@
                class="{{ operation_ui.secondary_button_classes() }}">
                 <i data-lucide="arrow-left" class="h-4 w-4"></i>
                 Back to TLS Inventory
-            </a>
-            <a href="#update-secret"
-               class="{{ operation_ui.primary_button_classes() }}">
-                <i data-lucide="upload-cloud" class="h-4 w-4"></i>
-                Update TLS Secret
             </a>
         </section>
         <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">

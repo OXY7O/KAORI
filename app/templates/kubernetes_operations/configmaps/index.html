@@ -20,14 +20,23 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ page_hero.context_rows('ConfigMap Management context', [
-                    ('file-cog', 'Workspace', 'ConfigMap Management'),
-                    ('radio-tower', 'Source', 'Kubernetes API'),
-                    ('shield-check', 'Validation', 'Required', 'info')
-                ]) }}
+                {{ page_hero.context_card(
+                    'ConfigMap Management context',
+                    'ConfigMap Posture',
+                    'Validated Configuration Operations',
+                    'Controlled',
+                    'info',
+                    [
+                        ('database', 'Tracked Objects', total_configmaps, namespace_count ~ ' namespaces'),
+                        ('lock-keyhole', 'Immutable', immutable_count, 'Protected from update')
+                    ],
+                    'Open ConfigMap Workflows',
+                    '#configmap-workflows',
+                    'workflow'
+                ) }}
             </div>
         </section>
-        <section class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm sm:p-6">
+        <section id="configmap-workflows" class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm sm:p-6">
             {{ configmap_ui.workflow_header('mouse-pointer-click', 'Operational Workflows', 'Choose the Required ConfigMap Workflow', 'Each workflow keeps its own permission, validation, impact-review, and destructive-action boundaries.', 'Dry-Run First · Impact Aware') }}
             <div class="mt-6 grid gap-4 lg:grid-cols-3">
                 <article class="flex min-h-[23rem] flex-col rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
