@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from flask import (
@@ -35,13 +36,41 @@ def _validate_csrf() -> None:
         raise ValueError('The security token is missing or expired. Refresh the page and retry.') from exc
 
 
-def _settings_redirect(cluster_id: str):
-    redirect_args: dict[str, Any] = {'cluster_id': cluster_id}
+def _settings_request_args(cluster_id: str) -> dict[str, Any]:
+    settings_args: dict[str, Any] = {'cluster_id': cluster_id}
     for key in ('namespace_q', 'namespace_policy', 'page', 'per_page'):
         value = (request.form.get(key) or '').strip()
         if value:
-            redirect_args[key] = value
-    return redirect(url_for('platform_operations.kubernetes.index', tab='secret-reveal', **redirect_args))
+            settings_args[key] = value
+    return settings_args
+
+
+def _settings_response(cluster_id: str):
+    settings_args = _settings_request_args(cluster_id)
+    page_url = url_for(
+        'platform_operations.kubernetes.index',
+        tab='secret-reveal',
+        **settings_args,
+    )
+    if request.headers.get('HX-Request') != 'true':
+        return redirect(page_url)
+
+    context = build_secret_reveal_settings_context(
+        cluster_id,
+        namespace_query=settings_args.get('namespace_q'),
+        namespace_policy_filter=settings_args.get('namespace_policy'),
+        page=settings_args.get('page'),
+        per_page=settings_args.get('per_page'),
+    )
+    response = make_response(
+        render_template(
+            'platform_operations/kubernetes/secret_reveal/_cluster_workspace.html',
+            **context,
+        )
+    )
+    response.headers['HX-Push-Url'] = page_url
+    response.headers['HX-Trigger'] = json.dumps({'kaori:notifications-changed': True})
+    return response
 
 
 def _cluster_or_error(cluster_id: str) -> Cluster:
@@ -175,7 +204,7 @@ def update_readiness(cluster_id: str):
             message='KAORI could not save the cluster security readiness settings.',
             metadata={'cluster_id': cluster_id},
         )
-    return _settings_redirect(cluster_id)
+    return _settings_response(cluster_id)
 
 
 @bp.route('/cluster/<string:cluster_id>/namespace-policy', methods=['POST'])
@@ -238,4 +267,4 @@ def update_namespace_policy(cluster_id: str):
                 'requested_policy': requested_policy,
             },
         )
-    return _settings_redirect(cluster_id)
+    return _settings_response(cluster_id)

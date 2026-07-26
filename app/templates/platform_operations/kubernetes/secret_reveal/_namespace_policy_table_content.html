@@ -10,8 +10,8 @@
         <thead>
             <tr class="border-b border-brand-outline bg-kaori-soft/70 text-xs uppercase tracking-wide text-content-secondary">
                 <th class="px-5 py-3 text-left">Namespace</th>
-                <th class="px-5 py-3 text-left">Live source</th>
-                <th class="px-5 py-3 text-left">Current policy</th>
+                <th class="px-5 py-3 text-left">Live Source</th>
+                <th class="px-5 py-3 text-left">Current Policy</th>
                 <th class="px-5 py-3 text-right">Configure</th>
             </tr>
         </thead>
@@ -42,9 +42,7 @@
                         </div>
                     </td>
                     <td class="px-5 py-3 text-left align-middle">
-                        <span class="inline-flex items-center gap-1.5 rounded-md px-3 py-1 text-xs font-medium ring-1 ring-inset {{ live_classes }}">
-                            <i data-lucide="{{ 'check' if row.in_live_cluster else 'info' }}"
-                               class="h-3.5 w-3.5"></i>
+                        <span class="inline-flex items-center rounded-md px-3 py-1 text-xs font-medium ring-1 ring-inset {{ live_classes }}">
                             {{ 'Current' if row.in_live_cluster else 'Missing' }}
                         </span>
                     </td>
@@ -57,6 +55,11 @@
                     <td class="px-5 py-3 align-middle">
                         <form method="post"
                               action="{{ url_for('platform_operations.kubernetes.secret_reveal.update_namespace_policy', cluster_id=selected_cluster.id) }}"
+                              hx-post="{{ url_for('platform_operations.kubernetes.secret_reveal.update_namespace_policy', cluster_id=selected_cluster.id) }}"
+                              hx-target="#secret-reveal-cluster-workspace"
+                              hx-swap="outerHTML show:none"
+                              hx-indicator="#secret-reveal-namespace-loading"
+                              hx-disabled-elt="button[type='submit']"
                               class="ml-auto flex w-full max-w-md items-center justify-end gap-3">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="namespace" value="{{ row.namespace }}">
@@ -81,7 +84,7 @@
                             <button type="submit"
                                     title="Save {{ row.namespace }} policy"
                                     {% if not row.in_live_cluster and row.policy == 'disabled' %}disabled{% endif %}
-                                    class="inline-flex h-10 w-24 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-kaori-primary-hover focus:ring-4 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-surface-disabled disabled:text-content-muted disabled:shadow-none cursor-pointer disabled:cursor-not-allowed">
+                                    class="inline-flex h-10 w-24 shrink-0 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-3 text-sm font-semibold text-white shadow-sm outline-none transition hover:bg-kaori-primary-hover focus:ring-4 focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:bg-surface-disabled disabled:text-content-muted disabled:shadow-none">
                                 <i data-lucide="save" class="h-4 w-4"></i>
                                 Save
                             </button>

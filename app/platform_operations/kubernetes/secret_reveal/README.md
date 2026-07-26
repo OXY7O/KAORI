@@ -102,3 +102,21 @@ The Configure cell keeps the policy selector flexible and the Save button at a f
 - The Secret Reveal tab loads lazily through `platform_operations.kubernetes.secret_reveal_tab_workspace`; opening the Overview tab does not trigger a live namespace lookup.
 - Cluster/filter HTMX responses push the consolidated administration URL, while partial responses continue to target only the Secret Reveal workspace or namespace table.
 - Do not restore a standalone Secret Reveal page hero or a second tab bar. Kubernetes Administration owns the hero, overview surface, and internal tabs.
+
+## No-Reload Save Contract
+
+Cluster readiness and namespace policy mutations use HTMX POST requests and replace only `#secret-reveal-cluster-workspace`. The full-page form action remains available as a fallback, but successful and failed save attempts must not reload Kubernetes Administration when JavaScript is available.
+
+Each HTMX save response must:
+
+- rebuild the canonical Secret Reveal cluster workspace from server state;
+- preserve cluster, namespace search, policy filter, page, and page-size arguments;
+- update the browser URL through `HX-Push-Url`;
+- trigger `kaori:notifications-changed` so the persistent toast center reads the queued operational feedback;
+- keep the Secret Reveal tab active.
+
+Readiness controls use static form cards with explicit checkbox labels. Do not make the whole card animate, change background, or behave as a large click target. Standard interaction feedback belongs on the checkbox, select, and action button.
+
+The Kubernetes Boundary card is the violet KAORI guidance surface. Its header, supporting copy, icon containers, and internal guardrail cards must use white or white-opacity content against `bg-kaori-primary`.
+
+The Namespace Policies `Live Source` status is a text-only semantic label. Do not reintroduce decorative icons for `Current` or `Missing`.

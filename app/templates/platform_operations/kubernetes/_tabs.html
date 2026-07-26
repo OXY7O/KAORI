@@ -1,7 +1,7 @@
 {% macro render(active_tab) -%}
-    <nav class="border-b border-outline-default bg-kaori-soft/50 px-5 pt-4"
-         aria-label="Kubernetes Administration Workspaces">
-        <div class="flex gap-2 overflow-x-auto" role="tablist">
+    <section class="overflow-hidden rounded-2xl border border-brand-outline bg-kaori-soft/60 shadow-sm"
+             aria-label="Kubernetes Administration Workspace Tabs">
+        <div class="flex flex-wrap gap-2 p-2" role="tablist">
             {% set tabs = [
                 ('overview', 'layout-dashboard', 'Overview'),
                 ('secret-reveal', 'scan-eye', 'Secret Reveal')
@@ -11,13 +11,13 @@
                         role="tab"
                         :aria-selected="activeTab === '{{ key }}'"
                         aria-controls="kubernetes-administration-{{ key }}-tabpanel"
-                        @click="activeTab='{{ key }}'; history.replaceState(null, '', '{{ url_for('platform_operations.kubernetes.index', tab=key) }}'); {% if key == 'secret-reveal' %}$nextTick(() => window.dispatchEvent(new CustomEvent('kubernetes:load-secret-reveal'))){% endif %}"
-                        class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-t-xl border px-4 py-2.5 text-sm font-semibold transition"
-                        :class="activeTab === '{{ key }}' ? '-mb-px border-kaori-primary bg-kaori-primary text-white' : 'border-kaori-primary/25 bg-white text-kaori-primary hover:bg-kaori-soft'">
+                        @click="setTab('{{ key }}')"
+                        class="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-lg px-4 text-sm font-semibold transition"
+                        :class="activeTab === '{{ key }}' ? 'bg-kaori-primary text-white shadow-sm' : 'border border-brand-outline bg-surface-card text-kaori-primary hover:bg-kaori-soft'">
                     <i data-lucide="{{ icon }}" class="h-4 w-4" aria-hidden="true"></i>
                     {{ label }}
                 </button>
             {% endfor %}
         </div>
-    </nav>
+    </section>
 {%- endmacro %}

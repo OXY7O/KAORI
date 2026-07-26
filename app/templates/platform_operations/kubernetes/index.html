@@ -5,7 +5,7 @@
 {% block title %}Kubernetes Administration{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6"
-         x-data="{ activeTab: '{{ active_tab }}' }"
+         x-data="{ activeTab: '{{ active_tab }}', setTab(tab) { this.activeTab = tab; const url = new URL(window.location.href); url.searchParams.set('tab', tab); window.history.replaceState({}, '', url); if (tab === 'secret-reveal') window.dispatchEvent(new CustomEvent('kubernetes:load-secret-reveal')); } }"
          x-init="if (activeTab === 'secret-reveal') $nextTick(() => window.dispatchEvent(new CustomEvent('kubernetes:load-secret-reveal')))">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
@@ -74,33 +74,32 @@
             </div>
         </section>
 
-        <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm" aria-label="Kubernetes Administration Workspaces">
-            {{ kubernetes_admin_tabs.render(active_tab) }}
-            <div class="p-5 sm:p-6">
-                <div id="kubernetes-administration-overview-tabpanel"
-                     role="tabpanel"
-                     x-show="activeTab === 'overview'"
-                     x-cloak>
-                    {% include "platform_operations/kubernetes/_overview_workspace.html" %}
-                </div>
-                <div id="kubernetes-administration-secret-reveal-tabpanel"
-                     role="tabpanel"
-                     x-show="activeTab === 'secret-reveal'"
-                     x-cloak
-                     hx-get="{{ secret_reveal_workspace_url }}"
-                     hx-trigger="kubernetes:load-secret-reveal from:window once"
-                     hx-swap="innerHTML">
-                    <div class="flex min-h-56 items-center justify-center rounded-xl border border-outline-default bg-surface-hover">
-                        <div class="text-center">
-                            <span class="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                                <i data-lucide="loader-circle" class="h-5 w-5 animate-spin" aria-hidden="true"></i>
-                            </span>
-                            <p class="mt-3 text-sm font-semibold text-content-primary">Loading Secret Reveal Administration</p>
-                            <p class="mt-1 text-xs text-content-muted">Collecting cluster readiness and namespace policy context.</p>
-                        </div>
+        {{ kubernetes_admin_tabs.render(active_tab) }}
+
+        <div class="min-w-0">
+            <div id="kubernetes-administration-overview-tabpanel"
+                 role="tabpanel"
+                 x-show="activeTab === 'overview'"
+                 x-cloak>
+                {% include "platform_operations/kubernetes/_overview_workspace.html" %}
+            </div>
+            <div id="kubernetes-administration-secret-reveal-tabpanel"
+                 role="tabpanel"
+                 x-show="activeTab === 'secret-reveal'"
+                 x-cloak
+                 hx-get="{{ secret_reveal_workspace_url }}"
+                 hx-trigger="kubernetes:load-secret-reveal from:window once"
+                 hx-swap="innerHTML">
+                <div class="flex min-h-56 items-center justify-center rounded-2xl border border-outline-default bg-surface-card shadow-sm">
+                    <div class="text-center">
+                        <span class="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                            <i data-lucide="loader-circle" class="h-5 w-5 animate-spin" aria-hidden="true"></i>
+                        </span>
+                        <p class="mt-3 text-sm font-semibold text-content-primary">Loading Secret Reveal Administration</p>
+                        <p class="mt-1 text-xs text-content-muted">Collecting cluster readiness and namespace policy context.</p>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
     </div>
 {% endblock dashboard_content %}
