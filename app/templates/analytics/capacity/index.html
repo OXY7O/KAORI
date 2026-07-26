@@ -156,7 +156,7 @@
                                             <div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Capacity</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ resource_value(card.key, item.capacity) }}</p></div>
                                             <div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Headroom</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ item.headroom }}%</p></div>
                                         </div>
-                                        {{ progress_bar.bar(100 - item.headroom, track_classes='mt-4 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=card.label ~ ' utilization') }}
+                                        {{ progress_bar.bar(item.utilization_percent, track_classes='mt-4 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=card.label ~ ' utilization') }}
                                     </article>
                                 {% endfor %}
                             </div>
@@ -164,10 +164,10 @@
                                 <script id="capacity-allocation-chart-data" type="application/json">{{ {
                                     'labels': ['CPU', 'Memory', 'Pods', 'Storage'],
                                     'values': [
-                                        100 - capacity_summary.cpu.headroom,
-                                        100 - capacity_summary.memory.headroom,
-                                        100 - capacity_summary.pods.headroom,
-                                        100 - capacity_summary.storage.headroom
+                                        capacity_summary.cpu.utilization_percent,
+                                        capacity_summary.memory.utilization_percent,
+                                        capacity_summary.pods.utilization_percent,
+                                        capacity_summary.storage.utilization_percent
                                     ]
                                 } | tojson }}</script>
                                 <div class="mx-auto h-64 max-w-64"><canvas id="capacity-allocation-chart" aria-label="Cluster resource utilization chart"></canvas></div>
@@ -189,7 +189,7 @@
                                             <div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Capacity</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ resource_value(card.key, item.capacity) }}</p></div>
                                             <div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Headroom</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ item.headroom }}%</p></div>
                                         </div>
-                                        {{ progress_bar.bar(100 - item.headroom, track_classes='mt-4 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=card.label ~ ' utilization') }}
+                                        {{ progress_bar.bar(item.utilization_percent, track_classes='mt-4 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=card.label ~ ' utilization') }}
                                     </article>
                                 {% endfor %}
                             </div>

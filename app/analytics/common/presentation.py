@@ -26,27 +26,41 @@ def datetime_display(value: datetime | None, *, fallback: str = 'Not recorded') 
 
 def present_capacity_context(context: dict[str, Any]) -> dict[str, Any]:
     result = dict(context)
-    capacity_summary = result.get('capacity_summary')
+    raw_capacity_summary = result.get('capacity_summary')
+    capacity_summary = raw_capacity_summary if isinstance(raw_capacity_summary, dict) else {}
+    normalized_capacity_summary: dict[str, dict[str, Any]] = {}
     headroom_values: list[float] = []
 
-    if isinstance(capacity_summary, dict):
-        for resource in ('cpu', 'memory', 'pods', 'storage'):
-            item = capacity_summary.get(resource)
-            if not isinstance(item, dict):
-                continue
-            try:
-                headroom = float(item.get('headroom') or 0)
-            except (TypeError, ValueError):
-                headroom = 0.0
-            result[f'{resource}_headroom'] = headroom
-            result[f'{resource}_headroom_display'] = percent_display(headroom)
-            try:
-                capacity = float(item.get('capacity') or 0)
-            except (TypeError, ValueError):
-                capacity = 0.0
-            if capacity > 0:
-                headroom_values.append(headroom)
+    for resource in ('cpu', 'memory', 'pods', 'storage'):
+        raw_item = capacity_summary.get(resource)
+        item = dict(raw_item) if isinstance(raw_item, dict) else {}
 
+        try:
+            capacity = float(item.get('capacity') or 0)
+        except (TypeError, ValueError):
+            capacity = 0.0
+        try:
+            headroom = float(item.get('headroom') or 0)
+        except (TypeError, ValueError):
+            headroom = 0.0
+
+        item.setdefault('capacity', 0)
+        item.setdefault('used', 0)
+        item.setdefault('available', 0)
+        item['headroom'] = headroom
+        item['utilization_percent'] = (
+            max(min(100.0 - headroom, 100.0), 0.0)
+            if capacity > 0
+            else 0.0
+        )
+        normalized_capacity_summary[resource] = item
+
+        result[f'{resource}_headroom'] = headroom
+        result[f'{resource}_headroom_display'] = percent_display(headroom)
+        if capacity > 0:
+            headroom_values.append(headroom)
+
+    result['capacity_summary'] = normalized_capacity_summary
     capacity_headroom_available = bool(headroom_values)
     lowest_headroom = min(headroom_values) if capacity_headroom_available else 0.0
     result['capacity_headroom_available'] = capacity_headroom_available

@@ -2,10 +2,6 @@
 {% import "components/table_label.html" as table_label %}
 {% import "analytics/components/_prometheus_status.html" as prometheus_status_panel %}
 {% set selected_cluster_name = cluster.name if cluster else 'No Cluster Selected' %}
-{% set cpu_headroom = capacity_summary.cpu.headroom|default(0) if capacity_summary is defined else 0 %}
-{% set memory_headroom = capacity_summary.memory.headroom|default(0) if capacity_summary is defined else 0 %}
-{% set pod_headroom = capacity_summary.pods.headroom|default(0) if capacity_summary is defined else 0 %}
-{% set storage_headroom = capacity_summary.storage.headroom|default(0) if capacity_summary is defined else 0 %}
 {% set lowest_headroom_value = lowest_headroom|default(0) %}
 {% if not capacity_headroom_available|default(false) %}
     {% set posture_value = "Unknown" %}
