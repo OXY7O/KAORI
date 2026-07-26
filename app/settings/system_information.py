@@ -4,73 +4,180 @@ from collections.abc import Mapping
 from typing import Any
 
 from app.cluster.constants import get_environment_label
+from app.integrations.compatibility import (
+    KUBERNETES_CURRENT_VERSION_LABEL,
+    KUBERNETES_SUPPORTED_VERSION_LABEL,
+    PROFILES,
+)
+
+_RELEASE_HIGHLIGHTS: tuple[dict[str, str], ...] = (
+    {
+        'title': 'Self-Healing Integration Runtime',
+        'icon': 'refresh-cw',
+        'description': (
+            'Kubernetes, Prometheus, and Alertmanager runtime monitoring can recover automatically and trigger targeted data refreshes after connectivity returns.'
+        ),
+    },
+    {
+        'title': 'Worker-Based Kubernetes Operations',
+        'icon': 'workflow',
+        'description': (
+            'Inventory, analytics materialization, and TLS certificate synchronization use registered background jobs with manual and scheduled execution paths.'
+        ),
+    },
+    {
+        'title': 'Template-Driven PDF Reporting',
+        'icon': 'file-chart-column',
+        'description': (
+            'Existing report templates can render through the WeasyPrint HTML/PDF engine while ReportLab remains available as a controlled legacy fallback.'
+        ),
+    },
+)
 
 _RELEASE_FEATURES: tuple[dict[str, Any], ...] = (
     {
         'title': 'Identity & Access',
         'icon': 'shield-check',
-        'description': 'Provider-neutral authentication and KAORI authorization controls.',
+        'description': 'Provider-neutral authentication and authoritative KAORI authorization controls.',
         'features': (
             'Local Database break-glass authentication',
             'LDAP / Active Directory provisioning and sign-in',
             'Google OpenID Connect and GitHub OAuth',
             'Role-based access, account lifecycle, and Super Admin guardrails',
-            'Unified authentication and administrative activity audit',
+            'Unified authentication and administrative Activity Audit evidence',
         ),
     },
     {
-        'title': 'Kubernetes Operations',
+        'title': 'Kubernetes Platform Operations',
         'icon': 'boxes',
-        'description': 'Centralized operational visibility and controlled Kubernetes workflows.',
+        'description': 'Inventory, governed mutations, advanced administration, and recovery-aware synchronization.',
         'features': (
-            'Cluster registration, validation, synchronization, and inventory',
-            'Nodes, namespaces, workloads, Pods, Services, Ingresses, storage, and topology',
-            'Secret and ConfigMap operational workflows',
-            'TLS Secret governance and protected reveal controls',
+            'Cluster registration, validation, runtime readiness, and automatic or manual inventory synchronization',
+            'Nodes, namespaces, workloads, Pods, Services, Ingresses, storage, configuration, and topology inventory',
+            'Validated ConfigMap and Secret create, update, replacement, and delete workflows',
+            'Protected one-time Secret Reveal under Platform Operations → Kubernetes Administration',
+            'TLS certificate inventory, governance, bulk rotation, and worker-based automatic synchronization',
         ),
     },
     {
         'title': 'Analytics & Intelligence',
         'icon': 'brain-circuit',
-        'description': 'Operational analytics that use connected infrastructure signals.',
+        'description': 'Worker-materialized operational analytics built from committed infrastructure snapshots.',
         'features': (
-            'Utilization, capacity, storage, workload, and forecast analytics',
-            'Top consumers, alerts, anomalies, and recommendation workflows',
-            'Versioned Prometheus and Alertmanager compatibility profiles',
+            'Kubernetes Operations Dashboard with inventory, capacity, forecast, consumer, alert, and reporting summaries',
+            'Resource utilization, capacity, storage, workload, forecast, top-consumer, and alert analytics',
+            'Internal content tabs that keep analytics pages compact without removing canonical navigation',
+            'Forecast and growth-risk visualization with historical and projected utilization',
+            'Recommendation, alert intelligence, anomaly, and operational response guidance',
         ),
     },
     {
-        'title': 'Reporting & Retention',
-        'icon': 'file-chart-column',
-        'description': 'Report generation, storage, scheduling foundations, and audit retention.',
+        'title': 'Integration Runtime & Compatibility',
+        'icon': 'unplug',
+        'description': 'Versioned adapters, live capability evidence, and recovery monitoring for infrastructure providers.',
         'features': (
-            'PDF report generation and generated report management',
-            'System and custom report templates',
-            'Local and S3-compatible storage backends',
-            'Archive-first operational activity retention',
+            'Kubernetes, Prometheus, Alertmanager, and Thanos Query compatibility profiles',
+            'Direct Prometheus and indirect Thanos Query integration modes',
+            'Runtime observations, readiness validation, and capability evidence collection',
+            'Automatic runtime monitoring with targeted recovery refresh after connectivity returns',
+            'User-friendly source failure presentation without exposing raw endpoints or exceptions',
+        ),
+    },
+    {
+        'title': 'Jobs & Automation',
+        'icon': 'timer-reset',
+        'description': 'Registered background execution policies with dedicated queues, progress, and auditable outcomes.',
+        'features': (
+            'Celery Beat scheduling with canonical job definitions and configurable policies',
+            'Manual, scheduled, and recovery-triggered execution paths',
+            'Inventory, analytics, integration runtime, retention, and TLS synchronization workloads',
+            'Job deduplication, progress reporting, partial-success handling, and execution history',
+        ),
+    },
+    {
+        'title': 'Reporting & Data Lifecycle',
+        'icon': 'file-chart-column',
+        'description': 'Template-driven report delivery, storage, scheduling, and centralized retention controls.',
+        'features': (
+            'Existing system and custom report templates with configurable sections and ordering',
+            'WeasyPrint HTML/PDF rendering with ReportLab legacy fallback',
+            'Generated report management, schedules, local storage, and S3-compatible storage',
+            'Centralized data lifecycle policies, archive verification, and operational retention',
         ),
     },
     {
         'title': 'Personal Workspace',
         'icon': 'user-round-cog',
-        'description': 'Per-user presentation and account security preferences.',
+        'description': 'Per-user presentation, identity context, credential ownership, and notification preferences.',
         'features': (
             'Automatic or manual IANA timezone selection',
             'Regional date, time, and locale presentation',
             'Account identity, credential ownership, and authentication history',
-            'Personal Notification Center',
+            'Persistent personal Notification Center and Activity Audit access',
         ),
     },
+)
+
+_COMPATIBILITY_PRESENTATION: tuple[dict[str, Any], ...] = (
     {
-        'title': 'Integrations',
-        'icon': 'unplug',
-        'description': 'Provider-neutral integration administration and readiness validation.',
-        'features': (
-            'Prometheus inventory and configuration',
-            'Alertmanager inventory and configuration',
-            'Direct and indirect integration modes',
-            'Externalized runtime secrets for identity and infrastructure providers',
-        ),
+        'key': 'kubernetes',
+        'product': 'Kubernetes',
+        'icon': 'ship-wheel',
+        'minimum_version': '1.20',
+        'minimum_label': 'v1.20',
+        'recommended_version': '1.34',
+        'recommended_label': 'v1.34+',
+        'support_band': KUBERNETES_SUPPORTED_VERSION_LABEL,
+        'current_band': KUBERNETES_CURRENT_VERSION_LABEL,
+        'support_label': 'Current and Legacy Supported',
+        'support_tone': 'info',
+        'capability_summary': 'API discovery, inventory, governed operations, and TLS governance.',
+        'validation_basis': 'Live API discovery and feature-level Kubernetes RBAC remain authoritative.',
+    },
+    {
+        'key': 'prometheus',
+        'product': 'Prometheus',
+        'icon': 'chart-no-axes-combined',
+        'minimum_version': '2.40',
+        'minimum_label': 'v2.40',
+        'recommended_version': '3.0',
+        'recommended_label': 'v3.0+',
+        'support_band': 'v2.40–v3.x',
+        'current_band': 'v3.x',
+        'support_label': 'Prometheus 3 Current',
+        'support_tone': 'normal',
+        'capability_summary': 'Prometheus HTTP API instant and range queries with Kubernetes metric contracts.',
+        'validation_basis': 'Required metrics, labels, query evidence, and retention capability must pass readiness validation.',
+    },
+    {
+        'key': 'alertmanager',
+        'product': 'Alertmanager',
+        'icon': 'bell-ring',
+        'minimum_version': '0.25',
+        'minimum_label': 'v0.25',
+        'recommended_version': '0.27',
+        'recommended_label': 'v0.27+',
+        'support_band': 'v0.25–v0.33',
+        'current_band': 'v0.27–v0.33',
+        'support_label': 'API v2 Current',
+        'support_tone': 'normal',
+        'capability_summary': 'Alertmanager API v2 status, alerts, and silences contracts.',
+        'validation_basis': 'Observed API metadata and binding scope must pass before alert analytics are considered ready.',
+    },
+    {
+        'key': 'thanos',
+        'product': 'Thanos Query',
+        'icon': 'database-zap',
+        'minimum_version': '0.39',
+        'minimum_label': 'v0.39',
+        'recommended_version': '0.41',
+        'recommended_label': 'v0.41+',
+        'support_band': 'v0.39–v0.41',
+        'current_band': 'v0.41.x',
+        'support_label': 'Query Profile Current',
+        'support_tone': 'normal',
+        'capability_summary': 'Prometheus-compatible API v1 queries and long-term historical metric access.',
+        'validation_basis': 'Query results and historical block availability are validated instead of relying on a Prometheus version endpoint.',
     },
 )
 
@@ -80,8 +187,29 @@ def _clean_config_value(value: Any, fallback: str = 'Not provided') -> str:
     return normalized or fallback
 
 
+def _compatibility_catalog() -> tuple[dict[str, Any], ...]:
+    catalog: list[dict[str, Any]] = []
+    for presentation in _COMPATIBILITY_PRESENTATION:
+        profiles = PROFILES.get(presentation['key'], ())
+        catalog.append(
+            {
+                **presentation,
+                'profiles': tuple(
+                    {
+                        'key': profile.key,
+                        'version_constraint': profile.version_constraint,
+                        'support_level': profile.support_level,
+                    }
+                    for profile in profiles
+                ),
+                'profile_count': len(profiles),
+            }
+        )
+    return tuple(catalog)
+
+
 def build_system_information(config: Mapping[str, Any]) -> dict[str, Any]:
-    """Return safe, user-visible KAORI release information.
+    """Return safe, user-visible KAORI release and compatibility information.
 
     This context intentionally excludes infrastructure endpoints, credentials,
     secret names, database details, and other deployment-sensitive values.
@@ -90,14 +218,21 @@ def build_system_information(config: Mapping[str, Any]) -> dict[str, Any]:
     environment = get_environment_label(_clean_config_value(config.get('APP_ENV'), 'development'))
     build_sha = _clean_config_value(config.get('APP_BUILD_SHA'), 'Not provided')
     build_date = _clean_config_value(config.get('APP_BUILD_DATE'), 'Not provided')
+    compatibility_products = _compatibility_catalog()
 
     return {
         'product_name': _clean_config_value(config.get('APP_NAME'), 'KAORI'),
         'version': version,
+        'release_label': f'KAORI {version}',
         'environment': environment,
         'build_sha': build_sha,
         'build_date': build_date,
+        'release_highlights': _RELEASE_HIGHLIGHTS,
+        'release_highlight_count': len(_RELEASE_HIGHLIGHTS),
         'feature_groups': _RELEASE_FEATURES,
         'feature_group_count': len(_RELEASE_FEATURES),
         'feature_count': sum(len(group['features']) for group in _RELEASE_FEATURES),
+        'compatibility_products': compatibility_products,
+        'compatibility_product_count': len(compatibility_products),
+        'compatibility_profile_count': sum(item['profile_count'] for item in compatibility_products),
     }

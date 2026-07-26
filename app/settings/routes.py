@@ -64,7 +64,7 @@ def general():
     can_view_system_information = user.has_permission('system.view')
     allowed_tabs = {'time-locale', 'regional-format'}
     if can_view_system_information:
-        allowed_tabs.add('system-information')
+        allowed_tabs.update({'system-information', 'compatibility-versions'})
     if active_tab not in allowed_tabs:
         active_tab = 'time-locale'
 

@@ -2,13 +2,14 @@
 
 ## General Settings
 
-`/settings/general` is a per-user workspace available to every authenticated KAORI account. It uses query-backed HTMX tabs so Time Zone, Regional Format, and System Information switch inside `#general-settings-page` without a full-page reload. Normal links remain the progressive-enhancement fallback.
+`/settings/general` is a per-user workspace available to every authenticated KAORI account. It uses query-backed HTMX tabs so Time Zone, Regional Format, System Information, and Compatibility Versions switch inside `#general-settings-page` without a full-page reload. Normal links remain the progressive-enhancement fallback.
 
 Current tabs:
 
 - `time-locale`: automatic browser timezone or a fixed IANA timezone.
 - `regional-format`: regional locale, date format, and 12/24-hour time format.
-- `system-information`: safe KAORI release identity and the capabilities shipped with the deployed version.
+- `system-information`: safe KAORI release identity, release 2.1.0 highlights, and the capabilities shipped with the deployed version.
+- `compatibility-versions`: minimum compatible and recommended Kubernetes, Prometheus, Alertmanager, and Thanos Query baselines derived from the canonical integration compatibility policy.
 
 The former standalone `/settings/time-locale` and `/settings/system-info` pages have been removed. General Settings is the canonical location for personal presentation preferences and safe release information.
 
@@ -33,9 +34,11 @@ The former standalone `/settings/time-locale` and `/settings/system-info` pages 
 
 - `APP_VERSION` is the canonical deployed application version and should match the immutable image tag.
 - `APP_BUILD_SHA` and `APP_BUILD_DATE` are optional immutable build metadata.
-- System Information is visible to every authenticated user and therefore exposes only safe product metadata.
+- System Information and Compatibility Versions require `system.view` and expose only safe product metadata.
 - Never expose credentials, secret environment-variable values, database URLs, provider endpoints, Redis details, Kubernetes credentials, or internal service addresses.
 - The capability catalog describes features shipped in the release; it does not imply that every provider is configured or that every user has RBAC access.
+- Compatibility Versions distinguishes the oldest profile-backed runtime from the recommended baseline for new deployments. Version matching never replaces live API, metric, label, query-evidence, or RBAC validation.
+- Compatibility labels describe KAORI application policy and must not be presented as the upstream product support or end-of-life calendar.
 
 ## Adding future General tabs
 

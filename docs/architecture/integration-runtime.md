@@ -273,3 +273,14 @@ independent, targeted jobs for the recovered cluster:
 Both jobs are best-effort and deduplicated. Failure to enqueue either recovery job does not invalidate the
 successful runtime health observation. TLS recovery uses `governance.tls_certificates.sync` on the inventory
 queue and does not run Kubernetes API collection inside the runtime worker.
+
+## User-visible compatibility policy
+
+General Settings → Compatibility Versions presents the canonical integration policy from
+`app.integrations.compatibility`. The page distinguishes:
+
+- **Minimum Compatible**: the oldest runtime version matched by a KAORI profile. A legacy or degraded support posture may still apply.
+- **Recommended Baseline**: the preferred current profile for new deployments and upgrade planning.
+- **Live Readiness**: provider APIs, metrics, labels, query evidence, retention, and RBAC must still pass validation. Version matching alone never marks an integration ready.
+
+The matrix is KAORI application compatibility guidance, not an upstream lifecycle or end-of-life calendar. Provider detail pages and persisted runtime observations remain authoritative for the detected version and current readiness state.

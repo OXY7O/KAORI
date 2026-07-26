@@ -1,0 +1,64 @@
+<section class="rounded-2xl border border-outline-default bg-surface-card p-5">
+    <div class="flex items-start gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+            <i data-lucide="book-open-check" class="h-5 w-5"></i>
+        </span>
+        <div>
+            <h2 class="text-base font-semibold text-content-primary">How to Read the Matrix</h2>
+            <p class="mt-1 text-sm leading-6 text-content-muted">
+                Version compatibility and operational readiness are separate decisions.
+            </p>
+        </div>
+    </div>
+    <div class="mt-5 space-y-3">
+        {% for icon, title, text in [
+            ('shield-question', 'Minimum Compatible', 'The oldest runtime line with a KAORI profile. Legacy warnings or reduced support posture may still apply.'),
+            ('badge-check', 'Recommended Baseline', 'The preferred starting version for new deployments and the current KAORI integration path.'),
+            ('scan-search', 'Live Readiness', 'The endpoint must still provide required APIs, metrics, labels, permissions, and query evidence.'),
+            ] %}
+            <div class="flex items-start gap-3 rounded-xl border border-outline-default bg-surface-subtle p-3.5">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary">
+                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                </span>
+                <div>
+                    <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ text }}</p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="rounded-2xl border border-outline-default bg-surface-card p-5">
+    <div class="flex items-start gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+            <i data-lucide="shield-ellipsis" class="h-5 w-5"></i>
+        </span>
+        <div>
+            <h2 class="text-base font-semibold text-content-primary">Policy Boundary</h2>
+            <p class="mt-1 text-sm leading-6 text-content-muted">
+                The matrix describes KAORI application compatibility, not the upstream product support calendar.
+            </p>
+        </div>
+    </div>
+    <dl class="mt-5 space-y-3 text-xs">
+        <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
+            <dt class="font-semibold text-content-primary">Source of truth</dt>
+            <dd class="mt-1 leading-5 text-content-muted">
+                Versioned profiles in <span class="font-mono text-kaori-primary">app.integrations.compatibility</span> and provider capability registries.
+            </dd>
+        </div>
+        <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
+            <dt class="font-semibold text-content-primary">Activation rule</dt>
+            <dd class="mt-1 leading-5 text-content-muted">
+                Unsupported versions are blocked. Compatible versions can still remain degraded until capability validation succeeds.
+            </dd>
+        </div>
+        <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
+            <dt class="font-semibold text-content-primary">Upgrade guidance</dt>
+            <dd class="mt-1 leading-5 text-content-muted">
+                Use the Recommended Baseline when introducing a new integration or planning an upgrade for maximum KAORI capability coverage.
+            </dd>
+        </div>
+    </dl>
+</section>
