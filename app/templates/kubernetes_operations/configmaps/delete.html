@@ -18,21 +18,11 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ configmap_ui.hero_context('Delete Workflow',
-                                'Protected Deletion',
-                                'Critical Action',
-                                'critical',
-                                'shield-alert',
-                                'shield-check',
-                                'Validation',
-                                'Preflight Required',
-                                'keyboard',
-                                'Confirmation',
-                                'Exact Name',
-                                url_for('kubernetes_operations.configmap_management'),
-                                'ConfigMap Management',
-                                'arrow-left'
-                ) }}
+                {{ page_hero.context_rows('Delete ConfigMap context', [
+                    ('trash-2', 'Operation', 'Delete', 'critical'),
+                    ('shield-check', 'Validation', 'Preflight Required', 'warning'),
+                    ('keyboard', 'Confirmation', 'Exact Name')
+                ]) }}
             </div>
         </section>
         <div id="configmap-operation-feedback" class="hidden" aria-hidden="true"></div>

@@ -3,6 +3,32 @@
     {% if cluster_onboarding.is_blocked %}
         {% include "components/cluster/_onboarding_banner.html" %}
     {% else %}
+        <section class="flex flex-col gap-4 rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between" aria-label="TLS certificate actions">
+            <div class="min-w-0">
+                <h2 class="text-sm font-semibold text-content-primary">TLS Registry Actions</h2>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Refresh certificate posture or open the controlled bulk rotation workflow.</p>
+            </div>
+            <div class="flex shrink-0 flex-wrap items-center gap-2">
+                <form method="post"
+                      action="{{ url_for('governance.tls_certificates_sync') }}"
+                      hx-post="{{ url_for('governance.tls_certificates_sync') }}"
+                      hx-target="#tls-certificates-page-content"
+                      hx-swap="outerHTML"
+                      hx-indicator="#tls-certificates-table-loading"
+                      data-tls-sync-form>
+                    <input type="hidden" name="cluster_id" value="{{ payload.filters.cluster_id }}">
+                    <button type="submit" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary transition hover:border-outline-strong hover:bg-surface-hover">
+                        <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                        Sync TLS
+                    </button>
+                </form>
+                <a href="{{ url_for('kubernetes_operations.tls_secret_bulk_rotation') }}"
+                   class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-kaori-primary bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover">
+                    <i data-lucide="upload-cloud" class="h-4 w-4"></i>
+                    Bulk Update
+                </a>
+            </div>
+        </section>
         {% include "governance/tls_certificates/partials/_summary_cards.html" %}
         {% include "governance/tls_certificates/partials/_content.html" %}
     {% endif %}

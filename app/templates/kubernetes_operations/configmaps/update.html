@@ -18,21 +18,11 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ configmap_ui.hero_context('Update Workflow',
-                                'Read Before Write',
-                                'Controlled',
-                                'info',
-                                'shield-check',
-                                'radio-tower',
-                                'Source',
-                                'Live Object',
-                                'git-compare-arrows',
-                                'Mutation',
-                                'Merge or Replace',
-                                url_for('kubernetes_operations.configmap_management'),
-                                'ConfigMap Management',
-                                'arrow-left'
-                ) }}
+                {{ page_hero.context_rows('Update ConfigMap context', [
+                    ('radio-tower', 'Source', 'Live Object'),
+                    ('git-compare-arrows', 'Mutation', 'Merge or Replace'),
+                    ('scan-search', 'Validation', 'Preview Required', 'info')
+                ]) }}
             </div>
         </section>
         <div id="configmap-operation-feedback" class="hidden" aria-hidden="true"></div>

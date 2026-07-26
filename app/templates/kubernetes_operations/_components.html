@@ -65,42 +65,7 @@
     </div>
 {%- endmacro %}
 
-{% macro hero_context(eyebrow, title, status_label, status_tone, status_icon, first_icon, first_label, first_value, second_icon, second_label, second_value, action_url, action_label, action_icon='arrow-left') -%}
-    <aside class="{{ page_hero.aside_classes() }}" aria-label="{{ eyebrow }}">
-        <div class="{{ page_hero.context_panel_classes() }}">
-            <div class="flex items-start justify-between gap-4">
-                <div class="min-w-0">
-                    <p class="{{ page_hero.context_panel_eyebrow_classes() }}">{{ eyebrow }}</p>
-                    <h2 class="{{ page_hero.context_panel_title_classes() }}">{{ title }}</h2>
-                </div>
-                <span class="inline-flex shrink-0 items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-semibold {% if status_tone == 'normal' %}border-status-normal-border bg-status-normal-soft text-status-normal-text {% elif status_tone == 'warning' %}border-status-warning-border bg-status-warning-soft text-status-warning-text {% elif status_tone == 'critical' %}border-status-critical-border bg-status-critical-soft text-status-critical-text {% elif status_tone == 'unknown' %}border-status-unknown-border bg-status-unknown-soft text-status-unknown-text {% else %}border-status-info-border bg-status-info-soft text-status-info-text{% endif %}">
-                    <i data-lucide="{{ status_icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                    {{ status_label }}
-                </span>
-            </div>
-            <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                <div class="{{ page_hero.context_metric_card_classes() }}">
-                    <div class="flex items-center gap-2 text-brand-foreground">
-                        <i data-lucide="{{ first_icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                        <p class="{{ page_hero.context_metric_label_classes() }}">{{ first_label }}</p>
-                    </div>
-                    <p class="mt-1.5 {{ page_hero.context_metric_value_classes(true) }}">{{ first_value }}</p>
-                </div>
-                <div class="{{ page_hero.context_metric_card_classes() }}">
-                    <div class="flex items-center gap-2 text-brand-foreground">
-                        <i data-lucide="{{ second_icon }}" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                        <p class="{{ page_hero.context_metric_label_classes() }}">{{ second_label }}</p>
-                    </div>
-                    <p class="mt-1.5 {{ page_hero.context_metric_value_classes(true) }}">{{ second_value }}</p>
-                </div>
-            </div>
-            <a href="{{ action_url }}" class="{{ page_hero.context_single_action_classes() }}">
-                <i data-lucide="{{ action_icon }}" class="h-4 w-4" aria-hidden="true"></i>
-                {{ action_label }}
-            </a>
-        </div>
-    </aside>
-{%- endmacro %}
+
 
 {% macro permission_label(allowed, protected=false) -%}
     {% if allowed %}

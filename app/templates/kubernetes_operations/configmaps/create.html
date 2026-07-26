@@ -20,21 +20,11 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ configmap_ui.hero_context('Create Workflow',
-                                'Create-Only ConfigMap',
-                                'Controlled',
-                                'info',
-                                'shield-plus',
-                                'file-plus-2',
-                                'Operation',
-                                'Create Only',
-                                'scan-search',
-                                'Validation',
-                                'Dry-Run Required',
-                                url_for('kubernetes_operations.configmap_management'),
-                                'ConfigMap Management',
-                                'arrow-left'
-                ) }}
+                {{ page_hero.context_rows('Create ConfigMap context', [
+                    ('file-plus-2', 'Operation', 'Create Only'),
+                    ('scan-search', 'Validation', 'Dry-Run Required', 'info'),
+                    ('target', 'Target Scope', 'Single ConfigMap')
+                ]) }}
             </div>
         </section>
         <div id="configmap-operation-feedback" class="hidden" aria-hidden="true"></div>

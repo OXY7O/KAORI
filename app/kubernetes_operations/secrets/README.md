@@ -197,7 +197,7 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 ## Unified KAORI presentation contract
 
 - Secret Management landing cards, create/replace/delete forms, Protected Reveal surfaces, and TLS rotation use the shared macros in `app/templates/kubernetes_operations/_components.html`.
-- The right side of every hero contains only status and compact metrics; descriptive helper sentences remain in the left hero description or content sections.
+- Every Secret Management and protected-reveal hero uses the canonical `page_hero.context_rows()` panel with exactly three horizontal label/value rows. The panel contains no heading, helper sentence, nested metric cards, or hero action; workflow actions remain in the page content.
 - Secret Type selection uses an explicit `is-selected`/`data-selected` contract. The active card has a violet border, selected surface, persistent violet icon, and a visible `Selected` badge in both light and dark appearance.
 - Validation, primary, secondary, destructive, and disabled actions use shared button macros so state changes do not alter geometry or produce thick borders.
 - Workflow section headers use one icon container, title hierarchy, description scale, outline, and surface treatment across Create, Replace, Delete, Reveal, and TLS rotation.
@@ -206,8 +206,8 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 - Creation Summary uses reusable operation summary items, while Sensitive Data Policy and Replacement Semantics use the canonical information-guide component.
 - Delete, Protected Reveal, and TLS Rotation use the canonical `components/info_flow.html` timeline instead of custom dark workflow cards.
 
-### Shared action-bar wrapper contract
+### Shared action-bar contract
 
-- Domain wrapper macros must declare `caller=None`, capture the outer call-block output before invoking the shared `action_bar` macro, and then pass the captured markup into the shared call block.
-- Calling `caller()` directly inside a nested `{% call shared.action_bar(...) %}` block is prohibited because the nested call shadows the outer caller and can raise `jinja2.exceptions.UndefinedError: No caller defined` at runtime.
-- The ConfigMap and Secret wrappers share a regression contract test in `tests/contracts/kubernetes/test_operation_component_caller_contract.py`.
+- ConfigMap and Secret templates import `kubernetes_operations/_components.html` directly; domain-specific component wrappers are not retained.
+- The canonical `action_bar` macro owns call-block rendering so validation and mutation controls use one runtime-safe implementation.
+- Direct component ownership and wrapper absence are covered by `tests/contracts/kubernetes/test_operation_component_caller_contract.py`.

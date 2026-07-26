@@ -18,28 +18,11 @@
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="Secret Reveal policy posture">
-                    <div class="{{ page_hero.context_panel_classes() }}">
-                        <div class="flex items-start justify-between gap-4">
-                            <div class="min-w-0">
-                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Reveal Policy Posture</p>
-                                <h2 class="{{ page_hero.context_panel_title_classes() }}">Protected Namespace Access</h2>
-                            </div>
-                            {{ table_label.status_label('Enabled' if global_reveal_enabled else 'Disabled', 'normal' if global_reveal_enabled else 'warning', 'shield-check' if global_reveal_enabled else 'shield-alert') }}
-                        </div>
-                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                            <div class="{{ page_hero.context_metric_card_classes() }}">
-                                <div class="flex items-center gap-2 text-brand-foreground"><i data-lucide="server-cog" class="h-3.5 w-3.5"></i><p class="{{ page_hero.context_metric_label_classes() }}">Selected Cluster</p></div>
-                                <p id="secret-reveal-hero-cluster-name" class="mt-1.5 {{ page_hero.context_metric_value_classes(true) }}">{{ selected_cluster.name if selected_cluster else 'Not Selected' }}</p>
-                            </div>
-                            {{ page_hero.context_metric('boxes', 'Enabled Namespaces', total_enabled_namespaces) }}
-                        </div>
-                        <a href="{{ url_for('kubernetes_operations.reveal_secret') }}" class="{{ page_hero.context_single_action_classes() }}">
-                            <i data-lucide="scan-eye" class="h-4 w-4"></i>
-                            Open Protected Reveal
-                        </a>
-                    </div>
-                </aside>
+                {{ page_hero.context_rows('Secret Reveal policy context', [
+                    ('power', 'Global Feature', 'Enabled' if global_reveal_enabled else 'Disabled', 'normal' if global_reveal_enabled else 'warning'),
+                    ('server-cog', 'Protected Clusters', protected_cluster_count ~ ' Configured'),
+                    ('boxes', 'Enabled Namespaces', total_enabled_namespaces)
+                ]) }}
             </div>
         </section>
         {{ kubernetes_admin_tabs.render('secret-reveal') }}
@@ -55,7 +38,14 @@
                             <p class="mt-0.5 text-xs leading-5 text-content-muted">Current feature availability, protected scope, namespace admission, and cluster readiness for one-time Secret reveal.</p>
                         </div>
                     </div>
-                    {{ table_label.status_label('Reveal enabled' if global_reveal_enabled else 'Reveal disabled', 'normal' if global_reveal_enabled else 'warning', 'shield-check' if global_reveal_enabled else 'shield-alert') }}
+                    <div class="flex shrink-0 flex-wrap items-center justify-end gap-2">
+                        {{ table_label.status_label('Reveal enabled' if global_reveal_enabled else 'Reveal disabled', 'normal' if global_reveal_enabled else 'warning', 'shield-check' if global_reveal_enabled else 'shield-alert') }}
+                        <a href="{{ url_for('kubernetes_operations.reveal_secret') }}"
+                           class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-primary transition hover:border-outline-strong hover:bg-surface-hover">
+                            <i data-lucide="scan-eye" class="h-4 w-4"></i>
+                            Open Protected Reveal
+                        </a>
+                    </div>
                 </div>
             </header>
             <div class="grid gap-px bg-outline-subtle md:grid-cols-2 xl:grid-cols-4">

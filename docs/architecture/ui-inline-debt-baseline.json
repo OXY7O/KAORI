@@ -90,47 +90,7 @@
       "inline_scripts": 1,
       "inline_styles": 0
     },
-    "app/templates/inventory/configuration/partials/_table_content.html": {
-      "inline_event_handlers": 2,
-      "inline_scripts": 0,
-      "inline_styles": 0
-    },
-    "app/templates/inventory/ingresses/partials/_table_content.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
-      "inline_styles": 0
-    },
-    "app/templates/inventory/namespaces/partials/_table_content.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
-      "inline_styles": 0
-    },
     "app/templates/inventory/nodes/partials/_table_content.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
-      "inline_styles": 0
-    },
-    "app/templates/inventory/overview/partials/_resources_by_cluster_content.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
-      "inline_styles": 0
-    },
-    "app/templates/inventory/pods/partials/_pod_detail_row.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
-      "inline_styles": 0
-    },
-    "app/templates/inventory/pods/partials/_table_content.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
-      "inline_styles": 0
-    },
-    "app/templates/inventory/services/partials/_table_content.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
-      "inline_styles": 0
-    },
-    "app/templates/inventory/storage/partials/_table_content.html": {
       "inline_event_handlers": 1,
       "inline_scripts": 0,
       "inline_styles": 0

@@ -20,7 +20,11 @@
                         </div>
                     {% endcall %}
                 </div>
-                {{ configmap_ui.hero_context('ConfigMap Operations', 'Validated Change Control', 'Live', 'info', 'radio-tower', 'server-cog', 'Source', 'Kubernetes API', 'shield-check', 'Validation', 'Required', url_for('integrations.kubernetes'), 'Manage Clusters', 'server-cog') }}
+                {{ page_hero.context_rows('ConfigMap Management context', [
+                    ('file-cog', 'Workspace', 'ConfigMap Management'),
+                    ('radio-tower', 'Source', 'Kubernetes API'),
+                    ('shield-check', 'Validation', 'Required', 'info')
+                ]) }}
             </div>
         </section>
         <section class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm sm:p-6">

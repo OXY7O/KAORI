@@ -96,11 +96,11 @@ Impact context can lag behind the live object. The UI must label it as inventory
 - Landing workflow cards mirror Secret Management geometry and hierarchy; destructive actions use semantic critical treatment without changing card dimensions.
 - Create and Update use the reusable validation action bar. Final mutation actions stay neutral and disabled until the latest payload passes validation.
 - Dynamic entry handling and cluster/namespace dependency behavior live in `app/static/js/configmap_editor.js`; templates no longer embed imperative `onchange` handlers or per-partial scripts.
-- The right hero panel contains only status and concise metrics, with no descriptive helper text.
+- Every ConfigMap hero uses the canonical `page_hero.context_rows()` panel with exactly three horizontal label/value rows. The panel contains no heading, helper sentence, nested metric cards, or hero action; navigation and mutations remain in the page content.
 - Create, Update, and Delete use the canonical `components/info_flow.html` timeline for operational steps. Custom dark workflow cards and domain-specific workflow-step markup are not retained.
 
-### Shared action-bar wrapper contract
+### Shared action-bar contract
 
-- Domain wrapper macros must declare `caller=None`, capture the outer call-block output before invoking the shared `action_bar` macro, and then pass the captured markup into the shared call block.
-- Calling `caller()` directly inside a nested `{% call shared.action_bar(...) %}` block is prohibited because the nested call shadows the outer caller and can raise `jinja2.exceptions.UndefinedError: No caller defined` at runtime.
-- The ConfigMap and Secret wrappers share a regression contract test in `tests/contracts/kubernetes/test_operation_component_caller_contract.py`.
+- ConfigMap and Secret templates import `kubernetes_operations/_components.html` directly; domain-specific component wrappers are not retained.
+- The canonical `action_bar` macro owns call-block rendering so validation and mutation controls use one runtime-safe implementation.
+- Direct component ownership and wrapper absence are covered by `tests/contracts/kubernetes/test_operation_component_caller_contract.py`.
