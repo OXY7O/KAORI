@@ -104,3 +104,9 @@ Impact context can lag behind the live object. The UI must label it as inventory
 - ConfigMap and Secret templates import `kubernetes_operations/_components.html` directly; domain-specific component wrappers are not retained.
 - The canonical `action_bar` macro owns call-block rendering so validation and mutation controls use one runtime-safe implementation.
 - Direct component ownership and wrapper absence are covered by `tests/contracts/kubernetes/test_operation_component_caller_contract.py`.
+
+### Hero navigation and delete layout
+
+- The ConfigMap Management hero links to Kubernetes cluster management.
+- Create, update, and delete workflow heroes return to ConfigMap Management.
+- Delete guardrails remain in the right column directly below the ConfigMap delete flow.

@@ -30,9 +30,9 @@
                         ('scan-search', 'Validation', 'Required', 'Server-side dry-run', true),
                         ('target', 'Target Scope', 'Single', 'Create-only ConfigMap')
                     ],
-                    'Open Creation Form',
-                    '#configmap-create-form',
-                    'arrow-down'
+                    'Back to ConfigMap Management',
+                    url_for('kubernetes_operations.configmap_management'),
+                    'arrow-left'
                 ) }}
             </div>
         </section>

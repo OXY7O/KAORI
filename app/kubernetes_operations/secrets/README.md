@@ -211,3 +211,11 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 - ConfigMap and Secret templates import `kubernetes_operations/_components.html` directly; domain-specific component wrappers are not retained.
 - The canonical `action_bar` macro owns call-block rendering so validation and mutation controls use one runtime-safe implementation.
 - Direct component ownership and wrapper absence are covered by `tests/contracts/kubernetes/test_operation_component_caller_contract.py`.
+
+### Hero navigation and workflow layout
+
+- The Secret Management hero links to Kubernetes cluster management.
+- Create, replace, delete, reveal, and bulk TLS rotation workflow heroes return to Secret Management.
+- Secret creation uses a compact summary list rather than nested summary cards.
+- Delete guardrails remain in the right column directly below Inspect Before Removing.
+- Bulk TLS rotation places validation actions below the upload panel; the combined left workflow column aligns with the right rotation-flow panel.

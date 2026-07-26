@@ -30,9 +30,9 @@
                         ('database', 'Tracked Objects', total_configmaps, namespace_count ~ ' namespaces'),
                         ('lock-keyhole', 'Immutable', immutable_count, 'Protected from update')
                     ],
-                    'Open ConfigMap Workflows',
-                    '#configmap-workflows',
-                    'workflow'
+                    'Manage Clusters',
+                    url_for('integrations.kubernetes'),
+                    'server-cog'
                 ) }}
             </div>
         </section>

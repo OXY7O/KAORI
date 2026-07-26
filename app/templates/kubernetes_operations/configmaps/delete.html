@@ -28,9 +28,9 @@
                         ('shield-check', 'Validation', 'Required', 'Non-destructive preflight', true),
                         ('keyboard', 'Confirmation', 'Exact Name', 'Short-lived validation receipt', true)
                     ],
-                    'Review Deletion Target',
-                    '#configmap-delete-form',
-                    'arrow-down'
+                    'Back to ConfigMap Management',
+                    url_for('kubernetes_operations.configmap_management'),
+                    'arrow-left'
                 ) }}
             </div>
         </section>
@@ -57,25 +57,7 @@
                         </div>
                     </div>
                 </section>
-                <section class="h-full overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-2 xl:row-start-1">
-                    {{ configmap_ui.section_header('shield-alert', 'Deletion Guardrails', 'Controls required before a ConfigMap can be removed.', 'critical') }}
-                    <div class="grid gap-4 p-5">
-                        {{ configmap_ui.guardrail('eye', 'Live Object Review', 'The selected target is read directly from Kubernetes.') }}
-                        {{ configmap_ui.guardrail('shield-check', 'Authorization Preflight', 'KAORI verifies live identity and delete RBAC without sending a DELETE request.') }}
-                        {{ configmap_ui.guardrail('keyboard', 'Exact Confirmation', 'The live ConfigMap name must be entered exactly.', 'critical') }}
-                    </div>
-                </section>
-                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-1 xl:row-start-2">
-                    {{ configmap_ui.section_header('triangle-alert', 'Deletion Impact Review', 'Confirm identity, live key count, known consumers, and deletion consequences.', 'warning') }}
-                    <div id="configmap-delete-target" class="p-5 sm:p-6">
-                        {% if target or target_error %}
-                            {% include 'kubernetes_operations/configmaps/_delete_target.html' %}
-                        {% else %}
-                            {{ configmap_ui.empty_state('file-warning', 'Select a ConfigMap to review deletion impact', 'Live identity, key count, and workload context will appear here.') }}
-                        {% endif %}
-                    </div>
-                </section>
-                <aside class="self-start xl:sticky xl:top-6 xl:col-start-2 xl:row-start-2">
+                <aside class="self-start xl:sticky xl:top-6 xl:col-start-2 xl:row-start-1">
                     {% set configmap_delete_flow = [
                         ('Select Object', 'Choose the registered cluster, live namespace, and existing ConfigMap target.'),
                         ('Review Impact', 'Inspect live identity, key count, and best-effort workload consumers before continuing.'),
@@ -92,6 +74,24 @@
                         open_by_default=true
                     ) }}
                 </aside>
+                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-1 xl:row-start-2">
+                    {{ configmap_ui.section_header('triangle-alert', 'Deletion Impact Review', 'Confirm identity, live key count, known consumers, and deletion consequences.', 'warning') }}
+                    <div id="configmap-delete-target" class="p-5 sm:p-6">
+                        {% if target or target_error %}
+                            {% include 'kubernetes_operations/configmaps/_delete_target.html' %}
+                        {% else %}
+                            {{ configmap_ui.empty_state('file-warning', 'Select a ConfigMap to review deletion impact', 'Live identity, key count, and workload context will appear here.') }}
+                        {% endif %}
+                    </div>
+                </section>
+                <section class="h-full overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-2 xl:row-start-2">
+                    {{ configmap_ui.section_header('shield-alert', 'Deletion Guardrails', 'Controls required before a ConfigMap can be removed.', 'critical') }}
+                    <div class="grid gap-4 p-5">
+                        {{ configmap_ui.guardrail('eye', 'Live Object Review', 'The selected target is read directly from Kubernetes.') }}
+                        {{ configmap_ui.guardrail('shield-check', 'Authorization Preflight', 'KAORI verifies live identity and delete RBAC without sending a DELETE request.') }}
+                        {{ configmap_ui.guardrail('keyboard', 'Exact Confirmation', 'The live ConfigMap name must be entered exactly.', 'critical') }}
+                    </div>
+                </section>
                 {% call configmap_ui.action_bar('shield-alert', 'Validate Before Deletion', 'Validation is non-destructive. The final delete action is irreversible from this workflow.', 'Delete ConfigMap Actions') %}
                     {% set oob = false %}
                     {% include 'kubernetes_operations/configmaps/_delete_actions.html' %}
