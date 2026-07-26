@@ -51,9 +51,7 @@
 
                     <div class="grid items-stretch gap-5 xl:grid-cols-12">
                         <div class="xl:col-span-6">
-                            {% with section_open_default=true %}
-                                {% include "dashboards/kubernetes/partials/_inventory_summary.html" %}
-                            {% endwith %}
+                            {% include "dashboards/kubernetes/partials/_inventory_summary.html" %}
                         </div>
                         <div class="xl:col-span-6">
                             <div id="dashboard-data-freshness"
@@ -152,9 +150,7 @@
                      role="tabpanel">
                     <div class="grid items-stretch gap-5 xl:grid-cols-12">
                         <div class="xl:col-span-6">
-                            {% with section_open_default=true %}
-                                {% include "dashboards/kubernetes/partials/_reporting_summary.html" %}
-                            {% endwith %}
+                            {% include "dashboards/kubernetes/partials/_reporting_summary.html" %}
                         </div>
                         <div class="xl:col-span-6">
                             {% include "dashboards/kubernetes/partials/_reporting_guidance.html" %}

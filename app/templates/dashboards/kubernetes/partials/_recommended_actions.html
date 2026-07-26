@@ -1,8 +1,6 @@
 <section id="dashboard-recommended-actions"
-         x-data="{ open: true }"
          class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <div @click="open = !open"
-         class="flex cursor-pointer select-none items-center gap-3 border-b border-outline-subtle px-5 py-4">
+    <div class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
         <div class="flex min-w-0 flex-1 items-center gap-3">
             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                 <i data-lucide="sparkles" class="h-5 w-5"></i>
@@ -17,24 +15,11 @@
                 <i data-lucide="list-checks" class="h-3.5 w-3.5 text-kaori-primary"></i>
                 {{ dashboard.recommended_actions|length }} active
             </span>
-            <button type="button"
-                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card"
-                    @click.stop="open = !open"
-                    :aria-expanded="open.toString()"
-                    aria-label="Toggle Recommended Actions">
-                <i data-lucide="chevron-down"
-                   class="h-4 w-4 transition-transform duration-200"
-                   :class="open ? 'rotate-180' : ''"></i>
-            </button>
         </div>
     </div>
-    <div x-cloak
-         x-show="open"
-         x-transition
-         class="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-5">
+    <div class="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-5">
         {% for action in dashboard.recommended_actions %}
-            <a @click.stop
-               href="{{ action.href }}"
+            <a href="{{ action.href }}"
                title="{{ action.rule_key }}"
                class="group flex min-h-[190px] flex-col rounded-lg border border-outline-subtle bg-surface-elevated p-4 transition duration-150 hover:border-outline-focus hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card">
                 <div class="mb-3 flex items-start justify-between gap-3">

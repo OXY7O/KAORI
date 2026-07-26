@@ -1,7 +1,5 @@
-<section x-data="{ open: {{ 'true' if section_open_default|default(true) else 'false' }} }"
-         class="h-full rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <div @click="open = !open"
-         class="flex cursor-pointer select-none items-center gap-3 border-b border-outline-subtle px-5 py-4">
+<section class="h-full rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <div class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
         <div class="flex min-w-0 flex-1 items-center gap-3">
             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                 <i data-lucide="file-text" class="h-5 w-5"></i>
@@ -12,21 +10,11 @@
             </div>
         </div>
         <div class="ml-auto flex shrink-0 items-center gap-2">
-            <a @click.stop
-               href="/reports"
+            <a href="/reports"
                class="hidden text-xs font-semibold text-kaori-primary transition hover:text-kaori-primary-hover sm:inline-flex">View Reports</a>
-            <button type="button"
-                    class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card"
-                    @click.stop="open = !open"
-                    :aria-expanded="open.toString()"
-                    aria-label="Toggle Reporting Summary">
-                <i data-lucide="chevron-down"
-                   class="h-4 w-4 transition-transform duration-200"
-                   :class="open ? 'rotate-180' : ''"></i>
-            </button>
         </div>
     </div>
-    <div x-cloak x-show="open" x-transition class="p-5">
+    <div class="p-5">
         <div class="grid grid-cols-3 gap-3">
             <div class="rounded-lg border border-outline-subtle bg-surface-hover p-3 text-center">
                 <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Generated</p>
@@ -63,8 +51,7 @@
                 <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-5 text-center">
                     <i data-lucide="file-plus-2" class="mx-auto h-6 w-6 text-kaori-primary"></i>
                     <p class="mt-2 text-sm font-semibold text-kaori-primary">No Reports Generated Yet</p>
-                    <a @click.stop
-                       href="/reports/generate"
+                    <a href="/reports/generate"
                        class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:text-kaori-primary-hover">
                         Generate report
                         <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>

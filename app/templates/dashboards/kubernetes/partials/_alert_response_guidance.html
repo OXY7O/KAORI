@@ -1,7 +1,5 @@
-<section x-data="{ open: true }"
-         class="h-full rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <div @click="open = !open"
-         class="flex cursor-pointer select-none items-center gap-3 border-b border-outline-subtle px-5 py-4">
+<section class="h-full rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <div class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
         <div class="flex min-w-0 flex-1 items-center gap-3">
             <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                 <i data-lucide="book-open-check" class="h-5 w-5"></i>
@@ -11,18 +9,9 @@
                 <p class="mt-0.5 text-xs leading-5 text-content-muted">Meaning, triage order, and controlled response flow for active Kubernetes alerts.</p>
             </div>
         </div>
-        <button type="button"
-                class="ml-auto inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition hover:border-outline-focus hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card"
-                @click.stop="open = !open"
-                :aria-expanded="open.toString()"
-                aria-label="Toggle Alert Interpretation and Response">
-            <i data-lucide="chevron-down"
-               class="h-4 w-4 transition-transform duration-200"
-               :class="open ? 'rotate-180' : ''"></i>
-        </button>
     </div>
 
-    <div x-cloak x-show="open" x-transition class="space-y-4 p-5">
+    <div class="space-y-4 p-5">
         <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
             <div class="flex items-start gap-3">
                 <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-status-info-border bg-status-info-soft text-status-info-text">
