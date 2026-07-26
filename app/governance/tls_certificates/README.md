@@ -35,7 +35,7 @@ The Kubernetes TLS Secret governance UI follows the KAORI violet design standard
 
 - TLS certificate inventory, detail, and rotation entry points use neutral structural surfaces with semantic status colors reserved for healthy, warning, critical, expired, and invalid states.
 - Inventory actions use the shared expandable-row behavior in `components/details/_expandable_row.html` and `app/static/js/detail_rows.js`; TLS tables do not maintain a separate inline toggle implementation.
-- Page-size selectors use the global `data-kaori-auto-submit` behavior. Sync progress is owned by `app/static/js/tls_certificate_management.js` rather than inline template JavaScript.
+- Page-size selectors use the global `data-kaori-auto-submit` behavior. Manual Sync TLS does not create a separate request-progress toast; the worker state is shown in the inventory summary and the dispatch result uses the canonical operational feedback toast.
 - TLS inventory and certificate-detail heroes use the canonical `page_hero.context_card()` posture panel with a semantic status, two certificate metrics, and one contextual CTA. Sync and bulk-update mutations remain in the content toolbar; the hero CTA only navigates to the relevant workspace.
 - Governance remains read-oriented. Bulk and single TLS Secret mutation actions link to Secret Management, and obsolete Governance-owned mutation templates are not retained.
 - TLS Governance does not use Flask flash messages; missing-record and cluster-setup feedback use the KAORI notification and Activity Log pipeline.
@@ -82,3 +82,9 @@ The order is fixed as:
 3. canonical Inventory table block.
 
 Active synchronization progress stays inside the inventory summary surface. Filter, pagination, synchronization, and polling continue to replace `tls-certificates-inventory-scope`, preserving the current filter state.
+
+## Inventory Presentation Dependencies
+
+- The pre-table posture surface reuses `app/templates/inventory/components/_summary.html`. Replacement packages that change the TLS inventory summary must include this canonical component so a partially upgraded deployment cannot fail with `TemplateNotFound`.
+- TLS pagination uses the canonical `components/pagination.html` controls and the global `app/static/js/pagination.js` numeric-page renderer. Full-page `href` values remain navigable while `hx-get` requests replace the current TLS inventory scope and preserve active filters.
+- The retired page-specific script `app/static/js/tls_certificate_management.js` must not be restored. Its request toast was not lifecycle-bound to the HTMX request and could remain visible after the worker job completed.

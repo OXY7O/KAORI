@@ -256,6 +256,7 @@
                 <input type="hidden" name="status" value="{{ payload.filters.status }}">
                 <input type="hidden" name="search" value="{{ payload.filters.search }}">
                 <select name="per_page"
+                        aria-label="Rows Per Page"
                         data-kaori-auto-submit
                         class="{{ pagination_ui.page_size_classes() }}">
                     {% for option in payload.pagination.allowed_per_page %}
@@ -265,11 +266,12 @@
                 </select>
             </form>
         </div>
-        <div class="flex flex-wrap items-center justify-start gap-2">
+        <div class="flex flex-wrap items-center gap-2">
             {% if payload.pagination.has_prev %}
-                {% set prev_url = url_for('governance.tls_certificates', cluster_id=payload.filters.cluster_id, namespace=payload.filters.namespace, status=payload.filters.status, search=payload.filters.search, per_page=payload.pagination.per_page, page=payload.pagination.prev_page, partial_mode='inventory_scope') %}
-                <a href="{{ prev_url }}"
-                   hx-get="{{ prev_url }}"
+                {% set prev_href = url_for('governance.tls_certificates', cluster_id=payload.filters.cluster_id, namespace=payload.filters.namespace, status=payload.filters.status, search=payload.filters.search, per_page=payload.pagination.per_page, page=payload.pagination.prev_page) %}
+                {% set prev_partial_url = url_for('governance.tls_certificates', cluster_id=payload.filters.cluster_id, namespace=payload.filters.namespace, status=payload.filters.status, search=payload.filters.search, per_page=payload.pagination.per_page, page=payload.pagination.prev_page, partial_mode='inventory_scope') %}
+                <a href="{{ prev_href }}"
+                   hx-get="{{ prev_partial_url }}"
                    hx-target="#tls-certificates-inventory-scope"
                    hx-swap="outerHTML"
                    hx-indicator="#tls-certificates-table-loading"
@@ -285,9 +287,10 @@
             {% endif %}
             {{ pagination_ui.numeric_pages(payload.pagination.page, payload.pagination.total_pages) }}
             {% if payload.pagination.has_next %}
-                {% set next_url = url_for('governance.tls_certificates', cluster_id=payload.filters.cluster_id, namespace=payload.filters.namespace, status=payload.filters.status, search=payload.filters.search, per_page=payload.pagination.per_page, page=payload.pagination.next_page, partial_mode='inventory_scope') %}
-                <a href="{{ next_url }}"
-                   hx-get="{{ next_url }}"
+                {% set next_href = url_for('governance.tls_certificates', cluster_id=payload.filters.cluster_id, namespace=payload.filters.namespace, status=payload.filters.status, search=payload.filters.search, per_page=payload.pagination.per_page, page=payload.pagination.next_page) %}
+                {% set next_partial_url = url_for('governance.tls_certificates', cluster_id=payload.filters.cluster_id, namespace=payload.filters.namespace, status=payload.filters.status, search=payload.filters.search, per_page=payload.pagination.per_page, page=payload.pagination.next_page, partial_mode='inventory_scope') %}
+                <a href="{{ next_href }}"
+                   hx-get="{{ next_partial_url }}"
                    hx-target="#tls-certificates-inventory-scope"
                    hx-swap="outerHTML"
                    hx-indicator="#tls-certificates-table-loading"
