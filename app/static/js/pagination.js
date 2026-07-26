@@ -71,9 +71,31 @@
         }
     }
 
+    function paginationContainers(root = document) {
+        const containers = [];
+        if (root instanceof Element && root.matches('[data-kaori-numeric-pagination]')) {
+            containers.push(root);
+        }
+        if (typeof root.querySelectorAll === 'function') {
+            containers.push(...root.querySelectorAll('[data-kaori-numeric-pagination]'));
+        }
+        return containers;
+    }
+
     function renderAll(root = document) {
-        root.querySelectorAll('[data-kaori-numeric-pagination]').forEach(render);
+        paginationContainers(root).forEach(render);
         if (window.htmx) window.htmx.process(root);
+    }
+
+    function renderAfterHtmxSwap(event) {
+        const target = event?.detail?.target;
+        window.requestAnimationFrame(() => {
+            if (target && target.isConnected) {
+                renderAll(target);
+            } else {
+                renderAll(document);
+            }
+        });
     }
 
     document.addEventListener('change', (event) => {
@@ -82,6 +104,7 @@
         control.form.requestSubmit();
     });
 
-    document.addEventListener('DOMContentLoaded', () => renderAll());
-    document.addEventListener('htmx:afterSwap', (event) => renderAll(event.detail.target));
+    document.addEventListener('DOMContentLoaded', () => renderAll(document));
+    document.addEventListener('htmx:afterSwap', renderAfterHtmxSwap);
+    document.addEventListener('htmx:afterSettle', renderAfterHtmxSwap);
 })();

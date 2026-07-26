@@ -90,3 +90,10 @@ Active synchronization progress stays inside the inventory summary surface. Filt
 - The pre-table posture surface reuses `app/templates/inventory/components/_summary.html`. Replacement packages that change the TLS inventory summary must include this canonical component so a partially upgraded deployment cannot fail with `TemplateNotFound`.
 - TLS pagination uses the canonical `components/pagination.html` controls and the global `app/static/js/pagination.js` numeric-page renderer. Full-page `href` values remain navigable while `hx-get` requests replace the current TLS inventory scope and preserve active filters.
 - The retired page-specific script `app/static/js/tls_certificate_management.js` must not be restored. Its request toast was not lifecycle-bound to the HTMX request and could remain visible after the worker job completed.
+
+## TLS Detail And Navigation Standard
+
+- The Kubernetes TLS Secret inventory hero uses `Manage Clusters` and routes to the canonical Kubernetes integration registry. It does not use an in-page `Manage TLS Inventory` anchor.
+- The certificate-detail hero owns the single `Back to TLS Certificates` action. A duplicate action row below the hero is not rendered.
+- Certificate detail content uses the canonical Inventory summary surface, reusable detail cards, standard operation section headers, and one sticky validity/rotation column. The page preserves certificate identity, validity, SAN coverage, Ingress relationships, and the controlled Secret Management handoff without duplicating navigation controls.
+- Numeric pagination must survive HTMX `outerHTML` replacement. The global pagination renderer reinitializes against the connected swap target or the document after both `htmx:afterSwap` and `htmx:afterSettle`.

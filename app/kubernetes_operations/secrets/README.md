@@ -221,3 +221,10 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 - Secret creation uses a compact summary list rather than nested summary cards.
 - Delete flow and guardrails are grouped inside one sticky right-column wrapper. They must never be separate grid rows, because a sticky flow card would overlap guardrails while the page scrolls.
 - Bulk TLS rotation places validation actions below the upload panel; the combined left workflow column aligns with the right rotation-flow panel.
+
+### TLS rotation presentation
+
+- The single TLS Secret rotation hero returns to Secret Management; it does not use an in-page `Open Replacement Form` hero action.
+- The rotation workflow uses the canonical target card, replacement-pair upload surface, shared guardrails, shared action bar, and sticky controlled-flow panel.
+- Bulk `Target TLS Secrets` uses `components/table.html` and `components/pagination.html` for Inventory-standard header, loading state, filters, Cluster and Namespace identities, semantic status, empty state, Rows Per Page, Previous/Next, and numeric page links.
+- Bulk pagination keeps a normal full-page `href` and a separate HTMX `hx-get` partial URL so fallback navigation remains valid and `outerHTML` swaps reinitialize numeric page links.

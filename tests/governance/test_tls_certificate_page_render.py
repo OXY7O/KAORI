@@ -96,3 +96,41 @@ def test_tls_pagination_uses_inventory_navigation_contract() -> None:
     assert 'hx-get="/governance.tls_certificates?' in rendered
     assert 'partial_mode=inventory_scope' in rendered
 
+
+
+def test_bulk_tls_target_table_uses_inventory_pagination_contract() -> None:
+    environment = Environment(
+        loader=FileSystemLoader(ROOT / 'app' / 'templates'),
+        autoescape=select_autoescape(['html', 'xml']),
+    )
+    environment.filters['environment_name'] = (
+        lambda value, empty='Environment not specified': value or empty
+    )
+
+    def url_for(endpoint: str, **values: object) -> str:
+        query = urlencode(values)
+        return f'/{endpoint}' + (f'?{query}' if query else '')
+
+    environment.globals['url_for'] = url_for
+
+    rendered = environment.get_template(
+        'kubernetes_operations/secrets/_bulk_target_table.html'
+    ).render(payload=_payload(), selected_ids=[])
+
+    assert 'id="tls-secret-update-target-table"' in rendered
+    assert 'data-kaori-numeric-pagination' in rendered
+    assert 'data-current-page="2"' in rendered
+    assert 'data-total-pages="5"' in rendered
+    assert 'aria-label="Rows Per Page"' in rendered
+    assert 'href="/kubernetes_operations.tls_secret_bulk_rotation?' in rendered
+    assert 'hx-get="/kubernetes_operations.tls_secret_bulk_rotation?' in rendered
+    assert 'partial_mode=bulk_table' in rendered
+
+
+def test_numeric_pagination_rerenders_after_outer_html_swaps() -> None:
+    script = (ROOT / 'app/static/js/pagination.js').read_text()
+
+    assert "document.addEventListener('htmx:afterSwap', renderAfterHtmxSwap)" in script
+    assert "document.addEventListener('htmx:afterSettle', renderAfterHtmxSwap)" in script
+    assert 'target && target.isConnected' in script
+    assert 'renderAll(document)' in script

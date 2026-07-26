@@ -2,31 +2,37 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/detail_object.html" as detail_object %}
-{% import "components/detail_tip.html" as detail_tip %}
+{% import "components/details/_detail_content.html" as detail %}
+{% import "inventory/components/_summary.html" as summary %}
 {% import "kubernetes_operations/_components.html" as operation_ui %}
-{% block title %}Kubernetes TLS Secret Record{% endblock title %}
+{% block title %}Kubernetes TLS Secret{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6">
         {% set hero_status = record.status or 'unknown' %}
         {% if hero_status == 'healthy' %}
-            {% set hero_status_label = "Healthy" %}{% set hero_status_tone = "normal" %}
+            {% set hero_status_label = 'Healthy' %}
+            {% set hero_status_tone = 'normal' %}
         {% elif hero_status == 'warning' %}
-            {% set hero_status_label = "Expiring soon" %}{% set hero_status_tone = "warning" %}
+            {% set hero_status_label = 'Expiring Soon' %}
+            {% set hero_status_tone = 'warning' %}
         {% elif hero_status in ['critical', 'expired', 'invalid'] %}
-            {% set hero_status_label = 'Expired' if hero_status in ['critical', 'expired'] else 'Invalid' %}{% set hero_status_tone = "critical" %}
+            {% set hero_status_label = 'Expired' if hero_status in ['critical', 'expired'] else 'Invalid' %}
+            {% set hero_status_tone = 'critical' %}
         {% else %}
-            {% set hero_status_label = hero_status.replace('_', ' ')|title %}{% set hero_status_tone = "unknown" %}
+            {% set hero_status_label = hero_status.replace('_', ' ')|title %}
+            {% set hero_status_tone = 'unknown' %}
         {% endif %}
+
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('key-round', 'Kubernetes TLS Secret', 'shield-check') %}
                         <h1 class="{{ page_hero.title_classes() }} break-words">{{ record.secret_name }}</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Certificate metadata, expiry posture, SAN coverage, Ingress usage, and controlled update context.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review certificate identity, validity, SAN coverage, Ingress usage, and the controlled rotation path.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('building-2', record.cluster.name if record.cluster else record.cluster_id) }}
                             {{ page_hero.meta_label('folder-tree', record.namespace ~ ' Namespace') }}
-                            {{ page_hero.meta_label('globe-2', ((record.dns_names or []) |length) ~ ' SAN Entries') }}
+                            {{ page_hero.meta_label('globe-2', ((record.dns_names or [])|length) ~ ' SAN Entries') }}
                         </div>
                     {% endcall %}
                 </div>
@@ -38,275 +44,150 @@
                     hero_status_tone,
                     [
                         ('calendar-clock', 'Days Remaining', record.days_remaining if record.days_remaining is not none else 'N/A', 'Until certificate expiry'),
-                        ('globe-2', 'SAN Coverage', (record.dns_names or [])|length, 'DNS names protected')
+                        ('route', 'Ingress Usage', (record.used_by or [])|length, 'Mapped Ingress resources')
                     ],
-                    'Update TLS Secret',
-                    '#update-secret',
-                    'upload-cloud'
+                    'Back to TLS Certificates',
+                    url_for('governance.tls_certificates'),
+                    'arrow-left'
                 ) }}
             </div>
         </section>
-        <section class="flex flex-wrap items-center justify-end gap-2" aria-label="Certificate record actions">
-            <a href="{{ url_for('governance.tls_certificates') }}"
-               class="{{ operation_ui.secondary_button_classes() }}">
-                <i data-lucide="arrow-left" class="h-4 w-4"></i>
-                Back to TLS Inventory
-            </a>
+
+        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+            {{ summary.panel_header(
+                'TLS Certificate Record',
+                'Certificate Snapshot',
+                'Canonical certificate posture derived from the latest Kubernetes TLS Secret inventory snapshot.',
+                hero_status_label,
+                'shield-check'
+            ) }}
+            {% set snapshot_cards = [
+                ('Common Name', record.common_name or 'N/A', 'badge-check', 'Primary certificate subject identity.'),
+                ('Days Remaining', record.days_remaining if record.days_remaining is not none else 'N/A', 'calendar-clock', 'Remaining certificate validity.'),
+                ('SAN Coverage', (record.dns_names or [])|length, 'globe-2', 'DNS identities protected by this certificate.'),
+                ('Ingress References', (record.used_by or [])|length, 'route', 'Inventoried Ingress resources using this Secret.')
+            ] %}
+            {{ summary.metric_grid(snapshot_cards) }}
         </section>
-        <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                <div class="flex items-center gap-3">
-                    <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                        <i data-lucide="badge-check" class="h-5 w-5"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs font-medium text-content-muted">Common Name</p>
-                        <p class="mt-1 max-w-[14rem] truncate text-sm font-semibold text-content-primary">{{ record.common_name or 'N/A' }}</p>
-                    </div>
-                </div>
-            </div>
-            <div class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                <div class="flex items-center gap-3">
-                    <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                        <i data-lucide="calendar-clock" class="h-5 w-5"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs font-medium text-content-muted">Valid From</p>
-                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ record.not_before|user_date("N/A") }}</p>
-                    </div>
-                </div>
-            </div>
-            <div class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                <div class="flex items-center gap-3">
-                    <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                        <i data-lucide="route" class="h-5 w-5"></i>
-                    </div>
-                    <div>
-                        <p class="text-xs font-medium text-content-muted">Ingress References</p>
-                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ (record.used_by or [])|length }} consumers</p>
-                    </div>
-                </div>
-            </div>
-            <div class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                <div class="flex items-center gap-3">
-                    <div class="flex h-11 w-11 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                        <i data-lucide="fingerprint" class="h-5 w-5"></i>
-                    </div>
-                    <div class="min-w-0">
-                        <p class="text-xs font-medium text-content-muted">SHA-256 Fingerprint</p>
-                        <p class="mt-1 max-w-[14rem] truncate font-mono text-xs font-semibold text-content-primary">{{ record.fingerprint_sha256 or 'N/A' }}</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <section class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr] xl:items-stretch">
-            <div class="space-y-6 xl:contents">
-                <div class="flex h-full flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-1 xl:row-start-1">
-                    <div class="flex flex-col gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="flex items-center gap-3">
-                            <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                <i data-lucide="badge-check" class="h-5 w-5"></i>
-                            </span>
-                            <div>
-                                <h2 class="text-base font-semibold text-content-primary">Certificate Identity</h2>
-                                <p class="text-sm text-content-muted">Primary subject, issuing authority, and unique certificate identifiers.</p>
-                            </div>
-                        </div>
-                        {{ table_label.metadata_label('X.509 certificate', 'badge-check') }}
-                    </div>
-                    <div class="flex flex-1 flex-col p-5">
-                        {% if record.common_name or record.serial_number or record.issuer or record.fingerprint_sha256 %}
-                            <div class="grid gap-3 sm:grid-cols-2">
-                                <div class="rounded-lg border border-outline-default bg-surface-hover p-4">
-                                    <div class="flex items-center gap-2 text-kaori-primary">
-                                        <i data-lucide="badge-check" class="h-4 w-4"></i>
-                                        <p class="text-xs font-medium">Common Name</p>
-                                    </div>
-                                    <p class="mt-2 break-words text-sm font-semibold text-content-primary">{{ record.common_name or 'N/A' }}</p>
-                                </div>
-                                <div class="rounded-lg border border-outline-default bg-surface-hover p-4">
-                                    <div class="flex items-center gap-2 text-kaori-primary">
-                                        <i data-lucide="hash" class="h-4 w-4"></i>
-                                        <p class="text-xs font-medium">Serial Number</p>
-                                    </div>
-                                    <p class="mt-2 break-all font-mono text-xs leading-5 text-content-secondary">{{ record.serial_number or 'N/A' }}</p>
-                                </div>
-                            </div>
-                            <div class="mt-4">
-                                {% call detail_object.card('Certificate identifiers', '2 fields', 'fingerprint') %}
-                                    <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-3 text-xs leading-5">
-                                        <span class="text-content-muted">Issuer</span>
-                                        <span class="min-w-0 break-words text-right font-medium text-content-primary">{{ record.issuer or 'N/A' }}</span>
-                                    </div>
-                                    <div class="grid grid-cols-[5.5rem_minmax(0,1fr)] items-start gap-3 text-xs leading-5">
-                                        <span class="text-content-muted">SHA-256</span>
-                                        <span class="min-w-0 break-all text-right font-mono text-[11px] text-content-primary">{{ record.fingerprint_sha256 or 'N/A' }}</span>
-                                    </div>
-                                {% endcall %}
-                            </div>
-                        {% else %}
-                            {{ detail_object.empty('Certificate identity unavailable', 'The certificate snapshot does not contain parsed subject or identifier metadata.', 'badge-x') }}
-                        {% endif %}
-                        {% if record.parse_error %}
-                            <div class="mt-4 rounded-lg border border-status-critical-border bg-status-critical-soft p-4 text-xs leading-5 text-status-critical-text">{{ record.parse_error }}</div>
-                        {% endif %}
-                        {% call detail_object.stack() %}
-                            {{ detail_tip.tip('Identity values come from parsed certificate metadata; Secret payloads are never shown.', 'shield-check') }}
+
+        <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
+            <div class="space-y-6">
+                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                    {{ operation_ui.section_header('badge-check', 'Certificate Identity', 'Parsed X.509 subject, issuer, serial number, and certificate fingerprint.') }}
+                    <div class="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
+                        {% call detail.detail_card('Subject Identity', 'badge-check', hero_status_label, 'status', hero_status_tone) %}
+                            {{ detail.detail_row('Common Name', record.common_name or 'N/A') }}
+                            {{ detail.detail_row('Issuer', record.issuer or 'N/A') }}
+                            {{ detail.detail_row('Secret Type', record.secret_type or 'kubernetes.io/tls') }}
+                        {% endcall %}
+                        {% call detail.detail_card('Certificate Identifiers', 'fingerprint', 'X.509 Certificate') %}
+                            {{ detail.detail_row('Serial Number', record.serial_number or 'N/A', true) }}
+                            {{ detail.detail_row('SHA-256', record.fingerprint_sha256 or 'N/A', true) }}
+                            {{ detail.detail_row('Cluster', record.cluster.name if record.cluster else record.cluster_id) }}
+                            {{ detail.detail_row('Namespace', record.namespace) }}
                         {% endcall %}
                     </div>
-                </div>
-                <div class="flex flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-1 xl:row-start-2 xl:self-start">
-                    <div class="flex flex-col gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="flex items-center gap-3">
-                            <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                <i data-lucide="globe-2" class="h-5 w-5"></i>
-                            </span>
-                            <div>
-                                <h2 class="text-base font-semibold text-content-primary">Subject Alternative Names</h2>
-                                <p class="text-sm text-content-muted">DNS identities covered by this certificate.</p>
+                    {% if record.parse_error %}
+                        <div class="mx-5 mb-5 rounded-lg border border-status-critical-border bg-status-critical-soft p-4 text-xs leading-5 text-status-critical-text sm:mx-6 sm:mb-6">{{ record.parse_error }}</div>
+                    {% endif %}
+                </section>
+
+                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                    {{ operation_ui.section_header('globe-2', 'Certificate Coverage', 'Subject Alternative Names and Ingress consumers covered by this TLS Secret.') }}
+                    <div class="grid gap-6 p-5 sm:p-6 xl:grid-cols-2">
+                        <div class="min-w-0">
+                            <div class="mb-3 flex items-center justify-between gap-3">
+                                <h3 class="text-sm font-semibold text-content-primary">Subject Alternative Names</h3>
+                                {{ table_label.metadata_label(((record.dns_names or [])|length) ~ (' SAN' if (record.dns_names or [])|length == 1 else ' SANs'), none, false, 'detail') }}
                             </div>
-                        </div>
-                        {{ table_label.metadata_label(((record.dns_names or []) |length) ~ ' SANs', 'globe-2') }}
-                    </div>
-                    <div class="flex flex-1 flex-col p-5">
-                        {% if record.dns_names %}
-                            {% call detail_object.card('DNS identities', ((record.dns_names or [])|length) ~ ' entries', 'globe-2') %}
-                                <div class="grid gap-2 sm:grid-cols-2">
+                            {% if record.dns_names %}
+                                <div class="grid gap-2">
                                     {% for domain in record.dns_names %}
-                                        <div class="flex min-w-0 items-center gap-2 rounded-md border border-outline-default bg-surface-card px-2.5 py-2">
-                                            <i data-lucide="shield-check"
-                                               class="h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
-                                            <span class="min-w-0 break-all text-xs font-medium text-content-primary">{{ domain }}</span>
+                                        <div class="rounded-lg border border-outline-default bg-surface-hover px-3 py-2.5 text-xs font-medium text-content-primary">
+                                            <span class="break-all">{{ domain }}</span>
                                         </div>
                                     {% endfor %}
                                 </div>
-                            {% endcall %}
-                        {% else %}
-                            {{ detail_object.empty('No SAN DNS names found', 'The certificate does not contain a recorded DNS Subject Alternative Name.', 'shield-off') }}
-                        {% endif %}
-                        {% call detail_object.stack() %}
-                            {{ detail_tip.tip('SANs should cover every hostname served by the mapped Ingress resources.', 'info') }}
-                        {% endcall %}
-                    </div>
-                </div>
-                <div class="flex flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-1 xl:row-start-3 xl:self-start">
-                    <div class="flex flex-col gap-3 border-b border-outline-default bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div class="flex items-center gap-3">
-                            <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                <i data-lucide="route" class="h-5 w-5"></i>
-                            </span>
-                            <div>
-                                <h2 class="text-base font-semibold text-content-primary">Ingress Usage</h2>
-                                <p class="text-sm text-content-muted">Ingress resources and mapped hosts currently referencing this TLS Secret.</p>
-                            </div>
+                            {% else %}
+                                {{ detail_object.empty('No SAN DNS Names Found', 'The certificate snapshot does not contain a DNS Subject Alternative Name.', 'shield-off') }}
+                            {% endif %}
                         </div>
-                        {{ table_label.metadata_label(((record.used_by or []) |length) ~ ' references', 'route') }}
-                    </div>
-                    <div class="flex flex-1 flex-col p-5">
-                        {% if record.used_by %}
-                            <div class="grid gap-3 lg:grid-cols-2">
-                                {% for consumer in record.used_by %}
-                                    {% call detail_object.card(consumer.name, consumer.namespace, 'route') %}
-                                        <div>
-                                            <p class="text-xs text-content-muted">Mapped Hosts</p>
-                                            <div class="mt-2 flex flex-wrap gap-2">
+                        <div class="min-w-0">
+                            <div class="mb-3 flex items-center justify-between gap-3">
+                                <h3 class="text-sm font-semibold text-content-primary">Ingress Usage</h3>
+                                {{ table_label.metadata_label(((record.used_by or [])|length) ~ (' Reference' if (record.used_by or [])|length == 1 else ' References'), none, false, 'detail') }}
+                            </div>
+                            {% if record.used_by %}
+                                <div class="grid gap-3">
+                                    {% for consumer in record.used_by %}
+                                        <article class="rounded-lg border border-outline-default bg-surface-hover p-4">
+                                            <div class="flex items-start justify-between gap-3">
+                                                <div class="min-w-0">
+                                                    <p class="break-words text-sm font-semibold text-content-primary">{{ consumer.name }}</p>
+                                                    <p class="mt-1 text-xs text-content-muted">{{ consumer.namespace }} Namespace</p>
+                                                </div>
+                                                {{ table_label.metadata_label((consumer.hosts or [])|length ~ (' Host' if (consumer.hosts or [])|length == 1 else ' Hosts'), none, false, 'detail') }}
+                                            </div>
+                                            <div class="mt-3 flex flex-col gap-1.5">
                                                 {% for host in consumer.hosts or [] %}
                                                     <a href="https://{{ host }}"
                                                        target="_blank"
                                                        rel="noopener noreferrer"
-                                                       class="inline-flex items-center gap-1.5 rounded-md border border-outline-default bg-surface-card px-2.5 py-1 text-xs font-medium text-kaori-primary transition hover:border-kaori-primary/30 hover:bg-kaori-soft">
+                                                       class="inline-flex max-w-full items-start gap-1.5 break-all text-xs font-medium text-kaori-primary transition hover:text-kaori-primary-dark">
                                                         <span>{{ host }}</span>
-                                                        <i data-lucide="external-link" class="h-3 w-3"></i>
+                                                        <i data-lucide="external-link" class="mt-0.5 h-3 w-3 shrink-0"></i>
                                                     </a>
                                                 {% else %}
-                                                    <span class="text-xs text-content-muted">No hosts mapped.</span>
+                                                    <span class="text-xs text-content-muted">No Mapped Hosts</span>
                                                 {% endfor %}
                                             </div>
-                                        </div>
-                                    {% endcall %}
-                                {% endfor %}
-                            </div>
-                        {% else %}
-                            {{ detail_object.empty('No Ingress mapping found', 'This TLS Secret is not currently referenced by an inventoried Ingress resource.', 'route-off') }}
-                        {% endif %}
-                        {% call detail_object.stack() %}
-                            {{ detail_tip.tip('Ingress References come from the latest inventory snapshot and may not include external consumers.', 'route') }}
-                        {% endcall %}
+                                        </article>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ detail_object.empty('No Ingress Mapping Found', 'This TLS Secret is not referenced by an inventoried Ingress resource.', 'route-off') }}
+                            {% endif %}
+                        </div>
                     </div>
-                </div>
+                </section>
             </div>
-            <div class="space-y-6 xl:contents">
-                <div class="flex h-full flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-start-2 xl:row-start-1">
-                    <div class="border-b border-outline-default bg-surface-hover px-5 py-4">
-                        <div class="flex items-center gap-3">
-                            <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                <i data-lucide="calendar-clock" class="h-5 w-5"></i>
-                            </span>
-                            <div>
-                                <h2 class="text-base font-semibold text-content-primary">Validity Window</h2>
-                                <p class="text-sm text-content-muted">Certificate lifetime, remaining validity, and current expiry posture.</p>
+
+            <aside class="space-y-6 xl:sticky xl:top-6">
+                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                    {{ operation_ui.section_header('calendar-clock', 'Validity Window', 'Current certificate lifetime and expiry posture.') }}
+                    <div class="space-y-4 p-5 sm:p-6">
+                        <div class="rounded-xl border border-outline-default bg-surface-hover p-4">
+                            <p class="text-xs font-medium text-content-muted">Remaining Validity</p>
+                            <div class="mt-2 flex items-end justify-between gap-3">
+                                <p class="text-3xl font-semibold text-content-primary">
+                                    {{ record.days_remaining if record.days_remaining is not none else 'N/A' }}
+                                    {% if record.days_remaining is not none %}<span class="text-sm font-medium text-content-muted">Days</span>{% endif %}
+                                </p>
+                                {{ table_label.status_label(hero_status_label, hero_status_tone, none, 'detail') }}
                             </div>
                         </div>
-                    </div>
-                    <div class="flex flex-1 flex-col p-5">
-                        <div class="rounded-lg border border-outline-default bg-surface-hover p-4">
-                            <div class="flex items-end justify-between gap-4">
-                                <div>
-                                    <p class="text-xs text-content-muted">Remaining Validity</p>
-                                    <p class="mt-1 text-3xl font-semibold text-content-primary">
-                                        {{ record.days_remaining if record.days_remaining is not none else 'N/A' }}
-                                        {% if record.days_remaining is not none %}<span class="ml-1 text-base font-medium">days</span>{% endif %}
-                                    </p>
-                                </div>
-                                {% with status=record.status %}
-                                    {% include "governance/tls_certificates/partials/_status_badge.html" %}
-                                {% endwith %}
-                            </div>
+                        <div class="space-y-2.5">
+                            {{ detail.detail_row('Valid From', record.not_before|user_datetime('N/A')) }}
+                            {{ detail.detail_row('Expires At', record.not_after|user_datetime('N/A')) }}
                         </div>
-                        {% if record.not_before or record.not_after %}
-                            <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                                <div class="rounded-lg border border-outline-default bg-surface-hover p-4">
-                                    <div class="flex items-center gap-2 text-kaori-primary">
-                                        <i data-lucide="calendar-check" class="h-4 w-4"></i>
-                                        <p class="text-xs font-medium">Valid From</p>
-                                    </div>
-                                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ record.not_before|user_datetime("N/A") }}</p>
-                                </div>
-                                <div class="rounded-lg border border-outline-default bg-surface-hover p-4">
-                                    <div class="flex items-center gap-2 text-kaori-primary">
-                                        <i data-lucide="calendar-x" class="h-4 w-4"></i>
-                                        <p class="text-xs font-medium">Expires At</p>
-                                    </div>
-                                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ record.not_after|user_datetime("N/A") }}</p>
-                                </div>
-                            </div>
-                        {% else %}
-                            <div class="mt-4">{{ detail_object.empty('Validity dates unavailable', 'The certificate snapshot does not contain a valid start or expiry timestamp.', 'calendar-off') }}</div>
-                        {% endif %}
-                        {% call detail_object.stack() %}
-                            {{ detail_tip.tip('Rotate before expiry so workloads and Ingress endpoints can be updated without interruption.', 'calendar-clock') }}
-                        {% endcall %}
+                        {{ operation_ui.guardrail('calendar-check', 'Rotation Window', 'Rotate before expiry so Ingress endpoints can adopt the replacement certificate without interruption.', 'normal') }}
                     </div>
-                </div>
-                <div id="update-secret"
-                     class="rounded-xl border border-outline-default bg-surface-card p-6 shadow-sm xl:col-start-2 xl:row-start-2 xl:self-start ">
-                    <div class="flex items-start gap-3">
-                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                            <i data-lucide="rotate-cw" class="h-5 w-5"></i>
-                        </div>
-                        <div>
-                            <h2 class="text-base font-semibold text-content-primary">Rotate TLS Secret</h2>
-                            <p class="mt-1 text-sm leading-6 text-content-muted">Governance identifies certificate posture. The controlled replacement workflow is performed under Kubernetes Operations.</p>
-                        </div>
+                </section>
+
+                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                    {{ operation_ui.section_header('rotate-cw', 'Controlled TLS Rotation', 'Replacement is performed through Secret Management with certificate and key validation.') }}
+                    <div class="space-y-4 p-5 sm:p-6">
+                        {{ operation_ui.guardrail('badge-check', 'Certificate Pair Validation', 'The public certificate and private key must match before Kubernetes is updated.') }}
+                        {{ operation_ui.guardrail('memory-stick', 'In-Memory Processing', 'Private-key material is not persisted in the KAORI database or activity metadata.') }}
+                        {{ operation_ui.guardrail('clipboard-check', 'Audited Operation', 'Target identity and operation outcome are recorded without certificate payloads.') }}
+                        <a href="{{ url_for('kubernetes_operations.tls_secret_rotate', certificate_id=record.id) }}"
+                           class="{{ operation_ui.primary_button_classes(true) }}">
+                            <i data-lucide="rotate-cw" class="h-4 w-4"></i>
+                            Open TLS Rotation Workflow
+                        </a>
                     </div>
-                    <a href="{{ url_for('kubernetes_operations.tls_secret_rotate', certificate_id=record.id) }}"
-                       class="mt-5 {{ operation_ui.primary_button_classes(true) }}">
-                        <i data-lucide="key-round" class="h-4 w-4"></i>
-                        Open TLS Rotation Workflow
-                    </a>
-                    <p class="mt-4 rounded-lg border border-outline-default bg-surface-hover p-4 text-xs leading-5 text-content-muted">Certificate files and private keys are validated and applied by Secret Management. Governance retains only posture, relationship, and audit context.</p>
-                </div>
-            </div>
+                </section>
+            </aside>
         </section>
     </div>
 {% endblock dashboard_content %}
