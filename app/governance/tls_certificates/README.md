@@ -70,3 +70,15 @@ After deploying a task-registration change, rebuild or restart the inventory wor
 The synchronization panel, summary, filters, table, and pagination share the `tls-certificates-inventory-scope` HTMX boundary. Active synchronization polling replaces that same scope using its current Cluster, Namespace, Status, Search, Page, and Rows Per Page values. Filter changes also replace the same scope. Polling must never be attached to the outer page container while filters replace only the table, because an older polling URL would restore default filter values.
 
 The TLS Secret table uses the shared Inventory presentation macros in `components/table.html` for block geometry, loading state, filter controls, table headers and rows, Cluster identity, Namespace identity, and pagination geometry. Semantic certificate status labels remain text-only.
+
+## Inventory Summary Presentation
+
+The content before the TLS Secret table follows the canonical Kubernetes Inventory structure. The page renders one shared inventory summary surface containing the summary header, four primary metrics, healthy coverage, synchronization state, next schedule, and the TLS inventory action bar. `inventory/components/_summary.html` remains the source of truth for summary header, metric, progress, and status presentation. The TLS-specific action bar is nested inside the same summary surface so the page does not introduce a separate oversized synchronization card before the table.
+
+The order is fixed as:
+
+1. canonical page hero;
+2. certificate inventory summary and operations;
+3. canonical Inventory table block.
+
+Active synchronization progress stays inside the inventory summary surface. Filter, pagination, synchronization, and polling continue to replace `tls-certificates-inventory-scope`, preserving the current filter state.
