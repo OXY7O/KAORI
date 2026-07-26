@@ -7,7 +7,7 @@
          data-analytics-page-request-tracking="false">
         {% set prometheus_status = integration_status.prometheus %}
         {% set alertmanager_status = integration_status.alertmanager %}
-        {% set selected_cluster_name = selected_cluster.name if selected_cluster else 'No cluster selected' %}
+        {% set selected_cluster_name = selected_cluster.name if selected_cluster else 'No Cluster Selected' %}
         {% set active_alerts = summary.active_alerts|default(0) %}
         {% set critical_alerts = summary.critical_alerts|default(0) %}
         {% set warning_alerts = summary.warning_alerts|default(0) %}
@@ -42,7 +42,7 @@
                     ('readiness', 'Ownership & Readiness', 'shield-check'),
                     ('recommendations', 'Recommendations', 'list-checks')
                 ] %}
-                {{ analytics_content_tabs.render('alerts-content', alert_tabs, 'Alerts and Anomalies Content') }}
+                {{ analytics_content_tabs.render('alerts-content', alert_tabs, 'Alerts & Anomalies Content') }}
                 <div id="alerts-content-panel-signals"
                      role="tabpanel"
                      aria-labelledby="alerts-content-tab-signals"
@@ -59,12 +59,12 @@
                      class="space-y-6">
                     <div x-data="{ activeSignalTab: 'alerts' }"
                          class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                        <div class="flex flex-col gap-4 border-b border-outline-default px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="flex flex-col gap-4 border-b border-outline-subtle p-5 sm:p-6 sm:flex-row sm:items-center sm:justify-between">
                             <div>
                                 <h2 class="text-lg font-semibold text-content-primary">Alert &amp; Anomaly Details</h2>
                                 <p class="mt-1 text-sm text-content-muted">Switch between active alert signals and anomaly candidates.</p>
                             </div>
-                            <div class="inline-flex rounded-lg border border-outline-default bg-surface-subtle p-1" role="tablist" aria-label="Alert detail type">
+                            <div class="inline-flex rounded-lg border border-outline-default bg-surface-subtle p-1" role="tablist" aria-label="Alert Detail Type">
                                 <button type="button"
                                         role="tab"
                                         @click="activeSignalTab = 'alerts'"
@@ -119,18 +119,3 @@
         {% endif %}
     </div>
 {% endblock dashboard_content %}
-{% block scripts %}
-    <script>
- document.addEventListener('htmx:afterSwap', function () {
- if (window.lucide) {
- window.lucide.createIcons()
- }
- })
-
- document.addEventListener('DOMContentLoaded', function () {
- if (window.lucide) {
- window.lucide.createIcons()
- }
- })
-    </script>
-{% endblock scripts %}

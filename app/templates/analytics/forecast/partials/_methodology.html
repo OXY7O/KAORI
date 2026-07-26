@@ -1,0 +1,38 @@
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <div class="border-b border-outline-subtle p-5 sm:p-6">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="sigma" class="h-5 w-5"></i></span>
+            <div class="min-w-0">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-content-muted">Forecast Model</p>
+                <div class="mt-1 flex flex-wrap items-center gap-2">
+                    <h2 class="text-lg font-semibold text-content-primary">Forecast Methodology</h2>
+                    <span class="rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary">{{ forecast_payload.method_label|default("Linear Trend") }}</span>
+                </div>
+                <p class="mt-1 text-sm leading-6 text-content-muted">Daily averages are projected against resource-capacity thresholds.</p>
+            </div>
+        </div>
+    </div>
+    <div class="grid gap-4 p-5 xl:grid-cols-[minmax(320px,0.9fr)_minmax(640px,1.6fr)] sm:p-6">
+        <article class="rounded-lg border border-outline-default bg-surface-hover p-4">
+            <div class="flex items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="calculator" class="h-4.5 w-4.5"></i></span>
+                <div><h3 class="font-semibold text-content-primary">Forecast Calculation</h3><p class="mt-1 text-sm leading-6 text-content-muted">Prometheus history is aggregated into daily averages, fitted using {{ forecast_payload.method_label|default("the selected trend model") }}, and projected against the selected capacity horizon.</p></div>
+            </div>
+        </article>
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {% set method_cards = [
+                ('database', 'Data Source', 'Prometheus', 'Historical resource metrics for the selected scope.'),
+                ('calendar-days', 'Aggregation', 'Daily Average', 'Range samples are grouped before trend calculation.'),
+                ('trending-up', 'Projection', forecast_payload.method_label|default('Linear Trend'), forecast_payload.method_description|default('The trend slope is extended through the selected horizon.')),
+                ('shield-alert', 'Risk Threshold', '75% / 90%', 'Warning and critical ETAs use current usage, slope, and capacity.')
+            ] %}
+            {% for icon, label, value, description in method_cards %}
+                <article class="rounded-lg border border-outline-default bg-surface-card p-4">
+                    <div class="flex items-center gap-2 text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i><p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">{{ label }}</p></div>
+                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ value }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+                </article>
+            {% endfor %}
+        </div>
+    </div>
+</section>

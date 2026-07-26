@@ -1,7 +1,7 @@
 {% import "components/progress_bar.html" as progress_bar %}
-<section class="rounded-xl border border-outline-default bg-surface-card shadow-sm ">
-    <details class="group">
-        <summary class="flex cursor-pointer list-none flex-col gap-4 px-6 py-5 lg:flex-row lg:items-start lg:justify-between">
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <div>
+        <div class="flex flex-col gap-4 px-6 py-5 lg:flex-row lg:items-start lg:justify-between">
             <div class="flex items-start gap-3">
                 <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl {{ ownership_summary.class }}">
                     <i data-lucide="{{ ownership_summary.icon|default('users') }}"
@@ -14,29 +14,24 @@
                             {{ ownership_summary.label }}
                         </span>
                     </div>
-                    <p class="mt-1 max-w-3xl text-sm text-content-muted ">{{ ownership_summary.description }}</p>
+                    <p class="mt-1 max-w-3xl text-sm text-content-muted">{{ ownership_summary.description }}</p>
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-                <span class="rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary ">
+                <span class="rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary">
                     Score {{ ownership_summary.score }}/100
                 </span>
-                <span class="inline-flex w-fit items-center gap-2 rounded-xl border border-outline-default bg-surface-subtle px-3 py-2 text-xs font-semibold text-content-secondary transition group-open:bg-kaori-soft group-open:text-kaori-primary group-open:bg-kaori-soft dark:group-open:text-kaori-primary">
-                    <i data-lucide="chevron-down"
-                       class="h-4 w-4 transition group-open:rotate-180"></i>
-                    Details
-                </span>
             </div>
-        </summary>
-        <div class="border-t border-outline-default p-6 ">
-            <div class="mb-5 rounded-xl border border-brand-outline bg-kaori-soft p-4 ">
+        </div>
+        <div class="border-t border-outline-subtle p-6">
+            <div class="mb-5 rounded-xl border border-brand-outline bg-kaori-soft p-4">
                 <div class="flex items-start gap-3">
                     <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kaori-primary text-white">
                         <i data-lucide="users" class="h-4 w-4"></i>
                     </div>
                     <div>
-                        <p class="text-sm font-semibold text-content-primary ">Triage ownership lens</p>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary ">
+                        <p class="text-sm font-semibold text-content-primary">Triage ownership lens</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">
                             Owner, contact, and runbook metadata determine whether an alert can be assigned and resolved without manual discovery.
                         </p>
                     </div>
@@ -50,15 +45,15 @@
                                     ('Alert Coverage', ownership_summary.alert_count, ownership_summary.source|title ~ ' source')
                                 ] %}
                 {% for label, value, desc in cards %}
-                    <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 ">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted ">{{ label }}</p>
-                        <p class="mt-2 text-2xl font-semibold text-content-primary ">{{ value }}</p>
-                        <p class="mt-1 text-xs text-content-muted ">{{ desc }}</p>
+                    <div class="rounded-xl border border-outline-default bg-surface-subtle p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
+                        <p class="mt-2 text-2xl font-semibold text-content-primary">{{ value }}</p>
+                        <p class="mt-1 text-xs text-content-muted">{{ desc }}</p>
                     </div>
                 {% endfor %}
             </div>
             <div class="mt-5 grid gap-4 xl:grid-cols-3">
-                <div class="rounded-xl border border-outline-default p-4 ">
+                <div class="rounded-xl border border-outline-default p-4">
                     <div class="flex items-center gap-2">
                         <i data-lucide="users" class="h-4 w-4 text-content-muted"></i>
                         <h3 class="text-sm font-semibold text-content-primary">Owner Groups</h3>
@@ -67,8 +62,8 @@
                         {% for owner in ownership_summary.owner_groups %}
                             <div>
                                 <div class="flex items-center justify-between gap-3 text-sm">
-                                    <span class="truncate font-medium text-content-secondary ">{{ owner.label }}</span>
-                                    <span class="font-semibold text-content-primary ">{{ owner.count }}</span>
+                                    <span class="truncate font-medium text-content-secondary">{{ owner.label }}</span>
+                                    <span class="font-semibold text-content-primary">{{ owner.count }}</span>
                                 </div>
                                 {{ progress_bar.bar(owner.percent,
                                                                 track_classes="mt-1 h-1.5 overflow-hidden rounded-full bg-surface-hover",
@@ -76,11 +71,11 @@
                                                                 label="Owner alert coverage",) }}
                             </div>
                         {% else %}
-                            <p class="text-sm text-content-muted ">No owner metadata detected.</p>
+                            <p class="text-sm text-content-muted">No owner metadata detected.</p>
                         {% endfor %}
                     </div>
                 </div>
-                <div class="rounded-xl border border-outline-default p-4 ">
+                <div class="rounded-xl border border-outline-default p-4">
                     <div class="flex items-center gap-2">
                         <i data-lucide="book-open" class="h-4 w-4 text-content-muted"></i>
                         <h3 class="text-sm font-semibold text-content-primary">Runbook Links</h3>
@@ -91,15 +86,15 @@
                                target="_blank"
                                rel="noopener noreferrer"
                                class="block rounded-xl bg-surface-subtle p-3 text-sm transition hover:bg-surface-hover /60 dark:hover:bg-surface-hover">
-                                <div class="font-semibold text-content-primary ">{{ item.name }}</div>
-                                <div class="mt-1 text-xs text-content-muted ">{{ item.namespace }} · {{ item.owner }}</div>
+                                <div class="font-semibold text-content-primary">{{ item.name }}</div>
+                                <div class="mt-1 text-xs text-content-muted">{{ item.namespace }} · {{ item.owner }}</div>
                             </a>
                         {% else %}
-                            <p class="text-sm text-content-muted ">No runbook URL detected in active alert annotations.</p>
+                            <p class="text-sm text-content-muted">No runbook URL detected in active alert annotations.</p>
                         {% endfor %}
                     </div>
                 </div>
-                <div class="rounded-xl border border-outline-default p-4 ">
+                <div class="rounded-xl border border-outline-default p-4">
                     <div class="flex items-center gap-2">
                         <i data-lucide="triangle-alert" class="h-4 w-4 text-content-muted"></i>
                         <h3 class="text-sm font-semibold text-content-primary">Missing Metadata</h3>
@@ -109,8 +104,8 @@
                             <div class="rounded-xl bg-surface-subtle p-3 /60">
                                 <div class="flex items-center justify-between gap-3">
                                     <div class="min-w-0">
-                                        <div class="truncate text-sm font-semibold text-content-primary ">{{ item.name }}</div>
-                                        <div class="mt-1 text-xs text-content-muted ">{{ item.namespace }} · {{ item.severity|title }}</div>
+                                        <div class="truncate text-sm font-semibold text-content-primary">{{ item.name }}</div>
+                                        <div class="mt-1 text-xs text-content-muted">{{ item.namespace }} · {{ item.severity|title }}</div>
                                     </div>
                                     <span class="shrink-0 rounded-md bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
                                         {{ item.missing|join(", ") }}
@@ -118,11 +113,11 @@
                                 </div>
                             </div>
                         {% else %}
-                            <p class="text-sm text-content-muted ">All active alerts include owner, runbook, and contact metadata.</p>
+                            <p class="text-sm text-content-muted">All active alerts include owner, runbook, and contact metadata.</p>
                         {% endfor %}
                     </div>
                 </div>
             </div>
         </div>
-    </details>
+    </div>
 </section>

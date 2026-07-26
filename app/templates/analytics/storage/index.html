@@ -34,45 +34,4 @@
             {% include "analytics/storage/partials/_storage_section.html" %}
         {% endif %}
     </div>
-    {% block scripts %}
-        <script>
- function hydrateStorageUi() {
- document
- .querySelectorAll(
- '.storage-progress'
- )
- .forEach(
- function (element) {
- const rawValue = Number(
- element.dataset.progress || 0
- );
-
- const value = Math.max(
- 0,
- Math.min(
- rawValue,
- 100
- )
- );
-
- element.style.width = `${value}%`;
- }
- );
-
- if (window.lucide) {
- window.lucide.createIcons();
- }
- }
-
- document.addEventListener(
- 'DOMContentLoaded',
- hydrateStorageUi
- );
-
- document.body.addEventListener(
- 'htmx:afterSwap',
- hydrateStorageUi
- );
-        </script>
-    {% endblock scripts %}
 {% endblock dashboard_content %}

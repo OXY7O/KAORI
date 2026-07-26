@@ -27,7 +27,7 @@
                     'maintenance': 'bg-status-maintenance',
                     'info': 'bg-status-info'
                 }.get(tone, 'bg-kaori-primary') %}
-        {{ progress_bar.bar(percentage, track_classes="mt-4 h-2 overflow-hidden rounded-full bg-surface-hover", fill_classes="h-full rounded-full transition-all duration-500 {{ bar_class }}", label="Coverage progress") }}
+        {{ progress_bar.bar(percentage, track_classes="mt-4 h-2 overflow-hidden rounded-full bg-surface-hover", fill_classes="h-full rounded-full transition-all duration-500 " ~ bar_class, label="Coverage progress") }}
     {% endmacro %}
     <div id="utilization-page"
          class="space-y-6"
@@ -93,15 +93,15 @@
                         </div>
                         <div class="grid gap-2 sm:grid-cols-3 lg:min-w-[560px]">
                             <div class="rounded-lg border border-outline-default bg-surface-hover px-3 py-3">
-                                <p class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-content-muted"><i data-lucide="server" class="h-3.5 w-3.5"></i>Worker split</p>
+                                <p class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-content-muted"><i data-lucide="server" class="h-3.5 w-3.5"></i>Worker Split</p>
                                 <p class="mt-1 text-sm font-semibold text-content-primary">{{ cluster_info.worker_nodes }} worker · {{ cluster_info.master_nodes }} control-plane</p>
                             </div>
                             <div class="rounded-lg border border-outline-default bg-surface-hover px-3 py-3">
-                                <p class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-content-muted"><i data-lucide="activity" class="h-3.5 w-3.5"></i>Readiness gap</p>
+                                <p class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-content-muted"><i data-lucide="activity" class="h-3.5 w-3.5"></i>Readiness Gap</p>
                                 <p class="mt-1 text-sm font-semibold text-content-primary">{{ cluster_info.not_ready_nodes }} nodes need attention</p>
                             </div>
                             <div class="rounded-lg border border-outline-default bg-surface-hover px-3 py-3">
-                                <p class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-content-muted"><i data-lucide="gauge" class="h-3.5 w-3.5"></i>Review focus</p>
+                                <p class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-content-muted"><i data-lucide="gauge" class="h-3.5 w-3.5"></i>Review Focus</p>
                                 <p class="mt-1 text-sm font-semibold text-content-primary">Capacity, pods, and pressure</p>
                             </div>
                         </div>
@@ -112,7 +112,7 @@
                                 <span class="flex h-9 w-9 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface-strong"><i data-lucide="badge-check" class="h-4.5 w-4.5"></i></span>
                                 {{ table_label.status_label('Ready' if cluster_info.not_ready_nodes == 0 else 'Review', 'normal' if cluster_info.not_ready_nodes == 0 else 'warning', 'circle-check' if cluster_info.not_ready_nodes == 0 else 'triangle-alert') }}
                             </div>
-                            <p class="mt-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Node readiness</p>
+                            <p class="mt-4 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Node Readiness</p>
                             <p class="mt-1 text-3xl font-semibold">{{ "%.0f"|format(ready_ratio) }}%</p>
                             <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">{{ cluster_info.ready_nodes }} ready · {{ cluster_info.not_ready_nodes }} NotReady</p>
                             <div class="mt-auto pt-4">

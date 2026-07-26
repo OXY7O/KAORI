@@ -1,0 +1,46 @@
+{% import "components/table_label.html" as table_label %}
+
+{% macro render(status, checked_at='', extra_class='') -%}
+    {% set label = status.status_label|default(status.label|default('Unknown')) %}
+    {% set message = status.message|default(status.description|default('Prometheus status is unavailable.')) %}
+    {% set connected = status.connected|default(false) %}
+    {% set configured = status.configured|default('not configured' not in label|lower) %}
+    {% set response_time = status.response_time_ms|default(none) %}
+    {% if connected %}
+        {% set tone = 'normal' %}
+        {% set icon = 'circle-check' %}
+        {% set dot_class = 'bg-status-normal' %}
+    {% elif configured %}
+        {% set tone = 'critical' %}
+        {% set icon = 'circle-x' %}
+        {% set dot_class = 'bg-status-critical' %}
+    {% else %}
+        {% set tone = 'disabled' %}
+        {% set icon = 'circle-minus' %}
+        {% set dot_class = 'bg-status-disabled' %}
+    {% endif %}
+    <section class="rounded-lg border border-outline-default bg-kaori-soft px-4 py-3 {{ extra_class }}">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 items-center gap-3">
+                <span class="h-2.5 w-2.5 shrink-0 rounded-full {{ dot_class }}" aria-hidden="true"></span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-sm font-semibold text-content-primary">Prometheus Status</h2>
+                        {{ table_label.status_label(label, tone, icon) }}
+                    </div>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ message }}</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                {% if response_time is not none %}
+                    {{ table_label.metadata_label(response_time ~ ' ms', 'zap') }}
+                {% else %}
+                    {{ table_label.metadata_label('No Response', 'zap-off') }}
+                {% endif %}
+                {% if checked_at %}
+                    {{ table_label.metadata_label('Checked ' ~ checked_at, 'clock-3') }}
+                {% endif %}
+            </div>
+        </div>
+    </section>
+{%- endmacro %}

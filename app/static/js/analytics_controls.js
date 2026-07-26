@@ -1,15 +1,39 @@
 (() => {
+    const clampPercent = (value) => Math.max(0, Math.min(Number(value) || 0, 100));
+
+    function analyticsTabStorageKey() {
+        return `kaori:analytics-tab:${window.location.pathname}`;
+    }
+
+    function requestedAnalyticsTab(allowedTabs, defaultTab) {
+        const hashTab = window.location.hash.replace(/^#/, '');
+        if (allowedTabs.includes(hashTab)) return hashTab;
+
+        try {
+            const storedTab = window.sessionStorage.getItem(analyticsTabStorageKey());
+            if (allowedTabs.includes(storedTab)) return storedTab;
+        } catch {
+            // Storage can be unavailable in hardened browser modes.
+        }
+
+        return defaultTab;
+    }
+
     window.kaoriAnalyticsTabs = (defaultTab, allowedTabs) => {
         const tabs = Array.isArray(allowedTabs) ? allowedTabs : [];
-        const requestedTab = window.location.hash.replace(/^#/, '');
-        const initialTab = tabs.includes(requestedTab) ? requestedTab : defaultTab;
 
         return {
-            activeTab: initialTab,
+            activeTab: requestedAnalyticsTab(tabs, defaultTab),
             setTab(tab) {
                 if (!tabs.includes(tab)) return;
 
                 this.activeTab = tab;
+
+                try {
+                    window.sessionStorage.setItem(analyticsTabStorageKey(), tab);
+                } catch {
+                    // The URL hash remains the fallback persistence mechanism.
+                }
 
                 const url = new URL(window.location.href);
                 url.hash = tab;
@@ -17,6 +41,19 @@
             },
         };
     };
+
+    function hydrateProgressBars(root = document) {
+        root.querySelectorAll('.kaori-progress-fill[data-progress]').forEach((element) => {
+            element.style.width = `${clampPercent(element.dataset.progress)}%`;
+        });
+    }
+
+    function hydrateProgressRings(root = document) {
+        root.querySelectorAll('[data-progress-ring]').forEach((element) => {
+            const value = clampPercent(element.dataset.progressRing);
+            element.setAttribute('stroke-dasharray', `${value} 100`);
+        });
+    }
 
     function resetDependentFields(control) {
         const form = control.form;
@@ -30,18 +67,30 @@
             if (!name) continue;
 
             const field = form.elements.namedItem(name);
-            if (!field || field instanceof RadioNodeList) continue;
+            if (!field || (typeof RadioNodeList !== 'undefined' && field instanceof RadioNodeList)) continue;
 
             field.value = rawValue.join('=').trim();
         }
     }
 
-    document.addEventListener(
-        'change',
-        (event) => {
-            const control = event.target.closest('[data-kaori-reset-fields]');
-            if (control) resetDependentFields(control);
-        },
-        true,
-    );
+    function hydrateAnalyticsUi(root = document) {
+        hydrateProgressBars(root);
+        hydrateProgressRings(root);
+
+        if (window.renderKaoriIcons) {
+            window.renderKaoriIcons();
+        } else if (window.lucide) {
+            window.lucide.createIcons();
+        }
+    }
+
+    document.addEventListener('change', (event) => {
+        const control = event.target.closest('[data-kaori-reset-fields]');
+        if (control) resetDependentFields(control);
+    }, true);
+
+    document.addEventListener('DOMContentLoaded', () => hydrateAnalyticsUi());
+    document.body.addEventListener('htmx:load', (event) => hydrateAnalyticsUi(event.detail.elt || document));
+    document.body.addEventListener('htmx:afterSwap', (event) => hydrateAnalyticsUi(event.detail.target || document));
+    document.body.addEventListener('htmx:afterSettle', (event) => hydrateAnalyticsUi(event.detail.elt || document));
 })();

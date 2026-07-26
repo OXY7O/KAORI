@@ -45,7 +45,9 @@ def test_pending_partial_renders_numeric_worker_progress() -> None:
     )
 
     assert 'aria-valuenow="42"' in rendered
-    assert 'width: 42%' in rendered
+    assert 'kaori-progress-fill' in rendered
+    assert 'data-progress="42"' in rendered
+    assert 'style=' not in rendered
     assert 'Collecting alert signals' in rendered
     assert '>42%</span>' in rendered
 

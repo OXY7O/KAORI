@@ -440,6 +440,15 @@ class CapacityService(AnalyticsBaseService):
                     pod_capacity,
                 ),
             },
+            'storage': {
+                'capacity': bytes_to_gib(summary.get('storage_capacity', 0)),
+                'used': bytes_to_gib(summary.get('storage_usage', 0)),
+                'available': bytes_to_gib(summary.get('storage_available', 0)),
+                'headroom': safe_percent(
+                    summary.get('storage_available', 0),
+                    summary.get('storage_capacity', 0),
+                ),
+            },
         }
 
     def get_allocation_status_findings(
@@ -860,13 +869,15 @@ class CapacityService(AnalyticsBaseService):
         icon_map = {
             'cpu': 'cpu',
             'memory': 'memory-stick',
-            'pods': 'box',
+            'pods': 'boxes',
+            'storage': 'hard-drive',
         }
 
         icon_class_map = {
             'cpu': 'bg-emerald-100 text-emerald-600',
             'memory': 'bg-violet-100 text-violet-600',
             'pods': 'bg-cyan-100 text-cyan-600',
+            'storage': 'bg-amber-100 text-amber-600',
         }
 
         risks: list[dict[str, Any]] = []
@@ -875,6 +886,7 @@ class CapacityService(AnalyticsBaseService):
             'cpu',
             'memory',
             'pods',
+            'storage',
         ]:
             item = capacity_summary.get(
                 resource,
@@ -888,8 +900,14 @@ class CapacityService(AnalyticsBaseService):
                 )
             )
 
-            status = self.get_headroom_status(
-                headroom,
+            capacity = self.to_float(item.get('capacity', 0))
+            status = (
+                self.get_headroom_status(headroom)
+                if capacity > 0
+                else {
+                    'label': 'Unknown',
+                    'class': 'bg-slate-100 text-slate-700',
+                }
             )
 
             risks.append(
@@ -954,7 +972,9 @@ class CapacityService(AnalyticsBaseService):
                 'cpu',
                 'memory',
                 'pods',
+                'storage',
             ]
+            and self.to_float(item.get('capacity', 0)) > 0
             and self.to_float(
                 item.get(
                     'headroom',

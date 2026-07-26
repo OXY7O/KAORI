@@ -1,7 +1,7 @@
 {% import "components/table_label.html" as table_label %}
-<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <details class="group">
-        <summary class="flex cursor-pointer list-none flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+<section class="overflow-hidden rounded-lg border border-outline-default bg-surface-card shadow-sm">
+    <div>
+        <div class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                     <i data-lucide="list-checks" class="h-5 w-5"></i>
@@ -9,17 +9,12 @@
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="text-lg font-semibold text-content-primary">Utilization Recommendations</h2>
-                        {{ table_label.metadata_label(recommendation_count|default(0) ~ ' actionable', 'sparkles') }}
+                        {{ table_label.metadata_label(recommendation_count|default(0) ~ ' Actionable', 'sparkles') }}
                     </div>
                     <p class="mt-1 text-sm leading-6 text-content-muted">Findings from utilization risk, node pressure, and top-consumer signals.</p>
                 </div>
             </div>
-            <span class="inline-flex min-h-9 w-fit items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition group-open:border-kaori-primary/20 group-open:bg-kaori-soft group-open:text-kaori-primary">
-                <i data-lucide="chevron-down"
-                   class="h-4 w-4 transition group-open:rotate-180"></i>
-                Details
-            </span>
-        </summary>
+        </div>
         <div class="border-t border-outline-subtle p-5">
             {% if recommendation_cards %}
                 <div class="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
@@ -77,5 +72,5 @@
                 </div>
             {% endif %}
         </div>
-    </details>
+    </div>
 </section>

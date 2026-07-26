@@ -1,18 +1,23 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
-{% set selected_cluster_name = cluster.name if cluster else 'No cluster selected' %}
-{% set prometheus_connected = prometheus_status.connected|default(false) %}
-{% set response_time = prometheus_status.response_time_ms %}
+{% import "analytics/components/_prometheus_status.html" as prometheus_status_panel %}
+{% set selected_cluster_name = cluster.name if cluster else 'No Cluster Selected' %}
 {% set cpu_headroom = capacity_summary.cpu.headroom|default(0) if capacity_summary is defined else 0 %}
 {% set memory_headroom = capacity_summary.memory.headroom|default(0) if capacity_summary is defined else 0 %}
 {% set pod_headroom = capacity_summary.pods.headroom|default(0) if capacity_summary is defined else 0 %}
-{% set lowest_headroom = [cpu_headroom, memory_headroom, pod_headroom]|min %}
-{% if lowest_headroom < 15 %}
+{% set storage_headroom = capacity_summary.storage.headroom|default(0) if capacity_summary is defined else 0 %}
+{% set lowest_headroom_value = lowest_headroom|default(0) %}
+{% if not capacity_headroom_available|default(false) %}
+    {% set posture_value = "Unknown" %}
+    {% set posture_desc = "Capacity headroom is not available yet." %}
+    {% set posture_tone = "unknown" %}
+    {% set posture_icon = "circle-help" %}
+{% elif lowest_headroom_value < 15 %}
     {% set posture_value = "Critical" %}
     {% set posture_desc = "Headroom needs immediate review." %}
     {% set posture_tone = "critical" %}
     {% set posture_icon = "shield-alert" %}
-{% elif lowest_headroom < 40 %}
+{% elif lowest_headroom_value < 40 %}
     {% set posture_value = "Watch" %}
     {% set posture_desc = "Review headroom and allocation pressure." %}
     {% set posture_tone = "warning" %}
@@ -27,7 +32,7 @@
     <section class="{{ page_hero.shell_classes() }}">
         <div class="{{ page_hero.layout_classes() }}">
             <div class="{{ page_hero.content_classes() }}">
-                {% call page_hero.intro('bar-chart-3', 'Kubernetes analytics', 'server-cog') %}
+                {% call page_hero.intro('bar-chart-3', 'Kubernetes Analytics', 'server-cog') %}
                     <h1 class="{{ page_hero.title_classes() }}">Capacity Analysis</h1>
                     <p class="mt-2 {{ page_hero.description_classes() }}">
                         Review Ready-worker capacity, allocation pressure, scheduling risk, request posture, and operational headroom.
@@ -37,21 +42,21 @@
                         {% if dependency_blocker %}
                             {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
                         {% else %}
-                            {{ page_hero.meta_label('cpu', 'CPU headroom ' ~ cpu_headroom_display) }}
+                            {{ page_hero.meta_label('cpu', 'CPU Headroom ' ~ cpu_headroom_display) }}
                             {{ page_hero.meta_label('list-checks', recommendation_count|default(0) ~ ' Actionable') }}
                         {% endif %}
                     </div>
                 {% endcall %}
             </div>
-            <aside class="{{ page_hero.aside_classes() }}" aria-label="Capacity posture">
+            <aside class="{{ page_hero.aside_classes() }}" aria-label="Capacity Posture">
                 {% if dependency_blocker %}
-                    {% set analytics_posture_label = "Capacity posture" %}
+                    {% set analytics_posture_label = "Capacity Posture" %}
                     {% include "analytics/components/_blocked_posture.html" %}
                 {% else %}
                     <div class="{{ page_hero.context_panel_classes() }}">
                         <div class="flex items-start justify-between gap-4">
                             <div>
-                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Capacity posture</p>
+                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Capacity Posture</p>
                                 <p class="mt-1 text-3xl font-bold leading-none text-brand-foreground">{{ posture_value }}</p>
                                 <p class="mt-2 text-sm leading-5 text-brand-foreground-muted">{{ posture_desc }}</p>
                             </div>
@@ -59,12 +64,12 @@
                         </div>
                         <div class="mt-auto grid grid-cols-2 gap-3 pt-4">
                             <div class="{{ page_hero.context_metric_card_classes() }}">
-                                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Lowest headroom</p>
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Lowest Headroom</p>
                                 <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ lowest_headroom_display }}</p>
                                 <p class="{{ page_hero.context_metric_helper_classes() }}">Lowest available resource margin</p>
                             </div>
                             <div class="{{ page_hero.context_metric_card_classes() }}">
-                                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Time range</p>
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Time Range</p>
                                 <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ selected_time_range }}</p>
                                 <p class="{{ page_hero.context_metric_helper_classes() }}">Observation window in use</p>
                             </div>
@@ -87,18 +92,7 @@
               class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
             <div class="p-5">
                 <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(260px,340px)_minmax(200px,240px)] xl:items-center">
-                    <section class="rounded-lg border border-outline-default bg-surface-subtle px-4 py-3">
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div class="min-w-0">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <h2 class="text-sm font-bold text-content-primary">Prometheus Status</h2>
-                                    {{ table_label.status_label(prometheus_status.label, 'normal' if prometheus_connected else 'critical', 'circle-check' if prometheus_connected else 'circle-x') }}
-                                </div>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ prometheus_status.description }}</p>
-                            </div>
-                            {{ table_label.metadata_label((response_time ~ ' ms') if response_time is not none else 'No response', 'zap') }}
-                        </div>
-                    </section>
+                    {{ prometheus_status_panel.render(prometheus_status) }}
                     <label class="block">
                         <span class="text-xs font-semibold text-content-secondary">Cluster</span>
                         <select name="cluster_id"

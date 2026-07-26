@@ -115,6 +115,9 @@
     const panelId = 'utilization-trend-panel';
     const canvasId = 'utilizationTrendChart';
     const chartKey = 'kaoriUtilizationTrendChart';
+    const cssVariable = (name, fallback) => (
+        getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
+    );
 
     const renderTrendChart = function() {
         const cpuTrend = {{ trends.cpu|default([])|tojson }};
@@ -156,9 +159,13 @@
         canvas.height = Math.floor(parentHeight * ratio);
 
         const ctx = canvas.getContext('2d');
-        const isDarkMode = document.documentElement.classList.contains('dark');
-        const textColor = isDarkMode ? '#cbd5e1' : '#475569';
-        const gridColor = isDarkMode ? 'rgba(148, 163, 184, 0.16)' : 'rgba(148, 163, 184, 0.22)';
+        const textColor = cssVariable('--kaori-content-secondary', 'CanvasText');
+        const gridColor = cssVariable('--kaori-outline-subtle', 'transparent');
+        const cardColor = cssVariable('--kaori-surface-card', 'Canvas');
+        const primaryColor = cssVariable('--kaori-content-primary', 'CanvasText');
+        const cpuColor = cssVariable('--kaori-brand-primary', 'CanvasText');
+        const memoryColor = cssVariable('--kaori-status-normal', 'CanvasText');
+        const podColor = cssVariable('--kaori-status-pending', 'CanvasText');
 
         const baseTrend = cpuTrend.length > 0 ? cpuTrend : memoryTrend.length > 0 ? memoryTrend : podTrend;
 
@@ -182,10 +189,10 @@
                         {
                             label: 'CPU',
                             data: cpuTrend.map(item => item.value),
-                            borderColor: '#7C3AED',
-                            backgroundColor: '#7C3AED',
-                            pointBackgroundColor: '#7C3AED',
-                            pointBorderColor: '#ffffff',
+                            borderColor: cpuColor,
+                            backgroundColor: cpuColor,
+                            pointBackgroundColor: cpuColor,
+                            pointBorderColor: cardColor,
                             pointBorderWidth: 2,
                             pointRadius: 2.5,
                             pointHoverRadius: 5,
@@ -196,10 +203,10 @@
                         {
                             label: 'Memory',
                             data: memoryTrend.map(item => item.value),
-                            borderColor: '#10b981',
-                            backgroundColor: '#10b981',
-                            pointBackgroundColor: '#10b981',
-                            pointBorderColor: '#ffffff',
+                            borderColor: memoryColor,
+                            backgroundColor: memoryColor,
+                            pointBackgroundColor: memoryColor,
+                            pointBorderColor: cardColor,
                             pointBorderWidth: 2,
                             pointRadius: 2.5,
                             pointHoverRadius: 5,
@@ -210,10 +217,10 @@
                         {
                             label: 'Pods',
                             data: podTrend.map(item => item.value),
-                            borderColor: '#06B6D4',
-                            backgroundColor: '#06B6D4',
-                            pointBackgroundColor: '#06B6D4',
-                            pointBorderColor: '#ffffff',
+                            borderColor: podColor,
+                            backgroundColor: podColor,
+                            pointBackgroundColor: podColor,
+                            pointBorderColor: cardColor,
                             pointBorderWidth: 2,
                             pointRadius: 2.5,
                             pointHoverRadius: 5,
@@ -250,10 +257,10 @@
                             },
                         },
                         tooltip: {
-                            backgroundColor: isDarkMode ? '#020617' : '#ffffff',
-                            titleColor: isDarkMode ? '#e2e8f0' : '#0f172a',
-                            bodyColor: isDarkMode ? '#cbd5e1' : '#475569',
-                            borderColor: isDarkMode ? '#334155' : '#e2e8f0',
+                            backgroundColor: cardColor,
+                            titleColor: primaryColor,
+                            bodyColor: textColor,
+                            borderColor: gridColor,
                             borderWidth: 1,
                             padding: 12,
                             displayColors: true,

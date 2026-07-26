@@ -5,17 +5,7 @@
       "inline_scripts": 1,
       "inline_styles": 0
     },
-    "app/templates/analytics/alerts/index.html": {
-      "inline_event_handlers": 0,
-      "inline_scripts": 1,
-      "inline_styles": 0
-    },
     "app/templates/analytics/capacity/index.html": {
-      "inline_event_handlers": 0,
-      "inline_scripts": 1,
-      "inline_styles": 0
-    },
-    "app/templates/analytics/forecast/index.html": {
       "inline_event_handlers": 0,
       "inline_scripts": 1,
       "inline_styles": 0
@@ -35,22 +25,7 @@
       "inline_scripts": 1,
       "inline_styles": 0
     },
-    "app/templates/analytics/storage/index.html": {
-      "inline_event_handlers": 0,
-      "inline_scripts": 1,
-      "inline_styles": 0
-    },
-    "app/templates/analytics/top_consumers/index.html": {
-      "inline_event_handlers": 0,
-      "inline_scripts": 1,
-      "inline_styles": 0
-    },
     "app/templates/analytics/utilization/partials/_trend.html": {
-      "inline_event_handlers": 0,
-      "inline_scripts": 1,
-      "inline_styles": 0
-    },
-    "app/templates/analytics/workload/index.html": {
       "inline_event_handlers": 0,
       "inline_scripts": 1,
       "inline_styles": 0
@@ -64,11 +39,6 @@
       "inline_event_handlers": 1,
       "inline_scripts": 1,
       "inline_styles": 0
-    },
-    "app/templates/components/progress_bar.html": {
-      "inline_event_handlers": 0,
-      "inline_scripts": 0,
-      "inline_styles": 3
     },
     "app/templates/integrations/alertmanager/partials/_inventory_content.html": {
       "inline_event_handlers": 1,
@@ -88,11 +58,6 @@
     "app/templates/intelligence/recommendations.html": {
       "inline_event_handlers": 0,
       "inline_scripts": 1,
-      "inline_styles": 0
-    },
-    "app/templates/inventory/nodes/partials/_table_content.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
       "inline_styles": 0
     },
     "app/templates/inventory/topology/index.html": {

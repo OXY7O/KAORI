@@ -24,7 +24,7 @@
             <span>Usage</span>
             <span>{{ "%.2f"|format(value|default(0) |float) }}%</span>
         </div>
-        {{ progress_bar.bar(percentage, track_classes="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover", fill_classes="h-full rounded-full transition-all duration-500 {{ bar_class }}", label="Coverage progress") }}
+        {{ progress_bar.bar(percentage, track_classes="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover", fill_classes="h-full rounded-full transition-all duration-500 " ~ bar_class, label="Coverage progress") }}
     </div>
 {% endmacro %}
 {% if cluster_onboarding.has_clusters and error %}

@@ -29,7 +29,7 @@
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
-            {% call page_hero.intro('triangle-alert', 'Kubernetes analytics', 'radar') %}
+            {% call page_hero.intro('triangle-alert', 'Kubernetes Analytics', 'radar') %}
                 <h1 class="{{ page_hero.title_classes() }}">Alerts &amp; Anomalies</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">
                     Review alert health, routing, silence visibility, anomaly signals, ownership, and operational readiness.
@@ -45,15 +45,15 @@
                 </div>
             {% endcall %}
         </div>
-        <aside class="{{ page_hero.aside_classes() }}" aria-label="Alert posture">
+        <aside class="{{ page_hero.aside_classes() }}" aria-label="Alert Posture">
             {% if dependency_blocker %}
-                {% set analytics_posture_label = "Alert posture" %}
+                {% set analytics_posture_label = "Alert Posture" %}
                 {% include "analytics/components/_blocked_posture.html" %}
             {% else %}
                 <div class="{{ page_hero.context_panel_classes() }}">
                     <div class="flex items-start justify-between gap-4">
                         <div>
-                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Alert posture</p>
+                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Alert Posture</p>
                             <p class="mt-1 text-3xl font-bold leading-none text-brand-foreground">{{ posture_value }}</p>
                             <p class="mt-2 text-sm leading-5 text-brand-foreground-muted">{{ posture_desc }}</p>
                         </div>

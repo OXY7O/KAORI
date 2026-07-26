@@ -1,0 +1,31 @@
+{% import "analytics/components/_prometheus_status.html" as prometheus_status_panel %}
+
+{% macro panel(title, description, icon, indicator_id, status=none, checked_at='', eyebrow='Analysis Controls') -%}
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+        <div class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+            <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-content-muted">{{ eyebrow }}</p>
+                        <h2 class="mt-1 text-lg font-semibold text-content-primary">{{ title }}</h2>
+                        <p class="mt-1 text-sm leading-6 text-content-muted">{{ description }}</p>
+                    </div>
+                </div>
+                {% if status is not none %}
+                    <div class="w-full xl:max-w-xl">
+                        {{ prometheus_status_panel.render(status, checked_at) }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="p-5 sm:p-6">
+            {{ caller() }}
+            <div id="{{ indicator_id }}" class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
+                <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
+            </div>
+        </div>
+    </section>
+{%- endmacro %}

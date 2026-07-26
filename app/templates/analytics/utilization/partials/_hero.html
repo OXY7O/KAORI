@@ -1,8 +1,7 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
-{% set selected_cluster_name = cluster.name if cluster else 'No cluster selected' %}
-{% set prometheus_connected = prometheus_status.connected|default(false) %}
-{% set response_time = prometheus_status.response_time_ms %}
+{% import "analytics/components/_prometheus_status.html" as prometheus_status_panel %}
+{% set selected_cluster_name = cluster.name if cluster else 'No Cluster Selected' %}
 {% set cpu_util = summary.cpu_utilization|default(0) %}
 {% set memory_util = summary.memory_utilization|default(0) %}
 {% set storage_util = summary.storage_utilization|default(0) %}
@@ -28,7 +27,7 @@
     <section class="{{ page_hero.shell_classes() }}">
         <div class="{{ page_hero.layout_classes() }}">
             <div class="{{ page_hero.content_classes() }}">
-                {% call page_hero.intro('activity', 'Kubernetes analytics', 'chart-no-axes-combined') %}
+                {% call page_hero.intro('activity', 'Kubernetes Analytics', 'chart-no-axes-combined') %}
                     <h1 class="{{ page_hero.title_classes() }}">Resource Utilization</h1>
                     <p class="mt-2 {{ page_hero.description_classes() }}">
                         Analyze CPU, memory, storage, pod utilization, historical trends, and node pressure for the selected cluster.
@@ -46,15 +45,15 @@
                 {% endcall %}
             </div>
             <aside class="{{ page_hero.aside_classes() }}"
-                   aria-label="Resource utilization posture">
+                   aria-label="Resource Utilization Posture">
                 {% if dependency_blocker %}
-                    {% set analytics_posture_label = "Utilization posture" %}
+                    {% set analytics_posture_label = "Utilization Posture" %}
                     {% include "analytics/components/_blocked_posture.html" %}
                 {% else %}
                     <div class="{{ page_hero.context_panel_classes() }}">
                         <div class="flex items-start justify-between gap-4">
                             <div class="min-w-0">
-                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Utilization posture</p>
+                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Utilization Posture</p>
                                 <p class="mt-1 text-3xl font-bold leading-none text-brand-foreground">{{ posture_value }}</p>
                                 <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">{{ posture_desc }}</p>
                             </div>
@@ -62,12 +61,12 @@
                         </div>
                         <div class="mt-auto grid grid-cols-2 gap-2 pt-4">
                             <div class="{{ page_hero.context_metric_card_classes() }}">
-                                <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Highest usage</p>
+                                <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Highest Usage</p>
                                 <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ highest_util }}%</p>
                                 <p class="{{ page_hero.context_metric_helper_classes() }}">Highest observed resource usage</p>
                             </div>
                             <div class="{{ page_hero.context_metric_card_classes() }}">
-                                <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Pod utilization</p>
+                                <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Pod Utilization</p>
                                 <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ pod_util }}%</p>
                                 <p class="{{ page_hero.context_metric_helper_classes() }}">Pods with recorded utilization</p>
                             </div>
@@ -92,25 +91,12 @@
             <input type="hidden" name="node" value="{{ selected_node }}" />
             <div class="p-5">
                 <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(260px,340px)_minmax(200px,240px)] xl:items-center">
-                    <section class="rounded-lg border border-outline-default bg-surface-hover px-4 py-3">
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div class="flex min-w-0 items-center gap-3">
-                                <span class="h-2.5 w-2.5 shrink-0 rounded-full {% if prometheus_connected %}bg-status-normal{% else %}bg-status-critical{% endif %}"></span>
-                                <div class="min-w-0">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        <h2 class="text-sm font-semibold text-content-primary">Prometheus Status</h2>
-                                        {{ table_label.status_label(prometheus_status.label, 'normal' if prometheus_connected else 'critical', 'circle-check' if prometheus_connected else 'circle-x') }}
-                                    </div>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ prometheus_status.description }}</p>
-                                </div>
-                            </div>
-                            {{ table_label.metadata_label((response_time ~ ' ms') if response_time is not none else 'No response', 'zap') }}
-                        </div>
-                    </section>
+                    {{ prometheus_status_panel.render(prometheus_status) }}
                     <label class="block">
                         <span class="text-xs font-semibold text-content-secondary">Cluster</span>
                         <select id="cluster_id"
                                 name="cluster_id"
+                                data-kaori-reset-fields="trend_node=,node="
                                 class="mt-1.5 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary shadow-sm outline-none transition hover:border-outline-strong focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
                             {% for item in clusters %}
                                 <option value="{{ item.id }}"

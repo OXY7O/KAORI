@@ -31,11 +31,10 @@
 {% if render_dependency_blocker|default(false) and dependency_blocker %}
     {% include "components/dependencies/_blocker.html" %}
 {% elif not dependency_blocker %}
-    <div class="space-y-6" x-data="kaoriAnalyticsTabs('overview', ['overview', 'trend', 'methodology', 'recommendations'])">
+    <div class="space-y-6" x-data="kaoriAnalyticsTabs('overview', ['overview', 'trend', 'recommendations'])">
         {% set forecast_tabs = [
             ('overview', 'Forecast Overview', 'chart-no-axes-combined'),
             ('trend', 'Trend Analysis', 'line-chart'),
-            ('methodology', 'Methodology', 'sigma'),
             ('recommendations', 'Recommendations', 'list-checks')
         ] %}
         {{ analytics_content_tabs.render('forecast-content', forecast_tabs, 'Resource Forecast Content') }}
@@ -44,49 +43,53 @@
              aria-labelledby="forecast-content-tab-overview"
              x-show="activeTab === 'overview'"
              class="space-y-6">
-        <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+            <div class="border-b border-outline-subtle p-5 sm:p-6">
+                <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="chart-no-axes-combined" class="h-5 w-5"></i></span><div><h2 class="text-lg font-semibold text-content-primary">Forecast Overview</h2><p class="mt-1 text-sm leading-6 text-content-muted">Review projected utilization, growth rate, confidence, and threshold timing by resource.</p></div></div>
+            </div>
+            <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4 sm:p-6">
+            <div class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
                 <div class="flex items-center justify-between gap-3">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Highest Projection</p>
-                        <p class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{{ summary.highest_projected_percent }}%</p>
-                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ summary.highest_projected_label }}</p>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Highest Projection</p>
+                        <p class="mt-2 text-2xl font-semibold text-content-primary">{{ summary.highest_projected_percent }}%</p>
+                        <p class="mt-1 text-sm text-content-muted">{{ summary.highest_projected_label }}</p>
                     </div>
-                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-300">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
                         <i data-lucide="activity" class="h-5 w-5"></i>
                     </div>
                 </div>
             </div>
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
                 <div class="flex items-center justify-between gap-3">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Warning Resources</p>
-                        <p class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{{ summary.warning_count }}</p>
-                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Projected 75%+</p>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Warning Resources</p>
+                        <p class="mt-2 text-2xl font-semibold text-content-primary">{{ summary.warning_count }}</p>
+                        <p class="mt-1 text-sm text-content-muted">Projected 75%+</p>
                     </div>
-                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-300">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
                         <i data-lucide="triangle-alert" class="h-5 w-5"></i>
                     </div>
                 </div>
             </div>
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
                 <div class="flex items-center justify-between gap-3">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Critical Resources</p>
-                        <p class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{{ summary.critical_count }}</p>
-                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Projected 90%+</p>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Critical Resources</p>
+                        <p class="mt-2 text-2xl font-semibold text-content-primary">{{ summary.critical_count }}</p>
+                        <p class="mt-1 text-sm text-content-muted">Projected 90%+</p>
                     </div>
-                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600 dark:bg-red-950/60 dark:text-red-300">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 text-red-600">
                         <i data-lucide="flame" class="h-5 w-5"></i>
                     </div>
                 </div>
             </div>
-            <div class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
                 <div class="flex items-center justify-between gap-3">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Nearest Critical</p>
-                        <p class="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{{ summary.nearest_critical.label }}</p>
-                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Nearest Critical</p>
+                        <p class="mt-2 text-2xl font-semibold text-content-primary">{{ summary.nearest_critical.label }}</p>
+                        <p class="mt-1 text-sm text-content-muted">
                             {% if summary.nearest_critical.date %}
                                 {{ summary.nearest_critical.date }}
                             {% else %}
@@ -94,23 +97,24 @@
                             {% endif %}
                         </p>
                     </div>
-                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-hover text-content-secondary">
                         <i data-lucide="calendar-clock" class="h-5 w-5"></i>
                     </div>
                 </div>
             </div>
+                    </div>
         </section>
         <section class="grid gap-4 xl:grid-cols-2">
             {% if forecast_items %}
                 {% for item in forecast_items %}
                     {% if item.key in ['cpu', 'memory'] %}
                         <article class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 p-5 text-white shadow-lg shadow-blue-500/20">
-                            <div class="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-white/10 blur-3xl"></div>
+                            <div class="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-surface-card/10 blur-3xl"></div>
                             <div class="absolute -bottom-16 left-12 h-36 w-36 rounded-full bg-cyan-300/20 blur-3xl"></div>
                             <div class="relative">
                                 <div class="flex items-start justify-between gap-4">
                                     <div class="flex items-start gap-3">
-                                        <div class="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/20 bg-white/15 text-white backdrop-blur">
+                                        <div class="flex h-11 w-11 items-center justify-center rounded-xl border border-white/20 bg-surface-card/15 text-white backdrop-blur">
                                             <i data-lucide="{{ item.icon }}" class="h-5 w-5"></i>
                                         </div>
                                         <div>
@@ -119,9 +123,9 @@
                                                 {% if item.status == 'critical' %}
                                                     <span class="rounded-md bg-red-500 px-2.5 py-1 text-xs font-semibold text-white">Critical</span>
                                                 {% elif item.status == 'warning' %}
-                                                    <span class="rounded-md bg-amber-400 px-2.5 py-1 text-xs font-semibold text-slate-950">Warning</span>
+                                                    <span class="rounded-md bg-amber-400 px-2.5 py-1 text-xs font-semibold text-content-primary">Warning</span>
                                                 {% else %}
-                                                    <span class="rounded-md bg-white/15 px-2.5 py-1 text-xs font-semibold text-white ring-1 ring-white/20">Normal</span>
+                                                    <span class="rounded-md bg-surface-card/15 px-2.5 py-1 text-xs font-semibold text-white ring-1 ring-white/20">Normal</span>
                                                 {% endif %}
                                             </div>
                                             <p class="mt-1 text-sm text-blue-50/85">{{ item.description }}</p>
@@ -129,22 +133,22 @@
                                     </div>
                                 </div>
                                 <div class="mt-5 grid gap-3 sm:grid-cols-2">
-                                    <div class="rounded-2xl border border-white/15 bg-white/12 p-4 backdrop-blur">
+                                    <div class="rounded-xl border border-white/15 bg-surface-card/12 p-4 backdrop-blur">
                                         <p class="text-xs font-semibold uppercase tracking-wide text-blue-50/75">Current Usage</p>
                                         <p class="mt-2 text-lg font-semibold text-white">{{ item.current_display }}</p>
                                         <p class="mt-1 text-sm text-blue-50/75">{{ item.current_percent }}% of {{ item.capacity_display }}</p>
                                     </div>
-                                    <div class="rounded-2xl border border-white/15 bg-white/12 p-4 backdrop-blur">
+                                    <div class="rounded-xl border border-white/15 bg-surface-card/12 p-4 backdrop-blur">
                                         <p class="text-xs font-semibold uppercase tracking-wide text-blue-50/75">Projected Usage</p>
                                         <p class="mt-2 text-lg font-semibold text-white">{{ item.projected_display }}</p>
                                         <p class="mt-1 text-sm text-blue-50/75">{{ item.projected_percent }}% projected</p>
                                     </div>
-                                    <div class="rounded-2xl border border-white/15 bg-white/12 p-4 backdrop-blur">
+                                    <div class="rounded-xl border border-white/15 bg-surface-card/12 p-4 backdrop-blur">
                                         <p class="text-xs font-semibold uppercase tracking-wide text-blue-50/75">Growth Rate</p>
                                         <p class="mt-2 text-lg font-semibold text-white">{{ item.growth_display }}</p>
                                         <p class="mt-1 text-sm text-blue-50/75">Based on linear trend</p>
                                     </div>
-                                    <div class="rounded-2xl border border-white/15 bg-white/12 p-4 backdrop-blur">
+                                    <div class="rounded-xl border border-white/15 bg-surface-card/12 p-4 backdrop-blur">
                                         <p class="text-xs font-semibold uppercase tracking-wide text-blue-50/75">Confidence</p>
                                         <p class="mt-2 text-lg font-semibold text-white">{{ item.confidence }}</p>
                                         <p class="mt-1 text-sm text-blue-50/75">{{ item.confidence_reason }}</p>
@@ -153,55 +157,55 @@
                             </div>
                         </article>
                     {% else %}
-                        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
                             <div class="flex items-start justify-between gap-4">
                                 <div class="flex items-start gap-3">
-                                    <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-300">
+                                    <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
                                         <i data-lucide="{{ item.icon }}" class="h-5 w-5"></i>
                                     </div>
                                     <div>
                                         <div class="flex flex-wrap items-center gap-2">
-                                            <h3 class="text-base font-semibold text-slate-950 dark:text-white">{{ item.label }} Forecast</h3>
+                                            <h3 class="text-base font-semibold text-content-primary">{{ item.label }} Forecast</h3>
                                             {% if item.status == 'critical' %}
-                                                <span class="rounded-md bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 dark:bg-red-950/60 dark:text-red-300">
+                                                <span class="rounded-md bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
                                                     Critical
                                                 </span>
                                             {% elif item.status == 'warning' %}
-                                                <span class="rounded-md bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-950/60 dark:text-amber-300">
+                                                <span class="rounded-md bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
                                                     Warning
                                                 </span>
                                             {% else %}
-                                                <span class="rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                                                <span class="rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
                                                     Normal
                                                 </span>
                                             {% endif %}
                                         </div>
-                                        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ item.description }}</p>
+                                        <p class="mt-1 text-sm text-content-muted">{{ item.description }}</p>
                                     </div>
                                 </div>
                             </div>
                             <div class="mt-5 grid gap-3 sm:grid-cols-2">
-                                <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Current Usage</p>
-                                    <p class="mt-2 text-lg font-semibold text-slate-950 dark:text-white">{{ item.current_display }}</p>
-                                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                <div class="rounded-xl bg-surface-hover p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Current Usage</p>
+                                    <p class="mt-2 text-lg font-semibold text-content-primary">{{ item.current_display }}</p>
+                                    <p class="mt-1 text-sm text-content-muted">
                                         {{ item.current_percent }}% of {{ item.capacity_display }}
                                     </p>
                                 </div>
-                                <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Projected Usage</p>
-                                    <p class="mt-2 text-lg font-semibold text-slate-950 dark:text-white">{{ item.projected_display }}</p>
-                                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ item.projected_percent }}% projected</p>
+                                <div class="rounded-xl bg-surface-hover p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Projected Usage</p>
+                                    <p class="mt-2 text-lg font-semibold text-content-primary">{{ item.projected_display }}</p>
+                                    <p class="mt-1 text-sm text-content-muted">{{ item.projected_percent }}% projected</p>
                                 </div>
-                                <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Growth Rate</p>
-                                    <p class="mt-2 text-lg font-semibold text-slate-950 dark:text-white">{{ item.growth_display }}</p>
-                                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Based on linear trend</p>
+                                <div class="rounded-xl bg-surface-hover p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Growth Rate</p>
+                                    <p class="mt-2 text-lg font-semibold text-content-primary">{{ item.growth_display }}</p>
+                                    <p class="mt-1 text-sm text-content-muted">Based on linear trend</p>
                                 </div>
-                                <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Confidence</p>
-                                    <p class="mt-2 text-lg font-semibold text-slate-950 dark:text-white">{{ item.confidence }}</p>
-                                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ item.confidence_reason }}</p>
+                                <div class="rounded-xl bg-surface-hover p-4">
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Confidence</p>
+                                    <p class="mt-2 text-lg font-semibold text-content-primary">{{ item.confidence }}</p>
+                                    <p class="mt-1 text-sm text-content-muted">{{ item.confidence_reason }}</p>
                                 </div>
                             </div>
                         </article>
@@ -209,41 +213,41 @@
                 {% endfor %}
             {% else %}
                 {% for item in fallback_items %}
-                    <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                    <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
                         <div class="flex items-start gap-3">
-                            <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-hover text-content-muted">
                                 <i data-lucide="{{ item.icon }}" class="h-5 w-5"></i>
                             </div>
                             <div>
                                 <div class="flex flex-wrap items-center gap-2">
-                                    <h3 class="text-base font-semibold text-slate-950 dark:text-white">{{ item.label }} Forecast</h3>
-                                    <span class="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                    <h3 class="text-base font-semibold text-content-primary">{{ item.label }} Forecast</h3>
+                                    <span class="rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary">
                                         No Data
                                     </span>
                                 </div>
-                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">{{ item.description }}</p>
+                                <p class="mt-1 text-sm text-content-muted">{{ item.description }}</p>
                             </div>
                         </div>
                         <div class="mt-5 grid gap-3 sm:grid-cols-2">
-                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Current Usage</p>
-                                <p class="mt-2 text-lg font-semibold text-slate-950 dark:text-white">N/A</p>
-                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Waiting for Prometheus metrics</p>
+                            <div class="rounded-xl bg-surface-hover p-4">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Current Usage</p>
+                                <p class="mt-2 text-lg font-semibold text-content-primary">N/A</p>
+                                <p class="mt-1 text-sm text-content-muted">Waiting for Prometheus metrics</p>
                             </div>
-                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Projected Usage</p>
-                                <p class="mt-2 text-lg font-semibold text-slate-950 dark:text-white">N/A</p>
-                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Forecast unavailable</p>
+                            <div class="rounded-xl bg-surface-hover p-4">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Projected Usage</p>
+                                <p class="mt-2 text-lg font-semibold text-content-primary">N/A</p>
+                                <p class="mt-1 text-sm text-content-muted">Forecast unavailable</p>
                             </div>
-                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Growth Rate</p>
-                                <p class="mt-2 text-lg font-semibold text-slate-950 dark:text-white">N/A</p>
-                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Not enough data</p>
+                            <div class="rounded-xl bg-surface-hover p-4">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Growth Rate</p>
+                                <p class="mt-2 text-lg font-semibold text-content-primary">N/A</p>
+                                <p class="mt-1 text-sm text-content-muted">Not enough data</p>
                             </div>
-                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Confidence</p>
-                                <p class="mt-2 text-lg font-semibold text-slate-950 dark:text-white">Low</p>
-                                <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Prometheus data unavailable</p>
+                            <div class="rounded-xl bg-surface-hover p-4">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Confidence</p>
+                                <p class="mt-2 text-lg font-semibold text-content-primary">Low</p>
+                                <p class="mt-1 text-sm text-content-muted">Prometheus data unavailable</p>
                             </div>
                         </div>
                     </article>
@@ -257,16 +261,16 @@
              x-show="activeTab === 'trend'"
              x-cloak
              class="space-y-6">
-        <section class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div class="flex flex-col gap-3 border-b border-slate-200 px-6 py-4 dark:border-slate-800 lg:flex-row lg:items-center lg:justify-between">
+        <section class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
+            <div class="flex flex-col gap-3 border-b border-outline-default px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                    <h2 class="text-base font-semibold text-slate-950 dark:text-white">Forecast Trend</h2>
-                    <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                    <h2 class="text-base font-semibold text-content-primary">Trend Analysis</h2>
+                    <p class="mt-1 text-sm text-content-muted">
                         Historical usage and projected utilization based on {{ forecast_payload.history_days }} days of data.
                     </p>
                 </div>
                 {% if forecast_payload.generated_at %}
-                    <div class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
+                    <div class="inline-flex items-center gap-2 rounded-full border border-outline-default bg-surface-hover px-3 py-1.5 text-xs font-medium text-content-secondary">
                         <i data-lucide="clock" class="h-3.5 w-3.5"></i>
                         Generated {{ forecast_payload.generated_at|user_datetime(include_seconds=true) }}
                     </div>
@@ -288,143 +292,40 @@
             </div>
         </section>
         </div>
-        <div id="forecast-content-panel-methodology"
-             role="tabpanel"
-             aria-labelledby="forecast-content-tab-methodology"
-             x-show="activeTab === 'methodology'"
-             x-cloak
-             class="space-y-6">
-        <section class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <details class="group">
-                <summary class="flex cursor-pointer list-none flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-                    <div class="flex min-w-0 items-start gap-3">
-                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900">
-                            <i data-lucide="sigma" class="h-5 w-5"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Forecast Methodology</h2>
-                                <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
-                                    Linear Regression
-                                </span>
-                            </div>
-                            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                                Daily averages are projected against capacity thresholds.
-                            </p>
-                        </div>
-                    </div>
-                    <span class="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition group-open:bg-blue-50 group-open:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:group-open:bg-blue-950/50 dark:group-open:text-blue-300">
-                        <i data-lucide="chevron-down"
-                           class="h-4 w-4 transition group-open:rotate-180"></i>
-                        Details
-                    </span>
-                </summary>
-                <div class="border-t border-slate-200 p-6 dark:border-slate-800">
-                    <div class="grid gap-5 xl:grid-cols-[minmax(320px,0.9fr)_minmax(640px,1.6fr)] xl:items-stretch">
-                        <div class="flex h-full items-start gap-3 rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-                            <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-300">
-                                <i data-lucide="sigma" class="h-5 w-5"></i>
-                            </div>
-                            <div>
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <h3 class="text-sm font-semibold text-slate-950 dark:text-white">Forecast Calculation</h3>
-                                    <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
-                                        y = slope × day + intercept
-                                    </span>
-                                </div>
-                                <p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                                    Forecast is calculated from Prometheus historical metrics using daily average aggregation,
-                                    then projected forward with a linear regression trend line. Projected utilization is compared
-                                    against resource capacity to estimate warning and critical risk windows.
-                                </p>
-                            </div>
-                        </div>
-                        <div class="grid gap-3 md:grid-cols-2 2xl:grid-cols-4">
-                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-                                <div class="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                                    <i data-lucide="database" class="h-4 w-4"></i>
-                                    <p class="text-xs font-semibold uppercase tracking-wide">Data Source</p>
-                                </div>
-                                <p class="mt-2 text-sm font-semibold text-slate-950 dark:text-white">Prometheus Range Query</p>
-                                <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                                    CPU, memory, storage, and pod metrics are sampled from Prometheus history.
-                                </p>
-                            </div>
-                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-                                <div class="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                                    <i data-lucide="calendar-days" class="h-4 w-4"></i>
-                                    <p class="text-xs font-semibold uppercase tracking-wide">Aggregation</p>
-                                </div>
-                                <p class="mt-2 text-sm font-semibold text-slate-950 dark:text-white">Daily Average</p>
-                                <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                                    Raw range data is grouped into daily average points before trend calculation.
-                                </p>
-                            </div>
-                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-                                <div class="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                                    <i data-lucide="trending-up" class="h-4 w-4"></i>
-                                    <p class="text-xs font-semibold uppercase tracking-wide">Projection</p>
-                                </div>
-                                <p class="mt-2 text-sm font-semibold text-slate-950 dark:text-white">{{ forecast_payload.method_label|default("Linear Trend") }}</p>
-                                <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                                    {{ forecast_payload.method_description|default("The trend slope is extended based on the selected forecast horizon.") }}
-                                </p>
-                            </div>
-                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-950">
-                                <div class="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                                    <i data-lucide="shield-alert" class="h-4 w-4"></i>
-                                    <p class="text-xs font-semibold uppercase tracking-wide">Risk Threshold</p>
-                                </div>
-                                <p class="mt-2 text-sm font-semibold text-slate-950 dark:text-white">75% warning · 90% critical</p>
-                                <p class="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                                    ETA is calculated from current usage, growth slope, and capacity threshold.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </details>
-        </section>
-        </div>
         <div id="forecast-content-panel-recommendations"
              role="tabpanel"
              aria-labelledby="forecast-content-tab-recommendations"
              x-show="activeTab === 'recommendations'"
              x-cloak
              class="space-y-6">
-        <section class="rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <details class="group">
-                <summary class="flex cursor-pointer list-none flex-col gap-4 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+        <section class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
+            <div>
+                <div class="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
                     <div class="flex min-w-0 items-start gap-3">
-                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 ring-1 ring-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-900">
+                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary ring-1 ring-brand-outline">
                             <i data-lucide="list-checks" class="h-5 w-5"></i>
                         </div>
                         <div class="min-w-0">
                             <div class="flex flex-wrap items-center gap-2">
-                                <h2 class="text-base font-semibold text-slate-950 dark:text-white">Forecast Recommendations</h2>
-                                <span class="inline-flex w-fit items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-950/60 dark:text-blue-300 dark:ring-blue-900">
-                                    {{ forecast_payload.recommendation_count|default(0) }} actionable
+                                <h2 class="text-base font-semibold text-content-primary">Forecast Recommendations</h2>
+                                <span class="inline-flex w-fit items-center gap-2 rounded-full bg-kaori-soft px-3 py-1 text-xs font-semibold text-kaori-primary ring-1 ring-brand-outline">
+                                    {{ forecast_payload.recommendation_count|default(0) }} Actionable
                                 </span>
                             </div>
-                            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                            <p class="mt-1 text-sm text-content-muted">
                                 Actionable guidance from projected utilization, threshold ETA, growth trend, and confidence.
                             </p>
                         </div>
                     </div>
-                    <span class="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-semibold text-slate-700 transition group-open:bg-blue-50 group-open:text-blue-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:group-open:bg-blue-950/50 dark:group-open:text-blue-300">
-                        <i data-lucide="chevron-down"
-                           class="h-4 w-4 transition group-open:rotate-180"></i>
-                        Details
-                    </span>
-                </summary>
-                <div class="border-t border-slate-200 p-6 dark:border-slate-800">
+                </div>
+                <div class="border-t border-outline-default p-6">
                     {% if forecast_payload.recommendation_cards %}
                         <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                             {% for recommendation in forecast_payload.recommendation_cards %}
                                 <a href="{{ recommendation.href|default(url_for('analytics.forecast') ) }}"
-                                   class="group rounded-2xl border border-slate-200 p-4 transition hover:border-blue-200 hover:bg-blue-50/40 dark:border-slate-800 dark:hover:border-blue-800 dark:hover:bg-blue-950/20">
+                                   class="group rounded-xl border border-outline-default p-4 transition hover:border-brand-outline hover:bg-kaori-soft/40">
                                     <div class="flex items-start gap-3">
-                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl {{ recommendation.icon_class }}">
+                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ recommendation.icon_class }}">
                                             <i data-lucide="{{ recommendation.icon }}" class="h-5 w-5"></i>
                                         </div>
                                         <div class="min-w-0 flex-1">
@@ -432,14 +333,14 @@
                                                 <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ recommendation.priority_class }}">
                                                     {{ recommendation.priority }}
                                                 </span>
-                                                <span class="rounded-md bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                                <span class="rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary">
                                                     {{ recommendation.source_label|default("Forecast") }}
                                                 </span>
                                             </div>
-                                            <h3 class="mt-3 font-semibold text-slate-950 dark:text-white">{{ recommendation.title }}</h3>
-                                            <p class="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">{{ recommendation.description }}</p>
-                                            <p class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-blue-600 group-hover:text-blue-700 dark:text-blue-400 dark:group-hover:text-blue-300">
-                                                Review forecast
+                                            <h3 class="mt-3 font-semibold text-content-primary">{{ recommendation.title }}</h3>
+                                            <p class="mt-1 text-sm leading-6 text-content-muted">{{ recommendation.description }}</p>
+                                            <p class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary group-hover:text-kaori-primary">
+                                                Review Forecast
                                                 <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
                                             </p>
                                         </div>
@@ -448,14 +349,14 @@
                             {% endfor %}
                         </div>
                     {% else %}
-                        <div class="max-w-xl rounded-2xl border border-slate-200 p-5 dark:border-slate-800">
+                        <div class="max-w-xl rounded-xl border border-outline-default p-5">
                             <div class="flex items-start gap-3">
-                                <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 dark:bg-amber-950/60 dark:text-amber-300">
+                                <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
                                     <i data-lucide="plug-zap" class="h-5 w-5"></i>
                                 </div>
                                 <div>
-                                    <h3 class="font-semibold text-slate-950 dark:text-white">Connect Prometheus Metrics</h3>
-                                    <p class="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                                    <h3 class="font-semibold text-content-primary">Connect Prometheus Metrics</h3>
+                                    <p class="mt-1 text-sm leading-6 text-content-muted">
                                         Forecast recommendations require Prometheus metrics to calculate trend, growth rate,
                                         projected utilization, capacity risk, and threshold ETA.
                                     </p>
@@ -464,7 +365,7 @@
                         </div>
                     {% endif %}
                 </div>
-            </details>
+            </div>
         </section>
         </div>
     </div>

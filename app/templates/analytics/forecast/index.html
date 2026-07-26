@@ -1,52 +1,49 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "analytics/components/_controls.html" as analytics_controls %}
 {% block title %}Resource Forecast{% endblock title %}
 {% block dashboard_content %}
-    <div id="forecast-page"
-         class="space-y-6"
-         data-analytics-page-request-tracking="false">
-        {% set selected_cluster_name = cluster.name if cluster else 'No cluster selected' %}
-        {% set response_time = prometheus_status.response_time_ms %}
+    <div id="forecast-page" class="space-y-6" data-analytics-page-request-tracking="false">
+        {% set selected_cluster_name = cluster.name if cluster else 'No Cluster Selected' %}
         {% set summary = forecast_payload.summary %}
         {% set recommendation_count = forecast_payload.recommendation_count|default(0) %}
         {% if dependency_blocker %}
             {% set posture_value = "Blocked" %}
             {% set posture_desc = dependency_blocker.title %}
-            {% set posture_badge = "bg-slate-500 text-white ring-slate-200/40" %}
         {% elif summary.critical_count|default(0) > 0 %}
             {% set posture_value = "Critical" %}
             {% set posture_desc = "Critical forecast risk." %}
-            {% set posture_badge = "bg-red-500 text-white ring-red-200/50" %}
         {% elif summary.warning_count|default(0) > 0 %}
             {% set posture_value = "Watch" %}
             {% set posture_desc = "Forecast risk needs review." %}
-            {% set posture_badge = "bg-amber-500 text-white ring-amber-200/50" %}
         {% elif forecast_payload.has_data %}
             {% set posture_value = "Healthy" %}
             {% set posture_desc = "Forecast signals are normal." %}
-            {% set posture_badge = "bg-emerald-500 text-white ring-emerald-200/40" %}
         {% else %}
             {% set posture_value = "No Data" %}
             {% set posture_desc = "Waiting for metrics." %}
-            {% set posture_badge = "bg-slate-500 text-white ring-slate-200/40" %}
         {% endif %}
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro('sparkles', 'Kubernetes capacity forecast', 'line-chart') %}
+                    {% call page_hero.intro('sparkles', 'Kubernetes Capacity Forecast', 'line-chart') %}
                         <h1 class="{{ page_hero.title_classes() }}">Resource Forecast</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">Forecast CPU, memory, storage, and pod growth to anticipate capacity pressure and future operational risk.</p>
-                        <div class="{{ page_hero.metadata_row_classes() }}">{{ page_hero.meta_label('server', selected_cluster_name) }}{{ page_hero.meta_label('lock-keyhole' if dependency_blocker else 'calendar-range', ('Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) if dependency_blocker else (selected_history_window ~ ' history')) }}{{ page_hero.meta_label('list-checks', recommendation_count ~ ' Actionable') }}</div>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('server', selected_cluster_name) }}
+                            {{ page_hero.meta_label('lock-keyhole' if dependency_blocker else 'calendar-range', ('Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) if dependency_blocker else (selected_history_window ~ ' History')) }}
+                            {{ page_hero.meta_label('list-checks', recommendation_count ~ ' Actionable') }}
+                        </div>
                     {% endcall %}
                 </div>
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="Forecast posture">
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="Forecast Posture">
                     {% if dependency_blocker %}
-                        {% set analytics_posture_label = "Forecast posture" %}
+                        {% set analytics_posture_label = "Forecast Posture" %}
                         {% include 'analytics/components/_blocked_posture.html' %}
                     {% else %}
                         <div class="{{ page_hero.context_panel_classes() }}">
                             <div>
-                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Forecast posture</p>
+                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Forecast Posture</p>
                                 <h2 class="mt-1 text-2xl font-bold text-brand-foreground">{{ posture_value }}</h2>
                                 <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">{{ posture_desc }}</p>
                             </div>
@@ -69,300 +66,32 @@
                   hx-select="#forecast-page"
                   hx-swap="outerHTML"
                   hx-push-url="true"
-                  hx-indicator="#forecast-refresh-indicator"
-                  class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-900">
-                <div class="px-6 py-4">
-                    <div class="mb-4 flex flex-col gap-3 border-b border-slate-100 pb-4 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Forecast Controls</p>
-                            <h2 class="mt-1 text-sm font-bold text-slate-900 dark:text-white">Resource forecast scope</h2>
-                        </div>
-                        <div class="inline-flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300">
-                            {% if prometheus_status.connected %}
-                                <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
-                            {% else %}
-                                <span class="h-2 w-2 rounded-full bg-rose-500"></span>
-                            {% endif %}
-                            <span class="text-slate-400 dark:text-slate-500">Prometheus</span>
-                            <span class="rounded-md px-2 py-0.5 ring-1 ring-inset {% if prometheus_status.connected %}bg-emerald-50 text-emerald-700 ring-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:ring-emerald-900{% else %}bg-rose-50 text-rose-700 ring-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:ring-rose-900{% endif %}">
-                                {{ prometheus_status.label }}
-                            </span>
-                            <span class="text-slate-400 dark:text-slate-500">·</span>
-                            <span>
-                                {% if response_time is not none %}
-                                    {{ response_time }} ms
-                                {% else %}
-                                    No response
-                                {% endif %}
-                            </span>
-                        </div>
-                    </div>
+                  hx-indicator="#forecast-refresh-indicator">
+                {% call analytics_controls.panel(
+                    'Forecast Controls',
+                    'Set the cluster, namespace, resource, model, history window, and forecast horizon.',
+                    'sliders-horizontal',
+                    'forecast-refresh-indicator',
+                    prometheus_status,
+                    eyebrow='Resource Forecast'
+                ) %}
+                    {% set input_classes = 'mt-1 w-full rounded-xl border border-outline-strong bg-surface-card px-3 py-2 pr-9 text-sm font-semibold text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10' %}
                     <div class="grid gap-3 lg:grid-cols-2 xl:grid-cols-[minmax(170px,1fr)_minmax(150px,.9fr)_minmax(130px,.75fr)_minmax(150px,.85fr)_minmax(120px,.7fr)_minmax(120px,.7fr)] xl:items-end">
-                        <label class="block min-w-0">
-                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Cluster</span>
-                            <select name="cluster_id"
-                                    data-kaori-reset-fields="namespace="
-                                    class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 pr-9 py-2 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
-                                {% for item in clusters %}
-                                    <option value="{{ item.id }}"
-                                            {% if cluster and cluster.id == item.id %}selected{% endif %}>
-                                        {{ item.name }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                        <label class="block min-w-0">
-                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Namespace</span>
-                            <select name="namespace"
-                                    class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 pr-9 py-2 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
-                                <option value="">All Namespaces</option>
-                                {% for namespace in namespace_options %}
-                                    <option value="{{ namespace }}"
-                                            {% if selected_namespace == namespace %}selected{% endif %}>
-                                        {{ namespace }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                        <label class="block min-w-0">
-                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Resource</span>
-                            <select name="resource"
-                                    class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 pr-9 py-2 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
-                                {% for item in resource_options %}
-                                    <option value="{{ item.value }}"
-                                            {% if item.value == selected_resource %}selected{% endif %}>
-                                        {{ item.label }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                        <label class="block min-w-0">
-                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Method</span>
-                            <select name="method"
-                                    class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 pr-9 py-2 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
-                                {% for item in forecast_method_options %}
-                                    <option value="{{ item.value }}"
-                                            {% if item.value == selected_method %}selected{% endif %}>
-                                        {{ item.label }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                        <label class="block min-w-0">
-                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">History</span>
-                            <select name="history_window"
-                                    class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 pr-9 py-2 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
-                                {% for item in history_window_options %}
-                                    <option value="{{ item.value }}"
-                                            {% if item.value == selected_history_window %}selected{% endif %}>
-                                        {{ item.label }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                        <label class="block min-w-0">
-                            <span class="text-xs font-medium text-slate-500 dark:text-slate-400">Forecast</span>
-                            <select name="forecast_horizon"
-                                    class="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 pr-9 py-2 text-sm font-semibold text-slate-800 shadow-sm outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-blue-400 dark:focus:ring-blue-400/10">
-                                {% for item in forecast_horizon_options %}
-                                    <option value="{{ item.value }}"
-                                            {% if item.value == selected_forecast_horizon %}selected{% endif %}>
-                                        {{ item.label }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </label>
+                        <label class="block min-w-0"><span class="text-xs font-medium text-content-muted">Cluster</span><select name="cluster_id" data-kaori-reset-fields="namespace=" class="{{ input_classes }}">{% for item in clusters %}<option value="{{ item.id }}" {% if cluster and cluster.id == item.id %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></label>
+                        <label class="block min-w-0"><span class="text-xs font-medium text-content-muted">Namespace</span><select name="namespace" class="{{ input_classes }}"><option value="">All Namespaces</option>{% for namespace in namespace_options %}<option value="{{ namespace }}" {% if selected_namespace == namespace %}selected{% endif %}>{{ namespace }}</option>{% endfor %}</select></label>
+                        <label class="block min-w-0"><span class="text-xs font-medium text-content-muted">Resource</span><select name="resource" class="{{ input_classes }}">{% for item in resource_options %}<option value="{{ item.value }}" {% if item.value == selected_resource %}selected{% endif %}>{{ item.label }}</option>{% endfor %}</select></label>
+                        <label class="block min-w-0"><span class="text-xs font-medium text-content-muted">Method</span><select name="method" class="{{ input_classes }}">{% for item in forecast_method_options %}<option value="{{ item.value }}" {% if item.value == selected_method %}selected{% endif %}>{{ item.label }}</option>{% endfor %}</select></label>
+                        <label class="block min-w-0"><span class="text-xs font-medium text-content-muted">History</span><select name="history_window" class="{{ input_classes }}">{% for item in history_window_options %}<option value="{{ item.value }}" {% if item.value == selected_history_window %}selected{% endif %}>{{ item.label }}</option>{% endfor %}</select></label>
+                        <label class="block min-w-0"><span class="text-xs font-medium text-content-muted">Forecast Horizon</span><select name="forecast_horizon" class="{{ input_classes }}">{% for item in forecast_horizon_options %}<option value="{{ item.value }}" {% if item.value == selected_forecast_horizon %}selected{% endif %}>{{ item.label }}</option>{% endfor %}</select></label>
                     </div>
-                    <div class="mt-4 rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-100">
-                        <div class="flex items-start gap-3">
-                            <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0"></i>
-                            <p class="leading-6">
-                                <span class="font-semibold">{{ forecast_payload.method_label|default("Linear Trend") }}</span> —
-                                {{ forecast_payload.method_description|default("Projects future usage from the historical growth rate.") }}
-                            </p>
-                        </div>
-                    </div>
-                    <div id="forecast-refresh-indicator"
-                         class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-blue-100 dark:bg-blue-950/60">
-                        <div class="h-full w-1/3 animate-pulse rounded-full bg-blue-600 dark:bg-blue-400"></div>
-                    </div>
-                </div>
+                {% endcall %}
             </form>
+            {% include "analytics/forecast/partials/_methodology.html" %}
             <div id="forecast-section">{% include "analytics/forecast/partials/_forecast_section.html" %}</div>
         {% endif %}
     </div>
 {% endblock dashboard_content %}
 {% block scripts %}
     <script src="{{ url_for('static', filename='vendor/chartjs/chart.umd.min.js') }}"></script>
-    <script>
-        let forecastChart = null;
-
-        function getForecastChartData() {
-            const element = document.getElementById('forecast-chart-data');
-
-            if (!element) {
-                return null;
-            }
-
-            try {
-                return JSON.parse(element.textContent);
-            } catch {
-                return null;
-            }
-        }
-
-        function buildForecastDatasets(payload) {
-            const datasets = [];
-
-            payload.datasets.forEach((item) => {
-                datasets.push({
-                    label: `${item.label} Historical`,
-                    data: item.historical,
-                    borderWidth: 2,
-                    tension: 0.35,
-                    pointRadius: 0
-                });
-
-                datasets.push({
-                    label: `${item.label} Forecast`,
-                    data: item.forecast,
-                    borderWidth: 2,
-                    borderDash: [6, 6],
-                    tension: 0.35,
-                    pointRadius: 0
-                });
-            });
-
-            if (payload.datasets.length > 0) {
-                const labelsLength = payload.datasets[0].labels.length;
-
-                datasets.push({
-                    label: 'Warning 75%',
-                    data: Array(labelsLength).fill(payload.warning_threshold),
-                    borderWidth: 1,
-                    borderDash: [4, 4],
-                    pointRadius: 0
-                });
-
-                datasets.push({
-                    label: 'Critical 90%',
-                    data: Array(labelsLength).fill(payload.critical_threshold),
-                    borderWidth: 1,
-                    borderDash: [2, 4],
-                    pointRadius: 0
-                });
-            }
-
-            return datasets;
-        }
-
-        function renderForecastChart() {
-            const canvas = document.getElementById('forecast-chart');
-
-            if (!canvas || typeof Chart === 'undefined') {
-                return;
-            }
-
-            const payload = getForecastChartData();
-
-            if (!payload || !payload.datasets || payload.datasets.length === 0) {
-                return;
-            }
-
-            const labels = payload.datasets[0].labels;
-
-            if (forecastChart !== null) {
-                forecastChart.destroy();
-            }
-
-            forecastChart = new Chart(canvas, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: buildForecastDatasets(payload)
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: {
-                        intersect: false,
-                        mode: 'index'
-                    },
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                usePointStyle: true,
-                                boxWidth: 8
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    const value = context.parsed.y;
-
-                                    if (value === null || value === undefined) {
-                                        return null;
-                                    }
-
-                                    return `${context.dataset.label}: ${value.toFixed(2)}%`;
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            suggestedMax: 100,
-                            ticks: {
-                                callback: function(value) {
-                                    return `${value}%`;
-                                }
-                            }
-                        },
-                        x: {
-                            ticks: {
-                                maxRotation: 0,
-                                autoSkip: true,
-                                maxTicksLimit: 8
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        function hydrateForecastUi() {
-            renderForecastChart();
-
-            if (window.lucide) {
-                window.lucide.createIcons();
-            }
-        }
-
-        document.addEventListener(
-            'DOMContentLoaded',
-            hydrateForecastUi
-        );
-
-        document.body.addEventListener(
-            'htmx:afterSwap',
-            function(event) {
-                if (
-                    event.detail.target &&
-                    (
-                        event.detail.target.id === 'forecast-section' ||
-                        event.detail.target.id === 'forecast-page'
-                    )
-                ) {
-                    hydrateForecastUi();
-                }
-            }
-        );
-
-        document.body.addEventListener(
-            'htmx:afterSettle',
-            hydrateForecastUi
-        );
-    </script>
+    <script src="{{ url_for('static', filename='js/analytics_forecast.js') }}"></script>
 {% endblock scripts %}
