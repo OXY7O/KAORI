@@ -14,7 +14,11 @@ from sqlalchemy import or_
 from app.common.integration_errors import describe_integration_failure
 from app.extensions.db import db
 from app.governance.tls_certificates.certificate import find_uncovered_hosts, validate_certificate_pair
-from app.governance.tls_certificates.collector import build_kubernetes_client, collect_tls_certificates
+from app.governance.tls_certificates.collector import (
+    TLSProgressCallback,
+    build_kubernetes_client,
+    collect_tls_certificates,
+)
 from app.governance.tls_certificates.constants import (
     TLS_CRT_KEY,
     TLS_DEFAULT_PER_PAGE,
@@ -217,9 +221,16 @@ def get_tls_certificate_detail(certificate_id: int) -> TLSCertificateInventory |
     return TLSCertificateInventory.query.get(certificate_id)
 
 
-def sync_tls_certificates_for_cluster(cluster: Cluster) -> tuple[int, str | None]:
+def sync_tls_certificates_for_cluster(
+    cluster: Cluster,
+    *,
+    progress_callback: TLSProgressCallback | None = None,
+) -> tuple[int, str | None]:
     try:
-        records = collect_tls_certificates(cluster)
+        records = collect_tls_certificates(
+            cluster,
+            progress_callback=progress_callback,
+        )
     except Exception as exc:
         current_app.logger.exception('TLS certificate sync failed for cluster %s', cluster.name)
         failure = describe_integration_failure(
@@ -232,18 +243,23 @@ def sync_tls_certificates_for_cluster(cluster: Cluster) -> tuple[int, str | None
             failure['code'] = 'legacy_tls_key_rejected'
             failure['reason'] = 'Legacy TLS key was rejected'
             failure['detail'] = (
-                'The Kubernetes API client certificate uses a legacy key that is rejected by the current OpenSSL security policy. '
+                'The Kubernetes API client certificate uses a legacy key that is rejected '
+                'by the current OpenSSL security policy. '
                 'Enable Allow legacy TLS certificate for this trusted cluster, then retry the TLS Secret sync.'
             )
         return 0, failure['detail']
+
+    if progress_callback is not None:
+        progress_callback(76, f'Reconciling TLS inventory records for {cluster.name}.')
 
     existing = {
         (record.namespace, record.secret_name): record
         for record in TLSCertificateInventory.query.filter(TLSCertificateInventory.cluster_id == cluster.id).all()
     }
     seen: set[tuple[str, str]] = set()
+    total_records = len(records)
 
-    for payload in records:
+    for index, payload in enumerate(records, start=1):
         key = (payload['namespace'], payload['secret_name'])
         seen.add(key)
         record = existing.get(key)
@@ -258,11 +274,24 @@ def sync_tls_certificates_for_cluster(cluster: Cluster) -> tuple[int, str | None
         for field, value in payload.items():
             setattr(record, field, value)
 
+        if progress_callback is not None and total_records:
+            reconcile_percent = 76 + int((index / total_records) * 14)
+            progress_callback(
+                reconcile_percent,
+                f'Reconciled {index} of {total_records} TLS inventory records for {cluster.name}.',
+            )
+
     stale_records = [record for key, record in existing.items() if key not in seen]
+    if progress_callback is not None:
+        progress_callback(93, f'Removing stale TLS inventory records for {cluster.name}.')
     for record in stale_records:
         db.session.delete(record)
 
+    if progress_callback is not None:
+        progress_callback(97, f'Committing TLS inventory snapshot for {cluster.name}.')
     db.session.commit()
+    if progress_callback is not None:
+        progress_callback(100, f'TLS inventory snapshot committed for {cluster.name}.')
     return len(records), None
 
 

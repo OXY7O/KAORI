@@ -162,10 +162,13 @@ def sync_tls_certificates_task(
     task_id = str(self.request.id)
     context = JobExecutionContext(task_id=task_id, job_execution_id=job_execution_id)
     total_targets = len(targets)
-    # Track preparation/collection and completion as separate worker phases so a
-    # single-cluster sync does not remain at 0% for the whole collection request.
-    total_steps = max((total_targets * 2) + 1, 1)
-    context.start(message='Preparing TLS certificate inventory synchronization.', total=total_steps)
+    progress_total = 100
+    context.start(message='Preparing TLS certificate inventory synchronization.', total=progress_total)
+    context.checkpoint(
+        current=3,
+        total=progress_total,
+        message='Preparing TLS certificate inventory synchronization.',
+    )
 
     collected_count = 0
     successful_clusters = 0
@@ -176,11 +179,32 @@ def sync_tls_certificates_task(
         for index, target in enumerate(targets, start=1):
             cluster_id = str(target['cluster_id'])
             cluster_name = str(target.get('cluster_name') or cluster_id)
-            context.checkpoint(
-                current=((index - 1) * 2) + 1,
-                total=total_steps,
-                message=f'Collecting TLS Secrets from {cluster_name}.',
-            )
+            last_reported_percent = -1
+
+            def report_cluster_progress(local_percent: int, message: str) -> None:
+                nonlocal last_reported_percent
+                # Reserve 3% for preparation and 4% for finalization. The
+                # remaining 93% is distributed evenly across target clusters.
+                normalized_local = max(0, min(int(local_percent), 100))
+                completed_fraction = (index - 1) + (normalized_local / 100)
+                overall_percent = min(
+                    3 + int((completed_fraction / max(total_targets, 1)) * 93),
+                    96,
+                )
+                # Collector callbacks can run once per Secret. Persist only
+                # meaningful percentage changes to avoid a database commit for
+                # every individual record while retaining responsive progress.
+                is_boundary = normalized_local in {0, 100}
+                if not is_boundary and overall_percent < last_reported_percent + 2:
+                    return
+                last_reported_percent = max(last_reported_percent, overall_percent)
+                context.checkpoint(
+                    current=overall_percent,
+                    total=progress_total,
+                    message=message,
+                )
+
+            report_cluster_progress(0, f'Preparing TLS collection for {cluster_name}.')
             cluster = db.session.get(Cluster, cluster_id)
             if cluster is None:
                 failures.append(
@@ -190,14 +214,13 @@ def sync_tls_certificates_task(
                         'error': 'The cluster record no longer exists.',
                     }
                 )
-                context.checkpoint(
-                    current=index * 2,
-                    total=total_steps,
-                    message=f'Processed {index} of {total_targets} clusters.',
-                )
+                report_cluster_progress(100, f'Skipped unavailable cluster {cluster_name}.')
                 continue
 
-            count, error = sync_tls_certificates_for_cluster(cluster)
+            count, error = sync_tls_certificates_for_cluster(
+                cluster,
+                progress_callback=report_cluster_progress,
+            )
             if error:
                 failures.append(
                     {
@@ -210,15 +233,11 @@ def sync_tls_certificates_task(
                 successful_clusters += 1
                 collected_count += count
 
-            context.checkpoint(
-                current=index * 2,
-                total=total_steps,
-                message=f'Processed {index} of {total_targets} clusters.',
-            )
+            report_cluster_progress(100, f'Processed {index} of {total_targets} clusters.')
 
         context.checkpoint(
-            current=min(total_targets * 2, total_steps - 1),
-            total=total_steps,
+            current=98,
+            total=progress_total,
             message='Finalizing TLS Secret inventory synchronization.',
         )
 

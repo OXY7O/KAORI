@@ -15,6 +15,7 @@ from app.governance.tls_certificates.service import (
     get_tls_certificate_detail,
     get_tls_certificate_page,
 )
+from app.governance.tls_certificates.sync_state import build_tls_sync_state
 from app.governance.tls_certificates.toast import (
     get_visible_tls_sync_job,
     present_tls_sync_toast,
@@ -133,7 +134,10 @@ def tls_certificates_sync_status(public_id: str):
         abort(404)
 
     filter_args = _sync_filter_args(request.args)
-    payload = get_tls_certificate_page(filter_args)
+    payload = {
+        'filters': filter_args,
+        'sync_state': build_tls_sync_state(cluster_id=filter_args['cluster_id'] or None),
+    }
     sync = present_tls_sync_toast(job)
 
     response = make_response(

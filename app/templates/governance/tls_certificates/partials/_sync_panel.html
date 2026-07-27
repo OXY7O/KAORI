@@ -1,50 +1,9 @@
-{% import "components/table_label.html" as table_label %}
 {% import "components/action_button.html" as action_button %}
-{% import "components/progress_bar.html" as progress_bar %}
 <div id="tls-registry-actions"
-     class="border-t border-outline-subtle bg-surface-hover"
-     {% if payload.sync_state.is_active and payload.sync_state.active_job_public_id %}
-     hx-get="{{ url_for('governance.tls_certificates_sync_status', public_id=payload.sync_state.active_job_public_id, cluster_id=payload.filters.cluster_id, namespace=payload.filters.namespace, status=payload.filters.status, search=payload.filters.search, page=payload.pagination.page, per_page=payload.pagination.per_page) }}"
-     hx-trigger="every 2s"
-     hx-target="this"
-     hx-swap="outerHTML"
-     hx-indicator="#tls-sync-panel-poll-indicator"
-     hx-sync="this:replace"
-     {% endif %}>
-    <span id="tls-sync-panel-poll-indicator" class="htmx-indicator hidden" aria-hidden="true"></span>
+     class="border-t border-outline-subtle bg-surface-hover">
     <div class="flex flex-col gap-4 px-5 py-4 sm:px-6 xl:flex-row xl:items-center xl:justify-between">
         <div class="min-w-0 flex-1">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true">
-                    <i data-lucide="{{ payload.sync_state.icon|default('refresh-cw') }}" class="h-4 w-4 {% if payload.sync_state.is_active %}animate-spin{% endif %}"></i>
-                </span>
-                <div class="min-w-0 flex-1">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <h3 class="text-sm font-semibold text-content-primary">TLS Inventory Operations</h3>
-                        {{ table_label.status_label(payload.sync_state.label, payload.sync_state.tone, none, 'detail') }}
-                    </div>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">
-                        {{ payload.sync_state.progress_message or payload.sync_state.helper }}
-                    </p>
-                    <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] leading-5 text-content-muted">
-                        <span><span class="font-semibold text-content-secondary">Automatic Sync:</span> {{ 'Enabled' if payload.sync_state.automatic_enabled else 'Manual Only' }}</span>
-                        <span><span class="font-semibold text-content-secondary">Last Successful:</span> {{ payload.sync_state.last_success_label }}</span>
-                        <span><span class="font-semibold text-content-secondary">Next Scheduled:</span> {{ payload.sync_state.next_run_label }}</span>
-                        {% if payload.sync_state.is_active %}
-                            <span><span class="font-semibold text-content-secondary">Progress:</span> {{ payload.sync_state.progress_percent }}%</span>
-                        {% endif %}
-                    </div>
-                    {% if payload.sync_state.is_active %}
-                        {{ progress_bar.bar(
-                            payload.sync_state.progress_percent,
-                            track_classes='mt-3 h-1.5 overflow-hidden rounded-full bg-kaori-soft',
-                            fill_classes='h-full rounded-full bg-kaori-primary transition-all duration-500',
-                            label='TLS Secret synchronization progress'
-                        ) }}
-                    {% endif %}
-                </div>
-            </div>
+            {% include "governance/tls_certificates/partials/_sync_live_state.html" %}
         </div>
         <div class="grid shrink-0 grid-cols-1 gap-2 sm:grid-cols-3">
             <form method="post"

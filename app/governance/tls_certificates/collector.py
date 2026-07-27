@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Callable
 
 from kubernetes.client import V1Ingress, V1Secret
 
@@ -12,6 +12,14 @@ from app.integrations.kubernetes.resolver import connection_for_cluster, tls_pol
 from app.integrations.kubernetes.tls import weak_tls_context
 from app.integrations.registry import get_integration
 from app.models import Cluster
+
+TLSProgressCallback = Callable[[int, str], None]
+
+
+def _report_progress(callback: TLSProgressCallback | None, percent: int, message: str) -> None:
+    if callback is None:
+        return
+    callback(max(0, min(int(percent), 100)), message)
 
 
 def _response_items(response: Any) -> list[Any]:
@@ -154,20 +162,48 @@ def parse_tls_secret(secret: V1Secret, usage_map: dict[tuple[str, str], dict[str
     return payload
 
 
-def collect_tls_certificates(cluster: Cluster) -> list[dict[str, Any]]:
+def collect_tls_certificates(
+    cluster: Cluster,
+    *,
+    progress_callback: TLSProgressCallback | None = None,
+) -> list[dict[str, Any]]:
+    _report_progress(progress_callback, 5, f'Connecting to Kubernetes API for {cluster.name}.')
+    _report_progress(progress_callback, 12, f'Collecting Ingress TLS references from {cluster.name}.')
     try:
         usage_map = collect_ingress_tls_usage(cluster)
     except Exception:
         usage_map = {}
 
+    _report_progress(progress_callback, 28, f'Reading Kubernetes Secrets from {cluster.name}.')
     with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
         client = build_kubernetes_client(cluster)
         core_api = client.core_api()
         response = core_api.list_secret_for_all_namespaces()
 
+    tls_secrets = [
+        secret
+        for secret in _response_items(response)
+        if secret.type == TLS_SECRET_TYPE
+    ]
+    _report_progress(
+        progress_callback,
+        42,
+        f'Found {len(tls_secrets)} TLS Secrets in {cluster.name}.',
+    )
+
     records: list[dict[str, Any]] = []
-    for secret in _response_items(response):
-        if secret.type == TLS_SECRET_TYPE:
-            records.append(parse_tls_secret(secret, usage_map))
+    total_secrets = len(tls_secrets)
+    if total_secrets == 0:
+        _report_progress(progress_callback, 72, f'No TLS Secrets require parsing in {cluster.name}.')
+        return records
+
+    for index, secret in enumerate(tls_secrets, start=1):
+        records.append(parse_tls_secret(secret, usage_map))
+        parse_percent = 42 + int((index / total_secrets) * 30)
+        _report_progress(
+            progress_callback,
+            parse_percent,
+            f'Parsed {index} of {total_secrets} TLS Secrets from {cluster.name}.',
+        )
 
     return records

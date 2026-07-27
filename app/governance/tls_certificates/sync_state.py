@@ -97,9 +97,14 @@ def build_tls_sync_state(*, cluster_id: str | None = None) -> dict[str, Any]:
         label, tone, icon = 'Current', 'normal', 'circle-check'
         helper = 'TLS certificate inventory is within the configured synchronization window.'
 
+    progress_current = max(int(active_job.progress_current or 0), 0) if active_job is not None else 0
+    progress_total = max(int(active_job.progress_total or 0), 0) if active_job is not None else 0
     progress_percent = 0
-    if active_job is not None and active_job.progress_total:
-        progress_percent = min(int((active_job.progress_current / active_job.progress_total) * 100), 100)
+    if progress_total:
+        progress_percent = max(
+            0,
+            min(round((progress_current / progress_total) * 100), 100),
+        )
 
     return {
         'label': label,
@@ -107,6 +112,8 @@ def build_tls_sync_state(*, cluster_id: str | None = None) -> dict[str, Any]:
         'icon': icon,
         'helper': helper,
         'is_active': active_job is not None,
+        'progress_current': progress_current,
+        'progress_total': progress_total,
         'progress_percent': progress_percent,
         'progress_message': active_job.progress_message if active_job is not None else None,
         'active_job_public_id': active_job.public_id if active_job is not None else None,
