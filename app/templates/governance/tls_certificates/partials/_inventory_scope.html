@@ -5,7 +5,11 @@
          hx-trigger="every 4s"
          hx-target="this"
          hx-swap="outerHTML"
+         hx-indicator="#tls-certificates-sync-poll-indicator"
      {% endif %}>
+    <span id="tls-certificates-sync-poll-indicator"
+          class="htmx-indicator hidden"
+          aria-hidden="true"></span>
     {% include "governance/tls_certificates/partials/_summary_cards.html" %}
     {% include "governance/tls_certificates/partials/_content.html" %}
 </div>

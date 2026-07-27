@@ -47,6 +47,10 @@ def test_tls_filter_state_owns_the_same_scope_as_active_sync_polling() -> None:
     assert 'hx-trigger="every 4s"' not in page
     assert 'id="tls-certificates-inventory-scope"' in scope
     assert "partial_mode='inventory_scope'" in scope
+    assert 'hx-indicator="#tls-certificates-sync-poll-indicator"' in scope
+    assert 'id="tls-certificates-sync-poll-indicator"' in scope
+    assert 'class="htmx-indicator hidden"' in scope
+    assert 'hx-indicator="#tls-certificates-table-loading"' not in scope
     assert 'hx-target="#tls-certificates-inventory-scope"' in filters
     assert 'name="partial_mode" value="inventory_scope"' in filters
     assert 'hx-target="#tls-certificates-inventory-scope"' in sync_panel
