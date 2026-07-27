@@ -143,10 +143,12 @@ def tls_certificates_sync_status(public_id: str):
             sync_result=None if sync['is_active'] else sync,
         )
     )
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
     if sync['is_active']:
         return response
 
-    response.headers['HX-Trigger'] = json.dumps(
+    response.headers['HX-Trigger-After-Swap'] = json.dumps(
         {
             'tlsInventorySyncFinished': True,
             'kaori:notifications-changed': True,

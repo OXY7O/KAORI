@@ -44,14 +44,19 @@ def test_tls_worker_progress_is_owned_by_inventory_operations_loading_bar() -> N
     assert 'hx-trigger="tlsInventorySyncFinished from:body"' in scope
     assert 'id="tls-certificates-background-refresh-trigger"' in scope
     assert 'class="htmx-indicator hidden"' in scope
-    assert 'loading_bar.render(' in sync_panel
+    assert '{% import "components/progress_bar.html" as progress_bar %}' in sync_panel
+    assert 'progress_bar.bar(' in sync_panel
     assert "url_for('governance.tls_certificates_sync_status'" in sync_panel
     assert 'payload.sync_state.progress_message' in sync_panel
-    assert 'hx-trigger="load delay:2s"' in sync_panel
+    assert 'hx-trigger="every 2s"' in sync_panel
+    assert 'hx-sync="this:replace"' in sync_panel
+    assert 'load delay:2s' not in sync_panel
     assert 'toast_oob=true' in sync_response
     assert 'tls-sync-feedback' not in layout
     assert "url_for('governance.tls_certificates_active_sync')" not in layout
     assert "'tlsInventorySyncFinished': True" in routes
+    assert "response.headers['HX-Trigger-After-Swap']" in routes
+    assert "response.headers['Cache-Control'] = 'no-store, max-age=0'" in routes
     assert 'feedback=feedback' in routes
 
 def test_tls_filter_state_keeps_one_inventory_scope_boundary() -> None:
@@ -129,5 +134,14 @@ def test_tls_page_exposes_automatic_freshness_with_scoped_worker_progress() -> N
     assert 'Next Scheduled' in sync_panel
     assert "payload.sync_state.is_active" in sync_panel
     assert "job_key='governance.tls_certificates.sync'" in sync_panel
-    assert 'TLS Secret synchronization in progress' in sync_panel
+    assert 'TLS Secret synchronization progress' in sync_panel
     assert 'hx-indicator="#tls-sync-panel-poll-indicator"' in sync_panel
+
+
+def test_tls_worker_reports_stage_progress_for_single_cluster_jobs() -> None:
+    tasks = (ROOT / 'app/governance/tls_certificates/tasks.py').read_text()
+
+    assert 'total_steps = max((total_targets * 2) + 1, 1)' in tasks
+    assert 'current=((index - 1) * 2) + 1' in tasks
+    assert 'current=index * 2' in tasks
+    assert "message='Finalizing TLS Secret inventory synchronization.'" in tasks

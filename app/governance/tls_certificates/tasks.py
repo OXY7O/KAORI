@@ -162,7 +162,10 @@ def sync_tls_certificates_task(
     task_id = str(self.request.id)
     context = JobExecutionContext(task_id=task_id, job_execution_id=job_execution_id)
     total_targets = len(targets)
-    context.start(message='Preparing TLS certificate inventory synchronization.', total=total_targets)
+    # Track preparation/collection and completion as separate worker phases so a
+    # single-cluster sync does not remain at 0% for the whole collection request.
+    total_steps = max((total_targets * 2) + 1, 1)
+    context.start(message='Preparing TLS certificate inventory synchronization.', total=total_steps)
 
     collected_count = 0
     successful_clusters = 0
@@ -174,8 +177,8 @@ def sync_tls_certificates_task(
             cluster_id = str(target['cluster_id'])
             cluster_name = str(target.get('cluster_name') or cluster_id)
             context.checkpoint(
-                current=index - 1,
-                total=total_targets,
+                current=((index - 1) * 2) + 1,
+                total=total_steps,
                 message=f'Collecting TLS Secrets from {cluster_name}.',
             )
             cluster = db.session.get(Cluster, cluster_id)
@@ -188,8 +191,8 @@ def sync_tls_certificates_task(
                     }
                 )
                 context.checkpoint(
-                    current=index,
-                    total=total_targets,
+                    current=index * 2,
+                    total=total_steps,
                     message=f'Processed {index} of {total_targets} clusters.',
                 )
                 continue
@@ -208,10 +211,16 @@ def sync_tls_certificates_task(
                 collected_count += count
 
             context.checkpoint(
-                current=index,
-                total=total_targets,
+                current=index * 2,
+                total=total_steps,
                 message=f'Processed {index} of {total_targets} clusters.',
             )
+
+        context.checkpoint(
+            current=min(total_targets * 2, total_steps - 1),
+            total=total_steps,
+            message='Finalizing TLS Secret inventory synchronization.',
+        )
 
         result = _with_job_metadata(
             {

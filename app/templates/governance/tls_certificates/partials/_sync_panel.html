@@ -1,14 +1,15 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/action_button.html" as action_button %}
-{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/progress_bar.html" as progress_bar %}
 <div id="tls-registry-actions"
      class="border-t border-outline-subtle bg-surface-hover"
      {% if payload.sync_state.is_active and payload.sync_state.active_job_public_id %}
      hx-get="{{ url_for('governance.tls_certificates_sync_status', public_id=payload.sync_state.active_job_public_id, cluster_id=payload.filters.cluster_id, namespace=payload.filters.namespace, status=payload.filters.status, search=payload.filters.search, page=payload.pagination.page, per_page=payload.pagination.per_page) }}"
-     hx-trigger="load delay:2s"
+     hx-trigger="every 2s"
      hx-target="this"
      hx-swap="outerHTML"
      hx-indicator="#tls-sync-panel-poll-indicator"
+     hx-sync="this:replace"
      {% endif %}>
     <span id="tls-sync-panel-poll-indicator" class="htmx-indicator hidden" aria-hidden="true"></span>
     <div class="flex flex-col gap-4 px-5 py-4 sm:px-6 xl:flex-row xl:items-center xl:justify-between">
@@ -35,10 +36,11 @@
                         {% endif %}
                     </div>
                     {% if payload.sync_state.is_active %}
-                        {{ loading_bar.render(
-                            'tls-sync-operation-progress',
-                            active=true,
-                            label='TLS Secret synchronization in progress'
+                        {{ progress_bar.bar(
+                            payload.sync_state.progress_percent,
+                            track_classes='mt-3 h-1.5 overflow-hidden rounded-full bg-kaori-soft',
+                            fill_classes='h-full rounded-full bg-kaori-primary transition-all duration-500',
+                            label='TLS Secret synchronization progress'
                         ) }}
                     {% endif %}
                 </div>
