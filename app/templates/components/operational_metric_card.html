@@ -30,23 +30,24 @@
         }
     } %}
     {% set tone_classes = tone_map.get(tone, tone_map.violet) %}
-    <article class="group relative min-h-[168px] overflow-hidden rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm transition duration-150 hover:-translate-y-0.5 hover:border-outline-strong hover:shadow-md">
-        <div class="absolute inset-x-0 top-0 h-1 {{ tone_classes.accent }}"></div>
-        <div class="flex items-start justify-between gap-3">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border {{ tone_classes.icon }}">
-                <i data-lucide="{{ icon }}" class="h-5 w-5" aria-hidden="true"></i>
+    <article class="relative min-h-[124px] overflow-hidden rounded-lg border border-outline-default bg-surface-card p-3.5 shadow-sm transition duration-150 hover:border-outline-strong hover:shadow-md">
+        <div class="absolute inset-y-0 left-0 w-0.5 {{ tone_classes.accent }}"></div>
+        <div class="flex items-start gap-3">
+            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border {{ tone_classes.icon }}">
+                <i data-lucide="{{ icon }}" class="h-4 w-4" aria-hidden="true"></i>
             </div>
-            <span class="inline-flex max-w-[9rem] items-center rounded-md border border-outline-default bg-surface-subtle px-2 py-1 text-[10px] font-semibold leading-4 text-content-secondary">
-                {{ source_label }}
-            </span>
+            <div class="min-w-0 flex-1">
+                <div class="flex items-start justify-between gap-2">
+                    <p class="truncate text-[11px] font-semibold uppercase tracking-[0.06em] text-content-muted" title="{{ label }}">{{ label }}</p>
+                    <span class="shrink-0 text-[10px] font-medium text-content-disabled">{{ scope_label }}</span>
+                </div>
+                <p class="mt-1 text-xl font-semibold tracking-tight text-content-primary">{{ value }}</p>
+            </div>
         </div>
-        <div class="mt-4">
-            <div class="flex items-baseline justify-between gap-3">
-                <p class="text-xs font-semibold uppercase tracking-[0.08em] text-content-muted">{{ label }}</p>
-                <span class="shrink-0 text-[10px] font-medium text-content-disabled">{{ scope_label }}</span>
-            </div>
-            <p class="mt-2 text-2xl font-semibold tracking-tight text-content-primary">{{ value }}</p>
-            <p class="mt-2 line-clamp-2 text-xs leading-5 text-content-muted">{{ description }}</p>
+        <p class="mt-2 truncate text-[11px] leading-4 text-content-muted" title="{{ description }}">{{ description }}</p>
+        <div class="mt-2 flex items-center gap-1.5 border-t border-outline-subtle pt-2 text-[10px] font-medium text-content-disabled">
+            <span class="h-1.5 w-1.5 rounded-full {{ tone_classes.accent }}" aria-hidden="true"></span>
+            <span>{{ source_label }}</span>
         </div>
     </article>
 {%- endmacro %}
