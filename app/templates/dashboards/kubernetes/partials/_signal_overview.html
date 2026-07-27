@@ -9,27 +9,30 @@
     {% endfor %}
 {% endif %}
 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
-        <div class="flex min-w-0 items-center gap-3">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary">
-                <i data-lucide="scan-line" class="h-4 w-4" aria-hidden="true"></i>
-            </span>
-            <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <h2 class="text-base font-semibold text-content-primary">Operational Signal Overview</h2>
-                    <span class="inline-flex items-center rounded-md border border-brand-outline bg-brand-surface px-2 py-0.5 text-[10px] font-semibold text-brand-foreground">
-                        8 Indicators
-                    </span>
+    <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex min-w-0 items-center gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="scan-line" class="h-4 w-4" aria-hidden="true"></i>
+                </span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <h2 class="text-base font-semibold text-content-primary">Operational Signal Overview</h2>
+                        <span class="inline-flex items-center rounded-md border border-brand-outline bg-brand-surface px-2 py-0.5 text-[10px] font-semibold text-brand-foreground">
+                            8 Indicators
+                        </span>
+                    </div>
+                    <p class="mt-0.5 truncate text-xs text-content-muted">
+                        Inventory, utilization, and alert posture for the active scope.
+                    </p>
                 </div>
-                <p class="mt-0.5 truncate text-xs text-content-muted">
-                    Inventory, utilization, and alert posture for the active scope.
-                </p>
+            </div>
+            <div class="flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-content-muted">
+                <i data-lucide="clock-3" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                <span>{{ dashboard.last_updated }}</span>
             </div>
         </div>
-        <div class="flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-content-muted">
-            <i data-lucide="clock-3" class="h-3.5 w-3.5" aria-hidden="true"></i>
-            <span>{{ dashboard.last_updated }}</span>
-        </div>
+        {{ loading_bar.render('dashboard-loading-bar', label='Refreshing Kubernetes Operational Signals') }}
     </header>
 
     <div class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-subtle px-4 py-3 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
@@ -74,7 +77,6 @@
         </div>
     </div>
 
-    {{ loading_bar.render('dashboard-loading-bar', label='Refreshing Kubernetes operational signals') }}
 
     <div class="p-4 sm:p-5">
         <div id="dashboard-kpi-cards"
