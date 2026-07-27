@@ -1,6 +1,6 @@
 {% import "components/table_label.html" as table_label %}
 
-{% macro render(status, checked_at='', extra_class='', embedded=false, compact=false) -%}
+{% macro render(status, checked_at='', extra_class='', embedded=false, compact=false, flat=false) -%}
     {% set label = status.status_label|default(status.label|default('Unknown')) %}
     {% set message = status.message|default(status.description|default('Prometheus status is unavailable.')) %}
     {% set connected = status.connected|default(false) %}
@@ -19,19 +19,19 @@
         {% set icon = 'circle-minus' %}
         {% set dot_class = 'bg-status-disabled' %}
     {% endif %}
-    <section class="{% if embedded %}rounded-lg border border-outline-subtle bg-surface-hover px-4 py-4{% else %}rounded-lg border border-outline-default bg-kaori-soft px-4 py-3{% endif %} {{ extra_class }}">
-        <div class="flex flex-col gap-3">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="mt-1 h-2.5 w-2.5 shrink-0 rounded-full {{ dot_class }}" aria-hidden="true"></span>
-                <div class="min-w-0 flex-1">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <h3 class="text-sm font-semibold text-content-primary">Prometheus Status</h3>
-                        {{ table_label.status_label(label, tone, icon) }}
-                    </div>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ message }}</p>
-                </div>
+    <section class="{% if flat %}min-w-0{% elif embedded %}rounded-lg border border-outline-subtle bg-surface-hover px-4 py-4{% else %}rounded-lg border border-outline-default bg-kaori-soft px-4 py-3{% endif %} {{ extra_class }}">
+        <div class="flex flex-col gap-2">
+            <div class="flex min-w-0 flex-wrap items-center gap-2">
+                <span class="h-2.5 w-2.5 shrink-0 rounded-full {{ dot_class }}" aria-hidden="true"></span>
+                <h3 class="text-sm font-semibold text-content-primary">Prometheus Status</h3>
+                {{ table_label.status_label(label, tone, icon) }}
             </div>
-            <div class="flex flex-wrap items-center gap-2{% if not compact %} border-t border-outline-subtle pt-3{% endif %}">
+
+            {% if not connected or not compact %}
+                <p class="text-xs leading-5 text-content-muted">{{ message }}</p>
+            {% endif %}
+
+            <div class="flex flex-wrap items-center gap-2{% if not compact and not flat %} border-t border-outline-subtle pt-3{% endif %}">
                 {% if response_time is not none %}
                     {{ table_label.metadata_label(response_time ~ ' ms', 'zap') }}
                 {% else %}
