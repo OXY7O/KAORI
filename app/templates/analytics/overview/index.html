@@ -10,6 +10,7 @@
         {% endif %}
         {% if not dependency_blocker %}
             <div id="overview-health-summary"
+                 class="space-y-6"
                  hx-target="this"
                  hx-get="{{ url_for('analytics.overview_section', section='health-summary') }}?{{ overview_query }}"
                  hx-trigger="load delay:100ms"

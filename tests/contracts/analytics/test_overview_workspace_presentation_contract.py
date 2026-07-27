@@ -4,14 +4,29 @@ from pathlib import Path
 OVERVIEW_ROOT = Path('app/templates/analytics/overview')
 
 
-def test_overview_health_combines_prometheus_and_snapshot_readiness() -> None:
+def test_overview_controls_and_readiness_share_one_box() -> None:
+    source = (OVERVIEW_ROOT / 'partials/_health_summary.html').read_text()
+    hero = (OVERVIEW_ROOT / 'partials/_hero.html').read_text()
+
+    assert 'Analytics Controls &amp; Data Readiness' in source
+    assert 'id="analytics-overview-filter"' in source
+    assert 'prometheus_status_panel.render' in source
+    assert 'compact=true' in source
+    assert 'Latest Analytics Data Snapshot' in source
+    assert 'Latest Sync' in source
+    assert 'Coverage' in source
+    assert 'id="analytics-overview-filter"' not in hero
+
+
+def test_operational_health_summary_is_a_separate_box() -> None:
     source = (OVERVIEW_ROOT / 'partials/_health_summary.html').read_text()
 
-    assert 'Analytics Health &amp; Data Readiness' in source
-    assert 'prometheus_status_panel.render' in source
-    assert 'Latest Analytics Data Snapshot' in source
-    assert 'Latest Data Sync' in source
-    assert 'Snapshot Coverage' in source
+    assert source.count('<section class="overflow-hidden rounded-xl') == 2
+    assert 'Operational Health Summary' in source
+    assert '6 Health Signals' in source
+    index_source = (OVERVIEW_ROOT / 'index.html').read_text()
+    assert 'id="overview-health-summary"' in index_source
+    assert 'class="space-y-6"' in index_source
 
 
 def test_overview_tabs_and_content_share_one_workspace_box() -> None:
