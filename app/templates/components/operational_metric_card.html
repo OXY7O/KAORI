@@ -4,7 +4,8 @@
       compatibility. Operational Signal cards intentionally use one neutral
       KAORI treatment so the overview stays calm and visually consistent.
     #}
-    <article class="group flex h-full min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm transition duration-150 hover:border-brand-outline hover:shadow-md">
+    <article class="group relative flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:border-kaori-primary hover:shadow-md">
+        <span class="absolute left-0 right-0 top-0 h-0.5 bg-surface-card transition-colors duration-150 group-hover:bg-kaori-primary" aria-hidden="true"></span>
         <div class="flex min-w-0 items-start gap-3">
             <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary">
                 <i data-lucide="{{ icon }}" class="h-4 w-4" aria-hidden="true"></i>
