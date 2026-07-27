@@ -177,6 +177,7 @@ class FreshnessItem:
     value: str
     icon: str
     description: str = ''
+    tone: str = 'unknown'
 
 
 @dataclass(slots=True)

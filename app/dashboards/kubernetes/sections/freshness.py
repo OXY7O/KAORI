@@ -48,67 +48,90 @@ def build_data_freshness(
 ) -> list[FreshnessItem]:
     selected_cluster_mode = live_cluster is not None
 
-    prometheus_value = 'Snapshot Ready' if has_prometheus_data else 'Unavailable'
-    prometheus_description = (
-        'Committed Prometheus-backed analytics snapshots are available for the selected cluster.'
-    )
-    if not selected_cluster_mode:
-        prometheus_value = 'Per-cluster snapshots'
-        prometheus_description = (
-            'All Clusters mode reads committed capacity snapshots for each visible Cluster Health row. '
-            'Select one cluster to inspect detailed capacity, top consumer, and forecast snapshots.'
+    if selected_cluster_mode:
+        prometheus_status = 'Ready' if has_prometheus_data else 'Unavailable'
+        prometheus_tone = 'normal' if has_prometheus_data else 'unknown'
+        prometheus_value = (
+            'Committed analytics snapshot available'
+            if has_prometheus_data
+            else 'No committed analytics snapshot'
         )
-    elif not has_prometheus_data:
         prometheus_description = (
-            'No committed Prometheus-backed analytics snapshot is currently available for the selected cluster.'
+            'Prometheus-backed utilization, capacity, consumer, and forecast data for the selected cluster.'
+            if has_prometheus_data
+            else 'Run or validate analytics materialization for the selected cluster before using live metric signals.'
         )
 
-    alertmanager_value = 'Snapshot Ready' if has_alertmanager_data else 'Unavailable'
-    alertmanager_description = (
-        'A committed AlertManager or Prometheus alert snapshot is available for the selected cluster.'
-    )
-    if not selected_cluster_mode:
-        alertmanager_value = 'Per-cluster snapshots'
-        alertmanager_description = (
-            'All Clusters mode reads committed alert snapshots for each visible Cluster Health row. '
-            'Select one cluster to inspect alert details and source context.'
+        alert_status = 'Ready' if has_alertmanager_data else 'Unavailable'
+        alert_tone = 'normal' if has_alertmanager_data else 'unknown'
+        alert_value = (
+            'Committed alert snapshot available'
+            if has_alertmanager_data
+            else 'No committed alert snapshot'
         )
-    elif not has_alertmanager_data:
-        alertmanager_description = 'No committed alert snapshot is currently available for the selected cluster.'
+        alert_description = (
+            'AlertManager or Prometheus alert data is available for the selected cluster.'
+            if has_alertmanager_data
+            else 'Validate the alert source and refresh the selected cluster before relying on alert signals.'
+        )
+    else:
+        prometheus_status = 'Per Cluster'
+        prometheus_tone = 'info'
+        prometheus_value = 'Resolved from committed cluster snapshots'
+        prometheus_description = (
+            'All Clusters mode summarizes committed capacity snapshots by cluster. Select one cluster for detailed analytics.'
+        )
+
+        alert_status = 'Per Cluster'
+        alert_tone = 'info'
+        alert_value = 'Resolved from committed cluster snapshots'
+        alert_description = (
+            'All Clusters mode summarizes committed alert snapshots by cluster. Select one cluster for source details.'
+        )
+
+    has_reports = reporting_snapshot.generated_reports > 0
 
     return [
         FreshnessItem(
-            label='Inventory Sync',
-            status='Healthy' if latest_inventory_sync else 'Unknown',
-            value=human_time(latest_inventory_sync) if latest_inventory_sync else 'No sync yet',
-            icon='refresh-cw',
+            label='Inventory Snapshot',
+            status='Current' if latest_inventory_sync else 'Not Synced',
+            tone='normal' if latest_inventory_sync else 'unknown',
+            value=(
+                f'Updated {human_time(latest_inventory_sync)}'
+                if latest_inventory_sync
+                else 'No committed inventory snapshot'
+            ),
+            icon='database-zap',
             description=(
-                'Database inventory and report summaries use the latest collected snapshot for the selected dashboard scope.'
+                'Latest synchronized Kubernetes object counts used by the dashboard and Inventory workspaces.'
             ),
         ),
         FreshnessItem(
-            label='Prometheus Analytics',
-            status='Healthy' if has_prometheus_data else ('Info' if not selected_cluster_mode else 'Unavailable'),
+            label='Metrics Snapshot',
+            status=prometheus_status,
+            tone=prometheus_tone,
             value=prometheus_value,
             icon='activity',
             description=prometheus_description,
         ),
         FreshnessItem(
-            label='Alert Signals',
-            status='Healthy' if has_alertmanager_data else ('Info' if not selected_cluster_mode else 'Unavailable'),
-            value=alertmanager_value,
+            label='Alert Snapshot',
+            status=alert_status,
+            tone=alert_tone,
+            value=alert_value,
             icon='bell-ring',
-            description=alertmanager_description,
+            description=alert_description,
         ),
         FreshnessItem(
-            label='Report Generation',
-            status='Healthy' if reporting_snapshot.generated_reports > 0 else 'Unknown',
+            label='Report Artifacts',
+            status='Available' if has_reports else 'Not Generated',
+            tone='normal' if has_reports else 'unknown',
             value=(
-                f'{reporting_snapshot.generated_reports} generated'
-                if reporting_snapshot.generated_reports
-                else 'No reports yet'
+                f'{reporting_snapshot.generated_reports} generated reports'
+                if has_reports
+                else 'No generated report artifacts'
             ),
             icon='file-text',
-            description='Report freshness shows whether generated report artifacts exist for operational review.',
+            description='Generated reports are retained operational artifacts, separate from live Kubernetes signal health.',
         ),
     ]
