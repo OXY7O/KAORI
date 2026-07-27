@@ -12,13 +12,12 @@
         {% endif %}
         {% set scope_label = 'Fleet' if kpi.label == 'Clusters' else 'Active Scope' %}
         {{ operational_metric_card.render(
-            kpi.label,
-            kpi.value,
-            kpi.description,
-            kpi.icon,
-            kpi.tone,
-            source_label,
-            scope_label
+            label=kpi.label,
+            value=kpi.value,
+            description=kpi.description,
+            icon=kpi.icon,
+            source_label=source_label,
+            scope_label=scope_label
         ) }}
     {% endfor %}
 </div>
