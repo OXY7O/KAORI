@@ -307,7 +307,7 @@ def overview_section(section: str):
         payload=payload,
     )
 
-    if section == 'prometheus-status':
+    if section in {'prometheus-status', 'health-summary'}:
         return f'{section_html}{_build_prometheus_failure_feedback(payload)}'
 
     return section_html

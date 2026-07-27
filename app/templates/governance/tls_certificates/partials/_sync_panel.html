@@ -1,5 +1,5 @@
 {% import "components/table_label.html" as table_label %}
-{% import "components/progress_bar.html" as progress_bar %}
+{% import "components/action_button.html" as action_button %}
 <div id="tls-registry-actions" class="border-t border-outline-subtle bg-surface-hover">
     <div class="flex flex-col gap-4 px-5 py-4 sm:px-6 xl:flex-row xl:items-center xl:justify-between">
         <div class="flex min-w-0 items-start gap-3">
@@ -20,7 +20,7 @@
                 </div>
             </div>
         </div>
-        <div class="flex shrink-0 flex-wrap items-center gap-2">
+        <div class="grid shrink-0 grid-cols-1 gap-2 sm:grid-cols-3">
             <form method="post"
                   action="{{ url_for('governance.tls_certificates_sync') }}"
                   hx-post="{{ url_for('governance.tls_certificates_sync') }}"
@@ -36,37 +36,21 @@
                 <input type="hidden" name="per_page" value="{{ payload.pagination.per_page }}">
                 <button type="submit"
                         {% if payload.sync_state.is_active %}disabled{% endif %}
-                        class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-primary transition hover:border-outline-strong hover:bg-surface-hover disabled:cursor-not-allowed disabled:bg-surface-disabled disabled:text-content-disabled">
+                        class="{{ action_button.classes('primary', true) }}">
                     <i data-lucide="refresh-cw" class="h-4 w-4"></i>
                     {{ 'Syncing TLS' if payload.sync_state.is_active else 'Sync TLS' }}
                 </button>
             </form>
-            {% if payload.sync_state.active_job_public_id %}
-                <a href="{{ url_for('jobs.executions', queue='inventory', search=payload.sync_state.active_job_public_id) }}"
-                   class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary">
-                    <i data-lucide="activity" class="h-4 w-4"></i>
-                    Review Active Job
-                </a>
-            {% endif %}
             <a href="{{ url_for('jobs.configuration', job_key='governance.tls_certificates.sync') }}"
-               class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary">
+               class="{{ action_button.classes('secondary', true) }}">
                 <i data-lucide="calendar-clock" class="h-4 w-4"></i>
                 Configure Sync
             </a>
             <a href="{{ url_for('kubernetes_operations.tls_secret_bulk_rotation') }}"
-               class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-kaori-primary bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-hover">
+               class="{{ action_button.classes('secondary', true) }}">
                 <i data-lucide="upload-cloud" class="h-4 w-4"></i>
                 Bulk Update
             </a>
         </div>
     </div>
-    {% if payload.sync_state.is_active %}
-        <div class="border-t border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
-            <div class="flex items-center justify-between gap-3 text-xs">
-                <span class="font-medium text-content-secondary">{{ payload.sync_state.progress_message or 'TLS certificate collection is running.' }}</span>
-                <span class="font-semibold text-kaori-primary">{{ payload.sync_state.progress_percent }}%</span>
-            </div>
-            {{ progress_bar.bar(payload.sync_state.progress_percent, track_classes="mt-2 h-1.5 overflow-hidden rounded-full bg-kaori-soft", fill_classes="h-full rounded-full bg-kaori-primary", label="TLS Certificate Synchronization Progress") }}
-        </div>
-    {% endif %}
 </div>

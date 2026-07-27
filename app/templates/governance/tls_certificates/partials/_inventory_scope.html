@@ -1,18 +1,16 @@
-<div id="tls-certificates-inventory-scope"
-     class="space-y-6"
-     {% if payload.sync_state.is_active %}
-         hx-get="{{ url_for('governance.tls_certificates', cluster_id=payload.filters.cluster_id, namespace=payload.filters.namespace, status=payload.filters.status, search=payload.filters.search, page=payload.pagination.page, per_page=payload.pagination.per_page, partial_mode='inventory_scope') }}"
-         hx-trigger="every 4s"
-         hx-target="this"
-         hx-swap="outerHTML"
-         hx-indicator="#tls-certificates-sync-poll-indicator"
-     {% endif %}>
-    <span id="tls-certificates-sync-poll-indicator"
+<div id="tls-certificates-inventory-scope" class="space-y-6">
+    <span id="tls-certificates-background-refresh-trigger"
           class="htmx-indicator hidden"
-          aria-hidden="true"></span>
+          aria-hidden="true"
+          hx-get="{{ url_for('governance.tls_certificates', cluster_id=payload.filters.cluster_id, namespace=payload.filters.namespace, status=payload.filters.status, search=payload.filters.search, page=payload.pagination.page, per_page=payload.pagination.per_page, partial_mode='inventory_scope') }}"
+          hx-trigger="tlsInventorySyncFinished from:body"
+          hx-target="#tls-certificates-inventory-scope"
+          hx-swap="outerHTML"
+          hx-indicator="this"></span>
     {% include "governance/tls_certificates/partials/_summary_cards.html" %}
     {% include "governance/tls_certificates/partials/_content.html" %}
 </div>
+{% include "governance/tls_certificates/partials/_sync_toast_oob.html" %}
 {% if sync_feedback %}
     {% with
         status=sync_feedback.status,

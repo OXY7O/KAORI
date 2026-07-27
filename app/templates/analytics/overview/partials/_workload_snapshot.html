@@ -1,3 +1,4 @@
+{% import "components/section_link_button.html" as section_link_button %}
 {% import "components/table_label.html" as table_label %}
 {% set workload_tone = {'green': 'normal', 'amber': 'warning', 'red': 'critical', 'gray': 'unknown'}.get(payload.workload_snapshot.tone, 'unknown') %}
 <section class="flex h-full flex-col rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
@@ -14,11 +15,10 @@
                 <p class="mt-1 text-sm text-content-muted">Request, limit, and provisioning signals from workload resource mapping.</p>
             </div>
         </div>
-        <a href="{{ payload.workload_snapshot.href }}?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}"
-           class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft">
-            View Workload Analysis
-            <i data-lucide="arrow-right" class="h-4 w-4"></i>
-        </a>
+        {{ section_link_button.render(
+            payload.workload_snapshot.href ~ '?cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range,
+            'View Workload Analysis'
+        ) }}
     </div>
     <div class="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
         {% set cards = [

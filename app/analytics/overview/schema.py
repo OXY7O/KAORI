@@ -51,6 +51,21 @@ def build_empty_overview_payload() -> dict[str, Any]:
             'message': 'Prometheus configuration is not available for this cluster.',
             'last_checked_at': utc_now_display(),
         },
+        'snapshot_summary': {
+            'status': 'Unavailable',
+            'tone': 'unknown',
+            'description': 'No committed Analytics Overview snapshot is available for this cluster.',
+            'latest_generated_at': 'Not Available',
+            'latest_attempt_at': 'Not Available',
+            'latest_dataset': 'No Snapshot',
+            'current_dataset_count': 0,
+            'available_dataset_count': 0,
+            'expected_dataset_count': 7,
+            'stale_dataset_count': 0,
+            'pending_dataset_count': 0,
+            'failed_dataset_count': 0,
+            'analysis_window': 'Last 24 Hours',
+        },
         'health_summary': {
             'cluster_health': build_metric_card(
                 label='Cluster Health',

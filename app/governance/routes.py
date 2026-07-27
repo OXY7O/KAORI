@@ -5,9 +5,11 @@ from flask_login import current_user
 
 from app.cluster.onboarding import has_registered_clusters
 from app.governance.tls_certificates.routes import (
+    tls_certificates_active_sync,
     tls_certificates_detail,
     tls_certificates_index,
     tls_certificates_sync,
+    tls_certificates_sync_status,
 )
 from app.notifications.service import record_operational_activity
 from app.rbac.decorators import permission_required
@@ -63,6 +65,22 @@ governance_bp.add_url_rule(
     endpoint='tls_certificates_sync',
     view_func=tls_certificates_sync,
     methods=['POST'],
+)
+
+
+
+governance_bp.add_url_rule(
+    '/tls-certificates/sync/active',
+    endpoint='tls_certificates_active_sync',
+    view_func=tls_certificates_active_sync,
+    methods=['GET'],
+)
+
+governance_bp.add_url_rule(
+    '/tls-certificates/sync/<string:public_id>/status',
+    endpoint='tls_certificates_sync_status',
+    view_func=tls_certificates_sync_status,
+    methods=['GET'],
 )
 
 governance_bp.add_url_rule(

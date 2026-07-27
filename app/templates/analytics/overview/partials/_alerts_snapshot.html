@@ -1,3 +1,4 @@
+{% import "components/section_link_button.html" as section_link_button %}
 {% import "components/table_label.html" as table_label %}
 {% set alerts = payload.alerts_snapshot %}
 {% set alert_tone = 'warning' if alerts.firing_alerts > 0 or alerts.warning_alerts > 0 else 'normal' %}
@@ -15,11 +16,10 @@
                 <p class="mt-1 text-sm text-content-muted">Alert pressure, severity, and anomaly signals for the selected period.</p>
             </div>
         </div>
-        <a href="{{ alerts.href }}?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}"
-           class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft">
-            View Alerts &amp; Anomalies
-            <i data-lucide="arrow-right" class="h-4 w-4"></i>
-        </a>
+        {{ section_link_button.render(
+            alerts.href ~ '?cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range,
+            'View Alerts & Anomalies'
+        ) }}
     </div>
 
     {% set alert_metrics = [

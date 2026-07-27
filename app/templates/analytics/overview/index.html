@@ -12,97 +12,100 @@
             <div id="overview-health-summary"
                  hx-target="this"
                  hx-get="{{ url_for('analytics.overview_section', section='health-summary') }}?{{ overview_query }}"
-                 hx-trigger="load delay:900ms"
+                 hx-trigger="load delay:100ms"
                  hx-swap="innerHTML">{% include "analytics/overview/partials/_section_loading.html" %}</div>
 
-            <section x-data="kaoriAnalyticsTabs('resource-capacity', ['resource-capacity', 'workload-storage', 'forecast-signals', 'actions'])"
-                     class="space-y-6">
+            <section id="analytics-overview-workspace"
+                     x-data="kaoriAnalyticsTabs('resource-capacity', ['resource-capacity', 'workload-storage', 'forecast-signals', 'actions'])"
+                     class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                 {% set analytics_tabs = [
                     ('resource-capacity', 'Resource & Capacity', 'gauge'),
                     ('workload-storage', 'Workloads & Storage', 'boxes'),
                     ('forecast-signals', 'Forecast & Signals', 'chart-no-axes-combined'),
                     ('actions', 'Actions & Recommendations', 'list-checks')
                 ] %}
-                {{ analytics_content_tabs.render('overview-content', analytics_tabs, 'Analytics Overview Categories') }}
+                {{ analytics_content_tabs.render('overview-content', analytics_tabs, 'Analytics Overview Categories', embedded=true) }}
 
-                <div id="overview-content-panel-resource-capacity"
-                     role="tabpanel"
-                     aria-labelledby="overview-content-tab-resource-capacity"
-                     x-show="activeTab === 'resource-capacity'"
-                     class="space-y-6">
-                    <div id="overview-resource-snapshot"
-                         hx-target="this"
-                         hx-get="{{ url_for('analytics.overview_section', section='resource-snapshot') }}?{{ overview_query }}"
-                         hx-trigger="load delay:100ms"
-                         hx-swap="innerHTML">{% include "analytics/overview/partials/_section_loading.html" %}</div>
-                    <div id="overview-capacity-snapshot"
-                         hx-target="this"
-                         hx-get="{{ url_for('analytics.overview_section', section='capacity-snapshot') }}?{{ overview_query }}"
-                         hx-trigger="load delay:150ms"
-                         hx-swap="innerHTML">{% include "analytics/overview/partials/_section_loading.html" %}</div>
-                </div>
-
-                <div id="overview-content-panel-workload-storage"
-                     role="tabpanel"
-                     aria-labelledby="overview-content-tab-workload-storage"
-                     x-show="activeTab === 'workload-storage'"
-                     x-cloak
-                     class="space-y-6">
-                    <div class="grid grid-cols-1 items-stretch gap-6 xl:grid-cols-2">
-                        <div id="overview-storage-snapshot"
-                             class="h-full"
+                <div class="p-4 sm:p-5">
+                    <div id="overview-content-panel-resource-capacity"
+                         role="tabpanel"
+                         aria-labelledby="overview-content-tab-resource-capacity"
+                         x-show="activeTab === 'resource-capacity'"
+                         class="space-y-5">
+                        <div id="overview-resource-snapshot"
                              hx-target="this"
-                             hx-get="{{ url_for('analytics.overview_section', section='storage-snapshot') }}?{{ overview_query }}"
-                             hx-trigger="load delay:250ms"
+                             hx-get="{{ url_for('analytics.overview_section', section='resource-snapshot') }}?{{ overview_query }}"
+                             hx-trigger="load delay:150ms"
                              hx-swap="innerHTML">{% include "analytics/overview/partials/_section_loading.html" %}</div>
-                        <div id="overview-workload-snapshot"
-                             class="h-full"
+                        <div id="overview-capacity-snapshot"
                              hx-target="this"
-                             hx-get="{{ url_for('analytics.overview_section', section='workload-snapshot') }}?{{ overview_query }}"
-                             hx-trigger="load delay:300ms"
+                             hx-get="{{ url_for('analytics.overview_section', section='capacity-snapshot') }}?{{ overview_query }}"
+                             hx-trigger="load delay:200ms"
                              hx-swap="innerHTML">{% include "analytics/overview/partials/_section_loading.html" %}</div>
                     </div>
-                    <div id="overview-top-consumers"
-                         hx-target="this"
-                         hx-get="{{ url_for('analytics.overview_section', section='top-consumers') }}?{{ overview_query }}"
-                         hx-trigger="load delay:350ms"
-                         hx-swap="innerHTML">{% include "analytics/overview/partials/_section_loading.html" %}</div>
-                </div>
 
-                <div id="overview-content-panel-forecast-signals"
-                     role="tabpanel"
-                     aria-labelledby="overview-content-tab-forecast-signals"
-                     x-show="activeTab === 'forecast-signals'"
-                     x-cloak
-                     class="space-y-6">
-                    <div id="overview-forecast-snapshot"
-                         hx-target="this"
-                         hx-get="{{ url_for('analytics.overview_section', section='forecast-snapshot') }}?{{ overview_query }}"
-                         hx-trigger="load delay:400ms"
-                         hx-swap="innerHTML">{% include "analytics/overview/partials/_section_loading.html" %}</div>
-                    <div id="overview-alerts-snapshot"
-                         hx-target="this"
-                         hx-get="{{ url_for('analytics.overview_section', section='alerts-snapshot') }}?{{ overview_query }}"
-                         hx-trigger="load delay:450ms"
-                         hx-swap="innerHTML">{% include "analytics/overview/partials/_section_loading.html" %}</div>
-                </div>
+                    <div id="overview-content-panel-workload-storage"
+                         role="tabpanel"
+                         aria-labelledby="overview-content-tab-workload-storage"
+                         x-show="activeTab === 'workload-storage'"
+                         x-cloak
+                         class="space-y-5">
+                        <div class="grid grid-cols-1 items-stretch gap-5 xl:grid-cols-2">
+                            <div id="overview-storage-snapshot"
+                                 class="h-full"
+                                 hx-target="this"
+                                 hx-get="{{ url_for('analytics.overview_section', section='storage-snapshot') }}?{{ overview_query }}"
+                                 hx-trigger="load delay:250ms"
+                                 hx-swap="innerHTML">{% include "analytics/overview/partials/_section_loading.html" %}</div>
+                            <div id="overview-workload-snapshot"
+                                 class="h-full"
+                                 hx-target="this"
+                                 hx-get="{{ url_for('analytics.overview_section', section='workload-snapshot') }}?{{ overview_query }}"
+                                 hx-trigger="load delay:300ms"
+                                 hx-swap="innerHTML">{% include "analytics/overview/partials/_section_loading.html" %}</div>
+                        </div>
+                        <div id="overview-top-consumers"
+                             hx-target="this"
+                             hx-get="{{ url_for('analytics.overview_section', section='top-consumers') }}?{{ overview_query }}"
+                             hx-trigger="load delay:350ms"
+                             hx-swap="innerHTML">{% include "analytics/overview/partials/_section_loading.html" %}</div>
+                    </div>
 
-                <div id="overview-content-panel-actions"
-                     role="tabpanel"
-                     aria-labelledby="overview-content-tab-actions"
-                     x-show="activeTab === 'actions'"
-                     x-cloak
-                     class="space-y-6">
-                    <div id="overview-actionable-recommendations"
-                         hx-target="this"
-                         hx-get="{{ url_for('analytics.overview_section', section='actionable-recommendations') }}?{{ overview_query }}"
-                         hx-trigger="load delay:1000ms"
-                         hx-swap="innerHTML">{% include "analytics/overview/partials/_section_loading.html" %}</div>
-                    <div id="overview-recommendations"
-                         hx-target="this"
-                         hx-get="{{ url_for('analytics.overview_section', section='recommendations') }}?{{ overview_query }}"
-                         hx-trigger="load delay:1100ms"
-                         hx-swap="innerHTML">{% include "analytics/overview/partials/_section_loading.html" %}</div>
+                    <div id="overview-content-panel-forecast-signals"
+                         role="tabpanel"
+                         aria-labelledby="overview-content-tab-forecast-signals"
+                         x-show="activeTab === 'forecast-signals'"
+                         x-cloak
+                         class="space-y-5">
+                        <div id="overview-forecast-snapshot"
+                             hx-target="this"
+                             hx-get="{{ url_for('analytics.overview_section', section='forecast-snapshot') }}?{{ overview_query }}"
+                             hx-trigger="load delay:400ms"
+                             hx-swap="innerHTML">{% include "analytics/overview/partials/_section_loading.html" %}</div>
+                        <div id="overview-alerts-snapshot"
+                             hx-target="this"
+                             hx-get="{{ url_for('analytics.overview_section', section='alerts-snapshot') }}?{{ overview_query }}"
+                             hx-trigger="load delay:450ms"
+                             hx-swap="innerHTML">{% include "analytics/overview/partials/_section_loading.html" %}</div>
+                    </div>
+
+                    <div id="overview-content-panel-actions"
+                         role="tabpanel"
+                         aria-labelledby="overview-content-tab-actions"
+                         x-show="activeTab === 'actions'"
+                         x-cloak
+                         class="space-y-5">
+                        <div id="overview-actionable-recommendations"
+                             hx-target="this"
+                             hx-get="{{ url_for('analytics.overview_section', section='actionable-recommendations') }}?{{ overview_query }}"
+                             hx-trigger="load delay:500ms"
+                             hx-swap="innerHTML">{% include "analytics/overview/partials/_section_loading.html" %}</div>
+                        <div id="overview-recommendations"
+                             hx-target="this"
+                             hx-get="{{ url_for('analytics.overview_section', section='recommendations') }}?{{ overview_query }}"
+                             hx-trigger="load delay:550ms"
+                             hx-swap="innerHTML">{% include "analytics/overview/partials/_section_loading.html" %}</div>
+                    </div>
                 </div>
             </section>
         {% endif %}

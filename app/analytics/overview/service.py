@@ -25,6 +25,27 @@ from app.models.cluster import Cluster
 FloatLike = str | bytes | SupportsFloat | SupportsIndex
 
 
+OVERVIEW_SNAPSHOT_DATASETS: dict[str, str] = {
+    'analytics.utilization.summary': 'Utilization Summary',
+    'analytics.capacity': 'Capacity Analysis',
+    'analytics.storage': 'Storage Analysis',
+    'analytics.workload': 'Workload Analysis',
+    'analytics.top_consumers': 'Top Consumers',
+    'analytics.forecast': 'Resource Forecast',
+    'analytics.alerts': 'Alerts and Anomalies',
+}
+
+ANALYTICS_TIME_RANGE_LABELS: dict[str, str] = {
+    '1h': 'Last 1 Hour',
+    '6h': 'Last 6 Hours',
+    '12h': 'Last 12 Hours',
+    '24h': 'Last 24 Hours',
+    '7d': 'Last 7 Days',
+    '30d': 'Last 30 Days',
+    '60d': 'Last 60 Days',
+}
+
+
 def get_analytics_overview(
     *,
     selected_cluster_id: str | None,
@@ -108,6 +129,10 @@ def _hydrate_overview_snapshot_sections(
     payload['actionable_recommendations'] = _build_actionable_recommendation_overview(payload)
     payload['actionable_recommendation_count'] = payload['actionable_recommendations']['total_count']
     payload['recommendations'] = build_operational_recommendations(payload)
+    payload['snapshot_summary'] = _get_snapshot_summary(
+        cluster_id=cluster_id,
+        time_range=time_range,
+    )
 
     return payload
 
@@ -223,6 +248,156 @@ def _hydrate_alerts_section(payload: dict[str, Any], cluster_id: str) -> None:
         ttl_seconds=20,
         loader=lambda: _get_alerts_snapshot(cluster_id=cluster_id),
     )
+
+
+def _get_snapshot_summary(*, cluster_id: str, time_range: str) -> dict[str, Any]:
+    if not cluster_id:
+        return _present_snapshot_summary([], time_range=time_range)
+
+    try:
+        snapshots = db.session.scalars(
+            select(AnalyticsSnapshot).where(
+                AnalyticsSnapshot.cluster_id == cluster_id,
+                AnalyticsSnapshot.dataset_key.in_(tuple(OVERVIEW_SNAPSHOT_DATASETS)),
+            )
+        ).all()
+    except Exception:
+        snapshots = []
+
+    return _present_snapshot_summary(snapshots, time_range=time_range)
+
+
+def _present_snapshot_summary(
+    snapshots: list[Any],
+    *,
+    time_range: str,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    current_time = _normalize_datetime(now or datetime.now(UTC))
+    latest_by_dataset: dict[str, Any] = {}
+
+    for snapshot in snapshots:
+        dataset_key = str(getattr(snapshot, 'dataset_key', '') or '')
+        if dataset_key not in OVERVIEW_SNAPSHOT_DATASETS:
+            continue
+        previous = latest_by_dataset.get(dataset_key)
+        if previous is None or _snapshot_sort_value(snapshot) > _snapshot_sort_value(previous):
+            latest_by_dataset[dataset_key] = snapshot
+
+    expected_count = len(OVERVIEW_SNAPSHOT_DATASETS)
+    current_count = 0
+    available_count = 0
+    stale_count = 0
+    pending_count = 0
+    failed_count = 0
+
+    for snapshot in latest_by_dataset.values():
+        status = str(getattr(snapshot, 'status', '') or '').lower()
+        expires_at = _normalize_datetime(getattr(snapshot, 'expires_at', None))
+        is_stale = status == 'ready' and expires_at is not None and expires_at <= current_time
+
+        if status == 'ready':
+            available_count += 1
+            if is_stale:
+                stale_count += 1
+            else:
+                current_count += 1
+        elif status == 'pending':
+            pending_count += 1
+        elif status == 'failed':
+            failed_count += 1
+
+    generated_snapshots = [
+        snapshot
+        for snapshot in latest_by_dataset.values()
+        if getattr(snapshot, 'generated_at', None) is not None
+    ]
+    latest_snapshot = max(generated_snapshots, key=_snapshot_sort_value, default=None)
+    attempt_snapshots = [
+        snapshot
+        for snapshot in latest_by_dataset.values()
+        if getattr(snapshot, 'last_attempt_at', None) is not None
+    ]
+    latest_attempt = max(
+        attempt_snapshots,
+        key=lambda item: (
+            _normalize_datetime(getattr(item, 'last_attempt_at', None))
+            or datetime.min.replace(tzinfo=UTC)
+        ),
+        default=None,
+    )
+
+    if pending_count:
+        status_label = 'Refresh In Progress'
+        tone = 'info'
+        description = 'One or more analytics datasets are currently being materialized by the worker.'
+    elif current_count == expected_count:
+        status_label = 'Current'
+        tone = 'normal'
+        description = 'All Analytics Overview datasets are available within their configured freshness windows.'
+    elif current_count > 0:
+        status_label = 'Partially Current'
+        tone = 'warning'
+        description = 'Current snapshot data is available, but one or more analytics domains still need refresh.'
+    elif stale_count > 0:
+        status_label = 'Stale'
+        tone = 'warning'
+        description = 'Only expired snapshot data is currently available for this cluster.'
+    elif failed_count > 0:
+        status_label = 'Failed'
+        tone = 'critical'
+        description = 'The latest materialization attempt failed before producing current analytics data.'
+    else:
+        status_label = 'Unavailable'
+        tone = 'unknown'
+        description = 'No committed Analytics Overview snapshot is available for this cluster.'
+
+    latest_generated_at = _format_snapshot_datetime(
+        getattr(latest_snapshot, 'generated_at', None) if latest_snapshot else None
+    )
+    latest_attempt_at = _format_snapshot_datetime(
+        getattr(latest_attempt, 'last_attempt_at', None) if latest_attempt else None
+    )
+    latest_dataset_key = str(getattr(latest_snapshot, 'dataset_key', '') or '') if latest_snapshot else ''
+
+    return {
+        'status': status_label,
+        'tone': tone,
+        'description': description,
+        'latest_generated_at': latest_generated_at,
+        'latest_attempt_at': latest_attempt_at,
+        'latest_dataset': OVERVIEW_SNAPSHOT_DATASETS.get(latest_dataset_key, 'No Snapshot'),
+        'current_dataset_count': current_count,
+        'available_dataset_count': available_count,
+        'expected_dataset_count': expected_count,
+        'stale_dataset_count': stale_count,
+        'pending_dataset_count': pending_count,
+        'failed_dataset_count': failed_count,
+        'analysis_window': ANALYTICS_TIME_RANGE_LABELS.get(time_range, time_range or 'Default'),
+    }
+
+
+def _snapshot_sort_value(snapshot: Any) -> datetime:
+    for attribute in ('generated_at', 'updated_at', 'last_attempt_at', 'created_at'):
+        value = _normalize_datetime(getattr(snapshot, attribute, None))
+        if value is not None:
+            return value
+    return datetime.min.replace(tzinfo=UTC)
+
+
+def _normalize_datetime(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
+def _format_snapshot_datetime(value: datetime | None) -> str:
+    normalized = _normalize_datetime(value)
+    if normalized is None:
+        return 'Not Available'
+    return normalized.strftime('%Y-%m-%d %H:%M UTC')
 
 
 def _read_committed_snapshot(

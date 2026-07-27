@@ -35,7 +35,7 @@ The Kubernetes TLS Secret governance UI follows the KAORI violet design standard
 
 - TLS certificate inventory, detail, and rotation entry points use neutral structural surfaces with semantic status colors reserved for healthy, warning, critical, expired, and invalid states.
 - Inventory actions use the shared expandable-row behavior in `components/details/_expandable_row.html` and `app/static/js/detail_rows.js`; TLS tables do not maintain a separate inline toggle implementation.
-- Page-size selectors use the global `data-kaori-auto-submit` behavior. Manual Sync TLS does not create a separate request-progress toast; the worker state is shown in the inventory summary and the dispatch result uses the canonical operational feedback toast.
+- Page-size selectors use the global `data-kaori-auto-submit` behavior. Manual Sync TLS uses a persistent worker-progress toast that survives page reload or navigation; the inventory summary keeps only the compact synchronization state.
 - TLS inventory and certificate-detail heroes use the canonical `page_hero.context_card()` posture panel with a semantic status, two certificate metrics, and one contextual CTA. Sync and bulk-update mutations remain in the content toolbar; the hero CTA only navigates to the relevant workspace.
 - Governance remains read-oriented. Bulk and single TLS Secret mutation actions link to Secret Management, and obsolete Governance-owned mutation templates are not retained.
 - TLS Governance does not use Flask flash messages; missing-record and cluster-setup feedback use the KAORI notification and Activity Log pipeline.
@@ -65,9 +65,9 @@ The TLS synchronization task module must be present in `Config.CELERY['imports']
 
 After deploying a task-registration change, rebuild or restart the inventory worker. A message previously rejected as an unregistered task has already been discarded by Celery and cannot resume automatically. Cancel the corresponding queued execution in Jobs & Executions, then dispatch a new TLS synchronization after the updated worker reports the task as registered.
 
-## Inventory Filter And Polling Contract
+## Inventory Filter And Toast Contract
 
-The synchronization panel, summary, filters, table, and pagination share the `tls-certificates-inventory-scope` HTMX boundary. Active synchronization polling replaces that same scope using its current Cluster, Namespace, Status, Search, Page, and Rows Per Page values. Filter changes also replace the same scope. Polling must never be attached to the outer page container while filters replace only the table, because an older polling URL would restore default filter values.
+The synchronization panel, summary, filters, table, and pagination share the `tls-certificates-inventory-scope` HTMX boundary. Filter changes replace that same scope. Active worker progress is polled only by the TLS synchronization toast, not by the inventory boundary. When the job reaches a terminal state, the toast emits `tlsInventorySyncFinished`; the inventory scope refreshes once with its current Cluster, Namespace, Status, Search, Page, and Rows Per Page values using a hidden HTMX indicator.
 
 The TLS Secret table uses the shared Inventory presentation macros in `components/table.html` for block geometry, loading state, filter controls, table headers and rows, Cluster identity, Namespace identity, and pagination geometry. Semantic certificate status labels remain text-only.
 
@@ -83,7 +83,7 @@ The order is fixed as:
 2. certificate inventory summary and operations;
 3. canonical Inventory table block.
 
-Active synchronization progress stays inside the inventory summary surface. Filter, pagination, synchronization, and polling continue to replace `tls-certificates-inventory-scope`, preserving the current filter state.
+Active synchronization progress stays in the persistent TLS worker toast. Filter, pagination, synchronization dispatch, and the one-time completion refresh continue to preserve the current `tls-certificates-inventory-scope` filter state.
 
 ## Inventory Presentation Dependencies
 

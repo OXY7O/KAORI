@@ -1,5 +1,5 @@
-{% macro render(tabset_id, tabs, aria_label) %}
-    <div class="rounded-xl border border-outline-default bg-surface-card p-2 shadow-sm">
+{% macro render(tabset_id, tabs, aria_label, embedded=false) %}
+    <div class="{% if embedded %}border-b border-outline-subtle bg-surface-hover px-3 py-3{% else %}rounded-xl border border-outline-default bg-surface-card p-2 shadow-sm{% endif %}">
         <div class="flex gap-2 overflow-x-auto"
              role="tablist"
              aria-label="{{ aria_label }}">
@@ -12,7 +12,7 @@
                         :tabindex="activeTab === '{{ tab_id }}' ? 0 : -1"
                         :class="activeTab === '{{ tab_id }}'
                             ? 'border-kaori-primary bg-kaori-soft text-kaori-primary'
-                            : 'border-transparent bg-surface-card text-content-secondary hover:border-outline-default hover:bg-surface-hover hover:text-content-primary'"
+                            : 'border-transparent bg-surface-card text-content-secondary hover:border-outline-default hover:bg-surface-card hover:text-content-primary'"
                         class="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-lg border px-4 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card"
                         @click="setTab('{{ tab_id }}'); $nextTick(() => { window.dispatchEvent(new Event('resize')); if (window.renderKaoriIcons) window.renderKaoriIcons(); })"
                         @keydown.right.prevent="if ($el.nextElementSibling) $el.nextElementSibling.focus()"

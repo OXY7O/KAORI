@@ -68,6 +68,10 @@
                     {% endwith %}
                 {% endif %}
             </div>
+            <div id="tls-sync-feedback"
+                 class="flex w-full flex-col gap-3"
+                 {% if current_user.is_authenticated and current_user.has_permission('tls_certificates.sync') and cluster_onboarding.has_clusters %} hx-get="{{ url_for('governance.tls_certificates_active_sync') }}" hx-trigger="load" hx-swap="innerHTML" {% endif %}>
+            </div>
             <div id="individual-sync-feedback"
                  class="flex w-full flex-col gap-3"
                  {% if current_user.is_authenticated and current_user.has_permission('clusters.sync') and cluster_onboarding.has_clusters %} hx-get="{{ url_for('cluster.active_individual_sync_statuses') }}" hx-trigger="load" hx-swap="innerHTML" {% endif %}>

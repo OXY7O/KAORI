@@ -1,3 +1,4 @@
+{% import "components/section_link_button.html" as section_link_button %}
 <section class="overflow-hidden rounded-2xl border border-brand-outline bg-kaori-primary p-5 text-brand-foreground shadow-sm lg:p-6">
     <div class="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div class="flex items-start gap-3">
@@ -10,11 +11,10 @@
                 <p class="mt-1 text-sm text-brand-foreground-muted">Allocatable capacity, remaining headroom, and prioritized capacity signals.</p>
             </div>
         </div>
-        <a href="/analytics/capacity?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}"
-           class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-white/20 bg-white px-3 text-xs font-semibold text-kaori-primary-dark shadow-sm transition hover:bg-kaori-soft">
-            View Capacity
-            <i data-lucide="arrow-right" class="h-4 w-4"></i>
-        </a>
+        {{ section_link_button.render(
+            payload.capacity_snapshot.cpu_headroom.href ~ '?cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range,
+            'View Capacity'
+        ) }}
     </div>
     <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
         {% for item in [payload.capacity_snapshot.cpu_headroom, payload.capacity_snapshot.memory_headroom, payload.capacity_snapshot.pod_capacity_remaining, payload.capacity_snapshot.recommendations] %}
