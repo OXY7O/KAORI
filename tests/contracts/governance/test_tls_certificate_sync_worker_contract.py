@@ -27,15 +27,15 @@ def test_tls_manual_route_dispatches_worker_job_instead_of_collecting_inline() -
     assert 'def sync_tls_certificates(cluster_id:' not in service
 
 
-def test_tls_worker_progress_is_owned_by_persistent_toast() -> None:
+def test_tls_worker_progress_is_owned_by_inventory_operations_loading_bar() -> None:
     scope = (
         ROOT / 'app/templates/governance/tls_certificates/partials/_inventory_scope.html'
     ).read_text()
     sync_panel = (
         ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel.html'
     ).read_text()
-    sync_toast = (
-        ROOT / 'app/templates/governance/tls_certificates/partials/_sync_toast.html'
+    sync_response = (
+        ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel_response.html'
     ).read_text()
     layout = (ROOT / 'app/templates/layouts/app.html').read_text()
     routes = (ROOT / 'app/governance/tls_certificates/routes.py').read_text()
@@ -44,14 +44,15 @@ def test_tls_worker_progress_is_owned_by_persistent_toast() -> None:
     assert 'hx-trigger="tlsInventorySyncFinished from:body"' in scope
     assert 'id="tls-certificates-background-refresh-trigger"' in scope
     assert 'class="htmx-indicator hidden"' in scope
-    assert 'progress_bar' not in sync_panel
-    assert 'TLS Secret Sync In Progress' in sync_toast
-    assert 'notification-progress-indeterminate' in sync_toast
-    assert "url_for('governance.tls_certificates_sync_status'" in sync_toast
-    assert 'id="tls-sync-feedback"' in layout
-    assert "url_for('governance.tls_certificates_active_sync')" in layout
+    assert 'loading_bar.render(' in sync_panel
+    assert "url_for('governance.tls_certificates_sync_status'" in sync_panel
+    assert 'payload.sync_state.progress_message' in sync_panel
+    assert 'hx-trigger="load delay:2s"' in sync_panel
+    assert 'toast_oob=true' in sync_response
+    assert 'tls-sync-feedback' not in layout
+    assert "url_for('governance.tls_certificates_active_sync')" not in layout
     assert "'tlsInventorySyncFinished': True" in routes
-
+    assert 'feedback=feedback' in routes
 
 def test_tls_filter_state_keeps_one_inventory_scope_boundary() -> None:
     scope = (
@@ -94,6 +95,18 @@ def test_tls_operation_buttons_share_the_same_kaori_component() -> None:
     assert 'focus-visible:ring-outline-focus' in action_button
 
 
+def test_tls_dispatch_attempts_are_written_to_activity_audit() -> None:
+    routes = (ROOT / 'app/governance/tls_certificates/routes.py').read_text()
+
+    assert 'from app.models.audit import AuditEvent' in routes
+    assert 'def _record_dispatch_audit(' in routes
+    assert "event.action = f'governance_tls_secret_sync_dispatch_{action_status}'" in routes
+    assert "action_status='queued' if outcome.created else 'already_active'" in routes
+    assert "action_status='quota_exceeded'" in routes
+    assert "action_status='failed'" in routes
+    assert "action_status='blocked'" in routes
+
+
 def test_tls_terminal_outcomes_are_written_to_activity_audit() -> None:
     tasks = (ROOT / 'app/governance/tls_certificates/tasks.py').read_text()
 
@@ -106,7 +119,7 @@ def test_tls_terminal_outcomes_are_written_to_activity_audit() -> None:
     assert '_record_terminal_audit(' in tasks
 
 
-def test_tls_page_exposes_automatic_freshness_without_inline_worker_progress() -> None:
+def test_tls_page_exposes_automatic_freshness_with_scoped_worker_progress() -> None:
     sync_panel = (
         ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel.html'
     ).read_text()
@@ -116,4 +129,5 @@ def test_tls_page_exposes_automatic_freshness_without_inline_worker_progress() -
     assert 'Next Scheduled' in sync_panel
     assert "payload.sync_state.is_active" in sync_panel
     assert "job_key='governance.tls_certificates.sync'" in sync_panel
-    assert 'TLS Certificate Synchronization Progress' not in sync_panel
+    assert 'TLS Secret synchronization in progress' in sync_panel
+    assert 'hx-indicator="#tls-sync-panel-poll-indicator"' in sync_panel

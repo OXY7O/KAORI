@@ -233,6 +233,46 @@ def get_utilization_summary_context(query_args: Mapping[str, Any]) -> dict[str, 
     return base
 
 
+def _trend_metric_summary(series: list[dict[str, float]]) -> dict[str, float | int]:
+    values = [float(point.get('value') or 0) for point in series]
+    if not values:
+        return {'current': 0.0, 'average': 0.0, 'peak': 0.0, 'samples': 0}
+    return {
+        'current': round(values[-1], 2),
+        'average': round(sum(values) / len(values), 2),
+        'peak': round(max(values), 2),
+        'samples': len(values),
+    }
+
+
+def build_utilization_trend_summary(trends: dict[str, list[dict[str, float]]]) -> dict[str, Any]:
+    resources = {
+        resource: _trend_metric_summary(trends.get(resource, []))
+        for resource in ('cpu', 'memory', 'pods')
+    }
+    peak_resource, peak_metric = max(
+        resources.items(),
+        key=lambda item: float(item[1]['peak']),
+    )
+    peak_value = float(peak_metric['peak'])
+    if peak_value > 90:
+        posture, tone = 'Critical', 'critical'
+    elif peak_value >= 75:
+        posture, tone = 'Warning', 'warning'
+    elif any(int(metric['samples']) for metric in resources.values()):
+        posture, tone = 'Normal', 'normal'
+    else:
+        posture, tone = 'No Data', 'unknown'
+    return {
+        'resources': resources,
+        'posture': posture,
+        'tone': tone,
+        'peak_resource': peak_resource.upper() if peak_value else 'None',
+        'peak_value': round(peak_value, 2),
+        'sample_count': max(int(metric['samples']) for metric in resources.values()),
+    }
+
+
 def get_utilization_trend_context(query_args: Mapping[str, Any]) -> dict[str, Any]:
     cluster, service, context = _dependency_context(query_args)
     dependency_blocker = context.get('dependency_blocker')
@@ -270,6 +310,7 @@ def get_utilization_trend_context(query_args: Mapping[str, Any]) -> dict[str, An
         'cluster': cluster,
         'summary': summary,
         'trends': trends,
+        'trend_summary': build_utilization_trend_summary(trends),
         'trend_hours': trend_hours,
         'allowed_trend_hours': list(ALLOWED_TREND_HOURS),
         'available_worker_nodes': available_worker_nodes,

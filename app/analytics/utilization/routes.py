@@ -8,7 +8,10 @@ from app.analytics.materialization.presentation import (
     snapshot_meta,
 )
 from app.analytics.materialization.requests import resolve_materialized_request
-from app.analytics.utilization.materialization import ALLOWED_TREND_HOURS
+from app.analytics.utilization.materialization import (
+    ALLOWED_TREND_HOURS,
+    build_utilization_trend_summary,
+)
 from app.analytics.utilization.service import get_utilization_clusters
 from app.common.dependencies import render_dependency_blocker
 from app.rbac.decorators import permission_required
@@ -103,6 +106,9 @@ def _base_context_or_state():
         and not trend_context.get('dependency_blocker')
     ):
         context['trends'] = trend_context.get('trends') or {'cpu': [], 'memory': [], 'pods': []}
+        context['trend_summary'] = trend_context.get('trend_summary') or build_utilization_trend_summary(
+            context['trends']
+        )
         context['selected_trend_node'] = trend_context.get('selected_trend_node', selected_trend_node)
         context['available_worker_nodes'] = trend_context.get(
             'available_worker_nodes',
@@ -153,6 +159,8 @@ def utilization_trend() -> str:
         )
         return render_template('analytics/materialization/_pending.html', **pending)
     context = dict(materialized.result.context or {})
+    context.setdefault('trends', {'cpu': [], 'memory': [], 'pods': []})
+    context.setdefault('trend_summary', build_utilization_trend_summary(context['trends']))
     context['analytics_materialization'] = snapshot_meta(materialized)
     return render_template('analytics/utilization/partials/_trend.html', **context)
 

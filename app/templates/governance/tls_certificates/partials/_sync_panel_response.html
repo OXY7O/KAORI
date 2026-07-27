@@ -1,0 +1,22 @@
+{% include "governance/tls_certificates/partials/_sync_panel.html" %}
+{% if sync_result %}
+    {% with
+        notification_id='tls-sync-' ~ sync_result.public_id,
+        status=sync_result.status,
+        title=sync_result.title,
+        message=sync_result.message,
+        detail=sync_result.detail,
+        view_url=url_for('governance.tls_certificates'),
+        action_label='View TLS Inventory',
+        action_icon='shield-check',
+        total_count=sync_result.total_count,
+        synced_count=sync_result.synced_count,
+        failed_count=sync_result.failed_count,
+        duration_seconds=sync_result.duration_seconds,
+        completed_label=sync_result.completed_label,
+        notification_saved=true,
+        toast_oob=true
+    %}
+        {% include "components/navigation/_quick_sync_result.html" %}
+    {% endwith %}
+{% endif %}

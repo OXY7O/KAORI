@@ -1,0 +1,143 @@
+{% import "components/table_label.html" as table_label %}
+{% import "analytics/components/_prometheus_status.html" as prometheus_status_component %}
+{% set materialization = analytics_materialization|default({}) %}
+{% if materialization.stale %}
+    {% set snapshot_label = 'Stale Snapshot' %}
+    {% set snapshot_tone = 'warning' %}
+    {% set snapshot_icon = 'history' %}
+{% elif materialization.state == 'ready' %}
+    {% set snapshot_label = 'Current Snapshot' %}
+    {% set snapshot_tone = 'normal' %}
+    {% set snapshot_icon = 'database-check' %}
+{% elif materialization.state == 'pending' or materialization.refresh_dispatched %}
+    {% set snapshot_label = 'Refresh In Progress' %}
+    {% set snapshot_tone = 'info' %}
+    {% set snapshot_icon = 'loader-circle' %}
+{% elif materialization.state == 'failed' %}
+    {% set snapshot_label = 'Snapshot Failed' %}
+    {% set snapshot_tone = 'critical' %}
+    {% set snapshot_icon = 'database-x' %}
+{% else %}
+    {% set snapshot_label = 'Snapshot Unavailable' %}
+    {% set snapshot_tone = 'unknown' %}
+    {% set snapshot_icon = 'database' %}
+{% endif %}
+{% set ready_ratio = ((cluster_info.ready_nodes / cluster_info.total_nodes) * 100) if cluster_info.total_nodes else 0 %}
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="scan-search" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-lg font-semibold text-content-primary">Utilization Scope &amp; Data Readiness</h2>
+                        {{ table_label.status_label(snapshot_label, snapshot_tone, snapshot_icon, 'detail') }}
+                    </div>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">Prometheus connectivity, active Kubernetes cluster context, and the committed utilization snapshot used by this page.</p>
+                </div>
+            </div>
+            {{ table_label.metadata_label('Worker Materialized', 'database-zap', false, 'detail') }}
+        </div>
+    </header>
+
+    <div class="grid gap-4 p-5 sm:p-6 xl:grid-cols-3">
+        {{ prometheus_status_component.render(
+            prometheus_status,
+            materialization.last_attempt_at|user_datetime(''),
+            embedded=true
+        ) }}
+
+        <section class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-4">
+            <div class="flex items-start gap-3">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="server-cog" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="text-sm font-semibold text-content-primary">Active Cluster Scope</h3>
+                        {{ table_label.metadata_label(cluster.name if cluster else 'No Cluster', 'building-2', false, 'detail') }}
+                    </div>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Kubernetes {{ cluster_info.kubernetes_version }} · {{ cluster_info.worker_nodes }} worker and {{ cluster_info.master_nodes }} control-plane nodes.</p>
+                </div>
+            </div>
+            <div class="mt-4 divide-y divide-outline-subtle border-y border-outline-subtle">
+                <div class="flex items-center justify-between gap-3 py-2.5 text-xs">
+                    <span class="text-content-muted">Node Readiness</span>
+                    <span class="font-semibold text-content-primary">{{ cluster_info.ready_nodes }} / {{ cluster_info.total_nodes }} Ready · {{ '%.0f'|format(ready_ratio) }}%</span>
+                </div>
+                <div class="flex items-center justify-between gap-3 py-2.5 text-xs">
+                    <span class="text-content-muted">Worker Split</span>
+                    <span class="text-right font-semibold text-content-primary">{{ cluster_info.worker_nodes }} Worker · {{ cluster_info.master_nodes }} Control Plane</span>
+                </div>
+                <div class="flex items-center justify-between gap-3 py-2.5 text-xs">
+                    <span class="text-content-muted">Analysis Window</span>
+                    <span class="font-semibold text-content-primary">
+                        {% if trend_hours == 1 %}Last Hour
+                        {% elif trend_hours < 24 %}Last {{ trend_hours }} Hours
+                        {% elif trend_hours == 24 %}Last 24 Hours
+                        {% elif trend_hours == 168 %}Last 7 Days
+                        {% elif trend_hours == 720 %}Last 30 Days
+                        {% elif trend_hours == 1440 %}Last 60 Days
+                        {% else %}{{ trend_hours }} Hours{% endif %}
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <section class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-4">
+            <div class="flex items-start gap-3">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="database-clock" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="text-sm font-semibold text-content-primary">Latest Utilization Data Snapshot</h3>
+                        {{ table_label.status_label(snapshot_label, snapshot_tone, snapshot_icon, 'detail') }}
+                    </div>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">The page reads committed worker output and does not execute Prometheus range queries during normal rendering.</p>
+                </div>
+            </div>
+            <div class="mt-4 divide-y divide-outline-subtle border-y border-outline-subtle">
+                <div class="flex items-start justify-between gap-3 py-2.5 text-xs">
+                    <span class="text-content-muted">Latest Data Sync</span>
+                    <span class="text-right font-semibold text-content-primary">{{ materialization.generated_at|user_datetime('Unavailable') }}</span>
+                </div>
+                <div class="flex items-start justify-between gap-3 py-2.5 text-xs">
+                    <span class="text-content-muted">Latest Worker Attempt</span>
+                    <span class="text-right font-semibold text-content-primary">{{ materialization.last_attempt_at|user_datetime('Unavailable') }}</span>
+                </div>
+                <div class="flex items-start justify-between gap-3 py-2.5 text-xs">
+                    <span class="text-content-muted">Freshness Window</span>
+                    <span class="text-right font-semibold text-content-primary">{{ materialization.expires_at|user_datetime('Not Available') }}</span>
+                </div>
+                <div class="flex items-start justify-between gap-3 py-2.5 text-xs">
+                    <span class="text-content-muted">Dataset</span>
+                    <span class="break-all text-right font-mono font-semibold text-content-primary">{{ materialization.dataset_key or 'analytics.utilization.summary' }}</span>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+        {% set scope_metrics = [
+            ('Node Readiness', '%.0f%%'|format(ready_ratio), cluster_info.ready_nodes ~ ' ready · ' ~ cluster_info.not_ready_nodes ~ ' NotReady', 'badge-check'),
+            ('CPU Capacity', cluster_info.cpu_capacity, 'Allocatable cores', 'cpu'),
+            ('Memory Capacity', '%.2f GiB'|format(cluster_info.memory_capacity / 1024**3), 'Allocatable memory', 'memory-stick'),
+            ('Pod Capacity', cluster_info.pod_capacity, 'Available pod slots', 'boxes')
+        ] %}
+        {% for label, value, helper, icon in scope_metrics %}
+            <div class="flex min-w-0 items-start gap-3 bg-surface-card px-5 py-4 sm:px-6">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
+                    <p class="mt-1 break-words text-lg font-semibold text-content-primary">{{ value }}</p>
+                    <p class="mt-0.5 text-xs text-content-muted">{{ helper }}</p>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</section>

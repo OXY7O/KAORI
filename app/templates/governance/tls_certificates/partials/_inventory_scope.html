@@ -10,7 +10,6 @@
     {% include "governance/tls_certificates/partials/_summary_cards.html" %}
     {% include "governance/tls_certificates/partials/_content.html" %}
 </div>
-{% include "governance/tls_certificates/partials/_sync_toast_oob.html" %}
 {% if sync_feedback %}
     {% with
         status=sync_feedback.status,

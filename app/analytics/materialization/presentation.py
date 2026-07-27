@@ -12,10 +12,14 @@ def snapshot_meta(materialized: MaterializedRequest) -> dict[str, Any]:
     snapshot = materialized.result.snapshot
     return {
         'state': materialized.result.state,
+        'status': snapshot.status if snapshot else materialized.result.state,
+        'dataset_key': snapshot.dataset_key if snapshot else None,
         'stale': materialized.result.stale,
         'refresh_dispatched': materialized.dispatched,
         'generated_at': snapshot.generated_at if snapshot else None,
         'expires_at': snapshot.expires_at if snapshot else None,
+        'last_attempt_at': snapshot.last_attempt_at if snapshot else None,
+        'last_job_execution_id': snapshot.last_job_execution_id if snapshot else None,
         'last_error': snapshot.last_error if snapshot else None,
         'source_warning': materialized.source_warning,
     }
