@@ -145,3 +145,12 @@ def test_tls_worker_reports_stage_progress_for_single_cluster_jobs() -> None:
     assert 'current=((index - 1) * 2) + 1' in tasks
     assert 'current=index * 2' in tasks
     assert "message='Finalizing TLS Secret inventory synchronization.'" in tasks
+
+def test_tls_sync_visibility_query_avoids_distinct_across_json_columns() -> None:
+    toast = (ROOT / 'app/governance/tls_certificates/toast.py').read_text()
+
+    assert 'JobExecution.subscribers.any(' in toast
+    assert 'JobExecutionSubscriber.user_id == user_id' in toast
+    assert '.outerjoin(' not in toast
+    assert '.distinct()' not in toast
+

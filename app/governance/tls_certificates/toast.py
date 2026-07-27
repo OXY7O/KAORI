@@ -12,20 +12,16 @@ from app.models.job import JobExecution, JobExecutionSubscriber
 
 
 def _visible_query(user_id: int):
-    return (
-        JobExecution.query.outerjoin(
-            JobExecutionSubscriber,
-            JobExecutionSubscriber.job_execution_id == JobExecution.id,
-        )
-        .filter(
-            JobExecution.job_type == TLS_SYNC_JOB_TYPE,
-            JobExecution.operation == TLS_SYNC_OPERATION,
-            or_(
-                JobExecution.requested_by_user_id == user_id,
-                JobExecutionSubscriber.user_id == user_id,
-            ),
-        )
-        .distinct()
+    subscriber_can_view = JobExecution.subscribers.any(
+        JobExecutionSubscriber.user_id == user_id,
+    )
+    return JobExecution.query.filter(
+        JobExecution.job_type == TLS_SYNC_JOB_TYPE,
+        JobExecution.operation == TLS_SYNC_OPERATION,
+        or_(
+            JobExecution.requested_by_user_id == user_id,
+            subscriber_can_view,
+        ),
     )
 
 
