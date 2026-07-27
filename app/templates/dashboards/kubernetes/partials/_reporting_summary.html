@@ -1,61 +1,136 @@
 {% import "components/section_link_button.html" as section_link_button %}
-<section class="h-full rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <div class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
-        <div class="flex min-w-0 flex-1 items-center gap-3">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                <i data-lucide="file-text" class="h-5 w-5"></i>
+{% import "components/table_label.html" as table_label %}
+
+{% set reporting = dashboard.reporting_snapshot %}
+{% set source_available = reporting.source_status|default('Unavailable', true)|lower == 'available' %}
+
+<section class="flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="border-b border-outline-subtle px-5 py-4">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 items-center gap-3">
+                <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="file-chart-column" class="h-5 w-5" aria-hidden="true"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-sm font-semibold text-content-primary">Reporting Summary</h2>
+                        {{ table_label.status_label(
+                            reporting.source_status|default('Unavailable', true),
+                            tone='normal' if source_available else 'unknown',
+                            size='compact'
+                        ) }}
+                    </div>
+                    <p class="mt-0.5 text-xs leading-5 text-content-muted">
+                        Report output, reusable definitions, schedules, and recent generation activity.
+                    </p>
+                </div>
             </div>
-            <div class="min-w-0">
-                <h2 class="text-sm font-semibold text-content-primary">Reporting Summary</h2>
-                <p class="mt-0.5 text-xs leading-5 text-content-muted">Recent report activity and reporting asset counts.</p>
-            </div>
-        </div>
-        <div class="ml-auto flex shrink-0 items-center gap-2">
             {{ section_link_button.render('/reports', 'View Reports') }}
         </div>
-    </div>
-    <div class="p-5">
-        <div class="grid grid-cols-3 gap-3">
-            <div class="rounded-lg border border-outline-subtle bg-surface-hover p-3 text-center">
-                <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Generated</p>
-                <p class="mt-1 text-xl font-semibold text-content-primary">{{ dashboard.reporting_snapshot.generated_reports }}</p>
+    </header>
+
+    <div class="flex flex-1 flex-col gap-5 p-5">
+        <div class="grid gap-3 sm:grid-cols-2">
+            <div class="flex min-w-0 flex-col justify-between rounded-lg border border-kaori-outline bg-kaori-soft p-4 sm:row-span-2">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-outline bg-surface-card text-kaori-primary">
+                        <i data-lucide="files" class="h-4 w-4" aria-hidden="true"></i>
+                    </div>
+                    {{ table_label.metadata_label('Report Output', size='compact') }}
+                </div>
+                <div class="mt-6 min-w-0">
+                    <p class="text-3xl font-semibold tracking-tight text-content-primary">
+                        {{ reporting.generated_reports }}
+                    </p>
+                    <p class="mt-1 text-sm font-semibold text-content-primary">Generated Reports</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">
+                        Stored report artifacts available within the active dashboard scope.
+                    </p>
+                </div>
             </div>
-            <div class="rounded-lg border border-outline-subtle bg-surface-hover p-3 text-center">
-                <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Templates</p>
-                <p class="mt-1 text-xl font-semibold text-content-primary">{{ dashboard.reporting_snapshot.templates }}</p>
+
+            <div class="flex min-w-0 items-center justify-between gap-4 rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                <div class="flex min-w-0 items-center gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="layout-template" class="h-4 w-4" aria-hidden="true"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-content-primary">Report Templates</p>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Reusable approved report definitions.</p>
+                    </div>
+                </div>
+                <p class="shrink-0 text-2xl font-semibold text-content-primary">{{ reporting.templates }}</p>
             </div>
-            <div class="rounded-lg border border-outline-subtle bg-surface-hover p-3 text-center">
-                <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Schedules</p>
-                <p class="mt-1 text-xl font-semibold text-content-primary">{{ dashboard.reporting_snapshot.schedules }}</p>
+
+            <div class="flex min-w-0 items-center justify-between gap-4 rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                <div class="flex min-w-0 items-center gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="calendar-clock" class="h-4 w-4" aria-hidden="true"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-content-primary">Report Schedules</p>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Configured recurring generation plans.</p>
+                    </div>
+                </div>
+                <p class="shrink-0 text-2xl font-semibold text-content-primary">{{ reporting.schedules }}</p>
             </div>
         </div>
-        <div class="mt-4 space-y-2.5">
-            {% if dashboard.reporting_snapshot.latest_reports %}
-                {% for report in dashboard.reporting_snapshot.latest_reports %}
-                    <div class="flex items-center justify-between gap-4 rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                        <div class="flex min-w-0 items-center gap-3">
-                            <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                <i data-lucide="file-check-2" class="h-4 w-4"></i>
+
+        <div class="min-w-0">
+            <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <div class="min-w-0">
+                    <h3 class="text-xs font-semibold uppercase tracking-wide text-content-secondary">Recent Report Activity</h3>
+                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Up to five latest generated report records.</p>
+                </div>
+                {% if reporting.latest_reports %}
+                    {{ table_label.metadata_label(
+                        table_label.count_text(reporting.latest_reports|length, 'Record'),
+                        icon='history',
+                        size='compact'
+                    ) }}
+                {% endif %}
+            </div>
+
+            {% if reporting.latest_reports %}
+                <div class="overflow-hidden rounded-lg border border-outline-subtle">
+                    {% for report in reporting.latest_reports %}
+                        {% set normalized_status = report.status|default('Unknown', true)|lower %}
+                        {% set status_tone = 'normal' if normalized_status in ['completed', 'ready', 'succeeded'] else ('critical' if normalized_status in ['failed', 'error'] else ('info' if normalized_status in ['queued', 'running', 'pending', 'in progress'] else 'unknown')) %}
+                        <div class="flex min-w-0 flex-col gap-3 bg-surface-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between {% if not loop.last %}border-b border-outline-subtle{% endif %}">
+                            <div class="flex min-w-0 items-start gap-3">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                    <i data-lucide="file-check-2" class="h-4 w-4" aria-hidden="true"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="break-words text-sm font-semibold text-content-primary">{{ report.title }}</p>
+                                    <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-content-muted">
+                                        <span class="inline-flex items-center gap-1">
+                                            <i data-lucide="clock-3" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                                            {{ report.generated_at }}
+                                        </span>
+                                        <span aria-hidden="true">•</span>
+                                        <span>Generated output</span>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="min-w-0">
-                                <p class="truncate text-sm font-semibold text-content-primary">{{ report.title }}</p>
-                                <p class="mt-0.5 text-xs text-content-muted">{{ report.generated_at }}</p>
+                            <div class="shrink-0 sm:self-center">
+                                {{ table_label.status_label(report.status, tone=status_tone, size='detail') }}
                             </div>
                         </div>
-                        <span class="rounded-md border px-2.5 py-1 text-xs font-semibold {% if report.status|lower == 'completed' %}border-status-normal-border bg-status-normal-soft text-status-normal-text {% elif report.status|lower == 'failed' %}border-status-critical-border bg-status-critical-soft text-status-critical-text {% else %}border-status-pending-border bg-status-pending-soft text-status-pending-text{% endif %}">
-                            {{ report.status }}
-                        </span>
-                    </div>
-                {% endfor %}
+                    {% endfor %}
+                </div>
             {% else %}
-                <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-5 text-center">
-                    <i data-lucide="file-plus-2" class="mx-auto h-6 w-6 text-kaori-primary"></i>
-                    <p class="mt-2 text-sm font-semibold text-kaori-primary">No Reports Generated Yet</p>
-                    <a href="/reports/generate"
-                       class="mt-2 inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:text-kaori-primary-hover">
-                        Generate report
-                        <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
-                    </a>
+                <div class="flex flex-col items-center justify-center rounded-lg border border-dashed border-outline-strong bg-surface-elevated px-5 py-8 text-center">
+                    <span class="flex h-11 w-11 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="file-plus-2" class="h-5 w-5" aria-hidden="true"></i>
+                    </span>
+                    <p class="mt-3 text-sm font-semibold text-content-primary">No Generated Reports</p>
+                    <p class="mt-1 max-w-sm text-xs leading-5 text-content-muted">
+                        Generate the first report to establish recent activity and report output history.
+                    </p>
+                    <div class="mt-4">
+                        {{ section_link_button.render('/reports/generate', 'Generate Report', icon='plus') }}
+                    </div>
                 </div>
             {% endif %}
         </div>
