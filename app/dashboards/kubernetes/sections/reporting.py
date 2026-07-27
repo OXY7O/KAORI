@@ -11,7 +11,7 @@ def build_reporting_snapshot(selected_cluster_id: str | None) -> ReportingSnapsh
     ReportTemplate = models.get('ReportTemplate')
     ReportSchedule = models.get('ReportSchedule')
 
-    reports = query_all(Report, selected_cluster_id, limit=5) if Report else []
+    reports = query_all(Report, selected_cluster_id, limit=3) if Report else []
     latest: list[ReportItem] = []
     for report in reports:
         title = str(get_attr(report, 'title', 'name', 'report_name', default='Generated Report'))
