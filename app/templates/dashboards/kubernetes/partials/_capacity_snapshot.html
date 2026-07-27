@@ -1,4 +1,5 @@
 {% import "components/progress_bar.html" as progress_bar %}
+{% import "components/section_link_button.html" as section_link_button %}
 <section id="dashboard-capacity-snapshot"
          class="h-full rounded-xl border border-outline-default bg-surface-card shadow-sm">
     <div class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
@@ -12,8 +13,7 @@
             </div>
         </div>
         <div class="ml-auto flex shrink-0 items-center gap-2">
-            <a href="/analytics/capacity"
-               class="hidden text-xs font-semibold text-kaori-primary transition hover:text-kaori-primary-hover sm:inline-flex">View Capacity</a>
+            {{ section_link_button.render('/analytics/capacity', 'View Capacity') }}
         </div>
     </div>
     <div class="p-5">
