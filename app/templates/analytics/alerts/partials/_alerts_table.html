@@ -1,4 +1,4 @@
-<div id="alerts-table-container">
+<div id="alerts-table-container" data-alerts-swap-boundary>
     <div class="hidden grid-cols-12 gap-4 border-b border-outline-default bg-surface-hover px-4 py-3 lg:grid">
         <div class="col-span-4 text-xs font-semibold uppercase tracking-wide text-content-muted">Alert</div>
         <div class="col-span-2 text-xs font-semibold uppercase tracking-wide text-content-muted">Severity &amp; State</div>
@@ -10,7 +10,7 @@
     <div class="divide-y divide-outline-default bg-surface-card">
         {% if alerts %}
             {% for alert in alerts %}
-                {% set row_key = 'alert-' ~ loop.index0 %}
+                {% set row_key = 'alert-' ~ alerts_pagination.page ~ '-' ~ loop.index0 %}
                 {% include "analytics/alerts/partials/_alerts_table_row.html" %}
             {% endfor %}
         {% else %}
