@@ -16,7 +16,7 @@ from app.jobs.definitions.base import JobDefinition
 from app.jobs.dispatcher import dispatch_registered_job
 from app.jobs.policies.forms import JobPolicyForm, ManualJobRunForm
 from app.jobs.policies.service import update_job_policy
-from app.jobs.presentation import build_job_execution_context
+from app.jobs.presentation import build_job_execution_context, build_job_execution_status_context
 from app.jobs.registry import get_job_definition
 from app.jobs.service import (
     JobCancellationNotAllowed,
@@ -165,10 +165,17 @@ def index() -> ResponseReturnValue:
 @permission_required('jobs.view')
 def executions() -> ResponseReturnValue:
     if _is_htmx():
-        return _render_execution_fragment(
-            _execution_context(),
-            request.args.get('fragment', 'page').strip(),
+        fragment = request.args.get('fragment', 'page').strip()
+        context = (
+            build_job_execution_status_context(
+                tab=request.args.get('execution_tab', request.args.get('tab', 'active')).strip()
+            )
+            if fragment == 'status'
+            else _execution_context()
         )
+        response = make_response(_render_execution_fragment(context, fragment))
+        response.headers['Cache-Control'] = 'no-store, max-age=0'
+        return response
     return render_template(
         'jobs/index.html',
         **_page_context(active_section='executions'),

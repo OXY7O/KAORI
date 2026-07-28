@@ -14,8 +14,9 @@ def test_active_alert_signal_state_has_explicit_meaning() -> None:
     row = _read("_alerts_table_row.html")
 
     assert "Severity &amp; State" in table
-    assert ">Severity</p>" in row
-    assert ">Alert State</p>" in row
+    assert ">Severity</p>" not in row
+    assert ">Alert State</p>" not in row
+    assert "space-y-1 lg:col-span-2" in row
     assert "Severity: " in row
     assert "State: " in row
 

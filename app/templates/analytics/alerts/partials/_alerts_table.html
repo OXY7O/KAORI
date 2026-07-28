@@ -7,7 +7,7 @@
         <div class="col-span-2 text-right text-xs font-semibold uppercase tracking-wide text-content-muted">Action</div>
     </div>
 
-    <div x-data="{ openAlert: null }" class="divide-y divide-outline-default bg-surface-card">
+    <div class="divide-y divide-outline-default bg-surface-card">
         {% if alerts %}
             {% for alert in alerts %}
                 {% set row_key = 'alert-' ~ loop.index0 %}

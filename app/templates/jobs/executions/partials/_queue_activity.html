@@ -1,76 +1,61 @@
 {% import "components/table_label.html" as table_label %}
-<section class="{{ 'min-w-0' if embedded|default(false) else 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' }}"
+<section id="job-queue-activity"
+         class="{{ 'min-w-0' if embedded|default(false) else 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' }}"
          aria-labelledby="queue-activity-title">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-                <div class="flex flex-wrap items-center gap-2">
-                    <h3 id="queue-activity-title" class="text-base font-semibold text-content-primary">Queue Activity</h3>
-                    {{ table_label.metadata_label((job_queue_rows|length) ~ ' Queues') }}
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="network" class="h-5 w-5"></i></span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h3 id="queue-activity-title" class="text-base font-semibold text-content-primary">Queue Activity</h3>
+                        {{ table_label.metadata_label((job_queue_rows|length) ~ ' Queues') }}
+                    </div>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Compare demand, completion, and attention posture across isolated worker queues.</p>
                 </div>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Execution demand recorded across isolated KAORI worker queues.</p>
             </div>
-            <p class="text-xs font-medium text-content-muted">Record activity, not worker liveness</p>
+            <p class="text-xs font-medium text-content-muted">Execution records · not worker liveness</p>
         </div>
     </header>
 
     {% if job_queue_rows %}
-        <div class="grid gap-4 p-5 lg:grid-cols-2 sm:p-6">
+        <div class="hidden grid-cols-12 gap-4 border-b border-outline-subtle bg-surface-hover px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted lg:grid sm:px-6">
+            <span class="col-span-4">Queue</span><span class="col-span-6">Execution Activity</span><span class="col-span-2 text-right">Posture</span>
+        </div>
+        <div class="divide-y divide-outline-subtle">
             {% for queue in job_queue_rows %}
-                {% set queue_tone = 'warning' if queue.state == 'attention' else ('info' if queue.state == 'active' else 'unknown') %}
-                <article class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-                    <header class="flex items-start justify-between gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3.5">
-                        <div class="flex min-w-0 items-start gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                <i data-lucide="{{ queue.icon }}" class="h-4 w-4"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <h4 class="break-words text-sm font-semibold text-content-primary">{{ queue.name }}</h4>
-                                <p class="mt-1 text-xs text-content-muted">Latest activity {{ queue.latest_activity }}</p>
-                            </div>
+                {% set queue_tone = 'warning' if queue.state == 'attention' else ('info' if queue.state == 'active' else 'normal') %}
+                <article class="grid min-w-0 gap-4 px-5 py-4 sm:px-6 lg:grid-cols-12 lg:items-center">
+                    <div class="flex min-w-0 items-start gap-3 lg:col-span-4">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="{{ queue.icon }}" class="h-4 w-4"></i></span>
+                        <div class="min-w-0">
+                            <h4 class="break-words text-sm font-semibold text-content-primary">{{ queue.name }}</h4>
+                            <p class="mt-1 text-xs text-content-muted">Latest activity {{ queue.latest_activity }}</p>
                         </div>
-                        {{ table_label.status_indicator_label(queue.state|title, tone=queue_tone) }}
-                    </header>
-
-                    <dl class="grid grid-cols-2 sm:grid-cols-4">
-                        {% set metrics = [
-                            ('Active', queue.active),
-                            ('Running', queue.running),
-                            ('Queued', queue.queued),
-                            ('Completed · 24H', queue.completed_24h)
-                        ] %}
-                        {% for label, value in metrics %}
-                            <div class="border-outline-subtle px-4 py-3 {% if loop.index <= 2 %}border-b{% endif %} {% if loop.index is odd %}border-r{% endif %} sm:border-b-0 {% if loop.index < 4 %}sm:border-r{% else %}sm:border-r-0{% endif %}">
+                    </div>
+                    <dl class="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:col-span-6">
+                        {% for label, value in [('Active', queue.active), ('Running', queue.running), ('Queued', queue.queued), ('Completed · 24H', queue.completed_24h)] %}
+                            <div class="min-w-0 rounded-lg bg-surface-hover px-3 py-2.5">
                                 <dt class="text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">{{ label }}</dt>
-                                <dd class="mt-1 text-lg font-bold text-content-primary">{{ value }}</dd>
+                                <dd class="mt-1 text-base font-bold text-content-primary">{{ value }}</dd>
                             </div>
                         {% endfor %}
                     </dl>
-
-                    <div class="border-t border-outline-subtle px-4 py-3">
+                    <div class="flex flex-col items-start gap-2 lg:col-span-2 lg:items-end">
+                        {{ table_label.status_indicator_label(queue.state|title, tone=queue_tone) }}
                         {% if queue.failed_24h or queue.attention %}
-                            <div class="flex items-start gap-2 text-xs leading-5 text-status-warning-text">
-                                <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-status-warning"></span>
-                                <p>{{ queue.failed_24h }} failed in the last 24 hours · {{ queue.attention }} execution{{ '' if queue.attention == 1 else 's' }} currently require attention.</p>
-                            </div>
+                            <p class="text-xs leading-5 text-status-warning-text lg:text-right">{{ queue.failed_24h }} failed · {{ queue.attention }} need attention</p>
                         {% else %}
-                            <div class="flex items-start gap-2 text-xs leading-5 text-content-muted">
-                                <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-status-normal"></span>
-                                <p>No failed or attention-required execution is currently recorded for this queue.</p>
-                            </div>
+                            <p class="text-xs leading-5 text-content-muted lg:text-right">No failure or attention signal.</p>
                         {% endif %}
                     </div>
                 </article>
             {% endfor %}
         </div>
-        <div class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs leading-5 text-content-muted sm:px-6">
-            Queue Activity is derived from canonical JobExecution records. Use deployment monitoring or Celery inspection to verify worker process health.
-        </div>
+        <div class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs leading-5 text-content-muted sm:px-6">Queue Activity is derived from canonical JobExecution records. Use deployment monitoring or Celery inspection for worker process health.</div>
     {% else %}
         <div class="px-6 py-12 text-center">
-            <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                <i data-lucide="network" class="h-5 w-5"></i>
-            </span>
+            <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="network" class="h-5 w-5"></i></span>
             <h3 class="mt-4 text-base font-semibold text-content-primary">No Queue Activity</h3>
             <p class="mt-1 text-sm text-content-secondary">KAORI has not recorded background execution activity yet.</p>
         </div>

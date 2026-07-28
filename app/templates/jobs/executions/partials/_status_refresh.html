@@ -1,5 +1,13 @@
-{% import "components/page_hero.html" as page_hero %}
-{% include 'jobs/executions/_workspace.html' %}
-{% set oob = true %}
-{% include 'jobs/executions/partials/_hero_metadata.html' %}
-{% include 'jobs/executions/partials/_hero_context_metrics.html' %}
+{% from "integrations/partials/_status_badge.html" import status_badge %}
+{% include 'jobs/executions/partials/_status_poller.html' %}
+<span id="execution-overview-posture" hx-swap-oob="outerHTML">
+    {{ status_badge('pending' if job_stats.active else 'ready', 'Work Active' if job_stats.active else 'Queues Clear') }}
+</span>
+<p id="execution-overview-updated" class="text-xs font-medium text-content-muted" hx-swap-oob="outerHTML">Updated {{ job_last_refreshed_at }}</p>
+<p id="execution-overview-metric-active" class="text-xl font-bold text-content-primary" hx-swap-oob="outerHTML">{{ job_stats.active }}</p>
+<p id="execution-overview-metric-running" class="text-xl font-bold text-content-primary" hx-swap-oob="outerHTML">{{ job_stats.running }}</p>
+<p id="execution-overview-metric-attention" class="text-xl font-bold text-content-primary" hx-swap-oob="outerHTML">{{ job_stats.attention }}</p>
+<p id="execution-overview-metric-completed" class="text-xl font-bold text-content-primary" hx-swap-oob="outerHTML">{{ job_stats.completed_24h }}</p>
+<span id="execution-tab-count-active" class="inline-flex min-h-5 min-w-5 items-center justify-center rounded-md bg-kaori-soft px-1.5 text-[10px] font-semibold text-kaori-primary" hx-swap-oob="outerHTML">{{ job_stats.active }}</span>
+<span id="execution-tab-count-registry" class="inline-flex min-h-5 min-w-5 items-center justify-center rounded-md bg-kaori-soft px-1.5 text-[10px] font-semibold text-kaori-primary" hx-swap-oob="outerHTML">{{ job_stats.total }}</span>
+<span id="execution-tab-count-queues" class="inline-flex min-h-5 min-w-5 items-center justify-center rounded-md bg-kaori-soft px-1.5 text-[10px] font-semibold text-kaori-primary" hx-swap-oob="outerHTML">{{ job_stats.queues }}</span>

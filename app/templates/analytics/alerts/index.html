@@ -22,6 +22,8 @@
               hx-target="#alerts-page-content"
               hx-select="#alerts-page-content"
               hx-swap="outerHTML settle:150ms"
+              hx-push-url="true"
+              hx-on::before-request="window.dispatchEvent(new CustomEvent('kaori:alerts-collapse'))"
               hx-indicator="#alerts-refresh-indicator"
               hx-sync="#alerts-control-form:replace"
               class="space-y-6">
@@ -37,7 +39,7 @@
         {% if not dependency_blocker %}
             {% include "analytics/alerts/partials/_cluster_signal_overview.html" %}
 
-            <section x-data="kaoriAnalyticsTabs('alerts', ['alerts', 'anomalies', 'routing', 'ownership', 'recommendations'])"
+            <section data-alerts-tabset x-data="kaoriAnalyticsTabs('alerts', ['alerts', 'anomalies', 'routing', 'ownership', 'recommendations'])"
                      class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                 <div class="flex flex-col gap-3 px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
@@ -70,6 +72,7 @@
                          role="tabpanel"
                          aria-labelledby="alerts-content-tab-alerts"
                          x-show="activeTab === 'alerts'"
+                         x-cloak
                          class="space-y-4">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div>

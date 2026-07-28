@@ -1,4 +1,3 @@
-{% import "components/loading_bar.html" as loading_bar %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 <section id="job-execution-workspace"
          class="space-y-5"
@@ -16,14 +15,15 @@
                         <div class="flex flex-wrap items-center gap-2">
                             <h2 id="execution-overview-title"
                                 class="text-lg font-semibold text-content-primary">Execution Overview</h2>
-                            {{ status_badge('pending' if job_stats.active else 'ready', 'Work Active' if job_stats.active else 'Queues Clear') }}
+                            <span id="execution-overview-posture">
+                                {{ status_badge('pending' if job_stats.active else 'ready', 'Work Active' if job_stats.active else 'Queues Clear') }}
+                            </span>
                         </div>
                         <p class="mt-1 text-sm leading-6 text-content-secondary">Current execution demand, completion posture, and worker queue activity recorded by KAORI.</p>
                     </div>
                 </div>
-                <p class="text-xs font-medium text-content-muted">Updated {{ job_last_refreshed_at }}</p>
+                <p id="execution-overview-updated" class="text-xs font-medium text-content-muted">Updated {{ job_last_refreshed_at }}</p>
             </div>
-            {{ loading_bar.render('job-workspace-loading', label='Refreshing Jobs and Executions status') }}
         </header>
 
         <div class="grid sm:grid-cols-2 xl:grid-cols-4">
@@ -47,7 +47,7 @@
                     </span>
                     <div class="min-w-0">
                         <div class="flex items-baseline gap-2">
-                            <p class="text-xl font-bold text-content-primary">{{ value }}</p>
+                            <p id="execution-overview-metric-{{ 'active' if label == 'Active Jobs' else ('running' if label == 'Running Now' else ('attention' if label == 'Needs Attention' else 'completed')) }}" class="text-xl font-bold text-content-primary">{{ value }}</p>
                             <p class="text-xs font-semibold text-content-secondary">{{ label }}</p>
                         </div>
                         <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>
@@ -103,7 +103,7 @@
                                 :class="activeTab === '{{ key }}' ? 'border-kaori-primary text-kaori-primary' : 'border-transparent text-content-muted hover:text-content-primary'">
                             <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                             {{ label }}
-                            <span class="inline-flex min-h-5 min-w-5 items-center justify-center rounded-md bg-kaori-soft px-1.5 text-[10px] font-semibold text-kaori-primary">{{ count }}</span>
+                            <span id="execution-tab-count-{{ key }}" class="inline-flex min-h-5 min-w-5 items-center justify-center rounded-md bg-kaori-soft px-1.5 text-[10px] font-semibold text-kaori-primary">{{ count }}</span>
                         </button>
                     {% endfor %}
                 </nav>
@@ -123,4 +123,5 @@
             {% include 'jobs/executions/partials/_queue_activity.html' %}
         </div>
     </section>
+    {% include 'jobs/executions/partials/_status_poller.html' %}
 </section>

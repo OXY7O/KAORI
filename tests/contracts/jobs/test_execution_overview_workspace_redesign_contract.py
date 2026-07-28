@@ -47,9 +47,9 @@ def test_active_execution_progress_is_stable_and_compact() -> None:
 def test_queue_activity_uses_summary_strips_instead_of_nested_metric_cards() -> None:
     source = _read('partials/_queue_activity.html')
 
-    assert 'grid grid-cols-2 sm:grid-cols-4' in source
+    assert 'grid grid-cols-2 gap-3 sm:grid-cols-4' in source
     assert 'Completed · 24H' in source
-    assert 'Record activity, not worker liveness' in source
+    assert 'Execution records · not worker liveness' in source
     assert 'rounded-lg border border-outline-subtle bg-surface-card p-3' not in source
 
 

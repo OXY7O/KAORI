@@ -73,6 +73,21 @@
         }
     }
 
+
+    function stabilizeAlertsAfterSwap(root) {
+        const alertsRoot = root?.id === 'alerts-page-content'
+            ? root
+            : root?.querySelector?.('#alerts-page-content');
+        if (!alertsRoot) return;
+
+        window.dispatchEvent(new CustomEvent('kaori:alerts-collapse'));
+
+        const tabset = alertsRoot.querySelector('[data-alerts-tabset]');
+        if (tabset && window.Alpine && !tabset._x_dataStack) {
+            window.Alpine.initTree(tabset);
+        }
+    }
+
     function hydrateAnalyticsUi(root = document) {
         hydrateProgressBars(root);
         hydrateProgressRings(root);
@@ -91,6 +106,6 @@
 
     document.addEventListener('DOMContentLoaded', () => hydrateAnalyticsUi());
     document.body.addEventListener('htmx:load', (event) => hydrateAnalyticsUi(event.detail.elt || document));
-    document.body.addEventListener('htmx:afterSwap', (event) => hydrateAnalyticsUi(event.detail.target || document));
+    document.body.addEventListener('htmx:afterSwap', (event) => { const root = event.detail.target || document; hydrateAnalyticsUi(root); stabilizeAlertsAfterSwap(root); });
     document.body.addEventListener('htmx:afterSettle', (event) => hydrateAnalyticsUi(event.detail.elt || document));
 })();

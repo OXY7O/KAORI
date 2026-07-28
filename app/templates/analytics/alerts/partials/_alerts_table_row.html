@@ -8,7 +8,7 @@
 {% set ends_display = alert.ends_at|user_datetime %}
 {% set severity_tone = 'critical' if alert.severity == 'critical' else ('warning' if alert.severity == 'warning' else ('info' if alert.severity == 'info' else 'unknown')) %}
 {% set status_tone = 'critical' if alert.status in ['firing', 'active'] else ('warning' if alert.status == 'pending' else 'unknown') %}
-<div>
+<div x-data="{ expanded: false }" @kaori:alerts-collapse.window="expanded = false">
     <div class="grid gap-4 px-4 py-4 lg:grid-cols-12 lg:items-center">
         <div class="min-w-0 lg:col-span-4">
             <div class="flex min-w-0 items-start gap-3">
@@ -22,15 +22,9 @@
             </div>
         </div>
 
-        <div class="min-w-0 lg:col-span-2">
-            <div class="grid grid-cols-2 gap-2">
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Severity</p>
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Alert State</p>
-            </div>
-            <div class="mt-1 grid grid-cols-2 items-start gap-2">
-                <div class="min-w-0">{{ table_label.status_label(alert.severity|title, tone=severity_tone, size='compact') }}</div>
-                <div class="min-w-0">{{ table_label.status_label(alert.status|title, tone=status_tone, size='compact') }}</div>
-            </div>
+        <div class="min-w-0 space-y-1 lg:col-span-2">
+            <div class="min-w-0">{{ table_label.status_label(alert.severity|title, tone=severity_tone, size='compact') }}</div>
+            <div class="min-w-0">{{ table_label.status_label(alert.status|title, tone=status_tone, size='compact') }}</div>
         </div>
 
         <div class="min-w-0 space-y-1 lg:col-span-2">
@@ -51,20 +45,20 @@
 
         <div class="flex lg:col-span-2 lg:justify-end">
             <button type="button"
-                    @click="openAlert = openAlert === '{{ row_key }}' ? null : '{{ row_key }}'"
+                    @click="expanded = !expanded"
                     class="{{ table_ui.action_classes() }} w-full shrink-0 sm:w-auto"
-                    :aria-expanded="openAlert === '{{ row_key }}' ? 'true' : 'false'"
+                    :aria-expanded="expanded ? 'true' : 'false'"
                     aria-controls="{{ row_key }}-details">
                 <i data-lucide="chevron-down"
                    class="h-4 w-4 transition"
-                   :class="{ 'rotate-180': openAlert === '{{ row_key }}' }"></i>
-                <span x-text="openAlert === '{{ row_key }}' ? 'Hide Details' : 'View More'">View More</span>
+                   :class="{ 'rotate-180': expanded }"></i>
+                <span x-text="expanded ? 'Hide Details' : 'View More'">View More</span>
             </button>
         </div>
     </div>
 
     <div id="{{ row_key }}-details"
-         x-show="openAlert === '{{ row_key }}'"
+         x-show="expanded"
          x-cloak
          class="border-t border-outline-subtle bg-surface-hover px-4 py-5">
         <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
@@ -135,7 +129,7 @@
                             <h4 class="text-sm font-semibold text-content-primary">Labels</h4>
                             {{ table_label.status_label('Routing Context', tone='info', size='compact') }}
                         </div>
-                        <div class="mt-3 flex max-h-40 flex-wrap gap-1.5 overflow-auto pr-1">
+                        <div class="mt-3 flex flex-wrap gap-1.5">
                             {% for key, value in alert.labels.items() %}
                                 <span class="rounded-md bg-surface-hover px-2 py-1 text-xs text-content-secondary"><span class="break-all">{{ key }}={{ value }}</span></span>
                             {% else %}
@@ -149,7 +143,7 @@
                             <h4 class="text-sm font-semibold text-content-primary">Annotations</h4>
                             {{ table_label.metadata_label('Operator Notes', size='compact') }}
                         </div>
-                        <div class="mt-3 flex max-h-40 flex-wrap gap-1.5 overflow-auto pr-1">
+                        <div class="mt-3 flex flex-wrap gap-1.5">
                             {% set annotation_count = namespace(found=0) %}
                             {% for key, value in alert.annotations.items() %}
                                 {% if key not in ['description', 'runbook_url', 'runbook', 'runbookURL'] %}

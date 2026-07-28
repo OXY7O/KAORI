@@ -30,6 +30,15 @@
         {{ loading_bar.render('job-execution-loading', label='Refreshing Job Execution Registry') }}
     </header>
 
+    <div class="grid grid-cols-2 border-b border-outline-subtle bg-surface-card sm:grid-cols-4">
+        {% for label, value in [('Total Records', job_stats.total), ('Active', job_stats.active), ('Needs Attention', job_stats.attention), ('Completed · 24H', job_stats.completed_24h)] %}
+            <div class="px-5 py-3 {% if not loop.last %}border-r border-outline-subtle{% endif %}">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ label }}</p>
+                <p class="mt-1 text-lg font-bold text-content-primary">{{ value }}</p>
+            </div>
+        {% endfor %}
+    </div>
+
     <form class="grid gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:grid-cols-2 xl:grid-cols-4 sm:px-6"
           hx-get="{{ url_for('jobs.executions') }}"
           hx-target="#job-execution-registry"

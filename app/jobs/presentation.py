@@ -36,7 +36,6 @@ _STATUS_PRESENTATION = {
     'expired': ('Expired', 'unknown', 'clock-alert'),
 }
 
-
 _QUEUE_ICONS = {
     'integration-runtime': 'activity',
     'integration-validation': 'scan-search',
@@ -147,6 +146,8 @@ def _row(job: JobExecution) -> dict[str, Any]:
     }
 
 
+
+
 def present_job_execution(job: JobExecution) -> dict[str, Any]:
     """Return the compact execution presentation used by configuration workspaces."""
     row = _row(job)
@@ -155,18 +156,8 @@ def present_job_execution(job: JobExecution) -> dict[str, Any]:
         payload.get('trigger_type')
         or ('scheduled' if job.requested_by_user_id is None else 'manual')
     )
-    result_summary = job.result_summary_json or {}
-    failures = result_summary.get('failures') if isinstance(result_summary, dict) else None
-    first_failure = failures[0] if isinstance(failures, list) and failures else {}
-    if not isinstance(first_failure, dict):
-        first_failure = {}
     row.update(
         {
-            'error_code': job.error_code or first_failure.get('code'),
-            'failure_title': first_failure.get('title'),
-            'failure_detail': first_failure.get('error') or job.error_message,
-            'failure_remediation': first_failure.get('remediation'),
-            'failed_dataset_key': first_failure.get('dataset_key'),
             'trigger_type': trigger_type,
             'trigger_label': trigger_type.replace('_', ' ').title(),
             'trigger_icon': (
@@ -238,6 +229,38 @@ def _queue_activity(queue_names: list[str], cutoff: datetime) -> list[dict[str, 
         )
     return rows
 
+
+
+def build_job_execution_status_context(*, tab: str = 'active') -> dict[str, Any]:
+    """Return lightweight counters for the live Execution Overview poller."""
+    selected_tab = tab if tab in _ALLOWED_TABS else _ALLOWED_TABS[0]
+    cutoff = datetime.now(UTC) - timedelta(hours=24)
+    active_count = JobExecution.query.filter(JobExecution.status.in_(_ACTIVE_STATUSES)).count()
+    running_count = JobExecution.query.filter_by(status='running').count()
+    attention_count = JobExecution.query.filter(JobExecution.status.in_(_ATTENTION_STATUSES)).count()
+    completed_24h_count = JobExecution.query.filter(
+        JobExecution.status.in_(_TERMINAL_STATUSES),
+        JobExecution.completed_at.isnot(None),
+        JobExecution.completed_at >= cutoff,
+    ).count()
+    total_count = JobExecution.query.count()
+    queue_count = (
+        JobExecution.query.with_entities(JobExecution.queue_name)
+        .distinct()
+        .count()
+    )
+    return {
+        'job_stats': {
+            'total': total_count,
+            'active': active_count,
+            'running': running_count,
+            'attention': attention_count,
+            'completed_24h': completed_24h_count,
+            'queues': queue_count,
+        },
+        'selected_job_tab': selected_tab,
+        'job_last_refreshed_at': present_user_datetime(datetime.now(UTC), empty='Just now'),
+    }
 
 def build_job_execution_context(
     *,
