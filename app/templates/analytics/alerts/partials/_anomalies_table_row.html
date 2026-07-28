@@ -1,4 +1,5 @@
 {% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
 <tr class="hover:bg-surface-subtle dark:hover:bg-surface-hover/50">
     <td class="px-6 py-4 align-top">
         <div class="flex items-start gap-3">
@@ -12,16 +13,13 @@
         </div>
     </td>
     <td class="px-6 py-4 align-top">
-        <span class="inline-flex items-center gap-1.5 rounded-md bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
-            <i data-lucide="alert-triangle" class="h-3.5 w-3.5"></i>
-            {{ anomaly.severity | title }}
-        </span>
+        {{ table_label.status_label(anomaly.severity|title, tone=anomaly.severity, size='compact') }}
     </td>
     <td class="px-6 py-4 align-top">
-        <span class="inline-flex items-center gap-1.5 rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary bg-kaori-soft ">
-            <i data-lucide="box" class="h-3.5 w-3.5"></i>
-            {{ anomaly.namespace }}
-        </span>
+        <div class="min-w-0 space-y-1">
+            <p class="break-words text-sm font-semibold text-content-primary">{{ anomaly.namespace }}</p>
+            <p class="break-all text-xs leading-5 text-content-muted">{{ anomaly.target }}</p>
+        </div>
     </td>
     <td class="px-6 py-4 align-top text-sm text-content-secondary ">{{ anomaly.signal }}</td>
     <td class="px-6 py-4 align-top text-right">

@@ -40,7 +40,7 @@
         link.setAttribute('aria-label', `Go to page ${page}`);
 
         if (source) {
-            for (const attr of ['hx-target', 'hx-swap', 'hx-indicator', 'hx-push-url', 'hx-include', 'hx-sync']) {
+            for (const attr of ['hx-target', 'hx-swap', 'hx-indicator', 'hx-push-url', 'hx-include', 'hx-sync', 'hx-on::before-request']) {
                 if (source.hasAttribute(attr)) link.setAttribute(attr, source.getAttribute(attr));
             }
             const href = source.getAttribute('href');

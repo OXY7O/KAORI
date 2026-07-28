@@ -18,6 +18,7 @@
                 hx-swap="outerHTML"
                 hx-indicator="#{{ 'alerts-table-loading-indicator' if page_size_name == 'alerts_per_page' else 'anomalies-table-loading-indicator' }}"
                 hx-push-url="false"
+                hx-on::before-request="window.dispatchEvent(new CustomEvent('kaori:alerts-collapse'))"
                 hx-vals='js:{ cluster_id: "{{ selected_cluster_id }}", source: "{{ selected_source }}", severity: "{{ selected_severity }}", status: "{{ selected_status }}", namespace: "{{ selected_namespace }}", search: "{{ selected_search }}", page: "1", alerts_per_page: "{{ pagination.per_page if page_size_name == 'alerts_per_page' else sibling_page_size_value }}", anomalies_per_page: "{{ pagination.per_page if page_size_name == 'anomalies_per_page' else sibling_page_size_value }}", [event.target.name]: event.target.value }'
                 class="{{ pagination_ui.page_size_classes() }}">
             {% for option in per_page_options %}
@@ -31,9 +32,11 @@
             <a href="{{ url_for('analytics.alerts', page=pagination.prev_page, cluster_id=selected_cluster_id, source=selected_source, severity=selected_severity, status=selected_status, namespace=selected_namespace, search=selected_search, alerts_per_page=(pagination.per_page if page_size_name == 'alerts_per_page' else sibling_page_size_value) , anomalies_per_page=(pagination.per_page if page_size_name == 'anomalies_per_page' else sibling_page_size_value)) }}"
                hx-get="{{ url_for(endpoint_name, page=pagination.prev_page, cluster_id=selected_cluster_id, source=selected_source, severity=selected_severity, status=selected_status, namespace=selected_namespace, search=selected_search, alerts_per_page=(pagination.per_page if page_size_name == 'alerts_per_page' else sibling_page_size_value) , anomalies_per_page=(pagination.per_page if page_size_name == 'anomalies_per_page' else sibling_page_size_value)) }}"
                hx-target="{{ target_id }}"
+               hx-sync="{{ target_id }}:replace"
                hx-swap="outerHTML"
                hx-push-url="false"
                hx-indicator="#{{ 'alerts-table-loading-indicator' if page_size_name == 'alerts_per_page' else 'anomalies-table-loading-indicator' }}"
+               hx-on::before-request="window.dispatchEvent(new CustomEvent('kaori:alerts-collapse'))"
                class="{{ pagination_ui.navigation_classes(disabled=false) }}">
                 <i data-lucide="chevron-left" class="h-4 w-4"></i>
                 Previous
@@ -49,9 +52,11 @@
             <a href="{{ url_for('analytics.alerts', page=pagination.next_page, cluster_id=selected_cluster_id, source=selected_source, severity=selected_severity, status=selected_status, namespace=selected_namespace, search=selected_search, alerts_per_page=(pagination.per_page if page_size_name == 'alerts_per_page' else sibling_page_size_value) , anomalies_per_page=(pagination.per_page if page_size_name == 'anomalies_per_page' else sibling_page_size_value)) }}"
                hx-get="{{ url_for(endpoint_name, page=pagination.next_page, cluster_id=selected_cluster_id, source=selected_source, severity=selected_severity, status=selected_status, namespace=selected_namespace, search=selected_search, alerts_per_page=(pagination.per_page if page_size_name == 'alerts_per_page' else sibling_page_size_value) , anomalies_per_page=(pagination.per_page if page_size_name == 'anomalies_per_page' else sibling_page_size_value)) }}"
                hx-target="{{ target_id }}"
+               hx-sync="{{ target_id }}:replace"
                hx-swap="outerHTML"
                hx-push-url="false"
                hx-indicator="#{{ 'alerts-table-loading-indicator' if page_size_name == 'alerts_per_page' else 'anomalies-table-loading-indicator' }}"
+               hx-on::before-request="window.dispatchEvent(new CustomEvent('kaori:alerts-collapse'))"
                class="{{ pagination_ui.navigation_classes(disabled=false) }}">
                 Next
                 <i data-lucide="chevron-right" class="h-4 w-4"></i>

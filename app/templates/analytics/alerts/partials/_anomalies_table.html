@@ -1,28 +1,39 @@
 {% import "components/loading_bar.html" as loading_bar %}
-<div id="anomalies-table-container">
+{% import "components/table_label.html" as table_label %}
+<div id="anomalies-table-container" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+    <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="min-w-0">
+                <h3 class="text-base font-semibold text-content-primary">Detected Anomaly Candidates</h3>
+                <p class="mt-1 text-sm leading-6 text-content-muted">Metric deviations requiring validation against workload, capacity, and source context.</p>
+            </div>
+            {{ table_label.status_label((anomalies_pagination.total_items|default(0)) ~ ' Detected', tone='warning' if anomalies_pagination.total_items|default(0) else 'normal', size='compact') }}
+        </div>
+        {{ loading_bar.render('anomalies-table-loading-indicator', label='Refreshing Detected Anomaly Candidates') }}
+    </header>
+
     {% set table_kind = "anomalies" %}
     {% set endpoint_name = "analytics.alerts_anomalies_table" %}
     {% set target_id = "#anomalies-table-container" %}
     {% include "analytics/alerts/partials/_table_filters.html" %}
-    <div class="px-4 sm:px-5">
-        {{ loading_bar.render('anomalies-table-loading-indicator', label='Refreshing Detected Anomaly Candidates') }}
-    </div>
+
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-outline-default dark:divide-outline-default">
-            <thead class="bg-surface-subtle /60">
+        <table class="min-w-full divide-y divide-outline-default">
+            <thead class="bg-surface-hover">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">Anomaly</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">Severity</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">Namespace</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">Signal</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Anomaly</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Severity</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Namespace / Pod</th>
+                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Signal</th>
                     <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wide text-content-muted">Action</th>
                 </tr>
             </thead>
             <tbody x-data="{ openAnomaly: null }"
-                   class="divide-y divide-outline-default bg-surface-card dark:divide-outline-default ">
+                   @kaori:alerts-collapse.window="openAnomaly = null"
+                   class="divide-y divide-outline-default bg-surface-card">
                 {% if anomalies %}
                     {% for anomaly in anomalies %}
-                        {% set row_key = 'anomaly-' ~ loop.index0 %}
+                        {% set row_key = 'anomaly-' ~ anomalies_pagination.page ~ '-' ~ loop.index0 %}
                         {% include "analytics/alerts/partials/_anomalies_table_row.html" %}
                     {% endfor %}
                 {% else %}
@@ -39,6 +50,7 @@
             </tbody>
         </table>
     </div>
+
     {% set pagination = anomalies_pagination %}
     {% set endpoint_name = "analytics.alerts_anomalies_table" %}
     {% set target_id = "#anomalies-table-container" %}

@@ -8,11 +8,14 @@ def read(relative: str) -> str:
     return (TEMPLATES / relative).read_text(encoding="utf-8")
 
 
-def test_alert_signal_state_is_single_row() -> None:
+def test_alert_signal_state_uses_separate_semantic_columns() -> None:
+    table = read("alerts/partials/_alerts_table.html")
     content = read("alerts/partials/_alerts_table_row.html")
-    assert 'flex min-w-0 flex-wrap items-center gap-2' in content
-    assert "alert.severity|title" in content
-    assert "alert.status|title" in content
+    main_row = content.split('<div id="{{ row_key }}-details"', 1)[0]
+    assert ">Severity</div>" in table
+    assert ">State</div>" in table
+    assert "table_label.status_label(alert.severity|title" in main_row
+    assert "table_label.status_label(alert.status|title" in main_row
 
 
 def test_all_target_pages_use_unified_controls_and_readiness() -> None:

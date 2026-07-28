@@ -126,19 +126,13 @@ def get_alerts_context(
         per_page=selected_alerts_per_page,
     )
 
-    if selected_cluster is not None:
-        raw_anomalies, anomaly_source_status = load_prometheus_anomaly_metrics(
+    raw_anomalies = (
+        load_prometheus_anomaly_metrics(
             cluster=selected_cluster,
         )
-    else:
-        raw_anomalies = []
-        anomaly_source_status = {
-            'connected': False,
-            'label': 'Waiting for Cluster',
-            'error': None,
-            'response_time_ms': None,
-            'partial': False,
-        }
+        if selected_cluster is not None
+        else []
+    )
 
     anomalies = filter_anomalies(
         raw_anomalies,
@@ -149,7 +143,7 @@ def get_alerts_context(
 
     anomaly_rows, anomaly_pagination = paginate_items(
         anomalies,
-        page=1,
+        page=selected_page,
         per_page=selected_anomalies_per_page,
     )
 
@@ -271,22 +265,6 @@ def get_alerts_context(
         'anomalies_pagination': anomaly_pagination,
         'summary': summary,
         'source_status': source_status,
-        'anomaly_source_status': anomaly_source_status,
-        'collection_warnings': (
-            [
-                {
-                    'code': 'anomaly_signals_unavailable',
-                    'title': 'Prometheus anomaly candidates are unavailable',
-                    'detail': str(anomaly_source_status.get('error') or ''),
-                    'remediation': (
-                        'Review the analytics worker query fingerprint and Prometheus/Thanos '
-                        'capacity. Alert records remain available from the selected alert source.'
-                    ),
-                }
-            ]
-            if selected_cluster is not None and anomaly_source_status.get('partial')
-            else []
-        ),
         'integration_status': integration_status,
         'dependency_blocker': dependency_blocker,
         'source_health': source_health,
@@ -375,7 +353,7 @@ def present_alerts_materialized_context(
     )
     anomaly_rows, anomaly_pagination = paginate_items(
         filtered_anomalies,
-        page=1,
+        page=selected_page,
         per_page=selected_anomalies_per_page,
     )
 

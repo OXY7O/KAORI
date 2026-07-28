@@ -26,16 +26,19 @@ def test_cluster_filter_preserves_tab_workspace_and_collapses_details() -> None:
     assert 'x-show="expanded"' in row
 
 
-def test_severity_state_is_compact_single_row() -> None:
+def test_severity_and_state_are_independent_columns() -> None:
+    table = _read('partials/_alerts_table.html')
     row = _read('partials/_alerts_table_row.html')
+    main_row = row.split('<div id="{{ row_key }}-details"', 1)[0]
 
-    assert 'class="min-w-0 lg:col-span-2"' in row
-    assert row.count("table_label.status_label(alert.severity|title") == 1
-    assert row.count("table_label.status_label(alert.status|title") == 0
-    assert 'flex min-w-0 flex-wrap items-center gap-2' in row
-    assert '<span class="break-words text-xs font-semibold text-content-muted">{{ alert.status|title }}</span>' in row
-    assert '>Severity</p>' not in row
-    assert '>Alert State</p>' not in row
+    assert '>Severity</div>' in table
+    assert '>State</div>' in table
+    assert 'Severity &amp; State' not in table
+    assert 'lg:col-span-1' in main_row
+    assert main_row.count("table_label.status_label(alert.severity|title") == 1
+    assert main_row.count("table_label.status_label(alert.status|title") == 1
+    assert '>Severity</p>' in main_row
+    assert '>State</p>' in main_row
 
 
 def test_labels_and_annotations_do_not_create_nested_vertical_scroll() -> None:

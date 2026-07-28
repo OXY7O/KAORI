@@ -1,95 +1,133 @@
-<div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm ">
-    <div class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div class="min-w-0">
-                <p class="text-xs font-semibold uppercase tracking-[0.24em] text-content-muted ">Alert Controls</p>
-                <h2 class="mt-1 text-sm font-semibold text-content-primary">Alert Analysis Filters</h2>
-                <p class="mt-1 text-xs leading-5 text-content-muted ">
-                    Select cluster, source, severity, status, namespace, and search context.
-                </p>
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table_label.html" as table_label %}
+{% set materialization = analytics_materialization if analytics_materialization is defined else none %}
+{% set source_connected = source_status.connected|default(false) %}
+{% set source_configured = source_status.configured|default(false) %}
+{% set source_label = 'Connected' if source_connected else ('Unavailable' if source_configured else 'Not Configured') %}
+{% set source_tone = 'normal' if source_connected else ('critical' if source_configured else 'unknown') %}
+{% set resolved_source = source_status.resolved_source|default(selected_source|default('auto')) %}
+{% if materialization and materialization.stale|default(false) %}
+    {% set snapshot_label = 'Stale Snapshot' %}
+    {% set snapshot_tone = 'warning' %}
+{% elif materialization and materialization.state|default('') == 'failed' %}
+    {% set snapshot_label = 'Snapshot Failed' %}
+    {% set snapshot_tone = 'critical' %}
+{% elif materialization and (materialization.state|default('') == 'pending' or materialization.refresh_dispatched|default(false)) %}
+    {% set snapshot_label = 'Refresh In Progress' %}
+    {% set snapshot_tone = 'info' %}
+{% elif materialization and materialization.generated_at|default(none) %}
+    {% set snapshot_label = 'Current Snapshot' %}
+    {% set snapshot_tone = 'normal' %}
+{% else %}
+    {% set snapshot_label = 'Snapshot Unavailable' %}
+    {% set snapshot_tone = 'unknown' %}
+{% endif %}
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="sliders-horizontal" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-content-muted">Alerts &amp; Anomalies</p>
+                    <h2 class="mt-1 text-lg font-semibold text-content-primary">Alert Controls &amp; Data Readiness</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">Select the cluster and preferred signal source. Record-level filters remain inside each table.</p>
+                </div>
             </div>
-            <div class="inline-flex w-fit items-center gap-2 rounded-full border border-outline-default bg-surface-subtle px-3 py-1.5 text-xs font-semibold text-content-secondary ">
-                <i data-lucide="sliders-horizontal"
-                   class="h-3.5 w-3.5 text-kaori-primary"></i>
-                Filter scope
+            <div class="flex flex-wrap items-center gap-2">
+                {{ table_label.status_label(source_label, tone=source_tone, size='compact') }}
+                {{ table_label.metadata_label((resolved_source|string|title) ~ ' Source', size='compact') }}
             </div>
         </div>
-    </div>
-    <div class="px-5 py-4 sm:px-6">
-        <div class="grid gap-3 lg:grid-cols-2 xl:grid-cols-[minmax(170px,1fr)_minmax(130px,.7fr)_minmax(130px,.7fr)_minmax(130px,.7fr)_minmax(180px,1fr)_minmax(240px,1.2fr)] xl:items-end">
+        {{ loading_bar.render('alerts-refresh-indicator', label='Refreshing Alerts & Anomalies') }}
+    </header>
+
+    <div class="space-y-5 p-5 sm:p-6">
+        {% set input_classes = 'mt-1.5 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 pr-9 text-sm font-semibold text-content-primary outline-none transition-colors hover:border-outline-strong focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft' %}
+        <div class="grid gap-4 sm:grid-cols-2">
             <label class="block min-w-0">
-                <span class="text-xs font-medium text-content-muted ">Cluster</span>
+                <span class="text-xs font-semibold text-content-secondary">Cluster</span>
                 <select id="alerts-cluster-select"
                         name="cluster_id"
-                        data-kaori-reset-fields="namespace=,search=,page=1"
-                        class="mt-1 w-full rounded-xl border border-outline-strong bg-surface-card px-3 py-2 pr-9 text-sm font-semibold text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 ">
+                        data-kaori-reset-fields="page=1"
+                        class="{{ input_classes }}">
                     {% for cluster in clusters %}
-                        <option value="{{ cluster.id }}"
-                                {% if selected_cluster_id == cluster.id %}selected{% endif %}>
-                            {{ cluster.name }}
-                        </option>
+                        <option value="{{ cluster.id }}" {% if selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
                     {% endfor %}
                 </select>
             </label>
             <label class="block min-w-0">
-                <span class="text-xs font-medium text-content-muted ">Source</span>
-                <select name="source"
-                        class="mt-1 w-full rounded-xl border border-outline-strong bg-surface-card px-3 py-2 pr-9 text-sm font-semibold text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 ">
+                <span class="text-xs font-semibold text-content-secondary">Signal Source</span>
+                <select name="source" class="{{ input_classes }}">
                     <option value="auto" {% if selected_source == 'auto' %}selected{% endif %}>Auto</option>
-                    <option value="alertmanager"
-                            {% if selected_source == 'alertmanager' %}selected{% endif %}>Alertmanager</option>
-                    <option value="prometheus"
-                            {% if selected_source == 'prometheus' %}selected{% endif %}>Prometheus</option>
+                    <option value="alertmanager" {% if selected_source == 'alertmanager' %}selected{% endif %}>Alertmanager</option>
+                    <option value="prometheus" {% if selected_source == 'prometheus' %}selected{% endif %}>Prometheus</option>
                 </select>
-            </label>
-            <label class="block min-w-0">
-                <span class="text-xs font-medium text-content-muted ">Severity</span>
-                <select name="severity"
-                        class="mt-1 w-full rounded-xl border border-outline-strong bg-surface-card px-3 py-2 pr-9 text-sm font-semibold text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 ">
-                    {% for option in severity_options %}
-                        <option value="{{ option }}"
-                                {% if selected_severity == option %}selected{% endif %}>{{ option | title }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="block min-w-0">
-                <span class="text-xs font-medium text-content-muted ">Status</span>
-                <select name="status"
-                        class="mt-1 w-full rounded-xl border border-outline-strong bg-surface-card px-3 py-2 pr-9 text-sm font-semibold text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 ">
-                    {% for option in status_options %}
-                        <option value="{{ option }}"
-                                {% if selected_status == option %}selected{% endif %}>{{ option | title }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="block min-w-0">
-                <span class="text-xs font-medium text-content-muted ">Namespace</span>
-                <select name="namespace"
-                        class="mt-1 w-full rounded-xl border border-outline-strong bg-surface-card px-3 py-2 pr-9 text-sm font-semibold text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 ">
-                    <option value="" {% if not selected_namespace %}selected{% endif %}>All Namespaces</option>
-                    {% for namespace in namespace_options %}
-                        <option value="{{ namespace }}"
-                                {% if selected_namespace == namespace %}selected{% endif %}>{{ namespace }}</option>
-                    {% endfor %}
-                </select>
-            </label>
-            <label class="block min-w-0">
-                <span class="text-xs font-medium text-content-muted ">Search</span>
-                <span class="relative mt-1 block">
-                    <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-content-muted" aria-hidden="true">
-                        <i data-lucide="search" class="h-4 w-4"></i>
-                    </span>
-                    <input type="text"
-                           name="search"
-                           value="{{ selected_search }}"
-                           placeholder="Search alert, pod, node, namespace..."
-                           class="w-full min-w-0 rounded-xl border border-outline-strong bg-surface-card py-2 pl-10 pr-3 text-sm font-semibold text-content-primary shadow-sm outline-none transition placeholder:font-normal placeholder:text-content-muted focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10 ">
-                </span>
             </label>
         </div>
-        <div id="alerts-refresh-indicator"
-             class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
-            <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
+
+        <div class="grid gap-4 border-t border-outline-subtle pt-5 lg:grid-cols-2">
+            <section class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-4">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                            <i data-lucide="radio-tower" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h3 class="text-sm font-semibold text-content-primary">Alert Source Readiness</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Resolved provider used by the committed alert dataset.</p>
+                        </div>
+                    </div>
+                    {{ table_label.status_label(source_label, tone=source_tone, size='compact') }}
+                </div>
+                <dl class="mt-4 grid gap-3 sm:grid-cols-3">
+                    <div>
+                        <dt class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Resolved Source</dt>
+                        <dd class="mt-1 break-words text-sm font-semibold text-content-primary">{{ resolved_source|string|title }}</dd>
+                    </div>
+                    <div class="sm:border-l sm:border-outline-subtle sm:pl-3">
+                        <dt class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Response</dt>
+                        <dd class="mt-1 text-sm font-semibold text-content-primary">{{ source_status.response_time_ms ~ ' ms' if source_status.response_time_ms|default(none) else 'Not Recorded' }}</dd>
+                    </div>
+                    <div class="sm:border-l sm:border-outline-subtle sm:pl-3">
+                        <dt class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Fallback</dt>
+                        <dd class="mt-1 text-sm font-semibold text-content-primary">{{ 'Active' if source_status.fallback_used|default(false) else 'Standby' }}</dd>
+                    </div>
+                </dl>
+                {% if source_status.error|default('') %}
+                    <p class="mt-3 border-t border-outline-subtle pt-3 text-xs leading-5 text-status-critical-text">{{ source_status.error }}</p>
+                {% endif %}
+            </section>
+
+            <section class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-4">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                            <i data-lucide="database-clock" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h3 class="text-sm font-semibold text-content-primary">Latest Data Snapshot</h3>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Committed worker data used by this workspace.</p>
+                        </div>
+                    </div>
+                    {{ table_label.status_label(snapshot_label, tone=snapshot_tone, size='compact') }}
+                </div>
+                <dl class="mt-4 grid gap-3 sm:grid-cols-3">
+                    <div>
+                        <dt class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Updated</dt>
+                        <dd class="mt-1 break-words text-sm font-semibold text-content-primary">{{ materialization.generated_at|default(none)|user_datetime('Unavailable') if materialization else 'Unavailable' }}</dd>
+                    </div>
+                    <div class="sm:border-l sm:border-outline-subtle sm:pl-3">
+                        <dt class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Dataset</dt>
+                        <dd class="mt-1 break-words text-sm font-semibold text-content-primary">{{ materialization.dataset_key|default('analytics.alerts') if materialization else 'analytics.alerts' }}</dd>
+                    </div>
+                    <div class="sm:border-l sm:border-outline-subtle sm:pl-3">
+                        <dt class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Worker Attempt</dt>
+                        <dd class="mt-1 break-words text-sm font-semibold text-content-primary">{{ materialization.last_attempt_at|default(materialization.latest_worker_attempt_at|default(none))|user_datetime('Unavailable') if materialization else 'Unavailable' }}</dd>
+                    </div>
+                </dl>
+            </section>
         </div>
     </div>
-</div>
+</section>

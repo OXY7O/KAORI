@@ -9,16 +9,12 @@
         {% set prometheus_status = integration_status.prometheus %}
         {% set alertmanager_status = integration_status.alertmanager %}
         {% set selected_cluster_name = selected_cluster.name if selected_cluster else 'No Cluster Selected' %}
-        {% set active_alerts = summary.active_alerts|default(0) %}
-        {% set critical_alerts = summary.critical_alerts|default(0) %}
-        {% set warning_alerts = summary.warning_alerts|default(0) %}
-        {% set anomaly_count = summary.detected_anomalies|default(0) %}
 
         <form id="alerts-control-form"
               method="GET"
               action="{{ url_for('analytics.alerts') }}"
               hx-get="{{ url_for('analytics.alerts') }}"
-              hx-trigger="change[event.target.matches('select') && event.target.name !== 'alerts_per_page' && event.target.name !== 'anomalies_per_page'], keyup[event.target.name === 'search'] changed delay:500ms"
+              hx-trigger="change[event.target.matches('select')] delay:120ms"
               hx-target="#alerts-page-content"
               hx-select="#alerts-page-content"
               hx-swap="outerHTML settle:150ms"
@@ -75,16 +71,7 @@
                          x-bind:hidden="activeTab !== 'alerts'"
                          x-cloak
                          class="space-y-4">
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <h3 class="text-base font-semibold text-content-primary">Active Alert Records</h3>
-                                <p class="mt-1 text-sm leading-6 text-content-muted">Current Alertmanager or Prometheus alert signals matching the selected scope.</p>
-                            </div>
-                            {{ table_label.status_label(active_alerts ~ ' Active', tone='critical' if active_alerts else 'normal', size='compact') }}
-                        </div>
-                        <div class="overflow-hidden rounded-xl border border-outline-default">
-                            {% include "analytics/alerts/partials/_alerts_table.html" %}
-                        </div>
+                        {% include "analytics/alerts/partials/_alerts_table.html" %}
                     </div>
 
                     <div id="alerts-content-panel-anomalies"
@@ -95,16 +82,7 @@
                          hidden
                          x-cloak
                          class="space-y-4">
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <h3 class="text-base font-semibold text-content-primary">Detected Anomaly Candidates</h3>
-                                <p class="mt-1 text-sm leading-6 text-content-muted">Metric deviations requiring validation against workload, capacity, and source context.</p>
-                            </div>
-                            {{ table_label.status_label(anomaly_count ~ ' Detected', tone='warning' if anomaly_count else 'normal', size='compact') }}
-                        </div>
-                        <div class="overflow-hidden rounded-xl border border-outline-default">
-                            {% include "analytics/alerts/partials/_anomalies_table.html" %}
-                        </div>
+                        {% include "analytics/alerts/partials/_anomalies_table.html" %}
                     </div>
 
                     <div id="alerts-content-panel-routing"
