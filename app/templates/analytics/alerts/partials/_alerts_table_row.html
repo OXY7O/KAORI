@@ -22,14 +22,14 @@
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-3 lg:col-span-2 lg:grid-cols-1 lg:gap-2">
-            <div class="min-w-0">
+        <div class="min-w-0 lg:col-span-2">
+            <div class="grid grid-cols-2 gap-2">
                 <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Severity</p>
-                <div class="mt-1">{{ table_label.status_label(alert.severity|title, tone=severity_tone, size='compact') }}</div>
-            </div>
-            <div class="min-w-0">
                 <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Alert State</p>
-                <div class="mt-1">{{ table_label.status_label(alert.status|title, tone=status_tone, size='compact') }}</div>
+            </div>
+            <div class="mt-1 grid grid-cols-2 items-start gap-2">
+                <div class="min-w-0">{{ table_label.status_label(alert.severity|title, tone=severity_tone, size='compact') }}</div>
+                <div class="min-w-0">{{ table_label.status_label(alert.status|title, tone=status_tone, size='compact') }}</div>
             </div>
         </div>
 
