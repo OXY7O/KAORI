@@ -80,7 +80,7 @@
                 <a href="{{ url_for('jobs.executions', execution_tab='registry', queue=definition.queue_name, search=definition.operation) }}"
                    class="{{ action_button.classes('secondary', full=true) }}">
                     <i data-lucide="list-checks" class="h-4 w-4"></i>
-                    View All Executions
+                    Executions
                 </a>
                 {% if can_execute %}
                     <form method="post"

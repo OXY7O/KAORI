@@ -95,7 +95,7 @@ def build_job_configuration_context(*, selected_job_key: str | None = None) -> d
     }
     execution_presentation = {
         'kubernetes.inventory.sync': {
-            'manual_action_label': 'Sync All Inventory',
+            'manual_action_label': 'Sync Inventory',
             'manual_action_icon': 'database-zap',
             'execution_scope_label': 'All Eligible Clusters',
             'execution_scope_detail': (
@@ -103,7 +103,7 @@ def build_job_configuration_context(*, selected_job_key: str | None = None) -> d
             ),
         },
         'governance.tls_certificates.sync': {
-            'manual_action_label': 'Sync TLS Now',
+            'manual_action_label': 'Sync TLS',
             'manual_action_icon': 'refresh-cw',
             'execution_scope_label': 'Eligible TLS Clusters',
             'execution_scope_detail': (
@@ -111,7 +111,7 @@ def build_job_configuration_context(*, selected_job_key: str | None = None) -> d
             ),
         },
         'analytics.materialize': {
-            'manual_action_label': 'Run Analytics Refresh',
+            'manual_action_label': 'Refresh Analytics',
             'manual_action_icon': 'chart-no-axes-combined',
             'execution_scope_label': 'Configured Analytics Snapshots',
             'execution_scope_detail': (
@@ -120,7 +120,7 @@ def build_job_configuration_context(*, selected_job_key: str | None = None) -> d
             ),
         },
         'analytics.forecast.materialize': {
-            'manual_action_label': 'Run Forecast Refresh',
+            'manual_action_label': 'Refresh Forecast',
             'manual_action_icon': 'chart-spline',
             'execution_scope_label': 'Configured Forecast Snapshots',
             'execution_scope_detail': (
