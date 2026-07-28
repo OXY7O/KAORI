@@ -1,90 +1,126 @@
-{% import "components/table.html" as table_ui %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% from "integrations/partials/_status_badge.html" import status_badge %}
 <section id="job-execution-workspace"
          class="space-y-5"
-         x-data="{ activeTab: '{{ selected_job_tab }}', setTab(tab) { this.activeTab = tab; const url = new URL(window.location.href); url.searchParams.set('tab', tab); window.history.replaceState({}, '', url); } }">
-    <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+         x-data="{ activeTab: '{{ selected_job_tab }}', setTab(tab) { this.activeTab = tab; const url = new URL(window.location.href); url.searchParams.set('tab', tab); url.searchParams.set('execution_tab', tab); window.history.replaceState({}, '', url); } }">
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
              aria-labelledby="execution-overview-title">
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-            <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true"><i data-lucide="gauge" class="h-5 w-5"></i></span>
-                <div>
-                    <h2 id="execution-overview-title"
-                        class="text-lg font-semibold text-content-primary">Execution Overview</h2>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Current workload posture across KAORI worker queues.</p>
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="gauge" class="h-5 w-5"></i>
+                    </span>
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 id="execution-overview-title"
+                                class="text-lg font-semibold text-content-primary">Execution Overview</h2>
+                            {{ status_badge('pending' if job_stats.active else 'ready', 'Work Active' if job_stats.active else 'Queues Clear') }}
+                        </div>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Current execution demand, completion posture, and worker queue activity recorded by KAORI.</p>
+                    </div>
                 </div>
+                <p class="text-xs font-medium text-content-muted">Updated {{ job_last_refreshed_at }}</p>
             </div>
             {{ loading_bar.render('job-workspace-loading', label='Refreshing Jobs and Executions status') }}
         </header>
-        <div class="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4 sm:p-6">
-            <div class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
-                <div class="flex items-center justify-between gap-3"><span class="flex h-9 w-9 items-center justify-center rounded-lg bg-status-info-soft text-status-info-text"><i data-lucide="layers-3" class="h-4 w-4"></i></span>{{ status_badge('pending' if job_stats.active else 'unknown', 'Active' if job_stats.active else 'Idle') }}</div>
-                <p class="mt-4 text-2xl font-bold text-content-primary">{{ job_stats.active }}</p>
-                <p class="mt-1 text-xs font-medium text-content-muted">Active Jobs</p>
-            </div>
-            <div class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
-                <div class="flex items-center justify-between gap-3"><span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="cpu" class="h-4 w-4"></i></span><span class="text-xs font-semibold text-content-muted">Live</span></div>
-                <p class="mt-4 text-2xl font-bold text-content-primary">{{ job_stats.running }}</p>
-                <p class="mt-1 text-xs font-medium text-content-muted">Running Now</p>
-            </div>
-            <div class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
-                <div class="flex items-center justify-between gap-3"><span class="flex h-9 w-9 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning-text"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>{{ status_badge('degraded' if job_stats.attention else 'ready', 'Review' if job_stats.attention else 'Clear') }}</div>
-                <p class="mt-4 text-2xl font-bold text-content-primary">{{ job_stats.attention }}</p>
-                <p class="mt-1 text-xs font-medium text-content-muted">Needs Attention</p>
-            </div>
-            <div class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
-                <div class="flex items-center justify-between gap-3"><span class="flex h-9 w-9 items-center justify-center rounded-lg bg-status-normal-soft text-status-normal-text"><i data-lucide="circle-check-big" class="h-4 w-4"></i></span><span class="text-xs font-semibold text-content-muted">24 hours</span></div>
-                <p class="mt-4 text-2xl font-bold text-content-primary">{{ job_stats.completed_24h }}</p>
-                <p class="mt-1 text-xs font-medium text-content-muted">Completed</p>
-            </div>
+
+        <div class="grid sm:grid-cols-2 xl:grid-cols-4">
+            {% set overview_metrics = [
+                ('activity', 'Active Jobs', job_stats.active, 'Queued, running, or retrying', 'info'),
+                ('cpu', 'Running Now', job_stats.running, 'Currently owned by workers', 'violet'),
+                ('triangle-alert', 'Needs Attention', job_stats.attention, 'Retrying, failed, or partial', 'warning'),
+                ('circle-check-big', 'Completed · 24H', job_stats.completed_24h, 'Terminal executions recorded', 'normal')
+            ] %}
+            {% for icon, label, value, description, tone in overview_metrics %}
+                {% set icon_classes =
+                    'bg-status-warning-soft text-status-warning-text' if tone == 'warning'
+                    else ('bg-status-normal-soft text-status-normal-text' if tone == 'normal'
+                    else ('bg-status-info-soft text-status-info-text' if tone == 'info'
+                    else 'bg-kaori-soft text-kaori-primary'))
+                %}
+                <div class="flex min-w-0 items-center gap-3 border-outline-subtle px-5 py-4 sm:px-6 {% if loop.index < 4 %}border-b{% endif %} {% if loop.index is odd %}sm:border-r{% endif %} {% if loop.index > 2 %}sm:border-b-0{% endif %} {% if loop.index < 4 %}xl:border-b-0 xl:border-r{% else %}xl:border-r-0{% endif %}">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ icon_classes }}"
+                          aria-hidden="true">
+                        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <div class="flex items-baseline gap-2">
+                            <p class="text-xl font-bold text-content-primary">{{ value }}</p>
+                            <p class="text-xs font-semibold text-content-secondary">{{ label }}</p>
+                        </div>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>
+                    </div>
+                </div>
+            {% endfor %}
         </div>
-        <div class="grid border-t border-outline-subtle md:grid-cols-3">
-            <div class="border-b border-outline-subtle p-5 md:border-b-0 md:border-r">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="users-round" class="h-4 w-4 text-kaori-primary"></i>
-                    <h3 class="text-sm font-semibold text-content-primary">Shared Execution</h3>
+
+        <div class="grid border-t border-outline-subtle bg-surface-hover md:grid-cols-3 md:divide-x md:divide-outline-subtle">
+            {% set boundaries = [
+                ('users-round', 'Shared Execution', 'Identical requests attach to one canonical execution.'),
+                ('split', 'Queue Isolation', 'Runtime, analytics, forecasting, and maintenance remain isolated.'),
+                ('archive-restore', 'Lifecycle Managed', 'Terminal records follow the Job Executions retention policy.')
+            ] %}
+            {% for icon, title, description in boundaries %}
+                <div class="flex items-start gap-3 border-b border-outline-subtle px-5 py-3.5 last:border-b-0 md:border-b-0 sm:px-6">
+                    <i data-lucide="{{ icon }}" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                    <div>
+                        <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+                    </div>
                 </div>
-                <p class="mt-2 text-sm leading-6 text-content-secondary">Identical multi-user requests attach to one canonical job instead of creating duplicate worker load.</p>
-            </div>
-            <div class="border-b border-outline-subtle p-5 md:border-b-0 md:border-r">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="split" class="h-4 w-4 text-kaori-primary"></i>
-                    <h3 class="text-sm font-semibold text-content-primary">Queue Isolation</h3>
-                </div>
-                <p class="mt-2 text-sm leading-6 text-content-secondary">Runtime, validation, analytics, forecasting, and maintenance work use independent execution queues.</p>
-            </div>
-            <div class="p-5">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="archive-restore" class="h-4 w-4 text-kaori-primary"></i>
-                    <h3 class="text-sm font-semibold text-content-primary">Lifecycle Managed</h3>
-                </div>
-                <p class="mt-2 text-sm leading-6 text-content-secondary">Terminal execution records follow the dedicated Job Executions policy in KAORI Data Lifecycle.</p>
-            </div>
-        </div>
-    </section>
-    <section class="overflow-hidden rounded-2xl border border-brand-outline bg-kaori-soft/60 shadow-sm"
-             aria-label="Job execution workspace tabs">
-        <div class="flex flex-wrap gap-2 p-2">
-            <button type="button"
-                    @click="setTab('active')"
-                    :class="activeTab === 'active' ? 'bg-kaori-primary text-white shadow-sm' : 'border border-brand-outline bg-surface-card text-kaori-primary hover:bg-kaori-soft'"
-                    class="inline-flex min-h-10 items-center gap-2 rounded-lg px-4 text-sm font-semibold transition"><i data-lucide="activity" class="h-4 w-4"></i>Active Work<span class="rounded-md bg-white/15 px-2 py-0.5 text-[10px]"
-      :class="activeTab === 'active' ? 'text-white' : 'bg-kaori-soft text-kaori-primary'">{{ job_stats.active }}</span></button>
-            <button type="button"
-                    @click="setTab('registry')"
-                    :class="activeTab === 'registry' ? 'bg-kaori-primary text-white shadow-sm' : 'border border-brand-outline bg-surface-card text-kaori-primary hover:bg-kaori-soft'"
-                    class="inline-flex min-h-10 items-center gap-2 rounded-lg px-4 text-sm font-semibold transition"><i data-lucide="list-checks" class="h-4 w-4"></i>Execution Registry<span class="rounded-md bg-white/15 px-2 py-0.5 text-[10px]"
-      :class="activeTab === 'registry' ? 'text-white' : 'bg-kaori-soft text-kaori-primary'">{{ job_stats.total }}</span></button>
-            <button type="button"
-                    @click="setTab('queues')"
-                    :class="activeTab === 'queues' ? 'bg-kaori-primary text-white shadow-sm' : 'border border-brand-outline bg-surface-card text-kaori-primary hover:bg-kaori-soft'"
-                    class="inline-flex min-h-10 items-center gap-2 rounded-lg px-4 text-sm font-semibold transition"><i data-lucide="network" class="h-4 w-4"></i>Queue Activity<span class="rounded-md bg-white/15 px-2 py-0.5 text-[10px]"
-      :class="activeTab === 'queues' ? 'text-white' : 'bg-kaori-soft text-kaori-primary'">{{ job_stats.queues }}</span></button>
+            {% endfor %}
         </div>
     </section>
-    <div x-show="activeTab === 'active'" x-cloak>{% include 'jobs/executions/partials/_active_jobs.html' %}</div>
-    <div x-show="activeTab === 'registry'" x-cloak>{% include 'jobs/executions/partials/_registry.html' %}</div>
-    <div x-show="activeTab === 'queues'" x-cloak>{% include 'jobs/executions/partials/_queue_activity.html' %}</div>
+
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+             aria-labelledby="execution-workspace-title">
+        <header class="border-b border-outline-subtle px-5 pt-4 sm:px-6">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div class="flex items-start gap-3 pb-4">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="workflow" class="h-4 w-4"></i>
+                    </span>
+                    <div>
+                        <h2 id="execution-workspace-title" class="text-base font-semibold text-content-primary">Execution Workspace</h2>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Monitor active work, search execution history, and compare queue demand.</p>
+                    </div>
+                </div>
+                <nav class="flex gap-1 overflow-x-auto" aria-label="Execution workspace sections" role="tablist">
+                    {% set tabs = [
+                        ('active', 'activity', 'Active Work', job_stats.active),
+                        ('registry', 'list-checks', 'Registry', job_stats.total),
+                        ('queues', 'network', 'Queues', job_stats.queues)
+                    ] %}
+                    {% for key, icon, label, count in tabs %}
+                        <button type="button"
+                                role="tab"
+                                :aria-selected="activeTab === '{{ key }}'"
+                                @click="setTab('{{ key }}')"
+                                class="inline-flex min-h-10 shrink-0 items-center gap-2 border-b-2 px-3 py-2 text-sm font-semibold transition"
+                                :class="activeTab === '{{ key }}' ? 'border-kaori-primary text-kaori-primary' : 'border-transparent text-content-muted hover:text-content-primary'">
+                            <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                            {{ label }}
+                            <span class="inline-flex min-h-5 min-w-5 items-center justify-center rounded-md bg-kaori-soft px-1.5 text-[10px] font-semibold text-kaori-primary">{{ count }}</span>
+                        </button>
+                    {% endfor %}
+                </nav>
+            </div>
+        </header>
+
+        <div x-show="activeTab === 'active'" role="tabpanel" x-cloak>
+            {% set embedded = true %}
+            {% include 'jobs/executions/partials/_active_jobs.html' %}
+        </div>
+        <div x-show="activeTab === 'registry'" role="tabpanel" x-cloak>
+            {% set embedded = true %}
+            {% include 'jobs/executions/partials/_registry.html' %}
+        </div>
+        <div x-show="activeTab === 'queues'" role="tabpanel" x-cloak>
+            {% set embedded = true %}
+            {% include 'jobs/executions/partials/_queue_activity.html' %}
+        </div>
+    </section>
 </section>

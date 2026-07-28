@@ -1,67 +1,78 @@
-{% from "integrations/partials/_status_badge.html" import status_badge %}
-<section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+{% import "components/table_label.html" as table_label %}
+<section class="{{ 'min-w-0' if embedded|default(false) else 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' }}"
          aria-labelledby="queue-activity-title">
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-        <div class="flex items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"><i data-lucide="network" class="h-5 w-5"></i></span>
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <h2 id="queue-activity-title"
-                    class="text-lg font-semibold text-content-primary">Queue Activity</h2>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Compare execution demand across isolated KAORI worker queues.</p>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h3 id="queue-activity-title" class="text-base font-semibold text-content-primary">Queue Activity</h3>
+                    {{ table_label.metadata_label((job_queue_rows|length) ~ ' Queues') }}
+                </div>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">Execution demand recorded across isolated KAORI worker queues.</p>
             </div>
+            <p class="text-xs font-medium text-content-muted">Record activity, not worker liveness</p>
         </div>
     </header>
+
     {% if job_queue_rows %}
-        <div class="grid gap-4 p-5 lg:grid-cols-2 xl:grid-cols-3 sm:p-6">
+        <div class="grid gap-4 p-5 lg:grid-cols-2 sm:p-6">
             {% for queue in job_queue_rows %}
-                <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
-                    <div class="flex items-start justify-between gap-3">
+                {% set queue_tone = 'warning' if queue.state == 'attention' else ('info' if queue.state == 'active' else 'unknown') %}
+                <article class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+                    <header class="flex items-start justify-between gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3.5">
                         <div class="flex min-w-0 items-start gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand-outline bg-kaori-soft text-kaori-primary"><i data-lucide="{{ queue.icon }}" class="h-4 w-4"></i></span>
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                <i data-lucide="{{ queue.icon }}" class="h-4 w-4"></i>
+                            </span>
                             <div class="min-w-0">
-                                <h3 class="break-words text-sm font-semibold text-content-primary">{{ queue.name }}</h3>
+                                <h4 class="break-words text-sm font-semibold text-content-primary">{{ queue.name }}</h4>
                                 <p class="mt-1 text-xs text-content-muted">Latest activity {{ queue.latest_activity }}</p>
                             </div>
                         </div>
-                        {{ status_badge('degraded' if queue.state == 'attention' else ('pending' if queue.state == 'active' else 'unknown') , queue.state|title) }}
-                    </div>
-                    <dl class="mt-4 grid grid-cols-2 gap-3">
-                        <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
-                            <dt class="text-xs font-semibold text-content-muted">Active</dt>
-                            <dd class="mt-1 text-xl font-bold text-content-primary">
-                                {{ queue.active }}
-                            </dd>
-                        </div>
-                        <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
-                            <dt class="text-xs font-semibold text-content-muted">Running</dt>
-                            <dd class="mt-1 text-xl font-bold text-content-primary">
-                                {{ queue.running }}
-                            </dd>
-                        </div>
-                        <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
-                            <dt class="text-xs font-semibold text-content-muted">Queued</dt>
-                            <dd class="mt-1 text-xl font-bold text-content-primary">
-                                {{ queue.queued }}
-                            </dd>
-                        </div>
-                        <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
-                            <dt class="text-xs font-semibold text-content-muted">Completed · 24h</dt>
-                            <dd class="mt-1 text-xl font-bold text-content-primary">
-                                {{ queue.completed_24h }}
-                            </dd>
-                        </div>
+                        {{ table_label.status_indicator_label(queue.state|title, tone=queue_tone) }}
+                    </header>
+
+                    <dl class="grid grid-cols-2 sm:grid-cols-4">
+                        {% set metrics = [
+                            ('Active', queue.active),
+                            ('Running', queue.running),
+                            ('Queued', queue.queued),
+                            ('Completed · 24H', queue.completed_24h)
+                        ] %}
+                        {% for label, value in metrics %}
+                            <div class="border-outline-subtle px-4 py-3 {% if loop.index <= 2 %}border-b{% endif %} {% if loop.index is odd %}border-r{% endif %} sm:border-b-0 {% if loop.index < 4 %}sm:border-r{% else %}sm:border-r-0{% endif %}">
+                                <dt class="text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">{{ label }}</dt>
+                                <dd class="mt-1 text-lg font-bold text-content-primary">{{ value }}</dd>
+                            </div>
+                        {% endfor %}
                     </dl>
-                    {% if queue.failed_24h or queue.attention %}
-                        <div class="mt-3 rounded-lg border border-status-warning-border bg-status-warning-soft p-3 text-xs font-medium leading-5 text-status-warning-text">{{ queue.failed_24h }} failed in the last 24 hours · {{ queue.attention }} execution{{ '' if queue.attention == 1 else 's' }} currently require attention.</div>
-                    {% endif %}
+
+                    <div class="border-t border-outline-subtle px-4 py-3">
+                        {% if queue.failed_24h or queue.attention %}
+                            <div class="flex items-start gap-2 text-xs leading-5 text-status-warning-text">
+                                <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-status-warning"></span>
+                                <p>{{ queue.failed_24h }} failed in the last 24 hours · {{ queue.attention }} execution{{ '' if queue.attention == 1 else 's' }} currently require attention.</p>
+                            </div>
+                        {% else %}
+                            <div class="flex items-start gap-2 text-xs leading-5 text-content-muted">
+                                <span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-status-normal"></span>
+                                <p>No failed or attention-required execution is currently recorded for this queue.</p>
+                            </div>
+                        {% endif %}
+                    </div>
                 </article>
             {% endfor %}
         </div>
-        <div class="border-t border-outline-subtle px-5 py-4 text-xs leading-5 text-content-muted sm:px-6">Queue Activity reflects canonical job records. It does not claim worker liveness; use Celery worker inspection or deployment monitoring for process health.</div>
+        <div class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs leading-5 text-content-muted sm:px-6">
+            Queue Activity is derived from canonical JobExecution records. Use deployment monitoring or Celery inspection to verify worker process health.
+        </div>
     {% else %}
-        <div class="px-6 py-14 text-center">
-            <h3 class="text-base font-semibold text-content-primary">No Queue Activity</h3>
-            <p class="mt-1 text-sm text-content-secondary">KAORI has not recorded background work yet.</p>
+        <div class="px-6 py-12 text-center">
+            <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                <i data-lucide="network" class="h-5 w-5"></i>
+            </span>
+            <h3 class="mt-4 text-base font-semibold text-content-primary">No Queue Activity</h3>
+            <p class="mt-1 text-sm text-content-secondary">KAORI has not recorded background execution activity yet.</p>
         </div>
     {% endif %}
 </section>

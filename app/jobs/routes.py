@@ -105,9 +105,12 @@ def _render_execution_fragment(context: dict[str, object], fragment: str) -> str
         'active': 'jobs/executions/partials/_active_jobs.html',
         'status': 'jobs/executions/partials/_status_refresh.html',
     }
+    fragment_context = dict(context)
+    if fragment in {'active', 'registry'}:
+        fragment_context['embedded'] = True
     return render_template(
         template_by_fragment.get(fragment, 'jobs/executions/_workspace.html'),
-        **context,
+        **fragment_context,
     )
 
 

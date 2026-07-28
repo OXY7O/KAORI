@@ -1,23 +1,25 @@
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
 {% import "components/loading_bar.html" as loading_bar %}
-{% from "integrations/partials/_status_badge.html" import status_badge %}
 {% set active_refresh_url = url_for('jobs.executions', fragment='active', tab='active') %}
 <section id="active-job-workspace"
-         class="{{ table_ui.block_classes() }}"
+         class="{{ 'min-w-0' if embedded|default(false) else table_ui.block_classes() }}"
          aria-labelledby="active-job-workspace-title"
-         {% if active_job_rows %} hx-get="{{ active_refresh_url }}" hx-trigger="every 5s" hx-target="this" hx-swap="outerHTML" hx-indicator="#active-job-loading" {% endif %}>
+         {% if active_job_rows %}hx-get="{{ active_refresh_url }}" hx-trigger="every 5s" hx-target="this" hx-swap="outerHTML" hx-indicator="#active-job-loading" hx-sync="this:replace"{% endif %}>
     <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div class="flex items-start gap-3">
-                <span class="{{ table_ui.block_icon_classes() }}" aria-hidden="true"><i data-lucide="activity" class="h-5 w-5"></i></span>
-                <div>
-                    <h2 id="active-job-workspace-title"
-                        class="{{ table_ui.block_title_classes() }}">Active Work</h2>
-                    <p class="{{ table_ui.block_description_classes() }}">Follow queued, running, retrying, and cancellation-requested jobs.</p>
+            <div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <h3 id="active-job-workspace-title" class="text-base font-semibold text-content-primary">Active Work</h3>
+                    {{ table_label.status_indicator_label(
+                        (active_job_rows|length) ~ ' Visible',
+                        tone='info' if active_job_rows else 'unknown'
+                    ) }}
                 </div>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">Queued, running, retrying, and cancellation-requested executions.</p>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex flex-wrap items-center gap-3">
                 <span class="text-xs font-medium text-content-muted">Updated {{ job_last_refreshed_at }}</span>
                 <button type="button"
                         hx-get="{{ active_refresh_url }}"
@@ -33,78 +35,66 @@
         </div>
         {{ loading_bar.render('active-job-loading', label='Refreshing active job status') }}
     </header>
+
     {% if active_job_rows %}
         <div class="divide-y divide-outline-subtle">
             {% for row in active_job_rows %}
-                <article class="grid gap-4 px-5 py-4 transition-colors hover:bg-kaori-mist sm:px-6 xl:grid-cols-[minmax(0,2fr)_minmax(180px,1fr)_minmax(230px,1.25fr)_auto] xl:items-center">
-                    <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary"
+                <article class="grid min-w-0 gap-4 px-5 py-4 sm:px-6 lg:grid-cols-12 lg:items-center">
+                    <div class="flex min-w-0 items-start gap-3 lg:col-span-4">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                               aria-hidden="true">
                             <i data-lucide="{{ row.icon }}" class="h-[18px] w-[18px]"></i>
                         </span>
                         <div class="min-w-0">
                             <div class="flex flex-wrap items-center gap-2">
-                                <h3 class="truncate text-sm font-semibold text-content-primary"
-                                    title="{{ row.operation_label }}">{{ row.operation_label }}</h3>
-                                {% set semantic = 'warning' if row.status in ['retrying', 'cancel_requested'] else 'info' %}
-                                <span class="inline-flex min-h-6 items-center rounded-md border border-status-{{ semantic }}-border bg-status-{{ semantic }}-soft px-2 text-[10px] font-semibold text-status-{{ semantic }}-text">{{ row.status_label }}</span>
+                                <h4 class="break-words text-sm font-semibold text-content-primary">{{ row.operation_label }}</h4>
+                                {{ table_label.status_indicator_label(row.status_label, tone=row.status_tone) }}
                             </div>
-                            <p class="mt-1 truncate text-xs text-content-muted"
-                               title="{{ row.provider_label }} · {{ row.scope }}">{{ row.provider_label }} · {{ row.scope }}</p>
+                            <p class="mt-1 break-words text-xs leading-5 text-content-muted">{{ row.provider_label }} · {{ row.scope }}</p>
                             <p class="mt-1 text-[10px] font-medium text-content-muted">{{ row.workload_label }} · {{ row.public_id[:8] }}</p>
                         </div>
                     </div>
-                    <div class="min-w-0">
-                        <div class="flex items-center justify-between gap-2 text-xs">
-                            <span class="line-clamp-1 font-medium text-content-secondary"
-                                  title="{{ row.progress_message }}">{{ row.progress_message }}</span>
+
+                    <div class="min-w-0 lg:col-span-3">
+                        <div class="flex items-start justify-between gap-3 text-xs">
+                            <p class="break-words font-medium leading-5 text-content-secondary">{{ row.progress_message }}</p>
                             <span class="shrink-0 font-semibold text-kaori-primary">{{ row.progress_label }}</span>
                         </div>
                         {% if row.progress_mode == 'determinate' %}
-                            {{ progress_bar.bar(row.progress,
-                                                        track_classes="mt-2 h-1.5 overflow-hidden bg-kaori-soft",
-                                                        fill_classes="h-full bg-kaori-primary transition-[width] duration-300",
-                                                        label="Job execution progress",) }}
+                            {{ progress_bar.determinate(
+                                row.progress,
+                                label=row.operation_label ~ ' progress',
+                                classes='mt-2 h-1.5 w-full overflow-hidden rounded-full accent-kaori-primary'
+                            ) }}
                         {% else %}
-                            <div class="mt-2 h-1.5 overflow-hidden bg-kaori-soft">
-                                {% if row.progress_mode == 'indeterminate' %}
-                                    <div class="notification-progress-indeterminate h-full bg-kaori-primary"></div>
-                                {% else %}
-                                    <div class="h-full w-0 bg-kaori-primary"></div>
-                                {% endif %}
+                            <div class="mt-2 flex items-center gap-2 text-[10px] font-medium text-content-muted">
+                                <span class="h-1.5 w-1.5 rounded-full bg-status-info" aria-hidden="true"></span>
+                                <span>{{ 'Waiting for worker capacity' if row.progress_mode == 'queued' else 'Worker progress is not yet measurable' }}</span>
                             </div>
                         {% endif %}
                         <p class="mt-2 text-[10px] text-content-muted">Attempt {{ row.attempt_count }}/{{ row.max_attempts }}</p>
                     </div>
-                    <dl class="grid min-w-0 grid-cols-2 gap-x-4 gap-y-2 text-xs">
+
+                    <dl class="grid min-w-0 grid-cols-2 gap-x-4 gap-y-2 text-xs lg:col-span-3">
                         <div class="min-w-0">
                             <dt class="font-semibold text-content-muted">Queue</dt>
-                            <dd class="mt-1 truncate font-medium text-content-primary"
-                                title="{{ row.queue_name }}">
-                                {{ row.queue_name }}
-                            </dd>
+                            <dd class="mt-1 break-words font-medium text-content-primary">{{ row.queue_name }}</dd>
                         </div>
                         <div class="min-w-0">
                             <dt class="font-semibold text-content-muted">Requested By</dt>
-                            <dd class="mt-1 truncate font-medium text-content-primary"
-                                title="{{ row.requester }}">
-                                {{ row.requester }}
-                            </dd>
+                            <dd class="mt-1 break-words font-medium text-content-primary">{{ row.requester }}</dd>
                         </div>
                         <div>
                             <dt class="font-semibold text-content-muted">Started</dt>
-                            <dd class="mt-1 font-medium text-content-primary">
-                                {{ row.started_at }}
-                            </dd>
+                            <dd class="mt-1 font-medium text-content-primary">{{ row.started_at }}</dd>
                         </div>
                         <div>
                             <dt class="font-semibold text-content-muted">Duration</dt>
-                            <dd class="mt-1 font-medium text-content-primary">
-                                {{ row.duration }}
-                            </dd>
+                            <dd class="mt-1 font-medium text-content-primary">{{ row.duration }}</dd>
                         </div>
                     </dl>
-                    <div class="flex shrink-0 justify-start xl:justify-end">
+
+                    <div class="flex shrink-0 justify-start lg:col-span-2 lg:justify-end">
                         {% if current_user.has_permission('jobs.cancel') and row.can_cancel %}
                             <form method="post"
                                   action="{{ url_for('jobs.cancel_execution', public_id=row.public_id) }}"
@@ -119,43 +109,33 @@
                                 <button type="submit"
                                         class="{{ table_ui.action_classes(destructive=true) }}"
                                         title="{{ row.action_help }}">
-                                    <i data-lucide="{{ row.action_icon }}"
-                                       class="h-4 w-4"
-                                       aria-hidden="true"></i>
+                                    <i data-lucide="{{ row.action_icon }}" class="h-4 w-4" aria-hidden="true"></i>
                                     {{ row.action_label }}
                                 </button>
                             </form>
                         {% elif row.action_state == 'protected' %}
-                            <span class="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border border-brand-outline bg-kaori-soft px-2.5 text-xs font-medium text-kaori-primary"
-                                  title="{{ row.action_help }}">
-                                <i data-lucide="shield-check" class="h-4 w-4" aria-hidden="true"></i>
-                                Protected Run
-                            </span>
+                            {{ table_label.metadata_label('Protected Run', icon='shield-check') }}
                         {% elif row.can_cancel %}
-                            <span class="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border border-outline-subtle bg-surface-hover px-2.5 text-xs font-medium text-content-muted"
-                                  title="Cancellation requires the Jobs Cancel permission.">
-                                <i data-lucide="lock-keyhole" class="h-4 w-4" aria-hidden="true"></i>
-                                View Only
-                            </span>
+                            {{ table_label.status_indicator_label('View Only', tone='unknown') }}
                         {% else %}
-                            <span class="inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border border-outline-subtle bg-surface-hover px-2.5 text-xs font-medium text-content-muted"
-                                  title="{{ row.action_help }}">
-                                <i data-lucide="minus" class="h-4 w-4" aria-hidden="true"></i>
-                                No Action
-                            </span>
+                            {{ table_label.status_indicator_label('No Action', tone='unknown') }}
                         {% endif %}
                     </div>
                 </article>
             {% endfor %}
         </div>
-        {% if active_job_overflow > 0 %}
-            <div class="border-t border-outline-subtle px-5 py-4 text-center text-sm text-content-secondary sm:px-6">{{ active_job_overflow }} additional active job{{ '' if active_job_overflow == 1 else 's' }} available in the Execution Registry.</div>
+        {% if active_job_overflow %}
+            <div class="border-t border-outline-subtle bg-surface-hover px-5 py-3 text-xs text-content-muted sm:px-6">
+                {{ active_job_overflow }} additional active execution{{ '' if active_job_overflow == 1 else 's' }} can be reviewed in the Execution Registry.
+            </div>
         {% endif %}
     {% else %}
-        <div class="px-6 py-14 text-center">
-            <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-status-normal-soft text-status-normal-text"><i data-lucide="circle-check-big" class="h-5 w-5"></i></span>
-            <h3 class="mt-4 text-base font-semibold text-content-primary">No Active Work</h3>
-            <p class="mt-1 text-sm leading-6 text-content-secondary">KAORI has no queued, running, retrying, or cancellation-requested jobs.</p>
+        <div class="px-6 py-12 text-center">
+            <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                <i data-lucide="circle-check-big" class="h-5 w-5"></i>
+            </span>
+            <h3 class="mt-4 text-base font-semibold text-content-primary">No Active Executions</h3>
+            <p class="mt-1 text-sm text-content-secondary">All registered background work is currently idle or terminal.</p>
         </div>
     {% endif %}
 </section>
