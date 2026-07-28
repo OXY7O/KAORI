@@ -11,7 +11,10 @@
                 </span>
                 <div class="min-w-0">
                     <p class="break-words text-sm font-semibold text-content-primary">{{ anomaly.name }}</p>
-                    <p class="mt-1 break-words text-sm leading-5 text-content-muted">{{ anomaly.description }}</p>
+                    <div class="mt-1 flex min-w-0 items-center gap-2 text-sm text-content-muted">
+                        <i data-lucide="box" class="h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
+                        <span class="min-w-0 break-words">{{ anomaly.namespace }}</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -23,12 +26,12 @@
 
         <div class="min-w-0 space-y-1 lg:col-span-3">
             <div class="flex min-w-0 items-center gap-2 text-sm font-medium text-content-secondary">
-                <i data-lucide="box" class="h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
-                <span class="min-w-0 break-words">{{ anomaly.namespace }}</span>
+                <i data-lucide="activity" class="h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
+                <span class="min-w-0 break-words">{{ anomaly.signal }}</span>
             </div>
             <div class="flex min-w-0 items-center gap-2 text-xs text-content-muted">
-                <i data-lucide="activity" class="h-3.5 w-3.5 shrink-0"></i>
-                <span class="min-w-0 break-words">{{ anomaly.signal }}</span>
+                <i data-lucide="crosshair" class="h-3.5 w-3.5 shrink-0"></i>
+                <span class="min-w-0 break-words">{{ anomaly.target }}</span>
             </div>
         </div>
 

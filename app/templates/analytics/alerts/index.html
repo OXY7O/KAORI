@@ -37,7 +37,7 @@
         {% if not dependency_blocker %}
             {% include "analytics/alerts/partials/_cluster_signal_overview.html" %}
 
-            <section x-data="kaoriAnalyticsTabs('alerts', ['alerts', 'anomalies', 'routing', 'readiness', 'recommendations'])"
+            <section x-data="kaoriAnalyticsTabs('alerts', ['alerts', 'anomalies', 'routing', 'ownership', 'recommendations'])"
                      class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                 <div class="flex flex-col gap-3 px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
@@ -60,7 +60,7 @@
                     ('alerts', 'Alerts', 'bell-ring'),
                     ('anomalies', 'Anomalies', 'radar'),
                     ('routing', 'Routing & Suppression', 'route'),
-                    ('readiness', 'Ownership & Readiness', 'shield-check'),
+                    ('ownership', 'Ownership & Runbook Coverage', 'book-open-check'),
                     ('recommendations', 'Recommendations', 'list-checks')
                 ] %}
                 {{ analytics_content_tabs.render('alerts-content', alert_tabs, 'Alerts & Anomalies Workspace', embedded=true) }}
@@ -105,20 +105,49 @@
                          role="tabpanel"
                          aria-labelledby="alerts-content-tab-routing"
                          x-show="activeTab === 'routing'"
-                         x-cloak
-                         class="space-y-6">
-                        {% include "analytics/alerts/partials/_routing_summary.html" %}
-                        {% include "analytics/alerts/partials/_silence_inhibition_summary.html" %}
+                         x-cloak>
+                        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                            <div class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:px-6 lg:flex-row lg:items-start lg:justify-between">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                        <i data-lucide="route" class="h-5 w-5"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <h3 class="text-base font-semibold text-content-primary">Routing &amp; Suppression</h3>
+                                        <p class="mt-1 text-sm leading-6 text-content-muted">Review alert delivery, grouping behavior, active silences, and inhibition policy readiness in one operational workspace.</p>
+                                    </div>
+                                </div>
+                                <div class="flex flex-wrap items-center gap-2">
+                                    {{ table_label.status_label(routing_summary.label, tone=routing_summary.level|default('info'), size='detail') }}
+                                    {{ table_label.status_label(silence_summary.label, tone=silence_summary.level|default('info'), size='detail') }}
+                                </div>
+                            </div>
+                            {% include "analytics/alerts/partials/_routing_summary.html" %}
+                            {% include "analytics/alerts/partials/_silence_inhibition_summary.html" %}
+                        </section>
                     </div>
 
-                    <div id="alerts-content-panel-readiness"
+                    <div id="alerts-content-panel-ownership"
                          role="tabpanel"
-                         aria-labelledby="alerts-content-tab-readiness"
-                         x-show="activeTab === 'readiness'"
-                         x-cloak
-                         class="space-y-6">
-                        {% include "analytics/alerts/partials/_ownership_summary.html" %}
-                        {% include "analytics/alerts/partials/_incident_readiness.html" %}
+                         aria-labelledby="alerts-content-tab-ownership"
+                         x-show="activeTab === 'ownership'"
+                         x-cloak>
+                        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+                            <div class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:px-6 lg:flex-row lg:items-start lg:justify-between">
+                                <div class="flex min-w-0 items-start gap-3">
+                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                        <i data-lucide="book-open-check" class="h-5 w-5"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <h3 class="text-base font-semibold text-content-primary">Ownership &amp; Runbook Coverage</h3>
+                                        <p class="mt-1 text-sm leading-6 text-content-muted">Verify accountable owners, escalation contacts, runbook availability, and metadata gaps for active signals.</p>
+                                    </div>
+                                </div>
+                                {{ table_label.status_label(ownership_summary.label, tone=ownership_summary.level|default('info'), size='detail') }}
+                            </div>
+                            {% include "analytics/alerts/partials/_ownership_summary.html" %}
+                            {% include "analytics/alerts/partials/_incident_readiness.html" %}
+                        </section>
                     </div>
 
                     <div id="alerts-content-panel-recommendations"

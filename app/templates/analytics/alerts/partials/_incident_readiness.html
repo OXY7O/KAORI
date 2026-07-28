@@ -1,81 +1,52 @@
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
-<section class="rounded-xl border border-outline-subtle bg-surface-card p-5 sm:p-6">
-    <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+<div>
+    <div class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:px-6 lg:flex-row lg:items-start lg:justify-between">
         <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                <i data-lucide="{{ incident_readiness.icon|default('siren') }}" class="h-5 w-5"></i>
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <i data-lucide="siren" class="h-4 w-4"></i>
             </span>
-            <div class="min-w-0">
-                <h3 class="text-base font-semibold text-content-primary">Incident Readiness</h3>
-                <p class="mt-1 text-sm leading-6 text-content-muted">{{ incident_readiness.description }}</p>
+            <div>
+                <h4 class="text-sm font-semibold text-content-primary">Escalation Readiness</h4>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Supporting checks for ownership, source availability, and incident response context.</p>
             </div>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            {{ table_label.status_label(incident_readiness.label, tone=incident_readiness.level|default('info'), size='detail') }}
-            {{ table_label.metadata_label('Score ' ~ incident_readiness.score ~ '/100', size='detail') }}
+            {{ table_label.status_label(incident_readiness.label, tone=incident_readiness.level|default('info'), size='compact') }}
+            {{ table_label.metadata_label('Score ' ~ incident_readiness.score ~ '/100', size='compact') }}
         </div>
     </div>
 
-    <div class="mt-5 rounded-lg border border-kaori-primary/20 bg-kaori-soft px-4 py-3">
-        <div class="flex items-start gap-3">
-            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
-                <i data-lucide="compass" class="h-4 w-4"></i>
-            </span>
-            <div>
-                <p class="text-sm font-semibold text-content-primary">Recommended Action</p>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">{{ incident_readiness.recommended_action }}</p>
+    <div class="grid divide-y divide-outline-subtle lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+        <div class="p-5 sm:p-6">
+            <h5 class="text-sm font-semibold text-content-primary">Recommended Action</h5>
+            <p class="mt-2 text-sm leading-6 text-content-secondary">{{ incident_readiness.recommended_action }}</p>
+        </div>
+        <div class="p-5 sm:p-6">
+            <div class="flex items-center justify-between gap-3">
+                <p class="text-sm font-semibold text-content-primary">Source Readiness</p>
+                <span class="text-sm font-semibold text-kaori-primary">{{ incident_readiness.source_score }}/100</span>
             </div>
+            {{ progress_bar.bar(incident_readiness.source_score, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-outline-default', fill_classes='h-full rounded-full bg-kaori-primary', label='Source Readiness') }}
+        </div>
+        <div class="p-5 sm:p-6">
+            <div class="flex items-center justify-between gap-3">
+                <p class="text-sm font-semibold text-content-primary">Ownership Readiness</p>
+                <span class="text-sm font-semibold text-kaori-primary">{{ incident_readiness.ownership_score }}/100</span>
+            </div>
+            {{ progress_bar.bar(incident_readiness.ownership_score, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-outline-default', fill_classes='h-full rounded-full bg-kaori-primary', label='Ownership Readiness') }}
         </div>
     </div>
 
-    <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {% set readiness_metrics = [
-            ('Critical Signals', incident_readiness.critical_signals, 'circle-alert'),
-            ('Warning Signals', incident_readiness.warning_signals, 'alert-triangle'),
-            ('Anomalies', incident_readiness.anomaly_signals, 'radar'),
-            ('Routing', 'Ready' if incident_readiness.routing_ready else 'Limited', 'route'),
-            ('Silence Risk', incident_readiness.silence_risk, 'volume-x'),
-            ('Inhibition Risk', incident_readiness.inhibition_risk, 'shield-off')
-        ] %}
-        {% for label, value, icon in readiness_metrics %}
-            <div class="flex items-center justify-between gap-3 rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
-                <div class="flex min-w-0 items-center gap-2">
-                    <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0 text-kaori-primary"></i>
-                    <span class="text-sm font-medium text-content-secondary">{{ label }}</span>
-                </div>
-                <span class="shrink-0 text-base font-semibold text-content-primary">{{ value }}</span>
-            </div>
-        {% endfor %}
-    </div>
-
-    <div class="mt-5 grid gap-4 lg:grid-cols-2">
-        {% for label, score in [('Source Readiness', incident_readiness.source_score), ('Ownership Readiness', incident_readiness.ownership_score)] %}
-            <div class="rounded-lg border border-outline-subtle bg-surface-card px-4 py-3">
-                <div class="flex items-center justify-between gap-3">
-                    <p class="text-sm font-semibold text-content-primary">{{ label }}</p>
-                    <span class="text-sm font-semibold text-kaori-primary">{{ score }}/100</span>
-                </div>
-                {{ progress_bar.bar(score, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-outline-default', fill_classes='h-full rounded-full bg-kaori-primary', label=label) }}
-            </div>
-        {% endfor %}
-    </div>
-
-    <div class="mt-5 border-t border-outline-subtle pt-5">
-        <div class="flex items-center gap-2">
-            <i data-lucide="list-checks" class="h-4 w-4 text-kaori-primary"></i>
-            <h4 class="text-sm font-semibold text-content-primary">Readiness Checks</h4>
-        </div>
-        <div class="mt-4 grid gap-3 lg:grid-cols-2">
+    <div class="border-t border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="grid gap-3 md:grid-cols-2">
             {% for check in incident_readiness.checks %}
                 {% set check_tone = 'normal' if check.status == 'pass' else ('warning' if check.status == 'warning' else 'critical') %}
-                <div class="rounded-lg border border-outline-subtle bg-surface-hover px-3 py-3">
-                    <div class="flex items-start gap-3">
-                        {{ table_label.status_label(check.status|title, tone=check_tone, size='compact') }}
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-content-primary">{{ check.label }}</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ check.description }}</p>
-                        </div>
+                <div class="flex items-start gap-3 rounded-lg bg-surface-hover px-3 py-3">
+                    {{ table_label.status_label(check.status|title, tone=check_tone, size='compact') }}
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-content-primary">{{ check.label }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ check.description }}</p>
                     </div>
                 </div>
             {% else %}
@@ -83,4 +54,4 @@
             {% endfor %}
         </div>
     </div>
-</section>
+</div>

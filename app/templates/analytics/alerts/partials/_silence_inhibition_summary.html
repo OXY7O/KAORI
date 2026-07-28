@@ -1,42 +1,6 @@
 {% import "components/table_label.html" as table_label %}
-<section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
-    <div class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:px-6 lg:flex-row lg:items-start lg:justify-between">
-        <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                <i data-lucide="{{ silence_summary.icon|default('volume-x') }}" class="h-5 w-5"></i>
-            </span>
-            <div class="min-w-0">
-                <h3 class="text-base font-semibold text-content-primary">Silence &amp; Inhibition</h3>
-                <p class="mt-1 text-sm leading-6 text-content-muted">Review suppression coverage, active silence scope, and Alertmanager inhibition readiness.</p>
-            </div>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-            {{ table_label.status_label(silence_summary.label, tone=silence_summary.level|default('info'), size='detail') }}
-            {{ table_label.metadata_label(((silence_summary.active_silences|default(0)|int) + (inhibition_summary.matched_alerts|default(0)|int)) ~ ' Suppressed Signals', icon='volume-x', size='detail') }}
-        </div>
-    </div>
-
-    <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
-        {% set metrics = [
-            ('Active Silences', silence_summary.active_silences, 'bell-off'),
-            ('Silence Matches', silence_summary.matched_alerts, 'filter'),
-            ('Pending Silences', silence_summary.pending_silences, 'clock-3'),
-            ('Inhibited Alerts', inhibition_summary.matched_alerts, 'shield-minus')
-        ] %}
-        {% for label, value, icon in metrics %}
-            <div class="flex items-center gap-3 px-5 py-4 sm:px-6">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                </span>
-                <div>
-                    <p class="text-xs text-content-muted">{{ label }}</p>
-                    <p class="mt-0.5 text-lg font-semibold text-content-primary">{{ value }}</p>
-                </div>
-            </div>
-        {% endfor %}
-    </div>
-
-    <div class="grid border-t border-outline-subtle divide-y divide-outline-subtle xl:grid-cols-2 xl:divide-x xl:divide-y-0">
+<div>
+    <div class="grid divide-y divide-outline-subtle xl:grid-cols-2 xl:divide-x xl:divide-y-0">
         <div class="p-5 sm:p-6">
             <div class="flex items-start justify-between gap-3">
                 <div>
@@ -45,10 +9,22 @@
                 </div>
                 {{ table_label.status_label(silence_summary.level|default('unknown')|title, tone=silence_summary.level|default('unknown'), size='compact') }}
             </div>
+            <dl class="mt-4 grid grid-cols-3 divide-x divide-outline-subtle rounded-lg bg-surface-hover">
+                {% for label, value in [
+                    ('Active', silence_summary.active_silences),
+                    ('Matched', silence_summary.matched_alerts),
+                    ('Pending', silence_summary.pending_silences)
+                ] %}
+                    <div class="px-3 py-3 text-center">
+                        <dt class="text-xs text-content-muted">{{ label }}</dt>
+                        <dd class="mt-1 text-lg font-semibold text-content-primary">{{ value }}</dd>
+                    </div>
+                {% endfor %}
+            </dl>
             {% if silence_summary.silenced_matchers %}
                 <div class="mt-4 flex flex-wrap gap-2">
                     {% for matcher in silence_summary.silenced_matchers %}
-                        {{ table_label.metadata_label(matcher, icon='filter', wrap=true) }}
+                        {{ table_label.metadata_label(matcher, icon='filter', wrap=true, size='compact') }}
                     {% endfor %}
                 </div>
             {% else %}
@@ -59,7 +35,7 @@
                     <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Affected Namespaces</p>
                     <div class="mt-2 flex flex-wrap gap-2">
                         {% for namespace in silence_summary.silenced_namespaces %}
-                            {{ table_label.metadata_label(namespace, icon='box', wrap=true) }}
+                            {{ table_label.metadata_label(namespace, icon='box', wrap=true, size='compact') }}
                         {% endfor %}
                     </div>
                 </div>
@@ -87,7 +63,7 @@
             {% if inhibition_summary.source_equal_labels %}
                 <div class="mt-4 flex flex-wrap gap-2">
                     {% for label in inhibition_summary.source_equal_labels %}
-                        {{ table_label.metadata_label(label, icon='equal', wrap=true) }}
+                        {{ table_label.metadata_label(label, icon='equal', wrap=true, size='compact') }}
                     {% endfor %}
                 </div>
             {% else %}
@@ -99,7 +75,10 @@
     {% if silence_summary['items'] %}
         <div class="border-t border-outline-subtle">
             <div class="flex items-center justify-between gap-3 bg-surface-hover px-5 py-3 sm:px-6">
-                <h4 class="text-sm font-semibold text-content-primary">Active Silence Records</h4>
+                <div>
+                    <h4 class="text-sm font-semibold text-content-primary">Active Silence Records</h4>
+                    <p class="mt-1 text-xs text-content-muted">Current suppression windows and their affected alert count.</p>
+                </div>
                 {{ table_label.metadata_label(silence_summary['items']|length ~ ' Records', size='compact') }}
             </div>
             <div class="divide-y divide-outline-subtle">
@@ -122,4 +101,4 @@
             </div>
         </div>
     {% endif %}
-</section>
+</div>
