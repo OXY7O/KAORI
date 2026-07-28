@@ -1,14 +1,20 @@
 {% extends "jobs/configuration/definitions/_materialization_job.html" %}
 {% block materialization_options %}
-<div>
-    <p class="text-xs font-semibold text-content-secondary">Materialized History Windows</p>
-    <div class="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
+<fieldset class="rounded-lg border border-outline-default bg-surface-hover p-4">
+    <legend class="px-1 text-xs font-semibold text-content-secondary">Precomputed History Windows</legend>
+    <p class="mt-1 text-xs leading-5 text-content-muted">Select the historical windows prepared by the forecasting worker.</p>
+    <div class="mt-3 grid gap-2 sm:grid-cols-3">
         {% for value, label in policy_form.forecast_history_windows.choices %}
-            <label class="flex items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary">
-                <input type="checkbox" name="forecast_history_windows" value="{{ value }}" {% if value in (policy_form.forecast_history_windows.data or []) %}checked{% endif %} class="h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary"> {{ label }}
+            <label class="flex min-h-10 cursor-pointer items-center justify-between gap-3 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary hover:border-kaori-primary/30 hover:bg-kaori-soft">
+                <span>{{ label }}</span>
+                <input type="checkbox"
+                       name="forecast_history_windows"
+                       value="{{ value }}"
+                       {% if value in (policy_form.forecast_history_windows.data or []) %}checked{% endif %}
+                       class="h-4 w-4 shrink-0 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary">
             </label>
         {% endfor %}
     </div>
-</div>
-<p class="text-xs leading-5 text-content-muted">Forecast workers materialize historical Prometheus windows only. KAORI always retains the 30-day history required by the Kubernetes Operations Dashboard. Forecast horizon, resource, and method are projected locally from the committed history and do not create additional worker queries.</p>
+    <p class="mt-3 text-xs leading-5 text-content-muted">KAORI always retains the 30-day history required by the Kubernetes Operations Dashboard.</p>
+</fieldset>
 {% endblock materialization_options %}

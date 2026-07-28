@@ -27,6 +27,8 @@ ANALYTICS_REFRESH_DEFINITION = JobDefinition(
     minimum_interval_minutes=5,
     maximum_interval_minutes=1440,
     safety_summary='Long-range results are generated once per cluster and parameter set, then shared by every user.',
+    execution_summary='Materialize shared analytics snapshots and monitor worker progress from one execution workspace.',
+    recent_execution_summary='Latest shared analytics snapshot materialization runs.',
     default_configuration={
         'time_ranges': ['24h', '7d', '30d', '60d'],
         'freshness_minutes': 20,

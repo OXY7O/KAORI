@@ -24,4 +24,6 @@ INVENTORY_SYNC_DEFINITION = JobDefinition(
     default_enabled=True,
     default_interval_minutes=60,
     safety_summary='Each cluster promotes inventory only after a complete generation commits successfully.',
+    execution_summary='Run a fleet inventory refresh and monitor the canonical execution without leaving this page.',
+    recent_execution_summary='Latest scheduled and manual fleet inventory synchronizations.',
 )

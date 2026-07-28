@@ -74,6 +74,8 @@ class JobDefinition:
     schedule_supported: bool = True
     manual_execution_supported: bool = True
     safety_summary: str = ''
+    execution_summary: str = 'Run the job manually or wait for the saved automatic policy.'
+    recent_execution_summary: str = 'Latest scheduled and manual executions for this job.'
     default_configuration: dict[str, Any] | None = None
 
     def dispatch(

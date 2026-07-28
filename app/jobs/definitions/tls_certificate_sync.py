@@ -29,4 +29,6 @@ TLS_CERTIFICATE_SYNC_DEFINITION = JobDefinition(
         'Each cluster is collected independently and replaces only its committed TLS inventory '
         'after the Kubernetes API read completes.'
     ),
+    execution_summary='Refresh TLS Secret inventory across eligible clusters and monitor the active worker run.',
+    recent_execution_summary='Latest scheduled and manual TLS Secret inventory refreshes.',
 )

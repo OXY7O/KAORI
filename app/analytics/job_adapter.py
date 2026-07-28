@@ -18,8 +18,10 @@ from app.analytics.materialization.catalog import (
 from app.analytics.materialization.service import get_snapshot, normalize_parameters
 from app.analytics.tasks import materialize_analytics_snapshots, materialize_forecast_snapshots
 from app.dashboards.kubernetes.snapshots import CAPACITY_DATASET_KEY
+from app.jobs.constants import ACTIVE_JOB_STATUSES
 from app.jobs.definitions.base import RegisteredJobDispatchResult
 from app.jobs.dispatcher import enqueue_canonical_job
+from app.jobs.presentation import present_job_execution
 from app.models import AnalyticsSnapshot, Cluster
 from app.models.job import JobExecution, JobPolicy
 from app.prometheus.repository import resolve_instance_for_cluster
@@ -522,7 +524,8 @@ def dispatch_forecast_materialization(
 def _active_job(job_type: str, *, scope_key: str | None = None) -> JobExecution | None:
     query = JobExecution.query.filter(
         JobExecution.job_type == job_type,
-        JobExecution.status.in_({'queued', 'running', 'retrying', 'cancel_requested'}),
+        JobExecution.status.in_(ACTIVE_JOB_STATUSES),
+        JobExecution.completed_at.is_(None),
     )
     if scope_key is not None:
         query = query.filter(JobExecution.scope_key == scope_key)
@@ -534,23 +537,75 @@ def _context(policy: JobPolicy, *, forecasting: bool) -> dict[str, Any]:
     datasets = (FORECAST_DATASET,) if forecasting else list_analytics_datasets()
     job_type = 'forecast_materialization' if forecasting else 'analytics_materialization'
     operation = 'materialize_forecast' if forecasting else 'materialize_analytics'
-    latest = (
-        JobExecution.query.filter_by(job_type=job_type, operation=operation)
-        .order_by(JobExecution.created_at.desc())
-        .first()
-    )
+    jobs = JobExecution.query.filter_by(job_type=job_type, operation=operation)
+    active_job = _active_job(job_type)
+    recent_jobs = jobs.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).limit(5).all()
+    latest = recent_jobs[0] if recent_jobs else None
     snapshot_count = AnalyticsSnapshot.query.filter(
         AnalyticsSnapshot.cluster_id.in_([cluster.id for cluster in clusters] or ['']),
         AnalyticsSnapshot.dataset_key.in_([dataset.key for dataset in datasets]),
         AnalyticsSnapshot.payload_json.isnot(None),
     ).count()
+
+    if active_job is not None:
+        configuration_state = {
+            'label': 'Execution Active',
+            'tone': 'pending',
+            'icon': 'loader-circle',
+        }
+        execution_state = {
+            'label': 'Execution Active',
+            'tone': 'pending',
+            'icon': 'loader-circle',
+            'description': 'A materialization worker is processing snapshot requests.',
+        }
+    elif not clusters:
+        configuration_state = {
+            'label': 'Blocked',
+            'tone': 'warning',
+            'icon': 'shield-alert',
+        }
+        execution_state = {
+            'label': 'Blocked',
+            'tone': 'warning',
+            'icon': 'shield-alert',
+            'description': 'No eligible source binding is available for this job.',
+        }
+    elif policy.enabled:
+        configuration_state = {
+            'label': 'Enabled',
+            'tone': 'normal',
+            'icon': 'circle-check',
+        }
+        execution_state = {
+            'label': 'Ready',
+            'tone': 'normal',
+            'icon': 'circle-check',
+            'description': 'Eligible clusters are ready for materialization.',
+        }
+    else:
+        configuration_state = {
+            'label': 'Manual Only',
+            'tone': 'unknown',
+            'icon': 'mouse-pointer-click',
+        }
+        execution_state = {
+            'label': 'Ready',
+            'tone': 'normal',
+            'icon': 'circle-check',
+            'description': 'Manual materialization is available for eligible clusters.',
+        }
+
     return {
         'eligible_cluster_count': len(clusters),
         'registered_cluster_count': Cluster.query.count(),
         'dataset_count': len(datasets),
         'snapshot_count': snapshot_count,
-        'active_job': _active_job(job_type),
-        'latest_job': latest,
+        'configuration_state': configuration_state,
+        'execution_state': execution_state,
+        'active_job': present_job_execution(active_job) if active_job is not None else None,
+        'latest_job': present_job_execution(latest) if latest is not None else None,
+        'recent_jobs': [present_job_execution(job) for job in recent_jobs],
         'queue_name': current_app.config['FORECASTING_CELERY_QUEUE' if forecasting else 'ANALYTICS_CELERY_QUEUE'],
         'policy_configuration': policy.configuration_json or {},
         'generated_at': datetime.now(UTC),

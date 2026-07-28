@@ -115,7 +115,10 @@ def build_inventory_sync_context(policy: JobPolicy) -> dict[str, Any]:
         JobExecution.operation == 'inventory_sync_all',
     )
     active_job = (
-        jobs_query.filter(JobExecution.status.in_(ACTIVE_JOB_STATUSES))
+        jobs_query.filter(
+            JobExecution.status.in_(ACTIVE_JOB_STATUSES),
+            JobExecution.completed_at.is_(None),
+        )
         .order_by(JobExecution.updated_at.desc(), JobExecution.id.desc())
         .first()
     )

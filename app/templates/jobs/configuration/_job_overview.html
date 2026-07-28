@@ -1,0 +1,42 @@
+{% set definition = selected_job.definition %}
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="{{ definition.icon }}" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-kaori-primary">{{ definition.domain }}</p>
+                    <h2 class="mt-1 text-lg font-semibold text-content-primary">{{ definition.name }}</h2>
+                    <p class="mt-1 max-w-3xl text-xs leading-5 text-content-muted">{{ definition.description }}</p>
+                </div>
+            </div>
+            {% include "jobs/configuration/_selected_status.html" %}
+        </div>
+    </header>
+    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+        {% for icon, label, value, helper in overview_metrics %}
+            <article class="bg-surface-card p-4 sm:p-5">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ label }}</p>
+                        <p class="mt-2 break-words text-lg font-semibold text-content-primary">{{ value }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                    </div>
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                    </span>
+                </div>
+            </article>
+        {% endfor %}
+    </div>
+    {% if overview_notice|default('') %}
+        <footer class="border-t border-kaori-primary/15 bg-kaori-soft px-5 py-3 sm:px-6">
+            <p class="flex items-start gap-2 text-xs leading-5 text-content-secondary">
+                <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                <span>{{ overview_notice }}</span>
+            </p>
+        </footer>
+    {% endif %}
+</section>

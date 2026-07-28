@@ -30,6 +30,8 @@ FORECAST_REFRESH_DEFINITION = JobDefinition(
         'Forecast range queries run in the forecasting queue and the last successful result '
         'remains available during refresh.'
     ),
+    execution_summary='Generate reusable forecast history snapshots and monitor the forecasting worker.',
+    recent_execution_summary='Latest forecast history materialization runs.',
     default_configuration={
         'history_windows': ['7d', '30d', '90d'],
         'freshness_minutes': 120,

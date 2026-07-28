@@ -70,7 +70,10 @@ def build_job_configuration_context(*, selected_job_key: str | None = None) -> d
             JobExecution.job_type,
             JobExecution.operation,
         )
-        .filter(JobExecution.status.in_(ACTIVE_JOB_STATUSES))
+        .filter(
+            JobExecution.status.in_(ACTIVE_JOB_STATUSES),
+            JobExecution.completed_at.is_(None),
+        )
         .distinct()
         .all()
     }
@@ -90,11 +93,64 @@ def build_job_configuration_context(*, selected_job_key: str | None = None) -> d
         'policy': selected_policy,
         **selected_definition.build_context(selected_policy),
     }
+    execution_presentation = {
+        'kubernetes.inventory.sync': {
+            'manual_action_label': 'Sync All Inventory',
+            'manual_action_icon': 'database-zap',
+            'execution_scope_label': 'All Eligible Clusters',
+            'execution_scope_detail': (
+                f"{selected_context.get('eligible_cluster_count', 0)} eligible cluster bindings"
+            ),
+        },
+        'governance.tls_certificates.sync': {
+            'manual_action_label': 'Sync TLS Now',
+            'manual_action_icon': 'refresh-cw',
+            'execution_scope_label': 'Eligible TLS Clusters',
+            'execution_scope_detail': (
+                f"{selected_context.get('eligible_cluster_count', 0)} eligible cluster bindings"
+            ),
+        },
+        'analytics.materialize': {
+            'manual_action_label': 'Run Analytics Refresh',
+            'manual_action_icon': 'chart-no-axes-combined',
+            'execution_scope_label': 'Configured Analytics Snapshots',
+            'execution_scope_detail': (
+                f"{selected_context.get('dataset_count', 0)} dataset families across "
+                f"{selected_context.get('eligible_cluster_count', 0)} clusters"
+            ),
+        },
+        'analytics.forecast.materialize': {
+            'manual_action_label': 'Run Forecast Refresh',
+            'manual_action_icon': 'chart-spline',
+            'execution_scope_label': 'Configured Forecast Snapshots',
+            'execution_scope_detail': (
+                f"{selected_context.get('dataset_count', 0)} forecast dataset across "
+                f"{selected_context.get('eligible_cluster_count', 0)} clusters"
+            ),
+        },
+    }
+    selected_context.update(
+        execution_presentation.get(
+            selected_definition.key,
+            {
+                'manual_action_label': 'Run Now',
+                'manual_action_icon': 'play',
+                'execution_scope_label': selected_definition.scope_key,
+                'execution_scope_detail': selected_definition.scope_type.replace('_', ' ').title(),
+            },
+        )
+    )
+    selected_context['execution_disabled'] = not bool(
+        selected_context.get('eligible_cluster_count', 1)
+    )
     enabled_count = sum(1 for policy in policies if policy.enabled)
     attention_count = sum(
         1 for policy in policies if policy.last_dispatch_status in _ATTENTION_DISPATCH_STATUSES
     )
-    active_executions = JobExecution.query.filter(JobExecution.status.in_(ACTIVE_JOB_STATUSES)).count()
+    active_executions = JobExecution.query.filter(
+        JobExecution.status.in_(ACTIVE_JOB_STATUSES),
+        JobExecution.completed_at.is_(None),
+    ).count()
     return {
         'job_catalog': catalog,
         'selected_job_key': selected_key,

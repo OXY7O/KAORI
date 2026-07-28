@@ -1,169 +1,89 @@
+{% import "components/action_button.html" as action_button %}
 {% import "components/table_label.html" as table_label %}
-{% import "components/progress_bar.html" as progress_bar %}
 {% set definition = selected_job.definition %}
 {% set policy = selected_job.policy %}
 {% set can_configure = current_user.has_permission(definition.configure_permission) %}
-{% set can_execute = current_user.has_permission(definition.execute_permission) and (not definition.domain_execute_permission or current_user.has_permission(definition.domain_execute_permission)) %}
-<div class="space-y-6">
+{% set overview_metrics = [
+    ('server-cog', 'Eligible Clusters', selected_job.eligible_cluster_count, 'Source-ready clusters'),
+    ('layers-3', 'Dataset Families', selected_job.dataset_count, 'Reusable snapshot groups'),
+    ('database', 'Stored Snapshots', selected_job.snapshot_count, 'Committed reusable results'),
+    ('timer', 'Automatic Policy', policy.interval_minutes ~ ' Minutes', 'Saved refresh cadence')
+] %}
+{% set overview_notice = 'The last successful snapshot remains available while the worker prepares a newer committed result.' %}
+<div class="space-y-5">
+    {% include "jobs/configuration/_job_overview.html" %}
+
     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-        <header class="border-b border-outline-subtle bg-surface-subtle px-5 py-4">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div class="flex items-start gap-3">
-                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary ring-1 ring-brand-outline">
-                        <i data-lucide="{{ definition.icon }}" class="h-5 w-5"></i>
-                    </span>
-                    <div>
-                        <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">{{ definition.domain }}</p>
-                        <h2 class="mt-1 text-lg font-semibold text-content-primary">{{ definition.name }}</h2>
-                        <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted">{{ definition.description }}</p>
-                    </div>
-                </div>
-                <div class="flex flex-wrap gap-2">
-                    {{ table_label.status_indicator_label('Automatic' if policy.enabled else 'Manual Only', 'normal' if policy.enabled else 'unknown', 'clock-3') }}
-                    {{ table_label.status_indicator_label(definition.queue_name, 'maintenance', 'cpu') }}
+        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+            <div class="flex items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="sliders-horizontal" class="h-4 w-4"></i></span>
+                <div>
+                    <h3 class="text-base font-semibold text-content-primary">Materialization Policy</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Configure scheduling, freshness, fallback, and the snapshot ranges prepared by this job.</p>
                 </div>
             </div>
         </header>
-        <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
-            {% for icon, label, value, helper in [
-                ('server-cog', 'Eligible Clusters', selected_job.eligible_cluster_count, 'Prometheus-connected clusters'),
-                ('layers-3', 'Datasets', selected_job.dataset_count, 'Shared materialization families'),
-                ('database', 'Stored Snapshots', selected_job.snapshot_count, 'Persistent reusable results'),
-                ('timer', 'Interval', policy.interval_minutes ~ ' Minutes', 'Automatic refresh cadence')
-            ] %}
-                <div class="bg-surface-card p-4">
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ label }}</p>
-                            <p class="mt-2 text-2xl font-semibold text-content-primary">{{ value }}</p>
-                            <p class="mt-1 text-xs text-content-muted">{{ helper }}</p>
-                        </div>
-                        <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                            <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                        </span>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
-    </section>
-
-    <div class="grid gap-6 xl:grid-cols-12 xl:items-start">
         <form method="post"
               action="{{ url_for('jobs.update_policy', job_key=definition.key) }}"
               hx-post="{{ url_for('jobs.update_policy', job_key=definition.key) }}"
               hx-target="#job-configuration-workspace"
-              hx-swap="outerHTML"
-              class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm xl:col-span-7">
+              hx-swap="outerHTML">
             {{ policy_form.hidden_tag() }}
-            <header class="border-b border-outline-subtle px-5 py-4">
-                <div class="flex items-start gap-3">
-                    <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="sliders-horizontal" class="h-4 w-4"></i></span>
-                    <div>
-                        <h3 class="text-base font-semibold text-content-primary">Automatic Materialization Policy</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Configure the shared snapshot refresh schedule.</p>
-                    </div>
-                </div>
-            </header>
-            <div class="space-y-5 p-5">
-                <label class="flex items-start justify-between gap-4 rounded-lg border border-outline-default bg-surface-elevated p-4">
-                    <span>
-                        <span class="block text-sm font-semibold text-content-primary">Enable Automatic Execution</span>
-                        <span class="mt-1 block text-xs leading-5 text-content-muted">Scheduled runs are recorded without user notifications.</span>
-                    </span>
-                    {{ policy_form.enabled(class_="mt-1 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary") }}
-                </label>
-                <div class="grid gap-4 sm:grid-cols-2">
-                    <label>
+            <div class="space-y-5 p-5 sm:p-6">
+                <div class="grid gap-4 lg:grid-cols-12">
+                    <label class="flex items-start justify-between gap-4 rounded-lg border border-outline-default bg-surface-hover p-4 lg:col-span-6">
+                        <span class="min-w-0">
+                            <span class="block text-sm font-semibold text-content-primary">Enable Automatic Execution</span>
+                            <span class="mt-1 block text-xs leading-5 text-content-muted">Dispatch due snapshot work from the saved policy.</span>
+                        </span>
+                        {{ policy_form.enabled(class_="mt-1 h-5 w-5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary", disabled=not can_configure) }}
+                    </label>
+                    <label class="lg:col-span-3">
                         <span class="text-xs font-semibold text-content-secondary">Execution Interval</span>
                         <div class="relative mt-1.5">
-                            {{ policy_form.interval_minutes(class_="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 pr-20 text-sm font-semibold text-content-primary outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10") }}
+                            {{ policy_form.interval_minutes(class_="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 pr-20 text-sm font-semibold text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20", disabled=not can_configure) }}
                             <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-content-muted">Minutes</span>
                         </div>
                     </label>
-                    <label>
+                    <label class="lg:col-span-3">
                         <span class="text-xs font-semibold text-content-secondary">Snapshot Freshness</span>
                         <div class="relative mt-1.5">
-                            {{ policy_form.freshness_minutes(class_="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 pr-20 text-sm font-semibold text-content-primary outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10") }}
+                            {{ policy_form.freshness_minutes(class_="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 pr-20 text-sm font-semibold text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20", disabled=not can_configure) }}
                             <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-content-muted">Minutes</span>
                         </div>
                     </label>
                 </div>
-                <label>
-                    <span class="text-xs font-semibold text-content-secondary">Stale Fallback Window</span>
-                    <div class="relative mt-1.5">
-                        {{ policy_form.stale_grace_minutes(class_="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 pr-20 text-sm font-semibold text-content-primary outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10") }}
-                        <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-content-muted">Minutes</span>
+
+                <div class="grid gap-4 lg:grid-cols-12">
+                    <label class="lg:col-span-4">
+                        <span class="text-xs font-semibold text-content-secondary">Stale Fallback Window</span>
+                        <div class="relative mt-1.5">
+                            {{ policy_form.stale_grace_minutes(class_="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 pr-20 text-sm font-semibold text-content-primary outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-primary/20", disabled=not can_configure) }}
+                            <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-content-muted">Minutes</span>
+                        </div>
+                        <span class="mt-1.5 block text-xs leading-5 text-content-muted">Serve the last successful result during refresh or source failure.</span>
+                    </label>
+                    <div class="lg:col-span-8">
+                        {% block materialization_options %}{% endblock materialization_options %}
                     </div>
-                    <span class="mt-1.5 block text-xs leading-5 text-content-muted">Use the last successful snapshot during refresh or source failure.</span>
-                </label>
-                {% block materialization_options %}{% endblock materialization_options %}
+                </div>
+
+                <dl class="grid gap-3 text-xs sm:grid-cols-3">
+                    <div class="rounded-lg border border-outline-subtle bg-surface-hover p-3"><dt class="font-semibold text-content-muted">Last Dispatch</dt><dd class="mt-1 font-semibold text-content-primary">{{ policy.last_dispatched_at|user_datetime if policy.last_dispatched_at else 'Never Dispatched' }}</dd></div>
+                    <div class="rounded-lg border border-outline-subtle bg-surface-hover p-3"><dt class="font-semibold text-content-muted">Next Scheduled</dt><dd class="mt-1 font-semibold text-content-primary">{{ policy.next_run_at|user_datetime if policy.next_run_at else 'Not Scheduled' }}</dd></div>
+                    <div class="rounded-lg border border-outline-subtle bg-surface-hover p-3"><dt class="font-semibold text-content-muted">Policy Updated</dt><dd class="mt-1 font-semibold text-content-primary">{{ policy.updated_at|user_datetime }}</dd></div>
+                </dl>
             </div>
-            <footer class="flex items-center justify-between gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4">
-                <p class="text-xs text-content-muted">No Celery Beat restart is required.</p>
+            <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                <p class="text-xs leading-5 text-content-muted">Changes are read by the scheduler without restarting Celery Beat.</p>
                 {% if can_configure %}
-                    <button type="submit" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark">
-                        <i data-lucide="save" class="h-4 w-4"></i> Save
-                    </button>
+                    <button type="submit" class="{{ action_button.classes('primary') }}"><i data-lucide="save" class="h-4 w-4"></i>Save Policy</button>
                 {% else %}
                     {{ table_label.status_indicator_label('View Only', 'unknown', 'lock-keyhole') }}
                 {% endif %}
             </footer>
         </form>
+    </section>
 
-        <aside class="space-y-6 xl:sticky xl:top-5 xl:col-span-5 xl:self-start">
-            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                <header class="border-b border-outline-subtle px-5 py-4">
-                    <h3 class="text-base font-semibold text-content-primary">Execution Control</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Manual and automatic runs share the same execution boundary.</p>
-                </header>
-                <div class="space-y-4 p-5">
-                    {% if selected_job.active_job %}
-                        <div class="rounded-lg border border-brand-outline bg-kaori-soft p-4">
-                            <div class="flex items-center justify-between gap-3">
-                                <p class="text-sm font-semibold text-content-primary">Execution Active</p>
-                                {{ table_label.status_indicator_label(selected_job.active_job.status|replace('_', ' ')|title, 'pending', 'loader-circle') }}
-                            </div>
-                            <p class="mt-2 text-xs text-content-muted">{{ selected_job.active_job.progress_message or 'Waiting for the target worker.' }}</p>
-                            {% set total = selected_job.active_job.progress_total or 0 %}
-                            {% set current = selected_job.active_job.progress_current or 0 %}
-                            {% set progress = ((current / total) * 100) if total else 0 %}
-                            {{ progress_bar.determinate(progress, label="Materialization progress", classes="mt-3 block h-1.5 w-full overflow-hidden rounded-full accent-kaori-primary") }}
-                        </div>
-                    {% else %}
-                        <div class="rounded-lg border border-outline-default bg-surface-elevated p-4">
-                            {{ table_label.status_indicator_label('Idle', 'unknown', 'circle-dashed') }}
-                            <p class="mt-3 text-xs leading-5 text-content-muted">No materialization job is active.</p>
-                        </div>
-                    {% endif %}
-                    <dl class="grid grid-cols-2 gap-3 text-xs">
-                        <div class="rounded-lg border border-outline-subtle p-3"><dt class="font-semibold text-content-muted">Queue</dt><dd class="mt-1 font-semibold text-content-primary">{{ selected_job.queue_name }}</dd></div>
-                        <div class="rounded-lg border border-outline-subtle p-3"><dt class="font-semibold text-content-muted">Canonical Record</dt><dd class="mt-1 font-semibold text-content-primary">JobExecution</dd></div>
-                    </dl>
-                </div>
-                <footer class="flex flex-wrap items-center justify-between gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4">
-                    <a href="{{ url_for('jobs.executions', execution_tab='registry', queue=selected_job.queue_name, search=definition.operation) }}" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-sm font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary"><i data-lucide="list-checks" class="h-4 w-4"></i> Executions</a>
-                    {% if can_execute %}
-                        <form method="post"
-                              action="{{ url_for('jobs.run_now', job_key=definition.key) }}"
-                              hx-post="{{ url_for('jobs.run_now', job_key=definition.key) }}"
-                              hx-target="#job-configuration-workspace"
-                              hx-swap="outerHTML">
-                            {{ manual_form.hidden_tag() }}
-                            <button type="submit" {% if selected_job.active_job or not selected_job.eligible_cluster_count %}disabled{% endif %} class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark disabled:cursor-not-allowed disabled:opacity-50"><i data-lucide="refresh-cw" class="h-4 w-4"></i> Run Now</button>
-                        </form>
-                    {% endif %}
-                </footer>
-            </section>
-            <section class="rounded-xl border border-brand-outline bg-kaori-soft p-5">
-                <div class="flex items-start gap-3">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary ring-1 ring-brand-outline"><i data-lucide="shield-check" class="h-4 w-4"></i></span>
-                    <div>
-                        <h3 class="text-sm font-semibold text-content-primary">Load Protection Boundary</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ definition.safety_summary }}</p>
-                        <p class="mt-2 text-xs leading-5 text-content-muted">Automatic runs are recorded in Activity Audit without toast feedback.</p>
-                    </div>
-                </div>
-            </section>
-        </aside>
-    </div>
+    {% include "jobs/configuration/_execution_activity.html" %}
 </div>

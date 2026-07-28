@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.common.presentation import present_user_datetime
 from app.governance.tls_certificates.sync_jobs import (
     NoEligibleTLSCertificateTargets,
     TLS_SYNC_JOB_TYPE,
@@ -13,30 +12,13 @@ from app.governance.tls_certificates.sync_jobs import (
 from app.jobs.constants import ACTIVE_JOB_STATUSES
 from app.jobs.definitions.base import RegisteredJobDispatchResult
 from app.jobs.policies.presentation import present_interval
+from app.jobs.presentation import present_job_execution
 from app.models.governance import TLSCertificateInventory
 from app.models.job import JobExecution, JobPolicy
 
 
 def _present_job(job: JobExecution | None) -> dict[str, Any] | None:
-    if job is None:
-        return None
-    progress = 0
-    if job.progress_total:
-        progress = min(int((job.progress_current / job.progress_total) * 100), 100)
-    payload = job.payload_json or {}
-    return {
-        'public_id': job.public_id,
-        'status': job.status,
-        'status_label': job.status.replace('_', ' ').title(),
-        'progress': progress,
-        'progress_message': job.progress_message or 'Waiting for the inventory worker.',
-        'target_count': int(payload.get('target_count') or job.progress_total or 0),
-        'trigger_label': str(payload.get('trigger_type') or 'manual').replace('_', ' ').title(),
-        'requester': job.requested_by.display_label if job.requested_by else 'KAORI Scheduler',
-        'queued_at': present_user_datetime(job.queued_at, empty='Not Queued'),
-        'completed_at': present_user_datetime(job.completed_at, empty='In Progress'),
-        'is_active': job.is_active,
-    }
+    return present_job_execution(job) if job is not None else None
 
 
 def dispatch_tls_certificate_sync(
@@ -73,12 +55,40 @@ def build_tls_certificate_sync_context(policy: JobPolicy) -> dict[str, Any]:
         JobExecution.operation == TLS_SYNC_OPERATION,
     )
     active_job = (
-        jobs.filter(JobExecution.status.in_(ACTIVE_JOB_STATUSES))
+        jobs.filter(
+            JobExecution.status.in_(ACTIVE_JOB_STATUSES),
+            JobExecution.completed_at.is_(None),
+        )
         .order_by(JobExecution.updated_at.desc(), JobExecution.id.desc())
         .first()
     )
     recent_jobs = jobs.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).limit(5).all()
     latest_job = recent_jobs[0] if recent_jobs else None
+
+    if active_job is not None:
+        configuration_state = {
+            'label': 'Execution Active',
+            'tone': 'pending',
+            'icon': 'loader-circle',
+        }
+    elif not targets:
+        configuration_state = {
+            'label': 'Blocked',
+            'tone': 'warning',
+            'icon': 'shield-alert',
+        }
+    elif policy.enabled:
+        configuration_state = {
+            'label': 'Enabled',
+            'tone': 'normal',
+            'icon': 'circle-check',
+        }
+    else:
+        configuration_state = {
+            'label': 'Manual Only',
+            'tone': 'unknown',
+            'icon': 'mouse-pointer-click',
+        }
 
     if active_job is not None:
         execution_state = {
@@ -106,6 +116,7 @@ def build_tls_certificate_sync_context(policy: JobPolicy) -> dict[str, Any]:
         'eligible_cluster_count': len(targets),
         'tracked_secret_count': TLSCertificateInventory.query.count(),
         'interval_label': present_interval(policy.interval_minutes),
+        'configuration_state': configuration_state,
         'execution_state': execution_state,
         'active_job': _present_job(active_job),
         'latest_job': _present_job(latest_job),

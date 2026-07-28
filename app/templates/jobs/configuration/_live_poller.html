@@ -1,0 +1,8 @@
+<div id="job-configuration-live-poller"
+     class="hidden"
+     aria-hidden="true"
+     hx-get="{{ url_for('jobs.configuration_status', job_key=selected_job.definition.key) }}"
+     hx-trigger="{{ 'every 2s' if selected_job.active_job else 'every 8s' }}"
+     hx-target="this"
+     hx-swap="outerHTML swap:0ms settle:0ms"
+     hx-sync="this:replace"></div>

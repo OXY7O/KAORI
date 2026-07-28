@@ -23,6 +23,19 @@ _JOB_ICONS = {
     'standard': 'workflow',
 }
 
+
+_STATUS_PRESENTATION = {
+    'queued': ('Queued', 'pending', 'clock-3'),
+    'running': ('Running', 'pending', 'loader-circle'),
+    'retrying': ('Retrying', 'warning', 'rotate-ccw'),
+    'cancel_requested': ('Cancel Requested', 'warning', 'octagon-alert'),
+    'succeeded': ('Succeeded', 'normal', 'circle-check'),
+    'partially_succeeded': ('Partially Succeeded', 'warning', 'triangle-alert'),
+    'failed': ('Failed', 'critical', 'circle-x'),
+    'canceled': ('Canceled', 'unknown', 'ban'),
+    'expired': ('Expired', 'unknown', 'clock-alert'),
+}
+
 _QUEUE_ICONS = {
     'integration-runtime': 'activity',
     'integration-validation': 'scan-search',
@@ -80,6 +93,10 @@ def _row(job: JobExecution) -> dict[str, Any]:
         action_icon = 'minus'
         action_help = 'This job has no available operator action.'
     requester = job.requested_by.display_label if job.requested_by is not None else 'KAORI Scheduler'
+    status_label, status_tone, status_icon = _STATUS_PRESENTATION.get(
+        job.status,
+        (job.status.replace('_', ' ').title(), 'unknown', 'circle-help'),
+    )
     scope = job.scope_key or (
         f'{job.provider_type}:{job.provider_instance_id}'
         if job.provider_type and job.provider_instance_id is not None
@@ -97,7 +114,9 @@ def _row(job: JobExecution) -> dict[str, Any]:
         'queue_name': job.queue_name,
         'priority': job.priority,
         'status': job.status,
-        'status_label': job.status.replace('_', ' ').title(),
+        'status_label': status_label,
+        'status_tone': status_tone,
+        'status_icon': status_icon,
         'provider_type': job.provider_type,
         'provider_label': (job.provider_type or 'KAORI').replace('_', ' ').title(),
         'scope': scope,
@@ -125,6 +144,35 @@ def _row(job: JobExecution) -> dict[str, Any]:
         'action_icon': action_icon,
         'action_help': action_help,
     }
+
+
+
+
+def present_job_execution(job: JobExecution) -> dict[str, Any]:
+    """Return the compact execution presentation used by configuration workspaces."""
+    row = _row(job)
+    payload = job.payload_json or {}
+    trigger_type = str(
+        payload.get('trigger_type')
+        or ('scheduled' if job.requested_by_user_id is None else 'manual')
+    )
+    row.update(
+        {
+            'trigger_type': trigger_type,
+            'trigger_label': trigger_type.replace('_', ' ').title(),
+            'trigger_icon': (
+                'calendar-clock' if trigger_type == 'scheduled' else 'mouse-pointer-click'
+            ),
+            'target_count': int(
+                payload.get('target_count')
+                or payload.get('total_count')
+                or payload.get('work_item_count')
+                or job.progress_total
+                or 0
+            ),
+        }
+    )
+    return row
 
 
 def _queue_icon(queue_name: str) -> str:

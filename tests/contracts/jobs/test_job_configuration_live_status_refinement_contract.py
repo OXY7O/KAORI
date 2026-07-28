@@ -34,26 +34,36 @@ def test_active_progress_is_determinate_without_restarting_animation() -> None:
     )
 
     for relative in (
-        'app/templates/jobs/configuration/definitions/inventory_sync.html',
-        'app/templates/jobs/configuration/definitions/_materialization_job.html',
-        'app/templates/jobs/configuration/definitions/tls_certificate_sync.html',
+        'app/templates/jobs/configuration/_execution_activity.html',
         'app/templates/components/navigation/_quick_sync_status.html',
     ):
         assert 'progress_bar.determinate' in _read(relative)
+
+    for relative in (
+        'app/templates/jobs/configuration/definitions/inventory_sync.html',
+        'app/templates/jobs/configuration/definitions/_materialization_job.html',
+        'app/templates/jobs/configuration/definitions/tls_certificate_sync.html',
+    ):
+        assert 'jobs/configuration/_execution_activity.html' in _read(relative)
 
 
 def test_job_catalog_status_refreshes_out_of_band() -> None:
     workspace = _read('app/templates/jobs/configuration/_workspace.html')
     job_workspace = _read('app/templates/jobs/configuration/_job_workspace.html')
+    poller = _read('app/templates/jobs/configuration/_live_poller.html')
+    response = _read('app/templates/jobs/configuration/_live_status_response.html')
     oob = _read('app/templates/jobs/configuration/_catalog_status_oob.html')
     routes = _read('app/jobs/routes.py')
 
     assert 'job-catalog-status-' in workspace
     assert 'job-catalog-activity-' in workspace
-    assert '_catalog_status_oob.html' in job_workspace
+    assert '_live_poller.html' in job_workspace
+    assert '_catalog_status_oob.html' in response
     assert 'hx-swap-oob="outerHTML"' in oob
+    assert 'configuration_status' in routes
     assert "Cache-Control'] = 'no-store, max-age=0'" in routes
-    assert 'hx-sync="this:replace"' in job_workspace
+    assert 'hx-sync="this:replace"' in poller
+    assert "'every 2s' if selected_job.active_job else 'every 8s'" in poller
 
 
 def test_registered_job_descriptions_are_compact() -> None:

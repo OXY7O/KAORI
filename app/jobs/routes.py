@@ -197,6 +197,17 @@ def configuration() -> ResponseReturnValue:
     )
 
 
+@bp.get('/configuration/<path:job_key>/status')
+@permission_required('jobs.view')
+def configuration_status(job_key: str) -> ResponseReturnValue:
+    context = _configuration_context(selected_job_key=job_key)
+    response = make_response(
+        render_template('jobs/configuration/_live_status_response.html', **context)
+    )
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    return response
+
+
 @bp.post('/configuration/<path:job_key>')
 @permission_required('jobs.configure')
 def update_policy(job_key: str) -> ResponseReturnValue:
