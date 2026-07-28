@@ -1,5 +1,4 @@
 {% extends "layouts/app.html" %}
-{% import "analytics/components/_controls.html" as analytics_controls %}
 {% block title %}Top Consumers{% endblock title %}
 {% block dashboard_content %}
     <div id="top-consumers-page" class="space-y-6" data-analytics-page-request-tracking="false">
@@ -13,17 +12,8 @@
         {% include "analytics/materialization/_freshness.html" %}
         {% if dependency_blocker %}{% include "components/dependencies/_blocker.html" %}{% endif %}
         {% if not dependency_blocker %}
-            <form id="top-consumers-filter-form" method="GET" hx-get="{{ url_for('analytics.top_consumers') }}" hx-trigger="change delay:120ms" hx-target="#top-consumers-page" hx-select="#top-consumers-page" hx-swap="outerHTML" hx-push-url="true" hx-indicator="#top-consumers-refresh-indicator">
-                {% call analytics_controls.panel('Consumer Controls', 'Select the cluster, namespace, and resource scope used to rank consumers.', 'sliders-horizontal', 'top-consumers-refresh-indicator', prometheus_status, eyebrow='Top Consumers') %}
-                    {% set input_classes = 'mt-1 w-full rounded-xl border border-outline-strong bg-surface-card px-3 py-2 pr-9 text-sm font-semibold text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10' %}
-                    <div class="grid gap-3 lg:grid-cols-3 xl:items-end">
-                        <label class="block"><span class="text-xs font-medium text-content-muted">Cluster</span><select name="cluster_id" data-kaori-reset-fields="namespace=,page=1" class="{{ input_classes }}">{% for item in clusters %}<option value="{{ item.id }}" {% if cluster and cluster.id == item.id %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></label>
-                        <label class="block"><span class="text-xs font-medium text-content-muted">Namespace</span><select name="namespace" class="{{ input_classes }}"><option value="">All Namespaces</option>{% for namespace in namespace_options %}<option value="{{ namespace }}" {% if selected_namespace == namespace %}selected{% endif %}>{{ namespace }}</option>{% endfor %}</select></label>
-                        <label class="block"><span class="text-xs font-medium text-content-muted">Resource</span><select name="resource" class="{{ input_classes }}">{% for item in resource_options %}<option value="{{ item.value }}" {% if selected_resource == item.value %}selected{% endif %}>{{ item.label }}</option>{% endfor %}</select></label>
-                    </div>
-                    <input type="hidden" name="search" value="{{ selected_search }}"><input type="hidden" name="sort" value="{{ selected_sort }}"><input type="hidden" name="focus" value="{{ selected_focus }}"><input type="hidden" name="page" value="1"><input type="hidden" name="per_page" value="{{ consumer_payload.pagination.per_page|default(5) }}">
-                {% endcall %}
-            </form>
+            {% include "analytics/top_consumers/partials/_controls_readiness.html" %}
+            {% include "analytics/top_consumers/partials/_summary.html" %}
             <div id="top-consumers-section">{% include "analytics/top_consumers/partials/_top_consumers_section.html" %}</div>
         {% endif %}
     </div>

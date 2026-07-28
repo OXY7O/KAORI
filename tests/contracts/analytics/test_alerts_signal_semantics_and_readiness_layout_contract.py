@@ -16,9 +16,10 @@ def test_active_alert_signal_state_has_explicit_meaning() -> None:
     assert "Severity &amp; State" in table
     assert ">Severity</p>" not in row
     assert ">Alert State</p>" not in row
-    assert "space-y-1 lg:col-span-2" in row
-    assert "Severity: " in row
-    assert "State: " in row
+    assert 'class="min-w-0 lg:col-span-2"' in row
+    assert "table_label.status_label(alert.severity|title" in row
+    assert "table_label.status_label(alert.status|title" not in row.split('<div id="{{ row_key }}-details"', 1)[0]
+    assert "{{ alert.status|title }}" in row
 
 
 def test_recommendation_badges_explain_priority_and_origin() -> None:

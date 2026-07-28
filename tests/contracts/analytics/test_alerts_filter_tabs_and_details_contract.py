@@ -29,9 +29,10 @@ def test_cluster_filter_preserves_tab_workspace_and_collapses_details() -> None:
 def test_severity_state_matches_two_line_scope_source_pattern() -> None:
     row = _read('partials/_alerts_table_row.html')
 
-    assert 'class="min-w-0 space-y-1 lg:col-span-2"' in row
+    assert 'class="min-w-0 lg:col-span-2"' in row
     assert row.count("table_label.status_label(alert.severity|title") == 1
-    assert row.count("table_label.status_label(alert.status|title") == 1
+    assert row.count("table_label.status_label(alert.status|title") == 0
+    assert '<p class="mt-1 break-words text-xs font-medium text-content-muted">{{ alert.status|title }}</p>' in row
     assert '>Severity</p>' not in row
     assert '>Alert State</p>' not in row
 
