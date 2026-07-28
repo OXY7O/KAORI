@@ -21,79 +21,63 @@
 {% endif %}
 {% call analytics_workspace.overview(
     'Forecast Overview & Methodology',
-    'Summarize projected capacity pressure and show the evidence boundary used to calculate each forecast.',
+    'Projected capacity posture and the calculation boundary used by every resource forecast.',
     'chart-no-axes-combined',
     forecast_payload.method_label|default('Forecast Method')
 ) %}
-    <div class="grid gap-5 xl:grid-cols-3">
-        <div class="overflow-hidden rounded-lg border border-kaori-primary/20 bg-kaori-soft xl:col-span-2">
-            <div class="flex flex-col gap-5 px-5 py-5 sm:flex-row sm:items-start sm:justify-between">
-                <div class="flex min-w-0 items-start gap-4">
-                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
-                        <i data-lucide="gauge" class="h-5 w-5"></i>
-                    </span>
-                    <div class="min-w-0">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-content-muted">Projected Capacity Posture</p>
-                            {{ table_label.status_label(posture_label, tone=posture_tone, size='compact') }}
-                        </div>
-                        <div class="mt-3 flex flex-wrap items-end gap-x-3 gap-y-1">
-                            <p class="text-3xl font-bold tracking-tight text-content-primary">{{ projected_percent }}%</p>
-                            <p class="pb-1 text-sm font-semibold text-content-secondary">highest projected utilization</p>
-                        </div>
-                        <p class="mt-2 break-words text-sm leading-6 text-content-muted">{{ projected_label }}</p>
+    <div class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
+        <div class="flex flex-col gap-4 bg-kaori-soft px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex min-w-0 items-center gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                    <i data-lucide="gauge" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-content-muted">Projected Capacity Posture</p>
+                        {{ table_label.status_label(posture_label, tone=posture_tone, size='compact') }}
+                    </div>
+                    <div class="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                        <p class="text-2xl font-bold tracking-tight text-content-primary">{{ projected_percent }}%</p>
+                        <p class="break-words text-sm font-semibold text-content-secondary">{{ projected_label }}</p>
                     </div>
                 </div>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                {{ table_label.metadata_label(selected_history_window ~ ' history', 'history') }}
+                {{ table_label.metadata_label(selected_forecast_horizon ~ ' horizon', 'calendar-range') }}
                 {% if forecast_payload.generated_at %}
                     {{ table_label.metadata_label('Generated ' ~ (forecast_payload.generated_at|user_datetime(include_seconds=true)), 'clock') }}
                 {% endif %}
             </div>
-            <div class="grid border-t border-kaori-primary/15 sm:grid-cols-3">
-                <div class="px-5 py-4">
-                    <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Warning Resources</p>
-                    <p class="mt-1 text-lg font-semibold text-content-primary">{{ warning_count }}</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Projected at or above 75%.</p>
-                </div>
-                <div class="border-t border-kaori-primary/15 px-5 py-4 sm:border-l sm:border-t-0">
-                    <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Critical Resources</p>
-                    <p class="mt-1 text-lg font-semibold text-content-primary">{{ critical_count }}</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Projected at or above 90%.</p>
-                </div>
-                <div class="border-t border-kaori-primary/15 px-5 py-4 sm:border-l sm:border-t-0">
-                    <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Nearest Critical</p>
-                    <p class="mt-1 break-words text-sm font-semibold text-content-primary">{{ nearest.label|default('No projected breach', true) }}</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ nearest.date|default('No projected date', true) }}</p>
-                </div>
-            </div>
         </div>
 
-        <div class="rounded-lg border border-outline-subtle bg-surface-hover px-5 py-5">
-            <div class="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-content-muted">Methodology Boundary</p>
-                    <h3 class="mt-1 text-base font-semibold text-content-primary">{{ forecast_payload.method_label|default('Linear Trend') }}</h3>
-                </div>
-                {{ table_label.status_label('Configured', tone='info', size='compact') }}
-            </div>
-            <p class="mt-2 text-xs leading-5 text-content-muted">{{ forecast_payload.method_description|default('Projects future usage from historical Prometheus samples and the current capacity baseline.') }}</p>
-
-            <div class="mt-5 divide-y divide-outline-subtle border-y border-outline-subtle">
-                {% for icon, label, value, helper in [
-                    ('history', 'Observation History', selected_history_window, forecast_payload.history_days ~ ' days evaluated'),
-                    ('sigma', 'Projection Model', forecast_payload.method_label|default('Linear Trend'), 'Applied consistently across resource domains'),
-                    ('calendar-range', 'Forecast Horizon', selected_forecast_horizon, 'Future capacity window')
-                ] %}
-                    <div class="flex items-start gap-3 py-3">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+        <div class="grid sm:grid-cols-2 xl:grid-cols-6">
+            {% for label, value, helper, icon in [
+                ('Warning', warning_count, 'At or above 75%', 'triangle-alert'),
+                ('Critical', critical_count, 'At or above 90%', 'shield-alert'),
+                ('Nearest Critical', nearest.label|default('Not projected', true), nearest.date|default('No projected date', true), 'calendar-clock'),
+                ('History', selected_history_window, forecast_payload.history_days ~ ' days evaluated', 'history'),
+                ('Model', forecast_payload.method_label|default('Linear Trend'), 'Applied to all resources', 'sigma'),
+                ('Horizon', selected_forecast_horizon, 'Future projection window', 'calendar-range')
+            ] %}
+                <div class="border-t border-outline-subtle px-4 py-3">
+                    <div class="flex items-start gap-2.5">
+                        <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary shadow-sm">
+                            <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+                        </span>
                         <div class="min-w-0">
                             <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
                             <p class="mt-1 break-words text-sm font-semibold text-content-primary">{{ value }}</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                            <p class="mt-0.5 break-words text-[11px] leading-4 text-content-muted">{{ helper }}</p>
                         </div>
                     </div>
-                {% endfor %}
-            </div>
-            <p class="mt-4 text-xs leading-5 text-content-muted">Confidence reflects sample completeness, trend stability, and the availability of a valid capacity baseline.</p>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="flex items-start gap-2 border-t border-outline-subtle px-4 py-3 text-xs leading-5 text-content-muted">
+            <i data-lucide="info" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
+            <p>{{ forecast_payload.method_description|default('Forecasts use committed Prometheus history, the selected projection model, and the current capacity baseline. Confidence reflects sample completeness and trend stability.') }}</p>
         </div>
     </div>
 {% endcall %}
