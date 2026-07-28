@@ -31,76 +31,84 @@
         </div>
     </header>
 
-    <div class="grid gap-px bg-outline-subtle lg:grid-cols-12">
-        <div class="bg-surface-card p-5 sm:p-6 lg:col-span-7">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div class="min-w-0">
+    <div class="border-b border-outline-subtle bg-surface-card px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
                     <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Current Execution</p>
-                    <h4 class="mt-2 text-sm font-semibold text-content-primary">
-                        {{ 'Worker Execution In Progress' if active_job else selected_job.execution_state.label }}
-                    </h4>
-                    <p class="mt-1 text-xs leading-5 text-content-secondary">
-                        {{ active_job.progress_message if active_job else selected_job.execution_state.description }}
-                    </p>
-                </div>
-                <div class="shrink-0 text-left sm:text-right">
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Execution Scope</p>
-                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ selected_job.execution_scope_label }}</p>
-                    <p class="mt-1 text-xs text-content-muted">{{ selected_job.execution_scope_detail }}</p>
-                </div>
-            </div>
-
-            {% if active_job %}
-                <div class="mt-5 rounded-lg border border-kaori-primary/20 bg-kaori-soft p-4">
-                    <div class="flex items-center justify-between gap-3 text-xs">
-                        <span class="font-semibold text-content-primary">{{ active_job.status_label }}</span>
-                        <span class="font-semibold text-kaori-primary">{{ active_job.progress }}%</span>
-                    </div>
-                    {{ progress_bar.determinate(
-                        active_job.progress,
-                        label=definition.name ~ ' execution progress',
-                        classes='mt-3 block h-1.5 w-full overflow-hidden rounded-full accent-kaori-primary'
+                    {{ table_label.status_indicator_label(
+                        active_job.status_label if active_job else selected_job.execution_state.label,
+                        active_job.status_tone if active_job else selected_job.execution_state.tone,
+                        active_job.status_icon if active_job else selected_job.execution_state.icon
                     ) }}
-                    <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">
-                        <span>Requested By · {{ active_job.requester }}</span>
-                        <span>Started · {{ active_job.started_at }}</span>
-                    </div>
                 </div>
-            {% endif %}
-        </div>
-
-        <div class="flex flex-col justify-between gap-4 bg-surface-hover p-5 sm:p-6 lg:col-span-5">
-            <div>
-                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Operational Control</p>
-                <p class="mt-2 text-xs leading-5 text-content-secondary">
-                    Manual execution uses the same canonical job record, queue, and audit boundary as scheduled runs.
+                <p class="mt-2 text-sm font-semibold text-content-primary">
+                    {{ active_job.progress_message if active_job else selected_job.execution_state.description }}
                 </p>
-            </div>
-            <div class="flex flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row">
-                <a href="{{ url_for('jobs.executions', execution_tab='registry', queue=definition.queue_name, search=definition.operation) }}"
-                   class="{{ action_button.classes('secondary', full=true) }}">
-                    <i data-lucide="list-checks" class="h-4 w-4"></i>
-                    Executions
-                </a>
-                {% if can_execute %}
-                    <form method="post"
-                          action="{{ url_for('jobs.run_now', job_key=definition.key) }}"
-                          hx-post="{{ url_for('jobs.run_now', job_key=definition.key) }}"
-                          hx-target="#job-configuration-workspace"
-                          hx-swap="outerHTML"
-                          class="w-full">
-                        {{ manual_form.hidden_tag() }}
-                        <button type="submit"
-                                {% if active_job or selected_job.execution_disabled %}disabled{% endif %}
-                                class="{{ action_button.classes('primary', full=true) }}">
-                            <i data-lucide="{{ selected_job.manual_action_icon }}" class="h-4 w-4"></i>
-                            {{ selected_job.manual_action_label }}
-                        </button>
-                    </form>
-                {% else %}
-                    {{ table_label.status_indicator_label('Execution Restricted', 'unknown', 'lock-keyhole') }}
+
+                {% if active_job %}
+                    <div class="mt-3">
+                        <div class="flex items-center justify-between gap-3 text-xs">
+                            <span class="text-content-muted">Progress</span>
+                            <span class="font-semibold text-kaori-primary">{{ active_job.progress }}%</span>
+                        </div>
+                        {{ progress_bar.determinate(
+                            active_job.progress,
+                            label=definition.name ~ ' execution progress',
+                            classes='mt-2 block h-1.5 w-full overflow-hidden rounded-full accent-kaori-primary'
+                        ) }}
+                    </div>
                 {% endif %}
             </div>
+
+            <div class="grid gap-3 sm:grid-cols-2 xl:min-w-[420px] xl:grid-cols-4">
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">Scope</p>
+                    <p class="mt-1 text-xs font-semibold text-content-primary">{{ selected_job.execution_scope_label }}</p>
+                </div>
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">Queue</p>
+                    <p class="mt-1 break-words text-xs font-semibold text-content-primary">{{ definition.queue_name }}</p>
+                </div>
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">Requested By</p>
+                    <p class="mt-1 break-words text-xs font-semibold text-content-primary">{{ active_job.requester if active_job else '—' }}</p>
+                </div>
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">Started</p>
+                    <p class="mt-1 break-words text-xs font-semibold text-content-primary">{{ active_job.started_at if active_job else '—' }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex flex-col gap-4 bg-surface-hover px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+        <p class="max-w-3xl text-xs leading-5 text-content-secondary">
+            Manual runs use the same queue, job record, and audit boundary as scheduled executions.
+        </p>
+        <div class="flex flex-col gap-2 sm:flex-row">
+            <a href="{{ url_for('jobs.executions', execution_tab='registry', queue=definition.queue_name, search=definition.operation) }}"
+               class="{{ action_button.classes('secondary') }}">
+                <i data-lucide="list-checks" class="h-4 w-4"></i>
+                Executions
+            </a>
+            {% if can_execute %}
+                <form method="post"
+                      action="{{ url_for('jobs.run_now', job_key=definition.key) }}"
+                      hx-post="{{ url_for('jobs.run_now', job_key=definition.key) }}"
+                      hx-target="#job-configuration-workspace"
+                      hx-swap="outerHTML">
+                    {{ manual_form.hidden_tag() }}
+                    <button type="submit"
+                            {% if active_job or selected_job.execution_disabled %}disabled{% endif %}
+                            class="{{ action_button.classes('primary') }}">
+                        <i data-lucide="{{ selected_job.manual_action_icon }}" class="h-4 w-4"></i>
+                        {{ selected_job.manual_action_label }}
+                    </button>
+                </form>
+            {% else %}
+                {{ table_label.status_indicator_label('Execution Restricted', 'unknown', 'lock-keyhole') }}
+            {% endif %}
         </div>
     </div>
 
