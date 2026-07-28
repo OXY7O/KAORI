@@ -18,7 +18,7 @@
               method="GET"
               action="{{ url_for('analytics.alerts') }}"
               hx-get="{{ url_for('analytics.alerts') }}"
-              hx-trigger="change[event.target.name !== 'alerts_per_page' && event.target.name !== 'anomalies_per_page'] from:select, keyup changed delay:500ms from:input[name='search']"
+              hx-trigger="change[event.target.matches('select') && event.target.name !== 'alerts_per_page' && event.target.name !== 'anomalies_per_page'], keyup[event.target.name === 'search'] changed delay:500ms"
               hx-target="#alerts-page-content"
               hx-select="#alerts-page-content"
               hx-swap="outerHTML settle:150ms"

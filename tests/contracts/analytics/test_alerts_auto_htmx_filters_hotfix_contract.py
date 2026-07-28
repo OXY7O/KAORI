@@ -9,8 +9,8 @@ def read(path: str) -> str:
 
 def test_table_filters_are_auto_htmx_without_apply_reset_buttons():
     template = read("app/templates/analytics/alerts/partials/_table_filters.html")
-    assert 'hx-trigger="change delay:120ms from:select' in template
-    assert "keyup changed delay:450ms" in template
+    assert "change[event.target.matches('select')] delay:120ms" in template
+    assert "keyup[event.target.name === 'search'] changed delay:450ms" in template
     assert ">Apply<" not in template
     assert ">Reset<" not in template
     assert 'type="submit"' not in template
