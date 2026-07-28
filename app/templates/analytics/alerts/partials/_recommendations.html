@@ -35,12 +35,12 @@
                     <i data-lucide="{{ recommendation.icon }}" class="h-4 w-4"></i>
                 </span>
                 <div class="min-w-0 flex-1">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <h4 class="break-words text-sm font-semibold text-content-primary">{{ recommendation.title }}</h4>
-                        {{ table_label.status_label(recommendation.priority, tone=priority_tone, size='compact') }}
-                        {{ table_label.metadata_label(recommendation.source_label, size='compact') }}
-                    </div>
+                    <h4 class="break-words text-sm font-semibold text-content-primary">{{ recommendation.title }}</h4>
                     <p class="mt-1 break-words text-sm leading-6 text-content-secondary">{{ recommendation.description }}</p>
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                        {{ table_label.status_label('Priority: ' ~ recommendation.priority, tone=priority_tone, size='compact') }}
+                        {{ table_label.metadata_label('Derived From: ' ~ recommendation.source_label, icon='database', wrap=true, size='compact') }}
+                    </div>
                 </div>
                 <div class="flex lg:justify-end">
                     {% if recommendation.is_actionable == 'Yes' %}

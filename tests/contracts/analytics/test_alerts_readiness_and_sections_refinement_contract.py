@@ -51,7 +51,8 @@ def test_recommendations_use_operational_rows_and_semantic_priority_labels() -> 
 
     assert 'divide-y divide-outline-subtle' in recommendations
     assert 'priority_tone' in recommendations
-    assert 'table_label.status_label(recommendation.priority' in recommendations
+    assert "table_label.status_label('Priority: ' ~ recommendation.priority" in recommendations
+    assert "Derived From: " in recommendations
     assert 'table_ui.action_classes()' in recommendations
     assert 'recommendation.icon_class' not in recommendations
     assert 'recommendation.priority_class' not in recommendations

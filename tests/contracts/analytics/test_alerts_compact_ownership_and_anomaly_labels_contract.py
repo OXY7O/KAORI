@@ -31,6 +31,9 @@ def test_ownership_workspace_uses_compact_internal_sections() -> None:
     assert "Runbook Coverage" in ownership
     assert "Metadata Gaps" in ownership
     assert "Escalation Readiness" in readiness
-    assert "grid min-w-full gap-3 sm:grid-cols-2" in readiness
+    assert "xl:grid-cols-2" in readiness
+    assert "min-w-full" not in readiness
+    assert "Source Readiness" in readiness
+    assert "Ownership Readiness" in readiness
     assert "p-5 sm:p-6" not in ownership
     assert "p-5 sm:p-6" not in readiness
