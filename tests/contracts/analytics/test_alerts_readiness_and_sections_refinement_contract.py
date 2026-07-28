@@ -55,3 +55,12 @@ def test_recommendations_use_operational_rows_and_semantic_priority_labels() -> 
     assert 'recommendation.icon_class' not in recommendations
     assert 'recommendation.priority_class' not in recommendations
     assert 'lg:grid-cols-2 xl:grid-cols-3' not in recommendations
+
+
+def test_alerts_page_does_not_duplicate_materialization_freshness_banner() -> None:
+    index = _read("analytics/alerts/index.html")
+    source_status = _read("analytics/alerts/partials/_source_status.html")
+
+    assert 'analytics/materialization/_freshness.html' not in index
+    assert 'Last Successful Snapshot' not in index
+    assert 'Alert Data Snapshot' in source_status
