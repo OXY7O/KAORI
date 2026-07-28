@@ -1,76 +1,76 @@
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
-<div class="border-b border-outline-subtle">
-    <div class="grid border-b border-outline-subtle lg:grid-cols-4">
-        <div class="flex items-center gap-4 bg-surface-hover px-5 py-5 sm:px-6">
-            <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                <i data-lucide="shield-check" class="h-5 w-5"></i>
+<div>
+    <div class="grid divide-y divide-outline-subtle border-b border-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+        <div class="flex items-center gap-3 bg-surface-hover px-4 py-4 sm:px-5">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <i data-lucide="shield-check" class="h-4 w-4"></i>
             </span>
-            <div>
-                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Coverage Score</p>
-                <p class="mt-1 text-2xl font-semibold text-content-primary">{{ ownership_summary.score }}<span class="text-sm text-content-muted">/100</span></p>
+            <div class="min-w-0">
+                <p class="text-xs font-medium text-content-muted">Coverage Score</p>
+                <p class="mt-0.5 text-xl font-semibold text-content-primary">{{ ownership_summary.score }}<span class="text-xs text-content-muted">/100</span></p>
             </div>
         </div>
-        <div class="grid divide-y divide-outline-subtle sm:grid-cols-3 sm:divide-x sm:divide-y-0 lg:col-span-3">
-            {% set metrics = [
-                ('Owners', ownership_summary.owner_count, ownership_summary.missing_owner_count ~ ' Missing', 'users'),
-                ('Runbooks', ownership_summary.runbook_count, ownership_summary.missing_runbook_count ~ ' Missing', 'book-open-check'),
-                ('Contacts', ownership_summary.contact_count, ownership_summary.missing_contact_count ~ ' Missing', 'radio-tower')
-            ] %}
-            {% for label, value, detail, icon in metrics %}
-                <div class="flex items-center gap-3 px-5 py-4 sm:px-6">
-                    <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0 text-kaori-primary"></i>
-                    <div>
-                        <p class="text-xs text-content-muted">{{ label }}</p>
-                        <p class="mt-0.5 text-lg font-semibold text-content-primary">{{ value }}</p>
-                        <p class="mt-0.5 text-xs text-content-muted">{{ detail }}</p>
+        {% set metrics = [
+            ('Owners', ownership_summary.owner_count, ownership_summary.missing_owner_count ~ ' Missing', 'users'),
+            ('Runbooks', ownership_summary.runbook_count, ownership_summary.missing_runbook_count ~ ' Missing', 'book-open-check'),
+            ('Contacts', ownership_summary.contact_count, ownership_summary.missing_contact_count ~ ' Missing', 'radio-tower')
+        ] %}
+        {% for label, value, detail, icon in metrics %}
+            <div class="flex items-center gap-3 px-4 py-4 sm:px-5">
+                <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0 text-kaori-primary"></i>
+                <div class="min-w-0">
+                    <div class="flex items-baseline gap-2">
+                        <p class="text-lg font-semibold text-content-primary">{{ value }}</p>
+                        <p class="text-xs font-medium text-content-muted">{{ label }}</p>
                     </div>
+                    <p class="mt-0.5 text-xs text-content-muted">{{ detail }}</p>
                 </div>
-            {% endfor %}
-        </div>
+            </div>
+        {% endfor %}
     </div>
 
     <div class="grid divide-y divide-outline-subtle xl:grid-cols-2 xl:divide-x xl:divide-y-0">
-        <div class="p-5 sm:p-6">
+        <section class="px-4 py-4 sm:px-5">
             <div class="flex items-center justify-between gap-3">
                 <div>
                     <h4 class="text-sm font-semibold text-content-primary">Owner Distribution</h4>
-                    <p class="mt-1 text-xs text-content-muted">Alert volume grouped by accountable owner.</p>
+                    <p class="mt-0.5 text-xs text-content-muted">Active signals grouped by accountable owner.</p>
                 </div>
                 {{ table_label.metadata_label(ownership_summary.owner_count ~ ' Owners', icon='users', size='compact') }}
             </div>
-            <div class="mt-4 space-y-4">
+            <div class="mt-3 space-y-3">
                 {% for owner in ownership_summary.owner_groups %}
                     <div>
                         <div class="flex items-center justify-between gap-3 text-sm">
                             <span class="min-w-0 break-words font-medium text-content-secondary">{{ owner.label }}</span>
                             <span class="shrink-0 font-semibold text-content-primary">{{ owner.count }}</span>
                         </div>
-                        {{ progress_bar.bar(owner.percent, track_classes='mt-2 h-1.5 overflow-hidden rounded-full bg-outline-default', fill_classes='h-full rounded-full bg-kaori-primary', label='Owner alert coverage') }}
+                        {{ progress_bar.bar(owner.percent, track_classes='mt-1.5 h-1.5 overflow-hidden rounded-full bg-outline-default', fill_classes='h-full rounded-full bg-kaori-primary', label='Owner alert coverage') }}
                     </div>
                 {% else %}
                     <p class="text-sm text-content-muted">No owner metadata detected.</p>
                 {% endfor %}
             </div>
-        </div>
+        </section>
 
-        <div class="p-5 sm:p-6">
+        <section class="px-4 py-4 sm:px-5">
             <div class="flex items-center justify-between gap-3">
                 <div>
                     <h4 class="text-sm font-semibold text-content-primary">Runbook Coverage</h4>
-                    <p class="mt-1 text-xs text-content-muted">Runbooks linked from active alert annotations.</p>
+                    <p class="mt-0.5 text-xs text-content-muted">Runbooks linked from active alert annotations.</p>
                 </div>
                 {{ table_label.status_label(ownership_summary.runbook_count ~ ' Available', tone='normal' if ownership_summary.runbook_count else 'warning', size='compact') }}
             </div>
-            <div class="mt-4 divide-y divide-outline-subtle">
+            <div class="mt-3 divide-y divide-outline-subtle">
                 {% for item in ownership_summary.runbook_items %}
                     <a href="{{ item.url }}"
                        target="_blank"
                        rel="noopener noreferrer"
-                       class="flex items-start justify-between gap-3 py-3 text-sm first:pt-0 last:pb-0">
+                       class="flex items-center justify-between gap-3 py-2.5 text-sm first:pt-0 last:pb-0">
                         <div class="min-w-0">
                             <p class="break-words font-semibold text-content-primary">{{ item.name }}</p>
-                            <p class="mt-1 break-words text-xs text-content-muted">{{ item.namespace }} · {{ item.owner }}</p>
+                            <p class="mt-0.5 break-words text-xs text-content-muted">{{ item.namespace }} · {{ item.owner }}</p>
                         </div>
                         <i data-lucide="arrow-up-right" class="h-4 w-4 shrink-0 text-kaori-primary"></i>
                     </a>
@@ -78,29 +78,29 @@
                     <p class="text-sm text-content-muted">No runbook URL detected in active alert annotations.</p>
                 {% endfor %}
             </div>
-        </div>
+        </section>
     </div>
 
-    <div class="border-t border-outline-subtle">
-        <div class="flex items-center justify-between gap-3 bg-surface-hover px-5 py-3 sm:px-6">
+    <section class="border-t border-outline-subtle">
+        <div class="flex flex-col gap-2 bg-surface-hover px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
             <div>
                 <h4 class="text-sm font-semibold text-content-primary">Metadata Gaps</h4>
-                <p class="mt-1 text-xs text-content-muted">Signals missing owner, runbook, or contact information.</p>
+                <p class="mt-0.5 text-xs text-content-muted">Signals missing owner, runbook, or contact information.</p>
             </div>
             {{ table_label.status_label(ownership_summary.missing_metadata_items|length ~ ' Records', tone='warning' if ownership_summary.missing_metadata_items else 'normal', size='compact') }}
         </div>
-        <div class="divide-y divide-outline-subtle">
+        <div class="grid divide-y divide-outline-subtle lg:grid-cols-2 lg:divide-x lg:divide-y-0">
             {% for item in ownership_summary.missing_metadata_items %}
-                <div class="grid gap-3 px-5 py-4 sm:px-6 md:grid-cols-2 md:items-center">
+                <div class="flex items-center justify-between gap-3 px-4 py-3 sm:px-5">
                     <div class="min-w-0">
                         <p class="break-words text-sm font-semibold text-content-primary">{{ item.name }}</p>
-                        <p class="mt-1 break-words text-xs text-content-muted">{{ item.namespace }} · {{ item.severity|title }}</p>
+                        <p class="mt-0.5 break-words text-xs text-content-muted">{{ item.namespace }} · {{ item.severity|title }}</p>
                     </div>
-                    <div class="md:flex md:justify-end">{{ table_label.status_label(item.missing|join(', '), tone='warning', size='compact') }}</div>
+                    <div class="shrink-0">{{ table_label.status_label(item.missing|join(', '), tone='warning', size='compact') }}</div>
                 </div>
             {% else %}
-                <p class="px-5 py-5 text-sm text-content-muted sm:px-6">All active alerts include owner, runbook, and contact metadata.</p>
+                <p class="px-4 py-4 text-sm text-content-muted sm:px-5 lg:col-span-2">All active alerts include owner, runbook, and contact metadata.</p>
             {% endfor %}
         </div>
-    </div>
+    </section>
 </div>

@@ -14,7 +14,8 @@ def test_anomaly_summary_uses_namespace_instead_of_description() -> None:
     row = _read("analytics/alerts/partials/_anomalies_table_row.html")
     summary = row.split('id="{{ row_key }}-details"', maxsplit=1)[0]
 
-    assert "Anomaly &amp; Namespace" in table
+    assert ">Anomaly</div>" in table
+    assert "Anomaly &amp; Namespace" not in table
     assert "Signal Context" in table
     assert "{{ anomaly.namespace }}" in summary
     assert "{{ anomaly.description }}" not in summary
@@ -57,5 +58,7 @@ def test_ownership_tab_uses_one_divided_workspace() -> None:
     assert "Runbook Coverage" in ownership
     assert "Metadata Gaps" in ownership
     assert "Escalation Readiness" in readiness
-    assert "<section" not in ownership
-    assert "<section" not in readiness
+    assert "rounded-xl border border-outline-default" not in ownership
+    assert "rounded-xl border border-outline-default" not in readiness
+    assert "p-5 sm:p-6" not in ownership
+    assert "p-5 sm:p-6" not in readiness

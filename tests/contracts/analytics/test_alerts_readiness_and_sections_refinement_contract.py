@@ -42,7 +42,8 @@ def test_silence_and_ownership_use_divided_workspaces_not_card_grids() -> None:
     assert 'Coverage Score' in ownership
     assert 'Runbook Coverage' in ownership
     assert 'Metadata Gaps' in ownership
-    assert 'xl:grid-cols-4' not in ownership
+    assert 'xl:grid-cols-4' in ownership
+    assert 'p-5 sm:p-6' not in ownership
 
 
 def test_recommendations_use_operational_rows_and_semantic_priority_labels() -> None:

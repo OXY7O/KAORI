@@ -1,57 +1,42 @@
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
-<div>
-    <div class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:px-6 lg:flex-row lg:items-start lg:justify-between">
+<section class="border-t border-outline-subtle bg-surface-hover">
+    <div class="flex flex-col gap-3 px-4 py-4 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
         <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
                 <i data-lucide="siren" class="h-4 w-4"></i>
             </span>
-            <div>
-                <h4 class="text-sm font-semibold text-content-primary">Escalation Readiness</h4>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Supporting checks for ownership, source availability, and incident response context.</p>
-            </div>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-            {{ table_label.status_label(incident_readiness.label, tone=incident_readiness.level|default('info'), size='compact') }}
-            {{ table_label.metadata_label('Score ' ~ incident_readiness.score ~ '/100', size='compact') }}
-        </div>
-    </div>
-
-    <div class="grid divide-y divide-outline-subtle lg:grid-cols-3 lg:divide-x lg:divide-y-0">
-        <div class="p-5 sm:p-6">
-            <h5 class="text-sm font-semibold text-content-primary">Recommended Action</h5>
-            <p class="mt-2 text-sm leading-6 text-content-secondary">{{ incident_readiness.recommended_action }}</p>
-        </div>
-        <div class="p-5 sm:p-6">
-            <div class="flex items-center justify-between gap-3">
-                <p class="text-sm font-semibold text-content-primary">Source Readiness</p>
-                <span class="text-sm font-semibold text-kaori-primary">{{ incident_readiness.source_score }}/100</span>
-            </div>
-            {{ progress_bar.bar(incident_readiness.source_score, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-outline-default', fill_classes='h-full rounded-full bg-kaori-primary', label='Source Readiness') }}
-        </div>
-        <div class="p-5 sm:p-6">
-            <div class="flex items-center justify-between gap-3">
-                <p class="text-sm font-semibold text-content-primary">Ownership Readiness</p>
-                <span class="text-sm font-semibold text-kaori-primary">{{ incident_readiness.ownership_score }}/100</span>
-            </div>
-            {{ progress_bar.bar(incident_readiness.ownership_score, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-outline-default', fill_classes='h-full rounded-full bg-kaori-primary', label='Ownership Readiness') }}
-        </div>
-    </div>
-
-    <div class="border-t border-outline-subtle px-5 py-4 sm:px-6">
-        <div class="grid gap-3 md:grid-cols-2">
-            {% for check in incident_readiness.checks %}
-                {% set check_tone = 'normal' if check.status == 'pass' else ('warning' if check.status == 'warning' else 'critical') %}
-                <div class="flex items-start gap-3 rounded-lg bg-surface-hover px-3 py-3">
-                    {{ table_label.status_label(check.status|title, tone=check_tone, size='compact') }}
-                    <div class="min-w-0">
-                        <p class="text-sm font-semibold text-content-primary">{{ check.label }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ check.description }}</p>
-                    </div>
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <h4 class="text-sm font-semibold text-content-primary">Escalation Readiness</h4>
+                    {{ table_label.status_label(incident_readiness.label, tone=incident_readiness.level|default('info'), size='compact') }}
+                    {{ table_label.metadata_label('Score ' ~ incident_readiness.score ~ '/100', size='compact') }}
                 </div>
-            {% else %}
-                <p class="text-sm text-content-muted">No readiness check available.</p>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">{{ incident_readiness.recommended_action }}</p>
+            </div>
+        </div>
+        <div class="grid min-w-full gap-3 sm:grid-cols-2 lg:w-96">
+            {% for label, score in [('Source', incident_readiness.source_score), ('Ownership', incident_readiness.ownership_score)] %}
+                <div>
+                    <div class="flex items-center justify-between gap-3 text-xs">
+                        <span class="font-medium text-content-muted">{{ label }}</span>
+                        <span class="font-semibold text-content-primary">{{ score }}/100</span>
+                    </div>
+                    {{ progress_bar.bar(score, track_classes='mt-1.5 h-1.5 overflow-hidden rounded-full bg-outline-default', fill_classes='h-full rounded-full bg-kaori-primary', label=label ~ ' Readiness') }}
+                </div>
             {% endfor %}
         </div>
     </div>
-</div>
+
+    <div class="flex flex-wrap gap-2 border-t border-outline-subtle px-4 py-3 sm:px-5">
+        {% for check in incident_readiness.checks %}
+            {% set check_tone = 'normal' if check.status == 'pass' else ('warning' if check.status == 'warning' else 'critical') %}
+            <div class="inline-flex max-w-full items-center gap-2 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2">
+                {{ table_label.status_label(check.status|title, tone=check_tone, size='compact') }}
+                <span class="min-w-0 break-words text-xs font-medium text-content-secondary" title="{{ check.description }}">{{ check.label }}</span>
+            </div>
+        {% else %}
+            <p class="text-sm text-content-muted">No readiness check available.</p>
+        {% endfor %}
+    </div>
+</section>
