@@ -172,6 +172,22 @@
                         <p class="font-semibold text-content-primary">{{ job.queued_at }}</p>
                         <p class="mt-1 text-content-muted">{{ job.duration|default(job.completed_at, true) }}</p>
                     </div>
+                    {% if job.failure_detail %}
+                        <div class="rounded-lg border {{ 'border-status-critical-border bg-status-critical-soft' if job.status == 'failed' else 'border-status-warning-border bg-status-warning-soft' }} px-3 py-2 text-xs leading-5 sm:col-span-2 lg:col-span-12">
+                            <div class="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                                <div class="min-w-0">
+                                    <p class="font-semibold text-content-primary">{{ job.failure_title or 'Execution Attention Required' }}</p>
+                                    <p class="mt-1 break-words text-content-muted">{{ job.failure_detail }}</p>
+                                    {% if job.failure_remediation %}
+                                        <p class="mt-1 break-words {{ 'text-status-critical-text' if job.status == 'failed' else 'text-status-warning-text' }}">Recommended action: {{ job.failure_remediation }}</p>
+                                    {% endif %}
+                                </div>
+                                {% if job.error_code %}
+                                    {{ table_label.metadata_label(job.error_code|replace('_', ' ')|title, size='compact') }}
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
                 </article>
             {% else %}
                 <div class="px-6 py-10 text-center">

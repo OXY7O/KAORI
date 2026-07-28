@@ -19,6 +19,26 @@ from app.dashboards.kubernetes.snapshot_builder import build_dashboard_alerts_co
 
 ContextBuilder = Callable[[Mapping[str, Any]], dict[str, Any]]
 
+_RANGE_BUDGET_MULTIPLIER = {
+    '1h': 0.5,
+    '6h': 0.65,
+    '12h': 0.8,
+    '24h': 1.0,
+    '7d': 1.25,
+    '30d': 1.75,
+    '60d': 2.0,
+    '90d': 2.0,
+}
+_TREND_RANGE_BY_HOURS = {
+    '1': '1h',
+    '6': '6h',
+    '12': '12h',
+    '24': '24h',
+    '168': '7d',
+    '720': '30d',
+    '1440': '60d',
+}
+
 
 @dataclass(frozen=True, slots=True)
 class AnalyticsDataset:
@@ -32,6 +52,8 @@ class AnalyticsDataset:
     required_binding_capabilities: tuple[str, ...] = ()
     required_capabilities: tuple[str, ...] = ()
     source_kind: str = 'prometheus'
+    execution_priority: int = 100
+    task_budget_seconds: int = 180
 
 
 ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
@@ -44,6 +66,8 @@ ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
         stale_grace_minutes=30,
         required_binding_capabilities=('metrics', 'alert_metrics'),
         source_kind='alert',
+        execution_priority=10,
+        task_budget_seconds=60,
     ),
     AnalyticsDataset(
         key='analytics.alerts',
@@ -55,6 +79,8 @@ ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
         snapshot_parameter_keys=('source',),
         required_binding_capabilities=('metrics', 'alert_metrics'),
         source_kind='alert',
+        execution_priority=20,
+        task_budget_seconds=90,
     ),
     AnalyticsDataset(
         key='analytics.utilization.summary',
@@ -71,6 +97,8 @@ ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
             'utilization_metrics',
             'node_filesystem_identity',
         ),
+        execution_priority=30,
+        task_budget_seconds=120,
     ),
     AnalyticsDataset(
         key='analytics.utilization.trend',
@@ -88,6 +116,8 @@ ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
             'utilization_metrics',
             'node_filesystem_identity',
         ),
+        execution_priority=90,
+        task_budget_seconds=300,
     ),
     AnalyticsDataset(
         key='analytics.utilization.node',
@@ -105,6 +135,8 @@ ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
             'utilization_metrics',
             'node_filesystem_identity',
         ),
+        execution_priority=35,
+        task_budget_seconds=180,
     ),
     AnalyticsDataset(
         key='analytics.capacity',
@@ -122,6 +154,8 @@ ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
             'capacity_metrics',
             'resource_requests_limits',
         ),
+        execution_priority=40,
+        task_budget_seconds=240,
     ),
     AnalyticsDataset(
         key='analytics.storage',
@@ -137,6 +171,8 @@ ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
             'pvc_usage',
             'node_filesystem_identity',
         ),
+        execution_priority=50,
+        task_budget_seconds=180,
     ),
     AnalyticsDataset(
         key='analytics.workload',
@@ -154,6 +190,8 @@ ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
             'workload_metrics',
             'resource_requests_limits',
         ),
+        execution_priority=60,
+        task_budget_seconds=300,
     ),
     AnalyticsDataset(
         key='analytics.top_consumers',
@@ -172,6 +210,8 @@ ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
             'capacity_metrics',
             'pvc_usage',
         ),
+        execution_priority=70,
+        task_budget_seconds=240,
     ),
 )
 
@@ -188,6 +228,8 @@ FORECAST_DATASET = AnalyticsDataset(
     snapshot_parameter_keys=('history_window', 'namespace'),
     required_binding_capabilities=('metrics', 'forecast'),
     required_capabilities=('range_query', 'long_term_history', 'capacity_metrics'),
+    execution_priority=100,
+    task_budget_seconds=600,
 )
 
 _DATASET_BY_KEY = {item.key: item for item in (*ANALYTICS_DATASETS, FORECAST_DATASET)}
@@ -244,3 +286,31 @@ def canonical_parameters(dataset_key: str, parameters: Mapping[str, Any] | None)
         for key, value in sorted(source.items())
         if key in allowed and value is not None and str(value).strip() != ''
     }
+
+
+def dataset_range(dataset_key: str, parameters: Mapping[str, Any] | None) -> str:
+    normalized = canonical_parameters(dataset_key, parameters)
+    if normalized.get('time_range'):
+        return normalized['time_range']
+    if normalized.get('history_window'):
+        return normalized['history_window']
+    return _TREND_RANGE_BY_HOURS.get(normalized.get('trend_hours', ''), '')
+
+
+def dataset_task_budget_seconds(
+    dataset_key: str,
+    parameters: Mapping[str, Any] | None,
+) -> int:
+    """Estimate one dataset budget from its query horizon.
+
+    The same estimate drives batch admission and the isolated per-dataset
+    timeout, preventing a 60-day range from inheriting the same deadline as an
+    instant or 24-hour query.
+    """
+
+    dataset = get_dataset(dataset_key)
+    multiplier = _RANGE_BUDGET_MULTIPLIER.get(
+        dataset_range(dataset_key, parameters),
+        1.0,
+    )
+    return max(int(dataset.task_budget_seconds * multiplier), 30)

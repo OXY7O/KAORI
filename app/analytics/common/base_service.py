@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import time
 from typing import Any
+
+from app.integrations.prometheus.exceptions import PrometheusError
 
 
 def bytes_to_gib(
@@ -226,104 +227,23 @@ class AnalyticsBaseService:
         self,
         query: str,
     ) -> list[dict[str, Any]]:
-        utilization_service = getattr(
-            self,
-            'utilization_service',
-            None,
-        )
-
-        if utilization_service is None:
-            return []
-
-        prometheus = getattr(
-            utilization_service,
-            'prometheus',
-            None,
-        )
-
-        if prometheus is None:
-            prometheus = getattr(
-                utilization_service,
-                'prometheus_service',
-                None,
+        utilization_service = getattr(self, 'utilization_service', None)
+        consumer = getattr(utilization_service, 'consumer', None)
+        if consumer is None:
+            raise PrometheusError(
+                'A cluster-scoped Prometheus consumer is required for analytics queries.'
             )
 
-        if prometheus is None:
-            return []
-
-        try:
-            if hasattr(
-                prometheus,
-                'instant_query',
-            ):
-                response = prometheus.instant_query(
-                    query,
-                )
-
-            elif hasattr(
-                prometheus,
-                'query',
-            ):
-                response = prometheus.query(
-                    query,
-                )
-
-            else:
-                return []
-
-        except Exception:
-            return []
-
-        if isinstance(
-            response,
-            list,
-        ):
-            return response
-
-        if not isinstance(
-            response,
-            dict,
-        ):
-            return []
-
-        data = response.get(
-            'data',
-            {},
-        )
-
-        if isinstance(
-            data,
-            dict,
-        ):
-            result = data.get(
-                'result',
-                [],
+        response = consumer.query(query)
+        if not isinstance(response, dict):
+            raise PrometheusError(
+                f'Prometheus returned {type(response).__name__}; expected a response mapping.'
             )
-
-        else:
-            result = response.get(
-                'result',
-                [],
-            )
-
-        if not isinstance(
-            result,
-            list,
-        ):
-            return []
-
-        filtered_result: list[dict[str, Any]] = []
-
-        for item in result:
-            if isinstance(
-                item,
-                dict,
-            ):
-                filtered_result.append(
-                    item,
-                )
-
-        return filtered_result
+        data = response.get('data', {})
+        result = data.get('result', []) if isinstance(data, dict) else []
+        if not isinstance(result, list):
+            raise PrometheusError('Prometheus response data.result is not a list.')
+        return [item for item in result if isinstance(item, dict)]
 
     def extract_value(
         self,
@@ -540,88 +460,47 @@ class AnalyticsBaseService:
     def get_prometheus_status(
         self,
     ) -> dict[str, Any]:
-        utilization_service = getattr(
-            self,
-            'utilization_service',
-            None,
-        )
-
-        if utilization_service is None:
+        utilization_service = getattr(self, 'utilization_service', None)
+        consumer = getattr(utilization_service, 'consumer', None)
+        if consumer is None:
             return {
                 'connected': False,
                 'response_time_ms': None,
-                'label': 'Prometheus Disconnected',
-                'description': 'Prometheus service unavailable',
+                'label': 'Prometheus Unavailable',
+                'description': 'A cluster-scoped Prometheus consumer is not available.',
+                'tone': 'critical',
+                'icon': 'circle-x',
             }
 
-        prometheus = getattr(
-            utilization_service,
-            'prometheus',
-            None,
-        )
-
-        if prometheus is None:
-            prometheus = getattr(
-                utilization_service,
-                'prometheus_service',
-                None,
+        response = consumer.analytics_status()
+        payload = response.payload if isinstance(response.payload, dict) else {}
+        response_time = payload.get('response_time_ms')
+        observation_degraded = bool(payload.get('observation_degraded'))
+        if not response.ok:
+            detail = (
+                response.diagnostics[0].detail
+                if response.diagnostics and response.diagnostics[0].detail
+                else (response.diagnostics[0].message if response.diagnostics else 'Prometheus is unavailable.')
             )
-
-        if prometheus is None:
             return {
                 'connected': False,
-                'response_time_ms': None,
-                'label': 'Prometheus Disconnected',
-                'description': 'Prometheus service unavailable',
+                'response_time_ms': response_time,
+                'label': 'Prometheus Unavailable',
+                'description': detail,
+                'error': detail,
+                'tone': 'critical',
+                'icon': 'circle-x',
             }
-
-        start_time = time.perf_counter()
-
-        try:
-            if hasattr(
-                prometheus,
-                'instant_query',
-            ):
-                prometheus.instant_query(
-                    'vector(1)',
-                )
-
-            elif hasattr(
-                prometheus,
-                'query',
-            ):
-                prometheus.query(
-                    'vector(1)',
-                )
-
-            else:
-                raise RuntimeError(
-                    'Prometheus query method unavailable',
-                )
-
-        except Exception:
-            return {
-                'connected': False,
-                'response_time_ms': None,
-                'label': 'Prometheus Disconnected',
-                'description': 'Prometheus query failed',
-            }
-
-        elapsed_ms = int(
-            (time.perf_counter() - start_time) * 1000,
-        )
-
-        if elapsed_ms >= 1500:
-            return {
-                'connected': True,
-                'response_time_ms': elapsed_ms,
-                'label': 'Prometheus Degraded',
-                'description': 'Prometheus responded slowly.',
-            }
-
         return {
             'connected': True,
-            'response_time_ms': elapsed_ms,
-            'label': 'Prometheus Connected',
-            'description': 'Last query completed successfully.',
+            'response_time_ms': response_time,
+            'label': 'Prometheus Query Ready',
+            'description': (
+                'The source is eligible; the previous runtime observation was degraded.'
+                if observation_degraded
+                else 'The source is eligible for analytics queries.'
+            ),
+            'tone': 'warning' if observation_degraded else 'normal',
+            'icon': 'triangle-alert' if observation_degraded else 'circle-check',
+            'observation_degraded': observation_degraded,
         }

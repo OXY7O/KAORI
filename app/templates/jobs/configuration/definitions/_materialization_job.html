@@ -6,7 +6,7 @@
 {% set overview_metrics = [
     ('server-cog', 'Eligible Clusters', selected_job.eligible_cluster_count, 'Source-ready clusters'),
     ('layers-3', 'Dataset Families', selected_job.dataset_count, 'Reusable snapshot groups'),
-    ('database', 'Stored Snapshots', selected_job.snapshot_count, 'Committed reusable results'),
+    ('database', 'Current Snapshots', selected_job.snapshot_health.current, selected_job.snapshot_health.stale ~ ' stale · ' ~ selected_job.snapshot_health.failed ~ ' failed'),
     ('timer', 'Automatic Policy', policy.interval_minutes ~ ' Minutes', 'Saved refresh cadence')
 ] %}
 {% set overview_notice = 'The last successful snapshot remains available while the worker prepares a newer committed result.' %}

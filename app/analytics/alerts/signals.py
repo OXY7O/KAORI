@@ -3,9 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from app.alertmanager.service import get_alertmanager_status
-from app.analytics.alerts.anomalies import build_anomalies
 from app.analytics.alerts.contracts import (
-    AlertClusterSignalComparisonRow,
     AlertResourceLinks,
     AlertSelectedClusterSignalOverview,
     AlertSignalPriority,
@@ -55,138 +53,6 @@ def build_resource_links(
             ),
         },
     }
-
-
-def build_cluster_signal_overview(
-    *,
-    clusters: list[Cluster],
-    source: str,
-) -> list[AlertClusterSignalComparisonRow]:
-    overview: list[AlertClusterSignalComparisonRow] = []
-
-    for cluster in clusters:
-        alerts, source_status = load_alerts_by_source(
-            cluster=cluster,
-            source=source,
-        )
-
-        anomalies = build_anomalies(
-            cluster=cluster,
-            severity='all',
-            namespace='',
-            search='',
-        )
-
-        critical_alerts = sum(
-            1
-            for alert in alerts
-            if alert.get(
-                'severity',
-            )
-            == 'critical'
-        )
-
-        warning_alerts = sum(
-            1
-            for alert in alerts
-            if alert.get(
-                'severity',
-            )
-            == 'warning'
-        )
-
-        active_alerts = sum(
-            1
-            for alert in alerts
-            if alert.get(
-                'status',
-            )
-            in {
-                'active',
-                'firing',
-                'pending',
-            }
-        )
-
-        anomaly_count = len(
-            anomalies,
-        )
-
-        total_signals = active_alerts + anomaly_count
-
-        overview.append(
-            {
-                'cluster_id': cluster.id,
-                'cluster_name': cluster.name,
-                'active_alerts': active_alerts,
-                'critical_alerts': critical_alerts,
-                'warning_alerts': warning_alerts,
-                'anomalies': anomaly_count,
-                'total_signals': total_signals,
-                'connected': bool(
-                    source_status.get(
-                        'connected',
-                    )
-                ),
-                'resolved_source': source_status.get(
-                    'resolved_source',
-                    'none',
-                ),
-                'fallback_used': bool(
-                    source_status.get(
-                        'fallback_used',
-                        False,
-                    )
-                ),
-                'bar_width': 0,
-            }
-        )
-
-    max_signals = max(
-        [
-            item.get(
-                'total_signals',
-                0,
-            )
-            for item in overview
-        ],
-        default=0,
-    )
-
-    for item in overview:
-        total_signals = int(
-            item.get(
-                'total_signals',
-                0,
-            )
-        )
-
-        if max_signals <= 0:
-            item['bar_width'] = 0
-        else:
-            item['bar_width'] = max(
-                int((total_signals / max_signals) * 100),
-                8,
-            )
-
-    return sorted(
-        overview,
-        key=lambda item: (
-            item.get(
-                'critical_alerts',
-                0,
-            ),
-            item.get(
-                'total_signals',
-                0,
-            ),
-            item.get(
-                'cluster_name',
-                '',
-            ),
-        ),
-        reverse=True,
-    )
 
 
 def build_bar_units(

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+from time import perf_counter
 from typing import Any
 
 from app.analytics.alerts.metrics import get_metric_labels, get_metric_value
@@ -10,6 +12,7 @@ from app.prometheus.service import PrometheusService
 
 POD_RESTART_ANOMALY_QUERY = get_query_expression('analytics.alerts.queries.POD_RESTART_ANOMALY_QUERY')
 POD_NOT_READY_ANOMALY_QUERY = get_query_expression('analytics.alerts.queries.POD_NOT_READY_ANOMALY_QUERY')
+logger = logging.getLogger(__name__)
 
 
 def normalize_restart_anomaly(
@@ -127,88 +130,78 @@ def normalize_not_ready_anomaly(
 def load_prometheus_anomaly_metrics(
     *,
     cluster: Cluster,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Load optional Prometheus anomaly candidates with explicit source status.
+
+    Alertmanager alerts remain usable when this optional Prometheus query fails,
+    but the worker snapshot and UI must expose the partial-data condition instead
+    of silently presenting an empty anomaly list as a healthy result.
+    """
+
+    started = perf_counter()
     try:
-        service = PrometheusService(
-            cluster,
+        service = PrometheusService(cluster)
+        restart_result = service.instant_query(POD_RESTART_ANOMALY_QUERY)
+        not_ready_result = service.instant_query(POD_NOT_READY_ANOMALY_QUERY)
+    except PrometheusError as exc:
+        elapsed_ms = max(int((perf_counter() - started) * 1000), 0)
+        logger.warning(
+            'Prometheus anomaly candidate collection failed for cluster %s: %s',
+            cluster.id,
+            exc,
+            extra={
+                'cluster_id': str(cluster.id),
+                'analytics_component': 'alert_anomaly_candidates',
+                'error': str(exc)[:1000],
+            },
         )
-
-        restart_result = service.instant_query(
-            POD_RESTART_ANOMALY_QUERY,
+        return [], {
+            'connected': False,
+            'label': 'Anomaly Signals Unavailable',
+            'error': str(exc),
+            'response_time_ms': elapsed_ms,
+            'partial': True,
+        }
+    except Exception as exc:
+        elapsed_ms = max(int((perf_counter() - started) * 1000), 0)
+        logger.exception(
+            'Unexpected Prometheus anomaly candidate collection failure for cluster %s.',
+            cluster.id,
+            extra={
+                'cluster_id': str(cluster.id),
+                'analytics_component': 'alert_anomaly_candidates',
+            },
         )
+        return [], {
+            'connected': False,
+            'label': 'Anomaly Signal Error',
+            'error': str(exc) or exc.__class__.__name__,
+            'response_time_ms': elapsed_ms,
+            'partial': True,
+        }
 
-        not_ready_result = service.instant_query(
-            POD_NOT_READY_ANOMALY_QUERY,
-        )
-
-    except PrometheusError:
-        return []
-    except Exception:
-        return []
-
-    restart_items = restart_result.get(
-        'data',
-        {},
-    ).get(
-        'result',
-        [],
-    )
-
-    if not isinstance(
-        restart_items,
-        list,
-    ):
+    restart_items = restart_result.get('data', {}).get('result', [])
+    if not isinstance(restart_items, list):
         restart_items = []
-
-    not_ready_items = not_ready_result.get(
-        'data',
-        {},
-    ).get(
-        'result',
-        [],
-    )
-
-    if not isinstance(
-        not_ready_items,
-        list,
-    ):
+    not_ready_items = not_ready_result.get('data', {}).get('result', [])
+    if not isinstance(not_ready_items, list):
         not_ready_items = []
 
     anomalies: list[dict[str, Any]] = []
-
     for item in restart_items:
-        if not isinstance(
-            item,
-            dict,
-        ):
-            continue
-
-        anomaly = normalize_restart_anomaly(
-            item,
-        )
-
-        if anomaly is not None:
-            anomalies.append(
-                anomaly,
-            )
-
+        if isinstance(item, dict) and (anomaly := normalize_restart_anomaly(item)) is not None:
+            anomalies.append(anomaly)
     for item in not_ready_items:
-        if not isinstance(
-            item,
-            dict,
-        ):
-            continue
+        if isinstance(item, dict) and (anomaly := normalize_not_ready_anomaly(item)) is not None:
+            anomalies.append(anomaly)
 
-        anomaly = normalize_not_ready_anomaly(
-            item,
-        )
-
-        if anomaly is not None:
-            anomalies.append(
-                anomaly,
-            )
-
-    return anomalies
+    return anomalies, {
+        'connected': True,
+        'label': 'Anomaly Signals Available',
+        'error': None,
+        'response_time_ms': max(int((perf_counter() - started) * 1000), 0),
+        'partial': False,
+    }
 
 
 def filter_anomalies(
@@ -298,25 +291,3 @@ def filter_anomalies(
         ]
 
     return filtered
-
-
-def build_anomalies(
-    *,
-    cluster: Cluster | None,
-    severity: str,
-    namespace: str,
-    search: str,
-) -> list[dict[str, Any]]:
-    if cluster is None:
-        return []
-
-    anomalies = load_prometheus_anomaly_metrics(
-        cluster=cluster,
-    )
-
-    return filter_anomalies(
-        anomalies,
-        severity=severity,
-        namespace=namespace,
-        search=search,
-    )

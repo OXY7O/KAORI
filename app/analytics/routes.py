@@ -204,17 +204,22 @@ def materialization_status():
     if result.available:
         response = make_response('', 204)
         response.headers['HX-Refresh'] = 'true'
+        response.headers['Cache-Control'] = 'no-store, max-age=0'
         return response
     progress = materialization_progress_context(result.snapshot)
-    return render_template(
-        'analytics/materialization/_pending.html',
-        materialization_status_url=request.full_path,
-        materialization_return_url=(
-            request.args.get('return_url', '').strip()
-            or url_for('analytics.overview')
-        ),
-        **progress,
+    response = make_response(
+        render_template(
+            'analytics/materialization/_pending.html',
+            materialization_status_url=request.full_path,
+            materialization_return_url=(
+                request.args.get('return_url', '').strip()
+                or url_for('analytics.overview')
+            ),
+            **progress,
+        )
     )
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    return response
 
 
 

@@ -126,13 +126,19 @@ def get_alerts_context(
         per_page=selected_alerts_per_page,
     )
 
-    raw_anomalies = (
-        load_prometheus_anomaly_metrics(
+    if selected_cluster is not None:
+        raw_anomalies, anomaly_source_status = load_prometheus_anomaly_metrics(
             cluster=selected_cluster,
         )
-        if selected_cluster is not None
-        else []
-    )
+    else:
+        raw_anomalies = []
+        anomaly_source_status = {
+            'connected': False,
+            'label': 'Waiting for Cluster',
+            'error': None,
+            'response_time_ms': None,
+            'partial': False,
+        }
 
     anomalies = filter_anomalies(
         raw_anomalies,
@@ -265,6 +271,22 @@ def get_alerts_context(
         'anomalies_pagination': anomaly_pagination,
         'summary': summary,
         'source_status': source_status,
+        'anomaly_source_status': anomaly_source_status,
+        'collection_warnings': (
+            [
+                {
+                    'code': 'anomaly_signals_unavailable',
+                    'title': 'Prometheus anomaly candidates are unavailable',
+                    'detail': str(anomaly_source_status.get('error') or ''),
+                    'remediation': (
+                        'Review the analytics worker query fingerprint and Prometheus/Thanos '
+                        'capacity. Alert records remain available from the selected alert source.'
+                    ),
+                }
+            ]
+            if selected_cluster is not None and anomaly_source_status.get('partial')
+            else []
+        ),
         'integration_status': integration_status,
         'dependency_blocker': dependency_blocker,
         'source_health': source_health,

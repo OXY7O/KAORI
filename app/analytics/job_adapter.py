@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from datetime import UTC, datetime
+import logging
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from flask import current_app
@@ -10,6 +11,8 @@ from app.alertmanager.resolver import resolve_alertmanager_sources
 from app.analytics.materialization.catalog import (
     FORECAST_DATASET,
     canonical_parameters,
+    dataset_range,
+    dataset_task_budget_seconds,
     get_dataset,
     list_analytics_datasets,
     source_binding_capabilities,
@@ -28,6 +31,26 @@ from app.prometheus.repository import resolve_instance_for_cluster
 from app.prometheus.resolver import resolve_prometheus_sources
 
 _DASHBOARD_REQUIRED_24H_DATASETS = {CAPACITY_DATASET_KEY}
+_RANGE_ORDER = {
+    '1h': 0,
+    '6h': 1,
+    '12h': 2,
+    '24h': 3,
+    '7d': 4,
+    '30d': 5,
+    '60d': 6,
+    '90d': 7,
+}
+logger = logging.getLogger(__name__)
+
+
+def _append_eligibility_diagnostic(
+    diagnostics: list[str] | None,
+    message: str,
+) -> None:
+    normalized = str(message or '').strip()
+    if diagnostics is not None and normalized and normalized not in diagnostics:
+        diagnostics.append(normalized[:1000])
 
 
 def _registered_clusters() -> list[Cluster]:
@@ -39,12 +62,16 @@ def _prometheus_eligible_clusters(clusters: list[Cluster] | None = None) -> list
     return [
         cluster
         for cluster in candidates
-        if (instance := resolve_instance_for_cluster(cluster.id)) is not None and instance.endpoint.strip()
+        if (instance := resolve_instance_for_cluster(cluster.id)) is not None
+        and instance.endpoint.strip()
     ]
 
 
-def _prometheus_dataset_eligible(cluster: Cluster, dataset_key: str) -> bool:
-    dataset = get_dataset(dataset_key)
+def _prometheus_dataset_eligible(
+    cluster: Cluster,
+    dataset_key: str,
+    diagnostics: list[str] | None = None,
+) -> bool:
     try:
         resolution = resolve_prometheus_sources(
             scope_type=KUBERNETES_CLUSTER_SCOPE,
@@ -52,17 +79,40 @@ def _prometheus_dataset_eligible(cluster: Cluster, dataset_key: str) -> bool:
             required_binding_capabilities=source_binding_capabilities(dataset_key),
             required_technical_capabilities=source_technical_capabilities(dataset_key),
         )
-    except Exception:
+    except Exception as exc:
+        _append_eligibility_diagnostic(
+            diagnostics,
+            f'{dataset_key} on {cluster.name}: source resolution failed: {exc}',
+        )
+        logger.warning(
+            'Could not evaluate Prometheus eligibility for analytics dataset.',
+            extra={
+                'cluster_id': str(cluster.id),
+                'dataset_key': dataset_key,
+                'error': str(exc)[:1000],
+            },
+        )
         return False
-    return resolution.selected is not None
+    if resolution.selected is None:
+        reason = (
+            resolution.candidates[0].decision_reason
+            if resolution.candidates
+            else 'No bound Prometheus source is available.'
+        )
+        _append_eligibility_diagnostic(
+            diagnostics,
+            f'{dataset_key} on {cluster.name}: {reason}',
+        )
+        return False
+    return True
 
 
 def _alert_dataset_eligible(
     cluster: Cluster,
     dataset_key: str,
     parameters: dict[str, Any] | None = None,
+    diagnostics: list[str] | None = None,
 ) -> bool:
-    dataset = get_dataset(dataset_key)
     source = canonical_parameters(dataset_key, parameters).get('source', 'auto').lower()
 
     if source in {'auto', 'alertmanager'}:
@@ -71,7 +121,20 @@ def _alert_dataset_eligible(
                 scope_type=KUBERNETES_CLUSTER_SCOPE,
                 scope_key=str(cluster.id),
             )
-        except Exception:
+        except Exception as exc:
+            _append_eligibility_diagnostic(
+                diagnostics,
+                f'{dataset_key} on {cluster.name}: Alertmanager resolution failed: {exc}',
+            )
+            logger.warning(
+                'Could not evaluate Alertmanager eligibility for analytics dataset.',
+                extra={
+                    'cluster_id': str(cluster.id),
+                    'dataset_key': dataset_key,
+                    'requested_source': source,
+                    'error': str(exc)[:1000],
+                },
+            )
             alertmanager = None
         if alertmanager is not None and alertmanager.selected is not None:
             return True
@@ -84,11 +147,28 @@ def _alert_dataset_eligible(
                 required_binding_capabilities=('metrics',),
                 required_technical_capabilities=('instant_query',),
             )
-        except Exception:
+        except Exception as exc:
+            _append_eligibility_diagnostic(
+                diagnostics,
+                f'{dataset_key} on {cluster.name}: Prometheus fallback resolution failed: {exc}',
+            )
+            logger.warning(
+                'Could not evaluate Prometheus fallback eligibility for alerts analytics.',
+                extra={
+                    'cluster_id': str(cluster.id),
+                    'dataset_key': dataset_key,
+                    'requested_source': source,
+                    'error': str(exc)[:1000],
+                },
+            )
             prometheus = None
         if prometheus is not None and prometheus.selected is not None:
             return True
 
+    _append_eligibility_diagnostic(
+        diagnostics,
+        f'{dataset_key} on {cluster.name}: no eligible {source} alert source is available.',
+    )
     return False
 
 
@@ -96,12 +176,13 @@ def _dataset_eligible(
     cluster: Cluster,
     dataset_key: str,
     parameters: dict[str, Any] | None = None,
+    diagnostics: list[str] | None = None,
 ) -> bool:
     dataset = get_dataset(dataset_key)
     if dataset.source_kind == 'prometheus':
-        return _prometheus_dataset_eligible(cluster, dataset_key)
+        return _prometheus_dataset_eligible(cluster, dataset_key, diagnostics)
     if dataset.source_kind == 'alert':
-        return _alert_dataset_eligible(cluster, dataset_key, parameters)
+        return _alert_dataset_eligible(cluster, dataset_key, parameters, diagnostics)
     return True
 
 
@@ -134,6 +215,64 @@ def _forecast_freshness_minutes(history_window: str, base_minutes: int) -> int:
     return max(base_minutes, minimum_by_history.get(history_window, base_minutes))
 
 
+def _work_item_range(item: dict[str, Any]) -> str:
+    parameters = item.get('parameters')
+    return dataset_range(
+        str(item['dataset_key']),
+        parameters if isinstance(parameters, dict) else None,
+    )
+
+
+def _work_item_sort_key(item: dict[str, Any]) -> tuple[int, int, str, str]:
+    dataset = get_dataset(str(item['dataset_key']))
+    selected_range = _work_item_range(item)
+    return (
+        dataset.execution_priority,
+        _RANGE_ORDER.get(selected_range, 0),
+        str(item.get('cluster_id') or ''),
+        dataset.key,
+    )
+
+
+def _work_item_budget_seconds(item: dict[str, Any]) -> int:
+    parameters = item.get('parameters')
+    return dataset_task_budget_seconds(
+        str(item['dataset_key']),
+        parameters if isinstance(parameters, dict) else None,
+    )
+
+
+def _effective_task_limits(
+    work_items: list[dict[str, Any]],
+    *,
+    forecasting: bool,
+) -> tuple[int, int, int]:
+    soft_key = (
+        'FORECASTING_TASK_SOFT_TIME_LIMIT_SECONDS'
+        if forecasting
+        else 'ANALYTICS_TASK_SOFT_TIME_LIMIT_SECONDS'
+    )
+    hard_key = (
+        'FORECASTING_TASK_HARD_TIME_LIMIT_SECONDS'
+        if forecasting
+        else 'ANALYTICS_TASK_HARD_TIME_LIMIT_SECONDS'
+    )
+    max_key = (
+        'FORECASTING_TASK_MAX_SOFT_TIME_LIMIT_SECONDS'
+        if forecasting
+        else 'ANALYTICS_TASK_MAX_SOFT_TIME_LIMIT_SECONDS'
+    )
+    base_soft = int(current_app.config[soft_key])
+    base_hard = int(current_app.config[hard_key])
+    maximum_soft = int(
+        current_app.config.get(max_key, 14400 if forecasting else 7200)
+    )
+    estimated_seconds = 120 + sum(_work_item_budget_seconds(item) for item in work_items)
+    soft_limit = min(max(base_soft, estimated_seconds), maximum_soft)
+    hard_limit = max(base_hard, soft_limit + 60)
+    return soft_limit, hard_limit, estimated_seconds
+
+
 def _snapshot_due(*, cluster_id: str, dataset_key: str, parameters: dict[str, Any]) -> bool:
     snapshot = get_snapshot(
         cluster_id=cluster_id,
@@ -164,6 +303,7 @@ def _analytics_work_items(
     clusters: list[Cluster],
     only_due: bool,
     prometheus_cluster_ids: set[str] | None = None,
+    eligibility_diagnostics: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     configuration = policy.configuration_json or {}
     if prometheus_cluster_ids is None:
@@ -184,7 +324,12 @@ def _analytics_work_items(
             dataset_key,
             parameters.get('snapshot_parameters'),
         )
-        if cluster is None or not _dataset_eligible(cluster, dataset_key, snapshot_parameters):
+        if cluster is None or not _dataset_eligible(
+            cluster,
+            dataset_key,
+            snapshot_parameters,
+            eligibility_diagnostics,
+        ):
             return []
         selected_range = snapshot_parameters.get('time_range')
         if dataset.key == 'analytics.utilization.trend':
@@ -229,10 +374,17 @@ def _analytics_work_items(
             if dataset.source_kind == 'prometheus' and cluster_id not in prometheus_cluster_ids:
                 continue
             for default_parameters in dataset.default_parameters:
-                if not _dataset_eligible(cluster, dataset.key, default_parameters):
+                if not _dataset_eligible(
+                    cluster,
+                    dataset.key,
+                    default_parameters,
+                    eligibility_diagnostics,
+                ):
                     continue
                 time_range = default_parameters.get('time_range')
-                trend_range = trend_range_by_hours.get(str(default_parameters.get('trend_hours') or ''))
+                trend_range = trend_range_by_hours.get(
+            str(default_parameters.get('trend_hours') or '')
+        )
                 selected_range = time_range or trend_range
                 dashboard_required_range = (
                     dataset.key in _DASHBOARD_REQUIRED_24H_DATASETS and selected_range == '24h'
@@ -277,6 +429,7 @@ def _forecast_work_items(
     *,
     clusters: list[Cluster],
     only_due: bool,
+    eligibility_diagnostics: list[str] | None = None,
 ) -> list[dict[str, Any]]:
     configuration = policy.configuration_json or {}
     freshness_minutes = int(configuration.get('freshness_minutes') or 120)
@@ -284,7 +437,11 @@ def _forecast_work_items(
     if parameters and parameters.get('dataset_key') and parameters.get('cluster_id'):
         cluster_id = str(parameters['cluster_id'])
         cluster = next((item for item in clusters if str(item.id) == cluster_id), None)
-        if cluster is None or not _prometheus_dataset_eligible(cluster, FORECAST_DATASET.key):
+        if cluster is None or not _prometheus_dataset_eligible(
+            cluster,
+            FORECAST_DATASET.key,
+            eligibility_diagnostics,
+        ):
             return []
         snapshot_parameters = canonical_parameters(
             FORECAST_DATASET.key,
@@ -323,7 +480,11 @@ def _forecast_work_items(
     ]
     work_items: list[dict[str, Any]] = []
     for cluster in clusters:
-        if not _prometheus_dataset_eligible(cluster, FORECAST_DATASET.key):
+        if not _prometheus_dataset_eligible(
+            cluster,
+            FORECAST_DATASET.key,
+            eligibility_diagnostics,
+        ):
             continue
         for history_window in history_windows:
             snapshot_parameters = canonical_parameters(
@@ -416,11 +577,21 @@ def _dispatch(
     if not clusters:
         return RegisteredJobDispatchResult(
             status='blocked',
-            message='No cluster has an eligible Prometheus or Alertmanager integration for this job.',
+            message=(
+                'No cluster has an eligible Prometheus or Alertmanager integration '
+                'for this job.'
+            ),
         )
     only_due = trigger_type == 'scheduled'
+    eligibility_diagnostics: list[str] = []
     work_items = (
-        _forecast_work_items(policy, parameters, clusters=clusters, only_due=only_due)
+        _forecast_work_items(
+            policy,
+            parameters,
+            clusters=clusters,
+            only_due=only_due,
+            eligibility_diagnostics=eligibility_diagnostics,
+        )
         if forecasting
         else _analytics_work_items(
             policy,
@@ -428,22 +599,41 @@ def _dispatch(
             clusters=clusters,
             only_due=only_due,
             prometheus_cluster_ids=prometheus_cluster_ids,
+            eligibility_diagnostics=eligibility_diagnostics,
         )
     )
     if not work_items:
-        return RegisteredJobDispatchResult(
-            status='current' if only_due else 'blocked',
-            message=(
-                'All configured snapshots are still within their freshness windows.'
-                if only_due
-                else 'No configured dataset has an eligible source and capability contract.'
-            ),
-        )
+        if only_due and not eligibility_diagnostics:
+            message = 'All configured snapshots are still within their freshness windows.'
+            status = 'current'
+        elif eligibility_diagnostics:
+            detail = ' | '.join(eligibility_diagnostics[:3])
+            message = (
+                'No analytics snapshot could be queued because source eligibility failed. '
+                f'{detail}'
+            )
+            status = 'blocked'
+        else:
+            message = 'No configured dataset has an eligible source and capability contract.'
+            status = 'blocked'
+        return RegisteredJobDispatchResult(status=status, message=message)
+    work_items.sort(key=_work_item_sort_key)
+    soft_time_limit, hard_time_limit, estimated_seconds = _effective_task_limits(
+        work_items,
+        forecasting=forecasting,
+    )
     task = materialize_forecast_snapshots if forecasting else materialize_analytics_snapshots
-    queue_name = current_app.config['FORECASTING_CELERY_QUEUE' if forecasting else 'ANALYTICS_CELERY_QUEUE']
+    queue_key = (
+        'FORECASTING_CELERY_QUEUE' if forecasting else 'ANALYTICS_CELERY_QUEUE'
+    )
+    queue_name = current_app.config[queue_key]
     workload_class = 'forecasting' if forecasting else 'analytics'
     scope_type = 'forecast_fleet' if forecasting else 'analytics_fleet'
-    scope_key = str(parameters.get('cluster_id')) if parameters and parameters.get('cluster_id') else 'all'
+    scope_key = (
+        str(parameters.get('cluster_id'))
+        if parameters and parameters.get('cluster_id')
+        else 'all'
+    )
     resource_group = f'{operation}:{scope_key}'
     admission_parameters: dict[str, Any] = {'scope': scope_key}
     if parameters:
@@ -462,24 +652,15 @@ def _dispatch(
             'trigger_type': trigger_type,
             'work_item_count': len(work_items),
             'work_items': work_items,
+            'estimated_duration_seconds': estimated_seconds,
+            'soft_time_limit_seconds': soft_time_limit,
+            'hard_time_limit_seconds': hard_time_limit,
         },
         scope_type=scope_type,
         scope_key=scope_key,
         max_attempts=2,
-        soft_time_limit_seconds=int(
-            current_app.config[
-                'FORECASTING_TASK_SOFT_TIME_LIMIT_SECONDS'
-                if forecasting
-                else 'ANALYTICS_TASK_SOFT_TIME_LIMIT_SECONDS'
-            ]
-        ),
-        hard_time_limit_seconds=int(
-            current_app.config[
-                'FORECASTING_TASK_HARD_TIME_LIMIT_SECONDS'
-                if forecasting
-                else 'ANALYTICS_TASK_HARD_TIME_LIMIT_SECONDS'
-            ]
-        ),
+        soft_time_limit_seconds=soft_time_limit,
+        hard_time_limit_seconds=hard_time_limit,
     )
     return RegisteredJobDispatchResult(
         status='queued' if created else 'active',
@@ -532,6 +713,60 @@ def _active_job(job_type: str, *, scope_key: str | None = None) -> JobExecution 
     return query.order_by(JobExecution.created_at.desc()).first()
 
 
+def _snapshot_health(
+    *,
+    clusters: list[Cluster],
+    datasets: tuple[Any, ...],
+) -> dict[str, Any]:
+    now = datetime.now(UTC)
+    dataset_by_key = {dataset.key: dataset for dataset in datasets}
+    rows = AnalyticsSnapshot.query.filter(
+        AnalyticsSnapshot.cluster_id.in_([cluster.id for cluster in clusters] or ['']),
+        AnalyticsSnapshot.dataset_key.in_(list(dataset_by_key) or ['']),
+    ).all()
+    counts = {'current': 0, 'stale': 0, 'expired': 0, 'failed': 0}
+    latest_failure = None
+    for snapshot in rows:
+        if snapshot.status == 'failed':
+            counts['failed'] += 1
+            if snapshot.last_error and (
+                latest_failure is None
+                or (snapshot.last_attempt_at or snapshot.updated_at)
+                > (latest_failure.last_attempt_at or latest_failure.updated_at)
+            ):
+                latest_failure = snapshot
+        if snapshot.payload_json is None or snapshot.generated_at is None:
+            continue
+        expires_at = snapshot.expires_at or snapshot.generated_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=UTC)
+        dataset = dataset_by_key.get(snapshot.dataset_key)
+        grace_minutes = (
+            snapshot.stale_grace_minutes
+            or (dataset.stale_grace_minutes if dataset is not None else 0)
+        )
+        stale_deadline = expires_at + timedelta(minutes=grace_minutes)
+        if now <= expires_at:
+            counts['current'] += 1
+        elif now <= stale_deadline:
+            counts['stale'] += 1
+        else:
+            counts['expired'] += 1
+    return {
+        **counts,
+        'total': len(rows),
+        'latest_failure': (
+            {
+                'dataset_key': latest_failure.dataset_key,
+                'error': latest_failure.last_error,
+                'attempted_at': latest_failure.last_attempt_at,
+            }
+            if latest_failure is not None
+            else None
+        ),
+    }
+
+
 def _context(policy: JobPolicy, *, forecasting: bool) -> dict[str, Any]:
     clusters = _prometheus_eligible_clusters() if forecasting else _analytics_eligible_clusters()[0]
     datasets = (FORECAST_DATASET,) if forecasting else list_analytics_datasets()
@@ -539,13 +774,21 @@ def _context(policy: JobPolicy, *, forecasting: bool) -> dict[str, Any]:
     operation = 'materialize_forecast' if forecasting else 'materialize_analytics'
     jobs = JobExecution.query.filter_by(job_type=job_type, operation=operation)
     active_job = _active_job(job_type)
-    recent_jobs = jobs.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).limit(5).all()
+    recent_jobs = (
+        jobs.order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
+        .limit(5)
+        .all()
+    )
     latest = recent_jobs[0] if recent_jobs else None
     snapshot_count = AnalyticsSnapshot.query.filter(
         AnalyticsSnapshot.cluster_id.in_([cluster.id for cluster in clusters] or ['']),
         AnalyticsSnapshot.dataset_key.in_([dataset.key for dataset in datasets]),
         AnalyticsSnapshot.payload_json.isnot(None),
     ).count()
+    snapshot_health = _snapshot_health(
+        clusters=clusters,
+        datasets=tuple(datasets),
+    )
 
     if active_job is not None:
         configuration_state = {
@@ -601,12 +844,17 @@ def _context(policy: JobPolicy, *, forecasting: bool) -> dict[str, Any]:
         'registered_cluster_count': Cluster.query.count(),
         'dataset_count': len(datasets),
         'snapshot_count': snapshot_count,
+        'snapshot_health': snapshot_health,
         'configuration_state': configuration_state,
         'execution_state': execution_state,
         'active_job': present_job_execution(active_job) if active_job is not None else None,
         'latest_job': present_job_execution(latest) if latest is not None else None,
         'recent_jobs': [present_job_execution(job) for job in recent_jobs],
-        'queue_name': current_app.config['FORECASTING_CELERY_QUEUE' if forecasting else 'ANALYTICS_CELERY_QUEUE'],
+        'queue_name': current_app.config[
+            'FORECASTING_CELERY_QUEUE'
+            if forecasting
+            else 'ANALYTICS_CELERY_QUEUE'
+        ],
         'policy_configuration': policy.configuration_json or {},
         'generated_at': datetime.now(UTC),
     }

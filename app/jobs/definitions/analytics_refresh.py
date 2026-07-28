@@ -23,7 +23,7 @@ ANALYTICS_REFRESH_DEFINITION = JobDefinition(
     context_builder_path=f'{ADAPTER_MODULE}:build_analytics_materialization_context',
     configuration_template='jobs/configuration/definitions/analytics_refresh.html',
     default_enabled=True,
-    default_interval_minutes=30,
+    default_interval_minutes=15,
     minimum_interval_minutes=5,
     maximum_interval_minutes=1440,
     safety_summary='Long-range results are generated once per cluster and parameter set, then shared by every user.',
@@ -31,7 +31,7 @@ ANALYTICS_REFRESH_DEFINITION = JobDefinition(
     recent_execution_summary='Latest shared analytics snapshot materialization runs.',
     default_configuration={
         'time_ranges': ['24h', '7d', '30d', '60d'],
-        'freshness_minutes': 20,
+        'freshness_minutes': 15,
         'stale_grace_minutes': 1440,
     },
 )

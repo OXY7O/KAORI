@@ -23,7 +23,6 @@ from app.analytics.common.payloads import get_empty_workload_payload
 from app.analytics.utilization.service import UtilizationService
 from app.common.dependencies import prometheus_capability_blocker, prometheus_connection_blocker
 from app.integrations.consumer.contracts import ConsumerResult
-from app.integrations.prometheus.exceptions import PrometheusError
 from app.integrations.prometheus.query_profiles import get_query_expression
 from app.intelligence.recommendation_engine import (
     build_workload_actionable_recommendations,
@@ -257,21 +256,28 @@ class WorkloadAnalysisService(AnalyticsBaseService):
         return result if isinstance(result, list) else []
 
     def get_prometheus_status(self) -> dict[str, Any]:
-        response = self.consumer.status()
+        response = self.consumer.analytics_status()
         payload = response.payload if isinstance(response.payload, dict) else {}
         response_time = payload.get('response_time_ms')
+        observation_degraded = bool(payload.get('observation_degraded'))
+        description = (
+            'The source is eligible for workload analytics queries.'
+            if response.ok and not observation_degraded
+            else (
+                'The source is eligible, but its previous runtime observation was degraded.'
+                if response.ok
+                else (response.diagnostics[0].message if response.diagnostics else 'Prometheus is unavailable.')
+            )
+        )
         return {
             'connected': response.ok,
             'response_time_ms': response_time,
-            'response_time_display': f'{response_time} ms' if response_time is not None else 'No response',
-            'label': 'Prometheus Connected' if response.ok else 'Prometheus Unavailable',
-            'description': (
-                'Integration runtime and workload capability contract are available.'
-                if response.ok
-                else (response.diagnostics[0].message if response.diagnostics else 'Prometheus is unavailable.')
-            ),
-            'tone': 'normal' if response.ok else 'critical',
-            'icon': 'circle-check' if response.ok else 'circle-x',
+            'response_time_display': f'{response_time} ms' if response_time is not None else 'No recent probe',
+            'label': 'Prometheus Query Ready' if response.ok else 'Prometheus Unavailable',
+            'description': description,
+            'tone': 'warning' if observation_degraded else ('normal' if response.ok else 'critical'),
+            'icon': 'triangle-alert' if observation_degraded else ('circle-check' if response.ok else 'circle-x'),
+            'observation_degraded': observation_degraded,
         }
 
     def get_all_namespace_options(
@@ -2287,7 +2293,7 @@ def get_workload_analysis_context(
         )
 
         return context
-    except (PrometheusError, Exception) as exc:
+    except Exception as exc:
         context['dependency_blocker'] = prometheus_connection_blocker(
             cluster,
             detail=str(exc),

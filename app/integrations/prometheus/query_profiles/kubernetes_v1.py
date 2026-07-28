@@ -1184,13 +1184,6 @@ QUERIES: dict[str, QueryDefinition] = {
         required_metrics=('kube_node_status_condition',),
         required_labels=(('kube_node_status_condition', ('condition', 'node', 'status')),),
     ),
-    'analytics.utilization.queries.PROMETHEUS_HEALTH': QueryDefinition(
-        key='analytics.utilization.queries.PROMETHEUS_HEALTH',
-        expression='vector(1)',
-        domain='app.analytics.utilization',
-        required_metrics=(),
-        required_labels=(),
-    ),
     'analytics.workload.queries.NAMESPACE_ACTIVE_QUERY': QueryDefinition(
         key='analytics.workload.queries.NAMESPACE_ACTIVE_QUERY',
         expression='kube_namespace_status_phase{phase="Active"} == 1',

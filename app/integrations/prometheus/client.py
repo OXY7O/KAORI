@@ -26,6 +26,7 @@ class PrometheusClient:
         self.scope_selector = scope_selector
         self.request_timeout_seconds = request_timeout_seconds
         self.base_url = config.endpoint.rstrip('/')
+        self.session = requests.Session()
 
     def _build_headers(
         self,
@@ -56,7 +57,7 @@ class PrometheusClient:
         url = f'{self.base_url}{path}'
 
         try:
-            response = requests.get(
+            response = self.session.get(
                 url,
                 params=params,
                 headers=self._build_headers(),

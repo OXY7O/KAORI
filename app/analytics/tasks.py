@@ -11,30 +11,42 @@ from billiard.exceptions import SoftTimeLimitExceeded
 from celery import shared_task
 from flask import current_app
 
-from app.analytics.materialization.catalog import get_dataset
+from app.analytics.materialization.catalog import (
+    dataset_task_budget_seconds,
+    get_dataset,
+)
+from app.analytics.materialization.errors import (
+    AnalyticsDatasetTimeoutError,
+    AnalyticsDependencyError,
+    classify_analytics_failure,
+)
+from app.analytics.materialization.source_lock import analytics_source_lock
 from app.analytics.materialization.service import (
     fail_snapshot,
     mark_snapshot_pending,
     normalize_parameters,
     store_snapshot,
 )
+from app.common.provider_query_runtime import provider_query_runtime
 from app.extensions.db import db
 from app.jobs.execution import JobCancellationRequested, JobExecutionContext
 from app.models import Cluster
 
 
-class AnalyticsDatasetTimeoutError(TimeoutError):
-    pass
-
-
-def _dataset_timeout_seconds(dataset_key: str) -> int:
+def _dataset_timeout_seconds(
+    dataset_key: str,
+    parameters: dict[str, Any] | None,
+) -> int:
+    forecasting = dataset_key == 'analytics.forecast'
     config_key = (
         'FORECASTING_DATASET_TIMEOUT_SECONDS'
-        if dataset_key == 'analytics.forecast'
+        if forecasting
         else 'ANALYTICS_DATASET_TIMEOUT_SECONDS'
     )
-    default = 600 if dataset_key == 'analytics.forecast' else 300
-    return int(current_app.config.get(config_key, default))
+    configured = int(current_app.config.get(config_key, 600 if forecasting else 300))
+    estimated = dataset_task_budget_seconds(dataset_key, parameters)
+    maximum = 3600 if forecasting else 1800
+    return min(max(configured, estimated), maximum)
 
 
 @contextmanager
@@ -90,20 +102,48 @@ def _fail_unfinished_work_items(
     error: Exception | str,
 ) -> None:
     for item in work_items:
+        dataset_key = str(item.get('dataset_key') or '')
+        cluster_id = str(item.get('cluster_id') or '')
         try:
+            dataset = get_dataset(dataset_key)
+            cluster = Cluster.query.get(cluster_id)
+            failure = classify_analytics_failure(
+                error,
+                dataset_label=dataset.label,
+                cluster_name=cluster.name if cluster is not None else f'Cluster {cluster_id}',
+            )
             fail_snapshot(
-                cluster_id=str(item['cluster_id']),
-                dataset_key=str(item['dataset_key']),
+                cluster_id=cluster_id,
+                dataset_key=dataset_key,
                 parameters=normalize_parameters(item.get('parameters')),
-                error=error,
+                error=failure.log_message(),
                 job_execution_id=job_execution_id,
             )
         except Exception:
             current_app.logger.exception(
-                'Could not mark timed-out analytics snapshot as failed for %s on cluster %s.',
-                item.get('dataset_key'),
-                item.get('cluster_id'),
+                'Could not mark unfinished analytics snapshot as failed for %s on cluster %s.',
+                dataset_key,
+                cluster_id,
             )
+
+
+def _dependency_blocker_message(blocker: Any) -> str:
+    if isinstance(blocker, dict):
+        title = str(blocker.get('title') or 'Analytics dependency unavailable')
+        detail = str(
+            blocker.get('diagnostic_detail')
+            or blocker.get('description')
+            or blocker.get('badge')
+            or ''
+        )
+    else:
+        title = str(getattr(blocker, 'title', '') or 'Analytics dependency unavailable')
+        detail = str(
+            getattr(blocker, 'diagnostic_detail', '')
+            or getattr(blocker, 'description', '')
+            or getattr(blocker, 'badge', '')
+        )
+    return f'{title}: {detail}'.rstrip(': ')
 
 
 def _materialize(
@@ -141,69 +181,134 @@ def _materialize(
                 parameters=parameters,
                 job_execution_id=job_execution_id,
             )
+            query_runtime = None
             try:
                 query_string = urlencode(parameters)
-                timeout_seconds = _dataset_timeout_seconds(dataset_key)
-                with _dataset_time_limit(
-                    dataset_key=dataset_key,
-                    timeout_seconds=timeout_seconds,
-                ):
-                    with current_app.test_request_context(
-                        f'/analytics/materialize?{query_string}'
-                    ):
-                        context = dataset.builder(parameters)
-                blocker = context.get('dependency_blocker') if isinstance(context, dict) else None
-                if blocker:
-                    if isinstance(blocker, dict):
-                        blocker_title = str(
-                            blocker.get('title') or 'Analytics dependency unavailable'
-                        )
-                        blocker_detail = str(
-                            blocker.get('diagnostic_detail')
-                            or blocker.get('description')
-                            or blocker.get('badge')
-                            or ''
-                        )
-                    else:
-                        blocker_title = str(
-                            getattr(blocker, 'title', '') or 'Analytics dependency unavailable'
-                        )
-                        blocker_detail = str(
-                            getattr(blocker, 'diagnostic_detail', '')
-                            or getattr(blocker, 'description', '')
-                            or getattr(blocker, 'badge', '')
-                        )
-                    raise RuntimeError(
-                        f'{blocker_title}: {blocker_detail}'.rstrip(': ')
-                    )
-                store_snapshot(
-                    cluster_id=cluster_id,
-                    dataset_key=dataset_key,
-                    parameters=parameters,
-                    context=context,
-                    job_execution_id=job_execution_id,
-                    freshness_minutes=int(item.get('freshness_minutes') or dataset.freshness_minutes),
-                    stale_grace_minutes=int(item.get('stale_grace_minutes') or dataset.stale_grace_minutes),
+                timeout_seconds = _dataset_timeout_seconds(dataset_key, parameters)
+                current_app.logger.info(
+                    'Analytics dataset materialization started.',
+                    extra={
+                        'dataset_key': dataset_key,
+                        'dataset_label': dataset.label,
+                        'cluster_id': cluster_id,
+                        'cluster_name': cluster_name,
+                        'job_execution_id': job_execution_id,
+                        'dataset_timeout_seconds': timeout_seconds,
+                        'snapshot_parameters': parameters,
+                    },
                 )
+                with provider_query_runtime(
+                    dataset_key=dataset_key,
+                    cluster_id=cluster_id,
+                    job_execution_id=job_execution_id,
+                ) as query_runtime:
+                    with analytics_source_lock(
+                        dataset_key=dataset_key,
+                        cluster_id=cluster_id,
+                        parameters=parameters,
+                    ) as source_lock_wait_ms:
+                        query_runtime.source_lock_wait_ms = source_lock_wait_ms
+                        if source_lock_wait_ms >= 1000:
+                            lifecycle.checkpoint(
+                                current=index - 1,
+                                total=len(work_items),
+                                message=f'Waiting for the shared metrics source before generating {dataset.label}',
+                            )
+                            current_app.logger.info(
+                                'Analytics dataset waited for a shared provider query slot.',
+                                extra={
+                                    'dataset_key': dataset_key,
+                                    'cluster_id': cluster_id,
+                                    'job_execution_id': job_execution_id,
+                                    'source_lock_wait_ms': source_lock_wait_ms,
+                                },
+                            )
+                        with _dataset_time_limit(
+                            dataset_key=dataset_key,
+                            timeout_seconds=timeout_seconds,
+                        ):
+                            with current_app.test_request_context(
+                                f'/analytics/materialize?{query_string}'
+                            ):
+                                context = dataset.builder(parameters)
+                    if not isinstance(context, dict):
+                        raise TypeError(
+                            f'{dataset.key} returned {type(context).__name__}; expected a context mapping.'
+                        )
+                    blocker = context.get('dependency_blocker')
+                    if blocker:
+                        raise AnalyticsDependencyError(_dependency_blocker_message(blocker))
+                    context['analytics_runtime'] = query_runtime.summary()
+                    store_snapshot(
+                        cluster_id=cluster_id,
+                        dataset_key=dataset_key,
+                        parameters=parameters,
+                        context=context,
+                        job_execution_id=job_execution_id,
+                        freshness_minutes=int(
+                            item.get('freshness_minutes') or dataset.freshness_minutes
+                        ),
+                        stale_grace_minutes=int(
+                            item.get('stale_grace_minutes') or dataset.stale_grace_minutes
+                        ),
+                    )
+                    current_app.logger.info(
+                        'Analytics snapshot materialized.',
+                        extra={
+                            **query_runtime.summary(),
+                            'dataset_label': dataset.label,
+                            'cluster_name': cluster_name,
+                        },
+                    )
                 succeeded += 1
             except SoftTimeLimitExceeded:
                 raise
             except Exception as exc:
                 db.session.rollback()
+                failure = classify_analytics_failure(
+                    exc,
+                    dataset_label=dataset.label,
+                    cluster_name=cluster_name,
+                )
+                runtime_summary = query_runtime.summary() if query_runtime is not None else {}
                 current_app.logger.exception(
-                    'Analytics materialization failed for %s on cluster %s.',
+                    'Analytics materialization failed [%s] for %s on cluster %s: %s',
+                    failure.code,
                     dataset_key,
                     cluster_id,
+                    failure.detail,
+                    extra={
+                        'analytics_failure_code': failure.code,
+                        'analytics_failure_retryable': failure.retryable,
+                        'analytics_failure_remediation': failure.remediation,
+                        'dataset_key': dataset_key,
+                        'cluster_id': cluster_id,
+                        'job_execution_id': job_execution_id,
+                        **runtime_summary,
+                    },
                 )
                 fail_snapshot(
                     cluster_id=cluster_id,
                     dataset_key=dataset_key,
                     parameters=parameters,
-                    error=exc,
+                    error=failure.log_message(),
                     job_execution_id=job_execution_id,
                 )
                 failed += 1
-                failures.append({'dataset_key': dataset_key, 'cluster_id': str(cluster_id), 'error': str(exc)[:255]})
+                failures.append(
+                    {
+                        'dataset_key': dataset_key,
+                        'cluster_id': cluster_id,
+                        'code': failure.code,
+                        'title': failure.title,
+                        'error': failure.detail[:1000],
+                        'remediation': failure.remediation,
+                        'retryable': str(failure.retryable).lower(),
+                        'query_count': str(runtime_summary.get('query_count', 0)),
+                        'retry_count': str(runtime_summary.get('retry_count', 0)),
+                        'query_duration_ms': str(runtime_summary.get('query_duration_ms', 0)),
+                    }
+                )
             lifecycle.checkpoint(
                 current=index,
                 total=len(work_items),
@@ -213,11 +318,11 @@ def _materialize(
         lifecycle.canceled()
         return {'status': 'canceled', 'succeeded': succeeded, 'failed': failed}
     except SoftTimeLimitExceeded as exc:
-        message = 'Analytics materialization exceeded its worker time limit.'
+        message = 'Analytics materialization exceeded its global worker time limit.'
         _fail_unfinished_work_items(
             work_items=work_items[max(current_index - 1, 0):],
             job_execution_id=job_execution_id,
-            error=message,
+            error=exc,
         )
         lifecycle.fail(message, error_code='analytics_materialization_timeout')
         raise exc
@@ -231,10 +336,29 @@ def _materialize(
         'failed': failed,
         'failures': failures[:20],
     }
+    current_app.logger.info(
+        'Analytics materialization batch finished.',
+        extra={
+            'job_execution_id': job_execution_id,
+            'total': len(work_items),
+            'succeeded': succeeded,
+            'failed': failed,
+            'status': (
+                'failed'
+                if failed and not succeeded
+                else ('partially_succeeded' if failed else 'succeeded')
+            ),
+        },
+    )
     if failed and not succeeded:
+        first_failure = failures[0] if failures else {}
         lifecycle.fail(
-            RuntimeError('All analytics snapshot requests failed.'),
-            error_code='analytics_materialization_all_failed',
+            RuntimeError(
+                str(first_failure.get('title') or 'All analytics snapshot requests failed.')
+            ),
+            error_code=str(
+                first_failure.get('code') or 'analytics_materialization_all_failed'
+            ),
         )
         return summary
     lifecycle.succeed(

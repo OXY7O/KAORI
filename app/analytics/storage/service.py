@@ -31,7 +31,6 @@ from app.analytics.common.payloads import get_empty_storage_payload
 from app.analytics.utilization.service import UtilizationService
 from app.common.dependencies import prometheus_capability_blocker, prometheus_connection_blocker
 from app.integrations.prometheus.capabilities import definition as capability_definition
-from app.integrations.prometheus.exceptions import PrometheusError
 from app.integrations.prometheus.query_profiles import get_query_expression
 from app.intelligence.recommendation_engine import (
     build_storage_actionable_recommendations,
@@ -1240,7 +1239,7 @@ def get_storage_analysis_context(
 
     try:
         prometheus_status = storage_service.get_prometheus_status()
-    except (PrometheusError, Exception) as exc:
+    except Exception as exc:
         prometheus_status = {
             'connected': False,
             'label': 'Prometheus Unavailable',
@@ -1297,7 +1296,7 @@ def get_storage_analysis_context(
             ),
         )
         namespace_options = storage_service.get_storage_namespace_options()
-    except (PrometheusError, Exception) as exc:
+    except Exception as exc:
         context['dependency_blocker'] = prometheus_connection_blocker(
             cluster,
             detail=str(exc),

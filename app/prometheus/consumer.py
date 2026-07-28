@@ -1,11 +1,19 @@
 from __future__ import annotations
 
+import logging
+from hashlib import sha256
+from time import perf_counter, sleep
 from typing import Any
 
 from flask import current_app, has_app_context
 
+from app.common.provider_query_runtime import record_provider_query, record_provider_retry
 from app.integrations.consumer.contracts import ConsumerDiagnostic, ConsumerResult, ConsumerSource
-from app.integrations.prometheus.exceptions import PrometheusError
+from app.integrations.prometheus.exceptions import (
+    PrometheusConnectionError,
+    PrometheusError,
+    PrometheusQueryError,
+)
 from app.integrations.registry import get_integration
 from app.models import Cluster
 from app.prometheus.resolver import ResolvedPrometheusSource, resolve_prometheus_sources
@@ -13,6 +21,8 @@ from app.prometheus.resolver import ResolvedPrometheusSource, resolve_prometheus
 DEFAULT_QUERY_CAPABILITIES = ('instant_query',)
 DEFAULT_RANGE_CAPABILITIES = ('range_query',)
 _EXECUTION_CAPABILITIES = frozenset((*DEFAULT_QUERY_CAPABILITIES, *DEFAULT_RANGE_CAPABILITIES))
+_TRANSIENT_HTTP_STATUS_TOKENS = ('http 429', 'http 500', 'http 502', 'http 503', 'http 504')
+logger = logging.getLogger(__name__)
 
 
 class PrometheusConsumer:
@@ -35,7 +45,7 @@ class PrometheusConsumer:
             raise PrometheusError(reasons or 'No canonical Prometheus runtime is bound to this Kubernetes cluster.')
         self.config = selected.instance
         self.binding = selected.binding
-        self.client = self._build_client(selected)
+        self._client_cache: dict[tuple[int, int, int | None], Any] = {}
         self._default_instance_id = selected.instance.id
 
     def query(
@@ -44,11 +54,13 @@ class PrometheusConsumer:
         *,
         required_capabilities: tuple[str, ...] = DEFAULT_QUERY_CAPABILITIES,
     ) -> dict[str, Any]:
-        source = self._source_for(DEFAULT_QUERY_CAPABILITIES)
-        return self._build_client(
-            source,
-            request_timeout_seconds=self._query_timeout_seconds(range_query=False),
-        ).query(promql)
+        source = self._source_for(required_capabilities)
+        return self._run_query(
+            source=source,
+            promql=promql,
+            range_query=False,
+            operation=lambda client: client.query(promql),
+        )
 
     def query_at(
         self,
@@ -57,11 +69,13 @@ class PrometheusConsumer:
         *,
         required_capabilities: tuple[str, ...] = DEFAULT_QUERY_CAPABILITIES,
     ) -> dict[str, Any]:
-        source = self._source_for(DEFAULT_QUERY_CAPABILITIES)
-        return self._build_client(
-            source,
-            request_timeout_seconds=self._query_timeout_seconds(range_query=False),
-        ).query_at(promql, timestamp)
+        source = self._source_for(required_capabilities)
+        return self._run_query(
+            source=source,
+            promql=promql,
+            range_query=False,
+            operation=lambda client: client.query_at(promql, timestamp),
+        )
 
     def query_range(
         self,
@@ -72,11 +86,13 @@ class PrometheusConsumer:
         *,
         required_capabilities: tuple[str, ...] = DEFAULT_RANGE_CAPABILITIES,
     ) -> dict[str, Any]:
-        source = self._source_for(DEFAULT_RANGE_CAPABILITIES)
-        return self._build_client(
-            source,
-            request_timeout_seconds=self._query_timeout_seconds(range_query=True),
-        ).query_range(promql, start, end, step)
+        source = self._source_for(required_capabilities)
+        return self._run_query(
+            source=source,
+            promql=promql,
+            range_query=True,
+            operation=lambda client: client.query_range(promql, start, end, step),
+        )
 
     def execute_query(
         self,
@@ -85,10 +101,12 @@ class PrometheusConsumer:
         required_capabilities: tuple[str, ...] = DEFAULT_QUERY_CAPABILITIES,
     ) -> ConsumerResult[dict[str, Any]]:
         return self._execute(
-            lambda source: self._build_client(
-                source,
-                request_timeout_seconds=self._query_timeout_seconds(range_query=False),
-            ).query(promql),
+            lambda source: self._run_query(
+                source=source,
+                promql=promql,
+                range_query=False,
+                operation=lambda client: client.query(promql),
+            ),
             required_capabilities=required_capabilities,
             execution_capabilities=DEFAULT_QUERY_CAPABILITIES,
         )
@@ -103,10 +121,12 @@ class PrometheusConsumer:
         required_capabilities: tuple[str, ...] = DEFAULT_RANGE_CAPABILITIES,
     ) -> ConsumerResult[dict[str, Any]]:
         return self._execute(
-            lambda source: self._build_client(
-                source,
-                request_timeout_seconds=self._query_timeout_seconds(range_query=True),
-            ).query_range(promql, start, end, step),
+            lambda source: self._run_query(
+                source=source,
+                promql=promql,
+                range_query=True,
+                operation=lambda client: client.query_range(promql, start, end, step),
+            ),
             required_capabilities=required_capabilities,
             execution_capabilities=DEFAULT_RANGE_CAPABILITIES,
         )
@@ -209,6 +229,169 @@ class PrometheusConsumer:
             },
         )
 
+    def analytics_status(self) -> ConsumerResult[dict[str, Any]]:
+        """Return execution readiness without issuing a duplicate health query.
+
+        The dataset's real PromQL request is the authoritative runtime probe. A
+        stale or failed integration observation remains advisory here so a
+        transient previous timeout cannot block an otherwise eligible source.
+        """
+        try:
+            selected = self._source_for(DEFAULT_QUERY_CAPABILITIES)
+        except PrometheusError as exc:
+            return ConsumerResult(
+                ok=False,
+                payload={
+                    'configured': bool(getattr(self.config, 'endpoint', None)),
+                    'last_status': getattr(self.config, 'last_status', None),
+                    'last_error': getattr(self.config, 'last_error', None),
+                    'last_checked_at': getattr(self.config, 'last_checked_at', None),
+                    'response_time_ms': getattr(self.config, 'last_response_time_ms', None),
+                },
+                source=self._source(),
+                diagnostics=(
+                    ConsumerDiagnostic(
+                        code='analytics_source_not_eligible',
+                        message='No bound Prometheus source can execute analytics queries.',
+                        category='capability',
+                        remediation='Run binding/full validation and restore instant query capability.',
+                        source_owner='Prometheus / Thanos metrics pipeline',
+                        detail=str(exc),
+                    ),
+                ),
+                required_capabilities=DEFAULT_QUERY_CAPABILITIES,
+            )
+
+        observed_health = str(selected.instance.last_status or '').strip().lower()
+        observation_degraded = observed_health in {
+            'unhealthy', 'error', 'failed', 'disconnected',
+        }
+        return ConsumerResult(
+            ok=True,
+            payload={
+                'configured': True,
+                'readiness': selected.instance.readiness_status,
+                'last_status': selected.instance.last_status,
+                'last_error': selected.instance.last_error,
+                'last_checked_at': selected.instance.last_checked_at,
+                'response_time_ms': selected.instance.last_response_time_ms,
+                'observation_degraded': observation_degraded,
+                'decision_reason': selected.decision_reason,
+            },
+            source=self._source_from(selected),
+            metadata={
+                'runtime_observation_advisory': True,
+                'observation_degraded': observation_degraded,
+            },
+            required_capabilities=DEFAULT_QUERY_CAPABILITIES,
+        )
+
+    def _run_query(
+        self,
+        *,
+        source: ResolvedPrometheusSource,
+        promql: str,
+        range_query: bool,
+        operation,
+    ) -> dict[str, Any]:
+        retries = self._query_retry_count()
+        fingerprint = sha256(promql.encode('utf-8')).hexdigest()[:12]
+        operation_name = 'range' if range_query else 'instant'
+        timeout_seconds = self._query_timeout_seconds(range_query=range_query)
+
+        for attempt in range(retries + 1):
+            started = perf_counter()
+            try:
+                payload = operation(
+                    self._client_for(
+                        source,
+                        request_timeout_seconds=timeout_seconds,
+                    )
+                )
+            except PrometheusError as exc:
+                elapsed_ms = max(int((perf_counter() - started) * 1000), 0)
+                record_provider_query(
+                    fingerprint=fingerprint,
+                    duration_ms=elapsed_ms,
+                    success=False,
+                    error=exc,
+                )
+                can_retry = self._is_transient_query_error(exc) and attempt < retries
+                if can_retry:
+                    record_provider_retry()
+                    delay = self._retry_backoff_seconds(attempt + 1)
+                    logger.warning(
+                        'Transient Prometheus %s query failed; retrying.',
+                        operation_name,
+                        extra={
+                            'cluster_id': str(self.cluster.id),
+                            'prometheus_instance_id': source.instance.id,
+                            'query_fingerprint': fingerprint,
+                            'attempt': attempt + 1,
+                            'max_attempts': retries + 1,
+                            'retry_delay_seconds': delay,
+                            'error': str(exc)[:1000],
+                        },
+                    )
+                    sleep(delay)
+                    continue
+                logger.error(
+                    'Prometheus %s query failed after %s attempt(s).',
+                    operation_name,
+                    attempt + 1,
+                    extra={
+                        'cluster_id': str(self.cluster.id),
+                        'prometheus_instance_id': source.instance.id,
+                        'query_fingerprint': fingerprint,
+                        'attempts': attempt + 1,
+                        'timeout_seconds': timeout_seconds,
+                        'error': str(exc)[:1000],
+                    },
+                )
+                raise
+            elapsed_ms = max(int((perf_counter() - started) * 1000), 0)
+            record_provider_query(
+                fingerprint=fingerprint,
+                duration_ms=elapsed_ms,
+                success=True,
+            )
+            return payload
+        raise PrometheusConnectionError('Prometheus query retry loop ended unexpectedly.')
+
+    @staticmethod
+    def _is_transient_query_error(error: PrometheusError) -> bool:
+        if isinstance(error, PrometheusConnectionError):
+            return True
+        if isinstance(error, PrometheusQueryError):
+            message = str(error).lower()
+            return any(token in message for token in _TRANSIENT_HTTP_STATUS_TOKENS)
+        return False
+
+    @staticmethod
+    def _query_retry_count() -> int:
+        if not has_app_context():
+            return 0
+        try:
+            return min(
+                max(int(current_app.config.get('PROMETHEUS_ANALYTICS_QUERY_RETRIES', 2)), 0),
+                5,
+            )
+        except (TypeError, ValueError):
+            return 2
+
+    @staticmethod
+    def _retry_backoff_seconds(attempt: int) -> float:
+        if not has_app_context():
+            return 0.0
+        try:
+            base = max(
+                float(current_app.config.get('PROMETHEUS_ANALYTICS_RETRY_BACKOFF_SECONDS', 1.0)),
+                0.0,
+            )
+        except (TypeError, ValueError):
+            base = 1.0
+        return min(base * (2 ** max(attempt - 1, 0)), 10.0)
+
     def _execute(
         self,
         operation,
@@ -288,21 +471,30 @@ class PrometheusConsumer:
         default = 120 if range_query else 30
         return int(current_app.config.get(config_key, default))
 
-    def _build_client(
+    def _client_for(
         self,
         source: ResolvedPrometheusSource,
         *,
         request_timeout_seconds: int | None = None,
     ):
-        return get_integration('prometheus').execute(
-            'client.build',
-            source.instance,
-            scope_selector=source.binding.selector_json,
-            request_timeout_seconds=request_timeout_seconds,
+        cache_key = (
+            int(source.instance.id),
+            int(source.binding.id),
+            request_timeout_seconds,
         )
+        client = self._client_cache.get(cache_key)
+        if client is None:
+            client = get_integration('prometheus').execute(
+                'client.build',
+                source.instance,
+                scope_selector=source.binding.selector_json,
+                request_timeout_seconds=request_timeout_seconds,
+            )
+            self._client_cache[cache_key] = client
+        return client
 
     def _require_capabilities(self, required_capabilities: tuple[str, ...]) -> None:
-        # Compatibility boundary for callers that only need eligibility validation.
+        # Eligibility-only callers do not need to construct or execute a client.
         self._source_for(required_capabilities)
 
     def _missing_capabilities(self, required: tuple[str, ...]) -> tuple[str, ...]:

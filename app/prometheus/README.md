@@ -38,3 +38,22 @@ The domain facade preserves route, analytics, and report call sites, but all
 provider runtime and binding operations are dispatched through the Integration
 Registry. Provider compatibility, query validation, binding mutation, and scope
 probe logic must not be reimplemented in this package.
+
+## Analytics query runtime contract
+
+Kubernetes Analytics uses `PrometheusConsumer` as the canonical query boundary.
+The consumer creates clients lazily, reuses one HTTP session within a dataset,
+and records only bounded query fingerprints and aggregate telemetry; raw PromQL
+is not persisted in snapshot metadata.
+
+An Integration Runtime observation such as `unhealthy` or `disconnected` is
+advisory for a later analytics worker attempt when the binding, selector,
+readiness, and instant/range query transport remain eligible. The real dataset
+query is the authoritative runtime probe. Analytics-specific code must not add
+an extra `vector(1)` preflight query. Generic provider validation may still use
+a lightweight query as part of Integration Runtime evidence.
+
+Transient connection and HTTP 429/500/502/503/504 failures receive bounded
+retries. Heavy queries are serialized by selected provider instance in the
+analytics materialization layer so clusters sharing one Prometheus or Thanos
+Query endpoint do not bypass the same concurrency boundary.

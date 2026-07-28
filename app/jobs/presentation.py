@@ -36,6 +36,7 @@ _STATUS_PRESENTATION = {
     'expired': ('Expired', 'unknown', 'clock-alert'),
 }
 
+
 _QUEUE_ICONS = {
     'integration-runtime': 'activity',
     'integration-validation': 'scan-search',
@@ -146,8 +147,6 @@ def _row(job: JobExecution) -> dict[str, Any]:
     }
 
 
-
-
 def present_job_execution(job: JobExecution) -> dict[str, Any]:
     """Return the compact execution presentation used by configuration workspaces."""
     row = _row(job)
@@ -156,8 +155,18 @@ def present_job_execution(job: JobExecution) -> dict[str, Any]:
         payload.get('trigger_type')
         or ('scheduled' if job.requested_by_user_id is None else 'manual')
     )
+    result_summary = job.result_summary_json or {}
+    failures = result_summary.get('failures') if isinstance(result_summary, dict) else None
+    first_failure = failures[0] if isinstance(failures, list) and failures else {}
+    if not isinstance(first_failure, dict):
+        first_failure = {}
     row.update(
         {
+            'error_code': job.error_code or first_failure.get('code'),
+            'failure_title': first_failure.get('title'),
+            'failure_detail': first_failure.get('error') or job.error_message,
+            'failure_remediation': first_failure.get('remediation'),
+            'failed_dataset_key': first_failure.get('dataset_key'),
             'trigger_type': trigger_type,
             'trigger_label': trigger_type.replace('_', ' ').title(),
             'trigger_icon': (

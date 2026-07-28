@@ -250,20 +250,6 @@ class AlertResourceLinks(TypedDict):
     contact_point: AlertResourceLink
 
 
-class AlertClusterSignalComparisonRow(TypedDict):
-    cluster_id: str
-    cluster_name: str
-    active_alerts: int
-    critical_alerts: int
-    warning_alerts: int
-    anomalies: int
-    total_signals: int
-    connected: bool
-    resolved_source: str
-    fallback_used: bool
-    bar_width: int
-
-
 class AlertSignalPriority(TypedDict):
     level: Literal['critical', 'warning', 'normal']
     label: str

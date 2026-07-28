@@ -126,17 +126,6 @@ def build_analysis_utilization_context(
                     )
             return clusters, cluster, None, base_context
 
-        if selected.operational_state in {
-            'unhealthy',
-            'ready_not_connected',
-            'degraded_not_connected',
-        }:
-            base_context['dependency_blocker'] = prometheus_connection_blocker(
-                cluster,
-                detail=selected.decision_reason,
-            )
-            return clusters, cluster, None, base_context
-
         try:
             prometheus = PrometheusService(cluster)
             utilization_service = UtilizationService(prometheus)
@@ -159,17 +148,27 @@ def build_analysis_utilization_context(
             }
             return clusters, cluster, None, base_context
 
-        connected = selected.instance.last_status == 'connected'
-        base_context['prometheus_connected'] = connected
+        observation_degraded = selected.operational_state in {
+            'unhealthy',
+            'ready_not_connected',
+            'degraded_not_connected',
+        }
+        base_context['prometheus_connected'] = True
         base_context['prometheus_status'] = {
             'configured': True,
-            'connected': connected,
+            'connected': True,
             'response_time_ms': selected.instance.last_response_time_ms,
-            'label': 'Prometheus Ready' if connected else 'Prometheus Readiness Available',
+            'label': 'Prometheus Query Ready',
             'description': (
-                'KAORI is using persisted Prometheus runtime readiness while the worker executes queries.'
+                'The source is eligible for analytics queries; the previous runtime observation '
+                'was degraded and remains advisory until the dataset query runs.'
+                if observation_degraded
+                else 'The source is eligible for analytics queries.'
             ),
-            'error': selected.instance.last_error,
+            'error': selected.instance.last_error if observation_degraded else None,
+            'tone': 'warning' if observation_degraded else 'normal',
+            'icon': 'triangle-alert' if observation_degraded else 'circle-check',
+            'observation_degraded': observation_degraded,
         }
         return clusters, cluster, utilization_service, base_context
 

@@ -16,7 +16,7 @@ from app.models import Cluster, PrometheusInstance
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.prometheus.consumer import PrometheusConsumer
 from app.prometheus.forms import PrometheusInstanceForm
-from app.prometheus.repository import KUBERNETES_CLUSTER_SCOPE, resolve_instance_for_cluster
+from app.prometheus.repository import KUBERNETES_CLUSTER_SCOPE
 
 
 class PrometheusService:
@@ -33,23 +33,24 @@ class PrometheusService:
         *,
         cluster: Cluster | None = None,
     ) -> None:
+        self.client = None
         if isinstance(source, PrometheusInstance):
-            config = source
             self.cluster = cluster
+            self.consumer = PrometheusConsumer(cluster) if cluster is not None else None
+            self.instance = self.consumer.config if self.consumer is not None else source
+            if self.consumer is None:
+                self.client = get_integration('prometheus').execute('client.build', source)
         else:
             self.cluster = source
-            config = resolve_instance_for_cluster(source.id)
-            if not config:
-                raise PrometheusError('No Prometheus runtime is bound to the selected Kubernetes cluster')
-
-        self.instance = config
-        self.client = get_integration('prometheus').execute('client.build', config)
-        self.consumer = PrometheusConsumer(self.cluster) if self.cluster is not None else None
+            self.consumer = PrometheusConsumer(source)
+            self.instance = self.consumer.config
 
     def instant_query(self, query: str) -> dict[str, Any]:
-        if self.consumer is None:
-            return self.client.query(query)
-        return self.consumer.query(query)
+        if self.consumer is not None:
+            return self.consumer.query(query)
+        if self.client is None:
+            raise PrometheusError('Prometheus query client is not available.')
+        return self.client.query(query)
 
     def range_query(
         self,
@@ -58,9 +59,11 @@ class PrometheusService:
         end: str,
         step: str,
     ) -> dict[str, Any]:
-        if self.consumer is None:
-            return self.client.query_range(query, start, end, step)
-        return self.consumer.query_range(query, start, end, step)
+        if self.consumer is not None:
+            return self.consumer.query_range(query, start, end, step)
+        if self.client is None:
+            raise PrometheusError('Prometheus query client is not available.')
+        return self.client.query_range(query, start, end, step)
 
     def test_connection(self, *, persist: bool = True) -> dict[str, Any]:
         return get_integration('prometheus').execute(

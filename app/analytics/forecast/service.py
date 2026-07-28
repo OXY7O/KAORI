@@ -26,7 +26,6 @@ from app.analytics.common.context import build_analysis_utilization_context
 from app.analytics.common.params import get_query_value
 from app.analytics.utilization.service import UtilizationService
 from app.common.dependencies import prometheus_connection_blocker
-from app.integrations.prometheus.exceptions import PrometheusError
 from app.integrations.prometheus.query_profiles import get_query_expression
 from app.intelligence.recommendation_engine import (
     build_forecast_actionable_recommendations,
@@ -34,7 +33,6 @@ from app.intelligence.recommendation_engine import (
     format_recommendation_cards,
 )
 from app.models import Cluster
-from app.prometheus.service import PrometheusService
 
 CPU_USAGE_BY_NAMESPACE_QUERY = get_query_expression('analytics.forecast.queries.CPU_USAGE_BY_NAMESPACE_QUERY')
 CPU_USAGE_QUERY = get_query_expression('analytics.forecast.queries.CPU_USAGE_QUERY')
@@ -165,7 +163,7 @@ class ForecastAnalysisService(AnalyticsBaseService):
     ) -> None:
         self.utilization_service = utilization_service
         self.cluster = cluster
-        self.prometheus = PrometheusService(cluster)
+        self.consumer = utilization_service.consumer
 
     def get_prometheus_status(
         self,
@@ -461,16 +459,13 @@ class ForecastAnalysisService(AnalyticsBaseService):
         end_time: datetime,
         step: str,
     ) -> list[ForecastPoint]:
-        try:
-            result = self.prometheus.range_query(
-                query=query,
-                start=_to_prometheus_time(start_time),
-                end=_to_prometheus_time(end_time),
-                step=step,
-            )
-        except Exception:
-            return []
-
+        result = self.consumer.query_range(
+            query,
+            _to_prometheus_time(start_time),
+            _to_prometheus_time(end_time),
+            step,
+            required_capabilities=('range_query',),
+        )
         return _extract_range_points(result)
 
     def _query_instant(
@@ -478,13 +473,10 @@ class ForecastAnalysisService(AnalyticsBaseService):
         *,
         query: str,
     ) -> float:
-        try:
-            result = self.prometheus.instant_query(
-                query=query,
-            )
-        except Exception:
-            return 0.0
-
+        result = self.consumer.query(
+            query,
+            required_capabilities=('instant_query',),
+        )
         return _extract_instant_value(result)
 
 
@@ -562,22 +554,7 @@ def get_forecast_analysis_context(
     if utilization_service is None or cluster is None:
         return context
 
-    try:
-        prometheus_status = utilization_service.get_prometheus_status()
-    except PrometheusError as exc:
-        prometheus_status = {
-            'connected': False,
-            'label': 'Prometheus Disconnected',
-            'response_time_ms': None,
-            'error': str(exc),
-        }
-    except Exception as exc:
-        prometheus_status = {
-            'connected': False,
-            'label': 'Prometheus Error',
-            'response_time_ms': None,
-            'error': str(exc),
-        }
+    prometheus_status = utilization_service.get_prometheus_status()
 
     context['prometheus_status'] = prometheus_status
     context['prometheus_connected'] = bool(
@@ -609,30 +586,11 @@ def get_forecast_analysis_context(
 
         return context
 
-    try:
-        forecast_service = ForecastAnalysisService(
-            utilization_service=utilization_service,
-            cluster=cluster,
-        )
-    except PrometheusError as exc:
-        context['forecast_payload'] = _empty_payload(
-            message=str(exc),
-        )
-
-        return context
-    except Exception as exc:
-        context['forecast_payload'] = _empty_payload(
-            message=f'Forecast service initialization failed: {exc}',
-        )
-
-        return context
-
-    try:
-        namespace_options = forecast_service.get_namespace_options()
-    except PrometheusError:
-        namespace_options = []
-    except Exception:
-        namespace_options = []
+    forecast_service = ForecastAnalysisService(
+        utilization_service=utilization_service,
+        cluster=cluster,
+    )
+    namespace_options = forecast_service.get_namespace_options()
 
     if selected_namespace and selected_namespace not in namespace_options:
         selected_namespace = ''
@@ -640,22 +598,13 @@ def get_forecast_analysis_context(
     context['selected_namespace'] = selected_namespace
     context['namespace_options'] = namespace_options
 
-    try:
-        forecast_payload = forecast_service.get_forecast_analysis(
-            namespace=selected_namespace,
-            history_window=selected_history_window,
-            forecast_horizon=selected_forecast_horizon,
-            resource=selected_resource,
-            method=selected_method,
-        )
-    except PrometheusError as exc:
-        forecast_payload = _empty_payload(
-            message=str(exc),
-        )
-    except Exception as exc:
-        forecast_payload = _empty_payload(
-            message=f'Forecast query failed: {exc}',
-        )
+    forecast_payload = forecast_service.get_forecast_analysis(
+        namespace=selected_namespace,
+        history_window=selected_history_window,
+        forecast_horizon=selected_forecast_horizon,
+        resource=selected_resource,
+        method=selected_method,
+    )
 
     context['forecast_payload'] = forecast_payload
 

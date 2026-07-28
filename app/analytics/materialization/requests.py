@@ -103,10 +103,10 @@ def choose_cluster_reference(
 
 
 def _candidate_is_usable(candidate: Any | None) -> bool:
-    return bool(
-        candidate is not None
-        and candidate.operational_state not in _UNUSABLE_OPERATIONAL_STATES
-    )
+    # Resolver selection already enforces enabled bindings, readiness, scope,
+    # and query transport capabilities. Persisted runtime health is advisory:
+    # a previous timeout must not suppress a fresh worker attempt.
+    return candidate is not None
 
 
 def _prometheus_resolution(
@@ -153,25 +153,38 @@ def _dataset_source_is_ready(
     parameters: Mapping[str, str],
 ) -> bool:
     dataset = get_dataset(dataset_key)
-    if dataset.source_kind == 'prometheus':
-        resolution = _prometheus_resolution(
-            dataset_key=dataset_key,
-            cluster_id=cluster.id,
-        )
-        return _candidate_is_usable(resolution.selected)
+    try:
+        if dataset.source_kind == 'prometheus':
+            resolution = _prometheus_resolution(
+                dataset_key=dataset_key,
+                cluster_id=cluster.id,
+            )
+            return _candidate_is_usable(resolution.selected)
 
-    if dataset.source_kind == 'alert':
-        source = str(parameters.get('source') or 'auto').strip().lower()
-        alertmanager_resolution, prometheus_resolution = _alert_resolutions(
-            cluster_id=cluster.id,
+        if dataset.source_kind == 'alert':
+            source = str(parameters.get('source') or 'auto').strip().lower()
+            alertmanager_resolution, prometheus_resolution = _alert_resolutions(
+                cluster_id=cluster.id,
+            )
+            alertmanager_ready = _candidate_is_usable(alertmanager_resolution.selected)
+            prometheus_ready = _candidate_is_usable(prometheus_resolution.selected)
+            if source == 'alertmanager':
+                return alertmanager_ready
+            if source == 'prometheus':
+                return prometheus_ready
+            return alertmanager_ready or prometheus_ready
+    except Exception as exc:
+        current_app.logger.exception(
+            'Could not evaluate analytics source readiness for %s on cluster %s.',
+            dataset_key,
+            cluster.id,
+            extra={
+                'dataset_key': dataset_key,
+                'cluster_id': str(cluster.id),
+                'error': str(exc)[:1000],
+            },
         )
-        alertmanager_ready = _candidate_is_usable(alertmanager_resolution.selected)
-        prometheus_ready = _candidate_is_usable(prometheus_resolution.selected)
-        if source == 'alertmanager':
-            return alertmanager_ready
-        if source == 'prometheus':
-            return prometheus_ready
-        return alertmanager_ready or prometheus_ready
+        return False
 
     return True
 
@@ -285,13 +298,15 @@ def _prometheus_dependency_state(
             None,
         )
 
+    runtime_warning = None
     if selected.operational_state in _UNUSABLE_OPERATIONAL_STATES:
-        return (
-            prometheus_connection_blocker(
-                cluster,
-                detail=selected.decision_reason,
+        runtime_warning = prometheus_connection_blocker(
+            cluster,
+            detail=(
+                'The previous runtime observation was degraded. KAORI will retry the '
+                'dataset query because the binding and query transport remain eligible. '
+                f'{selected.decision_reason}'
             ),
-            None,
         )
 
     strict = _prometheus_resolution(
@@ -300,7 +315,7 @@ def _prometheus_dependency_state(
         strict=True,
     )
     if strict.selected is not None:
-        return None, None
+        return None, runtime_warning
 
     candidate = strict.candidates[0] if strict.candidates else selected
     missing_capabilities = (
@@ -308,15 +323,16 @@ def _prometheus_dependency_state(
         *candidate.missing_technical_capabilities,
     )
     if not missing_capabilities:
-        return None, None
+        return None, runtime_warning
 
-    return (
-        None,
-        prometheus_capability_blocker(
-            cluster,
+    capability_warning = prometheus_capability_blocker(
+        cluster,
             capability_labels=_capability_labels(missing_capabilities),
             feature_label=get_dataset(dataset_key).label,
-        ),
+        )
+    return (
+        None,
+        capability_warning,
     )
 
 
@@ -446,11 +462,37 @@ def resolve_materialized_request(
         dataset_key=dataset_key,
         parameters=normalized,
     )
-    dependency_blocker, source_warning = _dependency_state(
-        dataset_key=dataset_key,
-        cluster=cluster,
-        parameters=normalized,
-    )
+    try:
+        dependency_blocker, source_warning = _dependency_state(
+            dataset_key=dataset_key,
+            cluster=cluster,
+            parameters=normalized,
+        )
+    except Exception as exc:
+        current_app.logger.exception(
+            'Could not resolve analytics source dependency for %s on cluster %s.',
+            dataset_key,
+            cluster.id,
+            extra={
+                'dataset_key': dataset_key,
+                'cluster_id': str(cluster.id),
+                'error': str(exc)[:1000],
+            },
+        )
+        dataset = get_dataset(dataset_key)
+        dependency_blocker = (
+            alert_source_connection_blocker(
+                cluster,
+                source=normalized.get('source', 'auto'),
+                detail=f'Source readiness evaluation failed: {exc}',
+            )
+            if dataset.source_kind == 'alert'
+            else prometheus_connection_blocker(
+                cluster,
+                detail=f'Source readiness evaluation failed: {exc}',
+            )
+        )
+        source_warning = None
     if dependency_blocker is not None and result.available:
         source_warning = dependency_blocker
         dependency_blocker = None
@@ -491,16 +533,18 @@ def resolve_materialized_request(
             RuntimeError,
             SQLAlchemyError,
             ValueError,
-        ):
+        ) as exc:
             db.session.rollback()
             current_app.logger.exception(
                 'Could not queue analytics materialization %s for cluster %s.',
                 dataset_key,
                 cluster.id,
             )
+            detail = str(exc).strip() or exc.__class__.__name__
             dispatch_error = (
-                'Analytics preparation could not be queued. '
-                'Retry after worker capacity is available.'
+                '[dispatch_failed] Analytics preparation could not be queued: '
+                f'{detail} Recommended action: Review Redis/Celery availability, '
+                'the selected integration binding, and the web log before retrying.'
             )
 
     return MaterializedRequest(

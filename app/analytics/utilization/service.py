@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
-from time import perf_counter
 from typing import Any
 
 from app.integrations.consumer.contracts import ConsumerResult
@@ -39,7 +38,6 @@ POD_COUNT = get_query_expression('analytics.utilization.queries.POD_COUNT')
 POD_COUNT_BY_NODE = get_query_expression('analytics.utilization.queries.POD_COUNT_BY_NODE')
 POD_UTILIZATION = get_query_expression('analytics.utilization.queries.POD_UTILIZATION')
 POD_UTILIZATION_BY_NODE = get_query_expression('analytics.utilization.queries.POD_UTILIZATION_BY_NODE')
-PROMETHEUS_HEALTH = get_query_expression('analytics.utilization.queries.PROMETHEUS_HEALTH')
 READY_NODES = get_query_expression('analytics.utilization.queries.READY_NODES')
 STORAGE_AVAILABLE = get_query_expression('analytics.utilization.queries.STORAGE_AVAILABLE')
 STORAGE_AVAILABLE_BY_NODE = get_query_expression('analytics.utilization.queries.STORAGE_AVAILABLE_BY_NODE')
@@ -123,21 +121,39 @@ class UtilizationService:
 
     def get_prometheus_status(
         self,
-    ) -> dict[str, bool | int | str]:
-        start = perf_counter()
-
-        self.consumer.query(
-            PROMETHEUS_HEALTH,
-            required_capabilities=self.REQUIRED_CAPABILITIES,
-        )
-
-        response_time_ms = int((perf_counter() - start) * 1000)
-
+    ) -> dict[str, Any]:
+        status = self.consumer.analytics_status()
+        payload = status.payload if isinstance(status.payload, dict) else {}
+        response_time_ms = payload.get('response_time_ms')
+        observation_degraded = bool(payload.get('observation_degraded'))
+        if not status.ok:
+            detail = (
+                status.diagnostics[0].detail
+                if status.diagnostics and status.diagnostics[0].detail
+                else (status.diagnostics[0].message if status.diagnostics else 'Prometheus is unavailable.')
+            )
+            return {
+                'connected': False,
+                'response_time_ms': response_time_ms,
+                'label': 'Prometheus Unavailable',
+                'description': detail,
+                'error': detail,
+                'tone': 'critical',
+                'icon': 'circle-x',
+            }
         return {
             'connected': True,
             'response_time_ms': response_time_ms,
-            'label': 'Prometheus Connected',
-            'description': 'Last query completed successfully.',
+            'label': 'Prometheus Query Ready',
+            'description': (
+                'The source is eligible for analytics queries; the previous runtime observation was degraded.'
+                if observation_degraded
+                else 'The source is eligible for analytics queries.'
+            ),
+            'tone': 'warning' if observation_degraded else 'normal',
+            'icon': 'triangle-alert' if observation_degraded else 'circle-check',
+            'observation_degraded': observation_degraded,
+            'last_checked_at': payload.get('last_checked_at'),
         }
 
     @staticmethod
@@ -1091,39 +1107,70 @@ def get_prometheus_status_snapshot(
             'configured': False,
             'connected': False,
             'status': 'not_configured',
-            'status_label': 'Not configured',
-            'status_tone': 'gray',
+            'status_label': 'Not Configured',
+            'status_tone': 'unknown',
             'endpoint': '',
             'response_time_ms': None,
             'message': 'Cluster is not available.',
+            'diagnostic_detail': 'Select an available Kubernetes cluster.',
         }
-    instance = resolve_instance_for_cluster(cluster.id)
-    if instance is None or not instance.endpoint.strip():
+    try:
+        consumer = PrometheusConsumer(cluster)
+        response = consumer.analytics_status()
+    except PrometheusError as exc:
         return {
             'configured': False,
             'connected': False,
-            'status': 'not_configured',
-            'status_label': 'Not configured',
-            'status_tone': 'gray',
+            'status': 'unavailable',
+            'status_label': 'Unavailable',
+            'status_tone': 'critical',
             'endpoint': '',
             'response_time_ms': None,
-            'message': 'Prometheus is not configured for the selected cluster.',
+            'message': str(exc),
+            'diagnostic_detail': str(exc),
         }
-    connected = str(instance.last_status or '').lower() == 'connected'
+
+    payload = response.payload if isinstance(response.payload, dict) else {}
+    if not response.ok:
+        diagnostic = response.diagnostics[0] if response.diagnostics else None
+        detail = (
+            diagnostic.detail
+            if diagnostic is not None and diagnostic.detail
+            else (diagnostic.message if diagnostic is not None else 'Prometheus is unavailable.')
+        )
+        return {
+            'configured': bool(payload.get('configured')),
+            'connected': False,
+            'status': 'unavailable',
+            'status_label': 'Unavailable',
+            'status_tone': 'critical',
+            'endpoint': getattr(consumer.config, 'endpoint', ''),
+            'response_time_ms': payload.get('response_time_ms'),
+            'message': detail,
+            'diagnostic_detail': detail,
+            'last_checked_at': payload.get('last_checked_at'),
+        }
+
+    observation_degraded = bool(payload.get('observation_degraded'))
+    message = (
+        'The endpoint is eligible for analytics queries. The previous runtime observation was degraded and is treated as advisory.'
+        if observation_degraded
+        else 'The endpoint is eligible for analytics queries.'
+    )
     return {
         'configured': True,
-        'connected': connected,
-        'status': 'connected' if connected else str(instance.last_status or 'disconnected'),
-        'status_label': 'Connected' if connected else 'Disconnected',
-        'status_tone': 'green' if connected else 'red',
-        'endpoint': instance.endpoint,
-        'response_time_ms': instance.last_response_time_ms,
-        'message': str(
-            instance.validation_message
-            or instance.last_error
-            or ('Latest persisted runtime observation is connected.' if connected else 'Latest persisted runtime observation is not connected.')
-        ),
+        'connected': True,
+        'status': 'query_ready',
+        'status_label': 'Query Ready',
+        'status_tone': 'warning' if observation_degraded else 'normal',
+        'endpoint': getattr(consumer.config, 'endpoint', ''),
+        'response_time_ms': payload.get('response_time_ms'),
+        'message': message,
+        'diagnostic_detail': payload.get('last_error') if observation_degraded else message,
+        'last_checked_at': payload.get('last_checked_at'),
+        'observation_degraded': observation_degraded,
     }
+
 
 def get_utilization_snapshot(
     cluster_id: str,

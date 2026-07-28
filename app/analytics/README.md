@@ -113,11 +113,12 @@ calling Prometheus again.
 Snapshot fingerprints contain only provider-query dimensions. Pagination,
 search, status, focus, and other presentation filters must never create a new
 snapshot generation. A missing snapshot renders a stable pending page with the
-same HTMX replacement ID as the requested workspace. Pending-page context must
-always define error, progress-message, and progress-percent fields, even when no
-JobExecution has reported progress yet; optional progress must render as an
-indeterminate state rather than raising a template error. A dependency failure
-renders a blocked state; it must never be stored as a ready snapshot payload.
+same HTMX replacement ID as the requested workspace. Pending-page context must always define error, progress-message, and
+progress-percent fields, even when no JobExecution has reported progress yet.
+Determinate progress must use the same worker counters as the displayed
+percentage; it must not use a decorative indeterminate bar. A dependency
+failure renders a blocked state and must never be stored as a ready snapshot
+payload.
 
 Prometheus connection readiness and analytics feature readiness are separate
 contracts. A Prometheus instance may be connected and generally Ready while a
@@ -511,7 +512,12 @@ Heavy Prometheus range queries are not executed independently for every web requ
 
 ### Protected refresh cadence
 
-The generic scheduler may inspect Analytics policy every 30 minutes and Forecast policy every 120 minutes, but it dispatches only snapshots whose freshness window has expired. KAORI applies minimum cadence floors by data horizon:
+The default Analytics policy is inspected every 15 minutes and the Forecast
+policy every 120 minutes. The scheduler dispatches only snapshots whose
+freshness window has expired. Existing database policy values are not silently
+overwritten by a new static default; operators should save a 15-minute
+Analytics interval in Job Configuration after upgrading. KAORI applies minimum
+cadence floors by data horizon:
 
 - 24-hour analytics: at least 20 minutes
 - 7-day analytics: at least 60 minutes
@@ -523,3 +529,30 @@ The generic scheduler may inspect Analytics policy every 30 minutes and Forecast
 Manual execution intentionally refreshes all configured combinations. Scheduled Utilization trend work follows only the configured time ranges; a missing unconfigured trend can still be materialized once on demand. On-demand requests join an active fleet materialization when one exists, preventing a page request from duplicating work already running on the worker. Per-dataset stale-grace limits cap a broad policy value so alert snapshots cannot remain acceptable for the same duration as long-range analytics.
 
 Analytics Overview reads committed database generations directly and does not add a second web or Redis TTL cache. This prevents a fresh worker commit from being hidden behind another presentation cache. Legacy `forecast_horizons` policy JSON is ignored and is removed the next time the Forecast policy is saved.
+
+### Provider-pressure and failure contract
+
+The worker does not run a separate analytics health request before the dataset
+query. The selected dataset query is the authoritative runtime probe. A
+previous unhealthy Integration Runtime observation remains visible as advisory
+context, but it does not hard-block an eligible binding from being retried.
+
+Heavy datasets acquire a lock for the selected Prometheus, Thanos, or
+Alertmanager provider instance. This prevents Analytics and Forecast workers,
+or multiple clusters sharing one endpoint, from overloading the same source in
+parallel. Alert source `auto` acquires both Alertmanager and Prometheus locks
+because anomaly candidates can use Prometheus while alert records use
+Alertmanager.
+
+Dataset priority, batch task limits, and isolated dataset timeouts are derived
+from one catalog budget. Long horizons receive larger bounded budgets than
+current/short queries. Transient connection and HTTP 429/500/502/503/504
+failures receive bounded retries. Worker logs and committed snapshot metadata
+record query fingerprints, query/retry counts, provider duration, source-lock
+wait, and an explicit error code with remediation.
+
+Failed refreshes never replace a previously committed payload with empty data.
+Forecast, Top Consumers, and other provider failures propagate to the
+materialization boundary. Alerts & Anomalies may remain partially available
+when Alertmanager succeeds but optional Prometheus anomaly collection fails;
+the partial-source warning is rendered explicitly.

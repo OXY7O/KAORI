@@ -17,7 +17,6 @@ from app.analytics.common.params import (
 )
 from app.analytics.utilization.service import UtilizationService
 from app.common.dependencies import prometheus_connection_blocker
-from app.integrations.prometheus.exceptions import PrometheusError
 from app.integrations.prometheus.query_profiles import get_query_expression
 from app.intelligence.recommendation_engine import (
     build_top_consumers_actionable_recommendations,
@@ -1266,22 +1265,7 @@ def get_top_consumers_context(
         utilization_service=utilization_service,
     )
 
-    try:
-        prometheus_status = top_consumers_service.get_prometheus_status()
-    except PrometheusError as exc:
-        prometheus_status = {
-            'connected': False,
-            'label': 'Prometheus Disconnected',
-            'response_time_ms': None,
-            'error': str(exc),
-        }
-    except Exception as exc:
-        prometheus_status = {
-            'connected': False,
-            'label': 'Prometheus Error',
-            'response_time_ms': None,
-            'error': str(exc),
-        }
+    prometheus_status = top_consumers_service.get_prometheus_status()
 
     context['prometheus_status'] = prometheus_status
     context['prometheus_connected'] = bool(
@@ -1315,10 +1299,7 @@ def get_top_consumers_context(
 
         return context
 
-    try:
-        namespace_options = top_consumers_service.get_namespace_options()
-    except Exception:
-        namespace_options = []
+    namespace_options = top_consumers_service.get_namespace_options()
 
     if selected_namespace and selected_namespace not in namespace_options:
         selected_namespace = ''
@@ -1326,30 +1307,15 @@ def get_top_consumers_context(
     context['selected_namespace'] = selected_namespace
     context['namespace_options'] = namespace_options
 
-    try:
-        consumer_payload = top_consumers_service.get_top_consumers_payload(
-            selected_namespace=selected_namespace,
-            selected_resource=selected_resource,
-            selected_search=selected_search,
-            selected_sort=selected_sort,
-            selected_focus=selected_focus,
-            page=page,
-            per_page=per_page,
-        )
-    except PrometheusError as exc:
-        consumer_payload = get_empty_top_consumers_payload(
-            message=str(
-                exc,
-            ),
-            page=page,
-            per_page=per_page,
-        )
-    except Exception as exc:
-        consumer_payload = get_empty_top_consumers_payload(
-            message=f'Top consumers query failed: {exc}',
-            page=page,
-            per_page=per_page,
-        )
+    consumer_payload = top_consumers_service.get_top_consumers_payload(
+        selected_namespace=selected_namespace,
+        selected_resource=selected_resource,
+        selected_search=selected_search,
+        selected_sort=selected_sort,
+        selected_focus=selected_focus,
+        page=page,
+        per_page=per_page,
+    )
 
     context['consumer_payload'] = consumer_payload
 
