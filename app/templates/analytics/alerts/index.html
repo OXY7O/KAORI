@@ -1,5 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "analytics/components/_content_tabs.html" as analytics_content_tabs %}
+{% import "components/table_label.html" as table_label %}
 {% block title %}Alerts & Anomalies{% endblock title %}
 {% block dashboard_content %}
     <div id="alerts-page-content"
@@ -37,7 +38,7 @@
         {% if not dependency_blocker %}
             {% include "analytics/alerts/partials/_cluster_signal_overview.html" %}
 
-            <section x-data="kaoriAnalyticsTabs('details', ['details', 'routing', 'readiness', 'recommendations'])"
+            <section x-data="kaoriAnalyticsTabs('alerts', ['alerts', 'anomalies', 'routing', 'readiness', 'recommendations'])"
                      class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                 <div class="flex flex-col gap-3 px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
@@ -46,7 +47,7 @@
                         </span>
                         <div class="min-w-0">
                             <h2 class="text-lg font-semibold text-content-primary">Alerts &amp; Anomalies Workspace</h2>
-                            <p class="mt-1 text-sm leading-6 text-content-muted">Review active signals, routing behavior, operational readiness, and recommended actions in one workspace.</p>
+                            <p class="mt-1 text-sm leading-6 text-content-muted">Review alert records, anomaly candidates, routing behavior, operational readiness, and recommended actions.</p>
                         </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-2 text-xs text-content-muted">
@@ -57,7 +58,8 @@
                 </div>
 
                 {% set alert_tabs = [
-                    ('details', 'Alerts & Anomalies', 'bell-ring'),
+                    ('alerts', 'Alerts', 'bell-ring'),
+                    ('anomalies', 'Anomalies', 'radar'),
                     ('routing', 'Routing & Suppression', 'route'),
                     ('readiness', 'Ownership & Readiness', 'shield-check'),
                     ('recommendations', 'Recommendations', 'list-checks')
@@ -65,42 +67,38 @@
                 {{ analytics_content_tabs.render('alerts-content', alert_tabs, 'Alerts & Anomalies Workspace', embedded=true) }}
 
                 <div class="p-5 sm:p-6">
-                    <div id="alerts-content-panel-details"
+                    <div id="alerts-content-panel-alerts"
                          role="tabpanel"
-                         aria-labelledby="alerts-content-tab-details"
-                         x-show="activeTab === 'details'"
-                         class="space-y-5">
-                        <div x-data="{ activeSignalTab: 'alerts' }" class="space-y-4">
-                            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
-                                    <h3 class="text-base font-semibold text-content-primary">Signal Records</h3>
-                                    <p class="mt-1 text-sm text-content-muted">Switch between active alert records and detected anomaly candidates.</p>
-                                </div>
-                                <div class="inline-flex w-fit rounded-lg border border-outline-default bg-surface-hover p-1" role="tablist" aria-label="Alert Detail Type">
-                                    <button type="button"
-                                            role="tab"
-                                            @click="activeSignalTab = 'alerts'"
-                                            :aria-selected="activeSignalTab === 'alerts' ? 'true' : 'false'"
-                                            :class="activeSignalTab === 'alerts' ? 'bg-surface-card text-kaori-primary shadow-sm' : 'text-content-muted hover:text-content-primary'"
-                                            class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition">
-                                        <i data-lucide="bell-ring" class="h-4 w-4"></i>
-                                        Alerts
-                                    </button>
-                                    <button type="button"
-                                            role="tab"
-                                            @click="activeSignalTab = 'anomalies'"
-                                            :aria-selected="activeSignalTab === 'anomalies' ? 'true' : 'false'"
-                                            :class="activeSignalTab === 'anomalies' ? 'bg-surface-card text-kaori-primary shadow-sm' : 'text-content-muted hover:text-content-primary'"
-                                            class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition">
-                                        <i data-lucide="radar" class="h-4 w-4"></i>
-                                        Anomalies
-                                    </button>
-                                </div>
+                         aria-labelledby="alerts-content-tab-alerts"
+                         x-show="activeTab === 'alerts'"
+                         class="space-y-4">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h3 class="text-base font-semibold text-content-primary">Active Alert Records</h3>
+                                <p class="mt-1 text-sm leading-6 text-content-muted">Current Alertmanager or Prometheus alert signals matching the selected scope.</p>
                             </div>
-                            <div class="overflow-hidden rounded-xl border border-outline-default">
-                                <div x-show="activeSignalTab === 'alerts'">{% include "analytics/alerts/partials/_alerts_table.html" %}</div>
-                                <div x-show="activeSignalTab === 'anomalies'" x-cloak>{% include "analytics/alerts/partials/_anomalies_table.html" %}</div>
+                            {{ table_label.status_label(active_alerts ~ ' Active', tone='critical' if active_alerts else 'normal', size='compact') }}
+                        </div>
+                        <div class="overflow-hidden rounded-xl border border-outline-default">
+                            {% include "analytics/alerts/partials/_alerts_table.html" %}
+                        </div>
+                    </div>
+
+                    <div id="alerts-content-panel-anomalies"
+                         role="tabpanel"
+                         aria-labelledby="alerts-content-tab-anomalies"
+                         x-show="activeTab === 'anomalies'"
+                         x-cloak
+                         class="space-y-4">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h3 class="text-base font-semibold text-content-primary">Detected Anomaly Candidates</h3>
+                                <p class="mt-1 text-sm leading-6 text-content-muted">Metric deviations requiring validation against workload, capacity, and source context.</p>
                             </div>
+                            {{ table_label.status_label(anomaly_count ~ ' Detected', tone='warning' if anomaly_count else 'normal', size='compact') }}
+                        </div>
+                        <div class="overflow-hidden rounded-xl border border-outline-default">
+                            {% include "analytics/alerts/partials/_anomalies_table.html" %}
                         </div>
                     </div>
 

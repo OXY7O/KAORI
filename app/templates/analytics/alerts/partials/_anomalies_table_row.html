@@ -1,32 +1,54 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/table_label.html" as table_label %}
 {% set severity_tone = 'critical' if anomaly.severity == 'critical' else ('warning' if anomaly.severity == 'warning' else 'info') %}
-<tr class="hover:bg-surface-hover">
-    <td class="px-6 py-4 align-top">
-        <div class="flex min-w-0 items-start gap-3">
-            <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                <i data-lucide="radar" class="h-4 w-4"></i>
-            </span>
-            <div class="min-w-0">
-                <p class="break-words text-sm font-semibold text-content-primary">{{ anomaly.name }}</p>
-                <p class="mt-1 max-w-xl break-words text-sm leading-5 text-content-muted">{{ anomaly.description }}</p>
+<div>
+    <div class="grid gap-4 px-4 py-4 lg:grid-cols-12 lg:items-center">
+        <div class="min-w-0 lg:col-span-5">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="radar" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="break-words text-sm font-semibold text-content-primary">{{ anomaly.name }}</p>
+                    <p class="mt-1 break-words text-sm leading-5 text-content-muted">{{ anomaly.description }}</p>
+                </div>
             </div>
         </div>
-    </td>
-    <td class="px-6 py-4 align-top">{{ table_label.status_label(anomaly.severity|title, tone=severity_tone, size='detail') }}</td>
-    <td class="px-6 py-4 align-top">{{ table_label.metadata_label(anomaly.namespace, icon='box', wrap=true, size='detail') }}</td>
-    <td class="px-6 py-4 align-top text-sm text-content-secondary">{{ anomaly.signal }}</td>
-    <td class="px-6 py-4 text-left align-top">
-        <button type="button"
-                @click="openAnomaly = openAnomaly === '{{ row_key }}' ? null : '{{ row_key }}'"
-                class="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
-            <i data-lucide="chevron-down" class="h-3.5 w-3.5 transition" :class="{ 'rotate-180': openAnomaly === '{{ row_key }}' }"></i>
-            <span x-text="openAnomaly === '{{ row_key }}' ? 'Hide Details' : 'View Details'">View Details</span>
-        </button>
-    </td>
-</tr>
-<tr x-show="openAnomaly === '{{ row_key }}'" x-cloak class="bg-surface-hover">
-    <td colspan="5" class="px-6 py-4">
+
+        <div class="flex flex-wrap items-center gap-2 lg:col-span-2">
+            {{ table_label.status_label(anomaly.severity|title, tone=severity_tone, size='compact') }}
+            {{ table_label.metadata_label(anomaly.source if anomaly.source else 'Prometheus', icon='database', wrap=true, size='compact') }}
+        </div>
+
+        <div class="min-w-0 space-y-1 lg:col-span-3">
+            <div class="flex min-w-0 items-center gap-2 text-sm font-medium text-content-secondary">
+                <i data-lucide="box" class="h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
+                <span class="min-w-0 break-words">{{ anomaly.namespace }}</span>
+            </div>
+            <div class="flex min-w-0 items-center gap-2 text-xs text-content-muted">
+                <i data-lucide="activity" class="h-3.5 w-3.5 shrink-0"></i>
+                <span class="min-w-0 break-words">{{ anomaly.signal }}</span>
+            </div>
+        </div>
+
+        <div class="flex lg:col-span-2 lg:justify-end">
+            <button type="button"
+                    @click="openAnomaly = openAnomaly === '{{ row_key }}' ? null : '{{ row_key }}'"
+                    class="{{ action_button.classes('secondary') }} w-full shrink-0 lg:w-auto"
+                    :aria-expanded="openAnomaly === '{{ row_key }}' ? 'true' : 'false'"
+                    aria-controls="{{ row_key }}-details">
+                <i data-lucide="chevron-down"
+                   class="h-4 w-4 transition"
+                   :class="{ 'rotate-180': openAnomaly === '{{ row_key }}' }"></i>
+                <span x-text="openAnomaly === '{{ row_key }}' ? 'Hide Details' : 'View More'">View More</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="{{ row_key }}-details"
+         x-show="openAnomaly === '{{ row_key }}'"
+         x-cloak
+         class="border-t border-outline-subtle bg-surface-hover px-4 py-5">
         <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
             <div class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-start lg:justify-between">
                 <div class="flex min-w-0 items-start gap-3">
@@ -36,65 +58,81 @@
                     <div class="min-w-0">
                         <div class="flex flex-wrap items-center gap-2">
                             <h3 class="break-words text-base font-semibold text-content-primary">{{ anomaly.name }}</h3>
-                            {{ table_label.metadata_label(anomaly.namespace, wrap=true) }}
-                            {{ table_label.status_label(anomaly.severity|title, tone=severity_tone) }}
+                            {{ table_label.status_label(anomaly.severity|title, tone=severity_tone, size='compact') }}
                         </div>
-                        <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">{{ anomaly.description }}</p>
+                        <p class="mt-1 max-w-4xl break-words text-sm leading-6 text-content-secondary">{{ anomaly.description }}</p>
                     </div>
                 </div>
-                {{ table_label.metadata_label(anomaly.signal, icon='activity', wrap=true, size='detail') }}
+                <div class="flex flex-wrap gap-2">
+                    {{ table_label.metadata_label(anomaly.namespace, icon='box', wrap=true, size='compact') }}
+                    {{ table_label.metadata_label(anomaly.signal, icon='activity', wrap=true, size='compact') }}
+                </div>
             </div>
 
-            <div class="grid gap-5 p-5 xl:grid-cols-3">
-                <div class="space-y-4 xl:col-span-2">
-                    <div class="grid gap-3 sm:grid-cols-3">
-                        {% for label, value, icon in [
-                            ('Target', anomaly.target, 'crosshair'),
-                            ('Signal', anomaly.signal, 'activity'),
-                            ('Source', anomaly.source if anomaly.source else 'Prometheus', 'database')
-                        ] %}
-                            <div class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
-                                <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-content-muted">
-                                    <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>{{ label }}
+            <div class="grid lg:grid-cols-3">
+                <div class="space-y-5 p-5 lg:col-span-2">
+                    <div>
+                        <h4 class="text-sm font-semibold text-content-primary">Anomaly Context</h4>
+                        <dl class="mt-3 grid gap-x-6 sm:grid-cols-2">
+                            {% for label, value, icon in [
+                                ('Target', anomaly.target, 'crosshair'),
+                                ('Signal', anomaly.signal, 'activity'),
+                                ('Namespace', anomaly.namespace, 'box'),
+                                ('Source', anomaly.source if anomaly.source else 'Prometheus', 'database')
+                            ] %}
+                                <div class="flex min-w-0 gap-3 border-b border-outline-subtle py-3">
+                                    <i data-lucide="{{ icon }}" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
+                                    <div class="min-w-0">
+                                        <dt class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</dt>
+                                        <dd class="mt-1 break-all text-sm font-medium text-content-primary">{{ value }}</dd>
+                                    </div>
                                 </div>
-                                <p class="mt-2 break-all text-sm font-semibold text-content-primary">{{ value }}</p>
-                            </div>
-                        {% endfor %}
+                            {% endfor %}
+                        </dl>
                     </div>
 
-                    <div class="rounded-lg border border-kaori-primary/20 bg-kaori-soft px-4 py-4">
+                    <div class="border-t border-outline-subtle pt-5">
                         <div class="flex items-start gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                                 <i data-lucide="search" class="h-4 w-4"></i>
                             </span>
                             <div>
                                 <h4 class="text-sm font-semibold text-content-primary">Recommended Anomaly Review</h4>
                                 <p class="mt-1 text-sm leading-6 text-content-secondary">Confirm whether the deviation is workload-driven, capacity-driven, or caused by source gaps. Compare recent deployment changes, namespace density, and node pressure before escalation.</p>
                                 <div class="mt-3 flex flex-wrap gap-2">
-                                    {{ table_label.metadata_label('Scope: ' ~ anomaly.namespace, wrap=true) }}
-                                    {{ table_label.metadata_label('Signal: ' ~ anomaly.signal, wrap=true) }}
-                                    {{ table_label.status_label('Priority: ' ~ anomaly.severity|title, tone=severity_tone) }}
+                                    {{ table_label.metadata_label('Scope: ' ~ anomaly.namespace, wrap=true, size='compact') }}
+                                    {{ table_label.status_label('Priority: ' ~ anomaly.severity|title, tone=severity_tone, size='compact') }}
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
+                <aside class="border-t border-outline-subtle p-5 lg:border-l lg:border-t-0">
                     <div class="flex items-center gap-2">
                         <i data-lucide="route" class="h-4 w-4 text-kaori-primary"></i>
                         <h4 class="text-sm font-semibold text-content-primary">Next Operational Action</h4>
                     </div>
-                    <ul class="mt-4 space-y-3 text-sm leading-6 text-content-secondary">
-                        <li class="flex gap-2"><span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-kaori-primary"></span><span>Verify whether the signal maps to a specific namespace, workload, or placement pattern.</span></li>
-                        <li class="flex gap-2"><span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-kaori-primary"></span><span>Compare the anomaly with alert pressure and recent utilization trends.</span></li>
-                        <li class="flex gap-2"><span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-kaori-primary"></span><span>Confirm provider health before interpreting missing samples as resource behavior.</span></li>
-                    </ul>
-                    <a href="{{ url_for('analytics.workload', cluster_id=selected_cluster_id, namespace=anomaly.namespace if anomaly.namespace != '-' else '') }}" class="{{ action_button.classes('primary') }} mt-5">
-                        <i data-lucide="boxes" class="h-4 w-4"></i>Review Workload
-                    </a>
-                </div>
+                    <ol class="mt-4 space-y-4">
+                        {% for action in [
+                            'Verify whether the signal maps to a specific namespace, workload, or placement pattern.',
+                            'Compare the anomaly with alert pressure and recent utilization trends.',
+                            'Confirm provider health before interpreting missing samples as resource behavior.'
+                        ] %}
+                            <li class="flex gap-3">
+                                <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-kaori-soft text-xs font-semibold text-kaori-primary">{{ loop.index }}</span>
+                                <span class="text-sm leading-6 text-content-secondary">{{ action }}</span>
+                            </li>
+                        {% endfor %}
+                    </ol>
+                </aside>
+            </div>
+
+            <div class="flex justify-end border-t border-outline-default bg-surface-hover px-5 py-4">
+                <a href="{{ url_for('analytics.workload', cluster_id=selected_cluster_id, namespace=anomaly.namespace if anomaly.namespace != '-' else '') }}" class="{{ action_button.classes('primary') }}">
+                    <i data-lucide="boxes" class="h-4 w-4"></i>Review Workload
+                </a>
             </div>
         </div>
-    </td>
-</tr>
+    </div>
+</div>
