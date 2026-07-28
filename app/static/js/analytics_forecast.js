@@ -93,11 +93,7 @@ let forecastChart = null;
                     },
                     plugins: {
                         legend: {
-                            position: 'bottom',
-                            labels: {
-                                usePointStyle: true,
-                                boxWidth: 8
-                            }
+                            display: false
                         },
                         tooltip: {
                             callbacks: {

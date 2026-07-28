@@ -1,0 +1,22 @@
+{% import "analytics/capacity/partials/_helpers.html" as capacity_ui %}
+{% import "components/progress_bar.html" as progress_bar %}
+{% import "components/table_label.html" as table_label %}
+{% set resources = [('cpu','CPU','cpu'),('memory','Memory','memory-stick'),('pods','Pods','boxes'),('storage','Storage','hard-drive')] %}
+<div class="space-y-5">
+    <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="chart-pie" class="h-5 w-5"></i></span><div><h3 class="text-lg font-semibold text-content-primary">Cluster Resource Allocation & Headroom</h3><p class="mt-1 text-sm leading-6 text-content-muted">Compare capacity, current usage, utilization, and remaining headroom across the primary resource domains.</p></div></div>
+    <div class="grid gap-4 sm:grid-cols-2">
+        {% for key, label, icon in resources %}
+            {% set item = capacity_summary[key] %}
+            <div class="rounded-lg border border-outline-subtle bg-surface-hover p-5">
+                <div class="flex items-start justify-between gap-3"><div class="flex items-center gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm"><i data-lucide="{{ icon }}" class="h-5 w-5"></i></span><div><h4 class="font-semibold text-content-primary">{{ label }}</h4><p class="mt-1 text-xs text-content-muted">{{ capacity_ui.resource_value(key, item.used) }} used</p></div></div>{{ capacity_ui.headroom_status(item.headroom, item.capacity) }}</div>
+                <div class="mt-4 grid grid-cols-3 gap-3"><div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Capacity</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ capacity_ui.resource_value(key, item.capacity) }}</p></div><div class="border-l border-outline-subtle pl-3"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Utilization</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ item.utilization_percent }}%</p></div><div class="border-l border-outline-subtle pl-3"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Headroom</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ item.headroom }}%</p></div></div>
+                {{ progress_bar.bar(item.utilization_percent, track_classes='mt-4 h-2 overflow-hidden rounded-full bg-surface-card', fill_classes='h-full rounded-full bg-kaori-primary', label=label ~ ' utilization') }}
+            </div>
+        {% endfor %}
+    </div>
+    <div class="grid gap-4 lg:grid-cols-3">
+        {% for key, section in allocation_summary.items() %}
+            <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4"><div class="flex items-center justify-between gap-3"><h4 class="font-semibold text-content-primary">{{ section.title }} Allocation</h4>{{ table_label.status_label(section.status.label, tone='warning' if 'warning' in section.status.class else ('critical' if 'critical' in section.status.class else 'normal'), size='compact') }}</div><div class="mt-4 space-y-3">{% for allocation_item in section.items %}<div><div class="flex items-center justify-between gap-3 text-xs"><span class="font-medium text-content-secondary">{{ allocation_item.label }}</span><span class="text-content-muted">{{ allocation_item.display }}</span></div>{{ progress_bar.bar(allocation_item.percent, track_classes='mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-card', fill_classes='h-full rounded-full bg-kaori-primary', label=allocation_item.label) }}</div>{% endfor %}</div></div>
+        {% endfor %}
+    </div>
+</div>

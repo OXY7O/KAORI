@@ -31,7 +31,7 @@
         {{ progress_bar.bar(
             percentage,
             track_classes="mt-4 h-2 overflow-hidden rounded-full bg-surface-hover",
-            fill_classes="h-full rounded-full transition-all duration-500 " ~ bar_class,
+            fill_classes="h-full rounded-full " ~ bar_class,
             label="Utilization progress"
         ) }}
     {% endmacro %}
@@ -72,6 +72,7 @@
             <script src="{{ url_for('static', filename='vendor/chartjs/chart.umd.min.js') }}"></script>
 
             {% include "analytics/utilization/partials/_readiness_scope.html" %}
+            {% include "analytics/utilization/partials/_overview.html" %}
 
             {% if analytics_materialization.source_warning %}
                 <section class="rounded-xl border border-status-warning-border bg-status-warning-soft px-4 py-3">

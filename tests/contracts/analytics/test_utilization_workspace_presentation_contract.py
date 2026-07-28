@@ -13,13 +13,12 @@ def test_utilization_scope_and_snapshot_are_outside_tab_workspace() -> None:
     assert index.index('analytics/utilization/partials/_readiness_scope.html') < index.index(
         'Resource Utilization Workspace'
     )
-    assert 'Utilization Scope &amp; Data Readiness' in readiness
+    assert 'Utilization Controls & Data Readiness' in readiness
     assert 'Prometheus Status' not in index
-    assert 'Active Cluster Scope' in readiness
-    assert 'Latest Utilization Data Snapshot' in readiness
-    assert 'Latest Data Sync' in readiness
-    assert 'Latest Worker Attempt' in readiness
-    assert 'Freshness Window' in readiness
+    assert 'Active Cluster' in readiness
+    assert 'controls_readiness' in readiness
+    assert 'analytics_materialization' in readiness
+    assert 'Worker Attempt' in (ROOT / 'app/templates/analytics/components/_analysis_workspace.html').read_text()
 
 
 def test_utilization_tabs_and_content_share_one_workspace_box() -> None:

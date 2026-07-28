@@ -26,13 +26,14 @@ def test_cluster_filter_preserves_tab_workspace_and_collapses_details() -> None:
     assert 'x-show="expanded"' in row
 
 
-def test_severity_state_matches_two_line_scope_source_pattern() -> None:
+def test_severity_state_is_compact_single_row() -> None:
     row = _read('partials/_alerts_table_row.html')
 
     assert 'class="min-w-0 lg:col-span-2"' in row
     assert row.count("table_label.status_label(alert.severity|title") == 1
     assert row.count("table_label.status_label(alert.status|title") == 0
-    assert '<p class="mt-1 break-words text-xs font-medium text-content-muted">{{ alert.status|title }}</p>' in row
+    assert 'flex min-w-0 flex-wrap items-center gap-2' in row
+    assert '<span class="break-words text-xs font-semibold text-content-muted">{{ alert.status|title }}</span>' in row
     assert '>Severity</p>' not in row
     assert '>Alert State</p>' not in row
 

@@ -1,76 +1,22 @@
+{% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
-<section class="overflow-hidden rounded-lg border border-outline-default bg-surface-card shadow-sm">
-    <div>
-        <div class="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="list-checks" class="h-5 w-5"></i>
-                </span>
-                <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <h2 class="text-lg font-semibold text-content-primary">Utilization Recommendations</h2>
-                        {{ table_label.metadata_label(recommendation_count|default(0) ~ ' Actionable', 'sparkles') }}
-                    </div>
-                    <p class="mt-1 text-sm leading-6 text-content-muted">Findings from utilization risk, node pressure, and top-consumer signals.</p>
-                </div>
-            </div>
-        </div>
-        <div class="border-t border-outline-subtle p-5">
-            {% if recommendation_cards %}
-                <div class="grid gap-3 lg:grid-cols-2 xl:grid-cols-3">
-                    {% for item in recommendation_cards %}
-                        {% set recommendation_url = url_for(
-                                                    'analytics.utilization',
-                                                    cluster_id=cluster.id if cluster else '',
-                                                    trend_hours=trend_hours,
-                                                    trend_node=selected_trend_node,
-                                                    node=selected_node
-                                                ) %}
-                        {% if item.resource == 'storage' or item.source == 'storage' or item.action_type == 'storage_review' %}
-                            {% set recommendation_url = url_for('analytics.storage', cluster_id=cluster.id if cluster else '', time_range='24h') %}
-                            {% set recommendation_label = "Open Storage Analysis" %}
-                        {% else %}
-                            {% set recommendation_label = "Review Utilization" %}
-                        {% endif %}
-                        {% set priority_tone = {
-                                                    'P1': 'critical',
-                                                    'Critical': 'critical',
-                                                    'P2': 'warning',
-                                                    'Warning': 'warning',
-                                                    'P3': 'info',
-                                                    'P4': 'maintenance'
-                                                }.get(item.priority, 'unknown') %}
-                        <article class="flex h-full flex-col rounded-lg border border-outline-default bg-surface-card p-4 transition hover:bg-surface-hover">
-                            <div class="flex items-start gap-3">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                    <i data-lucide="{{ item.icon }}" class="h-5 w-5"></i>
-                                </span>
-                                <div class="min-w-0">
-                                    <div class="flex flex-wrap items-center gap-2">
-                                        {{ table_label.status_label(item.priority, priority_tone) }}
-                                        {{ table_label.metadata_label(item.source_label, 'database-zap') }}
-                                    </div>
-                                    <h3 class="mt-3 font-semibold text-content-primary">{{ item.title }}</h3>
-                                    <p class="mt-1 text-sm leading-6 text-content-muted">{{ item.description }}</p>
-                                </div>
-                            </div>
-                            <a href="{{ recommendation_url }}"
-                               class="mt-auto inline-flex items-center gap-2 pt-4 text-sm font-semibold text-kaori-primary transition hover:text-kaori-primary-hover">
-                                {{ recommendation_label }}
-                                <i data-lucide="arrow-right" class="h-4 w-4"></i>
-                            </a>
-                        </article>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="rounded-lg border border-dashed border-outline-default bg-surface-hover px-4 py-8 text-center">
-                    <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-lg bg-status-normal-soft text-status-normal">
-                        <i data-lucide="check-circle-2" class="h-5 w-5"></i>
-                    </span>
-                    <h3 class="mt-4 font-semibold text-content-primary">No Actionable Utilization Recommendation</h3>
-                    <p class="mt-1 text-sm text-content-muted">Current utilization and pressure signals do not require immediate action.</p>
-                </div>
-            {% endif %}
-        </div>
+<div class="space-y-4">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="list-checks" class="h-5 w-5"></i></span><div><h3 class="text-lg font-semibold text-content-primary">Utilization Recommendations</h3><p class="mt-1 text-sm leading-6 text-content-muted">Prioritized actions derived from resource pressure, node signals, and top-consumer evidence.</p></div></div>
+        {{ table_label.metadata_label(recommendation_count|default(0) ~ ' Actionable', 'sparkles') }}
     </div>
-</section>
+    {% if recommendation_cards %}
+        <div class="divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle">
+            {% for item in recommendation_cards %}
+                {% set recommendation_url = url_for('analytics.storage', cluster_id=cluster.id if cluster else '', time_range='24h') if item.resource == 'storage' or item.source == 'storage' or item.action_type == 'storage_review' else url_for('analytics.utilization', cluster_id=cluster.id if cluster else '', trend_hours=trend_hours, trend_node=selected_trend_node, node=selected_node) %}
+                {% set priority_tone = 'critical' if item.priority in ['P1', 'Critical'] else ('warning' if item.priority in ['P2', 'Warning'] else ('info' if item.priority in ['P3', 'Info'] else 'unknown')) %}
+                <div class="flex flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex min-w-0 items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ item.icon }}" class="h-5 w-5"></i></span><div class="min-w-0"><div class="flex flex-wrap items-center gap-2">{{ table_label.status_label('Priority: ' ~ item.priority, tone=priority_tone, size='compact') }}{{ table_label.metadata_label('Derived From: ' ~ item.source_label, 'database-zap') }}</div><h4 class="mt-2 font-semibold text-content-primary">{{ item.title }}</h4><p class="mt-1 text-sm leading-6 text-content-muted">{{ item.description }}</p></div></div>
+                    <a href="{{ recommendation_url }}" class="{{ table_ui.action_classes() }} shrink-0"><i data-lucide="arrow-right" class="h-4 w-4"></i>Review</a>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        {% set empty_state_icon = 'check-circle-2' %}{% set empty_state_title = 'No Actionable Utilization Recommendation' %}{% set empty_state_description = 'Current utilization and pressure signals do not require immediate action.' %}{% include "components/states/_empty_state.html" %}
+    {% endif %}
+</div>

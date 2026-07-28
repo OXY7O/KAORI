@@ -1,280 +1,40 @@
 {% extends "layouts/app.html" %}
-{% import "components/progress_bar.html" as progress_bar %}
-{% import "components/table_label.html" as table_label %}
-{% import "analytics/components/_content_tabs.html" as analytics_content_tabs %}
+{% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
 {% block title %}Capacity Analysis{% endblock title %}
 {% block dashboard_content %}
-    {% macro resource_value(resource, value) %}
-        {% if resource == 'cpu' %}{{ value }} Cores{% elif resource in ['memory', 'storage'] %}{{ value }} GiB{% else %}{{ value|int }} Pods{% endif %}
-    {% endmacro %}
-    {% macro headroom_status(value, capacity) %}
-        {% if capacity|default(0)|float <= 0 %}
-            {{ table_label.status_label('Unknown', 'unknown', 'circle-help') }}
-        {% elif value < 15 %}
-            {{ table_label.status_label('Critical', 'critical', 'shield-alert') }}
-        {% elif value < 40 %}
-            {{ table_label.status_label('Watch', 'warning', 'triangle-alert') }}
-        {% else %}
-            {{ table_label.status_label('Healthy', 'normal', 'circle-check') }}
-        {% endif %}
-    {% endmacro %}
-    {% set resource_cards = [
-        {'key': 'cpu', 'label': 'CPU', 'icon': 'cpu', 'tone': 'info'},
-        {'key': 'memory', 'label': 'Memory', 'icon': 'memory-stick', 'tone': 'maintenance'},
-        {'key': 'pods', 'label': 'Pods', 'icon': 'boxes', 'tone': 'pending'},
-        {'key': 'storage', 'label': 'Storage', 'icon': 'hard-drive', 'tone': 'warning'}
-    ] %}
-    <div id="capacity-page"
-         class="space-y-6"
-         data-analytics-page-tracker="capacity-load-tracker"
-         data-analytics-page-request-tracking="false">
+    <div id="capacity-page" class="space-y-6" data-analytics-page-tracker="capacity-load-tracker" data-analytics-page-request-tracking="false">
         {% include "analytics/capacity/partials/_hero.html" %}
-        {% include "analytics/materialization/_freshness.html" %}
         {% if dependency_blocker %}
             {% include "components/dependencies/_blocker.html" %}
-        {% endif %}
-        {% if not dependency_blocker %}
-            {% set analytics_tracker_id = "capacity-load-tracker" %}
-            {% set analytics_page_id = "capacity-page" %}
-            {% set analytics_load_title = "Loading Capacity Analysis" %}
-            {% set analytics_load_description = "Loading the latest committed capacity snapshot." %}
-            {% set analytics_load_complete_title = "Capacity Analysis Fully Loaded" %}
-            {% set analytics_load_complete_description = "All capacity analysis sections have finished loading." %}
-            {% include "analytics/partials/_load_tracker.html" %}
-        {% endif %}
-        {% if error and not dependency_blocker %}
-            <div class="rounded-xl border border-status-warning-border bg-status-warning-soft p-4">
-                <div class="flex items-start gap-3">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning">
-                        <i data-lucide="triangle-alert" class="h-4.5 w-4.5"></i>
-                    </span>
-                    <div>
-                        <h2 class="font-semibold text-content-primary">Capacity Data Unavailable</h2>
-                        <p class="mt-1 text-sm leading-6 text-content-muted">{{ error }}</p>
-                    </div>
-                </div>
-            </div>
-        {% endif %}
-        {% if cluster and not dependency_blocker %}
-            <section x-data="kaoriAnalyticsTabs('summary', ['summary', 'allocation', 'risk', 'recommendations'])" class="space-y-6">
+        {% else %}
+            {% set analytics_tracker_id = "capacity-load-tracker" %}{% set analytics_page_id = "capacity-page" %}{% set analytics_load_title = "Loading Capacity Analysis" %}{% set analytics_load_description = "Loading the latest committed capacity snapshot." %}{% set analytics_load_complete_title = "Capacity Analysis Fully Loaded" %}{% set analytics_load_complete_description = "All capacity analysis sections have finished loading." %}{% include "analytics/partials/_load_tracker.html" %}
+            {% if error %}<section class="rounded-xl border border-status-warning-border bg-status-warning-soft p-4"><div class="flex items-start gap-3"><i data-lucide="triangle-alert" class="mt-0.5 h-5 w-5 text-status-warning"></i><div><h2 class="font-semibold text-content-primary">Capacity Data Unavailable</h2><p class="mt-1 text-sm leading-6 text-content-muted">{{ error }}</p></div></div></section>{% endif %}
+            {% include "analytics/capacity/partials/_controls_readiness.html" %}
+            {% if cluster %}
+                {% include "analytics/capacity/partials/_overview.html" %}
                 {% set capacity_tabs = [
                     ('summary', 'Worker Capacity Summary', 'server-cog'),
                     ('allocation', 'Allocation & Headroom', 'chart-pie'),
                     ('risk', 'Capacity Risk Summary', 'shield-alert'),
-                    ('recommendations', 'Recommendations', 'list-checks')
+                    ('recommendations', 'Capacity Recommendations', 'list-checks')
                 ] %}
-                {{ analytics_content_tabs.render('capacity-content', capacity_tabs, 'Capacity Analysis Content') }}
-
-                <div id="capacity-content-panel-summary"
-                     role="tabpanel"
-                     aria-labelledby="capacity-content-tab-summary"
-                     x-show="activeTab === 'summary'"
-                     class="space-y-6">
-                    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                        <div class="border-b border-outline-subtle p-5 sm:p-6">
-                            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                                <div class="flex items-start gap-3">
-                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                        <i data-lucide="server-cog" class="h-5 w-5"></i>
-                                    </span>
-                                    <div>
-                                        <div class="flex flex-wrap items-center gap-2">
-                                            <h2 class="text-lg font-semibold text-content-primary">Worker Capacity Summary</h2>
-                                            {{ table_label.metadata_label('Ready Worker Capacity', 'badge-check') }}
-                                        </div>
-                                        <p class="mt-1 max-w-3xl text-sm leading-6 text-content-muted">
-                                            Schedulable capacity uses Ready worker nodes as the baseline for placement, allocation, and headroom decisions.
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="grid gap-2 sm:grid-cols-2 lg:min-w-[20rem]">
-                                    <div class="rounded-lg border border-outline-default bg-surface-hover px-4 py-3">
-                                        <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Lowest Headroom</p>
-                                        <p class="mt-1 text-xl font-semibold text-content-primary">{{ lowest_headroom_display }}</p>
-                                    </div>
-                                    <div class="rounded-lg border border-outline-default bg-surface-hover px-4 py-3">
-                                        <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Observation Window</p>
-                                        <p class="mt-1 text-xl font-semibold text-content-primary">{{ selected_time_range }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-4 sm:p-6">
-                            {% for card in kpi_cards %}
-                                <article class="flex min-h-[180px] flex-col rounded-lg border border-outline-default bg-surface-card p-4 transition hover:bg-surface-hover">
-                                    <div class="flex items-start justify-between gap-3">
-                                        <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                            <i data-lucide="{{ card.icon }}" class="h-5 w-5"></i>
-                                        </span>
-                                        {% if loop.first %}
-                                            {{ table_label.status_label('Ready', 'normal', 'circle-check') }}
-                                        {% endif %}
-                                    </div>
-                                    <p class="mt-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">{{ card.label }}</p>
-                                    <p class="mt-1 text-2xl font-semibold tracking-tight text-content-primary">{{ card.value }}</p>
-                                    <p class="mt-2 text-sm leading-6 text-content-muted">{{ card.caption }}</p>
-                                    {% if card.footer %}
-                                        <p class="mt-auto border-t border-outline-subtle pt-3 text-xs text-content-muted">{{ card.footer }}</p>
-                                    {% endif %}
-                                </article>
-                            {% endfor %}
-                        </div>
-                    </section>
-                </div>
-
-                <div id="capacity-content-panel-allocation"
-                     role="tabpanel"
-                     aria-labelledby="capacity-content-tab-allocation"
-                     x-show="activeTab === 'allocation'"
-                     x-cloak
-                     class="space-y-6">
-                    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                        <div class="border-b border-outline-subtle p-5 sm:p-6">
-                            <div class="flex items-start gap-3">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                    <i data-lucide="chart-pie" class="h-5 w-5"></i>
-                                </span>
-                                <div>
-                                    <h2 class="text-lg font-semibold text-content-primary">Cluster Resource Allocation &amp; Headroom</h2>
-                                    <p class="mt-1 text-sm leading-6 text-content-muted">Compare current consumption and remaining capacity across CPU, memory, pods, and storage without nested expanders.</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="grid gap-5 p-5 xl:grid-cols-3 xl:items-center sm:p-6">
-                            <div class="grid gap-4">
-                                {% for card in resource_cards[:2] %}
-                                    {% set item = capacity_summary[card.key] %}
-                                    <article class="rounded-lg border border-outline-default bg-surface-card p-4">
-                                        <div class="flex items-start justify-between gap-3">
-                                            <div class="flex items-center gap-3">
-                                                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ card.icon }}" class="h-4.5 w-4.5"></i></span>
-                                                <div><h3 class="font-semibold text-content-primary">{{ card.label }}</h3><p class="text-xs text-content-muted">{{ resource_value(card.key, item.used) }} Used</p></div>
-                                            </div>
-                                            {{ headroom_status(item.headroom, item.capacity) }}
-                                        </div>
-                                        <div class="mt-4 grid grid-cols-2 gap-3">
-                                            <div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Capacity</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ resource_value(card.key, item.capacity) }}</p></div>
-                                            <div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Headroom</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ item.headroom }}%</p></div>
-                                        </div>
-                                        {{ progress_bar.bar(item.utilization_percent, track_classes='mt-4 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=card.label ~ ' utilization') }}
-                                    </article>
-                                {% endfor %}
-                            </div>
-                            <div class="rounded-xl border border-outline-default bg-surface-hover p-5 text-center">
-                                <script id="capacity-allocation-chart-data" type="application/json">{{ {
-                                    'labels': ['CPU', 'Memory', 'Pods', 'Storage'],
-                                    'values': [
-                                        capacity_summary.cpu.utilization_percent,
-                                        capacity_summary.memory.utilization_percent,
-                                        capacity_summary.pods.utilization_percent,
-                                        capacity_summary.storage.utilization_percent
-                                    ]
-                                } | tojson }}</script>
-                                <div class="mx-auto h-64 max-w-64"><canvas id="capacity-allocation-chart" aria-label="Cluster resource utilization chart"></canvas></div>
-                                <h3 class="mt-3 font-semibold text-content-primary">Allocation Pressure</h3>
-                                <p class="mt-1 text-sm leading-6 text-content-muted">Relative utilization across the four primary capacity domains.</p>
-                            </div>
-                            <div class="grid gap-4">
-                                {% for card in resource_cards[2:] %}
-                                    {% set item = capacity_summary[card.key] %}
-                                    <article class="rounded-lg border border-outline-default bg-surface-card p-4">
-                                        <div class="flex items-start justify-between gap-3">
-                                            <div class="flex items-center gap-3">
-                                                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ card.icon }}" class="h-4.5 w-4.5"></i></span>
-                                                <div><h3 class="font-semibold text-content-primary">{{ card.label }}</h3><p class="text-xs text-content-muted">{{ resource_value(card.key, item.used) }} Used</p></div>
-                                            </div>
-                                            {{ headroom_status(item.headroom, item.capacity) }}
-                                        </div>
-                                        <div class="mt-4 grid grid-cols-2 gap-3">
-                                            <div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Capacity</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ resource_value(card.key, item.capacity) }}</p></div>
-                                            <div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Headroom</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ item.headroom }}%</p></div>
-                                        </div>
-                                        {{ progress_bar.bar(item.utilization_percent, track_classes='mt-4 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=card.label ~ ' utilization') }}
-                                    </article>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        <div class="border-t border-outline-subtle p-5 sm:p-6">
-                            <div class="grid gap-4 lg:grid-cols-3">
-                                {% for key, section in allocation_summary.items() %}
-                                    <article class="rounded-lg border border-outline-default bg-surface-card p-4">
-                                        <div class="flex items-center justify-between gap-3">
-                                            <h3 class="font-semibold text-content-primary">{{ section.title }} Allocation</h3>
-                                            <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ section.status['class'] }}">{{ section.status['label'] }}</span>
-                                        </div>
-                                        <div class="mt-4 space-y-3">
-                                            {% for allocation_item in section['items'] %}
-                                                <div>
-                                                    <div class="flex items-center justify-between gap-3 text-xs"><span class="font-medium text-content-secondary">{{ allocation_item.label }}</span><span class="text-content-muted">{{ allocation_item.display }}</span></div>
-                                                    {{ progress_bar.bar(allocation_item.percent, track_classes='mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full ' ~ allocation_item.bar_class, label=allocation_item.label) }}
-                                                </div>
-                                            {% endfor %}
-                                        </div>
-                                    </article>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </section>
-                </div>
-
-                <div id="capacity-content-panel-risk"
-                     role="tabpanel"
-                     aria-labelledby="capacity-content-tab-risk"
-                     x-show="activeTab === 'risk'"
-                     x-cloak
-                     class="space-y-6">
-                    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                        <div class="border-b border-outline-subtle p-5 sm:p-6">
-                            <div class="flex items-start gap-3">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="shield-alert" class="h-5 w-5"></i></span>
-                                <div><h2 class="text-lg font-semibold text-content-primary">Capacity Risk Summary</h2><p class="mt-1 text-sm leading-6 text-content-muted">Prioritize constrained resources and governance findings using the current worker-capacity baseline.</p></div>
-                            </div>
-                        </div>
-                        <div class="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-4 sm:p-6">
-                            {% for item in risk_summary %}
-                                <article class="rounded-lg border border-outline-default bg-surface-card p-4">
-                                    <div class="flex items-start justify-between gap-3">
-                                        <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ item.icon }}" class="h-5 w-5"></i></span>
-                                        <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ item.status['class'] }}">{{ item.status['label'] }}</span>
-                                    </div>
-                                    <p class="mt-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">{{ item.label }} Headroom</p>
-                                    <p class="mt-1 text-3xl font-semibold text-content-primary">{{ item.headroom_display }}</p>
-                                    {{ progress_bar.bar(item.headroom, track_classes='mt-4 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=item.label ~ ' headroom') }}
-                                </article>
-                            {% endfor %}
-                        </div>
-                        <div class="border-t border-outline-subtle p-5 sm:p-6">
-                            <div class="flex items-start gap-3">
-                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="scale" class="h-4.5 w-4.5"></i></span>
-                                <div class="min-w-0 flex-1">
-                                    <h3 class="font-semibold text-content-primary">Governance Findings</h3>
-                                    <div class="mt-3 grid gap-2 lg:grid-cols-2">
-                                        {% for finding in governance_findings %}
-                                            <div class="flex items-center gap-3 rounded-lg border border-outline-default bg-surface-hover px-3 py-3">
-                                                <i data-lucide="{{ finding.icon }}" class="h-4 w-4 text-kaori-primary"></i>
-                                                <span class="text-sm text-content-secondary">{{ finding.label }}</span>
-                                            </div>
-                                        {% endfor %}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                </div>
-
-                <div id="capacity-content-panel-recommendations"
-                     role="tabpanel"
-                     aria-labelledby="capacity-content-tab-recommendations"
-                     x-show="activeTab === 'recommendations'"
-                     x-cloak
-                     class="space-y-6">
-                    {% include "analytics/capacity/partials/_recommendations.html" %}
-                </div>
-            </section>
+                {% call analytics_workspace.tabbed(
+                    'capacity-content',
+                    capacity_tabs,
+                    'Capacity Analysis Content',
+                    'Capacity Analysis Workspace',
+                    'Review worker capacity, allocation pressure, resource headroom, risk, and prioritized actions in one workspace.',
+                    'server-cog',
+                    'summary',
+                    ['summary', 'allocation', 'risk', 'recommendations']
+                ) %}
+                    <div id="capacity-content-panel-summary" role="tabpanel" aria-labelledby="capacity-content-tab-summary" x-show="activeTab === 'summary'">{% include "analytics/capacity/partials/_worker_summary.html" %}</div>
+                    <div id="capacity-content-panel-allocation" role="tabpanel" aria-labelledby="capacity-content-tab-allocation" x-show="activeTab === 'allocation'" x-cloak>{% include "analytics/capacity/partials/_allocation.html" %}</div>
+                    <div id="capacity-content-panel-risk" role="tabpanel" aria-labelledby="capacity-content-tab-risk" x-show="activeTab === 'risk'" x-cloak>{% include "analytics/capacity/partials/_risk.html" %}</div>
+                    <div id="capacity-content-panel-recommendations" role="tabpanel" aria-labelledby="capacity-content-tab-recommendations" x-show="activeTab === 'recommendations'" x-cloak>{% include "analytics/capacity/partials/_recommendations.html" %}</div>
+                {% endcall %}
+            {% endif %}
         {% endif %}
     </div>
 {% endblock dashboard_content %}
-{% block scripts %}
-    <script src="{{ url_for('static', filename='vendor/chartjs/chart.umd.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/analytics_capacity.js') }}"></script>
-{% endblock scripts %}
+{% block scripts %}<script src="{{ url_for('static', filename='vendor/chartjs/chart.umd.min.js') }}"></script><script src="{{ url_for('static', filename='js/analytics_capacity.js') }}"></script>{% endblock scripts %}

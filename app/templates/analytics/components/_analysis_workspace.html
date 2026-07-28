@@ -1,0 +1,115 @@
+{% import "components/loading_bar.html" as loading_bar %}
+{% import "components/table_label.html" as table_label %}
+{% import "analytics/components/_prometheus_status.html" as prometheus_status_panel %}
+{% import "analytics/components/_content_tabs.html" as analytics_content_tabs %}
+
+{% macro controls_readiness(title, description, icon, indicator_id, status, materialization=none, checked_at='', eyebrow='Analysis Controls') -%}
+    {% set snapshot = materialization if materialization else none %}
+    {% if snapshot and snapshot.stale|default(false) %}
+        {% set snapshot_status = 'Stale Snapshot' %}
+        {% set snapshot_tone = 'warning' %}
+    {% elif snapshot and snapshot.state|default('') == 'ready' %}
+        {% set snapshot_status = 'Current Snapshot' %}
+        {% set snapshot_tone = 'normal' %}
+    {% elif snapshot and (snapshot.state|default('') == 'pending' or snapshot.refresh_dispatched|default(false)) %}
+        {% set snapshot_status = 'Refresh In Progress' %}
+        {% set snapshot_tone = 'info' %}
+    {% elif snapshot and snapshot.state|default('') == 'failed' %}
+        {% set snapshot_status = 'Snapshot Failed' %}
+        {% set snapshot_tone = 'critical' %}
+    {% else %}
+        {% set snapshot_status = snapshot.status|default(snapshot.freshness_status|default('Unavailable')) if snapshot else 'Unavailable' %}
+        {% set status_lower = snapshot_status|string|lower %}
+        {% set snapshot_tone = 'normal' if status_lower in ['current', 'ready', 'available', 'healthy'] else ('info' if 'progress' in status_lower or 'pending' in status_lower or 'refresh' in status_lower else ('warning' if 'stale' in status_lower or 'partial' in status_lower else 'unknown')) %}
+    {% endif %}
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+        <div class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-content-muted">{{ eyebrow }}</p>
+                    <h2 class="mt-1 text-lg font-semibold text-content-primary">{{ title }}</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">{{ description }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="space-y-5 p-5 sm:p-6">
+            {{ caller() }}
+            <div class="grid gap-4 border-t border-outline-subtle pt-5 lg:grid-cols-2">
+                <div class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-4">
+                    {{ prometheus_status_panel.render(status, checked_at, flat=true, compact=true) }}
+                </div>
+                <div class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex min-w-0 items-center gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                                <i data-lucide="database-clock" class="h-4 w-4"></i>
+                            </span>
+                            <div class="min-w-0">
+                                <h3 class="text-sm font-semibold text-content-primary">Latest Data Snapshot</h3>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Committed analytics data used by this page.</p>
+                            </div>
+                        </div>
+                        {{ table_label.status_label(snapshot_status, tone=snapshot_tone, size='compact') }}
+                    </div>
+                    <div class="mt-4 grid gap-3 sm:grid-cols-3">
+                        <div class="min-w-0">
+                            <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Updated</p>
+                            <p class="mt-1 break-words text-sm font-semibold text-content-primary">{{ snapshot.generated_at|default(none)|user_datetime('Unavailable') if snapshot else 'Unavailable' }}</p>
+                        </div>
+                        <div class="min-w-0 sm:border-l sm:border-outline-subtle sm:pl-3">
+                            <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Dataset</p>
+                            <p class="mt-1 break-words text-sm font-semibold text-content-primary">{{ snapshot.dataset_key|default('Analytics Snapshot') if snapshot else 'Analytics Snapshot' }}</p>
+                        </div>
+                        <div class="min-w-0 sm:border-l sm:border-outline-subtle sm:pl-3">
+                            <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Worker Attempt</p>
+                            <p class="mt-1 break-words text-sm font-semibold text-content-primary">{{ snapshot.latest_worker_attempt_at|default(snapshot.last_attempt_at|default(snapshot.latest_job_started_at|default(none)))|user_datetime('Unavailable') if snapshot else 'Unavailable' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {{ loading_bar.render(indicator_id, label='Refreshing analytics data') }}
+        </div>
+    </section>
+{%- endmacro %}
+
+{% macro overview(title, description, icon, badge_text='Overview') -%}
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+        <div class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h2 class="text-lg font-semibold text-content-primary">{{ title }}</h2>
+                        <p class="mt-1 text-sm leading-6 text-content-muted">{{ description }}</p>
+                    </div>
+                </div>
+                {{ table_label.metadata_label(badge_text, 'layout-dashboard') }}
+            </div>
+        </div>
+        <div class="p-5 sm:p-6">{{ caller() }}</div>
+    </section>
+{%- endmacro %}
+
+{% macro tabbed(tabset_id, tabs, aria_label, title, description, icon, initial_tab, allowed_tabs) -%}
+    <section x-data="kaoriAnalyticsTabs('{{ initial_tab }}', {{ allowed_tabs|tojson }})"
+             class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+        <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-lg font-semibold text-content-primary">{{ title }}</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">{{ description }}</p>
+                </div>
+            </div>
+        </header>
+        {{ analytics_content_tabs.render(tabset_id, tabs, aria_label, embedded=true) }}
+        <div class="p-5 sm:p-6">{{ caller() }}</div>
+    </section>
+{%- endmacro %}

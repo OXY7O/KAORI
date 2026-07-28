@@ -1,5 +1,5 @@
 {% extends "layouts/app.html" %}
-{% import "analytics/components/_content_tabs.html" as analytics_content_tabs %}
+{% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
 {% block title %}Workload Analysis{% endblock title %}
 {% block dashboard_content %}
     <div id="workload-page"
@@ -7,11 +7,9 @@
          data-analytics-page-tracker="workload-load-tracker"
          data-analytics-page-request-tracking="false">
         {% include "analytics/workload/partials/_hero.html" %}
-        {% include "analytics/materialization/_freshness.html" %}
         {% if dependency_blocker %}
             {% include "components/dependencies/_blocker.html" %}
-        {% endif %}
-        {% if not dependency_blocker %}
+        {% else %}
             {% set analytics_tracker_id = "workload-load-tracker" %}
             {% set analytics_page_id = "workload-page" %}
             {% set analytics_load_title = "Loading workload analysis" %}
@@ -19,50 +17,32 @@
             {% set analytics_load_complete_title = "Workload analysis fully loaded" %}
             {% set analytics_load_complete_description = "All workload analysis sections have finished loading." %}
             {% include "analytics/partials/_load_tracker.html" %}
-        {% endif %}
-        {% if error and not dependency_blocker %}
-            <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-200">
-                <div class="flex items-start gap-3">
-                    <i data-lucide="triangle-alert" class="mt-0.5 h-5 w-5"></i>
-                    <div>
-                        <div class="font-semibold">Workload data unavailable</div>
-                        <div class="mt-1">{{ error }}</div>
-                    </div>
-                </div>
-            </div>
-        {% endif %}
-        {% if cluster and not dependency_blocker %}
-            <section x-data="kaoriAnalyticsTabs('quotas', ['quotas', 'mapping', 'recommendations'])" class="space-y-6">
+            {% if error %}
+                <section class="rounded-xl border border-status-warning-border bg-status-warning-soft p-4"><div class="flex items-start gap-3"><i data-lucide="triangle-alert" class="mt-0.5 h-5 w-5 text-status-warning"></i><div><h2 class="font-semibold text-content-primary">Workload Data Unavailable</h2><p class="mt-1 text-sm leading-6 text-content-muted">{{ error }}</p></div></div></section>
+            {% endif %}
+            {% include "analytics/workload/partials/_controls_readiness.html" %}
+            {% include "analytics/workload/partials/_overview.html" %}
+            {% if cluster %}
                 {% set workload_tabs = [
-                    ('quotas', 'Tenant Quotas', 'badge-gauge'),
-                    ('mapping', 'Resource Mapping', 'network'),
-                    ('recommendations', 'Recommendations', 'list-checks')
+                    ('quotas', 'Tenant Quota Analysis', 'badge-gauge'),
+                    ('mapping', 'Workload Resource Mapping', 'network'),
+                    ('recommendations', 'Workload Recommendations', 'list-checks')
                 ] %}
-                {{ analytics_content_tabs.render('workload-content', workload_tabs, 'Workload Analysis Content') }}
-                <div id="workload-content-panel-quotas"
-                     role="tabpanel"
-                     aria-labelledby="workload-content-tab-quotas"
-                     x-show="activeTab === 'quotas'"
-                     class="space-y-6">
-                    {% include "analytics/workload/partials/_tenant_quota_section.html" %}
-                </div>
-                <div id="workload-content-panel-mapping"
-                     role="tabpanel"
-                     aria-labelledby="workload-content-tab-mapping"
-                     x-show="activeTab === 'mapping'"
-                     x-cloak
-                     class="space-y-6">
-                    {% include "analytics/workload/partials/_workload_mapping_section.html" %}
-                </div>
-                <div id="workload-content-panel-recommendations"
-                     role="tabpanel"
-                     aria-labelledby="workload-content-tab-recommendations"
-                     x-show="activeTab === 'recommendations'"
-                     x-cloak
-                     class="space-y-6">
-                    {% include "analytics/workload/partials/_recommendations.html" %}
-                </div>
-            </section>
+                {% call analytics_workspace.tabbed(
+                    'workload-content',
+                    workload_tabs,
+                    'Workload Analysis Content',
+                    'Workload Analysis Workspace',
+                    'Review quota governance, workload resource mapping, and prioritized workload recommendations in one workspace.',
+                    'boxes',
+                    'quotas',
+                    ['quotas', 'mapping', 'recommendations']
+                ) %}
+                    <div id="workload-content-panel-quotas" role="tabpanel" aria-labelledby="workload-content-tab-quotas" x-show="activeTab === 'quotas'">{% include "analytics/workload/partials/_tenant_quota_section.html" %}</div>
+                    <div id="workload-content-panel-mapping" role="tabpanel" aria-labelledby="workload-content-tab-mapping" x-show="activeTab === 'mapping'" x-cloak>{% include "analytics/workload/partials/_workload_mapping_section.html" %}</div>
+                    <div id="workload-content-panel-recommendations" role="tabpanel" aria-labelledby="workload-content-tab-recommendations" x-show="activeTab === 'recommendations'" x-cloak>{% include "analytics/workload/partials/_recommendations.html" %}</div>
+                {% endcall %}
+            {% endif %}
         {% endif %}
     </div>
 {% endblock dashboard_content %}

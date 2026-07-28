@@ -1,0 +1,28 @@
+{% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "components/progress_bar.html" as progress_bar %}
+{% import "components/table_label.html" as table_label %}
+{% set filesystem = storage_summary.node_filesystem.summary %}
+{% set pv = storage_summary.persistent_storage.pv %}
+{% set pvc = storage_summary.persistent_storage.pvc %}
+{% call analytics_workspace.overview(
+    'Storage Analysis Overview',
+    'Summarize filesystem capacity, persistent-volume inventory, claim demand, and the highest observed storage pressure.',
+    'hard-drive',
+    selected_namespace if selected_namespace else 'All Namespaces'
+) %}
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {% set overview_metrics = [
+            ('Filesystem Capacity', filesystem.capacity, filesystem.used ~ ' used', 'server'),
+            ('Filesystem Usage', filesystem.usage_percent ~ '%', 'Highest node ' ~ filesystem.highest_node, 'gauge'),
+            ('Persistent Volumes', pv.count, pv.capacity ~ ' capacity', 'database'),
+            ('Persistent Claims', pvc.count, pvc.requested ~ ' requested', 'box')
+        ] %}
+        {% for label, value, helper, icon in overview_metrics %}
+            <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4"><div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><div class="min-w-0"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p><p class="mt-1 break-words text-xl font-semibold text-content-primary">{{ value }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p></div></div></div>
+        {% endfor %}
+    </div>
+    <div class="mt-4 grid gap-4 lg:grid-cols-2">
+        <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4"><div class="flex items-center justify-between gap-3"><div><h3 class="text-sm font-semibold text-content-primary">Node Filesystem Pressure</h3><p class="mt-1 text-xs text-content-muted">Current aggregate utilization across monitored node filesystems.</p></div>{{ table_label.status_label('Critical' if filesystem.usage_percent >= 90 else ('Watch' if filesystem.usage_percent >= 75 else 'Healthy'), tone='critical' if filesystem.usage_percent >= 90 else ('warning' if filesystem.usage_percent >= 75 else 'normal'), size='compact') }}</div>{{ progress_bar.bar(filesystem.usage_percent, track_classes='mt-4 h-2 overflow-hidden rounded-full bg-surface-card', fill_classes='h-full rounded-full bg-kaori-primary', label='Filesystem utilization') }}</div>
+        <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4"><div class="flex items-center justify-between gap-3"><div><h3 class="text-sm font-semibold text-content-primary">Persistent Storage Demand</h3><p class="mt-1 text-xs text-content-muted">PVC request and utilization pressure within the selected namespace scope.</p></div>{{ table_label.status_label('Critical' if pvc.used_percent >= 90 else ('Watch' if pvc.used_percent >= 75 else 'Healthy'), tone='critical' if pvc.used_percent >= 90 else ('warning' if pvc.used_percent >= 75 else 'normal'), size='compact') }}</div>{{ progress_bar.bar(pvc.used_percent, track_classes='mt-4 h-2 overflow-hidden rounded-full bg-surface-card', fill_classes='h-full rounded-full bg-kaori-primary', label='PVC utilization') }}</div>
+    </div>
+{% endcall %}

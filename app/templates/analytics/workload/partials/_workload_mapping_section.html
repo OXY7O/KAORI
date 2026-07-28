@@ -5,8 +5,8 @@
 {% set dynamic_workload_risk_options = workload_mapping_payload.risk_options if workload_mapping_payload.risk_options else workload_mapping_rows|map(attribute='risk.label')|unique|list %}
 <section id="workload-resource-mapping"
      x-data="{ openWorkloadDetail: null }"
-     class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-  <div class="border-b border-outline-subtle px-5 py-5 sm:px-6">
+     class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
+  <div class="border-b border-outline-subtle px-4 py-4 sm:px-5">
     <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
       <div class="flex min-w-0 items-start gap-3">
         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
@@ -25,7 +25,7 @@
          hx-swap="outerHTML"
          hx-indicator="#workload-refresh-indicator"
          hx-trigger="submit, change delay:250ms, keyup changed delay:500ms"
-         class="grid gap-2 md:grid-cols-2 xl:grid-cols-[220px_135px_155px_130px_120px]">
+         class="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
         <input type="hidden"
             name="cluster_id"
             value="{{ cluster.id if cluster else '' }}" />
@@ -77,7 +77,7 @@
       </form>
     </div>
   </div>
-  <div class="p-6">
+  <div class="p-4 sm:p-5">
     {% set total_workloads = workload_mapping_rows|length %}
     {% set page_workloads = workload_mapping_payload.rows|length %}
     {% set high_risk_count = workload_mapping_rows|selectattr('risk.label', 'equalto', 'High')|list|length %}
@@ -134,7 +134,7 @@
         </div>
       </div>
     </div>
-    <div class="overflow-x-auto rounded-xl border border-outline-default ">
+    <div class="overflow-x-auto rounded-lg border border-outline-subtle ">
       <table class="min-w-full divide-y divide-outline-default text-sm dark:divide-outline-default">
         <thead>
           <tr class="text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">
@@ -240,12 +240,12 @@
                     <div class="rounded-xl border border-outline-default bg-surface-card p-4 ">
                       <div class="mb-4 flex items-center justify-between gap-3">
                         <div class="flex items-center gap-2 text-sm font-semibold text-content-primary ">
-                          <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300">
+                          <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-status-normal-soft text-status-normal  ">
                             <i data-lucide="memory-stick" class="h-4 w-4"></i>
                           </span>
                           Memory profile
                         </div>
-                        <span class="rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">memory</span>
+                        <span class="rounded-md bg-status-normal-soft px-2.5 py-1 text-xs font-semibold text-status-normal-text dark:bg-status-normal/10 ">memory</span>
                       </div>
                       <div class="space-y-2.5 text-sm">
                         <div class="flex items-center justify-between gap-3"><span class="text-content-muted ">Request</span><span class="font-semibold text-content-primary ">{{ row.memory_request }}</span></div>

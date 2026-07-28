@@ -1,373 +1,116 @@
-{% import "analytics/components/_content_tabs.html" as analytics_content_tabs %}
-{% set summary = forecast_payload.summary %}
+{% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "components/progress_bar.html" as progress_bar %}
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
 {% set forecast_items = forecast_payload['items'] %}
 {% set has_data = forecast_payload.has_data %}
-{% set fallback_items = [
-    {
-        "key": "cpu",
-        "label": "CPU",
-        "icon": "cpu",
-        "description": "Projected CPU usage growth compared with worker-node allocatable CPU."
-    },
-    {
-        "key": "memory",
-        "label": "Memory",
-        "icon": "memory-stick",
-        "description": "Projected memory working set growth compared with worker-node allocatable memory."
-    },
-    {
-        "key": "storage",
-        "label": "Storage",
-        "icon": "database",
-        "description": "Projected PVC storage growth compared with PVC capacity."
-    },
-    {
-        "key": "pods",
-        "label": "Pods",
-        "icon": "boxes",
-        "description": "Projected running pod growth compared with worker-node pod capacity."
-    }
+{% set resource_tabs = [
+    ('cpu', 'CPU Forecast', 'cpu'),
+    ('memory', 'Memory Forecast', 'memory-stick'),
+    ('storage', 'Storage Forecast', 'database'),
+    ('pods', 'Pod Forecast', 'boxes'),
+    ('trend', 'Trend Analysis', 'line-chart'),
+    ('recommendations', 'Recommendations', 'list-checks')
 ] %}
-{% if render_dependency_blocker|default(false) and dependency_blocker %}
-    {% include "components/dependencies/_blocker.html" %}
-{% elif not dependency_blocker %}
-    <div class="space-y-6" x-data="kaoriAnalyticsTabs('overview', ['overview', 'trend', 'recommendations'])">
-        {% set forecast_tabs = [
-            ('overview', 'Forecast Overview', 'chart-no-axes-combined'),
-            ('trend', 'Trend Analysis', 'line-chart'),
-            ('recommendations', 'Recommendations', 'list-checks')
-        ] %}
-        {{ analytics_content_tabs.render('forecast-content', forecast_tabs, 'Resource Forecast Content') }}
-        <div id="forecast-content-panel-overview"
-             role="tabpanel"
-             aria-labelledby="forecast-content-tab-overview"
-             x-show="activeTab === 'overview'"
-             class="space-y-6">
-        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-            <div class="border-b border-outline-subtle p-5 sm:p-6">
-                <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="chart-no-axes-combined" class="h-5 w-5"></i></span><div><h2 class="text-lg font-semibold text-content-primary">Forecast Overview</h2><p class="mt-1 text-sm leading-6 text-content-muted">Review projected utilization, growth rate, confidence, and threshold timing by resource.</p></div></div>
-            </div>
-            <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4 sm:p-6">
-            <div class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                <div class="flex items-center justify-between gap-3">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Highest Projection</p>
-                        <p class="mt-2 text-2xl font-semibold text-content-primary">{{ summary.highest_projected_percent }}%</p>
-                        <p class="mt-1 text-sm text-content-muted">{{ summary.highest_projected_label }}</p>
-                    </div>
-                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                        <i data-lucide="activity" class="h-5 w-5"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                <div class="flex items-center justify-between gap-3">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Warning Resources</p>
-                        <p class="mt-2 text-2xl font-semibold text-content-primary">{{ summary.warning_count }}</p>
-                        <p class="mt-1 text-sm text-content-muted">Projected 75%+</p>
-                    </div>
-                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                        <i data-lucide="triangle-alert" class="h-5 w-5"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                <div class="flex items-center justify-between gap-3">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Critical Resources</p>
-                        <p class="mt-2 text-2xl font-semibold text-content-primary">{{ summary.critical_count }}</p>
-                        <p class="mt-1 text-sm text-content-muted">Projected 90%+</p>
-                    </div>
-                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-red-50 text-red-600">
-                        <i data-lucide="flame" class="h-5 w-5"></i>
-                    </div>
-                </div>
-            </div>
-            <div class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                <div class="flex items-center justify-between gap-3">
-                    <div>
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Nearest Critical</p>
-                        <p class="mt-2 text-2xl font-semibold text-content-primary">{{ summary.nearest_critical.label }}</p>
-                        <p class="mt-1 text-sm text-content-muted">
-                            {% if summary.nearest_critical.date %}
-                                {{ summary.nearest_critical.date }}
-                            {% else %}
-                                No projection
-                            {% endif %}
-                        </p>
-                    </div>
-                    <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-hover text-content-secondary">
-                        <i data-lucide="calendar-clock" class="h-5 w-5"></i>
-                    </div>
-                </div>
-            </div>
-                    </div>
-        </section>
-        <section class="grid gap-4 xl:grid-cols-2">
-            {% if forecast_items %}
-                {% for item in forecast_items %}
-                    {% if item.key in ['cpu', 'memory'] %}
-                        <article class="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-700 via-blue-600 to-cyan-500 p-5 text-white shadow-lg shadow-blue-500/20">
-                            <div class="absolute -right-10 -top-10 h-32 w-32 rounded-full bg-surface-card/10 blur-3xl"></div>
-                            <div class="absolute -bottom-16 left-12 h-36 w-36 rounded-full bg-cyan-300/20 blur-3xl"></div>
-                            <div class="relative">
-                                <div class="flex items-start justify-between gap-4">
-                                    <div class="flex items-start gap-3">
-                                        <div class="flex h-11 w-11 items-center justify-center rounded-xl border border-white/20 bg-surface-card/15 text-white backdrop-blur">
-                                            <i data-lucide="{{ item.icon }}" class="h-5 w-5"></i>
-                                        </div>
-                                        <div>
-                                            <div class="flex flex-wrap items-center gap-2">
-                                                <h3 class="text-base font-semibold text-white">{{ item.label }} Forecast</h3>
-                                                {% if item.status == 'critical' %}
-                                                    <span class="rounded-md bg-red-500 px-2.5 py-1 text-xs font-semibold text-white">Critical</span>
-                                                {% elif item.status == 'warning' %}
-                                                    <span class="rounded-md bg-amber-400 px-2.5 py-1 text-xs font-semibold text-content-primary">Warning</span>
-                                                {% else %}
-                                                    <span class="rounded-md bg-surface-card/15 px-2.5 py-1 text-xs font-semibold text-white ring-1 ring-white/20">Normal</span>
-                                                {% endif %}
-                                            </div>
-                                            <p class="mt-1 text-sm text-blue-50/85">{{ item.description }}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="mt-5 grid gap-3 sm:grid-cols-2">
-                                    <div class="rounded-xl border border-white/15 bg-surface-card/12 p-4 backdrop-blur">
-                                        <p class="text-xs font-semibold uppercase tracking-wide text-blue-50/75">Current Usage</p>
-                                        <p class="mt-2 text-lg font-semibold text-white">{{ item.current_display }}</p>
-                                        <p class="mt-1 text-sm text-blue-50/75">{{ item.current_percent }}% of {{ item.capacity_display }}</p>
-                                    </div>
-                                    <div class="rounded-xl border border-white/15 bg-surface-card/12 p-4 backdrop-blur">
-                                        <p class="text-xs font-semibold uppercase tracking-wide text-blue-50/75">Projected Usage</p>
-                                        <p class="mt-2 text-lg font-semibold text-white">{{ item.projected_display }}</p>
-                                        <p class="mt-1 text-sm text-blue-50/75">{{ item.projected_percent }}% projected</p>
-                                    </div>
-                                    <div class="rounded-xl border border-white/15 bg-surface-card/12 p-4 backdrop-blur">
-                                        <p class="text-xs font-semibold uppercase tracking-wide text-blue-50/75">Growth Rate</p>
-                                        <p class="mt-2 text-lg font-semibold text-white">{{ item.growth_display }}</p>
-                                        <p class="mt-1 text-sm text-blue-50/75">Based on linear trend</p>
-                                    </div>
-                                    <div class="rounded-xl border border-white/15 bg-surface-card/12 p-4 backdrop-blur">
-                                        <p class="text-xs font-semibold uppercase tracking-wide text-blue-50/75">Confidence</p>
-                                        <p class="mt-2 text-lg font-semibold text-white">{{ item.confidence }}</p>
-                                        <p class="mt-1 text-sm text-blue-50/75">{{ item.confidence_reason }}</p>
-                                    </div>
-                                </div>
+{% set allowed_tabs = ['cpu', 'memory', 'storage', 'pods', 'trend', 'recommendations'] %}
+{% if not dependency_blocker %}
+    {% call analytics_workspace.tabbed(
+        'forecast-content',
+        resource_tabs,
+        'Resource Forecast Content',
+        'Resource Forecast Workspace',
+        'Review each capacity domain, compare historical and projected signals, and act on forecast recommendations.',
+        'sparkles',
+        selected_resource if selected_resource in allowed_tabs else 'cpu',
+        allowed_tabs
+    ) %}
+        {% for resource_key, resource_label, resource_icon in resource_tabs[:4] %}
+            {% set resource = namespace(item=none) %}
+            {% for candidate in forecast_items %}{% if candidate.key == resource_key %}{% set resource.item = candidate %}{% endif %}{% endfor %}
+            <div id="forecast-content-panel-{{ resource_key }}"
+                 role="tabpanel"
+                 aria-labelledby="forecast-content-tab-{{ resource_key }}"
+                 x-show="activeTab === '{{ resource_key }}'"
+                 {% if resource_key != 'cpu' %}x-cloak{% endif %}>
+                {% if resource.item %}
+                    {% set item = resource.item %}
+                    {% set tone = 'critical' if item.status == 'critical' else ('warning' if item.status == 'warning' else 'normal') %}
+                    <div class="space-y-5">
+                        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                            <div class="flex min-w-0 items-start gap-3">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ item.icon }}" class="h-5 w-5"></i></span>
+                                <div class="min-w-0"><h3 class="text-lg font-semibold text-content-primary">{{ item.label }} Resource Forecast</h3><p class="mt-1 text-sm leading-6 text-content-muted">{{ item.description }}</p></div>
                             </div>
-                        </article>
-                    {% else %}
-                        <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                            <div class="flex items-start justify-between gap-4">
-                                <div class="flex items-start gap-3">
-                                    <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
-                                        <i data-lucide="{{ item.icon }}" class="h-5 w-5"></i>
-                                    </div>
-                                    <div>
-                                        <div class="flex flex-wrap items-center gap-2">
-                                            <h3 class="text-base font-semibold text-content-primary">{{ item.label }} Forecast</h3>
-                                            {% if item.status == 'critical' %}
-                                                <span class="rounded-md bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700">
-                                                    Critical
-                                                </span>
-                                            {% elif item.status == 'warning' %}
-                                                <span class="rounded-md bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
-                                                    Warning
-                                                </span>
-                                            {% else %}
-                                                <span class="rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                                                    Normal
-                                                </span>
-                                            {% endif %}
-                                        </div>
-                                        <p class="mt-1 text-sm text-content-muted">{{ item.description }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="mt-5 grid gap-3 sm:grid-cols-2">
-                                <div class="rounded-xl bg-surface-hover p-4">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Current Usage</p>
-                                    <p class="mt-2 text-lg font-semibold text-content-primary">{{ item.current_display }}</p>
-                                    <p class="mt-1 text-sm text-content-muted">
-                                        {{ item.current_percent }}% of {{ item.capacity_display }}
-                                    </p>
-                                </div>
-                                <div class="rounded-xl bg-surface-hover p-4">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Projected Usage</p>
-                                    <p class="mt-2 text-lg font-semibold text-content-primary">{{ item.projected_display }}</p>
-                                    <p class="mt-1 text-sm text-content-muted">{{ item.projected_percent }}% projected</p>
-                                </div>
-                                <div class="rounded-xl bg-surface-hover p-4">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Growth Rate</p>
-                                    <p class="mt-2 text-lg font-semibold text-content-primary">{{ item.growth_display }}</p>
-                                    <p class="mt-1 text-sm text-content-muted">Based on linear trend</p>
-                                </div>
-                                <div class="rounded-xl bg-surface-hover p-4">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Confidence</p>
-                                    <p class="mt-2 text-lg font-semibold text-content-primary">{{ item.confidence }}</p>
-                                    <p class="mt-1 text-sm text-content-muted">{{ item.confidence_reason }}</p>
-                                </div>
-                            </div>
-                        </article>
-                    {% endif %}
-                {% endfor %}
-            {% else %}
-                {% for item in fallback_items %}
-                    <article class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                        <div class="flex items-start gap-3">
-                            <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-surface-hover text-content-muted">
-                                <i data-lucide="{{ item.icon }}" class="h-5 w-5"></i>
-                            </div>
-                            <div>
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <h3 class="text-base font-semibold text-content-primary">{{ item.label }} Forecast</h3>
-                                    <span class="rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary">
-                                        No Data
-                                    </span>
-                                </div>
-                                <p class="mt-1 text-sm text-content-muted">{{ item.description }}</p>
-                            </div>
+                            {{ table_label.status_label(item.status|title, tone=tone, size='detail') }}
                         </div>
-                        <div class="mt-5 grid gap-3 sm:grid-cols-2">
-                            <div class="rounded-xl bg-surface-hover p-4">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Current Usage</p>
-                                <p class="mt-2 text-lg font-semibold text-content-primary">N/A</p>
-                                <p class="mt-1 text-sm text-content-muted">Waiting for Prometheus metrics</p>
-                            </div>
-                            <div class="rounded-xl bg-surface-hover p-4">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Projected Usage</p>
-                                <p class="mt-2 text-lg font-semibold text-content-primary">N/A</p>
-                                <p class="mt-1 text-sm text-content-muted">Forecast unavailable</p>
-                            </div>
-                            <div class="rounded-xl bg-surface-hover p-4">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Growth Rate</p>
-                                <p class="mt-2 text-lg font-semibold text-content-primary">N/A</p>
-                                <p class="mt-1 text-sm text-content-muted">Not enough data</p>
-                            </div>
-                            <div class="rounded-xl bg-surface-hover p-4">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Confidence</p>
-                                <p class="mt-2 text-lg font-semibold text-content-primary">Low</p>
-                                <p class="mt-1 text-sm text-content-muted">Prometheus data unavailable</p>
-                            </div>
-                        </div>
-                    </article>
-                {% endfor %}
-            {% endif %}
-        </section>
-        </div>
-        <div id="forecast-content-panel-trend"
-             role="tabpanel"
-             aria-labelledby="forecast-content-tab-trend"
-             x-show="activeTab === 'trend'"
-             x-cloak
-             class="space-y-6">
-        <section class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
-            <div class="flex flex-col gap-3 border-b border-outline-default px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                    <h2 class="text-base font-semibold text-content-primary">Trend Analysis</h2>
-                    <p class="mt-1 text-sm text-content-muted">
-                        Historical usage and projected utilization based on {{ forecast_payload.history_days }} days of data.
-                    </p>
-                </div>
-                {% if forecast_payload.generated_at %}
-                    <div class="inline-flex items-center gap-2 rounded-full border border-outline-default bg-surface-hover px-3 py-1.5 text-xs font-medium text-content-secondary">
-                        <i data-lucide="clock" class="h-3.5 w-3.5"></i>
-                        Generated {{ forecast_payload.generated_at|user_datetime(include_seconds=true) }}
-                    </div>
-                {% endif %}
-            </div>
-            <div class="p-6">
-                {% if has_data %}
-                    <script id="forecast-chart-data" type="application/json">{{ forecast_payload.chart | tojson }}</script>
-                    <div class="h-[360px]">
-                        <canvas id="forecast-chart"></canvas>
-                    </div>
-                {% else %}
-                    {% set empty_state_icon = "line-chart" %}
-                    {% set empty_state_title = "No Forecast Data Available" %}
-                    {% set empty_state_description = forecast_payload.message|default('Forecast data will appear after Prometheus has enough historical samples and a valid capacity baseline for the selected scope.', true) %}
-                    {% set empty_state_min_height = "min-h-[300px]" %}
-                    {% include "components/states/_empty_state.html" %}
-                {% endif %}
-            </div>
-        </section>
-        </div>
-        <div id="forecast-content-panel-recommendations"
-             role="tabpanel"
-             aria-labelledby="forecast-content-tab-recommendations"
-             x-show="activeTab === 'recommendations'"
-             x-cloak
-             class="space-y-6">
-        <section class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
-            <div>
-                <div class="flex flex-col gap-4 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-                    <div class="flex min-w-0 items-start gap-3">
-                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary ring-1 ring-brand-outline">
-                            <i data-lucide="list-checks" class="h-5 w-5"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <h2 class="text-base font-semibold text-content-primary">Forecast Recommendations</h2>
-                                <span class="inline-flex w-fit items-center gap-2 rounded-full bg-kaori-soft px-3 py-1 text-xs font-semibold text-kaori-primary ring-1 ring-brand-outline">
-                                    {{ forecast_payload.recommendation_count|default(0) }} Actionable
-                                </span>
-                            </div>
-                            <p class="mt-1 text-sm text-content-muted">
-                                Actionable guidance from projected utilization, threshold ETA, growth trend, and confidence.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div class="border-t border-outline-default p-6">
-                    {% if forecast_payload.recommendation_cards %}
-                        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                            {% for recommendation in forecast_payload.recommendation_cards %}
-                                <a href="{{ recommendation.href|default(url_for('analytics.forecast') ) }}"
-                                   class="group rounded-xl border border-outline-default p-4 transition hover:border-brand-outline hover:bg-kaori-soft/40">
-                                    <div class="flex items-start gap-3">
-                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ recommendation.icon_class }}">
-                                            <i data-lucide="{{ recommendation.icon }}" class="h-5 w-5"></i>
-                                        </div>
-                                        <div class="min-w-0 flex-1">
-                                            <div class="flex flex-wrap items-center gap-2">
-                                                <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ recommendation.priority_class }}">
-                                                    {{ recommendation.priority }}
-                                                </span>
-                                                <span class="rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary">
-                                                    {{ recommendation.source_label|default("Forecast") }}
-                                                </span>
-                                            </div>
-                                            <h3 class="mt-3 font-semibold text-content-primary">{{ recommendation.title }}</h3>
-                                            <p class="mt-1 text-sm leading-6 text-content-muted">{{ recommendation.description }}</p>
-                                            <p class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary group-hover:text-kaori-primary">
-                                                Review Forecast
-                                                <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
-                                            </p>
-                                        </div>
-                                    </div>
-                                </a>
+                        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                            {% for label, value, helper, icon in [
+                                ('Current Usage', item.current_display, item.current_percent ~ '% of ' ~ item.capacity_display, 'gauge'),
+                                ('Projected Usage', item.projected_display, item.projected_percent ~ '% projected', 'scan-line'),
+                                ('Growth Rate', item.growth_display, 'Change across the selected horizon', 'trending-up'),
+                                ('Confidence', item.confidence, item.confidence_reason, 'shield-check')
+                            ] %}
+                                <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
+                                    <div class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-content-muted"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>{{ label }}</div>
+                                    <p class="mt-2 break-words text-lg font-semibold text-content-primary">{{ value }}</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                                </div>
                             {% endfor %}
                         </div>
-                    {% else %}
-                        <div class="max-w-xl rounded-xl border border-outline-default p-5">
-                            <div class="flex items-start gap-3">
-                                <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600">
-                                    <i data-lucide="plug-zap" class="h-5 w-5"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-content-primary">Connect Prometheus Metrics</h3>
-                                    <p class="mt-1 text-sm leading-6 text-content-muted">
-                                        Forecast recommendations require Prometheus metrics to calculate trend, growth rate,
-                                        projected utilization, capacity risk, and threshold ETA.
-                                    </p>
-                                </div>
-                            </div>
+                        <div class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-4">
+                            <div class="flex items-center justify-between gap-3 text-xs"><span class="font-semibold text-content-secondary">Projected Capacity Utilization</span><span class="font-semibold text-content-primary">{{ item.projected_percent }}%</span></div>
+                            {{ progress_bar.bar(item.projected_percent, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-card', fill_classes='h-full rounded-full bg-kaori-primary', label=item.label ~ ' projected utilization') }}
+                            <div class="mt-3 flex flex-wrap gap-2">{{ table_label.metadata_label('Current ' ~ item.current_percent ~ '%', 'activity') }}{{ table_label.metadata_label('Capacity ' ~ item.capacity_display, 'server') }}{{ table_label.metadata_label('Projected ' ~ item.projected_percent ~ '%', 'calendar-clock') }}</div>
                         </div>
-                    {% endif %}
-                </div>
+                    </div>
+                {% else %}
+                    {% set empty_state_icon = resource_icon %}{% set empty_state_title = resource_label ~ ' Unavailable' %}{% set empty_state_description = 'The selected snapshot does not contain enough history or capacity evidence for this resource.' %}{% include "components/states/_empty_state.html" %}
+                {% endif %}
             </div>
-        </section>
-        </div>
-    </div>
+        {% endfor %}
 
+        <div id="forecast-content-panel-trend" role="tabpanel" aria-labelledby="forecast-content-tab-trend" x-show="activeTab === 'trend'" x-cloak>
+            <div class="space-y-5">
+                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                    <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="line-chart" class="h-5 w-5"></i></span><div><h3 class="text-lg font-semibold text-content-primary">Trend Analysis</h3><p class="mt-1 text-sm leading-6 text-content-muted">Compare observed usage with projected behavior across {{ forecast_payload.history_days }} days of history.</p></div></div>
+                    {% if forecast_payload.generated_at %}{{ table_label.metadata_label('Generated ' ~ (forecast_payload.generated_at|user_datetime(include_seconds=true)), 'clock') }}{% endif %}
+                </div>
+                <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    {% for label, helper, style_label, icon in [
+                        ('Historical', 'Observed Prometheus samples', 'Solid line', 'activity'),
+                        ('Forecast', 'Projected values after the observation boundary', 'Dashed line', 'trending-up'),
+                        ('Warning', 'Capacity attention threshold', '75%', 'triangle-alert'),
+                        ('Critical', 'Immediate capacity threshold', '90%', 'shield-alert')
+                    ] %}
+                        <div class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3"><div class="flex items-start gap-3"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><div><div class="flex flex-wrap items-center gap-2"><p class="text-sm font-semibold text-content-primary">{{ label }}</p>{{ table_label.metadata_label(style_label) }}</div><p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p></div></div></div>
+                    {% endfor %}
+                </div>
+                {% if has_data %}
+                    <script id="forecast-chart-data" type="application/json">{{ forecast_payload.chart | tojson }}</script>
+                    <div class="h-[360px] rounded-lg border border-outline-subtle bg-surface-hover p-4"><canvas id="forecast-chart"></canvas></div>
+                {% else %}
+                    {% set empty_state_icon = 'line-chart' %}{% set empty_state_title = 'No Forecast Data Available' %}{% set empty_state_description = forecast_payload.message|default('Forecast data will appear after the analytics worker commits enough historical samples and a valid capacity baseline.', true) %}{% include "components/states/_empty_state.html" %}
+                {% endif %}
+            </div>
+        </div>
+
+        <div id="forecast-content-panel-recommendations" role="tabpanel" aria-labelledby="forecast-content-tab-recommendations" x-show="activeTab === 'recommendations'" x-cloak>
+            <div class="space-y-4">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="list-checks" class="h-5 w-5"></i></span><div><h3 class="text-lg font-semibold text-content-primary">Forecast Recommendations</h3><p class="mt-1 text-sm leading-6 text-content-muted">Prioritized actions derived from projected utilization, threshold ETA, growth, and model confidence.</p></div></div>{{ table_label.metadata_label(forecast_payload.recommendation_count|default(0) ~ ' Actionable', 'sparkles') }}</div>
+                {% if forecast_payload.recommendation_cards %}
+                    <div class="divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle">
+                        {% for recommendation in forecast_payload.recommendation_cards %}
+                            {% set priority_tone = 'critical' if recommendation.priority in ['P1', 'Critical'] else ('warning' if recommendation.priority in ['P2', 'Warning'] else 'info') %}
+                            <div class="flex flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
+                                <div class="flex min-w-0 items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ recommendation.icon }}" class="h-5 w-5"></i></span><div class="min-w-0"><div class="flex flex-wrap items-center gap-2">{{ table_label.status_label('Priority: ' ~ recommendation.priority, tone=priority_tone, size='compact') }}{{ table_label.metadata_label('Derived From: ' ~ recommendation.source_label|default('Forecast'), 'database-zap') }}</div><h4 class="mt-2 font-semibold text-content-primary">{{ recommendation.title }}</h4><p class="mt-1 text-sm leading-6 text-content-muted">{{ recommendation.description }}</p></div></div>
+                                <a href="{{ recommendation.href|default(url_for('analytics.forecast')) }}" class="{{ table_ui.action_classes() }} shrink-0"><i data-lucide="arrow-right" class="h-4 w-4"></i>Review</a>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {% set empty_state_icon = 'check-circle-2' %}{% set empty_state_title = 'No Actionable Forecast Recommendation' %}{% set empty_state_description = 'Current projections do not require immediate capacity action.' %}{% include "components/states/_empty_state.html" %}
+                {% endif %}
+            </div>
+        </div>
+    {% endcall %}
 {% endif %}

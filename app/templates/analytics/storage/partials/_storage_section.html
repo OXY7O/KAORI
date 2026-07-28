@@ -1,143 +1,30 @@
-{% import "analytics/components/_content_tabs.html" as analytics_content_tabs %}
-{% import "components/table_label.html" as table_label %}
-<div x-data="kaoriAnalyticsTabs('overview', ['overview', 'filesystem', 'persistent', 'recommendations'])" class="space-y-6">
-    {% set storage_tabs = [
-        ('overview', 'Capacity & Utilization', 'hard-drive'),
-        ('filesystem', 'Node Filesystem', 'server'),
-        ('persistent', 'Persistent Storage', 'database'),
-        ('recommendations', 'Recommendations', 'list-checks')
-    ] %}
-    {{ analytics_content_tabs.render('storage-content', storage_tabs, 'Storage Analysis Content') }}
-
-    <div id="storage-content-panel-overview"
-         role="tabpanel"
-         aria-labelledby="storage-content-tab-overview"
-         x-show="activeTab === 'overview'"
-         class="space-y-6">
-        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-            <div class="border-b border-outline-subtle p-5 sm:p-6">
-                <div class="flex items-start gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="hard-drive" class="h-5 w-5"></i></span>
-                    <div>
-                        <h2 class="text-lg font-semibold text-content-primary">Storage Capacity &amp; Utilization</h2>
-                        <p class="mt-1 text-sm leading-6 text-content-muted">Review node filesystem pressure, persistent-volume capacity, claim demand, and remaining storage headroom.</p>
-                    </div>
-                </div>
+{% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
+{% set storage_tabs = [
+    ('capacity', 'Capacity & Utilization', 'hard-drive'),
+    ('filesystem', 'Node Filesystem Usage', 'server'),
+    ('persistent', 'Persistent Storage', 'database'),
+    ('recommendations', 'Storage Recommendations', 'list-checks')
+] %}
+{% call analytics_workspace.tabbed(
+    'storage-content',
+    storage_tabs,
+    'Storage Analysis Content',
+    'Storage Analysis Workspace',
+    'Review storage capacity, node filesystem pressure, persistent storage demand, and prioritized recommendations.',
+    'database',
+    'capacity',
+    ['capacity', 'filesystem', 'persistent', 'recommendations']
+) %}
+    <div id="storage-content-panel-capacity" role="tabpanel" aria-labelledby="storage-content-tab-capacity" x-show="activeTab === 'capacity'">
+        <div class="space-y-5">
+            <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="hard-drive" class="h-5 w-5"></i></span><div><h3 class="text-lg font-semibold text-content-primary">Storage Capacity & Utilization</h3><p class="mt-1 text-sm leading-6 text-content-muted">Compare aggregate filesystem utilization and persistent-storage demand within the active scope.</p></div></div>
+            <div class="grid gap-4 lg:grid-cols-2">
+                <div class="rounded-lg border border-outline-subtle bg-surface-hover p-5"><div class="flex items-center justify-between gap-3"><div><h4 class="font-semibold text-content-primary">Filesystem Capacity</h4><p class="mt-1 text-xs text-content-muted">{{ storage_summary.node_filesystem.summary.highest_node }} has the highest observed usage.</p></div><span class="text-2xl font-semibold text-content-primary">{{ storage_summary.node_filesystem.summary.usage_percent }}%</span></div><div class="mt-4 grid gap-3 sm:grid-cols-2"><div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Used</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ storage_summary.node_filesystem.summary.used }}</p></div><div class="sm:border-l sm:border-outline-subtle sm:pl-3"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Capacity</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ storage_summary.node_filesystem.summary.capacity }}</p></div></div></div>
+                <div class="rounded-lg border border-outline-subtle bg-surface-hover p-5"><div class="flex items-center justify-between gap-3"><div><h4 class="font-semibold text-content-primary">Persistent Storage</h4><p class="mt-1 text-xs text-content-muted">PersistentVolumeClaim pressure for {{ selected_namespace if selected_namespace else 'all namespaces' }}.</p></div><span class="text-2xl font-semibold text-content-primary">{{ storage_summary.persistent_storage.pvc.used_percent }}%</span></div><div class="mt-4 grid gap-3 sm:grid-cols-2"><div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Requested</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ storage_summary.persistent_storage.pvc.requested }}</p></div><div class="sm:border-l sm:border-outline-subtle sm:pl-3"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">PV Capacity</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ storage_summary.persistent_storage.pv.capacity }}</p></div></div></div>
             </div>
-            <div class="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-4 sm:p-6">
-                {% set summary_cards = [
-                    {'label': 'Filesystem Capacity', 'value': storage_summary.node_filesystem.summary.capacity, 'helper': storage_summary.node_filesystem.summary.used ~ ' Used', 'icon': 'server'},
-                    {'label': 'Filesystem Free', 'value': storage_summary.node_filesystem.summary.free, 'helper': storage_summary.node_filesystem.summary.free_percent ~ '% Free', 'icon': 'hard-drive'},
-                    {'label': 'Persistent Volumes', 'value': storage_summary.persistent_storage.pv.count, 'helper': storage_summary.persistent_storage.pv.capacity ~ ' Capacity', 'icon': 'database'},
-                    {'label': 'Persistent Volume Claims', 'value': storage_summary.persistent_storage.pvc.count, 'helper': storage_summary.persistent_storage.pvc.requested ~ ' Requested', 'icon': 'box'}
-                ] %}
-                {% for card in summary_cards %}
-                    <article class="rounded-lg border border-outline-default bg-surface-card p-4 transition hover:bg-surface-hover">
-                        <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ card.icon }}" class="h-5 w-5"></i></span>
-                        <p class="mt-4 text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">{{ card.label }}</p>
-                        <p class="mt-1 text-2xl font-semibold text-content-primary">{{ card.value }}</p>
-                        <p class="mt-2 text-sm text-content-muted">{{ card.helper }}</p>
-                    </article>
-                {% endfor %}
-            </div>
-            <div class="border-t border-outline-subtle p-5 sm:p-6">
-                <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)]">
-                    <div class="rounded-lg border border-outline-default bg-surface-card p-4">
-                        <div class="flex items-center justify-between gap-3">
-                            <div><h3 class="font-semibold text-content-primary">Filesystem Utilization</h3><p class="mt-1 text-xs text-content-muted">Highest usage on {{ storage_summary.node_filesystem.summary.highest_node }}</p></div>
-                            {{ table_label.status_label(storage_summary.node_filesystem.summary.usage_percent ~ '% Used', 'warning' if storage_summary.node_filesystem.summary.usage_percent >= 75 else 'normal', 'triangle-alert' if storage_summary.node_filesystem.summary.usage_percent >= 75 else 'circle-check') }}
-                        </div>
-                        <div class="mt-4 h-2 overflow-hidden rounded-full bg-surface-hover">
-                            <div class="kaori-progress-fill h-full rounded-full bg-kaori-primary" data-progress="{{ storage_summary.node_filesystem.summary.usage_percent }}"></div>
-                        </div>
-                    </div>
-                    <div class="rounded-lg border border-outline-default bg-kaori-soft p-4">
-                        <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Review Scope</p>
-                        <p class="mt-2 text-sm font-semibold text-content-primary">{{ selected_namespace if selected_namespace else 'All Namespaces' }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Persistent-storage findings follow the namespace scope selected in Storage Controls.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
+        </div>
     </div>
-
-    <div id="storage-content-panel-filesystem"
-         role="tabpanel"
-         aria-labelledby="storage-content-tab-filesystem"
-         x-show="activeTab === 'filesystem'"
-         x-cloak
-         class="space-y-6">
-        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-            <div class="border-b border-outline-subtle p-5 sm:p-6">
-                <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="server" class="h-5 w-5"></i></span>
-                        <div><h2 class="text-lg font-semibold text-content-primary">Node Filesystem Usage</h2><p class="mt-1 text-sm leading-6 text-content-muted">Inspect filesystem capacity and pressure for all nodes or a selected compute instance.</p></div>
-                    </div>
-                    <label class="block sm:w-72">
-                        <span class="text-xs font-semibold text-content-secondary">Node Filesystem</span>
-                        <select name="storage_node"
-                                class="mt-1.5 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary outline-none transition hover:border-outline-strong focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10"
-                                hx-get="{{ url_for('analytics.storage_filesystem_summary') }}"
-                                hx-trigger="change"
-                                hx-target="#storage-filesystem-panel"
-                                hx-swap="outerHTML"
-                                hx-include="#storage-analysis-filter-form, [name='storage_node']"
-                                hx-indicator="#storage-refresh-indicator">
-                            <option value="" {% if not selected_storage_node %}selected{% endif %}>All Nodes</option>
-                            {% for node in storage_summary.node_filesystem.available_nodes %}<option value="{{ node }}" {% if selected_storage_node == node %}selected{% endif %}>{{ node }}</option>{% endfor %}
-                        </select>
-                    </label>
-                </div>
-            </div>
-            <div class="p-5 sm:p-6">{% include "analytics/storage/partials/_filesystem_panel.html" %}</div>
-        </section>
-    </div>
-
-    <div id="storage-content-panel-persistent"
-         role="tabpanel"
-         aria-labelledby="storage-content-tab-persistent"
-         x-show="activeTab === 'persistent'"
-         x-cloak
-         class="space-y-6">
-        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-            <div class="border-b border-outline-subtle p-5 sm:p-6">
-                <div class="flex items-start gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="database" class="h-5 w-5"></i></span>
-                    <div><h2 class="text-lg font-semibold text-content-primary">Persistent Storage</h2><p class="mt-1 text-sm leading-6 text-content-muted">Review PersistentVolume capacity, PersistentVolumeClaim demand, utilization, binding, and storage-class risk.</p></div>
-                </div>
-            </div>
-            <div class="p-5 sm:p-6">{% include "analytics/storage/partials/_persistent_storage_panel.html" %}</div>
-        </section>
-    </div>
-
-    <div id="storage-content-panel-recommendations"
-         role="tabpanel"
-         aria-labelledby="storage-content-tab-recommendations"
-         x-show="activeTab === 'recommendations'"
-         x-cloak
-         class="space-y-6">
-        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-            <div class="border-b border-outline-subtle p-5 sm:p-6">
-                <div class="flex items-start gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="list-checks" class="h-5 w-5"></i></span>
-                    <div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><h2 class="text-lg font-semibold text-content-primary">Storage Recommendations</h2>{{ table_label.metadata_label(recommendation_count ~ ' Actionable', 'sparkles') }}</div><p class="mt-1 text-sm leading-6 text-content-muted">Actionable findings generated from filesystem, PersistentVolume, and PersistentVolumeClaim risk signals.</p></div>
-                </div>
-            </div>
-            <div class="p-5 sm:p-6">
-                {% if recommendation_cards %}
-                    <div class="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-                        {% for item in recommendation_cards %}
-                            <a href="{{ item.href if item.href else url_for('analytics.storage', cluster_id=cluster.id if cluster else '', namespace=selected_namespace) }}" class="group flex h-full flex-col rounded-lg border border-outline-default bg-surface-card p-4 transition hover:bg-surface-hover">
-                                <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ item.icon }}" class="h-5 w-5"></i></span><div class="min-w-0"><div class="flex flex-wrap gap-2"><span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ item.priority_class }}">{{ item.priority }}</span><span class="rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary">{{ item.source_label }}</span></div><h3 class="mt-3 font-semibold text-content-primary">{{ item.title }}</h3><p class="mt-1 text-sm leading-6 text-content-muted">{{ item.description }}</p></div></div>
-                                <span class="mt-auto inline-flex items-center gap-2 pt-4 text-sm font-semibold text-kaori-primary">Review Storage <i data-lucide="arrow-right" class="h-4 w-4"></i></span>
-                            </a>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    {% set empty_state_icon = "check-circle-2" %}{% set empty_state_title = "No Actionable Storage Recommendation" %}{% set empty_state_description = "Current storage signals do not require immediate action." %}{% set empty_state_min_height = "min-h-[190px]" %}{% include "components/states/_empty_state.html" %}
-                {% endif %}
-            </div>
-        </section>
-    </div>
-</div>
+    <div id="storage-content-panel-filesystem" role="tabpanel" aria-labelledby="storage-content-tab-filesystem" x-show="activeTab === 'filesystem'" x-cloak>{% include "analytics/storage/partials/_filesystem_panel.html" %}</div>
+    <div id="storage-content-panel-persistent" role="tabpanel" aria-labelledby="storage-content-tab-persistent" x-show="activeTab === 'persistent'" x-cloak>{% include "analytics/storage/partials/_persistent_storage_panel.html" %}</div>
+    <div id="storage-content-panel-recommendations" role="tabpanel" aria-labelledby="storage-content-tab-recommendations" x-show="activeTab === 'recommendations'" x-cloak>{% include "analytics/storage/partials/_recommendations.html" %}</div>
+{% endcall %}

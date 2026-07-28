@@ -1,0 +1,7 @@
+{% import "components/table_label.html" as table_label %}
+{% macro resource_value(resource, value) -%}
+    {% if resource == 'cpu' %}{{ value }} Cores{% elif resource in ['memory', 'storage'] %}{{ value }} GiB{% else %}{{ value|int }} Pods{% endif %}
+{%- endmacro %}
+{% macro headroom_status(value, capacity) -%}
+    {% if capacity|default(0)|float <= 0 %}{{ table_label.status_label('Unknown', 'unknown', size='compact') }}{% elif value < 15 %}{{ table_label.status_label('Critical', 'critical', size='compact') }}{% elif value < 40 %}{{ table_label.status_label('Watch', 'warning', size='compact') }}{% else %}{{ table_label.status_label('Healthy', 'normal', size='compact') }}{% endif %}
+{%- endmacro %}

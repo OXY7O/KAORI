@@ -1,0 +1,22 @@
+{% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "components/progress_bar.html" as progress_bar %}
+{% import "components/table_label.html" as table_label %}
+{% set resources = [
+    ('CPU', summary.cpu_utilization|default(0), summary.cpu_usage|default(0) ~ ' / ' ~ summary.cpu_capacity|default(0) ~ ' Cores', 'cpu'),
+    ('Memory', summary.memory_utilization|default(0), '%.2f GiB / %.2f GiB'|format(summary.memory_usage|default(0) / 1024**3, summary.memory_capacity|default(0) / 1024**3), 'memory-stick'),
+    ('Storage', summary.storage_utilization|default(0), summary.storage_usage_gib|default(0) ~ ' / ' ~ summary.storage_capacity_gib|default(0) ~ ' GiB', 'hard-drive'),
+    ('Pods', summary.pod_utilization|default(0), summary.pod_count|default(0) ~ ' / ' ~ summary.pod_capacity|default(0) ~ ' Pods', 'boxes')
+] %}
+{% call analytics_workspace.overview(
+    'Resource Utilization Overview',
+    'Summarize the current resource posture before opening detailed utilization, trend, node, and recommendation tabs.',
+    'gauge',
+    cluster.name if cluster else 'No Cluster'
+) %}
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {% for label, value, helper, icon in resources %}
+            {% set tone = 'critical' if value > 90 else ('warning' if value >= 75 else 'normal') %}
+            <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4"><div class="flex items-start justify-between gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>{{ table_label.status_label('Critical' if value > 90 else ('Watch' if value >= 75 else 'Normal'), tone=tone, size='compact') }}</div><p class="mt-4 text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ label }} Utilization</p><p class="mt-1 text-2xl font-semibold text-content-primary">{{ value }}%</p>{{ progress_bar.bar(value, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-card', fill_classes='h-full rounded-full bg-kaori-primary', label=label ~ ' utilization') }}<p class="mt-3 text-xs leading-5 text-content-muted">{{ helper }}</p></div>
+        {% endfor %}
+    </div>
+{% endcall %}

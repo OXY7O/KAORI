@@ -1,0 +1,26 @@
+{% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "components/table_label.html" as table_label %}
+{% call analytics_workspace.overview(
+    'Workload Analysis Overview',
+    'Summarize workload coverage, governance findings, quota posture, and recommendation volume for the selected scope.',
+    'layout-dashboard',
+    workload_posture.value|default('Overview')
+) %}
+    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {% set overview_metrics = [
+            ('Workloads', workload_count_display, 'Mapped workload objects in scope', 'boxes'),
+            ('Governance Findings', finding_count_display, 'Quota and resource findings', 'shield-alert'),
+            ('Recommendations', recommendation_count_display, 'Actionable workload guidance', 'list-checks'),
+            ('Observation Window', selected_time_range, 'Committed workload snapshot', 'calendar-range')
+        ] %}
+        {% for label, value, helper, icon in overview_metrics %}
+            <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
+                <div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><div class="min-w-0"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p><p class="mt-1 break-words text-xl font-semibold text-content-primary">{{ value }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p></div></div>
+            </div>
+        {% endfor %}
+    </div>
+    <div class="mt-4 flex flex-col gap-3 rounded-lg border border-kaori-primary/20 bg-kaori-soft px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div><div class="flex flex-wrap items-center gap-2"><h3 class="text-sm font-semibold text-content-primary">Workload Posture</h3>{{ table_label.status_label(workload_posture.value, workload_posture.tone, size='compact') }}</div><p class="mt-1 text-sm leading-6 text-content-secondary">{{ workload_posture.description }}</p></div>
+        {{ table_label.metadata_label(selected_namespace if selected_namespace else 'All Namespaces', 'folder-tree') }}
+    </div>
+{% endcall %}

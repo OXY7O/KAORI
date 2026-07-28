@@ -102,12 +102,23 @@
     </section>
 
     <section class="mt-5 rounded-lg border border-outline-subtle bg-surface-hover p-4">
-        <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div class="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
                 <h4 class="text-sm font-semibold text-content-primary">Historical Signal Behavior</h4>
                 <p class="mt-1 text-xs leading-5 text-content-muted">Compare current values with sustained movement and peaks before changing capacity or workload placement.</p>
             </div>
-            {{ table_label.metadata_label('CPU · Memory · Pods', 'line-chart', false, 'detail') }}
+            <div class="grid gap-2 sm:grid-cols-3 lg:w-full">
+                {% for label, helper, icon in [
+                    ('CPU', 'Processor utilization', 'cpu'),
+                    ('Memory', 'Working-set utilization', 'memory-stick'),
+                    ('Pods', 'Pod density utilization', 'boxes')
+                ] %}
+                    <div class="flex items-center gap-2 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
+                        <div><p class="text-xs font-semibold text-content-primary">{{ label }}</p><p class="text-[10px] text-content-muted">{{ helper }}</p></div>
+                    </div>
+                {% endfor %}
+            </div>
         </div>
         <div id="utilizationTrendChartContainer"
              class="relative h-[360px] rounded-lg border border-outline-subtle bg-surface-card p-3">
@@ -255,21 +266,7 @@
                         intersect: false,
                     },
                     plugins: {
-                        legend: {
-                            position: 'top',
-                            align: 'center',
-                            labels: {
-                                color: textColor,
-                                usePointStyle: true,
-                                pointStyle: 'circle',
-                                boxWidth: 8,
-                                boxHeight: 8,
-                                padding: 18,
-                                font: {
-                                    weight: '600',
-                                },
-                            },
-                        },
+                        legend: { display: false },
                         tooltip: {
                             backgroundColor: cardColor,
                             titleColor: primaryColor,
