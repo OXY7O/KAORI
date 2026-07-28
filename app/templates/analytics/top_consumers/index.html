@@ -9,7 +9,6 @@
         {% set recommendation_count = payload.recommendation_count|default(0) %}
         {% set total_rows = payload.total_rows|default(0) %}
         {% include "analytics/top_consumers/partials/_hero.html" %}
-        {% include "analytics/materialization/_freshness.html" %}
         {% if dependency_blocker %}{% include "components/dependencies/_blocker.html" %}{% endif %}
         {% if not dependency_blocker %}
             {% include "analytics/top_consumers/partials/_controls_readiness.html" %}

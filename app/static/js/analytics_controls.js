@@ -6,15 +6,17 @@
     }
 
     function requestedAnalyticsTab(allowedTabs, defaultTab) {
-        const hashTab = window.location.hash.replace(/^#/, '');
-        if (allowedTabs.includes(hashTab)) return hashTab;
-
         try {
             const storedTab = window.sessionStorage.getItem(analyticsTabStorageKey());
             if (allowedTabs.includes(storedTab)) return storedTab;
         } catch {
             // Storage can be unavailable in hardened browser modes.
         }
+
+        // Preserve compatibility with bookmarked legacy hashes without using
+        // hash navigation for normal tab interaction.
+        const hashTab = window.location.hash.replace(/^#/, '');
+        if (allowedTabs.includes(hashTab)) return hashTab;
 
         return defaultTab;
     }
@@ -32,12 +34,18 @@
                 try {
                     window.sessionStorage.setItem(analyticsTabStorageKey(), tab);
                 } catch {
-                    // The URL hash remains the fallback persistence mechanism.
+                    // The in-memory Alpine state still keeps the current tab active.
                 }
 
+                // Do not write a URL hash here. Hash updates can move the viewport
+                // when a matching element exists and make the workspace appear to
+                // jump upward. Remove a legacy analytics-tab hash without navigation.
                 const url = new URL(window.location.href);
-                url.hash = tab;
-                window.history.replaceState(null, '', url);
+                const currentHash = url.hash.replace(/^#/, '');
+                if (tabs.includes(currentHash)) {
+                    url.hash = '';
+                    window.history.replaceState(window.history.state, '', url);
+                }
             },
         };
     };
@@ -89,6 +97,27 @@
         }
     }
 
+    function stabilizeTopConsumersAfterSwap(root) {
+        const candidate = root?.isConnected ? root : document;
+        const pageRoot = candidate?.id === 'top-consumers-page'
+            ? candidate
+            : candidate?.querySelector?.('#top-consumers-page') || document.querySelector('#top-consumers-page');
+        if (!pageRoot?.isConnected) return;
+
+        const tabset = pageRoot.querySelector('[data-top-consumers-tabset]');
+        if (!tabset) return;
+
+        if (window.Alpine && !tabset._x_dataStack) {
+            window.Alpine.initTree(tabset);
+        }
+
+        const activeTab = tabset._x_dataStack?.[0]?.activeTab || 'overview';
+        tabset.querySelectorAll('[role="tabpanel"]').forEach((panel) => {
+            const panelName = panel.id.replace('top-consumers-content-panel-', '');
+            panel.hidden = panelName !== activeTab;
+        });
+    }
+
     function hydrateAnalyticsUi(root = document) {
         hydrateProgressBars(root);
         hydrateProgressRings(root);
@@ -107,6 +136,6 @@
 
     document.addEventListener('DOMContentLoaded', () => hydrateAnalyticsUi());
     document.body.addEventListener('htmx:load', (event) => hydrateAnalyticsUi(event.detail.elt || document));
-    document.body.addEventListener('htmx:afterSwap', (event) => { const root = event.detail.target || document; hydrateAnalyticsUi(root); stabilizeAlertsAfterSwap(root); });
+    document.body.addEventListener('htmx:afterSwap', (event) => { const root = event.detail.target || document; hydrateAnalyticsUi(root); stabilizeAlertsAfterSwap(root); stabilizeTopConsumersAfterSwap(root); });
     document.body.addEventListener('htmx:afterSettle', (event) => hydrateAnalyticsUi(event.detail.elt || document));
 })();

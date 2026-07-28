@@ -16,9 +16,10 @@
         <form method="GET"
               action="{{ url_for('analytics.top_consumers') }}"
               hx-get="{{ url_for('analytics.top_consumers_table') }}"
-              hx-target="#consumer-detail-section"
-              hx-swap="outerHTML"
-              hx-indicator="#top-consumers-refresh-indicator"
+              hx-target="#consumer-detail-results"
+              hx-swap="outerHTML settle:150ms"
+              hx-indicator="#consumer-detail-loading-indicator"
+              hx-sync="#consumer-detail-results:replace"
               class="flex flex-wrap items-center gap-3 text-sm text-content-muted ">
             <input type="hidden"
                    name="cluster_id"
@@ -52,9 +53,10 @@
                 {% set prev_table_url = url_for('analytics.top_consumers_table', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, resource=selected_resource, search=selected_search, sort=selected_sort, focus=selected_focus, page=prev_page, per_page=per_page) %}
                 <a href="{{ prev_page_url }}"
                    hx-get="{{ prev_table_url }}"
-                   hx-target="#consumer-detail-section"
-                   hx-swap="outerHTML"
-                   hx-indicator="#top-consumers-refresh-indicator"
+                   hx-target="#consumer-detail-results"
+                   hx-swap="outerHTML settle:150ms"
+                   hx-indicator="#consumer-detail-loading-indicator"
+                   hx-sync="#consumer-detail-results:replace"
                    class="{{ pagination_ui.navigation_classes(disabled=false) }}">
                     <i data-lucide="chevron-left" class="h-4 w-4"></i>
                     Previous
@@ -71,9 +73,10 @@
                 {% set next_table_url = url_for('analytics.top_consumers_table', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, resource=selected_resource, search=selected_search, sort=selected_sort, focus=selected_focus, page=next_page, per_page=per_page) %}
                 <a href="{{ next_page_url }}"
                    hx-get="{{ next_table_url }}"
-                   hx-target="#consumer-detail-section"
-                   hx-swap="outerHTML"
-                   hx-indicator="#top-consumers-refresh-indicator"
+                   hx-target="#consumer-detail-results"
+                   hx-swap="outerHTML settle:150ms"
+                   hx-indicator="#consumer-detail-loading-indicator"
+                   hx-sync="#consumer-detail-results:replace"
                    class="{{ pagination_ui.navigation_classes(disabled=false) }}">
                     Next
                     <i data-lucide="chevron-right" class="h-4 w-4"></i>

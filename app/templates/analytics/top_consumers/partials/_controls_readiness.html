@@ -5,6 +5,8 @@
 {% set generated_at = materialization.generated_at|default(none) if materialization else none %}
 {% set expires_at = materialization.expires_at|default(none) if materialization else none %}
 {% set last_attempt_at = materialization.last_attempt_at|default(none) if materialization else none %}
+{% set source_warning = materialization.source_warning|default(none) if materialization else none %}
+{% set last_error = materialization.last_error|default(none) if materialization else none %}
 {% set snapshot_stale = materialization.stale|default(false) if materialization else false %}
 {% set refresh_dispatched = materialization.refresh_dispatched|default(false) if materialization else false %}
 {% if refresh_dispatched %}
@@ -53,7 +55,8 @@
           hx-select="#top-consumers-page"
           hx-swap="outerHTML"
           hx-push-url="true"
-          hx-indicator="#top-consumers-refresh-indicator">
+          hx-indicator="#top-consumers-refresh-indicator"
+          hx-sync="#top-consumers-page:replace">
         <div class="grid gap-4 px-5 py-5 md:grid-cols-3 sm:px-6">
             {% set input_classes = 'mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none transition-colors hover:border-outline-strong focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft' %}
             <label class="block min-w-0">
@@ -88,6 +91,61 @@
             <input type="hidden" name="per_page" value="{{ consumer_payload.pagination.per_page|default(5) }}">
         </div>
     </form>
+
+    {% if snapshot_stale or source_warning or last_error %}
+        <div class="border-t border-outline-subtle px-5 py-4 sm:px-6">
+            <div class="divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-default bg-surface-hover">
+                {% if snapshot_stale %}
+                    <div class="flex items-start gap-3 px-4 py-3">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-status-warning-soft text-status-warning">
+                            <i data-lucide="history" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p class="text-sm font-semibold text-content-primary">Last Successful Snapshot</p>
+                                {{ table_label.status_indicator_label('Serving Committed Data', tone='warning', size='compact') }}
+                            </div>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">
+                                KAORI is serving the snapshot generated {{ generated_at|user_datetime if generated_at else 'at an unavailable time' }} while the background worker prepares a replacement. This page does not query Prometheus directly.
+                            </p>
+                        </div>
+                    </div>
+                {% endif %}
+                {% if source_warning %}
+                    <div class="flex items-start gap-3 px-4 py-3">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-status-warning-soft text-status-warning">
+                            <i data-lucide="triangle-alert" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-content-primary">Readiness Evidence Incomplete</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ source_warning.description }}</p>
+                            {% if source_warning.diagnostic_detail %}
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ source_warning.diagnostic_detail }}</p>
+                            {% endif %}
+                            {% if source_warning.action_url and source_warning.action_label %}
+                                <a href="{{ source_warning.action_url }}"
+                                   class="mt-2 inline-flex items-center gap-2 text-xs font-semibold text-kaori-primary hover:text-kaori-primary-hover">
+                                    <i data-lucide="external-link" class="h-3.5 w-3.5"></i>
+                                    {{ source_warning.action_label }}
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endif %}
+                {% if last_error %}
+                    <div class="flex items-start gap-3 px-4 py-3">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-status-critical-soft text-status-critical">
+                            <i data-lucide="circle-alert" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-content-primary">Latest Refresh Error</p>
+                            <p class="mt-1 break-words text-xs leading-5 text-content-muted">{{ last_error }}</p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
 
     <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
         <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">

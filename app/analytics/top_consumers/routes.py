@@ -79,12 +79,30 @@ def top_consumers_table() -> str:
     context, state = _context_or_state()
     if state:
         blocker = state.get('dependency_blocker')
-        return (
-            render_dependency_blocker(blocker)
-            if blocker
-            else render_template('analytics/materialization/_pending.html', **state)
+        return render_template(
+            'analytics/top_consumers/partials/_consumer_detail_results.html',
+            consumer_payload={'rows': [], 'pagination': {}},
+            render_dependency_blocker=bool(blocker),
+            render_materialization_pending=not bool(blocker),
+            **state,
         )
-    dependency_blocker = (context or {}).get('dependency_blocker')
+
+    table_context = context or {}
+    dependency_blocker = table_context.get('dependency_blocker')
     if dependency_blocker:
-        return render_dependency_blocker(dependency_blocker)
-    return render_template('analytics/top_consumers/partials/_consumer_detail_section.html', **(context or {}))
+        return render_template(
+            'analytics/top_consumers/partials/_consumer_detail_results.html',
+            consumer_payload={'rows': [], 'pagination': {}},
+            dependency_blocker=dependency_blocker,
+            render_dependency_blocker=True,
+            **{
+                key: value
+                for key, value in table_context.items()
+                if key not in {'consumer_payload', 'dependency_blocker'}
+            },
+        )
+
+    return render_template(
+        'analytics/top_consumers/partials/_consumer_detail_results.html',
+        **table_context,
+    )

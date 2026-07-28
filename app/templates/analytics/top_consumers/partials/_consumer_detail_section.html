@@ -1,252 +1,64 @@
-{% import "components/progress_bar.html" as progress_bar %}
-{% import "components/table.html" as table_ui %}
-{% import "components/table_label.html" as table_label %}
+{% import "components/loading_bar.html" as loading_bar %}
 {% set payload = consumer_payload %}
-{% set rows = payload.rows %}
 {% set pagination = payload.pagination %}
 {% if render_dependency_blocker|default(false) and dependency_blocker %}
-    <div id="consumer-detail-section">{% include "components/dependencies/_blocker.html" %}</div>
-{% elif not dependency_blocker %}
     <section id="consumer-detail-section" class="space-y-5">
-        <header class="flex flex-col gap-4 border-b border-outline-subtle pb-5 xl:flex-row xl:items-center xl:justify-between">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="list-filter" class="h-5 w-5"></i>
-                </span>
-                <div class="min-w-0">
-                    <h2 class="text-base font-semibold text-content-primary">Consumer Detail</h2>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Review resource usage and risk first; workload, pod, container, and PVC identity remain in View More.</p>
+        {% include "analytics/top_consumers/partials/_consumer_detail_results.html" %}
+    </section>
+{% elif not dependency_blocker %}
+    <section id="consumer-detail-section"
+             class="space-y-5"
+             hx-sync="#consumer-detail-results:replace">
+        <header class="border-b border-outline-subtle pb-5">
+            <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="list-filter" class="h-5 w-5"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h2 class="text-base font-semibold text-content-primary">Consumer Detail</h2>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Review resource usage and risk first; workload, pod, container, and PVC identity remain in View More.</p>
+                    </div>
                 </div>
+                <form id="consumer-detail-filter"
+                      method="GET"
+                      action="{{ url_for('analytics.top_consumers') }}"
+                      hx-get="{{ url_for('analytics.top_consumers_table') }}"
+                      hx-trigger="keyup[event.target.name === 'search'] changed delay:350ms, search[event.target.name === 'search'], change[event.target.name === 'sort']"
+                      hx-target="#consumer-detail-results"
+                      hx-swap="outerHTML settle:150ms"
+                      hx-indicator="#consumer-detail-loading-indicator"
+                      hx-sync="#consumer-detail-results:replace"
+                      class="grid min-w-0 gap-3 sm:grid-cols-2">
+                    <input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}">
+                    <input type="hidden" name="namespace" value="{{ selected_namespace }}">
+                    <input type="hidden" name="resource" value="{{ selected_resource }}">
+                    <input type="hidden" name="focus" value="{{ selected_focus }}">
+                    <input type="hidden" name="page" value="1">
+                    <label class="relative block min-w-0">
+                        <span class="sr-only">Search consumers</span>
+                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-content-muted">
+                            <i data-lucide="search" class="h-4 w-4"></i>
+                        </span>
+                        <input type="search"
+                               name="search"
+                               value="{{ selected_search }}"
+                               placeholder="Search consumers..."
+                               class="h-9 w-full rounded-md border border-outline-default bg-surface-card py-1.5 pl-9 pr-3 text-sm text-content-primary outline-none hover:border-outline-strong focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft">
+                    </label>
+                    <label class="block min-w-0">
+                        <span class="sr-only">Sort consumers</span>
+                        <select name="sort" class="h-9 w-full rounded-md border border-outline-default bg-surface-card px-3 py-1.5 text-sm text-content-primary outline-none hover:border-outline-strong focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft">
+                            {% for item in sort_options %}
+                                <option value="{{ item.value }}" {% if selected_sort == item.value %}selected{% endif %}>{{ item.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                </form>
             </div>
-            <form id="consumer-detail-filter"
-                  method="GET"
-                  action="{{ url_for('analytics.top_consumers') }}"
-                  hx-get="{{ url_for('analytics.top_consumers_table') }}"
-                  hx-trigger="keyup changed delay:350ms from:input[name='search'], change from:select"
-                  hx-target="#consumer-detail-section"
-                  hx-swap="outerHTML"
-                  hx-indicator="#top-consumers-refresh-indicator"
-                  class="grid min-w-0 gap-3 sm:grid-cols-2">
-                <input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}">
-                <input type="hidden" name="namespace" value="{{ selected_namespace }}">
-                <input type="hidden" name="resource" value="{{ selected_resource }}">
-                <input type="hidden" name="focus" value="{{ selected_focus }}">
-                <input type="hidden" name="page" value="1">
-                <label class="relative block min-w-0">
-                    <span class="sr-only">Search consumers</span>
-                    <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
-                    <input type="search"
-                           name="search"
-                           value="{{ selected_search }}"
-                           placeholder="Search consumers..."
-                           class="h-9 w-full rounded-md border border-outline-default bg-surface-card py-1.5 pl-9 pr-3 text-sm text-content-primary outline-none hover:border-outline-strong focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft">
-                </label>
-                <label class="block min-w-0">
-                    <span class="sr-only">Sort consumers</span>
-                    <select name="sort" class="h-9 w-full rounded-md border border-outline-default bg-surface-card px-3 py-1.5 text-sm text-content-primary outline-none hover:border-outline-strong focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft">
-                        {% for item in sort_options %}
-                            <option value="{{ item.value }}" {% if selected_sort == item.value %}selected{% endif %}>{{ item.label }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
-            </form>
+            {{ loading_bar.render('consumer-detail-loading-indicator', label='Refreshing Consumer Detail') }}
         </header>
 
-        {% set focus_labels = {
-            'missing_requests': 'Missing Requests',
-            'high_usage': 'High Usage Workloads',
-            'dominant_namespaces': 'Dominant Namespaces',
-            'high_pvc': 'High PVC Usage'
-        } %}
-        {% if selected_focus %}
-            {% set clear_focus_page_url = url_for(
-                'analytics.top_consumers',
-                cluster_id=cluster.id if cluster else '',
-                namespace=selected_namespace,
-                resource='all',
-                search='',
-                sort=selected_sort,
-                page=1,
-                per_page=pagination.per_page
-            ) %}
-            {% set clear_focus_table_url = url_for(
-                'analytics.top_consumers_table',
-                cluster_id=cluster.id if cluster else '',
-                namespace=selected_namespace,
-                resource='all',
-                search='',
-                sort=selected_sort,
-                page=1,
-                per_page=pagination.per_page
-            ) %}
-            <div class="flex flex-col gap-3 rounded-lg border border-kaori-primary/20 bg-kaori-soft px-4 py-3 text-sm text-kaori-primary sm:flex-row sm:items-center sm:justify-between">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="filter" class="h-4 w-4 shrink-0"></i>
-                    <span>Focused View: <span class="font-semibold">{{ focus_labels.get(selected_focus, selected_focus) }}</span></span>
-                </div>
-                <a href="{{ clear_focus_page_url }}"
-                   hx-get="{{ clear_focus_table_url }}"
-                   hx-target="#consumer-detail-section"
-                   hx-swap="outerHTML"
-                   hx-indicator="#top-consumers-refresh-indicator"
-                   class="inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:text-kaori-primary-hover">
-                    Clear Focus
-                    <i data-lucide="x" class="h-3.5 w-3.5"></i>
-                </a>
-            </div>
-        {% endif %}
-
-        {% if rows %}
-            <div class="overflow-hidden rounded-lg border border-outline-default">
-                <div class="hidden grid-cols-12 gap-4 border-b border-outline-subtle bg-surface-hover px-4 py-3 lg:grid">
-                    <div class="col-span-1 text-xs font-semibold uppercase tracking-wide text-content-muted">Rank</div>
-                    <div class="col-span-3 text-xs font-semibold uppercase tracking-wide text-content-muted">Namespace</div>
-                    <div class="col-span-4 text-xs font-semibold uppercase tracking-wide text-content-muted">Resource &amp; Usage</div>
-                    <div class="col-span-2 text-xs font-semibold uppercase tracking-wide text-content-muted">Risk</div>
-                    <div class="col-span-2 text-right text-xs font-semibold uppercase tracking-wide text-content-muted">Action</div>
-                </div>
-                <div class="divide-y divide-outline-subtle bg-surface-card">
-                    {% for row in rows %}
-                        {% set risk_tone = 'critical' if row.risk.key == 'critical' else ('warning' if row.risk.key == 'warning' else ('normal' if row.risk.key == 'normal' else 'unknown')) %}
-                        {% set action_label = 'Immediate Review' if row.risk.key == 'critical' else ('Optimize' if row.risk.key == 'warning' else ('Storage Review' if row.resource_type == 'pvc' else 'Monitor')) %}
-                        {% set action_tone = 'critical' if row.risk.key == 'critical' else ('warning' if row.risk.key == 'warning' else ('info' if row.resource_type == 'pvc' else 'normal')) %}
-                        <article x-data="{ expanded: false }">
-                            <div class="grid gap-4 px-4 py-4 lg:grid-cols-12 lg:items-center">
-                                <div class="lg:col-span-1">
-                                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-hover text-xs font-semibold text-content-secondary">{{ row.rank }}</span>
-                                </div>
-                                <div class="min-w-0 lg:col-span-3">
-                                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted lg:hidden">Namespace</p>
-                                    <p class="mt-1 break-words text-sm font-semibold text-content-primary lg:mt-0">{{ row.namespace }}</p>
-                                </div>
-                                <div class="min-w-0 lg:col-span-4">
-                                    <div class="flex flex-wrap items-center justify-between gap-2">
-                                        {{ table_label.metadata_label(row.resource_label, size='compact') }}
-                                        <span class="text-sm font-semibold tabular-nums text-content-primary">{{ row.current_display }}</span>
-                                    </div>
-                                    <div class="mt-2 flex items-center gap-3">
-                                        <div class="min-w-0 flex-1">
-                                            {% set risk_fill = 'bg-status-critical' if row.risk.key == 'critical' else ('bg-status-warning' if row.risk.key == 'warning' else 'bg-kaori-primary') %}
-                                            {{ progress_bar.bar(
-                                                row.usage_bar_percent,
-                                                track_classes='h-2 overflow-hidden rounded-full bg-surface-hover',
-                                                fill_classes='h-full rounded-full ' ~ risk_fill,
-                                                label=row.resource_label ~ ' usage'
-                                            ) }}
-                                        </div>
-                                        <span class="shrink-0 text-xs font-semibold tabular-nums text-content-secondary">{{ row.usage_percent }}%</span>
-                                    </div>
-                                </div>
-                                <div class="lg:col-span-2">
-                                    {{ table_label.status_label(row.risk.label, tone=risk_tone, size='compact') }}
-                                    <p class="mt-1 text-xs text-content-muted">{{ action_label }}</p>
-                                </div>
-                                <div class="flex lg:col-span-2 lg:justify-end">
-                                    <button type="button"
-                                            @click="expanded = !expanded"
-                                            class="{{ table_ui.action_classes() }} w-full shrink-0 sm:w-auto"
-                                            :aria-expanded="expanded ? 'true' : 'false'">
-                                        <i data-lucide="chevron-down" class="h-4 w-4 transition" :class="{ 'rotate-180': expanded }"></i>
-                                        <span x-text="expanded ? 'Hide Details' : 'View More'">View More</span>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div x-show="expanded" x-cloak class="border-t border-outline-subtle bg-surface-hover px-4 py-5">
-                                <div class="overflow-hidden rounded-lg border border-outline-default bg-surface-card">
-                                    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
-                                        <div class="min-w-0">
-                                            <div class="flex flex-wrap items-center gap-2">
-                                                <h3 class="break-words font-semibold text-content-primary">{{ row.workload }}</h3>
-                                                {{ table_label.status_label(row.risk.label, tone=risk_tone, size='compact') }}
-                                            </div>
-                                            <p class="mt-1 text-sm leading-6 text-content-secondary">Identity, resource boundary, and recommended action for this ranked consumer.</p>
-                                        </div>
-                                        <div class="flex flex-wrap gap-2">
-                                            {{ table_label.metadata_label(row.namespace, size='compact') }}
-                                            {{ table_label.metadata_label(row.resource_label, size='compact') }}
-                                            {{ table_label.status_indicator_label(action_label, tone=action_tone, size='compact') }}
-                                        </div>
-                                    </header>
-
-                                    <div class="grid lg:grid-cols-3">
-                                        <section class="p-5 lg:col-span-2">
-                                            <h4 class="text-sm font-semibold text-content-primary">Consumer Identity &amp; Resource Boundary</h4>
-                                            <dl class="mt-3 grid gap-x-6 sm:grid-cols-2">
-                                                {% set identity_label = 'PVC' if row.resource_type == 'pvc' else 'Workload' %}
-                                                {% for label, value in [
-                                                    ('Namespace', row.namespace),
-                                                    (identity_label, row.workload),
-                                                    ('Pod', row.pod if row.pod else '—'),
-                                                    ('Container', row.container if row.container else '—'),
-                                                    ('Current Usage', row.current_display),
-                                                    ('Request', row.request_display),
-                                                    ('Limit / Capacity', row.limit_display),
-                                                    ('Usage Ratio', row.usage_percent ~ '%')
-                                                ] %}
-                                                    <div class="flex min-w-0 items-start justify-between gap-4 border-b border-outline-subtle py-3">
-                                                        <dt class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</dt>
-                                                        <dd class="w-3/5 break-words text-right text-sm font-semibold text-content-primary">{{ value }}</dd>
-                                                    </div>
-                                                {% endfor %}
-                                            </dl>
-                                            <div class="mt-4">
-                                                <div class="flex items-center justify-between text-xs font-medium text-content-muted">
-                                                    <span>Usage Ratio</span>
-                                                    <span>{{ row.usage_percent }}%</span>
-                                                </div>
-                                                {{ progress_bar.bar(
-                                                    row.usage_bar_percent,
-                                                    track_classes='mt-2 h-2.5 overflow-hidden rounded-full bg-surface-hover',
-                                                    fill_classes='h-full rounded-full ' ~ risk_fill,
-                                                    label='Usage ratio'
-                                                ) }}
-                                            </div>
-                                        </section>
-
-                                        <aside class="border-t border-outline-subtle p-5 lg:border-l lg:border-t-0">
-                                            <div class="flex items-start gap-3">
-                                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                                    <i data-lucide="lightbulb" class="h-4 w-4"></i>
-                                                </span>
-                                                <div class="min-w-0">
-                                                    <h4 class="text-sm font-semibold text-content-primary">Recommended Action</h4>
-                                                    <p class="mt-1 text-sm leading-6 text-content-secondary">{{ row.recommendation }}</p>
-                                                </div>
-                                            </div>
-                                            <div class="mt-4 border-t border-outline-subtle pt-4">
-                                                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Why This Matters</p>
-                                                <p class="mt-2 text-sm leading-6 text-content-secondary">
-                                                    {% if row.request_display == '-' and row.resource_type in ['cpu', 'memory'] %}
-                                                        {{ row.resource_label }} request is missing, so Kubernetes cannot reserve predictable capacity for this workload.
-                                                    {% elif row.limit_display == '-' and row.resource_type in ['cpu', 'memory'] %}
-                                                        {{ row.resource_label }} limit is missing, so the workload has no configured upper resource boundary.
-                                                    {% elif row.resource_type == 'pvc' and row.usage_percent >= 80 %}
-                                                        PVC usage is {{ row.usage_percent }}%; review cleanup or expansion before capacity becomes critical.
-                                                    {% elif row.usage_percent >= 90 %}
-                                                        Usage is above the critical threshold of 90%.
-                                                    {% elif row.usage_percent >= 75 %}
-                                                        Usage is above the warning threshold of 75%.
-                                                    {% else %}
-                                                        Usage is below the warning threshold; continue monitoring growth and nearby ranked consumers.
-                                                    {% endif %}
-                                                </p>
-                                            </div>
-                                        </aside>
-                                    </div>
-                                </div>
-                            </div>
-                        </article>
-                    {% endfor %}
-                </div>
-            </div>
-            {% include "analytics/top_consumers/partials/_consumer_detail_pagination.html" %}
-        {% else %}
-            {% set empty_state_icon = "list-filter" %}
-            {% set empty_state_title = "No Consumer Rows Available" %}
-            {% set empty_state_description = "Adjust the namespace, resource, focus, or search filters to find matching consumer data." %}
-            {% set empty_state_min_height = "min-h-[260px]" %}
-            {% include "components/states/_empty_state.html" %}
-        {% endif %}
+        {% include "analytics/top_consumers/partials/_consumer_detail_results.html" %}
     </section>
 {% endif %}

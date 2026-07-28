@@ -40,8 +40,10 @@ def test_overview_rankings_do_not_force_horizontal_scroll() -> None:
 
 
 def test_consumer_detail_hides_workload_pod_and_pvc_from_main_columns() -> None:
-    detail = _read('partials/_consumer_detail_section.html')
-    main_header = detail.split('<div class="divide-y', 1)[0]
+    section = _read('partials/_consumer_detail_section.html')
+    results = _read('partials/_consumer_detail_results.html')
+    detail = section + results
+    main_header = results.split('<div class="divide-y', 1)[0]
 
     assert 'Workload / Pod / PVC' not in main_header
     assert 'Resource &amp; Usage' in detail
