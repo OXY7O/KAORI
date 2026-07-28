@@ -14,9 +14,9 @@
                 hx-get="{{ url_for(endpoint_name) }}"
                 hx-trigger="change consume"
                 hx-target="{{ target_id }}"
+                hx-sync="{{ target_id }}:replace"
                 hx-swap="outerHTML"
-                hx-indicator="#alerts-refresh-indicator"
-                hx-sync="#alerts-page-content:replace"
+                hx-indicator="#{{ 'alerts-table-loading-indicator' if page_size_name == 'alerts_per_page' else 'anomalies-table-loading-indicator' }}"
                 hx-push-url="false"
                 hx-vals='js:{ cluster_id: "{{ selected_cluster_id }}", source: "{{ selected_source }}", severity: "{{ selected_severity }}", status: "{{ selected_status }}", namespace: "{{ selected_namespace }}", search: "{{ selected_search }}", page: "1", alerts_per_page: "{{ pagination.per_page if page_size_name == 'alerts_per_page' else sibling_page_size_value }}", anomalies_per_page: "{{ pagination.per_page if page_size_name == 'anomalies_per_page' else sibling_page_size_value }}", [event.target.name]: event.target.value }'
                 class="{{ pagination_ui.page_size_classes() }}">
@@ -33,8 +33,7 @@
                hx-target="{{ target_id }}"
                hx-swap="outerHTML"
                hx-push-url="false"
-               hx-indicator="#alerts-refresh-indicator"
-               hx-sync="#alerts-page-content:replace"
+               hx-indicator="#{{ 'alerts-table-loading-indicator' if page_size_name == 'alerts_per_page' else 'anomalies-table-loading-indicator' }}"
                class="{{ pagination_ui.navigation_classes(disabled=false) }}">
                 <i data-lucide="chevron-left" class="h-4 w-4"></i>
                 Previous
@@ -52,8 +51,7 @@
                hx-target="{{ target_id }}"
                hx-swap="outerHTML"
                hx-push-url="false"
-               hx-indicator="#alerts-refresh-indicator"
-               hx-sync="#alerts-page-content:replace"
+               hx-indicator="#{{ 'alerts-table-loading-indicator' if page_size_name == 'alerts_per_page' else 'anomalies-table-loading-indicator' }}"
                class="{{ pagination_ui.navigation_classes(disabled=false) }}">
                 Next
                 <i data-lucide="chevron-right" class="h-4 w-4"></i>

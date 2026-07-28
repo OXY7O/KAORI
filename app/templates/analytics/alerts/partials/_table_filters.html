@@ -1,13 +1,16 @@
-{% import "components/pagination.html" as pagination_ui %}
 {% set is_alert_table = table_kind == 'alerts' %}
+{% set indicator_id = 'alerts-table-loading-indicator' if is_alert_table else 'anomalies-table-loading-indicator' %}
 <div class="border-b border-outline-default bg-surface-hover px-4 py-4 sm:px-5">
-    <form class="grid gap-3 sm:grid-cols-2 lg:items-end {{ 'lg:grid-cols-[minmax(150px,.7fr)_minmax(150px,.7fr)_minmax(180px,1fr)_minmax(240px,1.3fr)_auto]' if is_alert_table else 'lg:grid-cols-[minmax(150px,.7fr)_minmax(180px,1fr)_minmax(240px,1.3fr)_auto]' }}"
+    <form id="{{ table_kind }}-table-filter-form"
+          class="grid gap-3 sm:grid-cols-2 lg:items-end {{ 'lg:grid-cols-4' if is_alert_table else 'lg:grid-cols-3' }}"
           hx-get="{{ url_for(endpoint_name) }}"
+          hx-trigger="change delay:120ms from:select, keyup changed delay:450ms from:input[name='search'], search from:input[name='search']"
           hx-target="{{ target_id }}"
-          hx-swap="outerHTML"
+          hx-swap="outerHTML settle:120ms"
           hx-push-url="false"
-          hx-sync="#alerts-page-content:replace"
-          hx-indicator="#alerts-refresh-indicator">
+          hx-sync="{{ target_id }}:replace"
+          hx-indicator="#{{ indicator_id }}"
+          hx-on::before-request="window.dispatchEvent(new CustomEvent('kaori:alerts-collapse'))">
         <input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}">
         <input type="hidden" name="source" value="{{ selected_source }}">
         <input type="hidden" name="alerts_per_page" value="{{ selected_alerts_per_page }}">
@@ -16,8 +19,7 @@
 
         <label class="block min-w-0">
             <span class="text-xs font-semibold text-content-muted">Severity</span>
-            <select name="severity"
-                    class="mt-1 w-full rounded-lg border border-outline-strong bg-surface-card px-3 py-2 pr-9 text-sm font-medium text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
+            <select name="severity" class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 pr-9 text-sm text-content-primary outline-none transition-colors hover:border-outline-strong focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft">
                 {% for option in severity_options %}
                     <option value="{{ option }}" {% if selected_severity == option %}selected{% endif %}>{{ option|title }}</option>
                 {% endfor %}
@@ -27,8 +29,7 @@
         {% if is_alert_table %}
             <label class="block min-w-0">
                 <span class="text-xs font-semibold text-content-muted">State</span>
-                <select name="status"
-                        class="mt-1 w-full rounded-lg border border-outline-strong bg-surface-card px-3 py-2 pr-9 text-sm font-medium text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
+                <select name="status" class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 pr-9 text-sm text-content-primary outline-none transition-colors hover:border-outline-strong focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft">
                     {% for option in status_options %}
                         <option value="{{ option }}" {% if selected_status == option %}selected{% endif %}>{{ option|title }}</option>
                     {% endfor %}
@@ -40,8 +41,7 @@
 
         <label class="block min-w-0">
             <span class="text-xs font-semibold text-content-muted">Namespace</span>
-            <select name="namespace"
-                    class="mt-1 w-full rounded-lg border border-outline-strong bg-surface-card px-3 py-2 pr-9 text-sm font-medium text-content-primary outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
+            <select name="namespace" class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 pr-9 text-sm text-content-primary outline-none transition-colors hover:border-outline-strong focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft">
                 <option value="" {% if not selected_namespace %}selected{% endif %}>All Namespaces</option>
                 {% for namespace in namespace_options %}
                     <option value="{{ namespace }}" {% if selected_namespace == namespace %}selected{% endif %}>{{ namespace }}</option>
@@ -52,29 +52,7 @@
         <label class="relative block min-w-0">
             <span class="text-xs font-semibold text-content-muted">Search</span>
             <i data-lucide="search" class="pointer-events-none absolute left-3 top-[35px] h-4 w-4 text-content-muted"></i>
-            <input type="search"
-                   name="search"
-                   value="{{ selected_search }}"
-                   placeholder="{{ 'Search alert records...' if is_alert_table else 'Search anomaly candidates...' }}"
-                   class="mt-1 w-full rounded-lg border border-outline-strong bg-surface-card py-2 pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:font-normal placeholder:text-content-muted focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
+            <input type="search" name="search" value="{{ selected_search }}" placeholder="{{ 'Search alert records...' if is_alert_table else 'Search anomaly candidates...' }}" class="mt-1 h-10 w-full rounded-md border border-outline-default bg-surface-card py-2 pl-10 pr-3 text-sm text-content-primary outline-none transition-colors placeholder:text-content-muted hover:border-outline-strong focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft">
         </label>
-
-        <div class="flex items-center gap-2 sm:col-span-2 lg:col-span-1 lg:justify-end">
-            <button type="submit"
-                    class="inline-flex min-h-9 items-center justify-center gap-2 rounded-md bg-kaori-primary px-3 py-2 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover">
-                <i data-lucide="filter" class="h-3.5 w-3.5"></i>
-                Apply
-            </button>
-            <a href="{{ url_for(endpoint_name, cluster_id=selected_cluster_id, source=selected_source, alerts_per_page=selected_alerts_per_page, anomalies_per_page=selected_anomalies_per_page) }}"
-               hx-get="{{ url_for(endpoint_name, cluster_id=selected_cluster_id, source=selected_source, alerts_per_page=selected_alerts_per_page, anomalies_per_page=selected_anomalies_per_page) }}"
-               hx-target="{{ target_id }}"
-               hx-swap="outerHTML"
-               hx-push-url="false"
-               hx-sync="#alerts-page-content:replace"
-               hx-indicator="#alerts-refresh-indicator"
-               class="inline-flex min-h-9 items-center justify-center gap-2 rounded-md border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary">
-                Reset
-            </a>
-        </div>
     </form>
 </div>

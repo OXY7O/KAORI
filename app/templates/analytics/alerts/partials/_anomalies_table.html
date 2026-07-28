@@ -1,8 +1,12 @@
+{% import "components/loading_bar.html" as loading_bar %}
 <div id="anomalies-table-container">
     {% set table_kind = "anomalies" %}
     {% set endpoint_name = "analytics.alerts_anomalies_table" %}
     {% set target_id = "#anomalies-table-container" %}
     {% include "analytics/alerts/partials/_table_filters.html" %}
+    <div class="px-4 sm:px-5">
+        {{ loading_bar.render('anomalies-table-loading-indicator', label='Refreshing Detected Anomaly Candidates') }}
+    </div>
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-outline-default dark:divide-outline-default">
             <thead class="bg-surface-subtle /60">

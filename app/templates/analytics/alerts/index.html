@@ -5,7 +5,6 @@
 {% block dashboard_content %}
     <div id="alerts-page-content"
          class="space-y-6"
-         data-alerts-swap-boundary
          data-analytics-page-request-tracking="false">
         {% set prometheus_status = integration_status.prometheus %}
         {% set alertmanager_status = integration_status.alertmanager %}
@@ -72,7 +71,6 @@
                     <div id="alerts-content-panel-alerts"
                          role="tabpanel"
                          aria-labelledby="alerts-content-tab-alerts"
-                         data-alerts-tab-panel="alerts"
                          x-show="activeTab === 'alerts'"
                          x-bind:hidden="activeTab !== 'alerts'"
                          x-cloak
@@ -92,7 +90,6 @@
                     <div id="alerts-content-panel-anomalies"
                          role="tabpanel"
                          aria-labelledby="alerts-content-tab-anomalies"
-                         data-alerts-tab-panel="anomalies"
                          x-show="activeTab === 'anomalies'"
                          x-bind:hidden="activeTab !== 'anomalies'"
                          hidden
@@ -113,7 +110,6 @@
                     <div id="alerts-content-panel-routing"
                          role="tabpanel"
                          aria-labelledby="alerts-content-tab-routing"
-                         data-alerts-tab-panel="routing"
                          x-show="activeTab === 'routing'"
                          x-bind:hidden="activeTab !== 'routing'"
                          hidden
@@ -142,7 +138,6 @@
                     <div id="alerts-content-panel-ownership"
                          role="tabpanel"
                          aria-labelledby="alerts-content-tab-ownership"
-                         data-alerts-tab-panel="ownership"
                          x-show="activeTab === 'ownership'"
                          x-bind:hidden="activeTab !== 'ownership'"
                          hidden
@@ -168,7 +163,6 @@
                     <div id="alerts-content-panel-recommendations"
                          role="tabpanel"
                          aria-labelledby="alerts-content-tab-recommendations"
-                         data-alerts-tab-panel="recommendations"
                          x-show="activeTab === 'recommendations'"
                          x-bind:hidden="activeTab !== 'recommendations'"
                          hidden

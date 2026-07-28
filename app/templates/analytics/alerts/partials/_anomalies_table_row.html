@@ -36,6 +36,8 @@
     </td>
 </tr>
 <tr x-show="openAnomaly === '{{ row_key }}'"
+    x-bind:hidden="openAnomaly !== '{{ row_key }}'"
+    hidden
     x-cloak
     class="bg-surface-subtle /40">
     <td colspan="5" class="px-6 py-4">

@@ -1,8 +1,12 @@
+{% import "components/loading_bar.html" as loading_bar %}
 <div id="alerts-table-container">
     {% set table_kind = "alerts" %}
     {% set endpoint_name = "analytics.alerts_table" %}
     {% set target_id = "#alerts-table-container" %}
     {% include "analytics/alerts/partials/_table_filters.html" %}
+    <div class="px-4 sm:px-5">
+        {{ loading_bar.render('alerts-table-loading-indicator', label='Refreshing Active Alert Records') }}
+    </div>
     <div class="hidden grid-cols-12 gap-4 border-b border-outline-default bg-surface-hover px-4 py-3 lg:grid">
         <div class="col-span-4 text-xs font-semibold uppercase tracking-wide text-content-muted">Alert</div>
         <div class="col-span-2 text-xs font-semibold uppercase tracking-wide text-content-muted">Severity &amp; State</div>
