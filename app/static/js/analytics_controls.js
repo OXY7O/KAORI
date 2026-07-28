@@ -118,6 +118,31 @@
         });
     }
 
+    function stabilizeAnalyticsTabsets(root) {
+        const candidate = root?.isConnected ? root : document;
+        const tabsets = [];
+
+        if (candidate?.matches?.('[data-analytics-tabset]')) {
+            tabsets.push(candidate);
+        }
+        candidate?.querySelectorAll?.('[data-analytics-tabset]').forEach((tabset) => tabsets.push(tabset));
+
+        tabsets.forEach((tabset) => {
+            if (!tabset?.isConnected) return;
+
+            if (window.Alpine && !tabset._x_dataStack) {
+                window.Alpine.initTree(tabset);
+            }
+
+            const activeTab = tabset._x_dataStack?.[0]?.activeTab || tabset.dataset.defaultTab;
+            if (!activeTab) return;
+
+            tabset.querySelectorAll('[data-analytics-tab-panel]').forEach((panel) => {
+                panel.hidden = panel.dataset.analyticsTabPanel !== activeTab;
+            });
+        });
+    }
+
     function hydrateAnalyticsUi(root = document) {
         hydrateProgressBars(root);
         hydrateProgressRings(root);
@@ -134,8 +159,8 @@
         if (control) resetDependentFields(control);
     }, true);
 
-    document.addEventListener('DOMContentLoaded', () => hydrateAnalyticsUi());
+    document.addEventListener('DOMContentLoaded', () => { hydrateAnalyticsUi(); stabilizeAnalyticsTabsets(document); });
     document.body.addEventListener('htmx:load', (event) => hydrateAnalyticsUi(event.detail.elt || document));
-    document.body.addEventListener('htmx:afterSwap', (event) => { const root = event.detail.target || document; hydrateAnalyticsUi(root); stabilizeAlertsAfterSwap(root); stabilizeTopConsumersAfterSwap(root); });
+    document.body.addEventListener('htmx:afterSwap', (event) => { const root = event.detail.target || document; hydrateAnalyticsUi(root); stabilizeAlertsAfterSwap(root); stabilizeTopConsumersAfterSwap(root); stabilizeAnalyticsTabsets(root); });
     document.body.addEventListener('htmx:afterSettle', (event) => hydrateAnalyticsUi(event.detail.elt || document));
 })();

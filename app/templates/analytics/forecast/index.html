@@ -56,11 +56,6 @@
             {% include "components/dependencies/_blocker.html" %}
         {% else %}
             {% include "analytics/forecast/partials/_controls_readiness.html" %}
-            {% if analytics_materialization.source_warning %}
-                <section class="rounded-xl border border-status-warning-border bg-status-warning-soft px-4 py-3">
-                    <div class="flex items-start gap-3"><i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 text-status-warning"></i><div><p class="text-sm font-semibold text-content-primary">Forecast Snapshot Available · Source Evidence Incomplete</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ analytics_materialization.source_warning.description }}</p></div></div>
-                </section>
-            {% endif %}
             {% include "analytics/forecast/partials/_overview_methodology.html" %}
             <div id="forecast-section">{% include "analytics/forecast/partials/_forecast_section.html" %}</div>
         {% endif %}

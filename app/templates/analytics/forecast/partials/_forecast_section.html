@@ -13,6 +13,7 @@
     ('recommendations', 'Recommendations', 'list-checks')
 ] %}
 {% set allowed_tabs = ['cpu', 'memory', 'storage', 'pods', 'trend', 'recommendations'] %}
+{% set initial_tab = selected_resource if selected_resource in allowed_tabs else 'cpu' %}
 {% if not dependency_blocker %}
     {% call analytics_workspace.tabbed(
         'forecast-content',
@@ -21,7 +22,7 @@
         'Resource Forecast Workspace',
         'Review each capacity domain, compare historical and projected signals, and act on forecast recommendations.',
         'sparkles',
-        selected_resource if selected_resource in allowed_tabs else 'cpu',
+        initial_tab,
         allowed_tabs
     ) %}
         {% for resource_key, resource_label, resource_icon in resource_tabs[:4] %}
@@ -30,8 +31,10 @@
             <div id="forecast-content-panel-{{ resource_key }}"
                  role="tabpanel"
                  aria-labelledby="forecast-content-tab-{{ resource_key }}"
+                 data-analytics-tab-panel="{{ resource_key }}"
                  x-show="activeTab === '{{ resource_key }}'"
-                 {% if resource_key != 'cpu' %}x-cloak{% endif %}>
+                 x-bind:hidden="activeTab !== '{{ resource_key }}'"
+                 {% if resource_key != initial_tab %}hidden x-cloak{% endif %}>
                 {% if resource.item %}
                     {% set item = resource.item %}
                     {% set tone = 'critical' if item.status == 'critical' else ('warning' if item.status == 'warning' else 'normal') %}
@@ -69,7 +72,14 @@
             </div>
         {% endfor %}
 
-        <div id="forecast-content-panel-trend" role="tabpanel" aria-labelledby="forecast-content-tab-trend" x-show="activeTab === 'trend'" x-cloak>
+        <div id="forecast-content-panel-trend"
+             role="tabpanel"
+             aria-labelledby="forecast-content-tab-trend"
+             data-analytics-tab-panel="trend"
+             x-show="activeTab === 'trend'"
+             x-bind:hidden="activeTab !== 'trend'"
+             hidden
+             x-cloak>
             <div class="space-y-5">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="line-chart" class="h-5 w-5"></i></span><div><h3 class="text-lg font-semibold text-content-primary">Trend Analysis</h3><p class="mt-1 text-sm leading-6 text-content-muted">Compare observed usage with projected behavior across {{ forecast_payload.history_days }} days of history.</p></div></div>
@@ -94,7 +104,14 @@
             </div>
         </div>
 
-        <div id="forecast-content-panel-recommendations" role="tabpanel" aria-labelledby="forecast-content-tab-recommendations" x-show="activeTab === 'recommendations'" x-cloak>
+        <div id="forecast-content-panel-recommendations"
+             role="tabpanel"
+             aria-labelledby="forecast-content-tab-recommendations"
+             data-analytics-tab-panel="recommendations"
+             x-show="activeTab === 'recommendations'"
+             x-bind:hidden="activeTab !== 'recommendations'"
+             hidden
+             x-cloak>
             <div class="space-y-4">
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="list-checks" class="h-5 w-5"></i></span><div><h3 class="text-lg font-semibold text-content-primary">Forecast Recommendations</h3><p class="mt-1 text-sm leading-6 text-content-muted">Prioritized actions derived from projected utilization, threshold ETA, growth, and model confidence.</p></div></div>{{ table_label.metadata_label(forecast_payload.recommendation_count|default(0) ~ ' Actionable', 'sparkles') }}</div>
                 {% if forecast_payload.recommendation_cards %}
