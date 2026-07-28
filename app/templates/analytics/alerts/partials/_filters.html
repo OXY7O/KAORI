@@ -49,10 +49,18 @@
                     {% for namespace in namespace_options %}<option value="{{ namespace }}" {% if selected_namespace == namespace %}selected{% endif %}>{{ namespace }}</option>{% endfor %}
                 </select>
             </label>
-            <label class="relative block min-w-0">
+            <label class="block min-w-0">
                 <span class="text-xs font-medium text-content-muted">Search</span>
-                <i data-lucide="search" class="pointer-events-none absolute left-3 top-[37px] h-4 w-4 text-content-muted"></i>
-                <input type="text" name="search" value="{{ selected_search }}" placeholder="Search alert, pod, node, namespace..." class="mt-1 h-10 w-full min-w-0 rounded-lg border border-outline-strong bg-surface-card py-2 pl-10 pr-3 text-sm font-semibold text-content-primary shadow-sm outline-none transition placeholder:font-normal placeholder:text-content-muted focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
+                <span class="relative mt-1 block">
+                    <span class="pointer-events-none absolute inset-y-0 left-0 flex w-10 items-center justify-center text-content-muted" aria-hidden="true">
+                        <i data-lucide="search" class="h-4 w-4"></i>
+                    </span>
+                    <input type="text"
+                           name="search"
+                           value="{{ selected_search }}"
+                           placeholder="Search alert, pod, node, namespace..."
+                           class="h-10 w-full min-w-0 rounded-lg border border-outline-strong bg-surface-card py-2 pl-10 pr-3 text-sm font-semibold text-content-primary shadow-sm outline-none transition placeholder:font-normal placeholder:text-content-muted focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
+                </span>
             </label>
         </div>
         <div id="alerts-refresh-indicator" class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
