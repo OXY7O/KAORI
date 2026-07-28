@@ -1,13 +1,27 @@
 (() => {
     const clampPercent = (value) => Math.max(0, Math.min(Number(value) || 0, 100));
 
-    function analyticsTabStorageKey() {
-        return `kaori:analytics-tab:${window.location.pathname}`;
+    const ANALYTICS_TAB_ACTIVE_CLASSES = [
+        'border-kaori-primary',
+        'bg-kaori-soft',
+        'text-kaori-primary',
+    ];
+    const ANALYTICS_TAB_INACTIVE_CLASSES = [
+        'border-transparent',
+        'bg-surface-card',
+        'text-content-secondary',
+        'hover:border-outline-default',
+        'hover:bg-surface-card',
+        'hover:text-content-primary',
+    ];
+
+    function analyticsTabStorageKey(tabsetId = 'default') {
+        return `kaori:analytics-tab:${window.location.pathname}:${tabsetId}`;
     }
 
-    function requestedAnalyticsTab(allowedTabs, defaultTab) {
+    function requestedAnalyticsTab(allowedTabs, defaultTab, tabsetId = 'default') {
         try {
-            const storedTab = window.sessionStorage.getItem(analyticsTabStorageKey());
+            const storedTab = window.sessionStorage.getItem(analyticsTabStorageKey(tabsetId));
             if (allowedTabs.includes(storedTab)) return storedTab;
         } catch {
             // Storage can be unavailable in hardened browser modes.
@@ -21,31 +35,73 @@
         return defaultTab;
     }
 
-    window.kaoriAnalyticsTabs = (defaultTab, allowedTabs) => {
+    function clearLegacyAnalyticsHash(allowedTabs) {
+        // Hash updates can move the viewport. Only remove a legacy analytics hash;
+        // normal tab interaction stays in session storage and local DOM state.
+        const url = new URL(window.location.href);
+        const currentHash = url.hash.replace(/^#/, '');
+        if (!allowedTabs.includes(currentHash)) return;
+
+        url.hash = '';
+        window.history.replaceState(window.history.state, '', url);
+    }
+
+    function analyticsTabButtons(tabset) {
+        return Array.from(tabset.querySelectorAll('[data-analytics-tab-button]'));
+    }
+
+    function analyticsTabPanels(tabset) {
+        return Array.from(tabset.querySelectorAll('[data-analytics-tab-panel]'));
+    }
+
+    function setAnalyticsTab(tabset, tabId, { persist = true, focus = false } = {}) {
+        if (!tabset?.isConnected || !tabId) return false;
+
+        const buttons = analyticsTabButtons(tabset);
+        const allowedTabs = buttons.map((button) => button.dataset.analyticsTabButton).filter(Boolean);
+        if (!allowedTabs.includes(tabId)) return false;
+
+        const alpineState = tabset._x_dataStack?.[0];
+        if (alpineState && alpineState.activeTab !== tabId) {
+            alpineState.activeTab = tabId;
+        }
+
+        buttons.forEach((button) => {
+            const selected = button.dataset.analyticsTabButton === tabId;
+            button.setAttribute('aria-selected', selected ? 'true' : 'false');
+            button.tabIndex = selected ? 0 : -1;
+            button.classList.remove(...ANALYTICS_TAB_ACTIVE_CLASSES, ...ANALYTICS_TAB_INACTIVE_CLASSES);
+            button.classList.add(...(selected ? ANALYTICS_TAB_ACTIVE_CLASSES : ANALYTICS_TAB_INACTIVE_CLASSES));
+            if (selected && focus) button.focus({ preventScroll: true });
+        });
+
+        analyticsTabPanels(tabset).forEach((panel) => {
+            panel.hidden = panel.dataset.analyticsTabPanel !== tabId;
+        });
+
+        const tabsetId = tabset.dataset.analyticsTabsetId || tabset.id || 'default';
+        if (persist) {
+            try {
+                window.sessionStorage.setItem(analyticsTabStorageKey(tabsetId), tabId);
+            } catch {
+                // Native DOM state still keeps the current tab active.
+            }
+        }
+
+        clearLegacyAnalyticsHash(allowedTabs);
+        window.dispatchEvent(new Event('resize'));
+        if (window.renderKaoriIcons) window.renderKaoriIcons();
+        return true;
+    }
+
+    window.kaoriAnalyticsTabs = (defaultTab, allowedTabs, tabsetId = 'default') => {
         const tabs = Array.isArray(allowedTabs) ? allowedTabs : [];
 
         return {
-            activeTab: requestedAnalyticsTab(tabs, defaultTab),
+            activeTab: requestedAnalyticsTab(tabs, defaultTab, tabsetId),
             setTab(tab) {
                 if (!tabs.includes(tab)) return;
-
                 this.activeTab = tab;
-
-                try {
-                    window.sessionStorage.setItem(analyticsTabStorageKey(), tab);
-                } catch {
-                    // The in-memory Alpine state still keeps the current tab active.
-                }
-
-                // Do not write a URL hash here. Hash updates can move the viewport
-                // when a matching element exists and make the workspace appear to
-                // jump upward. Remove a legacy analytics-tab hash without navigation.
-                const url = new URL(window.location.href);
-                const currentHash = url.hash.replace(/^#/, '');
-                if (tabs.includes(currentHash)) {
-                    url.hash = '';
-                    window.history.replaceState(window.history.state, '', url);
-                }
             },
         };
     };
@@ -134,12 +190,15 @@
                 window.Alpine.initTree(tabset);
             }
 
-            const activeTab = tabset._x_dataStack?.[0]?.activeTab || tabset.dataset.defaultTab;
-            if (!activeTab) return;
+            const buttons = analyticsTabButtons(tabset);
+            const allowedTabs = buttons.map((button) => button.dataset.analyticsTabButton).filter(Boolean);
+            const tabsetId = tabset.dataset.analyticsTabsetId || tabset.id || 'default';
+            const alpineTab = tabset._x_dataStack?.[0]?.activeTab;
+            const activeTab = allowedTabs.includes(alpineTab)
+                ? alpineTab
+                : requestedAnalyticsTab(allowedTabs, tabset.dataset.defaultTab, tabsetId);
 
-            tabset.querySelectorAll('[data-analytics-tab-panel]').forEach((panel) => {
-                panel.hidden = panel.dataset.analyticsTabPanel !== activeTab;
-            });
+            setAnalyticsTab(tabset, activeTab, { persist: false });
         });
     }
 
@@ -157,6 +216,39 @@
     document.addEventListener('change', (event) => {
         const control = event.target.closest('[data-kaori-reset-fields]');
         if (control) resetDependentFields(control);
+    }, true);
+
+    document.addEventListener('click', (event) => {
+        const button = event.target.closest?.('[data-analytics-tab-button]');
+        if (!button) return;
+
+        const tabset = button.closest('[data-analytics-tabset]');
+        if (!tabset) return;
+
+        event.preventDefault();
+        setAnalyticsTab(tabset, button.dataset.analyticsTabButton);
+    }, true);
+
+    document.addEventListener('keydown', (event) => {
+        const button = event.target.closest?.('[data-analytics-tab-button]');
+        if (!button || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+
+        const tabset = button.closest('[data-analytics-tabset]');
+        if (!tabset) return;
+
+        const buttons = analyticsTabButtons(tabset);
+        const currentIndex = buttons.indexOf(button);
+        if (currentIndex < 0) return;
+
+        event.preventDefault();
+        let nextIndex = currentIndex;
+        if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % buttons.length;
+        if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + buttons.length) % buttons.length;
+        if (event.key === 'Home') nextIndex = 0;
+        if (event.key === 'End') nextIndex = buttons.length - 1;
+
+        const nextButton = buttons[nextIndex];
+        setAnalyticsTab(tabset, nextButton.dataset.analyticsTabButton, { focus: true });
     }, true);
 
     document.addEventListener('DOMContentLoaded', () => { hydrateAnalyticsUi(); stabilizeAnalyticsTabsets(document); });

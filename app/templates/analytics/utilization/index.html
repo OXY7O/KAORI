@@ -89,7 +89,10 @@
                 </section>
             {% endif %}
 
-            <section x-data="kaoriAnalyticsTabs('summary', ['summary', 'trend', 'nodes', 'recommendations'])"
+            <section data-analytics-tabset
+                     data-analytics-tabset-id="utilization-content"
+                     data-default-tab="summary"
+                     x-data='kaoriAnalyticsTabs("summary", ["summary", "trend", "nodes", "recommendations"], "utilization-content")'
                      class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                 <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
                     <div class="flex items-start gap-3">
@@ -119,7 +122,9 @@
                     <div id="utilization-content-panel-summary"
                          role="tabpanel"
                          aria-labelledby="utilization-content-tab-summary"
-                         x-show="activeTab === 'summary'">
+                         data-analytics-tab-panel="summary"
+                         x-show="activeTab === 'summary'"
+                         x-bind:hidden="activeTab !== 'summary'">
                         <section>
                             <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                 <div class="flex items-start gap-3">
@@ -163,7 +168,10 @@
                     <div id="utilization-content-panel-trend"
                          role="tabpanel"
                          aria-labelledby="utilization-content-tab-trend"
+                         data-analytics-tab-panel="trend"
                          x-show="activeTab === 'trend'"
+                         x-bind:hidden="activeTab !== 'trend'"
+                         hidden
                          x-cloak>
                         {% if trend_materialization_pending %}
                             <div hx-get="{{ url_for('analytics.utilization_trend', cluster_id=cluster.id, trend_hours=trend_hours, trend_node=selected_trend_node) }}"
@@ -191,7 +199,10 @@
                     <div id="utilization-content-panel-nodes"
                          role="tabpanel"
                          aria-labelledby="utilization-content-tab-nodes"
+                         data-analytics-tab-panel="nodes"
                          x-show="activeTab === 'nodes'"
+                         x-bind:hidden="activeTab !== 'nodes'"
+                         hidden
                          x-cloak>
                         <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
                             <div class="border-b border-outline-subtle p-5">
@@ -235,7 +246,10 @@
                     <div id="utilization-content-panel-recommendations"
                          role="tabpanel"
                          aria-labelledby="utilization-content-tab-recommendations"
+                         data-analytics-tab-panel="recommendations"
                          x-show="activeTab === 'recommendations'"
+                         x-bind:hidden="activeTab !== 'recommendations'"
+                         hidden
                          x-cloak>
                         {% include "analytics/utilization/partials/_recommendations.html" %}
                     </div>

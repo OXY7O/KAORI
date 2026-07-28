@@ -15,7 +15,7 @@
     'capacity',
     ['capacity', 'filesystem', 'persistent', 'recommendations']
 ) %}
-    <div id="storage-content-panel-capacity" role="tabpanel" aria-labelledby="storage-content-tab-capacity" x-show="activeTab === 'capacity'">
+    <div id="storage-content-panel-capacity" role="tabpanel" aria-labelledby="storage-content-tab-capacity" data-analytics-tab-panel="capacity" x-show="activeTab === 'capacity'" x-bind:hidden="activeTab !== 'capacity'">
         <div class="space-y-5">
             <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="hard-drive" class="h-5 w-5"></i></span><div><h3 class="text-lg font-semibold text-content-primary">Storage Capacity & Utilization</h3><p class="mt-1 text-sm leading-6 text-content-muted">Compare aggregate filesystem utilization and persistent-storage demand within the active scope.</p></div></div>
             <div class="grid gap-4 lg:grid-cols-2">
@@ -24,7 +24,7 @@
             </div>
         </div>
     </div>
-    <div id="storage-content-panel-filesystem" role="tabpanel" aria-labelledby="storage-content-tab-filesystem" x-show="activeTab === 'filesystem'" x-cloak>{% include "analytics/storage/partials/_filesystem_panel.html" %}</div>
-    <div id="storage-content-panel-persistent" role="tabpanel" aria-labelledby="storage-content-tab-persistent" x-show="activeTab === 'persistent'" x-cloak>{% include "analytics/storage/partials/_persistent_storage_panel.html" %}</div>
-    <div id="storage-content-panel-recommendations" role="tabpanel" aria-labelledby="storage-content-tab-recommendations" x-show="activeTab === 'recommendations'" x-cloak>{% include "analytics/storage/partials/_recommendations.html" %}</div>
+    <div id="storage-content-panel-filesystem" role="tabpanel" aria-labelledby="storage-content-tab-filesystem" data-analytics-tab-panel="filesystem" x-show="activeTab === 'filesystem'" x-bind:hidden="activeTab !== 'filesystem'" hidden x-cloak>{% include "analytics/storage/partials/_filesystem_panel.html" %}</div>
+    <div id="storage-content-panel-persistent" role="tabpanel" aria-labelledby="storage-content-tab-persistent" data-analytics-tab-panel="persistent" x-show="activeTab === 'persistent'" x-bind:hidden="activeTab !== 'persistent'" hidden x-cloak>{% include "analytics/storage/partials/_persistent_storage_panel.html" %}</div>
+    <div id="storage-content-panel-recommendations" role="tabpanel" aria-labelledby="storage-content-tab-recommendations" data-analytics-tab-panel="recommendations" x-show="activeTab === 'recommendations'" x-bind:hidden="activeTab !== 'recommendations'" hidden x-cloak>{% include "analytics/storage/partials/_recommendations.html" %}</div>
 {% endcall %}

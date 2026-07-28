@@ -64,5 +64,6 @@ def test_forecast_panels_have_native_hidden_fallback_and_post_swap_hydration() -
     assert "hidden\n             x-cloak" in section
     assert "function stabilizeAnalyticsTabsets(root)" in controls_js
     assert "window.Alpine.initTree(tabset)" in controls_js
-    assert "panel.hidden = panel.dataset.analyticsTabPanel !== activeTab" in controls_js
+    assert "panel.hidden = panel.dataset.analyticsTabPanel !== tabId" in controls_js
+    assert "function setAnalyticsTab(tabset, tabId" in controls_js
     assert "stabilizeAnalyticsTabsets(root)" in controls_js

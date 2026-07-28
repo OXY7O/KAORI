@@ -97,8 +97,9 @@
 
 {% macro tabbed(tabset_id, tabs, aria_label, title, description, icon, initial_tab, allowed_tabs) -%}
     <section data-analytics-tabset
+             data-analytics-tabset-id="{{ tabset_id }}"
              data-default-tab="{{ initial_tab }}"
-             x-data='kaoriAnalyticsTabs({{ initial_tab|tojson }}, {{ allowed_tabs|tojson }})'
+             x-data='kaoriAnalyticsTabs({{ initial_tab|tojson }}, {{ allowed_tabs|tojson }}, {{ tabset_id|tojson }})'
              class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
             <div class="flex min-w-0 items-start gap-3">

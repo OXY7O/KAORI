@@ -48,7 +48,7 @@ def test_consumer_detail_uses_persistent_kaori_loading_bar_and_results_swap():
 def test_analytics_tabs_do_not_write_hash_or_move_viewport():
     script = read("app/static/js/analytics_controls.js")
 
-    assert "window.sessionStorage.setItem(analyticsTabStorageKey(), tab)" in script
+    assert "window.sessionStorage.setItem(analyticsTabStorageKey(tabsetId), tabId)" in script
     assert "url.hash = tab" not in script
     assert "Hash updates can move the viewport" in script
     assert "url.hash = ''" in script

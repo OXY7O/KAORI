@@ -28,10 +28,10 @@
                     'summary',
                     ['summary', 'allocation', 'risk', 'recommendations']
                 ) %}
-                    <div id="capacity-content-panel-summary" role="tabpanel" aria-labelledby="capacity-content-tab-summary" x-show="activeTab === 'summary'">{% include "analytics/capacity/partials/_worker_summary.html" %}</div>
-                    <div id="capacity-content-panel-allocation" role="tabpanel" aria-labelledby="capacity-content-tab-allocation" x-show="activeTab === 'allocation'" x-cloak>{% include "analytics/capacity/partials/_allocation.html" %}</div>
-                    <div id="capacity-content-panel-risk" role="tabpanel" aria-labelledby="capacity-content-tab-risk" x-show="activeTab === 'risk'" x-cloak>{% include "analytics/capacity/partials/_risk.html" %}</div>
-                    <div id="capacity-content-panel-recommendations" role="tabpanel" aria-labelledby="capacity-content-tab-recommendations" x-show="activeTab === 'recommendations'" x-cloak>{% include "analytics/capacity/partials/_recommendations.html" %}</div>
+                    <div id="capacity-content-panel-summary" role="tabpanel" aria-labelledby="capacity-content-tab-summary" data-analytics-tab-panel="summary" x-show="activeTab === 'summary'" x-bind:hidden="activeTab !== 'summary'">{% include "analytics/capacity/partials/_worker_summary.html" %}</div>
+                    <div id="capacity-content-panel-allocation" role="tabpanel" aria-labelledby="capacity-content-tab-allocation" data-analytics-tab-panel="allocation" x-show="activeTab === 'allocation'" x-bind:hidden="activeTab !== 'allocation'" hidden x-cloak>{% include "analytics/capacity/partials/_allocation.html" %}</div>
+                    <div id="capacity-content-panel-risk" role="tabpanel" aria-labelledby="capacity-content-tab-risk" data-analytics-tab-panel="risk" x-show="activeTab === 'risk'" x-bind:hidden="activeTab !== 'risk'" hidden x-cloak>{% include "analytics/capacity/partials/_risk.html" %}</div>
+                    <div id="capacity-content-panel-recommendations" role="tabpanel" aria-labelledby="capacity-content-tab-recommendations" data-analytics-tab-panel="recommendations" x-show="activeTab === 'recommendations'" x-bind:hidden="activeTab !== 'recommendations'" hidden x-cloak>{% include "analytics/capacity/partials/_recommendations.html" %}</div>
                 {% endcall %}
             {% endif %}
         {% endif %}

@@ -16,7 +16,33 @@
     </div>
     <div class="grid gap-4 lg:grid-cols-3">
         {% for key, section in allocation_summary.items() %}
-            <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4"><div class="flex items-center justify-between gap-3"><h4 class="font-semibold text-content-primary">{{ section.title }} Allocation</h4>{{ table_label.status_label(section.status.label, tone='warning' if 'warning' in section.status.class else ('critical' if 'critical' in section.status.class else 'normal'), size='compact') }}</div><div class="mt-4 space-y-3">{% for allocation_item in section.items %}<div><div class="flex items-center justify-between gap-3 text-xs"><span class="font-medium text-content-secondary">{{ allocation_item.label }}</span><span class="text-content-muted">{{ allocation_item.display }}</span></div>{{ progress_bar.bar(allocation_item.percent, track_classes='mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-card', fill_classes='h-full rounded-full bg-kaori-primary', label=allocation_item.label) }}</div>{% endfor %}</div></div>
+            {% set section_status = section['status'] %}
+            <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
+                <div class="flex items-center justify-between gap-3">
+                    <h4 class="font-semibold text-content-primary">{{ section['title'] }} Allocation</h4>
+                    {{ table_label.status_label(
+                        section_status['label'],
+                        tone='warning' if 'warning' in section_status['class'] else ('critical' if 'critical' in section_status['class'] else 'normal'),
+                        size='compact'
+                    ) }}
+                </div>
+                <div class="mt-4 space-y-3">
+                    {% for allocation_item in section['items']|default([], true) %}
+                        <div>
+                            <div class="flex items-center justify-between gap-3 text-xs">
+                                <span class="font-medium text-content-secondary">{{ allocation_item['label'] }}</span>
+                                <span class="text-content-muted">{{ allocation_item['display'] }}</span>
+                            </div>
+                            {{ progress_bar.bar(
+                                allocation_item['percent'],
+                                track_classes='mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-card',
+                                fill_classes='h-full rounded-full bg-kaori-primary',
+                                label=allocation_item['label']
+                            ) }}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
         {% endfor %}
     </div>
 </div>

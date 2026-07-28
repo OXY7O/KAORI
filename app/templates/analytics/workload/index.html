@@ -38,9 +38,9 @@
                     'quotas',
                     ['quotas', 'mapping', 'recommendations']
                 ) %}
-                    <div id="workload-content-panel-quotas" role="tabpanel" aria-labelledby="workload-content-tab-quotas" x-show="activeTab === 'quotas'">{% include "analytics/workload/partials/_tenant_quota_section.html" %}</div>
-                    <div id="workload-content-panel-mapping" role="tabpanel" aria-labelledby="workload-content-tab-mapping" x-show="activeTab === 'mapping'" x-cloak>{% include "analytics/workload/partials/_workload_mapping_section.html" %}</div>
-                    <div id="workload-content-panel-recommendations" role="tabpanel" aria-labelledby="workload-content-tab-recommendations" x-show="activeTab === 'recommendations'" x-cloak>{% include "analytics/workload/partials/_recommendations.html" %}</div>
+                    <div id="workload-content-panel-quotas" role="tabpanel" aria-labelledby="workload-content-tab-quotas" data-analytics-tab-panel="quotas" x-show="activeTab === 'quotas'" x-bind:hidden="activeTab !== 'quotas'">{% include "analytics/workload/partials/_tenant_quota_section.html" %}</div>
+                    <div id="workload-content-panel-mapping" role="tabpanel" aria-labelledby="workload-content-tab-mapping" data-analytics-tab-panel="mapping" x-show="activeTab === 'mapping'" x-bind:hidden="activeTab !== 'mapping'" hidden x-cloak>{% include "analytics/workload/partials/_workload_mapping_section.html" %}</div>
+                    <div id="workload-content-panel-recommendations" role="tabpanel" aria-labelledby="workload-content-tab-recommendations" data-analytics-tab-panel="recommendations" x-show="activeTab === 'recommendations'" x-bind:hidden="activeTab !== 'recommendations'" hidden x-cloak>{% include "analytics/workload/partials/_recommendations.html" %}</div>
                 {% endcall %}
             {% endif %}
         {% endif %}
