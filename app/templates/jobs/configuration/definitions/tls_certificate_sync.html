@@ -19,8 +19,8 @@
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    {{ table_label.status_label('Automatic' if policy.enabled else 'Manual Only', 'normal' if policy.enabled else 'unknown', 'clock-3') }}
-                    {{ table_label.status_label(definition.queue_name, 'maintenance', 'cpu') }}
+                    {{ table_label.status_indicator_label('Automatic' if policy.enabled else 'Manual Only', 'normal' if policy.enabled else 'unknown', 'clock-3') }}
+                    {{ table_label.status_indicator_label(definition.queue_name, 'maintenance', 'cpu') }}
                 </div>
             </div>
         </header>
@@ -57,7 +57,7 @@
                     <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="calendar-clock" class="h-4 w-4"></i></span>
                     <div>
                         <h3 class="text-base font-semibold text-content-primary">Automatic TLS Inventory Policy</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Configure how often the inventory worker refreshes certificate posture and Ingress usage.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Configure the TLS inventory refresh schedule.</p>
                     </div>
                 </div>
             </header>
@@ -65,13 +65,13 @@
                 <label class="flex items-start justify-between gap-4 rounded-lg border border-outline-default bg-surface-elevated p-4">
                     <span>
                         <span class="block text-sm font-semibold text-content-primary">Enable Automatic Execution</span>
-                        <span class="mt-1 block text-xs leading-5 text-content-muted">Celery Beat dispatches the database-backed policy without blocking web requests.</span>
+                        <span class="mt-1 block text-xs leading-5 text-content-muted">Runs automatically from the saved policy.</span>
                     </span>
                     {{ policy_form.enabled(class_="h-5 w-5 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary", disabled=not can_configure) }}
                 </label>
                 <div>
                     <label for="interval_minutes" class="text-sm font-semibold text-content-primary">Execution Interval</label>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Recommended default: 360 minutes (6 hours). Allowed range: {{ definition.minimum_interval_minutes }}–{{ definition.maximum_interval_minutes }} minutes.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Allowed range: {{ definition.minimum_interval_minutes }}–{{ definition.maximum_interval_minutes }} minutes.</p>
                     <div class="relative mt-3">
                         <i data-lucide="timer" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
                         {{ policy_form.interval_minutes(
@@ -97,11 +97,11 @@
                 </dl>
             </div>
             <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <p class="text-xs leading-5 text-content-muted">Stored in <code>job_policies</code>; no Beat restart is required.</p>
+                <p class="text-xs leading-5 text-content-muted">Applied immediately from <code>job_policies</code>.</p>
                 {% if can_configure %}
                     <button type="submit" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark"><i data-lucide="save" class="h-4 w-4"></i>Save</button>
                 {% else %}
-                    {{ table_label.status_label('View Only', 'unknown', 'lock-keyhole') }}
+                    {{ table_label.status_indicator_label('View Only', 'unknown', 'lock-keyhole') }}
                 {% endif %}
             </footer>
         </form>
@@ -112,14 +112,14 @@
                     <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="play" class="h-4 w-4"></i></span>
                     <div>
                         <h3 class="text-base font-semibold text-content-primary">Manual Execution</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Run the same fleet TLS collection immediately through the inventory queue.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Run TLS inventory sync without changing the schedule.</p>
                     </div>
                 </div>
             </header>
             <div class="space-y-4 p-5">
                 <div class="rounded-lg border border-outline-default bg-surface-elevated p-4">
                     <div class="flex items-center justify-between gap-3">
-                        {{ table_label.status_label(selected_job.execution_state.label, selected_job.execution_state.tone, selected_job.execution_state.icon) }}
+                        {{ table_label.status_indicator_label(selected_job.execution_state.label, selected_job.execution_state.tone, selected_job.execution_state.icon) }}
                         <span class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Queue · {{ definition.queue_name }}</span>
                     </div>
                     <p class="mt-3 text-xs leading-5 text-content-secondary">{{ selected_job.execution_state.description }}</p>
@@ -130,7 +130,7 @@
                             <p class="text-sm font-semibold text-content-primary">Active TLS Sync</p>
                             <span class="text-xs font-semibold text-kaori-primary">{{ selected_job.active_job.progress }}%</span>
                         </div>
-                        {{ progress_bar.bar(selected_job.active_job.progress, track_classes="mt-3 h-1.5 overflow-hidden rounded-full bg-white", fill_classes="h-full rounded-full bg-kaori-primary", label="Active TLS certificate sync progress") }}
+                        {{ progress_bar.determinate(selected_job.active_job.progress, label="Active TLS certificate sync progress", classes="mt-3 block h-1.5 w-full overflow-hidden rounded-full accent-kaori-primary") }}
                         <p class="mt-2 text-xs text-content-muted">{{ selected_job.active_job.progress_message }}</p>
                     </div>
                 {% endif %}
@@ -143,7 +143,7 @@
                         <button type="submit" {% if not selected_job.eligible_cluster_count or selected_job.active_job %}disabled{% endif %} class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark disabled:cursor-not-allowed disabled:opacity-50"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Sync TLS Now</button>
                     </form>
                 {% else %}
-                    {{ table_label.status_label('Execution Restricted', 'unknown', 'lock-keyhole') }}
+                    {{ table_label.status_indicator_label('Execution Restricted', 'unknown', 'lock-keyhole') }}
                 {% endif %}
             </footer>
         </section>

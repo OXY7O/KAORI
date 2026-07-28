@@ -85,21 +85,21 @@ def build_tls_certificate_sync_context(policy: JobPolicy) -> dict[str, Any]:
             'label': 'Execution Active',
             'tone': 'pending',
             'icon': 'loader-circle',
-            'description': 'A TLS certificate inventory job is already queued or running.',
+            'description': 'A TLS certificate sync is active.',
         }
     elif targets:
         execution_state = {
             'label': 'Ready',
             'tone': 'normal',
             'icon': 'circle-check',
-            'description': 'Eligible Kubernetes clusters can be synchronized on demand.',
+            'description': 'Eligible clusters are ready to sync.',
         }
     else:
         execution_state = {
             'label': 'Blocked',
             'tone': 'warning',
             'icon': 'shield-alert',
-            'description': 'Enable a canonical Kubernetes binding before synchronizing TLS inventory.',
+            'description': 'Enable a Kubernetes binding before syncing TLS inventory.',
         }
 
     return {

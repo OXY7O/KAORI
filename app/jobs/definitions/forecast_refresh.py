@@ -8,10 +8,7 @@ FORECAST_REFRESH_DEFINITION = JobDefinition(
     key=JOB_KEY,
     name='Forecast Data Refresh',
     domain='Kubernetes Analytics',
-    description=(
-        'Generate persistent capacity forecasts on the dedicated forecasting worker '
-        'instead of during web requests.'
-    ),
+    description='Generate persistent capacity forecasts on the forecasting worker.',
     icon='chart-spline',
     queue_name='forecasting',
     workload_class='forecasting',

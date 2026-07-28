@@ -127,21 +127,21 @@ def build_inventory_sync_context(policy: JobPolicy) -> dict[str, Any]:
             'label': 'Enabled',
             'tone': 'normal',
             'icon': 'circle-check',
-            'description': 'Automatic fleet synchronization is scheduled.',
+            'description': 'Automatic fleet sync is scheduled.',
         }
     elif policy.enabled:
         scheduler_state = {
             'label': 'Waiting For Cluster',
             'tone': 'warning',
             'icon': 'triangle-alert',
-            'description': 'The schedule is enabled, but no eligible Kubernetes binding is available.',
+            'description': 'Enabled, but no eligible binding is available.',
         }
     else:
         scheduler_state = {
             'label': 'Disabled',
             'tone': 'disabled',
             'icon': 'circle-pause',
-            'description': 'Only manual inventory synchronization is available.',
+            'description': 'Automatic sync is disabled.',
         }
 
 
@@ -150,17 +150,14 @@ def build_inventory_sync_context(policy: JobPolicy) -> dict[str, Any]:
             'label': 'Sync Eligible',
             'tone': 'normal',
             'icon': 'link-2',
-            'description': (
-                'Canonical Kubernetes bindings are available. The sync itself verifies live API '
-                'access and inventory read permissions.'
-            ),
+            'description': 'Eligible Kubernetes bindings are ready for sync.',
         }
     else:
         readiness_state = {
             'label': 'Blocked',
             'tone': 'warning',
             'icon': 'shield-alert',
-            'description': 'No canonical Kubernetes binding is eligible for inventory synchronization.',
+            'description': 'No eligible Kubernetes binding is available.',
         }
 
     if active_job is not None:
@@ -193,21 +190,21 @@ def build_inventory_sync_context(policy: JobPolicy) -> dict[str, Any]:
             'label': 'Execution Active',
             'tone': 'pending',
             'icon': 'loader-circle',
-            'description': 'A fleet inventory job is already queued or running.',
+            'description': 'A fleet inventory job is active.',
         }
     elif eligible_cluster_count:
         execution_state = {
             'label': 'Ready',
             'tone': 'normal',
             'icon': 'circle-check',
-            'description': 'The eligible fleet can be synchronized on demand.',
+            'description': 'The eligible fleet is ready to sync.',
         }
     else:
         execution_state = {
             'label': 'Blocked',
             'tone': 'warning',
             'icon': 'shield-alert',
-            'description': 'Enable a canonical Kubernetes binding before synchronizing.',
+            'description': 'Enable a Kubernetes binding before syncing.',
         }
 
     return {

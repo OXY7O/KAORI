@@ -4,7 +4,7 @@ import logging
 from time import perf_counter
 
 from celery.exceptions import CeleryError
-from flask import flash, redirect, render_template, request, url_for
+from flask import flash, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from kombu.exceptions import OperationalError as KombuOperationalError
@@ -34,34 +34,31 @@ def sync_snapshot_visible_to_user(snapshot: dict, *, user_id: int) -> bool:
 
 
 def render_sync_snapshot(snapshot: dict, *, response_status: int = 200) -> ResponseReturnValue:
-    if snapshot['is_active']:
-        return (
-            render_template('components/navigation/_quick_sync_status.html', sync=snapshot),
-            response_status,
-        )
-
-    return (
-        render_template(
-            'components/navigation/_quick_sync_result.html',
-            task_id=snapshot.get('task_id'),
-            status=snapshot.get('status') or 'info',
-            title=snapshot.get('title') or 'Kubernetes sync finished',
-            message=snapshot.get('message') or 'The background synchronization task has finished.',
-            detail=snapshot.get('detail'),
-            view_url=url_for('integrations.kubernetes'),
-            total_count=snapshot.get('total_count', 0),
-            synced_count=snapshot.get('synced_count', 0),
-            failed_count=snapshot.get('failed_count', 0),
-            duration_seconds=snapshot.get('duration_seconds'),
-            completed_label='Completed just now',
-            notification_context=get_navigation_notification_context(user_id=current_user.id),
-            notification_saved=sync_snapshot_visible_to_user(
+    template = 'components/navigation/_quick_sync_status.html'
+    context = {'sync': snapshot}
+    if not snapshot['is_active']:
+        template = 'components/navigation/_quick_sync_result.html'
+        context = {
+            'task_id': snapshot.get('task_id'),
+            'status': snapshot.get('status') or 'info',
+            'title': snapshot.get('title') or 'Kubernetes sync finished',
+            'message': snapshot.get('message') or 'The background synchronization task has finished.',
+            'detail': snapshot.get('detail'),
+            'view_url': url_for('integrations.kubernetes'),
+            'total_count': snapshot.get('total_count', 0),
+            'synced_count': snapshot.get('synced_count', 0),
+            'failed_count': snapshot.get('failed_count', 0),
+            'duration_seconds': snapshot.get('duration_seconds'),
+            'completed_label': 'Completed just now',
+            'notification_context': get_navigation_notification_context(user_id=current_user.id),
+            'notification_saved': sync_snapshot_visible_to_user(
                 snapshot,
                 user_id=int(current_user.id),
             ),
-        ),
-        response_status,
-    )
+        }
+    response = make_response(render_template(template, **context), response_status)
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    return response
 
 
 def render_enqueue_error(*, message: str, detail: str, response_status: int) -> ResponseReturnValue:

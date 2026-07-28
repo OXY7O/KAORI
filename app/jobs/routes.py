@@ -4,7 +4,7 @@ import logging
 from importlib import import_module
 
 from celery.exceptions import CeleryError
-from flask import Blueprint, abort, current_app, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 from kombu.exceptions import OperationalError as KombuOperationalError
@@ -135,7 +135,12 @@ def _render_configuration_job(
         context['notification_context'] = get_navigation_notification_context(
             user_id=int(current_user.id)
         )
-    return render_template('jobs/configuration/_job_workspace.html', **context), status_code
+    response = make_response(
+        render_template('jobs/configuration/_job_workspace.html', **context),
+        status_code,
+    )
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    return response
 
 
 def _jobs_execution_url(*, search: str = '', queue: str = '') -> str:
@@ -179,7 +184,10 @@ def configuration() -> ResponseReturnValue:
             if fragment == 'job'
             else 'jobs/configuration/_workspace.html'
         )
-        return render_template(template, **context)
+        response = make_response(render_template(template, **context))
+        if fragment == 'job':
+            response.headers['Cache-Control'] = 'no-store, max-age=0'
+        return response
     return render_template(
         'jobs/index.html',
         **_page_context(

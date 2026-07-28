@@ -7,10 +7,7 @@ TLS_CERTIFICATE_SYNC_DEFINITION = JobDefinition(
     key=JOB_KEY,
     name='TLS Certificate Sync',
     domain='Kubernetes Governance',
-    description=(
-        'Refresh Kubernetes TLS Secret certificate inventory, Ingress usage, expiry posture, '
-        'and freshness through the inventory worker.'
-    ),
+    description='Refresh TLS Secret inventory, Ingress usage, expiry, and freshness.',
     icon='shield-check',
     queue_name='inventory',
     workload_class='standard',

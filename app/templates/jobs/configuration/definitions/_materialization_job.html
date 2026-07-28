@@ -19,8 +19,8 @@
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    {{ table_label.status_label('Automatic' if policy.enabled else 'Manual Only', 'normal' if policy.enabled else 'unknown', 'clock-3') }}
-                    {{ table_label.status_label(definition.queue_name, 'maintenance', 'cpu') }}
+                    {{ table_label.status_indicator_label('Automatic' if policy.enabled else 'Manual Only', 'normal' if policy.enabled else 'unknown', 'clock-3') }}
+                    {{ table_label.status_indicator_label(definition.queue_name, 'maintenance', 'cpu') }}
                 </div>
             </div>
         </header>
@@ -60,7 +60,7 @@
                     <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="sliders-horizontal" class="h-4 w-4"></i></span>
                     <div>
                         <h3 class="text-base font-semibold text-content-primary">Automatic Materialization Policy</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Configure how often KAORI refreshes shared results before users request them.</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Configure the shared snapshot refresh schedule.</p>
                     </div>
                 </div>
             </header>
@@ -68,7 +68,7 @@
                 <label class="flex items-start justify-between gap-4 rounded-lg border border-outline-default bg-surface-elevated p-4">
                     <span>
                         <span class="block text-sm font-semibold text-content-primary">Enable Automatic Execution</span>
-                        <span class="mt-1 block text-xs leading-5 text-content-muted">Scheduled runs create JobExecution and Activity Audit records without user notifications.</span>
+                        <span class="mt-1 block text-xs leading-5 text-content-muted">Scheduled runs are recorded without user notifications.</span>
                     </span>
                     {{ policy_form.enabled(class_="mt-1 h-4 w-4 rounded border-outline-default text-kaori-primary focus:ring-kaori-primary") }}
                 </label>
@@ -94,7 +94,7 @@
                         {{ policy_form.stale_grace_minutes(class_="h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 pr-20 text-sm font-semibold text-content-primary outline-none focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10") }}
                         <span class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs font-semibold text-content-muted">Minutes</span>
                     </div>
-                    <span class="mt-1.5 block text-xs leading-5 text-content-muted">KAORI serves the last successful result during refresh or temporary Prometheus failure.</span>
+                    <span class="mt-1.5 block text-xs leading-5 text-content-muted">Use the last successful snapshot during refresh or source failure.</span>
                 </label>
                 {% block materialization_options %}{% endblock materialization_options %}
             </div>
@@ -105,7 +105,7 @@
                         <i data-lucide="save" class="h-4 w-4"></i> Save
                     </button>
                 {% else %}
-                    {{ table_label.status_label('View Only', 'unknown', 'lock-keyhole') }}
+                    {{ table_label.status_indicator_label('View Only', 'unknown', 'lock-keyhole') }}
                 {% endif %}
             </footer>
         </form>
@@ -114,25 +114,25 @@
             <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                 <header class="border-b border-outline-subtle px-5 py-4">
                     <h3 class="text-base font-semibold text-content-primary">Execution Control</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Manual and automatic runs use the same definition, queue, and deduplication boundary.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Manual and automatic runs share the same execution boundary.</p>
                 </header>
                 <div class="space-y-4 p-5">
                     {% if selected_job.active_job %}
                         <div class="rounded-lg border border-brand-outline bg-kaori-soft p-4">
                             <div class="flex items-center justify-between gap-3">
                                 <p class="text-sm font-semibold text-content-primary">Execution Active</p>
-                                {{ table_label.status_label(selected_job.active_job.status|replace('_', ' ')|title, 'pending', 'loader-circle') }}
+                                {{ table_label.status_indicator_label(selected_job.active_job.status|replace('_', ' ')|title, 'pending', 'loader-circle') }}
                             </div>
                             <p class="mt-2 text-xs text-content-muted">{{ selected_job.active_job.progress_message or 'Waiting for the target worker.' }}</p>
                             {% set total = selected_job.active_job.progress_total or 0 %}
                             {% set current = selected_job.active_job.progress_current or 0 %}
                             {% set progress = ((current / total) * 100) if total else 0 %}
-                            {{ progress_bar.bar(progress, track_classes="mt-3 h-1.5 overflow-hidden rounded-full bg-white", fill_classes="h-full rounded-full bg-kaori-primary", label="Materialization progress") }}
+                            {{ progress_bar.determinate(progress, label="Materialization progress", classes="mt-3 block h-1.5 w-full overflow-hidden rounded-full accent-kaori-primary") }}
                         </div>
                     {% else %}
                         <div class="rounded-lg border border-outline-default bg-surface-elevated p-4">
-                            {{ table_label.status_label('Idle', 'unknown', 'circle-dashed') }}
-                            <p class="mt-3 text-xs leading-5 text-content-muted">No materialization execution is currently queued or running.</p>
+                            {{ table_label.status_indicator_label('Idle', 'unknown', 'circle-dashed') }}
+                            <p class="mt-3 text-xs leading-5 text-content-muted">No materialization job is active.</p>
                         </div>
                     {% endif %}
                     <dl class="grid grid-cols-2 gap-3 text-xs">
@@ -160,7 +160,7 @@
                     <div>
                         <h3 class="text-sm font-semibold text-content-primary">Load Protection Boundary</h3>
                         <p class="mt-1 text-xs leading-5 text-content-secondary">{{ definition.safety_summary }}</p>
-                        <p class="mt-2 text-xs leading-5 text-content-muted">Automatic executions are written to Activity Audit only. They do not create notification-center or toast feedback.</p>
+                        <p class="mt-2 text-xs leading-5 text-content-muted">Automatic runs are recorded in Activity Audit without toast feedback.</p>
                     </div>
                 </div>
             </section>

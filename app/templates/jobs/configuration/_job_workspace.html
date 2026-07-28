@@ -3,7 +3,8 @@
          hx-get="{{ url_for('jobs.configuration', job_key=selected_job.definition.key, fragment='job') }}"
          hx-trigger="every 2s"
          hx-target="this"
-         hx-swap="outerHTML"
+         hx-swap="outerHTML swap:0ms settle:0ms"
+         hx-sync="this:replace"
      {% endif %}>
     {% if selected_job %}
         {% include selected_job.definition.configuration_template %}
@@ -19,6 +20,10 @@
         </section>
     {% endif %}
 </div>
+
+{% if request.headers.get('HX-Request') == 'true' %}
+    {% include "jobs/configuration/_catalog_status_oob.html" %}
+{% endif %}
 
 {% if operation_feedback %}
     {% include 'components/operation_feedback_oob.html' %}

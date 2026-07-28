@@ -25,3 +25,12 @@
         <div class="kaori-progress-fill {{ secondary_classes }}" data-progress="{{ safe_secondary_value }}"></div>
     </div>
 {%- endmacro %}
+
+{% macro determinate(value, label='Progress', classes='h-1.5 w-full overflow-hidden rounded-full accent-kaori-primary') -%}
+    {% set safe_value = value | default(0, true) | int %}
+    {% if safe_value < 0 %}{% set safe_value = 0 %}{% elif safe_value > 100 %}{% set safe_value = 100 %}{% endif %}
+    <progress class="{{ classes }}"
+              value="{{ safe_value }}"
+              max="100"
+              aria-label="{{ label }}">{{ safe_value }}%</progress>
+{%- endmacro %}

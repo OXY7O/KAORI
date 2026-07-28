@@ -2,8 +2,9 @@
 <div id="quick-sync-task-{{ sync.task_id }}"
      data-cluster-sync-task="{{ sync.task_id }}"
      hx-get="{{ url_for('cluster.sync_all_status', task_id=sync.task_id) }}"
-     hx-trigger="load delay:2s"
-     hx-swap="outerHTML"
+     hx-trigger="every 2s"
+     hx-swap="outerHTML swap:0ms settle:0ms"
+     hx-sync="this:replace"
      data-quick-action-toast
      role="status"
      aria-live="polite"
@@ -58,9 +59,10 @@
                 </div>
             </div>
         </div>
-        {{ progress_bar.bar(sync.progress_percent,
-                track_classes="mt-4 h-1.5 overflow-hidden rounded-full bg-kaori-soft/70",
-                fill_classes="h-full rounded-full bg-kaori-primary transition-all duration-500",
-                label="Cluster synchronization progress",) }}
+        {{ progress_bar.determinate(
+                sync.progress_percent,
+                label="Cluster synchronization progress",
+                classes="mt-4 block h-1.5 w-full overflow-hidden rounded-full accent-kaori-primary"
+            ) }}
     </div>
 </div>

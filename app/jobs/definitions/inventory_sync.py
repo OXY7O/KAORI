@@ -7,9 +7,7 @@ INVENTORY_SYNC_DEFINITION = JobDefinition(
     key=JOB_KEY,
     name='Inventory Sync',
     domain='Kubernetes Inventory',
-    description=(
-        'Refresh all inventory resources for every cluster with an enabled canonical Kubernetes binding.'
-    ),
+    description='Refresh cluster inventory snapshots through enabled Kubernetes bindings.',
     icon='database-zap',
     queue_name='inventory',
     workload_class='standard',
