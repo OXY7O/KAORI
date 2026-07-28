@@ -1,3 +1,4 @@
+{% import "components/table.html" as table_ui %}
 {% import "components/action_button.html" as action_button %}
 {% import "components/table_label.html" as table_label %}
 {% set runbook_url = alert.runbook_url|default('') or alert.annotations.get('runbook_url') or alert.annotations.get('runbook') or alert.annotations.get('runbookURL') %}
@@ -45,7 +46,7 @@
         <div class="flex lg:col-span-2 lg:justify-end">
             <button type="button"
                     @click="openAlert = openAlert === '{{ row_key }}' ? null : '{{ row_key }}'"
-                    class="{{ action_button.classes('secondary') }} w-full shrink-0 lg:w-auto"
+                    class="{{ table_ui.action_classes() }} w-full shrink-0 sm:w-auto"
                     :aria-expanded="openAlert === '{{ row_key }}' ? 'true' : 'false'"
                     aria-controls="{{ row_key }}-details">
                 <i data-lucide="chevron-down"

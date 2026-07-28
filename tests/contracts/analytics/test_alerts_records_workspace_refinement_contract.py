@@ -38,7 +38,8 @@ def test_record_actions_have_dedicated_responsive_space() -> None:
 
     for content in (alerts, anomalies):
         assert "lg:col-span-2 lg:justify-end" in content
-        assert "w-full shrink-0 lg:w-auto" in content
+        assert "table_ui.action_classes()" in content
+        assert "w-full shrink-0 sm:w-auto" in content
         assert "View More" in content
         assert "aria-controls" in content
 

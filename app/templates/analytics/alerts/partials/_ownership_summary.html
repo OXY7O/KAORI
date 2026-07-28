@@ -1,45 +1,55 @@
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
-<section class="rounded-xl border border-outline-subtle bg-surface-hover p-5 sm:p-6">
-    <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+<section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+    <div class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:px-6 lg:flex-row lg:items-start lg:justify-between">
         <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                 <i data-lucide="{{ ownership_summary.icon|default('users') }}" class="h-5 w-5"></i>
             </span>
             <div class="min-w-0">
                 <h3 class="text-base font-semibold text-content-primary">Ownership &amp; Runbook Coverage</h3>
-                <p class="mt-1 text-sm leading-6 text-content-muted">{{ ownership_summary.description }}</p>
+                <p class="mt-1 text-sm leading-6 text-content-muted">Assess whether active alerts have accountable owners, escalation contacts, and usable runbooks.</p>
             </div>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-            {{ table_label.status_label(ownership_summary.label, tone=ownership_summary.level|default('info'), size='detail') }}
-            {{ table_label.metadata_label('Score ' ~ ownership_summary.score ~ '/100', size='detail') }}
+        {{ table_label.status_label(ownership_summary.label, tone=ownership_summary.level|default('info'), size='detail') }}
+    </div>
+
+    <div class="grid border-b border-outline-subtle lg:grid-cols-4">
+        <div class="flex items-center gap-4 bg-surface-hover px-5 py-5 sm:px-6 lg:col-span-1">
+            <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+                <i data-lucide="shield-check" class="h-5 w-5"></i>
+            </span>
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Coverage Score</p>
+                <p class="mt-1 text-2xl font-semibold text-content-primary">{{ ownership_summary.score }}<span class="text-sm text-content-muted">/100</span></p>
+            </div>
+        </div>
+        <div class="grid divide-y divide-outline-subtle sm:grid-cols-3 sm:divide-x sm:divide-y-0 lg:col-span-3">
+            {% set metrics = [
+                ('Owners', ownership_summary.owner_count, ownership_summary.missing_owner_count ~ ' Missing', 'users'),
+                ('Runbooks', ownership_summary.runbook_count, ownership_summary.missing_runbook_count ~ ' Missing', 'book-open-check'),
+                ('Contacts', ownership_summary.contact_count, ownership_summary.missing_contact_count ~ ' Missing', 'radio-tower')
+            ] %}
+            {% for label, value, detail, icon in metrics %}
+                <div class="flex items-center gap-3 px-5 py-4 sm:px-6">
+                    <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0 text-kaori-primary"></i>
+                    <div>
+                        <p class="text-xs text-content-muted">{{ label }}</p>
+                        <p class="mt-0.5 text-lg font-semibold text-content-primary">{{ value }}</p>
+                        <p class="mt-0.5 text-xs text-content-muted">{{ detail }}</p>
+                    </div>
+                </div>
+            {% endfor %}
         </div>
     </div>
 
-    <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        {% set metrics = [
-            ('Owners', ownership_summary.owner_count, ownership_summary.missing_owner_count ~ ' Missing'),
-            ('Runbooks', ownership_summary.runbook_count, ownership_summary.missing_runbook_count ~ ' Missing'),
-            ('Contacts', ownership_summary.contact_count, ownership_summary.missing_contact_count ~ ' Missing'),
-            ('Alert Coverage', ownership_summary.alert_count, ownership_summary.source|title ~ ' Source')
-        ] %}
-        {% for label, value, detail in metrics %}
-            <div class="rounded-lg border border-outline-subtle bg-surface-card px-4 py-3">
-                <p class="text-xs text-content-muted">{{ label }}</p>
-                <p class="mt-1 text-xl font-semibold text-content-primary">{{ value }}</p>
-                <p class="mt-1 text-xs text-content-muted">{{ detail }}</p>
-            </div>
-        {% endfor %}
-    </div>
-
-    <div class="mt-5 grid gap-4 xl:grid-cols-3">
-        <div class="rounded-lg border border-outline-subtle bg-surface-card p-4">
-            <div class="flex items-center gap-2">
-                <i data-lucide="users" class="h-4 w-4 text-kaori-primary"></i>
+    <div class="grid divide-y divide-outline-subtle xl:grid-cols-3 xl:divide-x xl:divide-y-0">
+        <div class="p-5 sm:p-6">
+            <div class="flex items-center justify-between gap-3">
                 <h4 class="text-sm font-semibold text-content-primary">Owner Distribution</h4>
+                {{ table_label.metadata_label(ownership_summary.owner_count ~ ' Owners', icon='users', size='compact') }}
             </div>
-            <div class="mt-4 space-y-3">
+            <div class="mt-4 space-y-4">
                 {% for owner in ownership_summary.owner_groups %}
                     <div>
                         <div class="flex items-center justify-between gap-3 text-sm">
@@ -54,20 +64,20 @@
             </div>
         </div>
 
-        <div class="rounded-lg border border-outline-subtle bg-surface-card p-4">
-            <div class="flex items-center gap-2">
-                <i data-lucide="book-open" class="h-4 w-4 text-kaori-primary"></i>
-                <h4 class="text-sm font-semibold text-content-primary">Runbook Links</h4>
+        <div class="p-5 sm:p-6">
+            <div class="flex items-center justify-between gap-3">
+                <h4 class="text-sm font-semibold text-content-primary">Runbook Coverage</h4>
+                {{ table_label.status_label(ownership_summary.runbook_count ~ ' Available', tone='normal' if ownership_summary.runbook_count else 'warning', size='compact') }}
             </div>
-            <div class="mt-4 space-y-2">
+            <div class="mt-4 divide-y divide-outline-subtle">
                 {% for item in ownership_summary.runbook_items %}
                     <a href="{{ item.url }}"
                        target="_blank"
                        rel="noopener noreferrer"
-                       class="flex items-start justify-between gap-3 rounded-lg bg-surface-hover px-3 py-3 text-sm transition hover:bg-kaori-soft">
+                       class="flex items-start justify-between gap-3 py-3 text-sm first:pt-0 last:pb-0">
                         <div class="min-w-0">
                             <p class="break-words font-semibold text-content-primary">{{ item.name }}</p>
-                            <p class="mt-1 text-xs text-content-muted">{{ item.namespace }} · {{ item.owner }}</p>
+                            <p class="mt-1 break-words text-xs text-content-muted">{{ item.namespace }} · {{ item.owner }}</p>
                         </div>
                         <i data-lucide="arrow-up-right" class="h-4 w-4 shrink-0 text-kaori-primary"></i>
                     </a>
@@ -77,18 +87,18 @@
             </div>
         </div>
 
-        <div class="rounded-lg border border-outline-subtle bg-surface-card p-4">
-            <div class="flex items-center gap-2">
-                <i data-lucide="triangle-alert" class="h-4 w-4 text-kaori-primary"></i>
-                <h4 class="text-sm font-semibold text-content-primary">Missing Metadata</h4>
+        <div class="p-5 sm:p-6">
+            <div class="flex items-center justify-between gap-3">
+                <h4 class="text-sm font-semibold text-content-primary">Metadata Gaps</h4>
+                {{ table_label.status_label(ownership_summary.missing_metadata_items|length ~ ' Records', tone='warning' if ownership_summary.missing_metadata_items else 'normal', size='compact') }}
             </div>
-            <div class="mt-4 space-y-2">
+            <div class="mt-4 divide-y divide-outline-subtle">
                 {% for item in ownership_summary.missing_metadata_items %}
-                    <div class="rounded-lg bg-surface-hover px-3 py-3">
+                    <div class="py-3 first:pt-0 last:pb-0">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
                                 <p class="break-words text-sm font-semibold text-content-primary">{{ item.name }}</p>
-                                <p class="mt-1 text-xs text-content-muted">{{ item.namespace }} · {{ item.severity|title }}</p>
+                                <p class="mt-1 break-words text-xs text-content-muted">{{ item.namespace }} · {{ item.severity|title }}</p>
                             </div>
                             {{ table_label.status_label(item.missing|join(', '), tone='warning', size='compact') }}
                         </div>
