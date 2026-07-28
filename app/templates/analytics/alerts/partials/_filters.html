@@ -1,18 +1,64 @@
-{% import "analytics/components/_controls.html" as analytics_controls %}
-{% call analytics_controls.panel(
-    'Alert Controls',
-    'Select the cluster, source, severity, status, namespace, and search scope used for alert analysis.',
-    'sliders-horizontal',
-    'alerts-refresh-indicator',
-    eyebrow='Alerts & Anomalies'
-) %}
-    {% set input_classes = 'mt-1 w-full rounded-xl border border-outline-strong bg-surface-card px-3 py-2 pr-9 text-sm font-semibold text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10' %}
-    <div class="grid gap-3 lg:grid-cols-2 xl:grid-cols-[minmax(170px,1fr)_minmax(130px,.7fr)_minmax(130px,.7fr)_minmax(130px,.7fr)_minmax(180px,1fr)_minmax(240px,1.2fr)] xl:items-end">
-        <label class="block min-w-0"><span class="text-xs font-medium text-content-muted">Cluster</span><select id="alerts-cluster-select" name="cluster_id" data-kaori-reset-fields="namespace=,search=,page=1" class="{{ input_classes }}">{% for cluster in clusters %}<option value="{{ cluster.id }}" {% if selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>{% endfor %}</select></label>
-        <label class="block min-w-0"><span class="text-xs font-medium text-content-muted">Source</span><select name="source" class="{{ input_classes }}"><option value="auto" {% if selected_source == 'auto' %}selected{% endif %}>Auto</option><option value="alertmanager" {% if selected_source == 'alertmanager' %}selected{% endif %}>Alertmanager</option><option value="prometheus" {% if selected_source == 'prometheus' %}selected{% endif %}>Prometheus</option></select></label>
-        <label class="block min-w-0"><span class="text-xs font-medium text-content-muted">Severity</span><select name="severity" class="{{ input_classes }}">{% for option in severity_options %}<option value="{{ option }}" {% if selected_severity == option %}selected{% endif %}>{{ option|title }}</option>{% endfor %}</select></label>
-        <label class="block min-w-0"><span class="text-xs font-medium text-content-muted">Status</span><select name="status" class="{{ input_classes }}">{% for option in status_options %}<option value="{{ option }}" {% if selected_status == option %}selected{% endif %}>{{ option|title }}</option>{% endfor %}</select></label>
-        <label class="block min-w-0"><span class="text-xs font-medium text-content-muted">Namespace</span><select name="namespace" class="{{ input_classes }}"><option value="" {% if not selected_namespace %}selected{% endif %}>All Namespaces</option>{% for namespace in namespace_options %}<option value="{{ namespace }}" {% if selected_namespace == namespace %}selected{% endif %}>{{ namespace }}</option>{% endfor %}</select></label>
-        <label class="relative block min-w-0"><span class="text-xs font-medium text-content-muted">Search</span><i data-lucide="search" class="pointer-events-none absolute left-3 top-[37px] h-4 w-4 text-content-muted"></i><input type="text" name="search" value="{{ selected_search }}" placeholder="Search alert, pod, node, namespace..." class="mt-1 w-full min-w-0 rounded-xl border border-outline-strong bg-surface-card py-2 pl-10 pr-3 text-sm font-semibold text-content-primary shadow-sm outline-none transition placeholder:font-normal placeholder:text-content-muted focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10"></label>
+{% import "components/table_label.html" as table_label %}
+{% set health_level = source_health.level|default('unavailable') %}
+{% set health_tone = 'normal' if health_level == 'healthy' else ('info' if health_level == 'fallback' else ('warning' if health_level == 'degraded' else 'critical')) %}
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <div class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <i data-lucide="sliders-horizontal" class="h-5 w-5"></i>
+            </span>
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-lg font-semibold text-content-primary">Alert Controls &amp; Source Readiness</h2>
+                    {{ table_label.status_label(source_health.label|default('Unavailable'), tone=health_tone, size='detail') }}
+                </div>
+                <p class="mt-1 text-sm leading-6 text-content-muted">Set the alert scope and verify Alertmanager and Prometheus availability before reviewing signals.</p>
+            </div>
+        </div>
     </div>
-{% endcall %}
+
+    {% set input_classes = 'mt-1 h-10 w-full rounded-lg border border-outline-strong bg-surface-card px-3 pr-9 text-sm font-semibold text-content-primary shadow-sm outline-none transition focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10' %}
+    <div class="px-5 py-4 sm:px-6">
+        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-6 xl:items-end">
+            <label class="block min-w-0">
+                <span class="text-xs font-medium text-content-muted">Cluster</span>
+                <select id="alerts-cluster-select" name="cluster_id" data-kaori-reset-fields="namespace=,search=,page=1" class="{{ input_classes }}">
+                    {% for cluster in clusters %}<option value="{{ cluster.id }}" {% if selected_cluster_id|string == cluster.id|string %}selected{% endif %}>{{ cluster.name }}</option>{% endfor %}
+                </select>
+            </label>
+            <label class="block min-w-0">
+                <span class="text-xs font-medium text-content-muted">Source</span>
+                <select name="source" class="{{ input_classes }}">
+                    <option value="auto" {% if selected_source == 'auto' %}selected{% endif %}>Auto</option>
+                    <option value="alertmanager" {% if selected_source == 'alertmanager' %}selected{% endif %}>Alertmanager</option>
+                    <option value="prometheus" {% if selected_source == 'prometheus' %}selected{% endif %}>Prometheus</option>
+                </select>
+            </label>
+            <label class="block min-w-0">
+                <span class="text-xs font-medium text-content-muted">Severity</span>
+                <select name="severity" class="{{ input_classes }}">{% for option in severity_options %}<option value="{{ option }}" {% if selected_severity == option %}selected{% endif %}>{{ option|title }}</option>{% endfor %}</select>
+            </label>
+            <label class="block min-w-0">
+                <span class="text-xs font-medium text-content-muted">Status</span>
+                <select name="status" class="{{ input_classes }}">{% for option in status_options %}<option value="{{ option }}" {% if selected_status == option %}selected{% endif %}>{{ option|title }}</option>{% endfor %}</select>
+            </label>
+            <label class="block min-w-0">
+                <span class="text-xs font-medium text-content-muted">Namespace</span>
+                <select name="namespace" class="{{ input_classes }}">
+                    <option value="" {% if not selected_namespace %}selected{% endif %}>All Namespaces</option>
+                    {% for namespace in namespace_options %}<option value="{{ namespace }}" {% if selected_namespace == namespace %}selected{% endif %}>{{ namespace }}</option>{% endfor %}
+                </select>
+            </label>
+            <label class="relative block min-w-0">
+                <span class="text-xs font-medium text-content-muted">Search</span>
+                <i data-lucide="search" class="pointer-events-none absolute left-3 top-[37px] h-4 w-4 text-content-muted"></i>
+                <input type="text" name="search" value="{{ selected_search }}" placeholder="Search alert, pod, node, namespace..." class="mt-1 h-10 w-full min-w-0 rounded-lg border border-outline-strong bg-surface-card py-2 pl-10 pr-3 text-sm font-semibold text-content-primary shadow-sm outline-none transition placeholder:font-normal placeholder:text-content-muted focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
+            </label>
+        </div>
+        <div id="alerts-refresh-indicator" class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
+            <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
+        </div>
+    </div>
+
+    {% include "analytics/alerts/partials/_source_status.html" %}
+</section>

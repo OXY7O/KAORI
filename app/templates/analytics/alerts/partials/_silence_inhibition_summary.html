@@ -1,146 +1,121 @@
-<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <div>
-        <div class="flex flex-col gap-4 px-6 py-5 lg:flex-row lg:items-start lg:justify-between">
-            <div class="flex items-start gap-3">
-                <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl {{ silence_summary.class }}">
-                    <i data-lucide="{{ silence_summary.icon }}" class="h-5 w-5"></i>
-                </span>
-                <div>
-                    <div class="flex flex-wrap items-center gap-2">
-                        <h2 class="text-lg font-semibold text-content-primary">Silence &amp; Inhibition Visibility</h2>
-                        <span class="inline-flex rounded-md px-2.5 py-1 text-xs font-semibold {{ silence_summary.class }}">
-                            {{ silence_summary.label }}
-                        </span>
-                    </div>
-                    <p class="mt-1 max-w-3xl text-sm text-content-muted">{{ silence_summary.description }}</p>
-                </div>
-            </div>
-            <div class="flex flex-wrap items-center gap-2">
-                <span class="inline-flex rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary">
-                    {{ silence_summary.active_silences }} active · {{ inhibition_summary.matched_alerts }} inhibited
-                </span>
+{% import "components/table_label.html" as table_label %}
+<section class="rounded-xl border border-outline-subtle bg-surface-card p-5 sm:p-6">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <i data-lucide="{{ silence_summary.icon|default('volume-x') }}" class="h-5 w-5"></i>
+            </span>
+            <div class="min-w-0">
+                <h3 class="text-base font-semibold text-content-primary">Silence &amp; Inhibition</h3>
+                <p class="mt-1 text-sm leading-6 text-content-muted">{{ silence_summary.description }}</p>
             </div>
         </div>
-        <div class="border-t border-outline-subtle p-6">
-            <div class="mb-5 rounded-xl border border-brand-outline bg-kaori-soft p-4">
-                <div class="flex items-start gap-3">
-                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kaori-primary text-white">
-                        <i data-lucide="volume-x" class="h-4 w-4"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm font-semibold text-content-primary">Noise-control lens</p>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">
-                            Silences and inhibitions show which alerts are intentionally muted, suppressed, or hidden from notification flow.
-                        </p>
-                    </div>
+        <div class="flex flex-wrap items-center gap-2">
+            {{ table_label.status_label(silence_summary.label, tone=silence_summary.level|default('info'), size='detail') }}
+            {{ table_label.metadata_label(silence_summary.active_silences ~ ' Active · ' ~ inhibition_summary.matched_alerts ~ ' Inhibited', size='detail') }}
+        </div>
+    </div>
+
+    <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {% set metrics = [
+            ('Active Silences', silence_summary.active_silences),
+            ('Silence Matches', silence_summary.matched_alerts),
+            ('Pending Silences', silence_summary.pending_silences),
+            ('Inhibited Alerts', inhibition_summary.matched_alerts)
+        ] %}
+        {% for label, value in metrics %}
+            <div class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
+                <p class="text-xs text-content-muted">{{ label }}</p>
+                <p class="mt-1 text-xl font-semibold text-content-primary">{{ value }}</p>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="mt-5 grid gap-4 xl:grid-cols-2">
+        <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <h4 class="text-sm font-semibold text-content-primary">Active Silence Scope</h4>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Matchers and namespaces currently excluded from notification flow.</p>
                 </div>
+                {{ table_label.status_label(silence_summary.level|default('unknown')|title, tone=silence_summary.level|default('unknown'), size='compact') }}
             </div>
-            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {% set cards = [
-                                    ('Active Silences', silence_summary.active_silences),
-                                    ('Matched Alerts', silence_summary.matched_alerts),
-                                    ('Pending Silences', silence_summary.pending_silences),
-                                    ('Inhibited Alerts', inhibition_summary.matched_alerts)
-                                ] %}
-                {% for label, value in cards %}
-                    <div class="rounded-xl border border-outline-default bg-surface-subtle px-4 py-3">
-                        <p class="text-xs font-medium text-content-muted">{{ label }}</p>
-                        <p class="mt-1 text-lg font-semibold text-content-primary">{{ value }}</p>
-                    </div>
-                {% endfor %}
-            </div>
-            <div class="mt-5 grid gap-4 xl:grid-cols-2">
-                <div class="rounded-xl border border-outline-default bg-surface-subtle p-4">
-                    <div class="flex items-center justify-between gap-3">
-                        <div>
-                            <h3 class="text-sm font-semibold text-content-primary">Active Silence Matchers</h3>
-                            <p class="mt-1 text-xs text-content-muted">Matcher expressions currently suppressing alert notifications.</p>
-                        </div>
-                        <span class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold {{ silence_summary.class }}">
-                            {{ silence_summary.level|title }}
+            {% if silence_summary.silenced_matchers %}
+                <div class="mt-4 flex flex-wrap gap-2">
+                    {% for matcher in silence_summary.silenced_matchers %}
+                        <span class="inline-flex max-w-full rounded-md bg-surface-card px-2.5 py-1 text-xs font-semibold text-content-secondary">
+                            <span class="break-all">{{ matcher }}</span>
                         </span>
-                    </div>
-                    {% if silence_summary.silenced_matchers %}
-                        <div class="mt-4 flex flex-wrap gap-2">
-                            {% for matcher in silence_summary.silenced_matchers %}
-                                <span class="inline-flex rounded-md bg-surface-card px-2.5 py-1 text-xs font-semibold text-content-secondary ring-1 ring-outline-default ring-outline-default">
-                                    {{ matcher }}
-                                </span>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <p class="mt-4 text-sm text-content-muted">No active silence matcher was detected.</p>
-                    {% endif %}
-                    {% if silence_summary.silenced_namespaces %}
-                        <div class="mt-4">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Affected Namespaces</p>
-                            <div class="mt-2 flex flex-wrap gap-2">
-                                {% for namespace in silence_summary.silenced_namespaces %}
-                                    <span class="inline-flex rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary bg-kaori-soft">{{ namespace }}</span>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    {% endif %}
+                    {% endfor %}
                 </div>
-                <div class="rounded-xl border border-outline-default bg-surface-subtle p-4">
-                    <div class="flex items-center justify-between gap-3">
-                        <div>
-                            <h3 class="text-sm font-semibold text-content-primary">Inhibition Readiness</h3>
-                            <p class="mt-1 text-xs text-content-muted">Derived from Alertmanager inhibited alert metadata.</p>
-                        </div>
-                        <span class="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold {{ inhibition_summary.class }}">
-                            {{ inhibition_summary.label }}
-                        </span>
-                    </div>
-                    <div class="mt-4 grid gap-3 sm:grid-cols-2">
-                        <div class="rounded-xl bg-surface-card px-3 py-2">
-                            <p class="text-xs text-content-muted">Rules Detected</p>
-                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ inhibition_summary.rules_detected }}</p>
-                        </div>
-                        <div class="rounded-xl bg-surface-card px-3 py-2">
-                            <p class="text-xs text-content-muted">Matched Alerts</p>
-                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ inhibition_summary.matched_alerts }}</p>
-                        </div>
-                    </div>
-                    {% if inhibition_summary.source_equal_labels %}
-                        <div class="mt-4">
-                            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Observed Equal Labels</p>
-                            <div class="mt-2 flex flex-wrap gap-2">
-                                {% for label in inhibition_summary.source_equal_labels %}
-                                    <span class="inline-flex rounded-md bg-surface-card px-2.5 py-1 text-xs font-semibold text-content-secondary ring-1 ring-outline-default ring-outline-default">{{ label }}</span>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    {% else %}
-                        <p class="mt-4 text-sm text-content-muted">{{ inhibition_summary.description }}</p>
-                    {% endif %}
-                </div>
-            </div>
-            {% if silence_summary['items'] %}
-                <div class="mt-5 overflow-hidden rounded-xl border border-outline-default">
-                    <div class="border-b border-outline-subtle bg-surface-subtle px-4 py-3">
-                        <h3 class="text-sm font-semibold text-content-primary">Active Silence Details</h3>
-                    </div>
-                    <div class="divide-y divide-outline-default dark:divide-outline-default">
-                        {% for item in silence_summary['items'] %}
-                            <div class="grid gap-3 bg-surface-card px-4 py-3 text-sm md:grid-cols-[1fr_1fr_1fr]">
-                                <div>
-                                    <p class="font-semibold text-content-primary">{{ item.created_by }}</p>
-                                    <p class="mt-1 text-xs text-content-muted">{{ item.comment }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-xs text-content-muted">Window</p>
-                                    <p class="mt-1 font-semibold text-content-primary">{{ item.starts_at }} → {{ item.ends_at }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-xs text-content-muted">Matched Alerts</p>
-                                    <p class="mt-1 font-semibold text-content-primary">{{ item.matched_alerts }}</p>
-                                </div>
-                            </div>
+            {% else %}
+                <p class="mt-4 text-sm text-content-muted">No active silence matcher was detected.</p>
+            {% endif %}
+            {% if silence_summary.silenced_namespaces %}
+                <div class="mt-4 border-t border-outline-subtle pt-4">
+                    <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Affected Namespaces</p>
+                    <div class="mt-2 flex flex-wrap gap-2">
+                        {% for namespace in silence_summary.silenced_namespaces %}
+                            {{ table_label.metadata_label(namespace, wrap=true) }}
                         {% endfor %}
                     </div>
                 </div>
             {% endif %}
         </div>
+
+        <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <h4 class="text-sm font-semibold text-content-primary">Inhibition Readiness</h4>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Alert suppression derived from Alertmanager inhibition metadata.</p>
+                </div>
+                {{ table_label.status_label(inhibition_summary.label, tone=inhibition_summary.level|default('info'), size='compact') }}
+            </div>
+            <div class="mt-4 grid grid-cols-2 gap-3">
+                <div class="rounded-lg bg-surface-card px-3 py-2">
+                    <p class="text-xs text-content-muted">Rules Detected</p>
+                    <p class="mt-1 text-base font-semibold text-content-primary">{{ inhibition_summary.rules_detected }}</p>
+                </div>
+                <div class="rounded-lg bg-surface-card px-3 py-2">
+                    <p class="text-xs text-content-muted">Matched Alerts</p>
+                    <p class="mt-1 text-base font-semibold text-content-primary">{{ inhibition_summary.matched_alerts }}</p>
+                </div>
+            </div>
+            {% if inhibition_summary.source_equal_labels %}
+                <div class="mt-4 flex flex-wrap gap-2">
+                    {% for label in inhibition_summary.source_equal_labels %}
+                        <span class="inline-flex rounded-md bg-surface-card px-2.5 py-1 text-xs font-semibold text-content-secondary">{{ label }}</span>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="mt-4 text-sm leading-6 text-content-muted">{{ inhibition_summary.description }}</p>
+            {% endif %}
+        </div>
     </div>
+
+    {% if silence_summary['items'] %}
+        <div class="mt-5 overflow-hidden rounded-lg border border-outline-subtle">
+            <div class="border-b border-outline-subtle bg-surface-hover px-4 py-3">
+                <h4 class="text-sm font-semibold text-content-primary">Active Silence Records</h4>
+            </div>
+            <div class="divide-y divide-outline-default">
+                {% for item in silence_summary['items'] %}
+                    <div class="grid gap-3 bg-surface-card px-4 py-3 text-sm md:grid-cols-[1.2fr_1fr_.6fr]">
+                        <div>
+                            <p class="font-semibold text-content-primary">{{ item.created_by }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.comment }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-content-muted">Window</p>
+                            <p class="mt-1 font-semibold text-content-primary">{{ item.starts_at }} → {{ item.ends_at }}</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-content-muted">Matched Alerts</p>
+                            <p class="mt-1 font-semibold text-content-primary">{{ item.matched_alerts }}</p>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
 </section>

@@ -1,139 +1,97 @@
+{% import "components/progress_bar.html" as progress_bar %}
+{% import "components/table_label.html" as table_label %}
 {% set overview = selected_cluster_signal_overview %}
-<section class="rounded-xl border border-outline-default bg-surface-card p-6 shadow-sm">
-    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-content-muted">Cluster signal overview</p>
-            <h2 class="mt-1 text-2xl font-semibold text-content-primary">{{ overview.cluster_name }}</h2>
-            <p class="mt-1 max-w-3xl truncate whitespace-nowrap text-sm text-content-muted">
-                Alert and anomaly summary for this cluster.
-            </p>
-        </div>
-        <div class="flex flex-wrap gap-2">
-            <span class="inline-flex items-center gap-1.5 rounded-md border border-outline-default bg-surface-subtle px-3 py-1.5 text-xs font-semibold text-content-secondary">
-                <i data-lucide="radio-tower" class="h-3.5 w-3.5"></i>
-                {{ overview.source | title }}
+{% set connection_tone = 'normal' if overview.connected else 'unknown' %}
+{% set priority_tone = 'critical' if overview.priority.label|lower == 'critical' else ('warning' if overview.priority.label|lower in ['high', 'warning', 'watch'] else ('info' if overview.priority.label|lower in ['medium', 'moderate'] else 'normal')) %}
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <div class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <i data-lucide="radar" class="h-5 w-5"></i>
             </span>
-            {% if overview.connected %}
-                <span class="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
-                    <i data-lucide="check-circle-2" class="h-3.5 w-3.5"></i>
-                    Connected
-                </span>
-            {% else %}
-                <span class="inline-flex items-center gap-1.5 rounded-md border border-outline-default bg-surface-subtle px-3 py-1.5 text-xs font-semibold text-content-secondary">
-                    <i data-lucide="circle-off" class="h-3.5 w-3.5"></i>
-                    Not Connected
-                </span>
-            {% endif %}
+            <div class="min-w-0">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-content-muted">Cluster Signal Overview</p>
+                <h2 class="mt-1 text-lg font-semibold text-content-primary">{{ overview.cluster_name }}</h2>
+                <p class="mt-1 text-sm text-content-muted">Current alert posture, anomaly pressure, and investigation priority for the selected cluster.</p>
+            </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            {{ table_label.metadata_label(overview.source|title, icon='radio-tower', size='detail') }}
+            {{ table_label.status_label('Connected' if overview.connected else 'Not Connected', tone=connection_tone, icon='check-circle-2' if overview.connected else 'circle-off', size='detail') }}
+            {{ table_label.status_label(overview.priority.label ~ ' Priority', tone=priority_tone, icon=overview.priority.icon, size='detail') }}
         </div>
     </div>
-    <div class="mt-6 grid gap-4 xl:grid-cols-[0.9fr_1.4fr]">
-        <div class="space-y-4">
-            <div class="relative overflow-hidden rounded-xl bg-kaori-primary p-5 text-white shadow-lg shadow-sm">
-                <div class="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-surface-card/10 blur-2xl"></div>
-                <div class="relative flex items-start gap-3">
-                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-surface-card/15 text-white">
-                        <i data-lucide="{{ overview.priority.icon }}" class="h-6 w-6"></i>
-                    </div>
-                    <div class="min-w-0">
-                        <h3 class="truncate text-base font-semibold text-white">{{ overview.priority.label }} Priority</h3>
-                        <p class="mt-1 text-sm leading-6 text-brand-foreground-muted">{{ overview.priority.description }}</p>
-                    </div>
-                </div>
-            </div>
-            <div class="grid grid-cols-2 gap-3">
-                {% set cards = [
-                                    ('Total Signals', overview.total_signals, 'activity'),
-                                    ('Active Alerts', overview.active_alerts, 'bell-ring'),
-                                    ('Critical', overview.critical_alerts, 'circle-alert'),
-                                    ('Warning', overview.warning_alerts, 'alert-triangle'),
-                                    ('Anomalies', overview.anomalies, 'radar'),
-                                    ('Pending', overview.pending_alerts, 'clock-3')
-                                ] %}
-                {% for label, value, icon in cards %}
-                    <div class="rounded-xl border border-outline-default bg-surface-subtle p-3">
-                        <div class="flex items-center justify-between gap-2">
-                            <span class="text-xs font-semibold text-content-muted">{{ label }}</span>
-                            <i data-lucide="{{ icon }}" class="h-4 w-4 text-content-muted"></i>
+
+    <div class="p-5 sm:p-6">
+        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {% set signal_cards = [
+                ('Active Alerts', overview.active_alerts, overview.bars.active_alerts, 'bell-ring'),
+                ('Critical Alerts', overview.critical_alerts, overview.bars.critical_alerts, 'circle-alert'),
+                ('Warning Alerts', overview.warning_alerts, overview.bars.warning_alerts, 'alert-triangle'),
+                ('Anomalies', overview.anomalies, overview.bars.anomalies, 'radar')
+            ] %}
+            {% for label, value, percent, icon in signal_cards %}
+                <div class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex min-w-0 items-center gap-2">
+                            <i data-lucide="{{ icon }}" class="h-4 w-4 shrink-0 text-kaori-primary"></i>
+                            <span class="text-sm font-semibold text-content-secondary">{{ label }}</span>
                         </div>
-                        <div class="mt-2 text-2xl font-semibold text-content-primary">{{ value }}</div>
+                        <span class="text-xl font-semibold text-content-primary">{{ value }}</span>
                     </div>
-                {% endfor %}
-            </div>
-        </div>
-        <div class="rounded-xl border border-outline-default bg-surface-subtle p-5">
-            <div class="mb-4 flex items-center justify-between gap-3">
-                <div>
-                    <h3 class="text-sm font-semibold text-content-primary">Signal Distribution</h3>
-                    <p class="mt-1 text-xs text-content-muted">Current alert and anomaly breakdown.</p>
+                    {{ progress_bar.bar(percent, track_classes='mt-3 h-1.5 overflow-hidden rounded-full bg-outline-default', fill_classes='h-full rounded-full bg-kaori-primary', label=label ~ ' signal share') }}
                 </div>
-                {% if overview.total_signals == 0 %}
-                    <span class="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300">
-                        <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
-                        No active signals
+            {% endfor %}
+        </div>
+
+        <div class="mt-4 grid gap-4 lg:grid-cols-5">
+            <div class="rounded-lg border border-outline-subtle bg-surface-card px-4 py-4 lg:col-span-2">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="{{ overview.priority.icon }}" class="h-4 w-4"></i>
                     </span>
-                {% endif %}
-            </div>
-            <div class="space-y-4">
-                {% set distribution_rows = [
-                                    ('Active Alerts', overview.active_alerts, overview.bars.active_alerts, 'bell-ring'),
-                                    ('Critical Alerts', overview.critical_alerts, overview.bars.critical_alerts, 'circle-alert'),
-                                    ('Warning Alerts', overview.warning_alerts, overview.bars.warning_alerts, 'alert-triangle'),
-                                    ('Anomalies', overview.anomalies, overview.bars.anomalies, 'radar')
-                                ] %}
-                {% for label, value, bar, icon in distribution_rows %}
                     <div>
-                        <div class="mb-2 flex items-center justify-between text-xs font-semibold text-content-secondary">
-                            <span class="inline-flex items-center gap-1.5">
-                                <i data-lucide="{{ icon }}" class="h-3.5 w-3.5 text-content-muted"></i>
-                                {{ label }}
-                            </span>
-                            <span class="rounded-md bg-surface-card px-2 py-0.5 text-content-secondary ring-1 ring-outline-default ring-outline-default">{{ value }}</span>
-                        </div>
-                        <div class="grid grid-cols-12 gap-1">
-                            {% for index in range(12) %}
-                                {% if index < bar %}
-                                    <div class="h-2 rounded-full bg-kaori-primary"></div>
-                                {% else %}
-                                    <div class="h-2 rounded-full bg-outline-default"></div>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
+                        <p class="text-sm font-semibold text-content-primary">{{ overview.priority.label }} Investigation Priority</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">{{ overview.priority.description }}</p>
                     </div>
-                {% endfor %}
-            </div>
-            <div class="mt-5 grid gap-3 lg:grid-cols-3">
-                <div class="rounded-xl border border-outline-default bg-surface-card p-3">
-                    <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-content-muted">
-                        <i data-lucide="activity" class="h-3.5 w-3.5"></i>
-                        Dominant Signal
-                    </div>
-                    <div class="mt-2 text-sm font-semibold text-content-primary">{{ overview.insight.dominant_signal }}</div>
-                    <p class="mt-1 text-xs text-content-muted">{{ overview.insight.dominant_signal_count }} items</p>
                 </div>
-                <div class="rounded-xl border border-outline-default bg-surface-card p-3">
-                    <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-content-muted">
-                        <i data-lucide="radar" class="h-3.5 w-3.5"></i>
-                        Dominant Anomaly
+                <div class="mt-4 grid grid-cols-2 gap-3 border-t border-outline-subtle pt-4">
+                    <div>
+                        <p class="text-xs text-content-muted">Total Signals</p>
+                        <p class="mt-1 text-base font-semibold text-content-primary">{{ overview.total_signals }}</p>
                     </div>
-                    <div class="mt-2 text-sm font-semibold text-content-primary">{{ overview.insight.dominant_anomaly }}</div>
-                    <p class="mt-1 text-xs text-content-muted">{{ overview.insight.dominant_anomaly_count }} items</p>
-                </div>
-                <div class="rounded-xl border border-outline-default bg-surface-card p-3">
-                    <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-content-muted">
-                        <i data-lucide="compass" class="h-3.5 w-3.5"></i>
-                        Action Hint
+                    <div>
+                        <p class="text-xs text-content-muted">Pending Alerts</p>
+                        <p class="mt-1 text-base font-semibold text-content-primary">{{ overview.pending_alerts }}</p>
                     </div>
-                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ overview.insight.action_hint }}</p>
                 </div>
             </div>
-            {% if overview.fallback_used and overview.fallback_reason %}
-                <div class="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
-                    <div class="flex items-start gap-2">
-                        <i data-lucide="route" class="mt-0.5 h-4 w-4 shrink-0"></i>
-                        <span>{{ overview.fallback_reason }}</span>
+
+            <div class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-4 lg:col-span-3">
+                <div class="grid gap-4 md:grid-cols-3">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Dominant Signal</p>
+                        <p class="mt-2 text-sm font-semibold text-content-primary">{{ overview.insight.dominant_signal }}</p>
+                        <p class="mt-1 text-xs text-content-muted">{{ overview.insight.dominant_signal_count }} items</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Dominant Anomaly</p>
+                        <p class="mt-2 text-sm font-semibold text-content-primary">{{ overview.insight.dominant_anomaly }}</p>
+                        <p class="mt-1 text-xs text-content-muted">{{ overview.insight.dominant_anomaly_count }} items</p>
+                    </div>
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Action Hint</p>
+                        <p class="mt-2 text-sm leading-6 text-content-secondary">{{ overview.insight.action_hint }}</p>
                     </div>
                 </div>
-            {% endif %}
+            </div>
         </div>
+
+        {% if overview.fallback_used and overview.fallback_reason %}
+            <div class="mt-4 flex items-start gap-2 rounded-lg border border-status-warning-border bg-status-warning-soft px-3 py-2 text-sm text-status-warning-text">
+                <i data-lucide="route" class="mt-0.5 h-4 w-4 shrink-0"></i>
+                <span>{{ overview.fallback_reason }}</span>
+            </div>
+        {% endif %}
     </div>
 </section>

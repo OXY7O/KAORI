@@ -1,222 +1,150 @@
+{% import "components/action_button.html" as action_button %}
+{% import "components/table_label.html" as table_label %}
 {% set runbook_url = alert.runbook_url|default('') or alert.annotations.get('runbook_url') or alert.annotations.get('runbook') or alert.annotations.get('runbookURL') %}
 {% set alert_owner = alert.owner|default('') or alert.labels.get('owner') or alert.labels.get('team') or alert.labels.get('service') or alert.namespace %}
 {% set alert_contact = alert.contact|default('') or alert.labels.get('contact') or alert.labels.get('pagerduty') or alert.labels.get('slack') or alert.annotations.get('contact') or alert.annotations.get('pagerduty') or alert.annotations.get('slack') %}
 {% set started_display = alert.starts_at|user_datetime %}
 {% set ends_display = alert.ends_at|user_datetime %}
-<tr class="hover:bg-surface-subtle dark:hover:bg-surface-hover/50">
+{% set severity_tone = 'critical' if alert.severity == 'critical' else ('warning' if alert.severity == 'warning' else ('info' if alert.severity == 'info' else 'unknown')) %}
+{% set status_tone = 'critical' if alert.status in ['firing', 'active'] else ('warning' if alert.status == 'pending' else 'unknown') %}
+<tr class="hover:bg-surface-hover">
     <td class="px-6 py-4 align-middle">
-        <div class="flex min-w-0 items-center gap-3">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-300">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                 <i data-lucide="bell-ring" class="h-4 w-4"></i>
-            </div>
+            </span>
             <div class="min-w-0">
-                <div class="truncate text-sm font-semibold leading-5 text-content-primary "
-                     title="{{ alert.name }}">{{ alert.name }}</div>
-                <div class="mt-1 max-w-[360px] truncate text-sm leading-5 text-content-muted "
-                     title="{{ alert.summary }}">{{ alert.summary }}</div>
+                <p class="break-words text-sm font-semibold leading-5 text-content-primary">{{ alert.name }}</p>
+                <p class="mt-1 max-w-xl break-words text-sm leading-5 text-content-muted">{{ alert.summary }}</p>
             </div>
         </div>
     </td>
-    <td class="px-4 py-4 align-middle">
-        {% if alert.severity == 'critical' %}
-            <span class="inline-flex items-center gap-1.5 rounded-md bg-red-100 px-2.5 py-1 text-xs font-semibold text-red-700 dark:bg-red-500/10 dark:text-red-300">
-                <i data-lucide="circle-alert" class="h-3.5 w-3.5"></i>Critical
-            </span>
-        {% elif alert.severity == 'warning' %}
-            <span class="inline-flex items-center gap-1.5 rounded-md bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-500/10 dark:text-amber-300">
-                <i data-lucide="alert-triangle" class="h-3.5 w-3.5"></i>Warning
-            </span>
-        {% elif alert.severity == 'info' %}
-            <span class="inline-flex items-center gap-1.5 rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary bg-kaori-soft ">
-                <i data-lucide="info" class="h-3.5 w-3.5"></i>Info
-            </span>
-        {% else %}
-            <span class="inline-flex items-center gap-1.5 rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary bg-kaori-primary-dark ">
-                <i data-lucide="minus-circle" class="h-3.5 w-3.5"></i>None
-            </span>
-        {% endif %}
-    </td>
-    <td class="px-4 py-4 align-middle">
-        <span class="inline-flex items-center rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary ">
-            {{ alert.status | title }}
-        </span>
-    </td>
-    <td class="px-4 py-4 align-middle">
-        <span class="inline-flex max-w-[260px] items-center gap-1.5 truncate rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary bg-kaori-soft "
-              title="{{ alert.namespace }}">
-            <i data-lucide="box" class="h-3.5 w-3.5"></i>
-            {{ alert.namespace }}
-        </span>
-    </td>
-    <td class="px-4 py-4 align-middle">
-        <span class="inline-flex items-center rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary bg-kaori-soft ">{{ alert.source }}</span>
-    </td>
-    <td class="px-4 py-4 align-middle">
-        <div class="whitespace-nowrap text-sm text-content-muted "
-             title="{{ alert.starts_at }}">{{ started_display }}</div>
-    </td>
+    <td class="px-4 py-4 align-middle">{{ table_label.status_label(alert.severity|title, tone=severity_tone, size='detail') }}</td>
+    <td class="px-4 py-4 align-middle">{{ table_label.status_label(alert.status|title, tone=status_tone, size='detail') }}</td>
+    <td class="px-4 py-4 align-middle">{{ table_label.metadata_label(alert.namespace, icon='box', wrap=true, size='detail') }}</td>
+    <td class="px-4 py-4 align-middle">{{ table_label.metadata_label(alert.source, size='detail') }}</td>
+    <td class="px-4 py-4 align-middle"><span class="text-sm text-content-muted">{{ started_display }}</span></td>
     <td class="px-6 py-4 text-left align-middle">
         <button type="button"
                 @click="openAlert = openAlert === '{{ row_key }}' ? null : '{{ row_key }}'"
-                class="inline-flex min-w-[116px] items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-outline-default bg-surface-card px-3 py-1.5 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary dark:hover:border-brand-outline hover:bg-kaori-soft dark:hover:text-kaori-primary">
-            <i data-lucide="chevron-down"
-               class="h-3.5 w-3.5 transition"
-               :class="{ 'rotate-180': openAlert === '{{ row_key }}' }"></i>
-            <span x-text="openAlert === '{{ row_key }}' ? 'Hide Details' : 'View More'">View More</span>
+                class="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
+            <i data-lucide="chevron-down" class="h-3.5 w-3.5 transition" :class="{ 'rotate-180': openAlert === '{{ row_key }}' }"></i>
+            <span x-text="openAlert === '{{ row_key }}' ? 'Hide Details' : 'View Details'">View Details</span>
         </button>
     </td>
 </tr>
-<tr x-show="openAlert === '{{ row_key }}'"
-    x-cloak
-    class="bg-surface-subtle /40">
+<tr x-show="openAlert === '{{ row_key }}'" x-cloak class="bg-surface-hover">
     <td colspan="7" class="px-6 py-4">
-        <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm ring-1 ring-outline-subtle ring-outline-default/70">
-            <div class="border-b border-outline-default bg-surface-subtle px-5 py-4 ">
-                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-primary text-white shadow-sm shadow-black/10">
-                            <i data-lucide="bell-ring" class="h-5 w-5"></i>
-                        </span>
-                        <div class="min-w-0">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <h3 class="break-words text-base font-semibold text-content-primary">{{ alert.name }}</h3>
-                                <span class="rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary bg-kaori-soft ">{{ alert.namespace }}</span>
-                                <span class="rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary ">{{ alert.status|title }}</span>
-                            </div>
-                            <p class="mt-1 max-w-3xl text-sm leading-6 text-content-secondary ">{{ alert.description }}</p>
+        <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+            <div class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 lg:flex-row lg:items-start lg:justify-between">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="bell-ring" class="h-5 w-5"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h3 class="break-words text-base font-semibold text-content-primary">{{ alert.name }}</h3>
+                            {{ table_label.metadata_label(alert.namespace, wrap=true) }}
+                            {{ table_label.status_label(alert.status|title, tone=status_tone) }}
                         </div>
-                    </div>
-                    <div class="flex flex-wrap gap-2 lg:justify-end">
-                        <span class="inline-flex items-center gap-1.5 rounded-md bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 ring-1 ring-red-100 dark:bg-red-500/10 dark:text-red-300 dark:ring-red-500/20">
-                            <i data-lucide="circle-alert" class="h-3.5 w-3.5"></i>
-                            {{ alert.severity|title }}
-                        </span>
-                        <span class="inline-flex items-center gap-1.5 rounded-md bg-kaori-soft px-3 py-1.5 text-xs font-semibold text-kaori-primary ring-1 ring-brand-outline bg-kaori-soft ring-brand-outline">
-                            <i data-lucide="database" class="h-3.5 w-3.5"></i>
-                            {{ alert.source }}
-                        </span>
+                        <p class="mt-1 max-w-4xl text-sm leading-6 text-content-secondary">{{ alert.description }}</p>
                     </div>
                 </div>
+                <div class="flex flex-wrap gap-2">
+                    {{ table_label.status_label(alert.severity|title, tone=severity_tone, icon='circle-alert', size='detail') }}
+                    {{ table_label.metadata_label(alert.source, icon='database', size='detail') }}
+                </div>
             </div>
-            <div class="grid gap-4 p-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)]">
-                <div class="space-y-4">
+
+            <div class="grid gap-5 p-5 xl:grid-cols-3">
+                <div class="space-y-4 xl:col-span-2">
                     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                        {% set detail_cards = [
-                                                    ('Started', started_display, 'clock'),
-                                                    ('Target', alert.target, 'crosshair'),
-                                                    ('Owner', alert_owner or '-', 'users'),
-                                                    ('Contact', alert_contact or '-', 'radio-tower')
-                                                ] %}
-                        {% for label, value, icon in detail_cards %}
-                            <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 ">
-                                <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-content-muted ">
-                                    <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
-                                    {{ label }}
+                        {% for label, value, icon in [
+                            ('Started', started_display, 'clock'),
+                            ('Target', alert.target, 'crosshair'),
+                            ('Owner', alert_owner or 'Unassigned', 'users'),
+                            ('Contact', alert_contact or 'Not Set', 'radio-tower')
+                        ] %}
+                            <div class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
+                                <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-content-muted">
+                                    <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>{{ label }}
                                 </div>
-                                <div class="mt-2 break-all text-sm font-semibold text-content-primary ">{{ value }}</div>
+                                <p class="mt-2 break-all text-sm font-semibold text-content-primary">{{ value }}</p>
                             </div>
                         {% endfor %}
                     </div>
-                    <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4 border-brand-outline bg-kaori-soft">
+
+                    <div class="rounded-lg border border-kaori-primary/20 bg-kaori-soft px-4 py-4">
                         <div class="flex items-start gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-card text-kaori-primary shadow-sm bg-kaori-soft ">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
                                 <i data-lucide="list-checks" class="h-4 w-4"></i>
                             </span>
-                            <div class="min-w-0">
+                            <div>
                                 <h4 class="text-sm font-semibold text-content-primary">Recommended Investigation Path</h4>
-                                <p class="mt-1 text-sm leading-6 text-content-secondary ">
-                                    Start from the affected namespace and workload, validate whether the alert is still firing, then compare labels and annotations with the expected owner, routing policy, and runbook coverage.
-                                </p>
-                                <div class="mt-3 grid gap-2 sm:grid-cols-3">
-                                    <div class="rounded-xl bg-surface-card px-3 py-2 text-xs text-content-secondary shadow-sm ">
-                                        <span class="font-semibold text-content-primary ">Scope:</span> {{ alert.namespace }}
-                                    </div>
-                                    <div class="rounded-xl bg-surface-card px-3 py-2 text-xs text-content-secondary shadow-sm ">
-                                        <span class="font-semibold text-content-primary ">Owner:</span> {{ alert_owner or 'unassigned' }}
-                                    </div>
-                                    <div class="rounded-xl bg-surface-card px-3 py-2 text-xs text-content-secondary shadow-sm ">
-                                        <span class="font-semibold text-content-primary ">Runbook:</span> {{ 'available' if runbook_url else 'missing' }}
-                                    </div>
+                                <p class="mt-1 text-sm leading-6 text-content-secondary">Validate the affected namespace and workload, confirm the alert is still firing, then compare ownership, routing, and runbook metadata.</p>
+                                <div class="mt-3 flex flex-wrap gap-2">
+                                    {{ table_label.metadata_label('Scope: ' ~ alert.namespace, wrap=true) }}
+                                    {{ table_label.metadata_label('Owner: ' ~ (alert_owner or 'Unassigned'), wrap=true) }}
+                                    {{ table_label.status_label('Runbook Available' if runbook_url else 'Runbook Missing', tone='normal' if runbook_url else 'warning') }}
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="flex flex-wrap gap-2">
+
+                    <div class="flex flex-wrap gap-3">
                         {% if alert.generator_url %}
-                            <a href="{{ alert.generator_url }}"
-                               target="_blank"
-                               rel="noopener noreferrer"
-                               class="inline-flex items-center gap-2 rounded-xl bg-kaori-primary px-3 py-2 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark">
-                                <i data-lucide="external-link" class="h-3.5 w-3.5"></i>
-                                Open Generator URL
+                            <a href="{{ alert.generator_url }}" target="_blank" rel="noopener noreferrer" class="{{ action_button.classes('secondary') }}">
+                                <i data-lucide="arrow-up-right" class="h-4 w-4"></i>Open Generator
                             </a>
                         {% endif %}
                         {% if runbook_url %}
-                            <a href="{{ runbook_url }}"
-                               target="_blank"
-                               rel="noopener noreferrer"
-                               class="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-indigo-700">
-                                <i data-lucide="book-open" class="h-3.5 w-3.5"></i>
-                                Open Runbook
+                            <a href="{{ runbook_url }}" target="_blank" rel="noopener noreferrer" class="{{ action_button.classes('secondary') }}">
+                                <i data-lucide="book-open" class="h-4 w-4"></i>Open Runbook
                             </a>
                         {% endif %}
-                        <a href="{{ url_for('analytics.workload', cluster_id=selected_cluster_id, namespace=alert.namespace if alert.namespace != '-' else '') }}"
-                           class="inline-flex items-center gap-2 rounded-xl bg-kaori-primary-dark px-3 py-2 text-xs font-semibold text-white transition hover:bg-surface-hover bg-kaori-primary dark:hover:bg-surface-hover">
-                            <i data-lucide="boxes" class="h-3.5 w-3.5"></i>
-                            Review Workload
+                        <a href="{{ url_for('analytics.workload', cluster_id=selected_cluster_id, namespace=alert.namespace if alert.namespace != '-' else '') }}" class="{{ action_button.classes('primary') }}">
+                            <i data-lucide="boxes" class="h-4 w-4"></i>Review Workload
                         </a>
                     </div>
                 </div>
-                <div class="grid gap-4">
-                    <div class="rounded-xl border border-outline-default bg-surface-card p-4 ">
+
+                <div class="space-y-4">
+                    <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
                         <div class="flex items-center justify-between gap-3">
-                            <div class="flex items-center gap-2">
-                                <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-surface-hover text-content-secondary ">
-                                    <i data-lucide="tags" class="h-4 w-4"></i>
-                                </span>
-                                <h4 class="text-sm font-semibold text-content-primary">Labels</h4>
-                            </div>
-                            <span class="rounded-md bg-surface-hover px-2 py-1 text-xs font-semibold text-content-muted ">routing context</span>
+                            <h4 class="text-sm font-semibold text-content-primary">Labels</h4>
+                            {{ table_label.status_label('Routing Context', tone='info') }}
                         </div>
                         <div class="mt-3 flex max-h-44 flex-wrap gap-1.5 overflow-auto pr-1">
                             {% for key, value in alert.labels.items() %}
-                                <span class="rounded-lg bg-surface-hover px-2 py-1 text-xs text-content-secondary ">{{ key }}={{ value }}</span>
+                                <span class="rounded-md bg-surface-card px-2 py-1 text-xs text-content-secondary"><span class="break-all">{{ key }}={{ value }}</span></span>
                             {% else %}
-                                <span class="text-sm text-content-muted ">No labels available.</span>
+                                <span class="text-sm text-content-muted">No labels available.</span>
                             {% endfor %}
                         </div>
                     </div>
-                    <div class="rounded-xl border border-outline-default bg-surface-card p-4 ">
+
+                    <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
                         <div class="flex items-center justify-between gap-3">
-                            <div class="flex items-center gap-2">
-                                <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft ">
-                                    <i data-lucide="message-square" class="h-4 w-4"></i>
-                                </span>
-                                <h4 class="text-sm font-semibold text-content-primary">Annotations</h4>
-                            </div>
-                            <span class="rounded-md bg-kaori-soft px-2 py-1 text-xs font-semibold text-kaori-primary bg-kaori-soft ">operator notes</span>
+                            <h4 class="text-sm font-semibold text-content-primary">Annotations</h4>
+                            {{ table_label.metadata_label('Operator Notes') }}
                         </div>
                         <div class="mt-3 flex max-h-44 flex-wrap gap-1.5 overflow-auto pr-1">
                             {% set annotation_count = namespace(found=0) %}
                             {% for key, value in alert.annotations.items() %}
                                 {% if key not in ['description', 'runbook_url', 'runbook', 'runbookURL'] %}
                                     {% set annotation_count.found = annotation_count.found + 1 %}
-                                    <span class="rounded-lg bg-kaori-soft px-2 py-1 text-xs text-kaori-primary bg-kaori-soft ">{{ key }}={{ value }}</span>
+                                    <span class="rounded-md bg-surface-card px-2 py-1 text-xs text-content-secondary"><span class="break-all">{{ key }}={{ value }}</span></span>
                                 {% endif %}
                             {% endfor %}
-                            {% if annotation_count.found == 0 %}
-                                <span class="text-sm text-content-muted ">No additional annotations available.</span>
-                            {% endif %}
+                            {% if annotation_count.found == 0 %}<span class="text-sm text-content-muted">No additional annotations available.</span>{% endif %}
                         </div>
                     </div>
-                    <div class="rounded-xl border border-outline-default bg-surface-subtle p-4 ">
-                        <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-content-muted ">
-                            <i data-lucide="fingerprint" class="h-3.5 w-3.5"></i>
-                            Technical identity
-                        </div>
-                        <div class="mt-3 grid gap-2 text-xs text-content-secondary ">
-                            <div><span class="font-semibold text-content-primary ">Fingerprint:</span> <span class="break-all">{{ alert.fingerprint or '-' }}</span></div>
-                            <div><span class="font-semibold text-content-primary ">Ends at:</span> {{ ends_display }}</div>
+
+                    <div class="rounded-lg border border-outline-subtle bg-surface-card p-4">
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Technical Identity</p>
+                        <div class="mt-3 space-y-2 text-xs text-content-secondary">
+                            <p><strong class="text-content-primary">Fingerprint:</strong> <span class="break-all">{{ alert.fingerprint or '—' }}</span></p>
+                            <p><strong class="text-content-primary">Ends At:</strong> {{ ends_display }}</p>
                         </div>
                     </div>
                 </div>

@@ -1,106 +1,80 @@
 {% import "components/progress_bar.html" as progress_bar %}
-<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <div>
-        <div class="flex flex-col gap-4 px-6 py-5 lg:flex-row lg:items-start lg:justify-between">
-            <div class="flex items-start gap-4">
-                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl {{ routing_summary.class }}">
-                    <i data-lucide="{{ routing_summary.icon }}" class="h-6 w-6"></i>
-                </div>
-                <div>
-                    <p class="text-sm font-semibold uppercase tracking-wide text-kaori-primary">Alert Intelligence</p>
-                    <h2 class="mt-1 text-xl font-semibold text-content-primary">Alert Routing &amp; Grouping</h2>
-                    <p class="mt-1 max-w-3xl text-sm text-content-muted">{{ routing_summary.description }}</p>
-                </div>
-            </div>
-            <div class="flex flex-wrap items-center gap-2">
-                <span class="inline-flex w-fit items-center gap-2 rounded-md px-3 py-1.5 text-xs font-semibold {{ routing_summary.class }}">
-                    <i data-lucide="{{ routing_summary.icon }}" class="h-3.5 w-3.5"></i>
-                    {{ routing_summary.label }}
-                </span>
+{% import "components/table_label.html" as table_label %}
+<section class="rounded-xl border border-outline-subtle bg-surface-hover p-5 sm:p-6">
+    <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                <i data-lucide="{{ routing_summary.icon|default('route') }}" class="h-5 w-5"></i>
+            </span>
+            <div class="min-w-0">
+                <h3 class="text-base font-semibold text-content-primary">Alert Routing &amp; Grouping</h3>
+                <p class="mt-1 text-sm leading-6 text-content-muted">{{ routing_summary.description }}</p>
             </div>
         </div>
-        <div class="border-t border-outline-subtle p-6">
-            <div class="mb-5 rounded-xl border border-brand-outline bg-kaori-soft p-4">
-                <div class="flex items-start gap-3">
-                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kaori-primary text-white">
-                        <i data-lucide="route" class="h-4 w-4"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm font-semibold text-content-primary">Routing lens</p>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">
-                            Receiver, namespace, severity, and fingerprint coverage help validate whether alerts can be grouped, routed, and triaged consistently.
-                        </p>
-                    </div>
-                </div>
-            </div>
-            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                {% set summary_cards = [
-                                    ('Receivers', routing_summary.receiver_count, 'Unique receiver or ownership hints.'),
-                                    ('Groups', routing_summary.group_count, 'Alertname / namespace / severity group keys.'),
-                                    ('Fingerprints', routing_summary.fingerprint_count, 'Alerts with stable Alertmanager fingerprint.'),
-                                    ('Namespaces', routing_summary.namespace_count, 'Namespaces represented by current alerts.')
-                                ] %}
-                {% for label, value, desc in summary_cards %}
-                    <div class="rounded-xl border border-outline-default bg-surface-subtle p-4">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
-                        <p class="mt-2 text-2xl font-semibold text-content-primary">{{ value }}</p>
-                        <p class="mt-1 text-xs text-content-muted">{{ desc }}</p>
-                    </div>
-                {% endfor %}
-            </div>
-            <div class="mt-6 grid gap-4 xl:grid-cols-3">
-                {% set groups = [
-                                    ('Receiver Groups', routing_summary.receiver_groups, 'radio-receiver'),
-                                    ('Namespace Groups', routing_summary.namespace_groups, 'boxes'),
-                                    ('Severity Groups', routing_summary.severity_groups, 'gauge')
-                                ] %}
-                {% for title, items, icon in groups %}
-                    <div class="rounded-xl border border-outline-default p-4">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-sm font-semibold text-content-primary">{{ title }}</h3>
-                            <i data-lucide="{{ icon }}" class="h-4 w-4 text-content-muted"></i>
-                        </div>
-                        <div class="mt-4 space-y-3">
-                            {% if items %}
-                                {% for item in items %}
-                                    <div>
-                                        <div class="flex items-center justify-between gap-3 text-sm">
-                                            <span class="truncate font-medium text-content-secondary">{{ item.label|title if title == 'Severity Groups' else item.label }}</span>
-                                            <span class="shrink-0 text-xs font-semibold text-content-muted">{{ item.count }}</span>
-                                        </div>
-                                        {{ progress_bar.bar(item.percent,
-                                                                                track_classes="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover",
-                                                                                fill_classes="h-full rounded-full bg-kaori-primary",
-                                                                                label=title ~ " coverage",) }}
-                                    </div>
-                                {% endfor %}
-                            {% else %}
-                                <p class="text-sm text-content-muted">No grouping data available.</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-            <div class="mt-6 rounded-xl border border-outline-default bg-surface-subtle p-4">
-                <div class="flex items-center justify-between">
-                    <h3 class="text-sm font-semibold text-content-primary">Top Grouping Keys</h3>
-                    <i data-lucide="git-branch" class="h-4 w-4 text-content-muted"></i>
-                </div>
-                <div class="mt-4 grid gap-3 lg:grid-cols-2">
-                    {% if routing_summary.grouping_keys %}
-                        {% for item in routing_summary.grouping_keys %}
-                            <div class="rounded-xl border border-outline-default bg-surface-card px-4 py-3">
-                                <div class="flex items-center justify-between gap-3">
-                                    <span class="truncate text-sm font-medium text-content-secondary">{{ item.label }}</span>
-                                    <span class="shrink-0 rounded-md bg-surface-hover px-2 py-0.5 text-xs font-semibold text-content-secondary">{{ item.count }}</span>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    {% else %}
-                        <p class="text-sm text-content-muted">No Alertmanager grouping key available for current alerts.</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
+        {{ table_label.status_label(routing_summary.label, tone=routing_summary.level|default('info'), size='detail') }}
     </div>
+
+    <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {% set summary_cards = [
+            ('Receivers', routing_summary.receiver_count, 'Receiver or ownership targets'),
+            ('Groups', routing_summary.group_count, 'Observed grouping keys'),
+            ('Fingerprints', routing_summary.fingerprint_count, 'Stable alert fingerprints'),
+            ('Namespaces', routing_summary.namespace_count, 'Namespaces with signals')
+        ] %}
+        {% for label, value, description in summary_cards %}
+            <div class="rounded-lg border border-outline-subtle bg-surface-card px-4 py-3">
+                <p class="text-xs text-content-muted">{{ label }}</p>
+                <p class="mt-1 text-xl font-semibold text-content-primary">{{ value }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="mt-5 grid gap-4 xl:grid-cols-3">
+        {% set groups = [
+            ('Receiver Distribution', routing_summary.receiver_groups, 'radio-receiver'),
+            ('Namespace Distribution', routing_summary.namespace_groups, 'boxes'),
+            ('Severity Distribution', routing_summary.severity_groups, 'gauge')
+        ] %}
+        {% for title, items, icon in groups %}
+            <div class="rounded-lg border border-outline-subtle bg-surface-card p-4">
+                <div class="flex items-center justify-between gap-3">
+                    <h4 class="text-sm font-semibold text-content-primary">{{ title }}</h4>
+                    <i data-lucide="{{ icon }}" class="h-4 w-4 text-content-muted"></i>
+                </div>
+                <div class="mt-4 space-y-3">
+                    {% for item in items %}
+                        <div>
+                            <div class="flex items-center justify-between gap-3 text-sm">
+                                <span class="min-w-0 break-words font-medium text-content-secondary">{{ item.label|title if title == 'Severity Distribution' else item.label }}</span>
+                                <span class="shrink-0 text-xs font-semibold text-content-primary">{{ item.count }}</span>
+                            </div>
+                            {{ progress_bar.bar(item.percent, track_classes='mt-2 h-1.5 overflow-hidden rounded-full bg-outline-default', fill_classes='h-full rounded-full bg-kaori-primary', label=title ~ ' coverage') }}
+                        </div>
+                    {% else %}
+                        <p class="text-sm text-content-muted">No grouping data available.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if routing_summary.grouping_keys %}
+        <div class="mt-4 rounded-lg border border-outline-subtle bg-surface-card px-4 py-3">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h4 class="text-sm font-semibold text-content-primary">Top Grouping Keys</h4>
+                    <p class="mt-1 text-xs text-content-muted">Highest-volume Alertmanager grouping combinations.</p>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    {% for item in routing_summary.grouping_keys %}
+                        <span class="inline-flex items-center gap-2 rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary">
+                            <span class="break-all">{{ item.label }}</span>
+                            <strong class="text-content-primary">{{ item.count }}</strong>
+                        </span>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    {% endif %}
 </section>

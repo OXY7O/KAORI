@@ -12,6 +12,7 @@
         {% set critical_alerts = summary.critical_alerts|default(0) %}
         {% set warning_alerts = summary.warning_alerts|default(0) %}
         {% set anomaly_count = summary.detected_anomalies|default(0) %}
+
         <form id="alerts-control-form"
               method="GET"
               action="{{ url_for('analytics.alerts') }}"
@@ -28,92 +29,108 @@
             {% include "analytics/materialization/_freshness.html" %}
             {% if dependency_blocker %}
                 {% include "components/dependencies/_blocker.html" %}
-            {% endif %}
-            {% if not dependency_blocker %}
+            {% else %}
                 {% include "analytics/alerts/partials/_filters.html" %}
             {% endif %}
         </form>
+
         {% if not dependency_blocker %}
-            <section x-data="kaoriAnalyticsTabs('signals', ['signals', 'details', 'routing', 'readiness', 'recommendations'])" class="space-y-6">
+            {% include "analytics/alerts/partials/_cluster_signal_overview.html" %}
+
+            <section x-data="kaoriAnalyticsTabs('details', ['details', 'routing', 'readiness', 'recommendations'])"
+                     class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+                <div class="flex flex-col gap-3 px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                            <i data-lucide="layout-dashboard" class="h-5 w-5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 class="text-lg font-semibold text-content-primary">Alerts &amp; Anomalies Workspace</h2>
+                            <p class="mt-1 text-sm leading-6 text-content-muted">Review active signals, routing behavior, operational readiness, and recommended actions in one workspace.</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2 text-xs text-content-muted">
+                        <span>{{ selected_cluster_name }}</span>
+                        <span aria-hidden="true">•</span>
+                        <span>{{ source_status.resolved_source|default('none')|title }} Source</span>
+                    </div>
+                </div>
+
                 {% set alert_tabs = [
-                    ('signals', 'Signal Overview', 'radar'),
                     ('details', 'Alerts & Anomalies', 'bell-ring'),
                     ('routing', 'Routing & Suppression', 'route'),
                     ('readiness', 'Ownership & Readiness', 'shield-check'),
                     ('recommendations', 'Recommendations', 'list-checks')
                 ] %}
-                {{ analytics_content_tabs.render('alerts-content', alert_tabs, 'Alerts & Anomalies Content') }}
-                <div id="alerts-content-panel-signals"
-                     role="tabpanel"
-                     aria-labelledby="alerts-content-tab-signals"
-                     x-show="activeTab === 'signals'"
-                     class="space-y-6">
-                    {% include "analytics/alerts/partials/_source_status.html" %}
-                    {% include "analytics/alerts/partials/_cluster_signal_overview.html" %}
-                </div>
-                <div id="alerts-content-panel-details"
-                     role="tabpanel"
-                     aria-labelledby="alerts-content-tab-details"
-                     x-show="activeTab === 'details'"
-                     x-cloak
-                     class="space-y-6">
-                    <div x-data="{ activeSignalTab: 'alerts' }"
-                         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                        <div class="flex flex-col gap-4 border-b border-outline-subtle p-5 sm:p-6 sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <h2 class="text-lg font-semibold text-content-primary">Alert &amp; Anomaly Details</h2>
-                                <p class="mt-1 text-sm text-content-muted">Switch between active alert signals and anomaly candidates.</p>
+                {{ analytics_content_tabs.render('alerts-content', alert_tabs, 'Alerts & Anomalies Workspace', embedded=true) }}
+
+                <div class="p-5 sm:p-6">
+                    <div id="alerts-content-panel-details"
+                         role="tabpanel"
+                         aria-labelledby="alerts-content-tab-details"
+                         x-show="activeTab === 'details'"
+                         class="space-y-5">
+                        <div x-data="{ activeSignalTab: 'alerts' }" class="space-y-4">
+                            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <h3 class="text-base font-semibold text-content-primary">Signal Records</h3>
+                                    <p class="mt-1 text-sm text-content-muted">Switch between active alert records and detected anomaly candidates.</p>
+                                </div>
+                                <div class="inline-flex w-fit rounded-lg border border-outline-default bg-surface-hover p-1" role="tablist" aria-label="Alert Detail Type">
+                                    <button type="button"
+                                            role="tab"
+                                            @click="activeSignalTab = 'alerts'"
+                                            :aria-selected="activeSignalTab === 'alerts' ? 'true' : 'false'"
+                                            :class="activeSignalTab === 'alerts' ? 'bg-surface-card text-kaori-primary shadow-sm' : 'text-content-muted hover:text-content-primary'"
+                                            class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition">
+                                        <i data-lucide="bell-ring" class="h-4 w-4"></i>
+                                        Alerts
+                                    </button>
+                                    <button type="button"
+                                            role="tab"
+                                            @click="activeSignalTab = 'anomalies'"
+                                            :aria-selected="activeSignalTab === 'anomalies' ? 'true' : 'false'"
+                                            :class="activeSignalTab === 'anomalies' ? 'bg-surface-card text-kaori-primary shadow-sm' : 'text-content-muted hover:text-content-primary'"
+                                            class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition">
+                                        <i data-lucide="radar" class="h-4 w-4"></i>
+                                        Anomalies
+                                    </button>
+                                </div>
                             </div>
-                            <div class="inline-flex rounded-lg border border-outline-default bg-surface-subtle p-1" role="tablist" aria-label="Alert Detail Type">
-                                <button type="button"
-                                        role="tab"
-                                        @click="activeSignalTab = 'alerts'"
-                                        :aria-selected="activeSignalTab === 'alerts' ? 'true' : 'false'"
-                                        :class="activeSignalTab === 'alerts' ? 'bg-surface-card text-kaori-primary shadow-sm' : 'text-content-muted hover:text-content-primary'"
-                                        class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition">
-                                    <i data-lucide="bell-ring" class="h-4 w-4"></i>
-                                    Alerts
-                                </button>
-                                <button type="button"
-                                        role="tab"
-                                        @click="activeSignalTab = 'anomalies'"
-                                        :aria-selected="activeSignalTab === 'anomalies' ? 'true' : 'false'"
-                                        :class="activeSignalTab === 'anomalies' ? 'bg-surface-card text-kaori-primary shadow-sm' : 'text-content-muted hover:text-content-primary'"
-                                        class="inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition">
-                                    <i data-lucide="radar" class="h-4 w-4"></i>
-                                    Anomalies
-                                </button>
+                            <div class="overflow-hidden rounded-xl border border-outline-default">
+                                <div x-show="activeSignalTab === 'alerts'">{% include "analytics/alerts/partials/_alerts_table.html" %}</div>
+                                <div x-show="activeSignalTab === 'anomalies'" x-cloak>{% include "analytics/alerts/partials/_anomalies_table.html" %}</div>
                             </div>
                         </div>
-                        <div x-show="activeSignalTab === 'alerts'">{% include "analytics/alerts/partials/_alerts_table.html" %}</div>
-                        <div x-show="activeSignalTab === 'anomalies'" x-cloak>{% include "analytics/alerts/partials/_anomalies_table.html" %}</div>
                     </div>
-                </div>
-                <div id="alerts-content-panel-routing"
-                     role="tabpanel"
-                     aria-labelledby="alerts-content-tab-routing"
-                     x-show="activeTab === 'routing'"
-                     x-cloak
-                     class="space-y-6">
-                    {% include "analytics/alerts/partials/_routing_summary.html" %}
-                    {% include "analytics/alerts/partials/_silence_inhibition_summary.html" %}
-                </div>
-                <div id="alerts-content-panel-readiness"
-                     role="tabpanel"
-                     aria-labelledby="alerts-content-tab-readiness"
-                     x-show="activeTab === 'readiness'"
-                     x-cloak
-                     class="space-y-6">
-                    {% include "analytics/alerts/partials/_ownership_summary.html" %}
-                    {% include "analytics/alerts/partials/_incident_readiness.html" %}
-                </div>
-                <div id="alerts-content-panel-recommendations"
-                     role="tabpanel"
-                     aria-labelledby="alerts-content-tab-recommendations"
-                     x-show="activeTab === 'recommendations'"
-                     x-cloak
-                     class="space-y-6">
-                    {% include "analytics/alerts/partials/_recommendations.html" %}
+
+                    <div id="alerts-content-panel-routing"
+                         role="tabpanel"
+                         aria-labelledby="alerts-content-tab-routing"
+                         x-show="activeTab === 'routing'"
+                         x-cloak
+                         class="space-y-6">
+                        {% include "analytics/alerts/partials/_routing_summary.html" %}
+                        {% include "analytics/alerts/partials/_silence_inhibition_summary.html" %}
+                    </div>
+
+                    <div id="alerts-content-panel-readiness"
+                         role="tabpanel"
+                         aria-labelledby="alerts-content-tab-readiness"
+                         x-show="activeTab === 'readiness'"
+                         x-cloak
+                         class="space-y-6">
+                        {% include "analytics/alerts/partials/_ownership_summary.html" %}
+                        {% include "analytics/alerts/partials/_incident_readiness.html" %}
+                    </div>
+
+                    <div id="alerts-content-panel-recommendations"
+                         role="tabpanel"
+                         aria-labelledby="alerts-content-tab-recommendations"
+                         x-show="activeTab === 'recommendations'"
+                         x-cloak>
+                        {% include "analytics/alerts/partials/_recommendations.html" %}
+                    </div>
                 </div>
             </section>
         {% endif %}

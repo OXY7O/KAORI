@@ -10,26 +10,26 @@
                 <col class="w-[10%]">
                 <col class="w-[8%]">
             </colgroup>
-            <thead class="bg-surface-subtle /60">
+            <thead class="bg-surface-hover">
                 <tr>
                     <th scope="col"
-                        class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">Alert</th>
+                        class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Alert</th>
                     <th scope="col"
-                        class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">Severity</th>
+                        class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Severity</th>
                     <th scope="col"
-                        class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">Status</th>
+                        class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Status</th>
                     <th scope="col"
-                        class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">Namespace</th>
+                        class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Namespace</th>
                     <th scope="col"
-                        class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">Source</th>
+                        class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Source</th>
                     <th scope="col"
-                        class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">Started</th>
+                        class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Started</th>
                     <th scope="col"
-                        class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">Details</th>
+                        class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Details</th>
                 </tr>
             </thead>
             <tbody x-data="{ openAlert: null }"
-                   class="divide-y divide-outline-default bg-surface-card dark:divide-outline-default ">
+                   class="divide-y divide-outline-default bg-surface-card dark:divide-outline-default">
                 {% if alerts %}
                     {% for alert in alerts %}
                         {% set row_key = 'alert-' ~ loop.index0 %}
