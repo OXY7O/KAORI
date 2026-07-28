@@ -44,6 +44,17 @@ from app.intelligence.recommendation_engine import (
 )
 
 
+def _summary_aliases(summary: dict[str, Any] | None) -> dict[str, int]:
+    """Expose stable hero counters for live and materialized alert contexts."""
+    values = summary or {}
+    return {
+        'active_alerts': int(values.get('active_alerts') or 0),
+        'critical_alerts': int(values.get('critical_alerts') or 0),
+        'warning_alerts': int(values.get('warning_alerts') or 0),
+        'anomaly_count': int(values.get('detected_anomalies') or 0),
+    }
+
+
 def get_alerts_context(
     *,
     cluster_id: str | None,
@@ -159,6 +170,7 @@ def get_alerts_context(
         'anomalies': anomalies,
         'all_anomalies': anomalies,
         'summary': summary,
+        **_summary_aliases(summary),
         'source_status': source_status,
         'selected_cluster_signal_overview': build_selected_cluster_signal_overview(
             cluster=selected_cluster,
@@ -407,6 +419,7 @@ def present_alerts_materialized_context(
             'all_anomalies': filtered_anomalies,
             'anomalies_pagination': anomaly_pagination,
             'summary': summary,
+            **_summary_aliases(summary),
             'selected_cluster_signal_overview': signal_overview,
             'actionable_recommendations': recommendations,
             'recommendation_cards': recommendation_cards,
