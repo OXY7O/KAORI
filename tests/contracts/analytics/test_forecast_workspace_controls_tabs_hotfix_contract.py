@@ -25,18 +25,17 @@ def test_forecast_overview_uses_operational_posture_and_methodology_boundary() -
 
     for label in (
         "Projected Capacity Posture",
-        "Warning Resources",
-        "Critical Resources",
+        "Warning",
+        "Critical",
         "Nearest Critical",
-        "Methodology Boundary",
-        "Observation History",
-        "Projection Model",
-        "Forecast Horizon",
+        "History",
+        "Model",
+        "Horizon",
     ):
         assert label in overview
 
-    assert "xl:col-span-2" in overview
-    assert "divide-y divide-outline-subtle" in overview
+    assert "Forecast Overview & Methodology" in overview
+    assert "grid-cols-2" in overview
     assert "<details" not in overview
 
 

@@ -25,8 +25,9 @@
                         hx-trigger="change"
                         hx-target="#persistent-storage-panel"
                         hx-swap="outerHTML"
+                        hx-sync="#persistent-storage-panel:replace"
                         hx-include="#persistent-storage-filter-form, [name='pvc_per_page']"
-                        hx-indicator="#storage-refresh-indicator">
+                        hx-indicator="#persistent-storage-loading-indicator">
                     {% for option in per_page_options %}
                         <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
                     {% endfor %}
@@ -38,8 +39,9 @@
                         hx-trigger="change"
                         hx-target="#persistent-storage-panel"
                         hx-swap="outerHTML"
+                        hx-sync="#persistent-storage-panel:replace"
                         hx-include="#persistent-storage-filter-form, [name='pv_per_page']"
-                        hx-indicator="#storage-refresh-indicator">
+                        hx-indicator="#persistent-storage-loading-indicator">
                     {% for option in per_page_options %}
                         <option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>
                     {% endfor %}
@@ -101,7 +103,8 @@
                    hx-get="{{ prev_url }}"
                    hx-target="#persistent-storage-panel"
                    hx-swap="outerHTML"
-                   hx-indicator="#storage-refresh-indicator"
+                   hx-sync="#persistent-storage-panel:replace"
+                   hx-indicator="#persistent-storage-loading-indicator"
                    class="{{ pagination_ui.navigation_classes(disabled=false) }}">
                     <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
                     Previous
@@ -118,7 +121,8 @@
                    hx-get="{{ next_url }}"
                    hx-target="#persistent-storage-panel"
                    hx-swap="outerHTML"
-                   hx-indicator="#storage-refresh-indicator"
+                   hx-sync="#persistent-storage-panel:replace"
+                   hx-indicator="#persistent-storage-loading-indicator"
                    class="{{ pagination_ui.navigation_classes(disabled=false) }}">
                     Next
                     <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>

@@ -14,11 +14,13 @@ def test_top_consumer_freshness_is_embedded_in_controls_workspace():
     )
 
     assert 'analytics/materialization/_freshness.html' not in index
-    assert "Last Successful Snapshot" in controls
-    assert "Readiness Evidence Incomplete" in controls
-    assert "Latest Refresh Error" in controls
-    assert "source_warning" in controls
-    assert "last_error" in controls
+    shared = read("app/templates/analytics/components/_analysis_workspace.html")
+    assert "Serving Last Successful Snapshot" in shared
+    assert "Source Evidence Incomplete" in shared
+    assert "Latest Refresh Error" in shared
+    assert "source_warning" in shared
+    assert "last_error" in shared
+    assert "analytics_workspace.controls_readiness" in controls
 
 
 def test_consumer_detail_uses_persistent_kaori_loading_bar_and_results_swap():
@@ -53,4 +55,4 @@ def test_analytics_tabs_do_not_write_hash_or_move_viewport():
     assert "Hash updates can move the viewport" in script
     assert "url.hash = ''" in script
     assert "function stabilizeAlertsAfterSwap(root)" in script
-    assert "function stabilizeTopConsumersAfterSwap(root)" in script
+    assert "function stabilizeAnalyticsTabsets(root)" in script

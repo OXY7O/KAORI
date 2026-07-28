@@ -19,10 +19,10 @@ def test_firing_state_uses_its_own_semantic_column():
 def test_anomaly_action_is_right_aligned_and_uses_kaori_action_component():
     table = read("_anomalies_table.html")
     row = read("_anomalies_table_row.html")
-    assert '>Action</th>' in table
+    assert '>Action</div>' in table
     assert 'text-right' in table
-    assert 'class="{{ table_ui.action_classes() }} shrink-0"' in row
-    assert '<td class="px-6 py-4 align-top text-right">' in row
+    assert 'class="{{ table_ui.action_classes() }} w-full shrink-0 sm:w-auto"' in row
+    assert 'lg:justify-end' in row
     assert 'rounded-full' not in row.split('@click=', 1)[1].split('</button>', 1)[0]
 
 

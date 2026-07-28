@@ -139,10 +139,11 @@
 
 
     function stabilizeAlertsAfterSwap(root) {
-        const candidate = root?.isConnected ? root : document;
-        const alertsRoot = candidate?.id === 'alerts-page-content'
-            ? candidate
-            : candidate?.querySelector?.('#alerts-page-content') || document.querySelector('#alerts-page-content');
+        const candidate = root || document;
+        const connectedCandidate = candidate.isConnected ? candidate : document;
+        const alertsRoot = connectedCandidate?.id === 'alerts-page-content'
+            ? connectedCandidate
+            : connectedCandidate?.querySelector?.('#alerts-page-content') || document.querySelector('#alerts-page-content');
         if (!alertsRoot?.isConnected) return;
 
         window.dispatchEvent(new CustomEvent('kaori:alerts-collapse'));
@@ -153,35 +154,16 @@
         }
     }
 
-    function stabilizeTopConsumersAfterSwap(root) {
-        const candidate = root?.isConnected ? root : document;
-        const pageRoot = candidate?.id === 'top-consumers-page'
-            ? candidate
-            : candidate?.querySelector?.('#top-consumers-page') || document.querySelector('#top-consumers-page');
-        if (!pageRoot?.isConnected) return;
-
-        const tabset = pageRoot.querySelector('[data-top-consumers-tabset]');
-        if (!tabset) return;
-
-        if (window.Alpine && !tabset._x_dataStack) {
-            window.Alpine.initTree(tabset);
-        }
-
-        const activeTab = tabset._x_dataStack?.[0]?.activeTab || 'overview';
-        tabset.querySelectorAll('[role="tabpanel"]').forEach((panel) => {
-            const panelName = panel.id.replace('top-consumers-content-panel-', '');
-            panel.hidden = panelName !== activeTab;
-        });
-    }
 
     function stabilizeAnalyticsTabsets(root) {
-        const candidate = root?.isConnected ? root : document;
+        const candidate = root || document;
+        const connectedCandidate = candidate.isConnected ? candidate : document;
         const tabsets = [];
 
-        if (candidate?.matches?.('[data-analytics-tabset]')) {
-            tabsets.push(candidate);
+        if (connectedCandidate?.matches?.('[data-analytics-tabset]')) {
+            tabsets.push(connectedCandidate);
         }
-        candidate?.querySelectorAll?.('[data-analytics-tabset]').forEach((tabset) => tabsets.push(tabset));
+        connectedCandidate?.querySelectorAll?.('[data-analytics-tabset]').forEach((tabset) => tabsets.push(tabset));
 
         tabsets.forEach((tabset) => {
             if (!tabset?.isConnected) return;
@@ -253,6 +235,6 @@
 
     document.addEventListener('DOMContentLoaded', () => { hydrateAnalyticsUi(); stabilizeAnalyticsTabsets(document); });
     document.body.addEventListener('htmx:load', (event) => hydrateAnalyticsUi(event.detail.elt || document));
-    document.body.addEventListener('htmx:afterSwap', (event) => { const root = event.detail.target || document; hydrateAnalyticsUi(root); stabilizeAlertsAfterSwap(root); stabilizeTopConsumersAfterSwap(root); stabilizeAnalyticsTabsets(root); });
-    document.body.addEventListener('htmx:afterSettle', (event) => hydrateAnalyticsUi(event.detail.elt || document));
+    document.body.addEventListener('htmx:afterSwap', (event) => { const root = event.detail.target || document; hydrateAnalyticsUi(root); stabilizeAlertsAfterSwap(root); stabilizeAnalyticsTabsets(root); });
+    document.body.addEventListener('htmx:afterSettle', (event) => { const root = event.detail.elt || document; hydrateAnalyticsUi(root); stabilizeAnalyticsTabsets(root); });
 })();

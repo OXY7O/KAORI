@@ -1,130 +1,88 @@
-<div id="storage-filesystem-panel" class="space-y-6">
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <div class="rounded-lg border border-outline-subtle p-5 ">
-            <div class="flex items-start gap-4">
-                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft ">
-                    <i data-lucide="server" class="h-5 w-5"></i>
-                </div>
-                <div>
-                    <div class="text-xs font-medium text-content-muted ">Node Filesystem</div>
-                    <div class="mt-1 text-2xl font-semibold text-content-primary ">
-                        {{ storage_summary.node_filesystem.summary.capacity }}
+{% import "components/progress_bar.html" as progress_bar %}
+{% import "components/table_label.html" as table_label %}
+<div id="storage-filesystem-panel" class="space-y-5">
+    <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
+        <div class="grid sm:grid-cols-2 xl:grid-cols-4">
+            {% for label, value, helper, icon, tone in [
+                ('Node Filesystem', storage_summary.node_filesystem.summary.capacity, storage_summary.node_filesystem.summary.used ~ ' used', 'server', 'info'),
+                ('Free Filesystem', storage_summary.node_filesystem.summary.free, storage_summary.node_filesystem.summary.free_percent ~ '% free', 'hard-drive', 'normal'),
+                ('Persistent Volumes', storage_summary.persistent_storage.pv.count, storage_summary.persistent_storage.pv.capacity ~ ' capacity', 'database', 'info'),
+                ('Persistent Volume Claims', storage_summary.persistent_storage.pvc.count, storage_summary.persistent_storage.pvc.requested ~ ' requested', 'box', 'info')
+            ] %}
+                <div class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-4 last:border-b-0 sm:border-r sm:last:border-r-0 xl:border-b-0">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
+                        <p class="mt-1 break-words text-lg font-semibold text-content-primary">{{ value }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
                     </div>
-                    <div class="text-xs text-content-muted ">{{ storage_summary.node_filesystem.summary.used }} used</div>
                 </div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
+        <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="min-w-0">
+                    <h3 class="font-semibold text-content-primary">Node Filesystem Usage</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Highest usage: {{ storage_summary.node_filesystem.summary.highest_usage }}% on {{ storage_summary.node_filesystem.summary.highest_node }}</p>
+                </div>
+                {{ table_label.status_label(storage_summary.node_filesystem.summary.usage_percent ~ '% Used', tone='warning' if storage_summary.node_filesystem.summary.usage_percent >= 75 else 'normal', size='compact') }}
             </div>
+            {{ progress_bar.bar(storage_summary.node_filesystem.summary.usage_percent, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label='Node filesystem utilization') }}
+        </header>
+
+        <div class="hidden grid-cols-12 gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3 lg:grid">
+            <div class="col-span-3 text-xs font-semibold uppercase tracking-wide text-content-muted">Node & Mountpoint</div>
+            <div class="col-span-3 text-xs font-semibold uppercase tracking-wide text-content-muted">Capacity</div>
+            <div class="col-span-4 text-xs font-semibold uppercase tracking-wide text-content-muted">Utilization</div>
+            <div class="col-span-2 text-right text-xs font-semibold uppercase tracking-wide text-content-muted">Risk</div>
         </div>
-        <div class="rounded-lg border border-outline-subtle p-5 ">
-            <div class="flex items-start gap-4">
-                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-status-normal-soft text-status-normal  ">
-                    <i data-lucide="hard-drive" class="h-5 w-5"></i>
-                </div>
-                <div>
-                    <div class="text-xs font-medium text-content-muted ">Free Filesystem</div>
-                    <div class="mt-1 text-2xl font-semibold text-content-primary ">{{ storage_summary.node_filesystem.summary.free }}</div>
-                    <div class="text-xs text-content-muted ">{{ storage_summary.node_filesystem.summary.free_percent }}% free</div>
-                </div>
-            </div>
+
+        <div class="divide-y divide-outline-subtle">
+            {% for row in storage_summary.node_filesystem.rows %}
+                {% set risk_label = row.risk.label|default('Unknown') %}
+                {% set risk_lower = risk_label|lower %}
+                {% set risk_tone = 'critical' if 'critical' in risk_lower or 'high' in risk_lower else ('warning' if 'warning' in risk_lower or 'medium' in risk_lower else ('normal' if 'normal' in risk_lower or 'low' in risk_lower else 'unknown')) %}
+                <article class="grid gap-4 px-4 py-4 lg:grid-cols-12 lg:items-center">
+                    <div class="min-w-0 lg:col-span-3">
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="server" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <p class="break-words text-sm font-semibold text-content-primary">{{ row.node }}</p>
+                                <p class="mt-1 break-all text-xs text-content-muted">{{ row.mountpoint }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-3 lg:col-span-3">
+                        {% for label, value in [('Total', row.capacity), ('Used', row.used), ('Free', row.free)] %}
+                            <div>
+                                <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
+                                <p class="mt-1 text-sm font-semibold text-content-primary">{{ value }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="min-w-0 lg:col-span-4">
+                        <div class="flex items-center justify-between gap-3 text-xs">
+                            <span class="font-medium text-content-muted">Usage</span>
+                            <span class="font-semibold text-content-primary">{{ row.usage_percent }}%</span>
+                        </div>
+                        {{ progress_bar.bar(row.usage_percent, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=row.node ~ ' filesystem utilization') }}
+                    </div>
+                    <div class="lg:col-span-2 lg:text-right">
+                        {{ table_label.status_label(risk_label, tone=risk_tone, size='compact') }}
+                    </div>
+                </article>
+            {% else %}
+                {% set empty_state_icon = "hard-drive" %}
+                {% set empty_state_title = "No Filesystem Metrics Available" %}
+                {% set empty_state_description = "Filesystem metrics will appear after Prometheus returns node filesystem data for the selected scope." %}
+                {% set empty_state_min_height = "min-h-[190px]" %}
+                {% include "components/states/_empty_state.html" %}
+            {% endfor %}
         </div>
-        <div class="rounded-lg border border-outline-subtle p-5 ">
-            <div class="flex items-start gap-4">
-                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-600 dark:bg-violet-950 dark:text-violet-300">
-                    <i data-lucide="database" class="h-5 w-5"></i>
-                </div>
-                <div>
-                    <div class="text-xs font-medium text-content-muted ">Persistent Volumes</div>
-                    <div class="mt-1 text-2xl font-semibold text-content-primary ">{{ storage_summary.persistent_storage.pv.count }}</div>
-                    <div class="text-xs text-content-muted ">{{ storage_summary.persistent_storage.pv.capacity }} capacity</div>
-                </div>
-            </div>
-        </div>
-        <div class="rounded-lg border border-outline-subtle p-5 ">
-            <div class="flex items-start gap-4">
-                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary  ">
-                    <i data-lucide="box" class="h-5 w-5"></i>
-                </div>
-                <div>
-                    <div class="text-xs font-medium text-content-muted ">Persistent Volume Claims</div>
-                    <div class="mt-1 text-2xl font-semibold text-content-primary ">{{ storage_summary.persistent_storage.pvc.count }}</div>
-                    <div class="text-xs text-content-muted ">{{ storage_summary.persistent_storage.pvc.requested }} requested</div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="rounded-lg border border-outline-subtle p-5 ">
-        <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-                <h3 class="font-semibold text-content-primary">Node Filesystem Usage</h3>
-                <p class="mt-1 text-xs text-content-muted ">
-                    Highest usage: {{ storage_summary.node_filesystem.summary.highest_usage }}% on {{ storage_summary.node_filesystem.summary.highest_node }}
-                </p>
-            </div>
-            <div class="text-sm font-semibold text-content-secondary ">
-                {{ storage_summary.node_filesystem.summary.usage_percent }}% used
-            </div>
-        </div>
-        <div class="h-3 overflow-hidden rounded-full bg-surface-hover ">
-            <div class="kaori-progress-fill h-3 rounded-full bg-kaori-primary"
-                 data-progress="{{ storage_summary.node_filesystem.summary.usage_percent }}"></div>
-        </div>
-        <div class="mt-5 overflow-x-auto">
-            <table class="min-w-full divide-y divide-outline-default text-sm dark:divide-outline-default">
-                <thead>
-                    <tr class="text-left text-xs font-semibold uppercase tracking-wide text-content-muted ">
-                        <th class="px-3 py-3">Node</th>
-                        <th class="px-3 py-3">Mountpoint</th>
-                        <th class="px-3 py-3">Capacity</th>
-                        <th class="px-3 py-3">Used</th>
-                        <th class="px-3 py-3">Free</th>
-                        <th class="px-3 py-3">Usage</th>
-                        <th class="px-3 py-3">Risk</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-outline-subtle dark:divide-outline-default">
-                    {% for row in storage_summary.node_filesystem.rows %}
-                        <tr class="text-content-secondary ">
-                            <td class="px-3 py-3 font-medium">
-                                <div class="flex items-center gap-2">
-                                    <span class="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft ">
-                                        <i data-lucide="server" class="h-4 w-4"></i>
-                                    </span>
-                                    <span>{{ row.node }}</span>
-                                </div>
-                            </td>
-                            <td class="px-3 py-3">
-                                <span class="inline-flex rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary ring-1 ring-brand-outline bg-kaori-soft ">
-                                    {{ row.mountpoint }}
-                                </span>
-                            </td>
-                            <td class="px-3 py-3">{{ row.capacity }}</td>
-                            <td class="px-3 py-3">{{ row.used }}</td>
-                            <td class="px-3 py-3">{{ row.free }}</td>
-                            <td class="px-3 py-3">
-                                <div class="flex min-w-40 items-center gap-3">
-                                    <div class="h-2 flex-1 overflow-hidden rounded-full bg-surface-hover ">
-                                        <div class="kaori-progress-fill h-2 rounded-full bg-kaori-primary"
-                                             data-progress="{{ row.usage_percent }}"></div>
-                                    </div>
-                                    <span class="w-12 text-right text-xs font-semibold">{{ row.usage_percent }}%</span>
-                                </div>
-                            </td>
-                            <td class="px-3 py-3">
-                                <span class="rounded-md px-2.5 py-1 text-xs font-semibold {{ row.risk.class }}">{{ row.risk.label }}</span>
-                            </td>
-                        </tr>
-                    {% else %}
-                        <tr>
-                            <td colspan="7" class="p-0">
-                                {% set empty_state_icon = "hard-drive" %}
-                                {% set empty_state_title = "No Filesystem Metrics Available" %}
-                                {% set empty_state_description = "Filesystem metrics will appear after Prometheus returns node filesystem data for the selected scope." %}
-                                {% set empty_state_min_height = "min-h-[190px]" %}
-                                {% include "components/states/_empty_state.html" %}
-                            </td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
+    </section>
 </div>

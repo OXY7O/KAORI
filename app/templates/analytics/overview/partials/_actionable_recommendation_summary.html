@@ -1,78 +1,67 @@
 {% import "components/table_label.html" as table_label %}
 {% set summary = payload.actionable_recommendations %}
 {% set summary_tone = {'green': 'normal', 'amber': 'warning', 'red': 'critical', 'gray': 'unknown'}.get(summary.tone, 'unknown') %}
-{% set summary_icon = {'green': 'circle-check', 'amber': 'triangle-alert', 'red': 'shield-alert', 'gray': 'circle-help'}.get(summary.tone, 'circle-help') %}
 {% set top_sources = summary.sources|sort(attribute='count', reverse=true) %}
 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-5 lg:flex-row lg:items-start lg:justify-between">
-        <div class="flex items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                <i data-lucide="list-checks" class="h-5 w-5"></i>
-            </span>
-            <div>
-                <div class="flex flex-wrap items-center gap-2">
-                    <h2 class="text-base font-semibold text-content-primary">Actionable Recommendations</h2>
-                    {{ table_label.status_label(summary.total_count ~ ' Actionable · ' ~ summary.status, summary_tone, summary_icon) }}
-                </div>
-                <p class="mt-1 text-sm leading-6 text-content-muted">Top actionable signals across capacity, utilization, storage, workload, forecast, consumers, and alerts.</p>
-            </div>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-            {% for source in top_sources[:3] %}
-                {% set source_tone = {'green': 'normal', 'amber': 'warning', 'red': 'critical', 'gray': 'unknown'}.get(source.tone, 'unknown') %}
-                <span class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary">
-                    {{ source.label }}
-                    {{ table_label.status_label(source.count, source_tone) }}
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="list-checks" class="h-5 w-5"></i>
                 </span>
-            {% endfor %}
-        </div>
-    </header>
-    <div class="p-5">
-        <div class="grid items-stretch gap-4 lg:grid-cols-[1.4fr_0.6fr]">
-            <div class="grid items-stretch gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {% for source in summary.sources %}
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">Actionable Recommendations</h2>
+                        {{ table_label.status_label(summary.total_count ~ ' actionable · ' ~ summary.status, tone=summary_tone, size='compact') }}
+                    </div>
+                    <p class="mt-1 text-sm leading-6 text-content-muted">Top operational signals across capacity, utilization, storage, workload, forecast, consumers, and alerts.</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                {% for source in top_sources[:3] %}
                     {% set source_tone = {'green': 'normal', 'amber': 'warning', 'red': 'critical', 'gray': 'unknown'}.get(source.tone, 'unknown') %}
-                    <a href="{{ source.href }}?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}"
-                       class="flex h-full rounded-lg border border-outline-default p-4 transition hover:border-kaori-primary/30 hover:bg-kaori-soft">
-                        <div class="flex w-full items-center justify-between gap-4">
-                            <div class="min-w-0">
-                                <p class="text-sm font-semibold text-content-primary">{{ source.label }}</p>
-                                <p class="mt-1 line-clamp-2 text-xs leading-5 text-content-muted">{{ source.description }}</p>
-                            </div>
-                            {{ table_label.status_label(source.count, source_tone) }}
-                        </div>
-                    </a>
+                    {{ table_label.status_label(source.label ~ ' · ' ~ source.count, tone=source_tone, size='compact') }}
                 {% endfor %}
             </div>
-            <aside class="flex h-full flex-col justify-between rounded-xl border border-brand-outline bg-kaori-primary p-4 text-brand-foreground">
-                <div>
-                    <div class="flex items-start justify-between gap-3">
-                        <div>
-                            <p class="text-sm font-semibold text-brand-foreground">Priority Summary</p>
-                            <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">Triage order for the most important operational signals.</p>
-                        </div>
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-brand-surface-strong text-brand-foreground">
-                            <i data-lucide="gauge" class="h-4.5 w-4.5"></i>
-                        </span>
-                    </div>
-                    <div class="mt-4 grid grid-cols-2 gap-2">
-                        <div class="rounded-lg border border-brand-outline bg-brand-surface p-3">
-                            <p class="text-xs text-brand-foreground-muted">Critical</p>
-                            <p class="mt-1 text-2xl font-semibold text-brand-foreground">{{ summary.priority_summary.critical }}</p>
-                        </div>
-                        <div class="rounded-lg border border-brand-outline bg-brand-surface p-3">
-                            <p class="text-xs text-brand-foreground-muted">Warning</p>
-                            <p class="mt-1 text-2xl font-semibold text-brand-foreground">{{ summary.priority_summary.warning }}</p>
-                        </div>
-                    </div>
-                </div>
-                <ul class="mt-4 space-y-2 text-xs leading-5 text-brand-foreground-muted">
-                    <li class="flex gap-2"><i data-lucide="check-circle-2" class="mt-0.5 h-3.5 w-3.5 shrink-0"></i><span>Review critical items before optimization tasks.</span></li>
-                    <li class="flex gap-2"><i data-lucide="route" class="mt-0.5 h-3.5 w-3.5 shrink-0"></i><span>Use source cards to open the related analytics page.</span></li>
-                    <li class="flex gap-2"><i data-lucide="clock-3" class="mt-0.5 h-3.5 w-3.5 shrink-0"></i><span>Recheck warning items during the next operational review.</span></li>
-                </ul>
-                <p class="mt-4 border-t border-brand-outline pt-3 text-xs leading-5 text-brand-foreground-muted">{{ summary.description }}</p>
-            </aside>
         </div>
+    </header>
+
+    <div class="grid gap-5 p-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(260px,0.55fr)] sm:p-6">
+        <div class="divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle">
+            {% for source in summary.sources %}
+                {% set source_tone = {'green': 'normal', 'amber': 'warning', 'red': 'critical', 'gray': 'unknown'}.get(source.tone, 'unknown') %}
+                <a href="{{ source.href }}?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}"
+                   class="flex items-center justify-between gap-4 bg-surface-card px-4 py-3 transition hover:bg-surface-hover">
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-content-primary">{{ source.label }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ source.description }}</p>
+                    </div>
+                    {{ table_label.status_label(source.count, tone=source_tone, size='compact') }}
+                </a>
+            {% endfor %}
+        </div>
+
+        <aside class="rounded-lg border border-kaori-primary/20 bg-kaori-soft p-4">
+            <div class="flex items-start justify-between gap-3">
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-content-muted">Priority Summary</p>
+                    <p class="mt-1 text-sm font-semibold text-content-primary">Operational Triage</p>
+                </div>
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                    <i data-lucide="gauge" class="h-4 w-4"></i>
+                </span>
+            </div>
+            <div class="mt-4 grid grid-cols-2 divide-x divide-kaori-primary/15 rounded-lg border border-kaori-primary/15 bg-surface-card">
+                <div class="px-3 py-3">
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Critical</p>
+                    <p class="mt-1 text-xl font-semibold text-content-primary">{{ summary.priority_summary.critical }}</p>
+                </div>
+                <div class="px-3 py-3">
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Warning</p>
+                    <p class="mt-1 text-xl font-semibold text-content-primary">{{ summary.priority_summary.warning }}</p>
+                </div>
+            </div>
+            <p class="mt-4 text-xs leading-5 text-content-muted">{{ summary.description }}</p>
+        </aside>
     </div>
 </section>

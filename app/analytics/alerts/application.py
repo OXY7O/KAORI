@@ -137,13 +137,34 @@ def get_alerts_context(
         per_page=selected_alerts_per_page,
     )
 
-    raw_anomalies = (
-        load_prometheus_anomaly_metrics(
+    collection_warnings: list[dict[str, str]] = []
+    if selected_cluster is not None:
+        raw_anomalies, anomaly_source_status = load_prometheus_anomaly_metrics(
             cluster=selected_cluster,
         )
-        if selected_cluster is not None
-        else []
-    )
+        if anomaly_source_status.get('partial', False):
+            collection_warnings.append(
+                {
+                    'title': 'Prometheus anomaly candidates are unavailable',
+                    'detail': str(
+                        anomaly_source_status.get('error')
+                        or 'The optional Prometheus anomaly query did not return a usable response.'
+                    ),
+                    'remediation': (
+                        'Review the Analytics Worker job log and Prometheus query pressure. '
+                        'Active Alertmanager records remain available from the committed snapshot.'
+                    ),
+                }
+            )
+    else:
+        raw_anomalies = []
+        anomaly_source_status = {
+            'connected': False,
+            'label': 'Cluster Required',
+            'error': None,
+            'response_time_ms': None,
+            'partial': False,
+        }
 
     anomalies = filter_anomalies(
         raw_anomalies,
@@ -172,6 +193,8 @@ def get_alerts_context(
         'summary': summary,
         **_summary_aliases(summary),
         'source_status': source_status,
+        'collection_warnings': collection_warnings,
+        'anomaly_source_status': anomaly_source_status,
         'selected_cluster_signal_overview': build_selected_cluster_signal_overview(
             cluster=selected_cluster,
             alerts=raw_alerts,
@@ -277,6 +300,8 @@ def get_alerts_context(
         'anomalies_pagination': anomaly_pagination,
         'summary': summary,
         'source_status': source_status,
+        'collection_warnings': collection_warnings,
+        'anomaly_source_status': anomaly_source_status,
         'integration_status': integration_status,
         'dependency_blocker': dependency_blocker,
         'source_health': source_health,

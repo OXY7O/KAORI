@@ -7,6 +7,7 @@
       hx-select="#storage-page"
       hx-swap="outerHTML"
       hx-push-url="true"
+      hx-sync="#storage-page:replace"
       hx-indicator="#storage-refresh-indicator">
     {% call analytics_workspace.controls_readiness(
         'Storage Controls & Data Readiness',

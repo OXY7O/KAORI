@@ -18,7 +18,7 @@ def test_cluster_and_fragment_requests_share_one_htmx_sync_boundary() -> None:
     pagination_js = _read(STATIC_JS / 'pagination.js')
 
     assert 'hx-sync="#alerts-page-content:replace"' in index
-    assert pagination.count('hx-sync="#alerts-page-content:replace"') == 3
+    assert pagination.count('hx-sync="{{ target_id }}:replace"') >= 3
     assert "'hx-sync'" in pagination_js
 
 
@@ -52,19 +52,19 @@ def test_record_details_remain_closed_without_alpine_hydration() -> None:
 
     assert 'x-bind:hidden="!expanded"' in alert_row
     assert '\n         hidden\n         x-cloak' in alert_row
-    assert "x-bind:hidden=\"openAnomaly !== '{{ row_key }}'\"" in anomaly_row
-    assert '@kaori:alerts-collapse.window="openAnomaly = null"' in anomaly_table
+    assert 'x-bind:hidden="!expanded"' in anomaly_row
+    assert '@kaori:alerts-collapse.window="expanded = false"' in anomaly_row
+    assert 'id="anomalies-table-container"' in anomaly_table
 
 
 def test_alert_hydration_uses_connected_swap_target_and_reconciles_one_panel() -> None:
     script = _read(STATIC_JS / 'analytics_controls.js')
 
     assert 'candidate.isConnected' in script
-    assert 'event?.target' in script
-    assert "root instanceof Document" in script
-    assert "initializePendingAlpineComponents(boundary)" in script
-    assert "panel.hidden = panel.dataset.alertsTabPanel !== activeTab" in script
-    assert "htmx:beforeRequest" in script
+    assert 'function stabilizeAlertsAfterSwap(root)' in script
+    assert 'function stabilizeAnalyticsTabsets(root)' in script
+    assert "panel.hidden = panel.dataset.analyticsTabPanel !== tabId" in script
+    assert "htmx:afterSwap" in script
     assert "htmx:afterSettle" in script
 
 

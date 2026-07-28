@@ -84,7 +84,11 @@
     {% include "components/dependencies/_blocker.html" %}
 {% elif not dependency_blocker %}
     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
-             x-data="kaoriAnalyticsTabs('overview', ['overview', 'detail', 'recommendations'])">
+             data-top-consumers-tabset
+             data-analytics-tabset
+             data-analytics-tabset-id="top-consumers-content"
+             data-default-tab="overview"
+             x-data='kaoriAnalyticsTabs("overview", ["overview", "detail", "recommendations"], "top-consumers-content")'>
         {% set consumer_tabs = [
             ('overview', 'Consumer Overview', 'bar-chart-3'),
             ('detail', 'Consumer Detail', 'list-filter'),
@@ -94,8 +98,10 @@
 
         <div id="top-consumers-content-panel-overview"
              role="tabpanel"
+             data-analytics-tab-panel="overview"
              aria-labelledby="top-consumers-content-tab-overview"
              x-show="activeTab === 'overview'"
+             x-bind:hidden="activeTab !== 'overview'"
              class="space-y-5 p-5 sm:p-6">
             <header class="flex min-w-0 items-start gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
@@ -159,8 +165,11 @@
 
         <div id="top-consumers-content-panel-detail"
              role="tabpanel"
+             data-analytics-tab-panel="detail"
              aria-labelledby="top-consumers-content-tab-detail"
              x-show="activeTab === 'detail'"
+             x-bind:hidden="activeTab !== 'detail'"
+             hidden
              x-cloak
              class="p-5 sm:p-6">
             {% include "analytics/top_consumers/partials/_consumer_detail_section.html" %}
@@ -168,8 +177,11 @@
 
         <div id="top-consumers-content-panel-recommendations"
              role="tabpanel"
+             data-analytics-tab-panel="recommendations"
              aria-labelledby="top-consumers-content-tab-recommendations"
              x-show="activeTab === 'recommendations'"
+             x-bind:hidden="activeTab !== 'recommendations'"
+             hidden
              x-cloak
              class="space-y-5 p-5 sm:p-6">
             <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

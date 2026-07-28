@@ -1,6 +1,6 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table_label.html" as table_label %}
-<div id="anomalies-table-container" class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+<div id="anomalies-table-container" data-alerts-swap-boundary class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
     <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div class="min-w-0">
@@ -17,38 +17,27 @@
     {% set target_id = "#anomalies-table-container" %}
     {% include "analytics/alerts/partials/_table_filters.html" %}
 
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-outline-default">
-            <thead class="bg-surface-hover">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Anomaly</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Severity</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Namespace / Pod</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Signal</th>
-                    <th class="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wide text-content-muted">Action</th>
-                </tr>
-            </thead>
-            <tbody x-data="{ openAnomaly: null }"
-                   @kaori:alerts-collapse.window="openAnomaly = null"
-                   class="divide-y divide-outline-default bg-surface-card">
-                {% if anomalies %}
-                    {% for anomaly in anomalies %}
-                        {% set row_key = 'anomaly-' ~ anomalies_pagination.page ~ '-' ~ loop.index0 %}
-                        {% include "analytics/alerts/partials/_anomalies_table_row.html" %}
-                    {% endfor %}
-                {% else %}
-                    <tr>
-                        <td colspan="5" class="p-0">
-                            {% set empty_state_icon = "radar" %}
-                            {% set empty_state_title = "No Anomalies Detected" %}
-                            {% set empty_state_description = "No metric deviation candidate matched the current analysis window." %}
-                            {% set empty_state_min_height = "min-h-[210px]" %}
-                            {% include "components/states/_empty_state.html" %}
-                        </td>
-                    </tr>
-                {% endif %}
-            </tbody>
-        </table>
+    <div class="hidden grid-cols-12 gap-4 border-b border-outline-subtle bg-surface-hover px-4 py-3 lg:grid">
+        <div class="col-span-4 text-xs font-semibold uppercase tracking-wide text-content-muted">Anomaly</div>
+        <div class="col-span-1 text-xs font-semibold uppercase tracking-wide text-content-muted">Severity</div>
+        <div class="col-span-3 text-xs font-semibold uppercase tracking-wide text-content-muted">Namespace / Pod</div>
+        <div class="col-span-2 text-xs font-semibold uppercase tracking-wide text-content-muted">Signal</div>
+        <div class="col-span-2 text-right text-xs font-semibold uppercase tracking-wide text-content-muted">Action</div>
+    </div>
+
+    <div class="divide-y divide-outline-subtle bg-surface-card">
+        {% if anomalies %}
+            {% for anomaly in anomalies %}
+                {% set row_key = 'anomaly-' ~ anomalies_pagination.page ~ '-' ~ loop.index0 %}
+                {% include "analytics/alerts/partials/_anomalies_table_row.html" %}
+            {% endfor %}
+        {% else %}
+            {% set empty_state_icon = "radar" %}
+            {% set empty_state_title = "No Anomalies Detected" %}
+            {% set empty_state_description = "No metric deviation candidate matched the current analysis window." %}
+            {% set empty_state_min_height = "min-h-[210px]" %}
+            {% include "components/states/_empty_state.html" %}
+        {% endif %}
     </div>
 
     {% set pagination = anomalies_pagination %}

@@ -20,12 +20,15 @@ def test_summary_is_outside_the_tab_workspace_and_below_controls() -> None:
 
 def test_controls_combine_filters_prometheus_and_snapshot_readiness() -> None:
     controls = _read('partials/_controls_readiness.html')
+    shared = (ROOT / 'app/templates/analytics/components/_analysis_workspace.html').read_text(encoding='utf-8')
+    prometheus = (ROOT / 'app/templates/analytics/components/_prometheus_status.html').read_text(encoding='utf-8')
 
-    assert 'Consumer Controls &amp; Data Readiness' in controls
-    assert 'prometheus_status_panel.render' in controls
-    assert 'Dataset: analytics.top_consumers' in controls
-    assert 'Updated' in controls
-    assert 'Worker Attempt' in controls
+    assert 'Consumer Controls & Data Readiness' in controls
+    assert 'analytics_workspace.controls_readiness' in controls
+    assert 'Prometheus Status' in prometheus
+    assert 'Latest Data Snapshot' in shared
+    assert 'Updated' in shared
+    assert 'Worker Attempt' in shared
 
 
 def test_overview_rankings_do_not_force_horizontal_scroll() -> None:

@@ -1,6 +1,6 @@
 {% macro render(tabset_id, tabs, aria_label, embedded=false) %}
     <div class="{{ 'border-b border-outline-subtle bg-surface-hover px-5 py-2 sm:px-6' if embedded else 'rounded-xl border border-outline-default bg-surface-card p-2 shadow-sm' }}">
-        <div class="flex gap-2 overflow-x-auto"
+        <div class="flex flex-wrap gap-2"
              role="tablist"
              aria-label="{{ aria_label }}">
             {% for tab_id, tab_label, tab_icon in tabs %}

@@ -223,6 +223,7 @@
                                           hx-swap="innerHTML"
                                           hx-trigger="change delay:120ms"
                                           hx-indicator="#node-detail-refresh-indicator"
+                                          hx-sync="#node-detail-panel:replace"
                                           class="grid gap-3 xl:w-[320px]">
                                         <input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}" />
                                         <label class="block">

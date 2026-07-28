@@ -33,4 +33,4 @@ def test_tab_and_detail_panels_have_native_hidden_fallback():
     anomaly_row = read("app/templates/analytics/alerts/partials/_anomalies_table_row.html")
     assert index.count("x-bind:hidden=") >= 5
     assert 'x-bind:hidden="!expanded"' in alert_row
-    assert "x-bind:hidden=\"openAnomaly !==" in anomaly_row
+    assert 'x-bind:hidden="!expanded"' in anomaly_row

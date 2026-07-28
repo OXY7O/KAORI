@@ -1,114 +1,139 @@
-{% import "components/table_label.html" as table_label %}
 {% set overview = selected_cluster_signal_overview %}
-{% set connection_tone = 'normal' if overview.connected else 'unknown' %}
-{% set normalized_priority = overview.priority.label|default('Normal', true)|lower %}
-{% set priority_tone = 'critical' if normalized_priority == 'critical' else ('warning' if normalized_priority in ['high', 'warning', 'watch'] else ('info' if normalized_priority in ['medium', 'moderate'] else 'normal')) %}
-<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <div class="flex flex-col gap-4 border-b border-outline-subtle px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-        <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                <i data-lucide="radar" class="h-5 w-5"></i>
-            </span>
-            <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                    <h2 class="text-lg font-semibold text-content-primary">Cluster Signal Overview</h2>
-                    <span class="text-sm font-medium text-content-muted">{{ overview.cluster_name }}</span>
-                </div>
-                <p class="mt-1 text-sm leading-6 text-content-muted">Consolidated signal posture and the next investigation focus for the selected cluster.</p>
-            </div>
+<section class="rounded-xl border border-outline-default bg-surface-card p-6 shadow-sm">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-content-muted">Cluster signal overview</p>
+            <h2 class="mt-1 text-2xl font-semibold text-content-primary">{{ overview.cluster_name }}</h2>
+            <p class="mt-1 max-w-3xl truncate whitespace-nowrap text-sm text-content-muted">
+                Alert and anomaly summary for this cluster.
+            </p>
         </div>
-        <div class="flex flex-wrap items-center gap-2">
-            {{ table_label.metadata_label(overview.source|title, icon='radio-tower', size='detail') }}
-            {{ table_label.status_label('Connected' if overview.connected else 'Not Connected', tone=connection_tone, icon='check-circle-2' if overview.connected else 'circle-off', size='detail') }}
-            {{ table_label.status_label(overview.priority.label ~ ' Priority', tone=priority_tone, icon=overview.priority.icon, size='detail') }}
+        <div class="flex flex-wrap gap-2">
+            <span class="inline-flex items-center gap-1.5 rounded-md border border-outline-default bg-surface-subtle px-3 py-1.5 text-xs font-semibold text-content-secondary">
+                <i data-lucide="radio-tower" class="h-3.5 w-3.5"></i>
+                {{ overview.source | title }}
+            </span>
+            {% if overview.connected %}
+                <span class="inline-flex items-center gap-1.5 rounded-md border border-status-normal-border bg-status-normal-soft px-3 py-1.5 text-xs font-semibold text-status-normal-text ">
+                    <i data-lucide="check-circle-2" class="h-3.5 w-3.5"></i>
+                    Connected
+                </span>
+            {% else %}
+                <span class="inline-flex items-center gap-1.5 rounded-md border border-outline-default bg-surface-subtle px-3 py-1.5 text-xs font-semibold text-content-secondary">
+                    <i data-lucide="circle-off" class="h-3.5 w-3.5"></i>
+                    Not Connected
+                </span>
+            {% endif %}
         </div>
     </div>
-
-    <div class="grid xl:grid-cols-5">
-        <div class="border-b border-outline-subtle px-5 py-5 sm:px-6 xl:col-span-2 xl:border-b-0">
-            <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="{{ overview.priority.icon }}" class="h-5 w-5"></i>
-                </span>
-                <div class="min-w-0">
-                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-content-muted">Investigation Posture</p>
-                    <h3 class="mt-1 text-base font-semibold text-content-primary">{{ overview.priority.label }} Priority</h3>
-                    <p class="mt-2 text-sm leading-6 text-content-secondary">{{ overview.priority.description }}</p>
+    <div class="mt-6 grid gap-4 xl:grid-cols-[0.9fr_1.4fr]">
+        <div class="space-y-4">
+            <div class="relative overflow-hidden rounded-xl bg-kaori-primary p-5 text-white shadow-lg shadow-sm">
+                <div class="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-surface-card/10 blur-2xl"></div>
+                <div class="relative flex items-start gap-3">
+                    <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-surface-card/15 text-white">
+                        <i data-lucide="{{ overview.priority.icon }}" class="h-6 w-6"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h3 class="truncate text-base font-semibold text-white">{{ overview.priority.label }} Priority</h3>
+                        <p class="mt-1 text-sm leading-6 text-brand-foreground-muted">{{ overview.priority.description }}</p>
+                    </div>
                 </div>
             </div>
-
-            <dl class="mt-5 grid grid-cols-2 overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
-                <div class="px-4 py-3">
-                    <dt class="text-xs font-medium text-content-muted">Total Signals</dt>
-                    <dd class="mt-1 text-xl font-semibold text-content-primary">{{ overview.total_signals }}</dd>
-                </div>
-                <div class="border-l border-outline-subtle px-4 py-3">
-                    <dt class="text-xs font-medium text-content-muted">Pending Alerts</dt>
-                    <dd class="mt-1 text-xl font-semibold text-content-primary">{{ overview.pending_alerts }}</dd>
-                </div>
-            </dl>
-        </div>
-
-        <div class="px-5 py-5 sm:px-6 xl:col-span-3 border-outline-subtle xl:border-l">
-            <div>
-                <h3 class="text-base font-semibold text-content-primary">Signal Summary</h3>
-                <p class="mt-1 text-sm text-content-muted">Current alert and anomaly counts without repeating distribution cards.</p>
-            </div>
-
-            {% set signal_metrics = [
-                ('Active Alerts', overview.active_alerts, 'bell-ring', 'bg-status-info-soft text-status-info-text'),
-                ('Critical Alerts', overview.critical_alerts, 'circle-alert', 'bg-status-critical-soft text-status-critical-text'),
-                ('Warning Alerts', overview.warning_alerts, 'alert-triangle', 'bg-status-warning-soft text-status-warning-text'),
-                ('Anomalies', overview.anomalies, 'radar', 'bg-kaori-soft text-kaori-primary')
-            ] %}
-            <dl class="mt-4 grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
-                {% for label, value, icon, icon_classes in signal_metrics %}
-                    <div class="min-w-0 bg-surface-card px-4 py-4">
-                        <div class="flex items-center justify-between gap-3">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ icon_classes }}">
-                                <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                            </span>
-                            <dd class="text-2xl font-semibold text-content-primary">{{ value }}</dd>
+            <div class="grid grid-cols-2 gap-3">
+                {% set cards = [
+                                    ('Total Signals', overview.total_signals, 'activity'),
+                                    ('Active Alerts', overview.active_alerts, 'bell-ring'),
+                                    ('Critical', overview.critical_alerts, 'circle-alert'),
+                                    ('Warning', overview.warning_alerts, 'alert-triangle'),
+                                    ('Anomalies', overview.anomalies, 'radar'),
+                                    ('Pending', overview.pending_alerts, 'clock-3')
+                                ] %}
+                {% for label, value, icon in cards %}
+                    <div class="rounded-xl border border-outline-default bg-surface-subtle p-3">
+                        <div class="flex items-center justify-between gap-2">
+                            <span class="text-xs font-semibold text-content-muted">{{ label }}</span>
+                            <i data-lucide="{{ icon }}" class="h-4 w-4 text-content-muted"></i>
                         </div>
-                        <dt class="mt-3 break-words text-sm font-semibold text-content-secondary">{{ label }}</dt>
+                        <div class="mt-2 text-2xl font-semibold text-content-primary">{{ value }}</div>
                     </div>
                 {% endfor %}
-            </dl>
+            </div>
+        </div>
+        <div class="rounded-xl border border-outline-default bg-surface-subtle p-5">
+            <div class="mb-4 flex items-center justify-between gap-3">
+                <div>
+                    <h3 class="text-sm font-semibold text-content-primary">Signal Distribution</h3>
+                    <p class="mt-1 text-xs text-content-muted">Current alert and anomaly breakdown.</p>
+                </div>
+                {% if overview.total_signals == 0 %}
+                    <span class="inline-flex items-center gap-1.5 rounded-md border border-status-normal-border bg-status-normal-soft px-2.5 py-1 text-xs font-semibold text-status-normal-text ">
+                        <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
+                        No active signals
+                    </span>
+                {% endif %}
+            </div>
+            <div class="space-y-4">
+                {% set distribution_rows = [
+                                    ('Active Alerts', overview.active_alerts, overview.bars.active_alerts, 'bell-ring'),
+                                    ('Critical Alerts', overview.critical_alerts, overview.bars.critical_alerts, 'circle-alert'),
+                                    ('Warning Alerts', overview.warning_alerts, overview.bars.warning_alerts, 'alert-triangle'),
+                                    ('Anomalies', overview.anomalies, overview.bars.anomalies, 'radar')
+                                ] %}
+                {% for label, value, bar, icon in distribution_rows %}
+                    <div>
+                        <div class="mb-2 flex items-center justify-between text-xs font-semibold text-content-secondary">
+                            <span class="inline-flex items-center gap-1.5">
+                                <i data-lucide="{{ icon }}" class="h-3.5 w-3.5 text-content-muted"></i>
+                                {{ label }}
+                            </span>
+                            <span class="rounded-md bg-surface-card px-2 py-0.5 text-content-secondary ring-1 ring-outline-default ring-outline-default">{{ value }}</span>
+                        </div>
+                        <div class="grid grid-cols-12 gap-1">
+                            {% for index in range(12) %}
+                                {% if index < bar %}
+                                    <div class="h-2 rounded-full bg-kaori-primary"></div>
+                                {% else %}
+                                    <div class="h-2 rounded-full bg-outline-default"></div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="mt-5 grid gap-3 lg:grid-cols-3">
+                <div class="rounded-xl border border-outline-default bg-surface-card p-3">
+                    <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-content-muted">
+                        <i data-lucide="activity" class="h-3.5 w-3.5"></i>
+                        Dominant Signal
+                    </div>
+                    <div class="mt-2 text-sm font-semibold text-content-primary">{{ overview.insight.dominant_signal }}</div>
+                    <p class="mt-1 text-xs text-content-muted">{{ overview.insight.dominant_signal_count }} items</p>
+                </div>
+                <div class="rounded-xl border border-outline-default bg-surface-card p-3">
+                    <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-content-muted">
+                        <i data-lucide="radar" class="h-3.5 w-3.5"></i>
+                        Dominant Anomaly
+                    </div>
+                    <div class="mt-2 text-sm font-semibold text-content-primary">{{ overview.insight.dominant_anomaly }}</div>
+                    <p class="mt-1 text-xs text-content-muted">{{ overview.insight.dominant_anomaly_count }} items</p>
+                </div>
+                <div class="rounded-xl border border-outline-default bg-surface-card p-3">
+                    <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-content-muted">
+                        <i data-lucide="compass" class="h-3.5 w-3.5"></i>
+                        Action Hint
+                    </div>
+                    <p class="mt-2 text-xs leading-5 text-content-secondary">{{ overview.insight.action_hint }}</p>
+                </div>
+            </div>
+            {% if overview.fallback_used and overview.fallback_reason %}
+                <div class="mt-5 rounded-xl border border-status-warning-border bg-status-warning-soft p-3 text-sm text-status-warning-text ">
+                    <div class="flex items-start gap-2">
+                        <i data-lucide="route" class="mt-0.5 h-4 w-4 shrink-0"></i>
+                        <span>{{ overview.fallback_reason }}</span>
+                    </div>
+                </div>
+            {% endif %}
         </div>
     </div>
-
-    <div class="border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
-        <div class="grid gap-4 md:grid-cols-3">
-            <div class="min-w-0">
-                <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-content-muted">
-                    <i data-lucide="activity" class="h-3.5 w-3.5 text-kaori-primary"></i>
-                    Dominant Signal
-                </div>
-                <p class="mt-2 break-words text-sm font-semibold text-content-primary">{{ overview.insight.dominant_signal }}</p>
-                <p class="mt-1 text-xs text-content-muted">{{ overview.insight.dominant_signal_count }} items</p>
-            </div>
-            <div class="min-w-0">
-                <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-content-muted">
-                    <i data-lucide="scan-search" class="h-3.5 w-3.5 text-kaori-primary"></i>
-                    Dominant Anomaly
-                </div>
-                <p class="mt-2 break-words text-sm font-semibold text-content-primary">{{ overview.insight.dominant_anomaly }}</p>
-                <p class="mt-1 text-xs text-content-muted">{{ overview.insight.dominant_anomaly_count }} items</p>
-            </div>
-            <div class="min-w-0">
-                <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-content-muted">
-                    <i data-lucide="list-checks" class="h-3.5 w-3.5 text-kaori-primary"></i>
-                    Recommended Focus
-                </div>
-                <p class="mt-2 text-sm leading-6 text-content-secondary">{{ overview.insight.action_hint }}</p>
-            </div>
-        </div>
-    </div>
-
-    {% if overview.fallback_used and overview.fallback_reason %}
-        <div class="flex items-start gap-2 border-t border-status-warning-border bg-status-warning-soft px-5 py-3 text-sm text-status-warning-text sm:px-6">
-            <i data-lucide="route" class="mt-0.5 h-4 w-4 shrink-0"></i>
-            <span>{{ overview.fallback_reason }}</span>
-        </div>
-    {% endif %}
 </section>

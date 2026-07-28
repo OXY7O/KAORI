@@ -1,4 +1,5 @@
 {% extends "layouts/app.html" %}
+{% import "analytics/components/_status_notice.html" as status_notice %}
 {% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
 {% block title %}Workload Analysis{% endblock title %}
 {% block dashboard_content %}
@@ -12,13 +13,13 @@
         {% else %}
             {% set analytics_tracker_id = "workload-load-tracker" %}
             {% set analytics_page_id = "workload-page" %}
-            {% set analytics_load_title = "Loading workload analysis" %}
+            {% set analytics_load_title = "Loading Workload Analysis" %}
             {% set analytics_load_description = "Loading workload, tenant quota, and resource mapping sections." %}
-            {% set analytics_load_complete_title = "Workload analysis fully loaded" %}
+            {% set analytics_load_complete_title = "Workload Analysis Fully Loaded" %}
             {% set analytics_load_complete_description = "All workload analysis sections have finished loading." %}
             {% include "analytics/partials/_load_tracker.html" %}
             {% if error %}
-                <section class="rounded-xl border border-status-warning-border bg-status-warning-soft p-4"><div class="flex items-start gap-3"><i data-lucide="triangle-alert" class="mt-0.5 h-5 w-5 text-status-warning"></i><div><h2 class="font-semibold text-content-primary">Workload Data Unavailable</h2><p class="mt-1 text-sm leading-6 text-content-muted">{{ error }}</p></div></div></section>
+                {{ status_notice.render('Workload Data Unavailable', error, tone='warning') }}
             {% endif %}
             {% include "analytics/workload/partials/_controls_readiness.html" %}
             {% include "analytics/workload/partials/_overview.html" %}

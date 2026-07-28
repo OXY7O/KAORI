@@ -37,7 +37,8 @@ def test_consumer_detail_has_local_standard_loading_bar():
 
 def test_top_consumers_is_rehydrated_after_htmx_swap():
     script = read("app/static/js/analytics_controls.js")
-    assert "function stabilizeTopConsumersAfterSwap(root)" in script
-    assert "[data-top-consumers-tabset]" in script
+    section = read("app/templates/analytics/top_consumers/partials/_top_consumers_section.html")
+    assert "function stabilizeAnalyticsTabsets(root)" in script
     assert "window.Alpine.initTree(tabset)" in script
-    assert "stabilizeTopConsumersAfterSwap(root)" in script
+    assert "stabilizeAnalyticsTabsets(root)" in script
+    assert "data-analytics-tabset" in section

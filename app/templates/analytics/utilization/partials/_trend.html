@@ -34,6 +34,7 @@
                   hx-swap="outerHTML"
                   hx-trigger="change delay:120ms"
                   hx-indicator="#utilization-trend-indicator"
+                  hx-sync="#utilization-trend-panel:replace"
                   hx-disinherit="hx-target hx-select hx-push-url hx-indicator"
                   class="sm:w-[280px]">
                 <input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}" />

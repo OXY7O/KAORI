@@ -5,7 +5,8 @@
 {% block dashboard_content %}
     <div id="alerts-page-content"
          class="space-y-6"
-         data-analytics-page-request-tracking="false">
+         data-analytics-page-request-tracking="false"
+         data-alerts-swap-boundary>
         {% set prometheus_status = integration_status.prometheus %}
         {% set alertmanager_status = integration_status.alertmanager %}
         {% set selected_cluster_name = selected_cluster.name if selected_cluster else 'No Cluster Selected' %}
@@ -35,7 +36,11 @@
         {% if not dependency_blocker %}
             {% include "analytics/alerts/partials/_cluster_signal_overview.html" %}
 
-            <section data-alerts-tabset x-data="kaoriAnalyticsTabs('alerts', ['alerts', 'anomalies', 'routing', 'ownership', 'recommendations'])"
+            <section data-alerts-tabset
+                     data-analytics-tabset
+                     data-analytics-tabset-id="alerts-content"
+                     data-default-tab="alerts"
+                     x-data='kaoriAnalyticsTabs("alerts", ["alerts", "anomalies", "routing", "ownership", "recommendations"], "alerts-content")'
                      class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                 <div class="flex flex-col gap-3 px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
@@ -66,6 +71,8 @@
                 <div class="p-5 sm:p-6">
                     <div id="alerts-content-panel-alerts"
                          role="tabpanel"
+                         data-analytics-tab-panel="alerts"
+                         data-alerts-tab-panel="alerts"
                          aria-labelledby="alerts-content-tab-alerts"
                          x-show="activeTab === 'alerts'"
                          x-bind:hidden="activeTab !== 'alerts'"
@@ -76,6 +83,8 @@
 
                     <div id="alerts-content-panel-anomalies"
                          role="tabpanel"
+                         data-analytics-tab-panel="anomalies"
+                         data-alerts-tab-panel="anomalies"
                          aria-labelledby="alerts-content-tab-anomalies"
                          x-show="activeTab === 'anomalies'"
                          x-bind:hidden="activeTab !== 'anomalies'"
@@ -87,6 +96,8 @@
 
                     <div id="alerts-content-panel-routing"
                          role="tabpanel"
+                         data-analytics-tab-panel="routing"
+                         data-alerts-tab-panel="routing"
                          aria-labelledby="alerts-content-tab-routing"
                          x-show="activeTab === 'routing'"
                          x-bind:hidden="activeTab !== 'routing'"
@@ -115,6 +126,8 @@
 
                     <div id="alerts-content-panel-ownership"
                          role="tabpanel"
+                         data-analytics-tab-panel="ownership"
+                         data-alerts-tab-panel="ownership"
                          aria-labelledby="alerts-content-tab-ownership"
                          x-show="activeTab === 'ownership'"
                          x-bind:hidden="activeTab !== 'ownership'"
@@ -140,6 +153,8 @@
 
                     <div id="alerts-content-panel-recommendations"
                          role="tabpanel"
+                         data-analytics-tab-panel="recommendations"
+                         data-alerts-tab-panel="recommendations"
                          aria-labelledby="alerts-content-tab-recommendations"
                          x-show="activeTab === 'recommendations'"
                          x-bind:hidden="activeTab !== 'recommendations'"

@@ -33,7 +33,7 @@ def test_numeric_pagination_inherits_htmx_synchronization_attributes():
 
 def test_anomaly_severity_has_no_icon_and_namespace_shows_plain_pod_context():
     row = read('app/templates/analytics/alerts/partials/_anomalies_table_row.html')
-    main_row = row.split('</tr>', 1)[0]
+    main_row = row.split('<div id="{{ row_key }}-details"', 1)[0]
     assert "table_label.status_label(anomaly.severity|title" in main_row
     assert 'data-lucide="alert-triangle"' not in main_row
     assert '{{ anomaly.namespace }}' in main_row

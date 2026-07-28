@@ -7,6 +7,7 @@
       hx-select="#capacity-page"
       hx-swap="outerHTML"
       hx-push-url="true"
+      hx-sync="#capacity-page:replace"
       hx-indicator="#capacity-refresh-indicator">
     {% call analytics_workspace.controls_readiness(
         'Capacity Controls & Data Readiness',

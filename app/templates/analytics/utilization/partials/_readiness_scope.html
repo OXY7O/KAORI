@@ -9,6 +9,7 @@
       hx-select="#utilization-page"
       hx-swap="outerHTML"
       hx-push-url="true"
+      hx-sync="#utilization-page:replace"
       hx-indicator="#utilization-refresh-indicator">
     <input type="hidden" name="trend_node" value="{{ selected_trend_node }}" />
     <input type="hidden" name="node" value="{{ selected_node }}" />
