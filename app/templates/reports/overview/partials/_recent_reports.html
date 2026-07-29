@@ -1,58 +1,73 @@
-<section class="overflow-hidden rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
-    <div class="flex items-center justify-between border-b border-outline-default px-5 py-4 dark:border-outline-default">
-        <div class="flex items-center gap-3">
-            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                <i data-lucide="file-text" class="h-4 w-4"></i>
-            </div>
+<section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+         aria-labelledby="recent-reports-title">
+    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-start sm:justify-between sm:px-6">
+        <div class="flex items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true">
+                <i data-lucide="file-text" class="h-5 w-5"></i>
+            </span>
             <div>
-                <h2 class="text-base font-semibold text-content-primary">Recent Generated Reports</h2>
-                <p class="text-xs text-content-muted dark:text-content-muted">Latest generated reports will appear here.</p>
+                <h2 id="recent-reports-title" class="text-base font-semibold text-content-primary">Recent Generated Reports</h2>
+                <p class="mt-0.5 text-xs leading-5 text-content-muted">Latest report records and artifact readiness across infrastructure scopes.</p>
             </div>
         </div>
-        <a href="#"
-           class="inline-flex items-center gap-1 text-sm font-semibold text-kaori-primary transition hover:text-kaori-primary dark:text-kaori-primary dark:hover:text-content-secondary">
+        <a href="{{ url_for('reports.generated_reports') }}"
+           class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-kaori-primary/30 bg-surface-card px-3 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft">
+            <i data-lucide="folder-open" class="h-4 w-4" aria-hidden="true"></i>
             View Reports
-            <i data-lucide="arrow-right" class="h-4 w-4"></i>
         </a>
-    </div>
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-outline-default divide-outline-default">
-            <thead class="bg-surface-subtle">
-                <tr>
-                    <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">
-                        Report Name
-                    </th>
-                    <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">
-                        Cluster
-                    </th>
-                    <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">
-                        Type
-                    </th>
-                    <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">
-                        Status
-                    </th>
-                    <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">
-                        Created At
-                    </th>
-                    <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">
-                        Action
-                    </th>
-                </tr>
-            </thead>
-        </table>
-    </div>
-    <div class="flex min-h-64 flex-col items-center justify-center px-6 py-12 text-center">
-        <div class="flex h-16 w-16 items-center justify-center rounded-full bg-kaori-soft text-content-muted bg-kaori-soft dark:text-content-secondary">
-            <i data-lucide="file-text" class="h-8 w-8"></i>
+    </header>
+    {% if payload.recent_reports %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-outline-default">
+                <thead class="bg-surface-hover">
+                    <tr>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Report Name</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Scope</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Type</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Status</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted">Created</th>
+                        <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-content-muted">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-outline-subtle bg-surface-card">
+                    {% for report in payload.recent_reports %}
+                        <tr class="transition hover:bg-surface-hover">
+                            <td class="px-5 py-4">
+                                <p class="max-w-xs truncate text-sm font-semibold text-content-primary"
+                                   title="{{ report.name }}">{{ report.name }}</p>
+                                <p class="mt-1 text-xs text-content-muted">{{ report.file_size }}</p>
+                            </td>
+                            <td class="px-5 py-4 text-sm text-content-secondary">{{ report.scope }}</td>
+                            <td class="px-5 py-4 text-sm text-content-secondary">{{ report.report_type_label }}</td>
+                            <td class="px-5 py-4">
+                                {{ table_label.status_label(report.status_label, report.status, none, 'detail') }}
+                            </td>
+                            <td class="px-5 py-4 text-sm text-content-secondary">{{ report.created_at|user_datetime }}</td>
+                            <td class="px-5 py-4 text-right">
+                                <a href="{{ report.href }}"
+                                   class="inline-flex min-h-8 items-center justify-center rounded-lg border border-outline-default px-3 text-xs font-semibold text-content-secondary transition hover:border-kaori-primary/40 hover:text-kaori-primary">View</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-        <h3 class="mt-4 text-base font-semibold text-content-primary">No Generated Reports Yet</h3>
-        <p class="mt-2 max-w-md text-sm leading-6 text-content-muted dark:text-content-muted">
-            You haven't generated any reports. Create your first Kubernetes operational report to get started.
-        </p>
-        <a href="#"
-           class="mt-5 inline-flex items-center gap-2 rounded-xl border border-brand-outline bg-kaori-soft px-4 py-2 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-soft border-brand-outline bg-kaori-soft dark:text-kaori-primary hover:bg-kaori-soft">
-            <i data-lucide="plus-circle" class="h-4 w-4"></i>
-            Create first report
-        </a>
-    </div>
+    {% else %}
+        <div class="flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:p-6">
+            <span class="flex h-12 w-12 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                  aria-hidden="true">
+                <i data-lucide="file-plus-2" class="h-6 w-6"></i>
+            </span>
+            <div class="min-w-0 flex-1">
+                <h3 class="text-sm font-semibold text-content-primary">No Generated Reports Yet</h3>
+                <p class="mt-1 text-xs leading-5 text-content-secondary">Generate the first report to establish artifact history and reporting evidence for this workspace.</p>
+            </div>
+            <a href="{{ url_for('reports.generate_report') }}"
+               class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-xs font-semibold text-white transition hover:bg-kaori-primary-dark">
+                <i data-lucide="plus-circle" class="h-4 w-4" aria-hidden="true"></i>
+                Generate Report
+            </a>
+        </div>
+    {% endif %}
 </section>

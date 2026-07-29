@@ -1,0 +1,45 @@
+<section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+         aria-labelledby="report-coverage-pipeline-title">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div class="flex items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="workflow" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <h2 id="report-coverage-pipeline-title" class="text-base font-semibold text-content-primary">Report Coverage & Pipeline</h2>
+                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Review scalable report-type coverage and the operational stages that produce each artifact.</p>
+                </div>
+            </div>
+            <nav class="grid gap-1 rounded-xl border border-kaori-primary/20 bg-kaori-soft p-1 sm:grid-cols-2"
+                 aria-label="Report coverage and pipeline tabs">
+                <button type="button"
+                        @click="activateReportWorkspaceTab('coverage')"
+                        :class="reportWorkspaceTab === 'coverage' ? 'bg-kaori-primary text-white shadow-sm' : 'bg-surface-card text-kaori-primary hover:bg-white'"
+                        class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-kaori-primary/20 px-3 text-xs font-semibold transition"
+                        :aria-selected="reportWorkspaceTab === 'coverage'"
+                        role="tab">
+                    <i data-lucide="clipboard-list" class="h-4 w-4" aria-hidden="true"></i>
+                    Report Type Coverage
+                </button>
+                <button type="button"
+                        @click="activateReportWorkspaceTab('pipeline')"
+                        :class="reportWorkspaceTab === 'pipeline' ? 'bg-kaori-primary text-white shadow-sm' : 'bg-surface-card text-kaori-primary hover:bg-white'"
+                        class="inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-kaori-primary/20 px-3 text-xs font-semibold transition"
+                        :aria-selected="reportWorkspaceTab === 'pipeline'"
+                        role="tab">
+                    <i data-lucide="git-branch" class="h-4 w-4" aria-hidden="true"></i>
+                    Reporting Pipeline Status
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <div x-show="reportWorkspaceTab === 'coverage'" x-cloak role="tabpanel">
+        {% include "reports/overview/partials/_report_type_coverage.html" %}
+    </div>
+    <div x-show="reportWorkspaceTab === 'pipeline'" x-cloak role="tabpanel">
+        {% include "reports/overview/partials/_pipeline_status.html" %}
+    </div>
+</section>

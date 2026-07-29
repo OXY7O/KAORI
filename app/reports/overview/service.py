@@ -52,36 +52,76 @@ IMPLEMENTED_REPORT_TYPES = {
 
 SERVER_REPORT_TYPE_COVERAGE = [
     {
-        'name': 'VM Inventory Report',
-        'description': 'Virtual machine catalog, ownership, power state, operating system, CPU, memory, disk, and placement summary.',
-        'icon': 'monitor-cog',
+        'name': 'Server Inventory Report',
+        'description': (
+            'Physical and virtual server inventory, ownership, operating system, lifecycle, '
+            'and placement summary.'
+        ),
+        'icon': 'server',
     },
     {
-        'name': 'VM Capacity Report',
-        'description': 'Allocated versus consumed CPU, memory, storage, and growth indicators for virtualized workloads.',
+        'name': 'Server Utilization Report',
+        'description': 'CPU, memory, filesystem, and load behavior from server inventory and Node Exporter metrics.',
+        'icon': 'activity',
+    },
+    {
+        'name': 'Server Capacity Report',
+        'description': (
+            'Allocated versus consumed compute, memory, and storage with capacity risk '
+            'and growth indicators.'
+        ),
         'icon': 'gauge',
     },
     {
-        'name': 'HCI Cluster Health Report',
-        'description': 'Host availability, cluster posture, storage pool status, replication signals, and operational risk highlights.',
-        'icon': 'network',
-    },
-    {
-        'name': 'Datastore & Volume Report',
-        'description': 'Datastore utilization, free capacity, thin provisioning exposure, and storage pressure overview.',
-        'icon': 'database',
-    },
-    {
-        'name': 'Host Utilization Report',
-        'description': 'Hypervisor host usage, contention indicators, consolidation opportunity, and noisy neighbor signals.',
-        'icon': 'server-cog',
+        'name': 'VM Inventory Report',
+        'description': (
+            'Virtual machine catalog, ownership, power state, operating system, CPU, memory, '
+            'disk, and placement summary.'
+        ),
+        'icon': 'monitor-cog',
     },
     {
         'name': 'VM Placement & Risk Report',
-        'description': 'Placement quality, affinity context, HA/DR readiness, and VM concentration risk across host groups.',
+        'description': (
+            'Placement quality, affinity context, availability readiness, and concentration '
+            'risk across host groups.'
+        ),
         'icon': 'git-fork',
     },
 ]
+
+HCI_REPORT_TYPE_COVERAGE = [
+    {
+        'name': 'HCI Cluster Health Report',
+        'description': (
+            'Cluster posture, host availability, storage pool status, replication signals, '
+            'and operational risk.'
+        ),
+        'icon': 'network',
+    },
+    {
+        'name': 'HCI Host Utilization Report',
+        'description': (
+            'Hypervisor host usage, contention indicators, consolidation opportunity, '
+            'and noisy-neighbor signals.'
+        ),
+        'icon': 'server-cog',
+    },
+    {
+        'name': 'Datastore & Volume Report',
+        'description': (
+            'Datastore utilization, free capacity, thin provisioning exposure, '
+            'and storage pressure overview.'
+        ),
+        'icon': 'database',
+    },
+    {
+        'name': 'HCI VM Placement Report',
+        'description': 'VM distribution, affinity, resilience, and placement risk from the connected HCI provider API.',
+        'icon': 'waypoints',
+    },
+]
+
 
 SCHEDULE_STATUS = 'Ready'
 
@@ -90,26 +130,30 @@ def get_reports_overview_payload() -> dict[str, Any]:
     report_counts = get_report_counts()
     storage_context = get_storage_context()
     report_type_coverage = get_report_type_coverage()
+    pipeline_status = get_pipeline_status(storage_context)
+    current_status = get_current_status(report_counts, storage_context, report_type_coverage)
 
     return {
         'page_title': 'Reports Overview',
-        'page_subtitle': (
-            'Generate readable infrastructure reports from inventory, analytics, schedules, templates, and artifact lifecycle data across container platform resources today and server/HCI resources next.'
-        ),
-        'selected_cluster_label': 'All Clusters',
+        'page_subtitle': 'Generate governed infrastructure reports from connected KAORI data sources.',
+        'selected_cluster_label': 'All Infrastructure Scopes',
         'report_engine_status': 'Ready',
         'storage_status': storage_context['display_status'],
         'summary_cards': get_summary_cards(report_counts),
         'recent_reports': get_recent_reports(),
         'report_type_coverage': report_type_coverage,
+        'report_type_summary': get_report_type_summary(report_type_coverage),
         'report_architecture_context': get_report_architecture_context(),
-        'pipeline_status': get_pipeline_status(storage_context),
+        'pipeline_status': pipeline_status,
+        'pipeline_summary': get_pipeline_summary(pipeline_status),
         'reporting_context': get_reporting_context(storage_context),
-        'current_status': get_current_status(report_counts, storage_context, report_type_coverage),
+        'current_status': current_status,
+        'current_status_summary': get_current_status_summary(current_status),
         'reporting_operating_model': get_reporting_operating_model(
             report_counts, storage_context, report_type_coverage
         ),
-        'data_collection_status': get_data_collection_status(),
+        'data_collection_status': get_data_collection_status(storage_context),
+        'related_information': get_related_information(),
         'storage_context': storage_context,
     }
 
@@ -120,7 +164,10 @@ def get_report_architecture_context() -> dict[str, str]:
         'active_source_label': SOURCE_KIND_LABELS.get(DEFAULT_REPORT_SOURCE_KIND, 'Container Platform'),
         'future_domain_label': REPORT_DOMAIN_LABELS.get('server', 'KAORI Server Reports'),
         'future_domain_description': REPORT_DOMAIN_DESCRIPTIONS.get('server', ''),
-        'summary': 'KAORI Kubernetes Reports owns Kubernetes reporting, KAORI Server Reports owns server/VM reporting with Node Exporter signals, and KAORI HCI Reports owns HCI provider API reporting.',
+        'summary': (
+            'Reports are assembled from reusable sections and whichever KAORI integrations are connected, '
+            'validated, and authorized for the selected infrastructure scope.'
+        ),
     }
 
 
@@ -170,28 +217,28 @@ def get_summary_cards(report_counts: dict[str, int]) -> list[dict[str, str]]:
         {
             'label': 'Total Reports',
             'value': str(report_counts['total']),
-            'caption': 'All report records',
+            'caption': 'All Report Records',
             'icon': 'files',
             'tone': 'blue',
         },
         {
             'label': 'Generated This Month',
             'value': str(report_counts['generated_this_month']),
-            'caption': 'Reports created this month',
+            'caption': 'Reports Created This Month',
             'icon': 'calendar-days',
             'tone': 'green',
         },
         {
             'label': 'Ready Reports',
             'value': str(report_counts['ready']),
-            'caption': 'Available for download',
+            'caption': 'Available for Download',
             'icon': 'check-circle-2',
             'tone': 'purple',
         },
         {
             'label': 'Enabled Schedules',
             'value': str(report_counts['active_schedules']),
-            'caption': 'Enabled recurring definitions',
+            'caption': 'Enabled Recurring Definitions',
             'icon': 'calendar-clock',
             'tone': 'purple',
         },
@@ -236,34 +283,68 @@ def get_report_type_coverage() -> dict[str, Any]:
                 'description': str(option.get('description', 'Operational report type.')),
                 'icon': str(option.get('icon', 'file-text')),
                 'status': 'Available' if is_ready else 'Reserved',
-                'tone': 'blue' if is_ready else 'gray',
+                'tone': 'normal' if is_ready else 'unknown',
             }
         )
 
     server_items = [
-        {
-            **item,
-            'status': 'Reserved',
-            'tone': 'gray',
-        }
+        {**item, 'status': 'Planned', 'tone': 'info'}
         for item in SERVER_REPORT_TYPE_COVERAGE
     ]
+    hci_items = [
+        {**item, 'status': 'Reserved', 'tone': 'unknown'}
+        for item in HCI_REPORT_TYPE_COVERAGE
+    ]
 
-    return {
-        'kubernetes': {
-            'label': 'KAORI Kubernetes Reports Infrastructure Reports',
-            'description': 'Infrastructure report types currently backed by container platform inventory, metrics, alerts, and report templates.',
+    domains = [
+        {
+            'key': 'kubernetes',
+            'label': 'Kubernetes Reports',
+            'description': (
+                'Available report contracts backed by Kubernetes inventory, Prometheus metrics, '
+                'and Alertmanager context.'
+            ),
+            'icon': 'boxes',
+            'status': 'Available',
+            'tone': 'normal',
             'items': kubernetes_items,
             'available_count': sum(1 for item in kubernetes_items if item['status'] == 'Available'),
             'total_count': len(kubernetes_items),
         },
-        'server': {
-            'label': 'KAORI Server Reports Infrastructure Reports',
-            'description': 'Infrastructure report types reserved for future VM, physical server, and HCI domains while reusing the same template, schedule, and storage model.',
+        {
+            'key': 'server',
+            'label': 'Server & VM Reports',
+            'description': (
+                'Planned report contracts for physical servers, virtual machines, '
+                'and Node Exporter signals.'
+            ),
+            'icon': 'server-cog',
+            'status': 'Planned',
+            'tone': 'info',
             'items': server_items,
             'available_count': 0,
             'total_count': len(server_items),
         },
+        {
+            'key': 'hci',
+            'label': 'HCI Reports',
+            'description': (
+                'Reserved report contracts for HCI clusters, hosts, datastores, '
+                'and VM placement from provider APIs.'
+            ),
+            'icon': 'network',
+            'status': 'Reserved',
+            'tone': 'unknown',
+            'items': hci_items,
+            'available_count': 0,
+            'total_count': len(hci_items),
+        },
+    ]
+
+    return {
+        'domains': domains,
+        'available_count': sum(domain['available_count'] for domain in domains),
+        'total_count': sum(domain['total_count'] for domain in domains),
     }
 
 
@@ -303,92 +384,142 @@ def get_storage_context() -> dict[str, Any]:
     }
 
 
+def get_report_type_summary(report_type_coverage: dict[str, Any]) -> dict[str, str]:
+    available = int(report_type_coverage.get('available_count', 0))
+    total = int(report_type_coverage.get('total_count', 0))
+    return {
+        'available': str(available),
+        'total': str(total),
+        'label': f'{available} Available Types',
+        'description': f'{total} report contracts across current and future infrastructure domains.',
+    }
+
+
 def get_pipeline_status(storage_context: dict[str, Any]) -> list[dict[str, str]]:
-    storage_tone = str(storage_context.get('tone', 'amber'))
+    storage_tone = 'normal' if str(storage_context.get('tone')) == 'green' else 'warning'
 
     return [
         {
-            'name': 'Container Platform Data Collection',
-            'description': 'Container platform inventory, workload metadata, Prometheus metrics, and Alertmanager signals are available for infrastructure reports.',
+            'name': 'Source Collection',
+            'description': (
+                'Connected infrastructure integrations provide inventory, metrics, alerts, '
+                'and source metadata.'
+            ),
             'status': 'Ready',
-            'tone': 'blue',
-            'icon': 'boxes',
+            'tone': 'normal',
+            'icon': 'database-zap',
         },
         {
-            'name': 'Server & HCI Data Collection',
-            'description': 'Server/VM collectors belong to KAORI Server Reports, while HCI provider collectors belong to KAORI HCI Reports. Both reuse this reporting workflow.',
-            'status': 'Reserved',
-            'tone': 'gray',
-            'icon': 'server-cog',
+            'name': 'Scope & Template Contract',
+            'description': (
+                'The request stores audience, scope, report type, selected sections, output format, '
+                'and owner context.'
+            ),
+            'status': 'Ready',
+            'tone': 'normal',
+            'icon': 'layout-template',
         },
         {
-            'name': 'Report Request',
-            'description': 'Manual generation persists the report contract, selected sections, scope, output format, and owner snapshot.',
+            'name': 'Report Generation',
+            'description': (
+                'The export engine builds a standalone PDF with reader guidance, metadata, evidence, '
+                'and selected sections.'
+            ),
             'status': 'Ready',
-            'tone': 'blue',
-            'icon': 'send',
-        },
-        {
-            'name': 'PDF Export Engine',
-            'description': 'PDF rendering creates readable documents with cover, reader overview, metadata, and data sections from the selected template.',
-            'status': 'Ready',
-            'tone': 'blue',
+            'tone': 'normal',
             'icon': 'file-check-2',
         },
         {
-            'name': 'Storage Backend',
+            'name': 'Artifact Storage',
             'description': str(storage_context.get('description', 'Report storage backend status is unavailable.')),
             'status': str(storage_context.get('display_status', 'Storage Review')),
             'tone': storage_tone,
             'icon': 'hard-drive',
         },
         {
-            'name': 'Schedule Worker',
-            'description': 'Recurring report automation is available through the UI Run now action and the flask run-report-schedules CLI worker.',
+            'name': 'Schedule Automation',
+            'description': (
+                'Recurring generation is available through saved schedules, Run Now, '
+                'and the schedule worker.'
+            ),
             'status': SCHEDULE_STATUS,
-            'tone': 'blue',
+            'tone': 'normal',
             'icon': 'calendar-clock',
         },
+        {
+            'name': 'Delivery Channels',
+            'description': (
+                'Email, webhook, and notification delivery remain planned channel integrations '
+                'over generated artifacts.'
+            ),
+            'status': 'Planned',
+            'tone': 'info',
+            'icon': 'send-horizontal',
+        },
     ]
+
+
+def get_pipeline_summary(pipeline_status: list[dict[str, str]]) -> dict[str, int]:
+    ready = sum(1 for item in pipeline_status if item.get('tone') == 'normal')
+    review = sum(1 for item in pipeline_status if item.get('tone') == 'warning')
+    planned = sum(1 for item in pipeline_status if item.get('tone') in {'info', 'unknown'})
+    return {
+        'ready': ready,
+        'review': review,
+        'planned': planned,
+        'total': len(pipeline_status),
+    }
 
 
 def get_reporting_context(storage_context: dict[str, Any]) -> list[dict[str, Any]]:
     return [
         {
-            'title': 'Infrastructure domain ownership',
-            'description': 'The reporting engine is domain-aware. KAORI Kubernetes Reports, KAORI Server Reports, and KAORI HCI Reports keep Kubernetes, server/VM, and HCI source families separated from the start.',
-            'icon': 'workflow',
-            'bullets': [
-                'KAORI Kubernetes Reports source family: Kubernetes, Prometheus, and Alertmanager.',
-                'KAORI Server Reports source family: server/VM inventory and Node Exporter. KAORI HCI Reports source family: HCI API.',
-            ],
+            'title': 'Integration-Driven Coverage',
+            'description': (
+                'A report can be generated for any supported infrastructure domain when its required '
+                'KAORI integrations are connected and validated.'
+            ),
+            'icon': 'plug-zap',
+            'detail': (
+                'The available source set determines which report types and sections can be populated '
+                'with current evidence.'
+            ),
         },
         {
-            'title': 'Readable report contract',
-            'description': 'Reports are designed as standalone documents, not dashboard screenshots. Each generated PDF should include scope, reader guidance, metadata, and selected report sections.',
-            'icon': 'book-open-check',
-            'bullets': [
-                'Base templates provide standard infrastructure reporting sections.',
-                'Custom templates can clone a base template or select only required sections.',
-            ],
+            'title': 'Reusable Report Contracts',
+            'description': (
+                'Base and custom templates define audience, sections, scope, and document structure '
+                'without coupling reports to one dashboard page.'
+            ),
+            'icon': 'layout-template',
+            'detail': (
+                'The same generation workflow can support Kubernetes, server, VM, HCI, security, '
+                'storage, and future provider domains.'
+            ),
         },
         {
-            'title': 'Storage and lifecycle',
-            'description': f'Generated artifacts are stored through the active {storage_context["active_detail"]} backend with domain-aware object prefixes.',
+            'title': 'Governed Artifact Lifecycle',
+            'description': (
+                f'Generated PDFs use the active {storage_context["active_detail"]} backend with '
+                'repeatable naming, ownership, archive, and retention boundaries.'
+            ),
             'icon': 'archive',
-            'bullets': [
-                'Local and S3-compatible storage use the same artifact naming model.',
-                'Retention and cleanup policy are defined separately from manual archive/restore actions.',
-            ],
+            'detail': (
+                'Storage selection is independent from report composition, so local filesystem '
+                'and S3-compatible backends share one lifecycle model.'
+            ),
         },
         {
-            'title': 'Automation boundary',
-            'description': 'Schedules can be executed from the UI or CLI. Webhook and notification delivery remain a channel integration layer, not part of the core report generation contract.',
-            'icon': 'calendar-clock',
-            'bullets': [
-                'UI: create schedules and run them immediately.',
-                'CLI: process due schedules with flask run-report-schedules.',
-            ],
+            'title': 'Automation & Delivery',
+            'description': (
+                'Manual generation and recurring schedules are available now; notification and webhook '
+                'channels can be added as separate delivery integrations.'
+            ),
+            'icon': 'workflow',
+            'detail': (
+                'Generation remains the authoritative step, while delivery channels distribute '
+                'the completed artifact to approved destinations.'
+            ),
         },
     ]
 
@@ -398,52 +529,74 @@ def get_current_status(
     storage_context: dict[str, Any],
     report_type_coverage: dict[str, Any],
 ) -> list[dict[str, str]]:
-    kubernetes_coverage = report_type_coverage['kubernetes']
+    type_summary = get_report_type_summary(report_type_coverage)
+    storage_tone = 'normal' if str(storage_context.get('tone')) == 'green' else 'warning'
 
     return [
         {
-            'label': 'Generated Reports',
+            'label': 'Report Engine',
+            'value': 'Ready',
+            'description': 'Manual generation and PDF export contracts are available.',
+            'tone': 'normal',
+            'icon': 'file-check-2',
+        },
+        {
+            'label': 'Generated Artifacts',
             'value': str(report_counts['total']),
-            'description': f'{report_counts["ready"]} ready, {report_counts["pending"]} in progress, {report_counts["archived"]} archived.',
-            'tone': 'blue' if report_counts['total'] else 'gray',
+            'description': (
+                f'{report_counts["ready"]} ready, {report_counts["pending"]} in progress, '
+                f'{report_counts["failed"]} failed, and {report_counts["archived"]} archived.'
+            ),
+            'tone': 'normal' if report_counts['failed'] == 0 else 'warning',
             'icon': 'files',
         },
         {
-            'label': 'KAORI Kubernetes Reports Coverage',
-            'value': f'{kubernetes_coverage["available_count"]}/{kubernetes_coverage["total_count"]}',
-            'description': 'Available infrastructure report types with implemented PDF contracts.',
-            'tone': 'green',
+            'label': 'Available Report Types',
+            'value': type_summary['available'],
+            'description': type_summary['description'],
+            'tone': 'normal',
             'icon': 'clipboard-check',
         },
         {
-            'label': 'Storage Backend',
+            'label': 'Artifact Storage',
             'value': str(storage_context.get('display_status', 'Storage Review')),
             'description': str(storage_context.get('description', 'Report storage backend status is unavailable.')),
-            'tone': str(storage_context.get('tone', 'amber')),
+            'tone': storage_tone,
             'icon': 'hard-drive',
         },
         {
-            'label': 'Template Library',
+            'label': 'Custom Templates',
             'value': str(report_counts['custom_templates']),
-            'description': 'Custom templates stored in addition to protected base templates.',
-            'tone': 'blue' if report_counts['custom_templates'] else 'gray',
-            'icon': 'layout-template',
+            'description': 'Reusable user-defined templates in addition to protected base templates.',
+            'tone': 'normal' if report_counts['custom_templates'] else 'unknown',
+            'icon': 'copy-plus',
         },
         {
             'label': 'Schedule Automation',
             'value': str(report_counts['active_schedules']),
-            'description': f'{report_counts["schedules"]} total schedules, {report_counts["active_schedules"]} enabled for recurring generation.',
-            'tone': 'green' if report_counts['active_schedules'] else 'gray',
+            'description': (
+                f'{report_counts["schedules"]} total schedules and '
+                f'{report_counts["active_schedules"]} currently enabled.'
+            ),
+            'tone': 'normal' if report_counts['active_schedules'] else 'unknown',
             'icon': 'calendar-clock',
         },
-        {
-            'label': 'KAORI Server Reports Coverage',
-            'value': 'Reserved',
-            'description': 'Server/VM report types map to KAORI Server Reports, while HCI report types map to KAORI HCI Reports provider sources.',
-            'tone': 'gray',
-            'icon': 'server-cog',
-        },
     ]
+
+
+def get_current_status_summary(current_status: list[dict[str, str]]) -> dict[str, Any]:
+    ready = sum(1 for item in current_status if item.get('tone') == 'normal')
+    review = sum(1 for item in current_status if item.get('tone') == 'warning')
+    neutral = sum(1 for item in current_status if item.get('tone') in {'unknown', 'info'})
+    posture = 'Needs Review' if review else 'Ready'
+    tone = 'warning' if review else 'normal'
+    return {
+        'ready': ready,
+        'review': review,
+        'neutral': neutral,
+        'posture': posture,
+        'tone': tone,
+    }
 
 
 def get_reporting_operating_model(
@@ -451,66 +604,209 @@ def get_reporting_operating_model(
     storage_context: dict[str, Any],
     report_type_coverage: dict[str, Any],
 ) -> dict[str, Any]:
-    kubernetes_coverage = report_type_coverage['kubernetes']
+    type_summary = get_report_type_summary(report_type_coverage)
     return {
         'title': 'Reporting Operating Model',
-        'description': 'A concise view of how reports are produced, governed, stored, and prepared for future infrastructure domains.',
+        'description': 'How KAORI composes, governs, stores, and automates infrastructure reports.',
         'cards': [
             {
-                'label': 'Protected base templates',
-                'value': str(kubernetes_coverage['available_count']),
-                'description': 'Base templates provide stable section contracts and cannot be edited or deleted directly.',
-                'icon': 'shield-check',
-                'tone': 'blue',
+                'label': 'Compose from Integrations',
+                'value': type_summary['available'],
+                'description': (
+                    'Available report types are populated from connected and validated '
+                    'infrastructure sources.'
+                ),
+                'icon': 'plug-zap',
+                'tone': 'normal',
             },
             {
-                'label': 'Custom templates',
+                'label': 'Govern with Templates',
                 'value': str(report_counts['custom_templates']),
-                'description': 'User-defined templates can clone base templates or select report sections for specific audiences.',
-                'icon': 'copy-plus',
-                'tone': 'purple',
+                'description': (
+                    'Protected base templates and custom templates define sections, audience, '
+                    'and document structure.'
+                ),
+                'icon': 'layout-template',
+                'tone': 'info',
             },
             {
-                'label': 'Artifact storage',
+                'label': 'Store as Artifacts',
                 'value': str(storage_context.get('label', 'Storage')),
-                'description': str(storage_context.get('description', 'Report storage backend status is unavailable.')),
+                'description': (
+                    'Generated PDFs follow one naming, archive, and retention contract across '
+                    'supported storage backends.'
+                ),
                 'icon': 'archive',
-                'tone': str(storage_context.get('tone', 'amber')),
+                'tone': 'normal' if str(storage_context.get('tone')) == 'green' else 'warning',
             },
             {
-                'label': 'Delivery channels',
-                'value': 'Coming Soon',
-                'description': 'Webhook, email, and notification delivery are reserved as delivery-channel integrations on top of generated artifacts.',
+                'label': 'Automate and Deliver',
+                'value': str(report_counts['active_schedules']),
+                'description': (
+                    'Schedules are available now; email, webhook, and notification channels '
+                    'remain planned integrations.'
+                ),
                 'icon': 'send-horizontal',
-                'tone': 'gray',
+                'tone': 'info',
             },
         ],
     }
 
 
-def get_data_collection_status() -> list[dict[str, Any]]:
+def get_data_collection_status(storage_context: dict[str, Any]) -> list[dict[str, Any]]:
+    s3_context = storage_context.get('s3', {})
+    s3_selected = storage_context.get('backend') == 's3'
+    custom_endpoint = bool(s3_context.get('endpoint_url')) and s3_context.get('endpoint_url') != 'AWS default endpoint'
+    s3_name = 'MinIO / S3-Compatible Storage' if custom_endpoint else 'S3-Compatible Storage'
+    s3_status = str(storage_context.get('display_status')) if s3_selected else 'Available'
+    s3_tone = 'normal' if s3_selected and str(storage_context.get('tone')) == 'green' else 'info'
+
     return [
         {
-            'title': 'Container Platform Data Collection',
+            'stage': 'ready',
+            'stage_label': 'Ready Now',
+            'name': 'Kubernetes API',
+            'category': 'Inventory Source',
             'status': 'Ready',
-            'tone': 'blue',
+            'tone': 'normal',
             'icon': 'boxes',
-            'items': [
-                'Cluster, node, namespace, workload, pod, service, ingress, and storage inventory for container platforms.',
-                'Prometheus-backed utilization, capacity, forecast, and top-consumer analytics for platform resources.',
-                'Alertmanager and Prometheus alert/anomaly context for infrastructure reporting.',
-            ],
+            'description': (
+                'Cluster, node, namespace, workload, pod, service, ingress, storage, '
+                'and configuration inventory.'
+            ),
         },
         {
-            'title': 'Server & HCI Data Collection',
-            'status': 'Reserved',
-            'tone': 'gray',
+            'stage': 'ready',
+            'stage_label': 'Ready Now',
+            'name': 'Prometheus / Thanos',
+            'category': 'Metrics Source',
+            'status': 'Ready',
+            'tone': 'normal',
+            'icon': 'activity',
+            'description': (
+                'Utilization, capacity, storage, workload, forecast, and top-consumer evidence '
+                'for report sections.'
+            ),
+        },
+        {
+            'stage': 'ready',
+            'stage_label': 'Ready Now',
+            'name': 'Alertmanager',
+            'category': 'Alert Source',
+            'status': 'Ready',
+            'tone': 'normal',
+            'icon': 'siren',
+            'description': 'Active alerts, routing, silence, inhibition, ownership, and incident-readiness context.',
+        },
+        {
+            'stage': 'ready' if storage_context.get('backend') == 'local' else 'available',
+            'stage_label': 'Ready Now' if storage_context.get('backend') == 'local' else 'Available',
+            'name': 'Local Filesystem',
+            'category': 'Artifact Storage',
+            'status': 'Selected' if storage_context.get('backend') == 'local' else 'Available',
+            'tone': 'normal' if storage_context.get('backend') == 'local' else 'info',
+            'icon': 'folder-archive',
+            'description': (
+                'Local report artifact storage using the shared naming, archive, download, '
+                'and retention model.'
+            ),
+        },
+        {
+            'stage': 'ready' if s3_selected else 'available',
+            'stage_label': 'Ready Now' if s3_selected else 'Available',
+            'name': s3_name,
+            'category': 'Artifact Storage',
+            'status': s3_status,
+            'tone': s3_tone,
+            'icon': 'database',
+            'description': (
+                'AWS S3, MinIO, or another S3-compatible backend for generated reports '
+                'and operational evidence.'
+            ),
+        },
+        {
+            'stage': 'planned',
+            'stage_label': 'Planned',
+            'name': 'Server & VM Inventory',
+            'category': 'Compute Source',
+            'status': 'Planned',
+            'tone': 'info',
             'icon': 'server-cog',
-            'items': [
-                'VM inventory, operating system, power state, placement, and ownership metadata.',
-                'Hypervisor or HCI host utilization, datastore capacity, and cluster health signals.',
-                'KAORI Server Reports and KAORI HCI Reports sections reuse the same template, schedule, and storage lifecycle.',
-            ],
+            'description': (
+                'Physical server and VM inventory combined with Node Exporter metrics '
+                'for server report families.'
+            ),
+        },
+        {
+            'stage': 'reserved',
+            'stage_label': 'Reserved',
+            'name': 'HCI Provider APIs',
+            'category': 'HCI Source',
+            'status': 'Reserved',
+            'tone': 'unknown',
+            'icon': 'network',
+            'description': 'HCI cluster, host, datastore, storage pool, and VM placement data from provider APIs.',
+        },
+        {
+            'stage': 'reserved',
+            'stage_label': 'Reserved',
+            'name': 'Vault & Secret Providers',
+            'category': 'Security Source',
+            'status': 'Reserved',
+            'tone': 'unknown',
+            'icon': 'key-round',
+            'description': (
+                'External secret, credential, and access-policy evidence for future '
+                'security-focused reports.'
+            ),
+        },
+        {
+            'stage': 'planned',
+            'stage_label': 'Planned',
+            'name': 'Email, Webhook & Notifications',
+            'category': 'Delivery Channel',
+            'status': 'Planned',
+            'tone': 'info',
+            'icon': 'send-horizontal',
+            'description': (
+                'Delivery integrations for distributing completed reports after artifact '
+                'generation succeeds.'
+            ),
+        },
+    ]
+
+
+def get_related_information() -> list[dict[str, str]]:
+    return [
+        {
+            'label': 'Generate Report',
+            'description': 'Select a report type, scope, period, sections, and output contract.',
+            'icon': 'plus-circle',
+            'href': url_for('reports.generate_report'),
+        },
+        {
+            'label': 'Report Templates',
+            'description': 'Review protected base templates and create reusable custom templates.',
+            'icon': 'layout-template',
+            'href': url_for('reports.report_templates'),
+        },
+        {
+            'label': 'Report Schedules',
+            'description': 'Create recurring generation definitions and run schedules on demand.',
+            'icon': 'calendar-clock',
+            'href': url_for('reports.schedules'),
+        },
+        {
+            'label': 'Report Storage',
+            'description': 'Review the active artifact backend, retention boundary, and storage health.',
+            'icon': 'hard-drive',
+            'href': url_for('reports.storage'),
+        },
+        {
+            'label': 'Infrastructure Integrations',
+            'description': 'Manage the provider connections that determine report data availability.',
+            'icon': 'plug-zap',
+            'href': url_for('integrations.overview'),
         },
     ]
 

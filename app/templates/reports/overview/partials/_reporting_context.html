@@ -1,16 +1,37 @@
-<section class="rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card">
-    <div class="flex items-center gap-3">
-        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-            <i data-lucide="target" class="h-4 w-4"></i>
+<section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm"
+         aria-labelledby="reporting-overview-title">
+    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="layout-dashboard" class="h-5 w-5"></i>
+                </span>
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Reporting Overview</p>
+                    <h2 id="reporting-overview-title"
+                        class="mt-1 text-lg font-semibold text-content-primary">Integration-Driven Reporting Workspace</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Generate any supported infrastructure report from reusable templates and the KAORI integrations available for the selected scope.</p>
+                </div>
+            </div>
+            {{ table_label.status_label(payload.report_engine_status, 'normal', 'badge-check', 'detail') }}
         </div>
-        <h2 class="text-base font-semibold text-content-primary">Reporting Context</h2>
-    </div>
-    <ul class="mt-4 space-y-3">
+    </header>
+    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
         {% for item in payload.reporting_context %}
-            <li class="flex gap-3 text-sm leading-6 text-content-secondary dark:text-content-secondary">
-                <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-kaori-primary"></span>
-                <span>{{ item }}</span>
-            </li>
+            <article class="bg-surface-card px-5 py-4 sm:px-6">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                          aria-hidden="true">
+                        <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <h3 class="text-sm font-semibold text-content-primary">{{ item.title }}</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.description }}</p>
+                    </div>
+                </div>
+                <p class="mt-3 border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">{{ item.detail }}</p>
+            </article>
         {% endfor %}
-    </ul>
+    </div>
 </section>

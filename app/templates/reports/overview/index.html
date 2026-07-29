@@ -1,491 +1,85 @@
-{% import "components/pagination.html" as pagination_ui %}
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/table_label.html" as table_label %}
 {% block title %}Reports Overview{% endblock title %}
 {% block dashboard_content %}
-    <div class="space-y-6">
-        <!-- Hero -->
+    <div class="space-y-6"
+         x-data="{
+             reportWorkspaceTab: 'coverage',
+             activateReportWorkspaceTab(tab) {
+                 this.reportWorkspaceTab = tab;
+                 this.$nextTick(() => {
+                     if (window.lucide) window.lucide.createIcons();
+                 });
+             }
+         }">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro('file-text', 'Infrastructure reporting center', 'file-text') %}
+                    {% call page_hero.intro('file-text', 'Infrastructure Reporting Center', 'file-text') %}
                         <h1 class="{{ page_hero.title_classes() }}">{{ payload.page_title }}</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">{{ payload.page_subtitle }}</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('boxes', 'Infrastructure resources') }}
+                            {{ page_hero.meta_label('layers-3', payload.selected_cluster_label) }}
                             {{ page_hero.meta_label('hard-drive', payload.storage_status) }}
-                            {{ page_hero.meta_label('calendar-clock', 'Scheduled reporting') }}
+                            {{ page_hero.meta_label('calendar-clock', 'Scheduled Reporting') }}
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="Report actions">
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="Reports overview actions">
                     <div class="{{ page_hero.context_panel_classes() }}">
-                        <div>
-                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Report engine</p>
-                            <h2 class="{{ page_hero.context_panel_title_classes() }}">{{ payload.report_engine_status }}</h2>
-                            <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Generate and govern standalone PDF artifacts from reusable templates and selected infrastructure scopes.</p>
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="min-w-0">
+                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Report Engine</p>
+                                <h2 class="{{ page_hero.context_panel_title_classes() }}">Reporting Readiness</h2>
+                            </div>
+                            {{ page_hero.context_status_badge(payload.report_engine_status, 'normal') }}
                         </div>
-                        <div class="mt-4 grid grid-cols-2 gap-2"><a href="{{ url_for('reports.report_templates') }}"
-   class="{{ page_hero.context_action_classes() }}"><i data-lucide="layout-template" class="h-4 w-4"></i>Templates</a><a href="{{ url_for('reports.generate_report') }}"
-   class="{{ page_hero.context_action_classes() }}"><i data-lucide="plus-circle" class="h-4 w-4"></i>Generate</a></div>
+                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                            {{ page_hero.context_metric(
+                                'clipboard-check',
+                                'Available Types',
+                                payload.report_type_summary.available,
+                                payload.report_type_summary.description
+                            ) }}
+                            {{ page_hero.context_metric(
+                                'calendar-clock',
+                                'Active Schedules',
+                                payload.summary_cards[3].value,
+                                'Recurring report definitions'
+                            ) }}
+                        </div>
+                        <div class="{{ page_hero.context_actions_classes() }}">
+                            <a href="{{ url_for('reports.report_templates') }}"
+                               class="{{ page_hero.context_action_classes() }}">
+                                <i data-lucide="layout-template" class="h-4 w-4" aria-hidden="true"></i>
+                                Templates
+                            </a>
+                            <a href="{{ url_for('reports.generate_report') }}"
+                               class="{{ page_hero.context_action_classes() }}">
+                                <i data-lucide="plus-circle" class="h-4 w-4" aria-hidden="true"></i>
+                                Generate
+                            </a>
+                        </div>
                     </div>
                 </aside>
             </div>
         </section>
-        <!-- Summary Cards -->
-        <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {% for card in payload.summary_cards %}
-                {% set tone_class = {
-                                    'blue': 'bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary',
-                                    'green': 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300',
-                                    'purple': 'bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-300',
-                                    'red': 'bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-300',
-                                    'gray': 'bg-surface-subtle text-content-secondary bg-kaori-soft dark:text-content-secondary',
-                                    'amber': 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300'
-                                }.get(card.tone, 'bg-surface-subtle text-content-secondary bg-kaori-soft dark:text-content-secondary') %}
-                <article class="rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card">
-                    <div class="flex items-start gap-4">
-                        <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl {{ tone_class }}">
-                            <i data-lucide="{{ card.icon }}" class="h-6 w-6"></i>
-                        </div>
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-content-secondary dark:text-content-secondary">{{ card.label }}</p>
-                            <p class="mt-2 text-3xl font-bold tracking-tight text-content-primary text-content-primary">{{ card.value }}</p>
-                            <p class="mt-1 text-sm text-content-muted dark:text-content-muted">{{ card.caption }}</p>
-                        </div>
-                    </div>
-                </article>
-            {% endfor %}
-        </section>
-        <!-- Main Layout -->
+
+        {% include "reports/overview/partials/_reporting_context.html" %}
+        {% include "reports/overview/partials/_summary_cards.html" %}
+
         <section class="grid gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
             <div class="space-y-6">
-                <!-- Recent Generated Reports -->
-                <section class="overflow-hidden rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
-                    <div class="flex flex-col gap-3 border-b border-outline-default px-5 py-4 dark:border-outline-default sm:flex-row sm:items-center sm:justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                                <i data-lucide="file-text" class="h-4 w-4"></i>
-                            </div>
-                            <div>
-                                <h2 class="text-base font-semibold text-content-primary text-content-primary">Recent Generated Reports</h2>
-                                <p class="text-xs text-content-muted dark:text-content-muted">Latest generated report records and artifact readiness across infrastructure domains.</p>
-                            </div>
-                        </div>
-                        <a href="{{ url_for('reports.generated_reports') }}"
-                           class="inline-flex items-center justify-center gap-2 rounded-xl border border-brand-outline bg-kaori-soft px-3.5 py-2 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-soft border-brand-outline bg-kaori-soft dark:text-kaori-primary hover:bg-kaori-soft">
-                            <i data-lucide="folder-open" class="h-4 w-4"></i>
-                            View Reports
-                        </a>
-                    </div>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-outline-default divide-outline-default">
-                            <thead class="bg-surface-subtle bg-surface-subtle">
-                                <tr>
-                                    <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">Report Name</th>
-                                    <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">Scope</th>
-                                    <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">Type</th>
-                                    <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">Status</th>
-                                    <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">Created</th>
-                                    <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-content-muted dark:text-content-muted">Action</th>
-                                </tr>
-                            </thead>
-                            {% if payload.recent_reports %}
-                                <tbody class="divide-y divide-outline-default bg-white divide-outline-default bg-surface-card">
-                                    {% for report in payload.recent_reports %}
-                                        {% set status_class = {
-                                                                                    'green': 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',
-                                                                                    'blue': 'bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary',
-                                                                                    'purple': 'bg-violet-50 text-violet-700 dark:bg-violet-950/50 dark:text-violet-300',
-                                                                                    'red': 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300',
-                                                                                    'gray': 'bg-kaori-soft text-content-secondary bg-kaori-soft dark:text-content-secondary'
-                                                                                }.get(report.status_tone, 'bg-kaori-soft text-content-secondary bg-kaori-soft dark:text-content-secondary') %}
-                                        <tr class="transition hover:bg-surface-subtle hover:bg-kaori-soft">
-                                            <td class="px-5 py-4">
-                                                <div class="max-w-xs truncate text-sm font-semibold text-content-primary text-content-primary"
-                                                     title="{{ report.name }}">{{ report.name }}</div>
-                                                <div class="mt-1 text-xs text-content-muted dark:text-content-muted">{{ report.file_size }}</div>
-                                            </td>
-                                            <td class="px-5 py-4 text-sm text-content-secondary dark:text-content-secondary">{{ report.scope }}</td>
-                                            <td class="px-5 py-4 text-sm text-content-secondary dark:text-content-secondary">{{ report.report_type_label }}</td>
-                                            <td class="px-5 py-4">
-                                                <span class="inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold {{ status_class }}">{{ report.status_label }}</span>
-                                            </td>
-                                            <td class="px-5 py-4 text-sm text-content-muted dark:text-content-muted">{{ report.created_at|user_datetime }}</td>
-                                            <td class="px-5 py-4 text-right">
-                                                <a href="{{ report.href }}"
-                                                   class="inline-flex items-center justify-center gap-2 rounded-lg border border-outline-default bg-white px-3 py-1.5 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-brand-outline hover:text-kaori-primary dark:border-outline-default bg-surface-subtle dark:text-content-secondary hover:border-brand-outline dark:hover:text-kaori-primary">
-                                                    <i data-lucide="external-link" class="h-3.5 w-3.5"></i>
-                                                    Open
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            {% endif %}
-                        </table>
-                    </div>
-                    {% if not payload.recent_reports %}
-                        <div class="flex min-h-64 flex-col items-center justify-center px-6 py-12 text-center">
-                            <div class="flex h-16 w-16 items-center justify-center rounded-full bg-kaori-soft text-content-muted bg-kaori-soft dark:text-content-secondary">
-                                <i data-lucide="file-text" class="h-8 w-8"></i>
-                            </div>
-                            <h3 class="mt-4 text-base font-semibold text-content-primary text-content-primary">No generated reports yet</h3>
-                            <p class="mt-2 max-w-md text-sm leading-6 text-content-muted dark:text-content-muted">Create the first operational report to validate the report generation, template, and storage workflow.</p>
-                            <a href="{{ url_for('reports.generate_report') }}"
-                               class="mt-5 inline-flex items-center gap-2 rounded-xl border border-brand-outline bg-kaori-soft px-4 py-2 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-soft border-brand-outline bg-kaori-soft dark:text-kaori-primary hover:bg-kaori-soft">
-                                <i data-lucide="plus-circle" class="h-4 w-4"></i>
-                                Create first report
-                            </a>
-                        </div>
-                    {% endif %}
-                </section>
-                <div class="grid gap-6 lg:grid-cols-2">
-                    <!-- Report Type Coverage -->
-                    <section class="flex min-h-[720px] flex-col rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card"
-                             x-data="{ activeCoverage: 'kubernetes', coveragePages: { kubernetes: 1, server: 1 }, perPage: 6, get activePage() { return this.coveragePages[this.activeCoverage] || 1; }, setCoverageTab(tab) { this.activeCoverage = tab; this.coveragePages[tab] = this.coveragePages[tab] || 1; }, setCoveragePage(page) { this.coveragePages[this.activeCoverage] = page; }, isCoverageItemVisible(family, index) { const page = this.coveragePages[family] || 1; const start = (page - 1) * this.perPage; return index >= start && index < start + this.perPage; } }">
-                        <div class="border-b border-outline-default px-5 py-4 dark:border-outline-default">
-                            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                                        <i data-lucide="clipboard-list" class="h-4 w-4"></i>
-                                    </div>
-                                    <div>
-                                        <h2 class="text-base font-semibold text-content-primary text-content-primary">Report Type Coverage</h2>
-                                        <p class="text-xs text-content-muted dark:text-content-muted">Coverage by infrastructure report family and source domain.</p>
-                                    </div>
-                                </div>
-                                <div class="inline-flex rounded-xl border border-outline-default bg-surface-subtle p-1 dark:border-outline-default bg-surface-subtle">
-                                    <button type="button"
-                                            class="rounded-lg px-3 py-1.5 text-xs font-semibold transition"
-                                            :class="activeCoverage === 'kubernetes' ? 'bg-white text-kaori-primary shadow-sm bg-kaori-soft dark:text-kaori-primary' : 'text-content-muted hover:text-content-secondary dark:text-content-muted dark:hover:text-content-secondary'"
-                                            @click="setCoverageTab('kubernetes')">KAORI Kubernetes Reports</button>
-                                    <button type="button"
-                                            class="rounded-lg px-3 py-1.5 text-xs font-semibold transition"
-                                            :class="activeCoverage === 'server' ? 'bg-white text-kaori-primary shadow-sm bg-kaori-soft dark:text-kaori-primary' : 'text-content-muted hover:text-content-secondary dark:text-content-muted dark:hover:text-content-secondary'"
-                                            @click="setCoverageTab('server')">KAORI Server Reports</button>
-                                </div>
-                            </div>
-                        </div>
-                        {% for family_key, family in payload.report_type_coverage.items() %}
-                            <div class="flex flex-1 flex-col"
-                                 x-show="activeCoverage === '{{ family_key }}'"
-                                 x-cloak>
-                                <div class="border-b border-outline-default bg-surface-subtle/70 px-5 py-4 dark:border-outline-default bg-surface-subtle">
-                                    <div class="flex items-start justify-between gap-4">
-                                        <div>
-                                            <h3 class="text-sm font-semibold text-content-primary text-content-primary">{{ family['label'] }}</h3>
-                                            <p class="mt-1 text-xs leading-5 text-content-muted dark:text-content-muted">{{ family['description'] }}</p>
-                                            <span class="mt-2 inline-flex rounded-lg bg-kaori-soft px-2.5 py-1 text-[11px] font-semibold text-content-secondary bg-kaori-soft dark:text-content-secondary">Default system template</span>
-                                        </div>
-                                        <span class="shrink-0 rounded-lg bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                                            {{ family['available_count'] }}/{{ family['total_count'] }} available
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="flex-1 divide-y divide-outline-default divide-outline-default">
-                                    {% for item in family['items'] %}
-                                        {% set coverage_class = {
-                                                                                    'blue': 'bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary',
-                                                                                    'gray': 'bg-kaori-soft text-content-secondary bg-kaori-soft dark:text-content-secondary'
-                                                                                }.get(item.tone, 'bg-kaori-soft text-content-secondary bg-kaori-soft dark:text-content-secondary') %}
-                                        <div class="flex items-start justify-between gap-4 px-5 py-4"
-                                             x-show="isCoverageItemVisible('{{ family_key }}', {{ loop.index0 }})"
-                                             x-cloak>
-                                            <div class="flex min-w-0 items-start gap-3">
-                                                <div class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-subtle text-kaori-primary bg-surface-subtle dark:text-kaori-primary">
-                                                    <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
-                                                </div>
-                                                <div class="min-w-0">
-                                                    <p class="text-sm font-semibold text-content-primary dark:text-content-primary">{{ item.name }}</p>
-                                                    <p class="mt-1 text-xs leading-5 text-content-muted dark:text-content-muted">{{ item.description }}</p>
-                                                </div>
-                                            </div>
-                                            <span class="shrink-0 rounded-lg px-2.5 py-1 text-xs font-semibold {{ coverage_class }}">{{ item.status }}</span>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                                {% set total_pages = ((family['items']|length) + 5) // 6 %}
-                                <div class="mt-auto flex flex-col gap-3 border-t border-outline-default px-5 py-4 dark:border-outline-default sm:flex-row sm:items-center sm:justify-between">
-                                    <p class="text-xs text-content-muted dark:text-content-muted">
-                                        Showing
-                                        <span x-text="((coveragePages['{{ family_key }}'] || 1) - 1) * perPage + 1"></span>
-                                        -
-                                        <span x-text="Math.min((coveragePages['{{ family_key }}'] || 1) * perPage, {{ family['items']|length }})"></span>
-                                        of {{ family['items']|length }} report types
-                                    </p>
-                                    <div class="inline-flex items-center gap-2">
-                                        <button type="button"
-                                                class="inline-flex items-center gap-1 rounded-lg border border-outline-default px-3 py-1.5 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:text-kaori-primary disabled:cursor-not-allowed disabled:opacity-40 dark:border-outline-default dark:text-content-secondary hover:border-brand-outline dark:hover:text-kaori-primary"
-                                                :disabled="(coveragePages['{{ family_key }}'] || 1) <= 1"
-                                                @click="coveragePages['{{ family_key }}'] = Math.max(1, (coveragePages['{{ family_key }}'] || 1) - 1)">
-                                            <i data-lucide="chevron-left" class="h-3.5 w-3.5"></i>
-                                            Prev
-                                        </button>
-                                        <span class="rounded-lg bg-kaori-soft px-2.5 py-1.5 text-xs font-semibold text-content-secondary bg-kaori-soft dark:text-content-secondary">
-                                            <span x-text="coveragePages['{{ family_key }}'] || 1"></span> / {{ total_pages }}
-                                        </span>
-                                        <button type="button"
-                                                class="inline-flex items-center gap-1 rounded-lg border border-outline-default px-3 py-1.5 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:text-kaori-primary disabled:cursor-not-allowed disabled:opacity-40 dark:border-outline-default dark:text-content-secondary hover:border-brand-outline dark:hover:text-kaori-primary"
-                                                :disabled="(coveragePages['{{ family_key }}'] || 1) >= {{ total_pages }}"
-                                                @click="coveragePages['{{ family_key }}'] = Math.min({{ total_pages }}, (coveragePages['{{ family_key }}'] || 1) + 1)">
-                                            Next
-                                            <i data-lucide="chevron-right" class="h-3.5 w-3.5"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </section>
-                    <!-- Reporting Pipeline Status -->
-                    <section class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
-                        <div class="border-b border-outline-default px-5 py-4 dark:border-outline-default">
-                            <div class="flex items-center gap-3">
-                                <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                                    <i data-lucide="git-branch" class="h-4 w-4"></i>
-                                </div>
-                                <div>
-                                    <h2 class="text-base font-semibold text-content-primary text-content-primary">Reporting Pipeline Status</h2>
-                                    <p class="text-xs text-content-muted dark:text-content-muted">Operational readiness of the infrastructure reporting pipeline.</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="px-5 py-4">
-                            <div class="space-y-4">
-                                {% for item in payload.pipeline_status %}
-                                    {% set dot_class = {
-                                                                            'blue': 'bg-kaori-primary',
-                                                                            'gray': 'bg-content-muted',
-                                                                            'amber': 'bg-amber-500',
-                                                                            'green': 'bg-emerald-500'
-                                                                        }.get(item.tone, 'bg-content-muted') %}
-                                    {% set badge_class = {
-                                                                            'blue': 'border-brand-outline bg-kaori-soft text-kaori-primary border-brand-outline bg-kaori-soft dark:text-kaori-primary',
-                                                                            'gray': 'border-outline-default bg-surface-subtle text-content-secondary dark:border-outline-default bg-surface-subtle dark:text-content-secondary',
-                                                                            'amber': 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300',
-                                                                            'green': 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
-                                                                        }.get(item.tone, 'border-outline-default bg-surface-subtle text-content-secondary dark:border-outline-default bg-surface-subtle dark:text-content-secondary') %}
-                                    <div class="flex items-start gap-3">
-                                        <div class="flex flex-col items-center">
-                                            <span class="mt-1 h-2.5 w-2.5 rounded-full {{ dot_class }}"></span>
-                                            {% if not loop.last %}
-                                                <span class="mt-2 h-10 w-px bg-outline-default bg-kaori-soft"></span>
-                                            {% endif %}
-                                        </div>
-                                        <div class="min-w-0 flex-1 rounded-xl border border-outline-default bg-surface-subtle px-3 py-3 dark:border-outline-default bg-surface-subtle">
-                                            <div class="flex items-start justify-between gap-3">
-                                                <div class="flex min-w-0 items-start gap-2.5">
-                                                    <i data-lucide="{{ item.icon }}"
-                                                       class="mt-0.5 h-4 w-4 shrink-0 text-content-muted dark:text-content-muted"></i>
-                                                    <div class="min-w-0">
-                                                        <p class="text-sm font-semibold text-content-primary dark:text-content-primary">{{ item.name }}</p>
-                                                        <p class="mt-1 text-xs leading-5 text-content-muted dark:text-content-muted">{{ item.description }}</p>
-                                                    </div>
-                                                </div>
-                                                <span class="shrink-0 rounded-lg border px-2 py-0.5 text-[11px] font-semibold {{ badge_class }}">{{ item.status }}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            </div>
-                        </div>
-                    </section>
-                </div>
-                <!-- Data Collection -->
-                <section class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
-                    <div class="border-b border-outline-default px-5 py-4 dark:border-outline-default">
-                        <div class="flex items-center gap-3">
-                            <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                                <i data-lucide="database-zap" class="h-4 w-4"></i>
-                            </div>
-                            <div>
-                                <h2 class="text-base font-semibold text-content-primary text-content-primary">Infrastructure Data Collection</h2>
-                                <p class="text-xs text-content-muted dark:text-content-muted">Source coverage for current container platform reports and future server/HCI reports.</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="grid gap-4 p-5 lg:grid-cols-2">
-                        {% for domain in payload.data_collection_status %}
-                            {% set domain_badge = {
-                                                            'blue': 'bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary',
-                                                            'gray': 'bg-kaori-soft text-content-secondary bg-kaori-soft dark:text-content-secondary'
-                                                        }.get(domain.tone, 'bg-kaori-soft text-content-secondary bg-kaori-soft dark:text-content-secondary') %}
-                            <article class="rounded-2xl border border-outline-default bg-surface-subtle p-4 dark:border-outline-default bg-surface-subtle">
-                                <div class="flex items-start justify-between gap-4">
-                                    <div class="flex items-start gap-3">
-                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-kaori-primary shadow-sm bg-surface-card dark:text-kaori-primary">
-                                            <i data-lucide="{{ domain.icon }}" class="h-4 w-4"></i>
-                                        </div>
-                                        <div>
-                                            <h3 class="text-sm font-semibold text-content-primary text-content-primary">{{ domain.title }}</h3>
-                                            <span class="mt-2 inline-flex rounded-lg px-2.5 py-1 text-xs font-semibold {{ domain_badge }}">{{ domain.status }}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <ul class="mt-4 space-y-2">
-                                    {% for item in domain['items'] %}
-                                        <li class="flex gap-2 text-xs leading-5 text-content-secondary dark:text-content-secondary">
-                                            <i data-lucide="check"
-                                               class="mt-0.5 h-3.5 w-3.5 shrink-0 text-white/900"></i>
-                                            <span>{{ item }}</span>
-                                        </li>
-                                    {% endfor %}
-                                </ul>
-                            </article>
-                        {% endfor %}
-                    </div>
-                </section>
+                {% include "reports/overview/partials/_recent_reports.html" %}
+                {% include "reports/overview/partials/_coverage_pipeline_workspace.html" %}
+                {% include "reports/overview/partials/_data_collection_status.html" %}
             </div>
-            <!-- Right Panel -->
-            <aside class="space-y-6">
-                <!-- Reporting Context -->
-                <section class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card"
-                         x-data="{ open: true }">
-                    <button type="button"
-                            class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
-                            @click="open = !open">
-                        <div class="flex items-center gap-3">
-                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                                <i data-lucide="target" class="h-[18px] w-[18px]"></i>
-                            </div>
-                            <div>
-                                <h2 class="text-base font-semibold text-content-primary text-content-primary">Reporting Context</h2>
-                                <p class="text-xs text-content-muted dark:text-content-muted">How to interpret the reporting scope.</p>
-                            </div>
-                        </div>
-                        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-outline-default bg-surface-subtle text-content-muted transition dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
-                            <i data-lucide="chevron-up" class="h-[18px] w-[18px]" x-show="open"></i>
-                            <i data-lucide="chevron-down" class="h-[18px] w-[18px]" x-show="!open"></i>
-                        </span>
-                    </button>
-                    <div class="border-t border-outline-default px-5 py-4 dark:border-outline-default"
-                         x-show="open"
-                         x-collapse>
-                        <div class="space-y-3">
-                            {% for item in payload.reporting_context %}
-                                <article class="rounded-xl bg-surface-subtle p-3 bg-surface-subtle">
-                                    <div class="flex items-start gap-3">
-                                        <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-kaori-primary shadow-sm bg-surface-card dark:text-kaori-primary">
-                                            <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
-                                        </div>
-                                        <div class="min-w-0">
-                                            <h3 class="text-sm font-semibold text-content-primary dark:text-content-primary">{{ item.title }}</h3>
-                                            <p class="mt-1 text-xs leading-5 text-content-muted dark:text-content-muted">{{ item.description }}</p>
-                                            <ul class="mt-2 space-y-1.5">
-                                                {% for bullet in item.bullets %}
-                                                    <li class="flex gap-2 text-xs leading-5 text-content-secondary dark:text-content-secondary">
-                                                        <span class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-kaori-primary"></span>
-                                                        <span>{{ bullet }}</span>
-                                                    </li>
-                                                {% endfor %}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </article>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </section>
-                <!-- Current Status -->
-                <section class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card"
-                         x-data="{ open: true }">
-                    <button type="button"
-                            class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
-                            @click="open = !open">
-                        <div class="flex items-center gap-3">
-                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                                <i data-lucide="activity" class="h-[18px] w-[18px]"></i>
-                            </div>
-                            <div>
-                                <h2 class="text-base font-semibold text-content-primary text-content-primary">Current Status</h2>
-                                <p class="text-xs text-content-muted dark:text-content-muted">Live operational summary for report readiness.</p>
-                            </div>
-                        </div>
-                        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-outline-default bg-surface-subtle text-content-muted transition dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
-                            <i data-lucide="chevron-up" class="h-[18px] w-[18px]" x-show="open"></i>
-                            <i data-lucide="chevron-down" class="h-[18px] w-[18px]" x-show="!open"></i>
-                        </span>
-                    </button>
-                    <div class="border-t border-outline-default px-5 py-4 dark:border-outline-default"
-                         x-show="open"
-                         x-collapse>
-                        <div class="grid gap-3">
-                            {% for item in payload.current_status %}
-                                {% set icon_class = {
-                                                                    'gray': 'bg-kaori-soft text-content-secondary bg-kaori-soft dark:text-content-secondary',
-                                                                    'amber': 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300',
-                                                                    'green': 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300',
-                                                                    'blue': 'bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary',
-                                                                    'red': 'bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-300'
-                                                                }.get(item.tone, 'bg-kaori-soft text-content-secondary bg-kaori-soft dark:text-content-secondary') %}
-                                <article class="rounded-xl border border-outline-default bg-surface-subtle p-3 dark:border-outline-default bg-surface-subtle">
-                                    <div class="flex items-start gap-3">
-                                        <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ icon_class }}">
-                                            <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
-                                        </div>
-                                        <div class="min-w-0">
-                                            <div class="flex flex-wrap items-center gap-2">
-                                                <p class="text-sm font-semibold text-content-primary dark:text-content-primary">{{ item.label }}</p>
-                                                <span class="rounded-lg bg-white px-2 py-0.5 text-xs font-bold text-content-primary shadow-sm bg-surface-card text-content-primary">{{ item.value }}</span>
-                                            </div>
-                                            <p class="mt-1 text-xs leading-5 text-content-muted dark:text-content-muted">{{ item.description }}</p>
-                                        </div>
-                                    </div>
-                                </article>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </section>
-                <!-- Reporting Operating Model -->
-                <section class="rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card"
-                         x-data="{ open: true }">
-                    <button type="button"
-                            class="flex w-full items-center justify-between gap-4 px-5 py-4 text-left"
-                            @click="open = !open">
-                        <div class="flex items-center gap-3">
-                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
-                                <i data-lucide="badge-check" class="h-[18px] w-[18px]"></i>
-                            </div>
-                            <div>
-                                <h2 class="text-base font-semibold text-content-primary text-content-primary">{{ payload.reporting_operating_model.title }}</h2>
-                                <p class="text-xs text-content-muted dark:text-content-muted">{{ payload.reporting_operating_model.description }}</p>
-                            </div>
-                        </div>
-                        <span class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-outline-default bg-surface-subtle text-content-muted transition dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
-                            <i data-lucide="chevron-up" class="h-[18px] w-[18px]" x-show="open"></i>
-                            <i data-lucide="chevron-down" class="h-[18px] w-[18px]" x-show="!open"></i>
-                        </span>
-                    </button>
-                    <div class="border-t border-outline-default px-5 py-4 dark:border-outline-default"
-                         x-show="open"
-                         x-collapse>
-                        <div class="grid gap-3">
-                            {% for card in payload.reporting_operating_model.cards %}
-                                {% set model_icon_class = {
-                                                                    'blue': 'bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary',
-                                                                    'purple': 'bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-300',
-                                                                    'gray': 'bg-kaori-soft text-content-secondary bg-kaori-soft dark:text-content-secondary',
-                                                                    'green': 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300',
-                                                                    'amber': 'bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300'
-                                                                }.get(card.tone, 'bg-kaori-soft text-content-secondary bg-kaori-soft dark:text-content-secondary') %}
-                                <article class="rounded-xl bg-surface-subtle p-3 bg-surface-subtle">
-                                    <div class="flex items-start gap-3">
-                                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl {{ model_icon_class }}">
-                                            <i data-lucide="{{ card.icon }}" class="h-4 w-4"></i>
-                                        </div>
-                                        <div class="min-w-0">
-                                            <div class="flex flex-wrap items-center gap-2">
-                                                <p class="text-sm font-semibold text-content-primary dark:text-content-primary">{{ card.label }}</p>
-                                                <span class="rounded-lg bg-white px-2 py-0.5 text-xs font-bold text-content-primary shadow-sm bg-surface-card text-content-primary">{{ card.value }}</span>
-                                            </div>
-                                            <p class="mt-1 text-xs leading-5 text-content-muted dark:text-content-muted">{{ card.description }}</p>
-                                        </div>
-                                    </div>
-                                </article>
-                            {% endfor %}
-                        </div>
-                    </div>
-                </section>
+
+            <aside class="space-y-6 xl:sticky xl:top-6 xl:self-start">
+                {% include "reports/overview/partials/_current_status.html" %}
+                {% include "reports/overview/partials/_reporting_operating_model.html" %}
+                {% include "reports/overview/partials/_related_information.html" %}
             </aside>
         </section>
     </div>
