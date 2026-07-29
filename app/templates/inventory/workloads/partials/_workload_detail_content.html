@@ -16,6 +16,29 @@
 {% else %}
     {% set status_tone = "warning" %}
 {% endif %}
+{% set normalized_update_strategy = workload.update_strategy|default('', true)|lower|replace('_', '')|replace('-', '')|replace(' ', '') %}
+{% set update_strategy_tones = {
+    'rollingupdate': 'normal',
+    'recreate': 'warning',
+    'ondelete': 'info'
+} %}
+{% set update_strategy_tone = update_strategy_tones.get(normalized_update_strategy, 'unknown') %}
+{% set restart_policy_tones = {
+    'always': 'normal',
+    'onfailure': 'info',
+    'never': 'warning'
+} %}
+{% set dns_policy_tones = {
+    'clusterfirst': 'normal',
+    'clusterfirstwithhostnet': 'info',
+    'default': 'info',
+    'none': 'warning'
+} %}
+{% set pull_policy_tones = {
+    'ifnotpresent': 'normal',
+    'always': 'info',
+    'never': 'warning'
+} %}
 <div class="bg-surface-hover px-4 py-4">
     <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-sm">
         <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -31,28 +54,37 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-                {{ table_label.metadata_label(workload.type) }}
-                {{ table_label.status_label(workload.state_display, status_tone) }}
+                {{ table_label.metadata_label(workload.type, 'boxes', false, 'detail') }}
+                {{ table_label.status_label(workload.state_display, status_tone, none, 'detail') }}
             </div>
         </header>
-        <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail.detail_card('Object Identity', 'badge-info', workload.age, class_name='min-h-96') %}
+        <div class="grid items-stretch gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
+            {% call detail.detail_card('Object Identity', 'badge-info', workload.age, class_name='min-h-96', badge_size='detail') %}
                 {{ detail.detail_row('Cluster', workload.cluster_name) }}
                 {{ detail.detail_row('Namespace', workload.namespace) }}
-                {{ detail.detail_row('Kind', workload.type) }}
+                {{ detail.metadata_row('Kind', workload.type, 'boxes') }}
                 {{ detail.detail_row('Age', workload.age) }}
                 {{ detail.detail_row('Kubernetes UID', workload.uid, true) }}
                 {{ detail.detail_row('Created', workload.created_at|user_datetime) }}
                 {{ detail.detail_row('Collected', workload.collected_at|user_datetime) }}
                 <div class="mt-auto pt-3">{{ info_box('Inventory Identity', 'Identifies the workload object and the latest snapshot collected by KAORI.', 'lightbulb', 'brand', true) }}</div>
             {% endcall %}
-            {% call detail.detail_card('Runtime State', 'activity', workload.state_display, class_name='min-h-80') %}
+            {% call detail.detail_card('Runtime State', 'activity', workload.state_display, 'status', status_tone, 'min-h-80', 'detail') %}
                 {% for row in workload.runtime_state_rows %}{{ detail.detail_row(row.label, row.value) }}{% endfor %}
                 {{ detail.detail_row('Managed Pods', workload.pod_count) }}
                 <div class="mt-auto pt-3">{{ info_box('Snapshot Boundary', 'Current controller state only; history remains in Analytics.', 'info', 'brand', true) }}</div>
             {% endcall %}
-            {% call detail.detail_card('Pod Configuration', 'settings-2', table_label.count_text(workload.container_count, 'Container'), class_name='min-h-96') %}
-                {% for row in workload.pod_configuration_rows %}{{ detail.detail_row(row.label, row.value) }}{% endfor %}
+            {% call detail.detail_card('Pod Configuration', 'settings-2', table_label.count_text(workload.container_count, 'Container'), class_name='min-h-96', badge_size='detail') %}
+                {% for row in workload.pod_configuration_rows %}
+                    {% set normalized_value = row.value|default('', true)|lower|replace('_', '')|replace('-', '')|replace(' ', '') %}
+                    {% if row.label == 'Restart Policy' %}
+                        {{ detail.status_row(row.label, row.value, restart_policy_tones.get(normalized_value, 'unknown'), none, 'detail') }}
+                    {% elif row.label == 'DNS Policy' %}
+                        {{ detail.status_row(row.label, row.value, dns_policy_tones.get(normalized_value, 'unknown'), none, 'detail') }}
+                    {% else %}
+                        {{ detail.detail_row(row.label, row.value) }}
+                    {% endif %}
+                {% endfor %}
                 <div class="mt-auto pt-3">
                     {% if workload.pod_configuration_reported %}
                         {{ info_box('Template Configuration', 'Pod configuration comes from the workload template. Runtime utilization remains in Analytics.', 'info', 'brand', true) }}
@@ -63,8 +95,14 @@
                     {% endif %}
                 </div>
             {% endcall %}
-            {% call detail.detail_card('Delivery & Placement', 'route', workload.update_strategy, class_name='min-h-[28rem]') %}
-                {% for row in workload.delivery_rows %}{{ detail.detail_row(row.label, row.value) }}{% endfor %}
+            {% call detail.detail_card('Delivery & Placement', 'route', workload.update_strategy, 'status', update_strategy_tone, 'min-h-[28rem]', 'detail') %}
+                {% for row in workload.delivery_rows %}
+                    {% if row.label == 'Update Strategy' %}
+                        {{ detail.status_row(row.label, row.value, update_strategy_tone, none, 'detail') }}
+                    {% else %}
+                        {{ detail.detail_row(row.label, row.value) }}
+                    {% endif %}
+                {% endfor %}
                 {% call detail_object.stack() %}
                     {% if workload.placement_configured %}
                         {% call detail_object.card('Placement Constraints', table_label.count_text(workload.placement_summary_rows|length, 'Field'), 'map-pinned') %}
@@ -108,9 +146,12 @@
                                 {% for container in workload.containers %}
                                     <tr>
                                         <td class="px-4 py-3 font-semibold text-content-primary">{{ container.name }}</td>
-                                        <td class="px-4 py-3 font-normal text-content-secondary">{{ container.kind }}</td>
+                                        <td class="px-4 py-3">{{ table_label.metadata_label(container.kind, 'container', false, 'detail') }}</td>
                                         <td class="max-w-[680px] break-all px-4 py-3 font-medium text-content-secondary">{{ container.image }}</td>
-                                        <td class="px-4 py-3 font-normal text-content-secondary">{{ container.pull_policy }}</td>
+                                        <td class="px-4 py-3">
+                                            {% set normalized_pull_policy = container.pull_policy|default('', true)|lower|replace('_', '')|replace('-', '')|replace(' ', '') %}
+                                            {{ table_label.status_label(container.pull_policy, pull_policy_tones.get(normalized_pull_policy, 'unknown'), none, 'detail') }}
+                                        </td>
                                     </tr>
                                 {% endfor %}
                             </tbody>
