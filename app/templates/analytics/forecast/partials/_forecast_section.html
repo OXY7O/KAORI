@@ -356,19 +356,19 @@
                 {% if forecast_payload.recommendation_cards %}
                     <div class="overflow-hidden rounded-lg border border-outline-subtle"
                          data-kaori-recommendation-pager
-                         data-page-size="5">
+                         data-page-size="3">
                         <div class="divide-y divide-outline-subtle">
                             {% for recommendation in forecast_payload.recommendation_cards %}
                                 {% set priority_tone = 'critical' if recommendation.priority in ['P1', 'Critical'] else ('warning' if recommendation.priority in ['P2', 'Warning'] else 'info') %}
                                 <div class="flex flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between"
                                      data-kaori-recommendation-item
-                                     {% if loop.index > 5 %}hidden{% endif %}>
+                                     {% if loop.index > 3 %}hidden{% endif %}>
                                     <div class="flex min-w-0 items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ recommendation.icon }}" class="h-5 w-5"></i></span><div class="min-w-0"><div class="flex flex-wrap items-center gap-2">{{ table_label.status_label('Priority: ' ~ recommendation.priority, tone=priority_tone, size='compact') }}{{ table_label.metadata_label('Derived From: ' ~ recommendation.source_label|default('Forecast'), 'database-zap') }}</div><h4 class="mt-2 font-semibold text-content-primary">{{ recommendation.title }}</h4><p class="mt-1 text-sm leading-6 text-content-muted">{{ recommendation.description }}</p></div></div>
                                     <a href="{{ recommendation.href|default(url_for('analytics.forecast')) }}" class="{{ table_ui.action_classes() }} shrink-0"><i data-lucide="arrow-right" class="h-4 w-4"></i>Review</a>
                                 </div>
                             {% endfor %}
                         </div>
-                        {{ recommendation_pager.controls(forecast_payload.recommendation_cards|length, 'Recommendations', 5) }}
+                        {{ recommendation_pager.controls(forecast_payload.recommendation_cards|length, 'Recommendations', 3) }}
                     </div>
                 {% else %}
                     {% set empty_state_icon = 'check-circle-2' %}

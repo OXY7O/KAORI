@@ -276,7 +276,10 @@
                         Previous
                     </span>
                 {% endif %}
-                {{ pagination_ui.numeric_pages(quota_pagination.page, quota_pagination.total_pages, 'quota_page') }}
+                <span class="shrink-0 text-center text-xs font-semibold text-content-muted" aria-live="polite">
+                    Page <span class="text-content-primary">{{ quota_pagination.page }}</span>
+                    of <span class="text-content-primary">{{ quota_pagination.total_pages }}</span>
+                </span>
                 {% if quota_pagination.page < quota_pagination.total_pages %}
                     <a href="{{ quota_next_url }}" hx-get="{{ quota_next_url }}" hx-target="#tenant-quota-analysis" hx-swap="outerHTML" hx-sync="#tenant-quota-analysis:replace" hx-indicator="#{{ indicator_id }}" class="{{ pagination_ui.navigation_classes() }}">
                         Next

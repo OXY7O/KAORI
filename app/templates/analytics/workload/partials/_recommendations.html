@@ -17,13 +17,13 @@
     {% if recommendation_cards %}
         <div class="overflow-hidden rounded-lg border border-outline-subtle"
              data-kaori-recommendation-pager
-             data-page-size="5">
+             data-page-size="3">
             <div class="divide-y divide-outline-subtle">
                 {% for item in recommendation_cards %}
                     {% set priority_tone = 'critical' if item.priority in ['P1', 'Critical'] else ('warning' if item.priority in ['P2', 'Warning'] else ('info' if item.priority in ['P3', 'Info'] else 'unknown')) %}
                     <div class="flex flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between"
                          data-kaori-recommendation-item
-                         {% if loop.index > 5 %}hidden{% endif %}>
+                         {% if loop.index > 3 %}hidden{% endif %}>
                         <div class="flex min-w-0 items-start gap-3">
                             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                                 <i data-lucide="{{ item.icon }}" class="h-5 w-5"></i>
@@ -44,7 +44,7 @@
                     </div>
                 {% endfor %}
             </div>
-            {{ recommendation_pager.controls(recommendation_cards|length, 'Recommendations', 5) }}
+            {{ recommendation_pager.controls(recommendation_cards|length, 'Recommendations', 3) }}
         </div>
     {% else %}
         {% set empty_state_icon = 'check-circle-2' %}

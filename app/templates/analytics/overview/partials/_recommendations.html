@@ -17,19 +17,19 @@
 
     <div class="p-5 sm:p-6">
         {% if recommendations %}
-            <div class="overflow-hidden rounded-lg border border-outline-subtle" data-kaori-recommendation-pager data-page-size="5">
+            <div class="overflow-hidden rounded-lg border border-outline-subtle" data-kaori-recommendation-pager data-page-size="3">
                 <div class="divide-y divide-outline-subtle">
                     {% for recommendation in recommendations %}
                         {% set source_key = recommendation.source|default('overview') %}
                         {% set source_label = recommendation.source_label|default(source_key|replace('_', ' ')|title) %}
                         {% set severity_tone = {'red': 'critical', 'amber': 'warning', 'green': 'normal', 'blue': 'info'}.get(recommendation.severity_tone, 'unknown') %}
-                        <a href="{{ recommendation.href }}?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}" class="flex flex-col gap-4 bg-surface-card px-4 py-4 transition hover:bg-surface-hover lg:flex-row lg:items-center lg:justify-between" data-kaori-recommendation-item {% if loop.index > 5 %}hidden{% endif %}>
+                        <a href="{{ recommendation.href }}?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}" class="flex flex-col gap-4 bg-surface-card px-4 py-4 transition hover:bg-surface-hover lg:flex-row lg:items-center lg:justify-between" data-kaori-recommendation-item {% if loop.index > 3 %}hidden{% endif %}>
                             <div class="flex min-w-0 items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ recommendation.icon }}" class="h-5 w-5"></i></span><div class="min-w-0"><div class="flex flex-wrap items-center gap-2">{{ table_label.status_label(recommendation.severity, tone=severity_tone, size='compact') }}{{ table_label.metadata_label('P' ~ recommendation.priority, 'flag', size='compact') }}{{ table_label.metadata_label(source_label, 'database-zap', size='compact') }}</div><h3 class="mt-2 text-sm font-semibold text-content-primary">{{ recommendation.title }}</h3><p class="mt-1 text-sm leading-6 text-content-muted">{{ recommendation.description }}</p></div></div>
                             <span class="inline-flex shrink-0 items-center gap-2 text-xs font-semibold text-kaori-primary">{{ recommendation.action_label }}<i data-lucide="arrow-right" class="h-3.5 w-3.5"></i></span>
                         </a>
                     {% endfor %}
                 </div>
-                {{ recommendation_pager.controls(recommendations|length, 'Actions', 5) }}
+                {{ recommendation_pager.controls(recommendations|length, 'Actions', 3) }}
             </div>
         {% else %}
             {% set empty_state_icon = "lightbulb" %}{% set empty_state_label = "No Data" %}{% set empty_state_title = "No Prioritized Actions Available" %}{% set empty_state_description = "KAORI will surface prioritized actions after analytics evidence is available." %}{% set empty_state_variant = "panel" %}{% set empty_state_min_height = "min-h-[150px]" %}{% include 'components/states/_empty_state.html' %}

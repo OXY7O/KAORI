@@ -2,7 +2,7 @@ import ast
 import re
 from pathlib import Path
 
-from jinja2 import Environment
+from jinja2 import Environment, FileSystemLoader
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -14,19 +14,30 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_numeric_pagination_supports_endpoint_specific_page_parameters() -> None:
+def test_workload_table_pagination_uses_endpoint_parameters_and_simple_page_indicator() -> None:
     pagination = read('app/templates/components/pagination.html')
     pagination_js = read('app/static/js/pagination.js')
     tenant = read('app/templates/analytics/workload/partials/_tenant_quota_section.html')
     mapping = read('app/templates/analytics/workload/partials/_workload_mapping_section.html')
 
+    # The shared numeric helper remains available to other workspaces.
     assert "numeric_pages(current_page, total_pages, page_param='page')" in pagination
     assert 'data-page-param="{{ page_param }}"' in pagination
     assert 'container.dataset.pageParam || PAGE_PARAM' in pagination_js
     assert 'replacePage(href, page, pageParam)' in pagination_js
     assert 'data-kaori-generated-page' in pagination_js
-    assert "numeric_pages(quota_pagination.page, quota_pagination.total_pages, 'quota_page')" in tenant
-    assert "numeric_pages(workload_pagination.page, workload_pagination.total_pages, 'workload_page')" in mapping
+
+    # Workload tables use the stable KAORI Previous / Page / Next pattern.
+    assert "numeric_pages(quota_pagination.page, quota_pagination.total_pages, 'quota_page')" not in tenant
+    assert "numeric_pages(workload_pagination.page, workload_pagination.total_pages, 'workload_page')" not in mapping
+    assert 'Page <span class="text-content-primary">{{ quota_pagination.page }}</span>' in tenant
+    assert 'of <span class="text-content-primary">{{ quota_pagination.total_pages }}</span>' in tenant
+    assert 'Page <span class="text-content-primary">{{ workload_pagination.page }}</span>' in mapping
+    assert 'of <span class="text-content-primary">{{ workload_pagination.total_pages }}</span>' in mapping
+    assert 'quota_page=quota_pagination.previous_page' in tenant
+    assert 'quota_page=quota_pagination.next_page' in tenant
+    assert 'workload_page=workload_pagination.previous_page' in mapping
+    assert 'workload_page=workload_pagination.next_page' in mapping
 
 
 def test_workload_detail_actions_are_restored_to_the_action_column() -> None:
@@ -75,13 +86,20 @@ def test_kubernetes_analytics_recommendation_lists_use_simple_previous_next_page
         content = read(relative)
         assert 'components/recommendation_pager.html' in content
         assert 'data-kaori-recommendation-pager' in content
+        assert 'data-page-size="3"' in content
         assert 'data-kaori-recommendation-item' in content
+        assert 'loop.index > 3' in content
         assert 'recommendation_pager.controls' in content
+        assert ", 3)" in content
 
     pager = read('app/templates/components/recommendation_pager.html')
     pager_js = read('app/static/js/recommendation_pagination.js')
     layout = read('app/templates/layouts/app.html')
 
+    assert "controls(total_items, item_label='Recommendations', page_size=3)" in pager
+    assert '{% if normalized_total > 0 %}' in pager
+    assert 'normalized_total > page_size' not in pager
+    assert 'flex items-center justify-between gap-3' in pager
     assert 'data-recommendation-previous' in pager
     assert 'data-recommendation-next' in pager
     assert 'Page <span class="text-content-primary" data-recommendation-page>1</span>' in pager
@@ -89,11 +107,28 @@ def test_kubernetes_analytics_recommendation_lists_use_simple_previous_next_page
     assert 'data-recommendation-end' not in pager
     assert 'data-recommendation-total>' not in pager
     assert "const ROOT_SELECTOR = '[data-kaori-recommendation-pager]'" in pager_js
+    assert 'numberValue(root.dataset.pageSize, 3)' in pager_js
     assert "document.addEventListener('htmx:afterSwap'" in pager_js
     assert 'data-recommendation-start' not in pager_js
     assert 'data-recommendation-end' not in pager_js
     assert "querySelector('[data-recommendation-total]')" not in pager_js
     assert "filename='js/recommendation_pagination.js'" in layout
+
+
+
+def test_recommendation_pager_remains_visible_on_a_single_page() -> None:
+    environment = Environment(loader=FileSystemLoader(TEMPLATES))
+    template = environment.from_string(
+        "{% import 'components/recommendation_pager.html' as pager %}"
+        "{{ pager.controls(3, 'Recommendations', 3) }}"
+    )
+
+    rendered = template.render()
+
+    assert 'data-recommendation-previous' in rendered
+    assert 'data-recommendation-next' in rendered
+    assert 'Page <span class="text-content-primary" data-recommendation-page>1</span>' in rendered
+    assert 'data-recommendation-next' in rendered and 'disabled' in rendered
 
 
 def test_intelligence_recommendations_use_simple_server_side_previous_next_pagination() -> None:

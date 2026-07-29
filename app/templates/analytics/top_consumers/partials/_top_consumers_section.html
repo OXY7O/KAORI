@@ -199,12 +199,12 @@
             </header>
 
             {% if payload.recommendation_cards %}
-                <div class="overflow-hidden rounded-lg border border-outline-default" data-kaori-recommendation-pager data-page-size="5">
+                <div class="overflow-hidden rounded-lg border border-outline-default" data-kaori-recommendation-pager data-page-size="3">
                     <div class="divide-y divide-outline-subtle">
                         {% for recommendation in payload.recommendation_cards %}
                             {% set priority = recommendation.priority|default('Info', true)|lower %}
                             {% set priority_tone = 'critical' if priority in ['critical', 'p1'] else ('warning' if priority in ['warning', 'p2'] else ('info' if priority in ['info', 'p3'] else 'unknown')) %}
-                            <article class="flex flex-col gap-4 bg-surface-card px-4 py-4 lg:flex-row lg:items-center lg:justify-between" data-kaori-recommendation-item {% if loop.index > 5 %}hidden{% endif %}>
+                            <article class="flex flex-col gap-4 bg-surface-card px-4 py-4 lg:flex-row lg:items-center lg:justify-between" data-kaori-recommendation-item {% if loop.index > 3 %}hidden{% endif %}>
                                 <div class="flex min-w-0 items-start gap-3">
                                     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                                         <i data-lucide="{{ recommendation.icon|default('lightbulb') }}" class="h-5 w-5"></i>
@@ -231,7 +231,7 @@
                             </article>
                         {% endfor %}
                     </div>
-                    {{ recommendation_pager.controls(payload.recommendation_cards|length, 'Recommendations', 5) }}
+                    {{ recommendation_pager.controls(payload.recommendation_cards|length, 'Recommendations', 3) }}
                 </div>
             {% else %}
                 {% set empty_state_icon = "list-checks" %}

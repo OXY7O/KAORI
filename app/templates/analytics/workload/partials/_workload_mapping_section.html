@@ -310,7 +310,10 @@
                         Previous
                     </span>
                 {% endif %}
-                {{ pagination_ui.numeric_pages(workload_pagination.page, workload_pagination.total_pages, 'workload_page') }}
+                <span class="shrink-0 text-center text-xs font-semibold text-content-muted" aria-live="polite">
+                    Page <span class="text-content-primary">{{ workload_pagination.page }}</span>
+                    of <span class="text-content-primary">{{ workload_pagination.total_pages }}</span>
+                </span>
                 {% if workload_pagination.page < workload_pagination.total_pages %}
                     <a href="{{ workload_next_url }}" hx-get="{{ workload_next_url }}" hx-target="#workload-resource-mapping" hx-swap="outerHTML" hx-sync="#workload-resource-mapping:replace" hx-indicator="#{{ indicator_id }}" class="{{ pagination_ui.navigation_classes() }}">
                         Next

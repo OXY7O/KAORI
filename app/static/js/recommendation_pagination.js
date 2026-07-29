@@ -12,18 +12,11 @@
 
         button.disabled = disabled
         button.setAttribute('aria-disabled', disabled ? 'true' : 'false')
-        button.classList.toggle('cursor-not-allowed', disabled)
-        button.classList.toggle('opacity-70', disabled)
-        button.classList.toggle('bg-surface-subtle', disabled)
-        button.classList.toggle('text-content-muted', disabled)
-        button.classList.toggle('cursor-pointer', !disabled)
-        button.classList.toggle('bg-surface-card', !disabled)
-        button.classList.toggle('text-content-secondary', !disabled)
     }
 
     function render(root, requestedPage = null) {
         const items = Array.from(root.querySelectorAll(ITEM_SELECTOR))
-        const pageSize = numberValue(root.dataset.pageSize, 5)
+        const pageSize = numberValue(root.dataset.pageSize, 3)
         const totalPages = Math.max(1, Math.ceil(items.length / pageSize))
         const storedPage = numberValue(root.dataset.page, 1)
         const page = Math.min(Math.max(requestedPage ?? storedPage, 1), totalPages)
