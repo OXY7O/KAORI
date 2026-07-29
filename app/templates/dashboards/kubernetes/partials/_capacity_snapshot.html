@@ -28,7 +28,7 @@
             <div class="space-y-4">
                 <div class="flex items-start gap-3 rounded-lg border border-outline-default bg-kaori-soft p-3 text-xs leading-5 text-content-secondary">
                     <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
-                    <p><span class="font-semibold text-kaori-primary">Data scope:</span> worker nodes only, matching Capacity Analysis and excluding nodes with control-plane or master roles.</p>
+                    <p><span class="font-semibold text-kaori-primary">Data Scope:</span> worker nodes only, matching Capacity Analysis and excluding nodes with control-plane or master roles.</p>
                 </div>
                 {% for item in dashboard.capacity_snapshot.items %}
                     <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3.5">
@@ -39,9 +39,9 @@
                             </div>
                             <span class="text-xs font-semibold text-content-secondary">
                                 {% if item.used_percent is not none %}
-                                    {{ item.used_percent|round(0) }}% used
+                                    {{ item.used_percent|round(0) }}% Used
                                 {% else %}
-                                    No metrics
+                                    No Metrics
                                 {% endif %}
                             </span>
                         </div>
@@ -54,7 +54,7 @@
                             <span>{{ item.description }}</span>
                             <span class="shrink-0 font-semibold text-content-secondary">
                                 {% if item.headroom_percent is not none %}
-                                    {{ item.headroom_percent|round(0) }}% headroom
+                                    {{ item.headroom_percent|round(0) }}% Headroom
                                 {% else %}
                                     —
                                 {% endif %}
@@ -78,14 +78,14 @@
                         <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
                             <div class="flex items-center gap-2 text-xs font-semibold text-content-primary">
                                 <i data-lucide="circle-help" class="h-3.5 w-3.5 text-kaori-primary"></i>
-                                What this means
+                                What This Means
                             </div>
                             <p class="mt-2 text-xs leading-5 text-content-muted">{{ dashboard.capacity_snapshot.risk_detail }}</p>
                         </div>
                         <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
                             <div class="flex items-center gap-2 text-xs font-semibold text-content-primary">
                                 <i data-lucide="list-checks" class="h-3.5 w-3.5 text-kaori-primary"></i>
-                                Recommended action
+                                Recommended Action
                             </div>
                             <p class="mt-2 text-xs leading-5 text-content-muted">{{ dashboard.capacity_snapshot.recommended_action }}</p>
                         </div>

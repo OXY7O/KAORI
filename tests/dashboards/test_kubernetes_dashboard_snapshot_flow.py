@@ -406,3 +406,92 @@ def test_dashboard_forecast_snapshot_exposes_chart_values_and_horizon() -> None:
     assert snapshot.highest_projected_percent == 92.0
     assert snapshot.has_historical_series is True
     assert snapshot.insight == 'Memory has the highest 60-day projection at 92%.'
+
+
+def test_dashboard_kpi_display_copy_uses_title_case() -> None:
+    from app.dashboards.kubernetes.sections.kpis import build_kpis
+
+    clusters_raw = [
+        SimpleNamespace(status='healthy'),
+        SimpleNamespace(status='healthy'),
+        SimpleNamespace(status='healthy'),
+        SimpleNamespace(status='warning'),
+    ]
+    kpis = build_kpis(
+        clusters_raw=clusters_raw,
+        clusters=[SimpleNamespace(id='cluster-1', name='Primary')],
+        nodes_total=5,
+        nodes_ready=5,
+        not_ready_nodes=0,
+        namespaces_total=12,
+        workloads_total=42,
+        pods_total=190,
+        running_pods=166,
+        unhealthy_pods=24,
+        capacity_snapshot=CapacitySnapshot(),
+        alerts_snapshot=AlertsSnapshot(),
+        live_cluster=object(),
+        active_alerts_label='0',
+        active_alerts_description='0 Critical • 0 Warning',
+    )
+
+    descriptions = {item.label: item.description for item in kpis}
+    assert descriptions['Clusters'] == '3 Healthy • 1 Warning'
+    assert descriptions['Namespaces'] == 'Discovered Kubernetes Namespaces'
+    assert descriptions['Pods'] == '166 Running • 24 Need Attention'
+    assert descriptions['CPU Usage'] == 'Committed Worker Snapshot'
+    assert descriptions['Memory Usage'] == 'Committed Worker Snapshot'
+
+
+def test_top_consumer_display_labels_use_title_case() -> None:
+    from app.dashboards.kubernetes.sections.top_consumers import build_top_consumers_snapshot
+
+    snapshot = build_top_consumers_snapshot(
+        context={
+            'consumer_payload': {
+                'all_rows': [
+                    {
+                        'resource_type': 'cpu',
+                        'workload': 'usage-only',
+                        'namespace': 'platform',
+                        'current_display': '1 core',
+                        'request': 0,
+                        'limit': 0,
+                    },
+                    {
+                        'resource_type': 'cpu',
+                        'workload': 'no-limit',
+                        'namespace': 'platform',
+                        'current_display': '1 core',
+                        'request': 1,
+                        'limit': 0,
+                        'usage_percent': 50,
+                    },
+                    {
+                        'resource_type': 'memory',
+                        'workload': 'warning',
+                        'namespace': 'platform',
+                        'current_display': '1 GiB',
+                        'request': 1,
+                        'limit': 1,
+                        'usage_percent': 80,
+                    },
+                    {
+                        'resource_type': 'memory',
+                        'workload': 'critical',
+                        'namespace': 'platform',
+                        'current_display': '2 GiB',
+                        'request': 1,
+                        'limit': 1,
+                        'usage_percent': 95,
+                    },
+                ]
+            }
+        },
+        unavailable_reason='Unavailable',
+    )
+
+    labels = [item.signal_label for item in snapshot.cpu + snapshot.memory]
+    assert labels == ['Usage Only', 'No Limit', 'Warning Usage', 'Critical Usage']
+    assert snapshot.insight_title == 'Consumer Insights'
+    assert 'Dominant Namespace: platform' in snapshot.insight_items

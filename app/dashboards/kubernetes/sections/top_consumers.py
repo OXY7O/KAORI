@@ -109,18 +109,18 @@ def _consumer_signal_label(
     signal_state: str,
 ) -> str:
     if request_value <= 0 and limit_value <= 0:
-        return 'Usage only'
+        return 'Usage Only'
     if request_value <= 0:
-        return 'No request'
+        return 'No Request'
     if limit_value <= 0:
-        return 'No limit'
+        return 'No Limit'
     if percent is None:
         return 'Unknown'
     if signal_state == 'critical':
-        return 'Critical usage'
+        return 'Critical Usage'
     if signal_state == 'warning':
-        return 'Warning usage'
-    return 'Within range'
+        return 'Warning Usage'
+    return 'Within Range'
 
 
 def _build_top_consumers_insight(
@@ -131,7 +131,7 @@ def _build_top_consumers_insight(
 ) -> dict[str, Any]:
     if not rows:
         return {
-            'title': 'Consumer insights',
+            'title': 'Consumer Insights',
             'description': 'No top consumer rows were returned by Prometheus for this cluster.',
             'items': ['Prometheus returned no CPU or memory consumer rows.'],
             'missing_request_limit_count': 0,
@@ -169,7 +169,7 @@ def _build_top_consumers_insight(
     if top_memory:
         insight_items.append(f'Highest Memory: {top_memory.get("workload") or top_memory.get("pod") or "-"}')
     if dominant_namespace != '-':
-        insight_items.append(f'Dominant namespace: {dominant_namespace}')
+        insight_items.append(f'Dominant Namespace: {dominant_namespace}')
     if missing_request_limit:
         insight_items.append(f'{len(missing_request_limit)} consumer row(s) missing request or limit context')
     if high_usage:
@@ -189,7 +189,7 @@ def _build_top_consumers_insight(
         description = 'Top CPU and memory consumers are within normal range based on available request/limit context.'
 
     return {
-        'title': 'Consumer insights',
+        'title': 'Consumer Insights',
         'description': description,
         'items': insight_items[:4],
         'missing_request_limit_count': len(missing_request_limit),

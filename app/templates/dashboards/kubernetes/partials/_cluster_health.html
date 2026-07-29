@@ -58,7 +58,7 @@
                             <td class="px-4 py-3.5 align-top">
                                 {% if row.nodes_ready is not none and row.nodes_total is not none %}
                                     <div class="font-semibold text-content-primary">{{ row.nodes_ready }}/{{ row.nodes_total }}</div>
-                                    <div class="mt-1 text-xs {% if row.nodes_ready == row.nodes_total %}text-status-normal-text{% else %}text-status-warning-text{% endif %}">Ready nodes</div>
+                                    <div class="mt-1 text-xs {% if row.nodes_ready == row.nodes_total %}text-status-normal-text{% else %}text-status-warning-text{% endif %}">Ready Nodes</div>
                                 {% else %}
                                     <div class="font-semibold text-content-disabled">N/A</div>
                                     <div class="mt-1 text-xs text-status-unknown-text">{{ row.nodes_status }}</div>
@@ -85,7 +85,7 @@
                             <td class="px-4 py-3.5 align-top">
                                 {% if row.active_alerts is not none %}
                                     <div class="font-semibold {% if row.active_alerts > 0 %}text-status-critical-text{% else %}text-status-normal-text{% endif %}">{{ row.active_alerts }}</div>
-                                    <div class="mt-1 text-xs text-content-muted">Active alerts</div>
+                                    <div class="mt-1 text-xs text-content-muted">Active Alerts</div>
                                 {% else %}
                                     <div class="font-semibold text-content-disabled">N/A</div>
                                     <div class="mt-1 text-xs text-status-unknown-text">{{ row.alerts_status }}</div>

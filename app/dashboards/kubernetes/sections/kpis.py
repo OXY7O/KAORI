@@ -37,8 +37,8 @@ def build_kpis(
             label='Clusters',
             value=str(len(clusters)),
             description=(
-                f'{count_cluster_status(clusters_raw, "healthy")} healthy • '
-                f'{count_cluster_status(clusters_raw, "warning")} warning'
+                f'{count_cluster_status(clusters_raw, "healthy")} Healthy • '
+                f'{count_cluster_status(clusters_raw, "warning")} Warning'
             ),
             icon='network',
             tone='blue',
@@ -53,7 +53,7 @@ def build_kpis(
         DashboardKpi(
             label='Namespaces',
             value=str(namespaces_total),
-            description='Discovered Kubernetes namespaces',
+            description='Discovered Kubernetes Namespaces',
             icon='layout-grid',
             tone='violet',
         ),
@@ -67,7 +67,7 @@ def build_kpis(
         DashboardKpi(
             label='Pods',
             value=str(pods_total),
-            description=f'{running_pods} Running • {unhealthy_pods} need attention',
+            description=f'{running_pods} Running • {unhealthy_pods} Need Attention',
             icon='container',
             tone='emerald' if unhealthy_pods == 0 else 'amber',
         ),
@@ -75,7 +75,7 @@ def build_kpis(
             label='CPU Usage',
             value=percent_label(capacity_percent(capacity_snapshot, 'CPU')) if live_cluster is not None else 'N/A',
             description=(
-                kpi_metric_description(live_cluster, 'Committed worker snapshot')
+                kpi_metric_description(live_cluster, 'Committed Worker Snapshot')
                 if live_cluster is not None
                 else 'Select a cluster to view committed CPU usage'
             ),
@@ -86,7 +86,7 @@ def build_kpis(
             label='Memory Usage',
             value=percent_label(capacity_percent(capacity_snapshot, 'Memory')) if live_cluster is not None else 'N/A',
             description=(
-                kpi_metric_description(live_cluster, 'Committed worker snapshot')
+                kpi_metric_description(live_cluster, 'Committed Worker Snapshot')
                 if live_cluster is not None
                 else 'Select a cluster to view committed memory usage'
             ),

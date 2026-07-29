@@ -98,7 +98,7 @@ class ConsumerItem:
     percent: float | None = None
     request_display: str = '-'
     limit_display: str = '-'
-    signal_label: str = 'Usage only'
+    signal_label: str = 'Usage Only'
     signal_state: str = 'unknown'
 
 
@@ -108,7 +108,7 @@ class TopConsumersSnapshot:
     memory: list[ConsumerItem] = field(default_factory=list)
     source_status: str = 'Unavailable'
     message: str = 'Prometheus top consumer data is not available yet.'
-    insight_title: str = 'Consumer insights'
+    insight_title: str = 'Consumer Insights'
     insight_description: str = 'Select a cluster to evaluate top consumer signals.'
     insight_items: list[str] = field(default_factory=list)
     missing_request_limit_count: int = 0
