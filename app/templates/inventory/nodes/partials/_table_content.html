@@ -75,7 +75,7 @@
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <p>
             Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span>
-            of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ 'node' if pagination.total_items == 1 else 'nodes' }}
+            of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ 'Node' if pagination.total_items == 1 else 'Nodes' }}
         </p>
         <form hx-get="{{ url_for('inventory.nodes') }}"
               hx-target="#nodes-table-content"
