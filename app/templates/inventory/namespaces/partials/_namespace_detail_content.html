@@ -52,15 +52,15 @@
             <div class="self-start sm:self-auto">{{ table_label.status_label(namespace.status, namespace_status_tone) }}</div>
         </header>
         <div class="grid items-stretch gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail.detail_card('Namespace Identity', 'badge-info', namespace.age) %}
-                {{ detail.status_row('Status', namespace.status, namespace_status_tone) }}
+            {% call detail.detail_card('Namespace Identity', 'badge-info', namespace.age, badge_size='detail') %}
+                {{ detail.status_row('Status', namespace.status, namespace_status_tone, size='detail') }}
                 {{ detail.detail_row('Age', namespace.age) }}
                 {{ detail.detail_row('UID', namespace.uid, True) }}
                 {{ detail.detail_row('Created', namespace.created_at|user_datetime if namespace.created_at else '-') }}
                 {{ detail.detail_row('Collected', namespace.collected_at|user_datetime) }}
                 {{ detail_tip('Age comes from creation time; Collected is the latest KAORI snapshot.', 'clock-3') }}
             {% endcall %}
-            {% call detail.detail_card('Resource Inventory', 'boxes', table_label.count_text(namespace.object_counts.tracked_total, 'Tracked Object')) %}
+            {% call detail.detail_card('Resource Inventory', 'boxes', table_label.count_text(namespace.object_counts.tracked_total, 'Tracked Object'), badge_size='detail') %}
                 {{ detail.detail_row('Pods', namespace.object_counts.pods) }}
                 {{ detail.detail_row('Services', namespace.object_counts.services) }}
                 {{ detail.detail_row('Ingresses', namespace.object_counts.ingresses) }}
@@ -85,14 +85,14 @@
             {% endcall %}
             {% set quota_badge = 'Configured' if namespace.quota_count > 0 else 'Not Configured' %}
             {% set quota_tone = 'normal' if namespace.quota_count > 0 else 'disabled' %}
-            {% call detail.detail_card('Resource Controls', 'sliders-horizontal', quota_badge, 'status', quota_tone) %}
-                {{ detail.status_row('ResourceQuota', ('Configured · ' ~ namespace.quota_count) if namespace.quota_count > 0 else 'Not Configured', 'normal' if namespace.quota_count > 0 else 'disabled') }}
+            {% call detail.detail_card('Resource Controls', 'sliders-horizontal', quota_badge, 'status', quota_tone, badge_size='detail') %}
+                {{ detail.status_row('ResourceQuota', ('Configured · ' ~ namespace.quota_count) if namespace.quota_count > 0 else 'Not Configured', 'normal' if namespace.quota_count > 0 else 'disabled', size='detail') }}
                 {% if namespace.limit_range_count is none %}
-                    {{ detail.status_row('LimitRange', 'Not Reported', 'unknown') }}
+                    {{ detail.status_row('LimitRange', 'Not Reported', 'unknown', size='detail') }}
                 {% elif namespace.limit_range_count > 0 %}
-                    {{ detail.status_row('LimitRange', 'Configured · ' ~ namespace.limit_range_count, 'normal') }}
+                    {{ detail.status_row('LimitRange', 'Configured · ' ~ namespace.limit_range_count, 'normal', size='detail') }}
                 {% else %}
-                    {{ detail.status_row('LimitRange', 'Not Configured', 'disabled') }}
+                    {{ detail.status_row('LimitRange', 'Not Configured', 'disabled', size='detail') }}
                 {% endif %}
                 <div class="mt-auto space-y-3 pt-3">
                     {% if namespace.quotas %}
@@ -118,11 +118,11 @@
                     {% endif %}
                 </div>
             {% endcall %}
-            {% call detail.detail_card('Security & Access', 'shield-check', psa_configured_count ~ '/3 PSA Labels') %}
+            {% call detail.detail_card('Security & Access', 'shield-check', psa_configured_count ~ '/3 PSA Labels', badge_size='detail') %}
                 {{ detail.detail_row('NetworkPolicies', namespace.network_policy_count if namespace.network_policy_count is not none else 'Not Reported') }}
                 {{ detail.detail_row('ServiceAccounts', namespace.service_account_count if namespace.service_account_count is not none else 'Not Reported') }}
                 {% set default_sa_tone = 'normal' if namespace.default_service_account == 'Present' else ('critical' if namespace.default_service_account == 'Missing' else 'unknown') %}
-                {{ detail.status_row('Default ServiceAccount', namespace.default_service_account, default_sa_tone) }}
+                {{ detail.status_row('Default ServiceAccount', namespace.default_service_account, default_sa_tone, size='detail') }}
                 {{ detail.detail_row('Secrets', namespace.object_counts.secrets) }}
                 {{ detail.detail_row('ConfigMaps', namespace.object_counts.config_maps) }}
                 <div class="mt-auto space-y-3 pt-3">

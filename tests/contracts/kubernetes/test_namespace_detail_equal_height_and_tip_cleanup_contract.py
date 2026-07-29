@@ -20,7 +20,7 @@ def test_namespace_detail_cards_follow_the_tallest_card() -> None:
     assert "min-h-96" not in detail
     assert "min-h-[28rem]" not in detail
 
-    assert "detail.detail_card('Namespace Identity', 'badge-info', namespace.age)" in detail
+    assert "detail.detail_card('Namespace Identity', 'badge-info', namespace.age, badge_size='detail')" in detail
     assert "detail.detail_card('Resource Inventory', 'boxes'" in detail
     assert "detail.detail_card('Resource Controls', 'sliders-horizontal'" in detail
     assert "detail.detail_card('Security & Access', 'shield-check'" in detail
