@@ -44,7 +44,10 @@ def test_namespace_detail_card_calls_match_shared_macro_signature() -> None:
     macro = read("app/templates/components/details/_detail_content.html")
 
     assert "macro detail_card(title, icon, badge=None, badge_type='metadata', badge_tone='unknown', class_name='')" in macro
+    assert "grid items-stretch gap-4 p-5 md:grid-cols-2 xl:grid-cols-4" in detail
     assert ", None, 'min-h-96'" not in detail
     assert ", None, 'min-h-[28rem]'" not in detail
-    assert "detail.detail_card('Namespace Identity', 'badge-info', namespace.age, 'metadata', 'unknown', 'min-h-96')" in detail
+    assert "min-h-96" not in detail
+    assert "min-h-[28rem]" not in detail
+    assert "detail.detail_card('Namespace Identity', 'badge-info', namespace.age)" in detail
     assert detail.count("detail.detail_card(") == 4
