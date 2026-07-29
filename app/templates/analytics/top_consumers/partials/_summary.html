@@ -32,9 +32,18 @@
                     </div>
                     <p class="shrink-0 text-xl font-semibold tabular-nums text-content-primary">{{ card.value }}</p>
                 </div>
-                <div class="mt-3 rounded-lg border border-outline-subtle bg-surface-subtle px-3 py-2">
-                    <p class="line-clamp-2 min-h-10 break-words text-sm font-semibold leading-5 text-content-primary" title="{{ card.label }}">{{ card.label }}</p>
-                    <p class="mt-1 text-xs leading-4 text-content-muted">{{ card.subtitle }}</p>
+                {% set identity_parts = card.label.split(' / ', 1) %}
+                <div class="mt-3 min-w-0 border-t border-outline-subtle pt-2.5">
+                    {% if identity_parts|length > 1 %}
+                        <div class="flex min-w-0 items-center gap-1.5 text-xs leading-4" title="{{ card.label }}">
+                            <span class="max-w-[38%] shrink-0 truncate font-medium text-content-secondary">{{ identity_parts[0] }}</span>
+                            <span class="shrink-0 text-content-faint">/</span>
+                            <span class="min-w-0 truncate font-semibold text-content-primary">{{ identity_parts[1] }}</span>
+                        </div>
+                    {% else %}
+                        <p class="truncate text-xs font-semibold leading-4 text-content-primary" title="{{ card.label }}">{{ card.label }}</p>
+                    {% endif %}
+                    <p class="mt-1 truncate text-[11px] leading-4 text-content-muted" title="{{ card.subtitle }}">{{ card.subtitle }}</p>
                 </div>
             </article>
         {% endfor %}

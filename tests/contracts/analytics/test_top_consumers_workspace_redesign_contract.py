@@ -71,6 +71,9 @@ def test_summary_uses_compact_metric_header_and_bounded_identity_panel() -> None
 
     assert 'px-5 py-3.5' in summary
     assert 'text-xl font-semibold tabular-nums' in summary
-    assert 'bg-surface-subtle px-3 py-2' in summary
-    assert 'line-clamp-2 min-h-10' in summary
-    assert 'mt-2 break-words text-sm font-semibold' not in summary
+    assert "card.label.split(' / ', 1)" in summary
+    assert 'border-t border-outline-subtle pt-2.5' in summary
+    assert 'max-w-[38%] shrink-0 truncate' in summary
+    assert 'min-w-0 truncate font-semibold' in summary
+    assert 'line-clamp-2 min-h-10' not in summary
+    assert 'rounded-lg border border-outline-subtle bg-surface-subtle' not in summary
