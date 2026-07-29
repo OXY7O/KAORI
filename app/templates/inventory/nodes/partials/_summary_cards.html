@@ -22,10 +22,10 @@
     </header>
 
     {% set capacity_cards = [
-        ('Total Nodes', inventory.total_nodes, 'server', 'Nodes In The Current Scope'),
+        ('Total Nodes', inventory.total_nodes, 'server', 'Nodes in the Current Scope'),
         ('Total CPU', inventory.total_cpu, 'cpu', 'Reported CPU Cores'),
-        ('Total Memory', inventory.total_memory, 'memory-stick', 'Reported Memory Capacity In GiB'),
-        ('Ephemeral Storage', inventory.total_ephemeral_storage, 'hard-drive', 'Local Ephemeral Capacity In GiB')
+        ('Total Memory', inventory.total_memory, 'memory-stick', 'Reported Memory Capacity in GiB'),
+        ('Ephemeral Storage', inventory.total_ephemeral_storage, 'hard-drive', 'Local Ephemeral Capacity in GiB')
     ] %}
     <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
         {% for label, value, icon, description in capacity_cards %}
@@ -66,7 +66,7 @@
                 <div>
                     <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Ready Nodes</p>
                     <p class="mt-2 text-2xl font-semibold text-content-primary">{{ inventory.ready_nodes }}</p>
-                    <p class="mt-2 text-xs leading-5 text-content-muted">Available For Workload Scheduling</p>
+                    <p class="mt-2 text-xs leading-5 text-content-muted">Available for Workload Scheduling</p>
                 </div>
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-status-normal-border bg-status-normal-soft text-status-normal-text">
                     <i data-lucide="circle-check-big" class="h-4 w-4"></i>
@@ -79,7 +79,7 @@
                 <div>
                     <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Not Ready Nodes</p>
                     <p class="mt-2 text-2xl font-semibold text-content-primary">{{ inventory.not_ready_nodes }}</p>
-                    <p class="mt-2 text-xs leading-5 text-content-muted">{{ not_ready_percentage | int }}% Of Nodes Require Attention</p>
+                    <p class="mt-2 text-xs leading-5 text-content-muted">{{ not_ready_percentage | int }}% of Nodes Require Attention</p>
                 </div>
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-status-warning-border bg-status-warning-soft text-status-warning-text">
                     <i data-lucide="triangle-alert" class="h-4 w-4"></i>
