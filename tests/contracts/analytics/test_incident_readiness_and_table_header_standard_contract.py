@@ -21,6 +21,9 @@ def test_incident_readiness_uses_compact_operational_workspace() -> None:
     assert 'Recommended Action' in content
     assert 'Readiness Checks' in content
     assert 'xl:grid-cols-6' in content
+    assert 'lg:grid-cols-2 xl:grid-cols-4' in content
+    assert 'lg:col-span-2' in content
+    assert 'mt-3 grid overflow-hidden rounded-lg border border-outline-subtle lg:grid-cols-2 xl:grid-cols-4' in content
     assert '<details' not in content
     assert '<summary' not in content
     assert 'rounded-xl border border-outline-default bg-surface-subtle p-4' not in content

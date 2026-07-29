@@ -36,4 +36,6 @@ def test_escalation_readiness_does_not_force_full_width_child() -> None:
     assert "xl:grid-cols-4" in readiness
     assert "lg:grid-cols-2" in readiness
     assert "Readiness Checks" in readiness
-    assert "Score {{ incident_readiness.score }}/100" in readiness
+    assert "{{ incident_readiness.score }}" in readiness
+    assert "Readiness Score" in readiness
+    assert "lg:col-span-2" in readiness
