@@ -8,18 +8,21 @@ def read(relative: str) -> str:
     return (OVERVIEW_ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_overview_controls_and_readiness_share_one_compact_box() -> None:
+def test_overview_controls_and_readiness_follow_shared_analytics_standard() -> None:
     source = read('partials/_health_summary.html')
     hero = read('partials/_hero.html')
 
+    assert 'class="space-y-6"' in source
+    assert 'data-analytics-controls-readiness' in source
+    assert 'Analytics Overview</p>' in source
     assert 'Analytics Controls &amp; Data Readiness' in source
     assert 'id="analytics-overview-filter"' in source
-    assert 'h-9 min-w-0 flex-1' in source
+    assert 'h-10 w-full rounded-lg border border-outline-default' in source
     assert 'prometheus_status_panel.render' in source
     assert 'embedded=true' not in source
-    assert 'payload.last_analyzed_at, compact=true, flat=true' in source
+    assert 'payload.last_analyzed_at, flat=true, compact=true' in source
     assert 'Latest Analytics Data Snapshot' in source
-    assert 'Latest Sync' in source
+    assert 'Committed worker datasets used by the overview tabs.' in source
     assert 'Coverage' in source
     assert 'id="analytics-overview-filter"' not in hero
 
@@ -33,10 +36,11 @@ def test_prometheus_compact_mode_avoids_nested_card() -> None:
     assert 'rounded-xl' not in source
 
 
-def test_operational_health_summary_uses_compact_signal_strip_and_guidance() -> None:
+def test_operational_health_summary_has_separate_vertical_rhythm() -> None:
     source = read('partials/_health_summary.html')
 
     assert source.count('<section class="overflow-hidden rounded-xl') == 2
+    assert 'class="space-y-6"' in source
     assert 'Operational Health Summary' in source
     assert '6 Health Signals' in source
     assert 'divide-y divide-outline-subtle' in source
@@ -48,7 +52,7 @@ def test_overview_workspace_splits_long_domains_into_dedicated_tabs() -> None:
     source = read('index.html')
 
     assert 'id="analytics-overview-workspace"' in source
-    assert "embedded=true" in source
+    assert 'embedded=true' in source
     assert 'class="p-4 sm:p-5"' in source
 
     for tab_id, label in (
@@ -78,9 +82,9 @@ def test_overview_domain_snapshots_are_informative_and_compact() -> None:
     expectations = {
         'partials/_resource_snapshot.html': (
             'Current Resource Pressure',
-            'Operational Reading',
-            'Warning Threshold',
-            'Critical Threshold',
+            'Pressure Posture',
+            'How To Read',
+            'What To Do',
         ),
         'partials/_capacity_snapshot.html': (
             'Worker Capacity Snapshot',
@@ -107,6 +111,8 @@ def test_overview_domain_snapshots_are_informative_and_compact() -> None:
         'partials/_actionable_recommendation_summary.html': (
             'Recommendation Source Queue',
             'Operational Triage',
+            'Before Execution',
+            'Next Review Focus',
             'Decision Principle',
         ),
     }
@@ -117,6 +123,19 @@ def test_overview_domain_snapshots_are_informative_and_compact() -> None:
         assert 'grid grid-cols-1 divide-y divide-outline-subtle' in source
         for marker in markers:
             assert marker in source
+
+
+def test_utilization_pressure_visual_is_not_compressed_into_small_cards() -> None:
+    source = read('partials/_resource_snapshot.html')
+
+    assert 'xl:grid-cols-12' in source
+    assert 'xl:col-span-8' in source
+    assert 'xl:col-span-4' in source
+    assert 'Headroom' in source
+    assert 'Normal · Below 75%' in source
+    assert 'Warning · 75% To 90%' in source
+    assert 'Critical · Above 90%' in source
+    assert 'grid-cols-4 gap-3' not in source
 
 
 def test_forecast_snapshot_uses_one_chart_and_one_resource_outlook() -> None:
@@ -132,15 +151,32 @@ def test_forecast_snapshot_uses_one_chart_and_one_resource_outlook() -> None:
     assert 'Trend Interpretation' not in source
 
 
-def test_top_consumers_use_compact_ranked_rows_without_truncating_identity() -> None:
+def test_top_consumers_use_calm_ranked_surfaces_without_divider_noise() -> None:
     source = read('partials/_top_consumers_snapshot.html')
 
     assert 'Top Consumer Snapshot' in source
     assert 'Ranked Records' in source
+    assert 'grid gap-5 p-4 sm:p-5 xl:grid-cols-2 2xl:grid-cols-4' in source
+    assert '<ol class="mt-3 space-y-2"' in source
+    assert 'rounded-lg bg-surface-hover px-3 py-2.5' in source
     assert 'break-words text-sm font-semibold' in source
+    assert 'progress_bar' not in source
+    assert 'divide-y divide-outline-subtle' not in source
     assert 'truncate' not in source
     assert 'How To Read' in source
     assert 'Recommended Action' in source
+
+
+def test_action_summary_fills_triage_column_with_execution_context() -> None:
+    source = read('partials/_actionable_recommendation_summary.html')
+
+    assert 'Before Execution' in source
+    assert 'Confirm Accountable Owner' in source
+    assert 'Validate Current Evidence' in source
+    assert 'Prepare Change And Rollback' in source
+    assert 'Next Review Focus' in source
+    assert 'highest_source.label' in source
+    assert 'highest_source.count' in source
 
 
 def test_overview_recommendations_are_always_visible_and_paginated() -> None:
