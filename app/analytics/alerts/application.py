@@ -145,7 +145,7 @@ def get_alerts_context(
         if anomaly_source_status.get('partial', False):
             collection_warnings.append(
                 {
-                    'title': 'Prometheus anomaly candidates are unavailable',
+                    'title': 'Prometheus Anomaly Candidates Are Unavailable',
                     'detail': str(
                         anomaly_source_status.get('error')
                         or 'The optional Prometheus anomaly query did not return a usable response.'
@@ -208,7 +208,7 @@ def get_alerts_context(
     )
     recommendation_cards = format_recommendation_cards(
         actionable_recommendations,
-        default_title='Continue alert and anomaly monitoring',
+        default_title='Continue Alert and Anomaly Monitoring',
         default_description=(
             'No actionable alert or anomaly recommendation was generated. '
             'Continue monitoring alert source health, active signals, and anomaly candidates.'
@@ -419,7 +419,7 @@ def present_alerts_materialized_context(
     )
     recommendation_cards = format_recommendation_cards(
         recommendations,
-        default_title='Continue alert and anomaly monitoring',
+        default_title='Continue Alert and Anomaly Monitoring',
         default_description=(
             'No actionable alert or anomaly recommendation was generated. '
             'Continue monitoring alert source health, active signals, and anomaly candidates.'

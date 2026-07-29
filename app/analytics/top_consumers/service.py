@@ -334,7 +334,7 @@ class TopConsumersService(AnalyticsBaseService):
         )
         recommendation_cards = format_recommendation_cards(
             actionable_recommendations,
-            default_title='Review top consumers',
+            default_title='Review Top Consumers',
             default_description='Review CPU, memory, pod, and PVC consumer hotspots.',
             default_source='top_consumers',
             default_action_type='consumer_review',
@@ -2146,7 +2146,7 @@ def present_top_consumers_materialized_context(
     recommendations = build_top_consumers_actionable_recommendations(payload)
     recommendation_cards = format_recommendation_cards(
         recommendations,
-        default_title='Review top consumers',
+        default_title='Review Top Consumers',
         default_description='Review CPU, memory, pod, and PVC consumer hotspots.',
         default_source='top_consumers',
         default_action_type='consumer_review',

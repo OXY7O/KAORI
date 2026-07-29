@@ -1,3 +1,5 @@
+{% import "components/recommendation_pager.html" as recommendation_pager %}
+{% import "components/action_button.html" as action_button %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% set cards = recommendation_cards if recommendation_cards is defined else recommendations %}
@@ -5,51 +7,40 @@
 <div class="space-y-5">
     <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                <i data-lucide="list-checks" class="h-5 w-5"></i>
-            </span>
-            <div class="min-w-0">
-                <h3 class="text-lg font-semibold text-content-primary">Operational Recommendations</h3>
-                <p class="mt-1 text-sm leading-6 text-content-muted">Prioritized findings derived from source health, active alerts, anomaly candidates, and affected resources.</p>
-            </div>
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="list-checks" class="h-5 w-5"></i></span>
+            <div class="min-w-0"><h3 class="text-lg font-semibold text-content-primary">Operational Recommendations</h3><p class="mt-1 text-sm leading-6 text-content-muted">Prioritized findings derived from source health, active alerts, anomaly candidates, and affected resources.</p></div>
         </div>
         {{ table_label.metadata_label(actionable_total ~ ' Actionable', 'sparkles') }}
     </div>
 
     {% if cards %}
-        <div class="divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle">
-            {% for recommendation in cards %}
-                {% set priority_key = recommendation.priority|default('Info')|lower %}
-                {% set priority_tone = 'critical' if priority_key in ['p1', 'critical'] else ('warning' if priority_key in ['p2', 'warning', 'high'] else 'info') %}
-                <div class="flex flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between sm:px-5">
-                    <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                            <i data-lucide="{{ recommendation.icon }}" class="h-5 w-5"></i>
-                        </span>
-                        <div class="min-w-0">
-                            <div class="flex flex-wrap items-center gap-2">
-                                {{ table_label.status_label(recommendation.priority, tone=priority_tone, size='compact') }}
-                                {{ table_label.metadata_label(recommendation.source_label, 'database-zap') }}
-                            </div>
-                            <h4 class="mt-2 text-sm font-semibold text-content-primary">{{ recommendation.title }}</h4>
-                            <p class="mt-1 text-sm leading-6 text-content-muted">{{ recommendation.description }}</p>
+        <div class="overflow-hidden rounded-lg border border-outline-subtle" data-kaori-recommendation-pager data-page-size="5">
+            <div class="divide-y divide-outline-subtle">
+                {% for recommendation in cards %}
+                    {% set priority_key = recommendation.priority|default('Info')|lower %}
+                    {% set priority_tone = 'critical' if priority_key in ['p1', 'critical'] else ('warning' if priority_key in ['p2', 'warning', 'high'] else 'info') %}
+                    <div class="flex flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between sm:px-5" data-kaori-recommendation-item {% if loop.index > 5 %}hidden{% endif %}>
+                        <div class="flex min-w-0 items-start gap-3">
+                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ recommendation.icon }}" class="h-5 w-5"></i></span>
+                            <div class="min-w-0"><div class="flex flex-wrap items-center gap-2">{{ table_label.status_label(recommendation.priority, tone=priority_tone, size='compact') }}{{ table_label.metadata_label(recommendation.source_label, 'database-zap') }}</div><h4 class="mt-2 text-sm font-semibold text-content-primary">{{ recommendation.title }}</h4><p class="mt-1 text-sm leading-6 text-content-muted">{{ recommendation.description }}</p></div>
                         </div>
+                        {% if recommendation.is_actionable == 'Yes' %}
+                            {% set external_action = recommendation.href.startswith('http://') or recommendation.href.startswith('https://') %}
+                            <a href="{{ recommendation.href }}"
+                               {% if external_action %}target="_blank" rel="noopener noreferrer"{% endif %}
+                               class="{{ action_button.classes('secondary') if external_action else table_ui.action_classes() }} shrink-0">
+                                <i data-lucide="{{ 'arrow-up-right' if external_action else 'arrow-right' }}" class="h-4 w-4"></i>
+                                Review Signal
+                            </a>
+                        {% else %}
+                            {{ table_label.status_label('Context Only', tone='unknown', size='compact') }}
+                        {% endif %}
                     </div>
-                    {% if recommendation.is_actionable == 'Yes' %}
-                        <a href="{{ recommendation.href }}" class="{{ table_ui.action_classes() }} shrink-0">
-                            <i data-lucide="arrow-right" class="h-4 w-4"></i>
-                            Review Signal
-                        </a>
-                    {% else %}
-                        {{ table_label.status_label('Context Only', tone='unknown', size='compact') }}
-                    {% endif %}
-                </div>
-            {% endfor %}
+                {% endfor %}
+            </div>
+            {{ recommendation_pager.controls(cards|length, 'Recommendations', 5) }}
         </div>
     {% else %}
-        {% set empty_state_icon = 'check-circle-2' %}
-        {% set empty_state_title = 'No Alert Recommendation Available' %}
-        {% set empty_state_description = 'Current alert and anomaly signals do not require an additional recommendation.' %}
-        {% include "components/states/_empty_state.html" %}
+        {% set empty_state_icon = 'check-circle-2' %}{% set empty_state_title = 'No Alert Recommendation Available' %}{% set empty_state_description = 'Current alert and anomaly signals do not require an additional recommendation.' %}{% include "components/states/_empty_state.html" %}
     {% endif %}
 </div>

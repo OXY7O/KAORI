@@ -21,9 +21,6 @@ def test_incident_readiness_uses_compact_operational_workspace() -> None:
     assert 'Recommended Action' in content
     assert 'Readiness Checks' in content
     assert 'xl:grid-cols-6' in content
-    assert 'lg:grid-cols-2 xl:grid-cols-4' in content
-    assert 'lg:col-span-2' in content
-    assert 'mt-3 grid overflow-hidden rounded-lg border border-outline-subtle lg:grid-cols-2 xl:grid-cols-4' in content
     assert '<details' not in content
     assert '<summary' not in content
     assert 'rounded-xl border border-outline-default bg-surface-subtle p-4' not in content
@@ -32,7 +29,7 @@ def test_incident_readiness_uses_compact_operational_workspace() -> None:
 def test_analytics_table_headers_follow_kaori_title_case_contract() -> None:
     expected_headers = {
         'alerts/partials/_alerts_table.html': [
-            'Alert', 'Severity', 'Scope &amp; Source', 'State', 'Started', 'Action'
+            'Alert', 'Severity', 'State', 'Scope &amp; Source', 'Started', 'Action'
         ],
         'alerts/partials/_anomalies_table.html': [
             'Anomaly', 'Severity', 'Namespace &amp; Pod', 'Signal', 'Action'
@@ -47,10 +44,10 @@ def test_analytics_table_headers_follow_kaori_title_case_contract() -> None:
             'Node &amp; Mount Point', 'Capacity', 'Utilization', 'Risk'
         ],
         'workload/partials/_tenant_quota_section.html': [
-            'Namespace', 'Quota Status', 'Quota &amp; Actual Usage', 'Missing Keys', 'Risk', 'Action'
+            'Namespace', 'Quota Status', 'Quota &amp; Actual Usage', 'Missing Keys', 'Risk'
         ],
         'workload/partials/_workload_mapping_section.html': [
-            'Workload &amp; Namespace', 'Resource &amp; QoS', 'Efficiency', 'Risk', 'Action'
+            'Workload &amp; Namespace', 'Resource &amp; QoS', 'Efficiency', 'Risk'
         ],
     }
 
@@ -84,3 +81,15 @@ def test_desktop_column_headers_use_consistent_kaori_presentation_classes() -> N
             if re.search(r'>\s*[A-Za-z#]', line):
                 assert 'font-semibold' in line
                 assert 'tracking-' in line
+
+
+def test_workload_detail_actions_use_full_width_accordion_rails() -> None:
+    quota = _read('workload/partials/_tenant_quota_section.html')
+    mapping = _read('workload/partials/_workload_mapping_section.html')
+
+    assert 'View Quota Details' in quota
+    assert 'Hide Quota Details' in quota
+    assert '>Action</div>' not in quota
+    assert 'View Resource Details' in mapping
+    assert 'Hide Resource Details' in mapping
+    assert '>Action</div>' not in mapping

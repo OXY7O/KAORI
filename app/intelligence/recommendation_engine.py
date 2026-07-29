@@ -596,7 +596,7 @@ def build_capacity_actionable_recommendations(payload: dict[str, Any]) -> list[d
 
     return [
         build_recommendation(
-            title='Continue monitoring schedulable capacity',
+            title='Continue Monitoring Schedulable Capacity',
             description=(
                 'No actionable capacity pressure was detected from current risk summary and governance findings. '
                 'Continue watching worker capacity, allocation trend, and upcoming workload demand.'
@@ -609,7 +609,7 @@ def build_capacity_actionable_recommendations(payload: dict[str, Any]) -> list[d
             is_actionable=False,
         ),
         build_recommendation(
-            title='Review capacity after major deployments',
+            title='Review Capacity After Major Deployments',
             description=(
                 'Re-run Capacity Analysis after large deployments, scaling events, or node pool changes '
                 'to validate that headroom remains safe.'
@@ -673,7 +673,7 @@ def build_utilization_actionable_recommendations(payload: dict[str, Any]) -> lis
         if isinstance(top_item, dict):
             recommendations.append(
                 build_recommendation(
-                    title='Review top CPU consumer',
+                    title='Review Top CPU Consumer',
                     description=(
                         'Validate whether the highest CPU consumer is expected. '
                         f'Namespace: {top_item.get("namespace", "-")}; pod: {top_item.get("pod", "-")}; '
@@ -695,7 +695,7 @@ def build_utilization_actionable_recommendations(payload: dict[str, Any]) -> lis
         if isinstance(top_item, dict):
             recommendations.append(
                 build_recommendation(
-                    title='Review top memory consumer',
+                    title='Review Top Memory Consumer',
                     description=(
                         'Validate whether the highest memory consumer is expected. '
                         f'Namespace: {top_item.get("namespace", "-")}; pod: {top_item.get("pod", "-")}; '
@@ -718,7 +718,7 @@ def build_utilization_actionable_recommendations(payload: dict[str, Any]) -> lis
 
     return [
         build_recommendation(
-            title='Continue regular utilization monitoring',
+            title='Continue Regular Utilization Monitoring',
             description=(
                 'No actionable utilization pressure was detected from current risk assessment. '
                 'Continue tracking CPU, memory, storage, pod usage, and recurring consumer hotspots.'
@@ -731,7 +731,7 @@ def build_utilization_actionable_recommendations(payload: dict[str, Any]) -> lis
             is_actionable=False,
         ),
         build_recommendation(
-            title='Validate workload resource requests and limits periodically',
+            title='Validate Workload Resource Requests and Limits Periodically',
             description=(
                 'Even when utilization is healthy, review requests and limits regularly to prevent '
                 'over-allocation, under-allocation, and noisy-neighbor risk.'
@@ -801,7 +801,7 @@ def build_storage_actionable_recommendations(
     if priority:
         recommendations.append(
             build_recommendation(
-                title='Review node filesystem pressure',
+                title='Review Node Filesystem Pressure',
                 description=(
                     f'Highest /var filesystem usage is {highest_filesystem_usage:.2f}% on {highest_node}. '
                     'Review image growth, logs, ephemeral storage consumption, and node cleanup before scheduling more workloads.'
@@ -823,7 +823,7 @@ def build_storage_actionable_recommendations(
     if fs_risk_count > 0:
         recommendations.append(
             build_recommendation(
-                title='Review filesystem risk items',
+                title='Review Filesystem Risk Items',
                 description=(
                     f'{fs_risk_count} filesystem row(s) have Watch, High, or Critical risk. '
                     'Prioritize nodes with high /var usage before image pulls, log growth, or workload placement increases disk pressure.'
@@ -855,7 +855,7 @@ def build_storage_actionable_recommendations(
     if priority:
         recommendations.append(
             build_recommendation(
-                title='Review PVC capacity utilization',
+                title='Review PVC Capacity Utilization',
                 description=(
                     f'PVC used capacity is {pvc_used_percent:.2f}% with {pvc_free_percent:.2f}% free. '
                     'Check namespace ownership, storage class expansion policy, and application growth before the volume reaches exhaustion.'
@@ -877,7 +877,7 @@ def build_storage_actionable_recommendations(
     if pvc_risk_count > 0:
         recommendations.append(
             build_recommendation(
-                title='Review PVC risk items',
+                title='Review PVC Risk Items',
                 description=(
                     f'{pvc_risk_count} PVC risk item(s) require attention. '
                     'Check PVC status, used capacity, namespace ownership, and storage expansion policy before increasing workload demand.'
@@ -899,7 +899,7 @@ def build_storage_actionable_recommendations(
     if pv_risk_count > 0:
         recommendations.append(
             build_recommendation(
-                title='Review PV lifecycle risk items',
+                title='Review PV Lifecycle Risk Items',
                 description=(
                     f'{pv_risk_count} PV risk item(s) were detected. '
                     'Review Available, Released, Failed, or Unknown PV states, reclaim policy, and claim binding before cleanup or reuse.'
@@ -920,7 +920,7 @@ def build_storage_actionable_recommendations(
 
     return [
         build_recommendation(
-            title='Continue regular storage monitoring',
+            title='Continue Regular Storage Monitoring',
             description=(
                 'No actionable storage risk was detected from filesystem, PV, or PVC signals. '
                 'Continue tracking filesystem usage, PVC growth, PV lifecycle state, and namespace storage demand.'
@@ -934,7 +934,7 @@ def build_storage_actionable_recommendations(
             is_actionable=False,
         ),
         build_recommendation(
-            title='Validate storage classes and reclaim policies periodically',
+            title='Validate Storage Classes and Reclaim Policies Periodically',
             description=(
                 'Review storage class expansion capability and PV reclaim policies for critical workloads before capacity incidents occur.'
             ),
@@ -997,7 +997,7 @@ def build_workload_actionable_recommendations(payload: dict[str, Any]) -> list[d
     if missing_quota_count > 0:
         recommendations.append(
             build_recommendation(
-                title='Create missing namespace ResourceQuota',
+                title='Create Missing Namespace ResourceQuota',
                 description=(
                     f'{missing_quota_count} namespace(s) have no ResourceQuota. '
                     'Define CPU, memory, and pod quota boundaries before allowing additional workload growth.'
@@ -1015,7 +1015,7 @@ def build_workload_actionable_recommendations(payload: dict[str, Any]) -> list[d
     if partial_quota_count > 0:
         recommendations.append(
             build_recommendation(
-                title='Complete partial ResourceQuota definitions',
+                title='Complete Partial ResourceQuota Definitions',
                 description=(
                     f'{partial_quota_count} namespace(s) have partial ResourceQuota coverage. '
                     'Add missing requests.cpu, limits.cpu, requests.memory, limits.memory, or pods quota keys.'
@@ -1033,7 +1033,7 @@ def build_workload_actionable_recommendations(payload: dict[str, Any]) -> list[d
     if quota_critical_count > 0:
         recommendations.append(
             build_recommendation(
-                title='Review namespaces at critical quota usage',
+                title='Review Namespaces at Critical Quota Usage',
                 description=(
                     f'{quota_critical_count} namespace(s) are at critical quota pressure. '
                     'Review allocation, actual usage, and ownership before increasing quota or scheduling new workloads.'
@@ -1050,7 +1050,7 @@ def build_workload_actionable_recommendations(payload: dict[str, Any]) -> list[d
     elif quota_near_limit_count > 0:
         recommendations.append(
             build_recommendation(
-                title='Review namespaces near quota limit',
+                title='Review Namespaces Near Quota Limit',
                 description=(
                     f'{quota_near_limit_count} namespace(s) are approaching quota limits. '
                     'Validate whether high allocation is expected and coordinate quota changes with application owners.'
@@ -1068,7 +1068,7 @@ def build_workload_actionable_recommendations(payload: dict[str, Any]) -> list[d
     if quota_efficiency_risk_count > 0:
         recommendations.append(
             build_recommendation(
-                title='Right-size quota allocation before expansion',
+                title='Right-Size Quota Allocation Before Expansion',
                 description=(
                     f'{quota_efficiency_risk_count} namespace(s) show high quota allocation with low actual usage. '
                     'Right-size workload requests and limits before increasing namespace quota.'
@@ -1123,7 +1123,7 @@ def build_workload_actionable_recommendations(payload: dict[str, Any]) -> list[d
     if best_effort_count > 0:
         recommendations.append(
             build_recommendation(
-                title='Remove BestEffort workload risk',
+                title='Remove BestEffort Workload Risk',
                 description=(
                     f'{best_effort_count} BestEffort workload(s) were detected. '
                     'Set CPU and memory requests to improve scheduling reliability and reduce noisy-neighbor risk.'
@@ -1141,7 +1141,7 @@ def build_workload_actionable_recommendations(payload: dict[str, Any]) -> list[d
     if missing_request_count > 0:
         recommendations.append(
             build_recommendation(
-                title='Set missing workload resource requests',
+                title='Set Missing Workload Resource Requests',
                 description=(
                     f'{missing_request_count} workload(s) are missing CPU or memory requests. '
                     'Define requests so scheduling, quota usage, and capacity planning reflect runtime demand.'
@@ -1159,7 +1159,7 @@ def build_workload_actionable_recommendations(payload: dict[str, Any]) -> list[d
     if missing_limit_count > 0:
         recommendations.append(
             build_recommendation(
-                title='Review missing workload limits',
+                title='Review Missing Workload Limits',
                 description=(
                     f'{missing_limit_count} workload(s) are missing CPU or memory limits. '
                     'Apply limit policy according to workload criticality and tenant governance requirements.'
@@ -1177,7 +1177,7 @@ def build_workload_actionable_recommendations(payload: dict[str, Any]) -> list[d
     if under_requested_count > 0:
         recommendations.append(
             build_recommendation(
-                title='Increase resources for under-provisioned workloads',
+                title='Increase Resources for Under-Provisioned Workloads',
                 description=(
                     f'{under_requested_count} workload(s) may need higher CPU or memory requests. '
                     'Validate recent peak usage, throttling, OOM, and application SLO impact before changing values.'
@@ -1195,7 +1195,7 @@ def build_workload_actionable_recommendations(payload: dict[str, Any]) -> list[d
     if over_requested_count > 0:
         recommendations.append(
             build_recommendation(
-                title='Right-size over-requested workloads',
+                title='Right-Size Over-Requested Workloads',
                 description=(
                     f'{over_requested_count} workload(s) appear over-requested. '
                     'Compare requests against average and peak usage before increasing quota or cluster capacity.'
@@ -1213,7 +1213,7 @@ def build_workload_actionable_recommendations(payload: dict[str, Any]) -> list[d
     if high_risk_count > 0 and under_requested_count == 0 and best_effort_count == 0:
         recommendations.append(
             build_recommendation(
-                title='Review high-risk workload mappings',
+                title='Review High-Risk Workload Mappings',
                 description=(
                     f'{high_risk_count} workload mapping row(s) are high risk. '
                     'Review resource status, QoS, efficiency, recommendation text, and workload ownership.'
@@ -1230,7 +1230,7 @@ def build_workload_actionable_recommendations(payload: dict[str, Any]) -> list[d
     elif medium_risk_count > 0:
         recommendations.append(
             build_recommendation(
-                title='Review medium-risk workload mappings',
+                title='Review Medium-Risk Workload Mappings',
                 description=(
                     f'{medium_risk_count} workload mapping row(s) have medium risk. '
                     'Prioritize repeated patterns across namespaces and application owners.'
@@ -1277,7 +1277,7 @@ def build_workload_actionable_recommendations(payload: dict[str, Any]) -> list[d
 
     return [
         build_recommendation(
-            title='Continue workload governance monitoring',
+            title='Continue Workload Governance Monitoring',
             description=(
                 'No actionable workload governance or right-sizing risk was detected. '
                 'Continue tracking ResourceQuota coverage, requests, limits, QoS class, and efficiency drift.'
@@ -1292,7 +1292,7 @@ def build_workload_actionable_recommendations(payload: dict[str, Any]) -> list[d
             is_actionable=False,
         ),
         build_recommendation(
-            title='Review workload requests and limits periodically',
+            title='Review Workload Requests and Limits Periodically',
             description=(
                 'Even when workload posture is healthy, review requests and limits after major deployments, scaling events, or tenant quota changes.'
             ),
@@ -1441,7 +1441,7 @@ def build_forecast_actionable_recommendations(
     if isinstance(critical_days, int | float) and critical_days <= 30:
         recommendations.append(
             build_recommendation(
-                title='Prioritize nearest critical forecast breach',
+                title='Prioritize Nearest Critical Forecast Breach',
                 description=(
                     f'{nearest_critical.get("resource", "A resource")} is projected to reach critical threshold in '
                     f'{nearest_critical.get("label", f"{int(critical_days)} days")}. '
@@ -1459,7 +1459,7 @@ def build_forecast_actionable_recommendations(
     elif isinstance(warning_days, int | float) and warning_days <= 30:
         recommendations.append(
             build_recommendation(
-                title='Review nearest forecast warning breach',
+                title='Review Nearest Forecast Warning Breach',
                 description=(
                     f'{nearest_warning.get("resource", "A resource")} is projected to reach warning threshold in '
                     f'{nearest_warning.get("label", f"{int(warning_days)} days")}. '
@@ -1482,7 +1482,7 @@ def build_forecast_actionable_recommendations(
 
     return [
         build_recommendation(
-            title='Continue forecast monitoring',
+            title='Continue Forecast Monitoring',
             description=(
                 'No actionable forecast risk was detected from projected resource growth. '
                 'Continue tracking forecast trend after major deployments, scaling events, and capacity changes.'
@@ -1497,7 +1497,7 @@ def build_forecast_actionable_recommendations(
             is_actionable=False,
         ),
         build_recommendation(
-            title='Validate forecast assumptions periodically',
+            title='Validate Forecast Assumptions Periodically',
             description=(
                 'Use forecast output as an early planning signal. Re-check with longer history windows when historical data is noisy or limited.'
             ),
@@ -1610,7 +1610,7 @@ def build_top_consumers_actionable_recommendations(
     if missing_requests:
         recommendations.append(
             build_recommendation(
-                title='Add missing CPU and memory requests',
+                title='Add Missing CPU and Memory Requests',
                 description=(
                     f'{len(missing_requests)} top consumer row(s) are missing CPU or memory requests. '
                     'Set requests so Kubernetes can schedule these workloads predictably and capacity reports are meaningful.'
@@ -1628,7 +1628,7 @@ def build_top_consumers_actionable_recommendations(
         priority = 'Critical' if critical_usage else 'Warning'
         recommendations.append(
             build_recommendation(
-                title='Review high CPU and memory consumers',
+                title='Review High CPU and Memory Consumers',
                 description=(
                     f'{len(high_usage)} CPU or memory consumer row(s) are above the warning threshold. '
                     'Validate whether the usage is expected, then tune requests/limits or scale the workload.'
@@ -1646,7 +1646,7 @@ def build_top_consumers_actionable_recommendations(
         namespace_text = ', '.join(dominant_namespaces[:3])
         recommendations.append(
             build_recommendation(
-                title='Investigate dominant resource namespaces',
+                title='Investigate Dominant Resource Namespaces',
                 description=(
                     f'{len(dominant_namespaces)} namespace(s) repeatedly appear in high-consumer rows: {namespace_text}. '
                     'Review tenant ownership, quota coverage, and workload growth before expanding shared capacity.'
@@ -1664,7 +1664,7 @@ def build_top_consumers_actionable_recommendations(
         priority = 'Critical' if critical_pvc else 'Warning'
         recommendations.append(
             build_recommendation(
-                title='Clean up or expand high PVC usage',
+                title='Clean Up or Expand High PVC Usage',
                 description=(
                     f'{len(high_pvc)} PVC consumer row(s) are using at least 80% of capacity. '
                     'Review cleanup, retention, storage expansion, and owning namespace before usage becomes disruptive.'
@@ -1682,7 +1682,7 @@ def build_top_consumers_actionable_recommendations(
         recommendations.extend(
             [
                 build_recommendation(
-                    title='No critical consumer hotspot detected',
+                    title='No Critical Consumer Hotspot Detected',
                     description=(
                         'Top consumer rows are currently below actionable hotspot thresholds. '
                         'Continue reviewing this page during incidents, deployments, and capacity reviews.'
@@ -1695,7 +1695,7 @@ def build_top_consumers_actionable_recommendations(
                     is_actionable=False,
                 ),
                 build_recommendation(
-                    title='Review top consumers periodically',
+                    title='Review Top Consumers Periodically',
                     description=(
                         'Use Top Consumers as the first drilldown when utilization, capacity, or forecast pages show pressure.'
                     ),
@@ -1783,7 +1783,7 @@ def build_alerts_actionable_recommendations(
     if not bool(source_status.get('connected', False)):
         recommendations.append(
             build_recommendation(
-                title='Restore alert source connectivity',
+                title='Restore Alert Source Connectivity',
                 description=(
                     'The selected alert source is not connected. Verify Prometheus and Alertmanager endpoint, '
                     'credentials, network access, and fallback mode before relying on alert analysis.'
@@ -1802,7 +1802,7 @@ def build_alerts_actionable_recommendations(
         alert_name = str(first_alert.get('name', 'critical alert') or 'critical alert')
         recommendations.append(
             build_recommendation(
-                title='Prioritize active critical alerts',
+                title='Prioritize Active Critical Alerts',
                 description=(
                     f'{len(critical_alerts)} active critical alert(s) detected. Start with {alert_name}, '
                     'review affected namespace/target, confirm blast radius, then follow the runbook or escalation path.'
@@ -1819,7 +1819,7 @@ def build_alerts_actionable_recommendations(
     if warning_alerts:
         recommendations.append(
             build_recommendation(
-                title='Review warning alerts before escalation',
+                title='Review Warning Alerts Before Escalation',
                 description=(
                     f'{len(warning_alerts)} active warning alert(s) detected. Validate whether these signals are '
                     'expected workload behavior or early degradation that needs remediation.'
@@ -1845,7 +1845,7 @@ def build_alerts_actionable_recommendations(
         )
         recommendations.append(
             build_recommendation(
-                title='Investigate anomaly candidates',
+                title='Investigate Anomaly Candidates',
                 description=(
                     f'{len(anomalies)} anomaly candidate(s) detected from Prometheus signals '
                     f'({restart_count} restart spike, {not_ready_count} not-ready). Review pod events, logs, probes, '
@@ -1867,7 +1867,7 @@ def build_alerts_actionable_recommendations(
     if affected_resources >= 3:
         recommendations.append(
             build_recommendation(
-                title='Correlate affected namespaces and targets',
+                title='Correlate Affected Namespaces and Targets',
                 description=(
                     f'{affected_resources} affected namespace/target pair(s) have active alert or anomaly signals. '
                     'Group the investigation by namespace, target, and owner before changing workload or cluster capacity.'
@@ -1886,7 +1886,7 @@ def build_alerts_actionable_recommendations(
         recommendations.extend(
             [
                 build_recommendation(
-                    title='No active alert or anomaly action required',
+                    title='No Active Alert or Anomaly Action Required',
                     description=str(
                         priority.get(
                             'description',
@@ -1901,7 +1901,7 @@ def build_alerts_actionable_recommendations(
                     is_actionable=False,
                 ),
                 build_recommendation(
-                    title='Keep alert response resources current',
+                    title='Keep Alert Response Resources Current',
                     description=(
                         'Validate Alertmanager routing, runbook links, contact points, and ownership metadata so alerts '
                         'remain actionable during incidents.'
@@ -2098,7 +2098,7 @@ def build_operational_recommendations(payload: dict[str, Any]) -> list[dict[str,
     if not recommendations:
         recommendations.append(
             _recommendation(
-                title='No urgent operational recommendation',
+                title='No Urgent Operational Recommendation',
                 description=(
                     'No immediate risk was detected from the current overview snapshot. '
                     'Continue monitoring utilization, capacity, storage, workload settings, forecast, and alerts.'
@@ -2244,7 +2244,7 @@ def _build_alert_recommendations(alerts_snapshot: dict[str, Any]) -> list[dict[s
     if critical_alerts > 0:
         recommendations.append(
             _recommendation(
-                title='Prioritize critical alerts',
+                title='Prioritize Critical Alerts',
                 description=(
                     f'{critical_alerts} critical alert(s) are active. Review affected namespace, '
                     'target, labels, and runbook before running optimization actions.'
@@ -2261,7 +2261,7 @@ def _build_alert_recommendations(alerts_snapshot: dict[str, Any]) -> list[dict[s
     elif active_alerts > 0 or warning_alerts > 0:
         recommendations.append(
             _recommendation(
-                title='Investigate active alert signals',
+                title='Investigate Active Alert Signals',
                 description=(
                     f'{firing_alerts} firing, {pending_alerts} pending, and '
                     f'{warning_alerts} warning alert(s) detected. Validate service impact first.'
@@ -2279,7 +2279,7 @@ def _build_alert_recommendations(alerts_snapshot: dict[str, Any]) -> list[dict[s
     if recent_anomalies > 0:
         recommendations.append(
             _recommendation(
-                title='Review anomaly candidates',
+                title='Review Anomaly Candidates',
                 description=(
                     f'{recent_anomalies} anomaly candidate(s) detected from restart or readiness signals. '
                     'Check recent deployments, probes, and container logs.'
@@ -2344,7 +2344,7 @@ def _build_storage_recommendations(storage_snapshot: dict[str, Any]) -> list[dic
 
     return [
         _recommendation(
-            title='Investigate PVC risk items',
+            title='Investigate PVC Risk Items',
             description=(
                 f'{pvc_risk_count} PVC risk item(s) require attention. Review high usage, '
                 'PVC status, and storage class expansion policy.'
@@ -2373,7 +2373,7 @@ def _build_workload_recommendations(workload_snapshot: dict[str, Any]) -> list[d
     if missing_baseline_total > 0:
         recommendations.append(
             _recommendation(
-                title='Define missing workload resource settings',
+                title='Define Missing Workload Resource Settings',
                 description=(
                     f'{missing_baseline_total} workload resource setting(s) are missing. '
                     'Define CPU/memory requests and limits to improve scheduling and quota accuracy.'
@@ -2391,7 +2391,7 @@ def _build_workload_recommendations(workload_snapshot: dict[str, Any]) -> list[d
     if over_provisioned > 0:
         recommendations.append(
             _recommendation(
-                title='Right-size over-provisioned workloads',
+                title='Right-Size Over-Provisioned Workloads',
                 description=(
                     f'{over_provisioned} workload(s) appear over-provisioned. Compare requests '
                     'against actual usage before increasing namespace or cluster capacity.'
@@ -2409,7 +2409,7 @@ def _build_workload_recommendations(workload_snapshot: dict[str, Any]) -> list[d
     if under_provisioned > 0:
         recommendations.append(
             _recommendation(
-                title='Increase resources for under-provisioned workloads',
+                title='Increase Resources for Under-Provisioned Workloads',
                 description=(
                     f'{under_provisioned} workload(s) may need higher request or limit values. '
                     'Validate usage trend and recent throttling or OOM symptoms.'
@@ -2438,7 +2438,7 @@ def _build_forecast_recommendations(forecast_snapshot: dict[str, Any]) -> list[d
 
     return [
         _recommendation(
-            title='Review forecast capacity risk',
+            title='Review Forecast Capacity Risk',
             description=(
                 f'{highest_projected_resource} is projected at '
                 f'{highest_projected_percent}% in the forecast window. '
@@ -2474,7 +2474,7 @@ def _build_top_consumer_recommendations(
 
     return [
         _recommendation(
-            title='Validate top consumers before remediation',
+            title='Validate Top Consumers Before Remediation',
             description=(
                 'Top consumer data is available. Review CPU, memory, and storage leaders '
                 'before changing requests, limits, quotas, or node capacity.'

@@ -278,7 +278,7 @@ class ForecastAnalysisService(AnalyticsBaseService):
 
         recommendation_cards = format_recommendation_cards(
             actionable_recommendations,
-            default_title='Continue forecast monitoring',
+            default_title='Continue Forecast Monitoring',
             default_description=(
                 'No actionable forecast recommendation was generated from the current projection. '
                 'Continue monitoring forecast trend and threshold ETA.'
@@ -2096,7 +2096,7 @@ def present_forecast_materialized_context(
     recommendations = build_forecast_actionable_recommendations(recommendation_payload)
     recommendation_cards = format_recommendation_cards(
         recommendations,
-        default_title='Continue forecast monitoring',
+        default_title='Continue Forecast Monitoring',
         default_description=(
             'No actionable forecast recommendation was generated from the current projection. '
             'Continue monitoring forecast trend and threshold ETA.'

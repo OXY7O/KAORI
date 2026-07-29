@@ -1,7 +1,6 @@
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/progress_bar.html" as progress_bar %}
-{% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% set dynamic_workload_type_options = workload_mapping_payload.workload_type_options if workload_mapping_payload.workload_type_options else workload_mapping_rows|map(attribute='type')|unique|list %}
 {% set dynamic_resource_status_options = workload_mapping_payload.resource_status_options if workload_mapping_payload.resource_status_options else workload_mapping_rows|map(attribute='resource_status.label')|unique|list %}
@@ -14,7 +13,9 @@
     <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
         <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="network" class="h-5 w-5"></i></span>
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="network" class="h-5 w-5"></i>
+                </span>
                 <div class="min-w-0">
                     <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-content-muted">Resource Governance</p>
                     <h2 class="mt-1 text-lg font-semibold text-content-primary">Workload Resource Mapping</h2>
@@ -35,11 +36,46 @@
                 <input type="hidden" name="time_range" value="{{ selected_time_range }}">
                 <input type="hidden" name="workload_page" value="1">
                 <input type="hidden" name="workload_per_page" value="{{ workload_pagination.per_page }}">
-                <label class="block min-w-0"><span class="sr-only">Search Workload</span><input type="search" name="workload_search" value="{{ selected_workload_search }}" placeholder="Search workload..." class="{{ input_classes }}"></label>
-                <label class="block"><span class="sr-only">Workload Type</span><select name="workload_type" class="{{ input_classes }}"><option value="">All Type</option>{% for item in dynamic_workload_type_options if item %}<option value="{{ item }}" {% if selected_workload_type == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></label>
-                <label class="block"><span class="sr-only">Resource Status</span><select name="workload_resource_status" class="{{ input_classes }}"><option value="">All Resources</option>{% for item in dynamic_resource_status_options if item %}<option value="{{ item }}" {% if selected_workload_resource_status == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></label>
-                <label class="block"><span class="sr-only">QoS</span><select name="workload_qos" class="{{ input_classes }}"><option value="">All QoS</option>{% for item in dynamic_qos_options if item %}<option value="{{ item }}" {% if selected_workload_qos == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></label>
-                <label class="block"><span class="sr-only">Workload Risk</span><select name="workload_risk" class="{{ input_classes }}"><option value="">All Risk</option>{% for item in dynamic_workload_risk_options if item %}<option value="{{ item }}" {% if selected_workload_risk == item %}selected{% endif %}>{{ item }}</option>{% endfor %}</select></label>
+                <label class="block min-w-0">
+                    <span class="sr-only">Search Workload</span>
+                    <input type="search" name="workload_search" value="{{ selected_workload_search }}" placeholder="Search Workload..." class="{{ input_classes }}">
+                </label>
+                <label class="block">
+                    <span class="sr-only">Workload Type</span>
+                    <select name="workload_type" class="{{ input_classes }}">
+                        <option value="">All Workload Types</option>
+                        {% for item in dynamic_workload_type_options if item %}
+                            <option value="{{ item }}" {% if selected_workload_type == item %}selected{% endif %}>{{ item }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="sr-only">Resource Status</span>
+                    <select name="workload_resource_status" class="{{ input_classes }}">
+                        <option value="">All Resource Statuses</option>
+                        {% for item in dynamic_resource_status_options if item %}
+                            <option value="{{ item }}" {% if selected_workload_resource_status == item %}selected{% endif %}>{{ item }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="sr-only">QoS Class</span>
+                    <select name="workload_qos" class="{{ input_classes }}">
+                        <option value="">All QoS Classes</option>
+                        {% for item in dynamic_qos_options if item %}
+                            <option value="{{ item }}" {% if selected_workload_qos == item %}selected{% endif %}>{{ item }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
+                <label class="block">
+                    <span class="sr-only">Workload Risk</span>
+                    <select name="workload_risk" class="{{ input_classes }}">
+                        <option value="">All Risks</option>
+                        {% for item in dynamic_workload_risk_options if item %}
+                            <option value="{{ item }}" {% if selected_workload_risk == item %}selected{% endif %}>{{ item }}</option>
+                        {% endfor %}
+                    </select>
+                </label>
             </form>
         </div>
         {{ loading_bar.render(indicator_id, label='Refreshing Workload Resource Mapping') }}
@@ -54,21 +90,29 @@
         {% set best_effort_count = workload_mapping_rows|selectattr('qos.label', 'equalto', 'BestEffort')|list|length %}
         <div class="grid divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
             {% for label, value, helper, icon in [
-                ('Mapped Workloads', total_workloads, page_workloads ~ ' shown on current page', 'boxes'),
-                ('Risk Signals', high_risk_count + medium_risk_count, high_risk_count ~ ' high · ' ~ medium_risk_count ~ ' medium', 'radar'),
-                ('Request Coverage', total_workloads - missing_request_count, missing_request_count ~ ' missing request', 'shield-check'),
-                ('QoS Watch', best_effort_count, 'BestEffort workloads', 'gauge')
+                ('Mapped Workloads', total_workloads, page_workloads ~ ' Shown on Current Page', 'boxes'),
+                ('Risk Signals', high_risk_count + medium_risk_count, high_risk_count ~ ' High · ' ~ medium_risk_count ~ ' Medium', 'radar'),
+                ('Request Coverage', total_workloads - missing_request_count, missing_request_count ~ ' Missing Request', 'shield-check'),
+                ('QoS Watch', best_effort_count, 'BestEffort Workloads', 'gauge')
             ] %}
-                <div class="flex min-w-0 items-start gap-3 px-4 py-4"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><div class="min-w-0"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p><p class="mt-1 text-lg font-semibold text-content-primary">{{ value }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p></div></div>
+                <div class="flex min-w-0 items-start gap-3 px-4 py-4">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
+                        <p class="mt-1 text-lg font-semibold text-content-primary">{{ value }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                    </div>
+                </div>
             {% endfor %}
         </div>
 
         <div class="mt-5 hidden grid-cols-12 gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3 lg:grid">
             <div class="col-span-4 text-xs font-semibold uppercase tracking-wide text-content-muted">Workload &amp; Namespace</div>
             <div class="col-span-2 text-xs font-semibold uppercase tracking-wide text-content-muted">Resource &amp; QoS</div>
-            <div class="col-span-3 text-xs font-semibold uppercase tracking-wide text-content-muted">Efficiency</div>
-            <div class="col-span-1 text-xs font-semibold uppercase tracking-wide text-content-muted">Risk</div>
-            <div class="col-span-2 text-right text-xs font-semibold uppercase tracking-wide text-content-muted">Action</div>
+            <div class="col-span-4 text-xs font-semibold uppercase tracking-wide text-content-muted">Efficiency</div>
+            <div class="col-span-2 text-xs font-semibold uppercase tracking-wide text-content-muted">Risk</div>
         </div>
 
         <div class="divide-y divide-outline-subtle border-x border-b border-outline-subtle lg:border-x-0">
@@ -81,44 +125,200 @@
                 {% set resource_tone = 'warning' if 'missing' in resource_lower or 'partial' in resource_lower else ('normal' if 'configured' in resource_lower or 'complete' in resource_lower else 'unknown') %}
                 {% set qos_label = row.qos.label|default('Unknown') %}
                 {% set qos_tone = 'warning' if qos_label|lower == 'besteffort' else ('normal' if qos_label|lower == 'guaranteed' else 'info') %}
-                <article x-data="{ expanded: false }">
+                <article x-data="{ expanded: false }" @keydown.escape.window="expanded = false">
                     <div class="grid gap-4 px-4 py-4 lg:grid-cols-12 lg:items-center">
-                        <div class="min-w-0 lg:col-span-4"><div class="flex min-w-0 items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="boxes" class="h-4 w-4"></i></span><div class="min-w-0"><p class="break-words text-sm font-semibold text-content-primary">{{ row.workload }}</p><p class="mt-1 break-words text-xs text-content-muted">{{ row.namespace }} · {{ row.type }} · {{ row.replicas }} replicas</p></div></div></div>
-                        <div class="flex flex-wrap gap-2 lg:col-span-2">{{ table_label.status_label(resource_label, tone=resource_tone, size='compact') }}{{ table_label.status_label(qos_label, tone=qos_tone, size='compact') }}</div>
-                        <div class="min-w-0 lg:col-span-3"><div class="flex items-center justify-between gap-2 text-xs"><span class="text-content-muted">Efficiency</span><span class="font-semibold text-content-primary">{{ row.efficiency_display }}%</span></div>{{ progress_bar.bar(row.efficiency, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=row.workload ~ ' efficiency') }}</div>
-                        <div class="lg:col-span-1">{{ table_label.status_label(risk_label, tone=risk_tone, size='compact') }}</div>
-                        <div class="flex lg:col-span-2 lg:justify-end"><button type="button" @click="expanded = !expanded" class="{{ table_ui.action_classes() }} w-full sm:w-auto" :aria-expanded="expanded ? 'true' : 'false'"><i data-lucide="chevron-down" class="h-3.5 w-3.5 transition" :class="{ 'rotate-180': expanded }"></i><span x-text="expanded ? 'Hide Details' : 'View More'">View More</span></button></div>
+                        <div class="min-w-0 lg:col-span-4">
+                            <div class="flex min-w-0 items-start gap-3">
+                                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                    <i data-lucide="boxes" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="break-words text-sm font-semibold text-content-primary">{{ row.workload }}</p>
+                                    <p class="mt-1 break-words text-xs text-content-muted">{{ row.namespace }} · {{ row.type }} · {{ row.replicas }} Replicas</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-2 lg:col-span-2">
+                            {{ table_label.status_label(resource_label, tone=resource_tone, size='compact') }}
+                            {{ table_label.status_label(qos_label, tone=qos_tone, size='compact') }}
+                        </div>
+                        <div class="min-w-0 lg:col-span-4">
+                            <div class="flex items-center justify-between gap-2 text-xs">
+                                <span class="text-content-muted">Efficiency</span>
+                                <span class="font-semibold text-content-primary">{{ row.efficiency_display }}%</span>
+                            </div>
+                            {{ progress_bar.bar(row.efficiency, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=row.workload ~ ' efficiency') }}
+                        </div>
+                        <div class="lg:col-span-2">
+                            <p class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-content-muted lg:hidden">Risk</p>
+                            {{ table_label.status_label(risk_label, tone=risk_tone, size='compact') }}
+                        </div>
                     </div>
 
-                    <div x-show="expanded" x-bind:hidden="!expanded" hidden x-cloak class="border-t border-outline-subtle bg-surface-hover px-4 py-5">
-                        <div class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
-                            <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between"><div><div class="flex flex-wrap items-center gap-2"><h3 class="font-semibold text-content-primary">{{ row.workload }}</h3>{{ table_label.metadata_label(row.namespace, 'folder-tree', wrap=true, size='compact') }}{{ table_label.status_label(risk_label, tone=risk_tone, size='compact') }}</div><p class="mt-1 text-xs leading-5 text-content-muted">Request, limit, usage, peak, QoS, and pod mapping detail.</p></div><div class="flex flex-wrap gap-2">{{ table_label.status_label(resource_label, tone=resource_tone, size='compact') }}{{ table_label.status_label(qos_label, tone=qos_tone, size='compact') }}</div></header>
-                            <div class="grid gap-4 p-4 lg:grid-cols-3">
+                    <button type="button"
+                            class="group flex w-full items-center gap-3 border-t border-outline-subtle bg-surface-subtle px-4 py-2.5 text-left text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kaori-accent/60"
+                            @click="expanded = !expanded"
+                            :aria-expanded="expanded ? 'true' : 'false'"
+                            aria-controls="workload-mapping-details-{{ loop.index }}">
+                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary shadow-sm">
+                            <i data-lucide="scan-search" class="h-3.5 w-3.5"></i>
+                        </span>
+                        <span x-text="expanded ? 'Hide Resource Details' : 'View Resource Details'">View Resource Details</span>
+                        <span class="ml-auto hidden font-medium text-content-muted md:inline">Requests, Limits, Usage, QoS &amp; Pods</span>
+                        <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 transition-transform" :class="{ 'rotate-180': expanded }"></i>
+                    </button>
+
+                    <div id="workload-mapping-details-{{ loop.index }}"
+                         x-show="expanded"
+                         x-bind:hidden="!expanded"
+                         hidden
+                         x-cloak
+                         class="bg-surface-subtle px-4 pb-4">
+                        <div class="overflow-hidden rounded-b-lg border border-t-0 border-outline-subtle bg-surface-card">
+                            <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <h3 class="font-semibold text-content-primary">{{ row.workload }}</h3>
+                                        {{ table_label.metadata_label(row.namespace, 'folder-tree', wrap=true, size='compact') }}
+                                        {{ table_label.status_label(risk_label, tone=risk_tone, size='compact') }}
+                                    </div>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Request, limit, usage, peak, QoS, and pod mapping details.</p>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    {{ table_label.status_label(resource_label, tone=resource_tone, size='compact') }}
+                                    {{ table_label.status_label(qos_label, tone=qos_tone, size='compact') }}
+                                </div>
+                            </header>
+
+                            <div class="grid divide-y divide-outline-subtle lg:grid-cols-3 lg:divide-x lg:divide-y-0">
                                 {% for title, icon, values in [
                                     ('CPU Profile', 'cpu', [('Request', row.cpu_request), ('Limit', row.cpu_limit), ('Average Usage', row.cpu_avg), ('Peak Usage', row.cpu_peak)]),
                                     ('Memory Profile', 'memory-stick', [('Request', row.memory_request), ('Limit', row.memory_limit), ('Average Usage', row.memory_avg), ('Peak Usage', row.memory_peak)])
                                 ] %}
-                                    <section class="rounded-lg border border-outline-subtle bg-surface-hover p-4"><div class="flex items-center gap-2"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><h4 class="text-sm font-semibold text-content-primary">{{ title }}</h4></div><dl class="mt-4 space-y-2 text-sm">{% for label, value in values %}<div class="flex items-center justify-between gap-3"><dt class="text-content-muted">{{ label }}</dt><dd class="font-semibold text-content-primary">{{ value }}</dd></div>{% endfor %}</dl></section>
+                                    <section class="p-4">
+                                        <div class="flex items-center gap-2">
+                                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                                <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                                            </span>
+                                            <h4 class="text-sm font-semibold text-content-primary">{{ title }}</h4>
+                                        </div>
+                                        <dl class="mt-4 space-y-2 text-sm">
+                                            {% for label, value in values %}
+                                                <div class="flex items-center justify-between gap-3">
+                                                    <dt class="text-content-muted">{{ label }}</dt>
+                                                    <dd class="font-semibold text-content-primary">{{ value }}</dd>
+                                                </div>
+                                            {% endfor %}
+                                        </dl>
+                                    </section>
                                 {% endfor %}
-                                <section class="rounded-lg border border-outline-subtle bg-surface-hover p-4"><div class="flex items-center justify-between gap-3"><div class="flex items-center gap-2"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="package-search" class="h-4 w-4"></i></span><h4 class="text-sm font-semibold text-content-primary">Pods & QoS</h4></div>{{ table_label.metadata_label((row.detail.pods|length) ~ ' pods', size='compact') }}</div><p class="mt-4 text-xs font-semibold uppercase tracking-wide text-content-muted">QoS Distribution</p><div class="mt-2 flex flex-wrap gap-1.5">{% for qos_name, qos_count in row.detail.qos_distribution.items() %}{{ table_label.metadata_label(qos_name ~ ': ' ~ qos_count, size='compact') }}{% else %}<span class="text-sm text-content-muted">No QoS data.</span>{% endfor %}</div><p class="mt-4 text-xs font-semibold uppercase tracking-wide text-content-muted">Pods</p><div class="mt-2 flex flex-wrap gap-1.5">{% for pod in row.detail.pods[:12] %}{{ table_label.metadata_label(pod, wrap=true, size='compact') }}{% endfor %}{% if row.detail.pods|length > 12 %}{{ table_label.metadata_label('+' ~ (row.detail.pods|length - 12) ~ ' more', size='compact') }}{% endif %}</div></section>
+                                <section class="p-4">
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div class="flex items-center gap-2">
+                                            <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                                <i data-lucide="package-search" class="h-4 w-4"></i>
+                                            </span>
+                                            <h4 class="text-sm font-semibold text-content-primary">Pods &amp; QoS</h4>
+                                        </div>
+                                        {{ table_label.metadata_label((row.detail.pods|length) ~ ' Pods', size='compact') }}
+                                    </div>
+                                    <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-content-muted">QoS Distribution</p>
+                                    <div class="mt-2 flex flex-wrap gap-1.5">
+                                        {% for qos_name, qos_count in row.detail.qos_distribution.items() %}
+                                            {{ table_label.metadata_label(qos_name ~ ': ' ~ qos_count, size='compact') }}
+                                        {% else %}
+                                            <span class="text-sm text-content-muted">No QoS Data.</span>
+                                        {% endfor %}
+                                    </div>
+                                    <p class="mt-4 text-xs font-semibold uppercase tracking-wide text-content-muted">Pods</p>
+                                    <div class="mt-2 flex flex-wrap gap-1.5">
+                                        {% for pod in row.detail.pods[:12] %}
+                                            {{ table_label.metadata_label(pod, wrap=true, size='compact') }}
+                                        {% endfor %}
+                                        {% if row.detail.pods|length > 12 %}
+                                            {{ table_label.metadata_label('+' ~ (row.detail.pods|length - 12) ~ ' More', size='compact') }}
+                                        {% endif %}
+                                    </div>
+                                </section>
                             </div>
-                            <div class="border-t border-outline-subtle bg-surface-hover px-4 py-4"><div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="sparkles" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Recommendation</h4><p class="mt-1 text-sm leading-6 text-content-muted">{{ row.recommendation }} Validate requests and limits against observed average and peak usage before changing replicas or rollout strategy.</p></div></div></div>
+
+                            <div class="border-t border-outline-subtle bg-kaori-soft/60 px-4 py-4">
+                                <div class="flex items-start gap-3">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                                        <i data-lucide="sparkles" class="h-4 w-4"></i>
+                                    </span>
+                                    <div>
+                                        <h4 class="text-sm font-semibold text-content-primary">Recommended Action</h4>
+                                        <p class="mt-1 text-sm leading-6 text-content-secondary">{{ row.recommendation }} Validate requests and limits against observed average and peak usage before changing replicas or rollout strategy.</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </article>
             {% else %}
-                {% set empty_state_icon = "boxes" %}{% set empty_state_title = "No Workload Mapping Data Available" %}{% set empty_state_description = "Workload mapping will appear after Prometheus and inventory data match the selected namespace and filters." %}{% set empty_state_min_height = "min-h-[190px]" %}{% include "components/states/_empty_state.html" %}
+                {% set empty_state_icon = "boxes" %}
+                {% set empty_state_title = "No Workload Mapping Data Available" %}
+                {% set empty_state_description = "Workload mapping will appear after Prometheus and inventory data match the selected namespace and filters." %}
+                {% set empty_state_min_height = "min-h-[190px]" %}
+                {% include "components/states/_empty_state.html" %}
             {% endfor %}
         </div>
 
         <div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-center"><p class="text-sm text-content-muted">Showing {{ workload_pagination.start_item }}–{{ workload_pagination.end_item }} of {{ workload_pagination.total_items }} workloads</p><form method="GET" action="{{ url_for('analytics.workload_resource_mapping') }}" hx-get="{{ url_for('analytics.workload_resource_mapping') }}" hx-target="#workload-resource-mapping" hx-swap="outerHTML" hx-sync="#workload-resource-mapping:replace" hx-indicator="#{{ indicator_id }}" hx-trigger="change" class="flex items-center gap-2"><input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}"><input type="hidden" name="namespace" value="{{ selected_namespace }}"><input type="hidden" name="time_range" value="{{ selected_time_range }}"><input type="hidden" name="workload_search" value="{{ selected_workload_search }}"><input type="hidden" name="workload_type" value="{{ selected_workload_type }}"><input type="hidden" name="workload_resource_status" value="{{ selected_workload_resource_status }}"><input type="hidden" name="workload_qos" value="{{ selected_workload_qos }}"><input type="hidden" name="workload_risk" value="{{ selected_workload_risk }}"><input type="hidden" name="workload_page" value="1"><select name="workload_per_page" class="{{ pagination_ui.page_size_classes() }}">{% for value in allowed_per_page_values %}<option value="{{ value }}" {% if workload_pagination.per_page == value %}selected{% endif %}>{{ value }}</option>{% endfor %}</select></form></div>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <p class="text-sm text-content-muted">Showing {{ workload_pagination.start_item }}–{{ workload_pagination.end_item }} of {{ workload_pagination.total_items }} Workloads</p>
+                <form method="GET"
+                      action="{{ url_for('analytics.workload_resource_mapping') }}"
+                      hx-get="{{ url_for('analytics.workload_resource_mapping') }}"
+                      hx-target="#workload-resource-mapping"
+                      hx-swap="outerHTML"
+                      hx-sync="#workload-resource-mapping:replace"
+                      hx-indicator="#{{ indicator_id }}"
+                      hx-trigger="change"
+                      class="flex items-center gap-2">
+                    <input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}">
+                    <input type="hidden" name="namespace" value="{{ selected_namespace }}">
+                    <input type="hidden" name="time_range" value="{{ selected_time_range }}">
+                    <input type="hidden" name="workload_search" value="{{ selected_workload_search }}">
+                    <input type="hidden" name="workload_type" value="{{ selected_workload_type }}">
+                    <input type="hidden" name="workload_resource_status" value="{{ selected_workload_resource_status }}">
+                    <input type="hidden" name="workload_qos" value="{{ selected_workload_qos }}">
+                    <input type="hidden" name="workload_risk" value="{{ selected_workload_risk }}">
+                    <input type="hidden" name="workload_page" value="1">
+                    <select name="workload_per_page" aria-label="Workloads Per Page" class="{{ pagination_ui.page_size_classes() }}">
+                        {% for value in allowed_per_page_values %}
+                            <option value="{{ value }}" {% if workload_pagination.per_page == value %}selected{% endif %}>{{ value }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
             <div class="flex items-center gap-2">
                 {% set workload_prev_url = url_for('analytics.workload_resource_mapping', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, time_range=selected_time_range, workload_search=selected_workload_search, workload_type=selected_workload_type, workload_resource_status=selected_workload_resource_status, workload_qos=selected_workload_qos, workload_risk=selected_workload_risk, workload_page=workload_pagination.previous_page, workload_per_page=workload_pagination.per_page) %}
                 {% set workload_next_url = url_for('analytics.workload_resource_mapping', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, time_range=selected_time_range, workload_search=selected_workload_search, workload_type=selected_workload_type, workload_resource_status=selected_workload_resource_status, workload_qos=selected_workload_qos, workload_risk=selected_workload_risk, workload_page=workload_pagination.next_page, workload_per_page=workload_pagination.per_page) %}
-                {% if workload_pagination.page > 1 %}<a href="{{ workload_prev_url }}" hx-get="{{ workload_prev_url }}" hx-target="#workload-resource-mapping" hx-swap="outerHTML" hx-sync="#workload-resource-mapping:replace" hx-indicator="#{{ indicator_id }}" class="{{ pagination_ui.navigation_classes() }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>{% else %}<span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>{% endif %}
-                {{ pagination_ui.numeric_pages(workload_pagination.page, workload_pagination.total_pages) }}
-                {% if workload_pagination.page < workload_pagination.total_pages %}<a href="{{ workload_next_url }}" hx-get="{{ workload_next_url }}" hx-target="#workload-resource-mapping" hx-swap="outerHTML" hx-sync="#workload-resource-mapping:replace" hx-indicator="#{{ indicator_id }}" class="{{ pagination_ui.navigation_classes() }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>{% else %}<span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>{% endif %}
+                {% if workload_pagination.page > 1 %}
+                    <a href="{{ workload_prev_url }}" hx-get="{{ workload_prev_url }}" hx-target="#workload-resource-mapping" hx-swap="outerHTML" hx-sync="#workload-resource-mapping:replace" hx-indicator="#{{ indicator_id }}" class="{{ pagination_ui.navigation_classes() }}">
+                        <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                        Previous
+                    </a>
+                {% else %}
+                    <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">
+                        <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                        Previous
+                    </span>
+                {% endif %}
+                {{ pagination_ui.numeric_pages(workload_pagination.page, workload_pagination.total_pages, 'workload_page') }}
+                {% if workload_pagination.page < workload_pagination.total_pages %}
+                    <a href="{{ workload_next_url }}" hx-get="{{ workload_next_url }}" hx-target="#workload-resource-mapping" hx-swap="outerHTML" hx-sync="#workload-resource-mapping:replace" hx-indicator="#{{ indicator_id }}" class="{{ pagination_ui.navigation_classes() }}">
+                        Next
+                        <i data-lucide="chevron-right" class="h-4 w-4"></i>
+                    </a>
+                {% else %}
+                    <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">
+                        Next
+                        <i data-lucide="chevron-right" class="h-4 w-4"></i>
+                    </span>
+                {% endif %}
             </div>
         </div>
     </div>

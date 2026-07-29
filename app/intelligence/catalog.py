@@ -3,7 +3,7 @@ from __future__ import annotations
 INTELLIGENCE_CATALOG: list[dict[str, object]] = [
     {
         'rule_key': 'kubernetes.workload.missing_cpu_requests',
-        'title': 'Workloads without CPU requests',
+        'title': 'Workloads Without CPU Requests',
         'domain': 'kubernetes',
         'source_kind': 'workload',
         'category': 'governance',
@@ -22,7 +22,7 @@ INTELLIGENCE_CATALOG: list[dict[str, object]] = [
     },
     {
         'rule_key': 'kubernetes.workload.missing_memory_requests',
-        'title': 'Workloads without memory requests',
+        'title': 'Workloads Without Memory Requests',
         'domain': 'kubernetes',
         'source_kind': 'workload',
         'category': 'governance',
@@ -41,7 +41,7 @@ INTELLIGENCE_CATALOG: list[dict[str, object]] = [
     },
     {
         'rule_key': 'kubernetes.workload.latest_image_tag',
-        'title': 'Container image uses latest tag',
+        'title': 'Container Image Uses Latest Tag',
         'domain': 'kubernetes',
         'source_kind': 'workload',
         'category': 'governance',
@@ -60,7 +60,7 @@ INTELLIGENCE_CATALOG: list[dict[str, object]] = [
     },
     {
         'rule_key': 'kubernetes.namespace.missing_quota',
-        'title': 'Namespace without resource quota',
+        'title': 'Namespace Without Resource Quota',
         'domain': 'kubernetes',
         'source_kind': 'namespace',
         'category': 'governance',
@@ -79,7 +79,7 @@ INTELLIGENCE_CATALOG: list[dict[str, object]] = [
     },
     {
         'rule_key': 'kubernetes.tls_secret.expired',
-        'title': 'TLS Secret certificate expired',
+        'title': 'TLS Secret Certificate Expired',
         'domain': 'kubernetes',
         'source_kind': 'tls_secret',
         'category': 'governance',
@@ -98,7 +98,7 @@ INTELLIGENCE_CATALOG: list[dict[str, object]] = [
     },
     {
         'rule_key': 'kubernetes.tls_secret.expiring_soon',
-        'title': 'TLS Secret certificate expiring soon',
+        'title': 'TLS Secret Certificate Expiring Soon',
         'domain': 'kubernetes',
         'source_kind': 'tls_secret',
         'category': 'governance',
@@ -117,7 +117,7 @@ INTELLIGENCE_CATALOG: list[dict[str, object]] = [
     },
     {
         'rule_key': 'kubernetes.tls_secret.invalid',
-        'title': 'TLS Secret certificate cannot be parsed',
+        'title': 'TLS Secret Certificate Cannot Be Parsed',
         'domain': 'kubernetes',
         'source_kind': 'tls_secret',
         'category': 'governance',
@@ -136,7 +136,7 @@ INTELLIGENCE_CATALOG: list[dict[str, object]] = [
     },
     {
         'rule_key': 'kubernetes.storage.pvc_high_usage_enrichment',
-        'title': 'Persistent volume near capacity enrichment',
+        'title': 'Persistent Volume Near Capacity Enrichment',
         'domain': 'kubernetes',
         'source_kind': 'persistent_volume',
         'category': 'capacity',
@@ -155,7 +155,7 @@ INTELLIGENCE_CATALOG: list[dict[str, object]] = [
     },
     {
         'rule_key': 'kubernetes.node.memory_pressure_enrichment',
-        'title': 'Node memory pressure enrichment',
+        'title': 'Node Memory Pressure Enrichment',
         'domain': 'kubernetes',
         'source_kind': 'node',
         'category': 'capacity',
@@ -174,7 +174,7 @@ INTELLIGENCE_CATALOG: list[dict[str, object]] = [
     },
     {
         'rule_key': 'kubernetes.forecast.capacity_exhaustion',
-        'title': 'Capacity exhaustion forecast',
+        'title': 'Capacity Exhaustion Forecast',
         'domain': 'kubernetes',
         'source_kind': 'cluster',
         'category': 'capacity',
@@ -193,7 +193,7 @@ INTELLIGENCE_CATALOG: list[dict[str, object]] = [
     },
     {
         'rule_key': 'server.vm.snapshot_age_policy',
-        'title': 'VM snapshot older than policy',
+        'title': 'VM Snapshot Older Than Policy',
         'domain': 'server',
         'source_kind': 'vm',
         'category': 'operations',
@@ -212,7 +212,7 @@ INTELLIGENCE_CATALOG: list[dict[str, object]] = [
     },
     {
         'rule_key': 'server.vm.overprovisioned_cpu',
-        'title': 'VM CPU appears over-provisioned',
+        'title': 'VM CPU Appears Over-Provisioned',
         'domain': 'server',
         'source_kind': 'vm',
         'category': 'optimization',
@@ -231,7 +231,7 @@ INTELLIGENCE_CATALOG: list[dict[str, object]] = [
     },
     {
         'rule_key': 'hci.datastore.high_usage_enrichment',
-        'title': 'Datastore capacity risk enrichment',
+        'title': 'Datastore Capacity Risk Enrichment',
         'domain': 'hci',
         'source_kind': 'datastore',
         'category': 'capacity',
@@ -250,7 +250,7 @@ INTELLIGENCE_CATALOG: list[dict[str, object]] = [
     },
     {
         'rule_key': 'hci.host_imbalance',
-        'title': 'HCI host resource imbalance',
+        'title': 'HCI Host Resource Imbalance',
         'domain': 'hci',
         'source_kind': 'hci_cluster',
         'category': 'performance',
@@ -269,7 +269,7 @@ INTELLIGENCE_CATALOG: list[dict[str, object]] = [
     },
     {
         'rule_key': 'kubernetes.pod.unhealthy_phase',
-        'title': 'Pods outside healthy runtime phase',
+        'title': 'Pods Outside Healthy Runtime Phase',
         'domain': 'kubernetes',
         'source_kind': 'pod',
         'category': 'reliability',
@@ -288,7 +288,7 @@ INTELLIGENCE_CATALOG: list[dict[str, object]] = [
     },
     {
         'rule_key': 'kubernetes.pod.high_restart_count',
-        'title': 'Pods with high restart count',
+        'title': 'Pods With High Restart Count',
         'domain': 'kubernetes',
         'source_kind': 'pod',
         'category': 'reliability',
@@ -307,7 +307,7 @@ INTELLIGENCE_CATALOG: list[dict[str, object]] = [
     },
     {
         'rule_key': 'kubernetes.node.not_ready',
-        'title': 'Node is not Ready',
+        'title': 'Node Is Not Ready',
         'domain': 'kubernetes',
         'source_kind': 'node',
         'category': 'reliability',
@@ -326,7 +326,7 @@ INTELLIGENCE_CATALOG: list[dict[str, object]] = [
     },
     {
         'rule_key': 'kubernetes.storage.binding_state',
-        'title': 'Storage object needs binding review',
+        'title': 'Storage Object Needs Binding Review',
         'domain': 'kubernetes',
         'source_kind': 'persistent_volume',
         'category': 'capacity',

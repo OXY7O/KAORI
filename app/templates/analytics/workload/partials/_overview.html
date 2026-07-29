@@ -6,21 +6,69 @@
     'layout-dashboard',
     workload_posture.value|default('Overview')
 ) %}
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {% set overview_metrics = [
-            ('Workloads', workload_count_display, 'Mapped workload objects in scope', 'boxes'),
-            ('Governance Findings', finding_count_display, 'Quota and resource findings', 'shield-alert'),
-            ('Recommendations', recommendation_count_display, 'Actionable workload guidance', 'list-checks'),
-            ('Observation Window', selected_time_range, 'Committed workload snapshot', 'calendar-range')
-        ] %}
+    {% set overview_metrics = [
+        ('Workloads', workload_count_display, 'Mapped Objects', 'boxes'),
+        ('Governance Findings', finding_count_display, 'Quota & Resource Risk', 'shield-alert'),
+        ('Recommendations', recommendation_count_display, 'Actionable Guidance', 'list-checks'),
+        ('Observation Window', selected_time_range, 'Committed Snapshot', 'calendar-range')
+    ] %}
+    <div class="grid divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle bg-surface-card sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
         {% for label, value, helper, icon in overview_metrics %}
-            <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
-                <div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><div class="min-w-0"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p><p class="mt-1 break-words text-xl font-semibold text-content-primary">{{ value }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p></div></div>
+            <div class="flex min-w-0 items-center gap-3 px-4 py-3.5">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
+                    <div class="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                        <p class="break-words text-lg font-semibold text-content-primary">{{ value }}</p>
+                        <p class="text-[11px] font-medium text-content-muted">{{ helper }}</p>
+                    </div>
+                </div>
             </div>
         {% endfor %}
     </div>
-    <div class="mt-4 flex flex-col gap-3 rounded-lg border border-kaori-primary/20 bg-kaori-soft px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <div><div class="flex flex-wrap items-center gap-2"><h3 class="text-sm font-semibold text-content-primary">Workload Posture</h3>{{ table_label.status_label(workload_posture.value, workload_posture.tone, size='compact') }}</div><p class="mt-1 text-sm leading-6 text-content-secondary">{{ workload_posture.description }}</p></div>
-        {{ table_label.metadata_label(selected_namespace if selected_namespace else 'All Namespaces', 'folder-tree') }}
+
+    <div class="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.45fr)_minmax(260px,0.55fr)]">
+        <section class="rounded-lg border border-kaori-primary/20 bg-kaori-soft px-4 py-4">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                            <i data-lucide="radar" class="h-4 w-4"></i>
+                        </span>
+                        <h3 class="text-sm font-semibold text-content-primary">Operational Workload Posture</h3>
+                        {{ table_label.status_label(workload_posture.value, workload_posture.tone, size='compact') }}
+                    </div>
+                    <p class="mt-2 text-sm leading-6 text-content-secondary">{{ workload_posture.description }}</p>
+                </div>
+                <div class="flex shrink-0 flex-wrap gap-2">
+                    {{ table_label.metadata_label(finding_count_display ~ ' Findings', 'shield-alert', size='compact') }}
+                    {{ table_label.metadata_label(recommendation_count_display ~ ' Recommendations', 'list-checks', size='compact') }}
+                </div>
+            </div>
+        </section>
+
+        <aside class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
+            <div class="flex items-center gap-2 border-b border-outline-subtle px-4 py-3">
+                <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <i data-lucide="scan-search" class="h-4 w-4"></i>
+                </span>
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Active Scope</p>
+                    <h3 class="text-sm font-semibold text-content-primary">Analysis Context</h3>
+                </div>
+            </div>
+            <dl class="divide-y divide-outline-subtle text-sm">
+                <div class="flex items-center justify-between gap-4 px-4 py-3">
+                    <dt class="text-content-muted">Namespace</dt>
+                    <dd class="min-w-0 truncate font-semibold text-content-primary" title="{{ selected_namespace if selected_namespace else 'All Namespaces' }}">{{ selected_namespace if selected_namespace else 'All Namespaces' }}</dd>
+                </div>
+                <div class="flex items-center justify-between gap-4 px-4 py-3">
+                    <dt class="text-content-muted">Observation Window</dt>
+                    <dd class="font-semibold text-content-primary">{{ selected_time_range }}</dd>
+                </div>
+            </dl>
+        </aside>
     </div>
 {% endcall %}

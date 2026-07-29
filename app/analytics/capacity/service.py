@@ -302,7 +302,7 @@ class CapacityService(AnalyticsBaseService):
 
         recommendation_cards = format_recommendation_cards(
             actionable_recommendations,
-            default_title='Continue capacity monitoring',
+            default_title='Continue Capacity Monitoring',
             default_description=(
                 'No actionable capacity recommendation was generated from the current risk signals. '
                 'Continue monitoring worker capacity, allocation, and headroom trends.'

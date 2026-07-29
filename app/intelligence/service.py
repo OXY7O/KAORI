@@ -828,12 +828,12 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
                 if is_catalog
                 else 'Actionable guidance from inventory state, metrics signals, alert context, and report readiness.'
             ),
-            'hero_label': 'Infrastructure intelligence',
-            'engine_status': 'Signal-based guidance',
+            'hero_label': 'Infrastructure Intelligence',
+            'engine_status': 'Signal-Based Guidance',
             'engine_description': (
                 'Evaluates inventory, metrics, alerts, and provider signals across Kubernetes, Server, and HCI assets.'
             ),
-            'workspace_label': 'Recommendation rule catalog' if is_catalog else 'Actionable recommendation workspace',
+            'workspace_label': 'Recommendation Rule Catalog' if is_catalog else 'Actionable Recommendation Workspace',
             'workspace_description': (
                 'Catalog lists rule definitions, signal sources, asset scope, detection logic, and visibility across report families.'
                 if is_catalog
@@ -928,22 +928,22 @@ def get_alert_intelligence_payload() -> dict[str, Any]:
     return {
         'page_title': 'Alert Intelligence',
         'page_subtitle': 'Alert enrichment workspace for Prometheus, Alertmanager, Server, and HCI signals.',
-        'hero_label': 'Alert signal intelligence',
-        'engine_status': 'Enrichment ready',
+        'hero_label': 'Alert Signal Intelligence',
+        'engine_status': 'Enrichment Ready',
         'engine_description': 'Prometheus detects, Alertmanager routes, Node Exporter and HCI API extend infrastructure context.',
         'boundaries': [
             {
-                'title': 'Kubernetes alert path',
+                'title': 'Kubernetes Alert Path',
                 'description': 'Prometheus owns metric detection and Alertmanager owns grouping, silence, routing, and notification per cluster.',
                 'icon': 'activity',
             },
             {
-                'title': 'Server signal path',
+                'title': 'Server Signal Path',
                 'description': 'Node Exporter supplies server-level CPU, memory, disk, and network metrics for KAORI Server Reports intelligence.',
                 'icon': 'server',
             },
             {
-                'title': 'HCI signal path',
+                'title': 'HCI Signal Path',
                 'description': 'HCI API integration supplies datastore, host balance, cluster health, and VM placement context for KAORI HCI Reports intelligence.',
                 'icon': 'network',
             },
@@ -951,22 +951,22 @@ def get_alert_intelligence_payload() -> dict[str, Any]:
         'dummy_flow': [
             {
                 'step': '1',
-                'title': 'Import signal',
+                'title': 'Import Signal',
                 'description': 'Read Kubernetes alerts from Alertmanager, server metrics from Node Exporter, or HCI health from provider APIs.',
             },
             {
                 'step': '2',
-                'title': 'Map asset',
+                'title': 'Map Asset',
                 'description': 'Classify the signal under Kubernetes, Server, or HCI and link it to the affected cluster, node, host, datastore, VM, or workload.',
             },
             {
                 'step': '3',
-                'title': 'Enrich context',
+                'title': 'Enrich Context',
                 'description': 'Attach ownership, inventory state, trend, capacity, related reports, and report-family context.',
             },
             {
                 'step': '4',
-                'title': 'Recommend action',
+                'title': 'Recommend Action',
                 'description': 'Produce investigation guidance without replacing Prometheus rules or Alertmanager routing policy.',
             },
         ],

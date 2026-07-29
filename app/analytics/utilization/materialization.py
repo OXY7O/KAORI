@@ -157,7 +157,7 @@ def _recommendation_context(
         'actionable_recommendations': recommendations,
         'recommendation_cards': format_recommendation_cards(
             recommendations,
-            default_title='Continue utilization monitoring',
+            default_title='Continue Utilization Monitoring',
             default_description=(
                 'No actionable utilization recommendation was generated from the current risk signals. '
                 'Continue monitoring CPU, memory, storage, pods, and recurring hotspots.'

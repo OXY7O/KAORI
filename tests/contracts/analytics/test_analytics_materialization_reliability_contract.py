@@ -170,7 +170,7 @@ def test_optional_alert_anomaly_failures_are_visible_as_partial_data() -> None:
     assert '-> tuple[list[dict[str, Any]], dict[str, Any]]' in anomalies
     assert "'partial': True" in anomalies
     assert 'collection_warnings' in application
-    assert 'Prometheus anomaly candidates are unavailable' in application
+    assert 'Prometheus Anomaly Candidates Are Unavailable' in application
     assert 'collection_warnings|default([])' in source_status
 
 

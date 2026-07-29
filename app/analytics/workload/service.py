@@ -2232,7 +2232,7 @@ def get_workload_analysis_context(
 
         recommendation_cards = format_recommendation_cards(
             actionable_recommendations,
-            default_title='Continue workload governance monitoring',
+            default_title='Continue Workload Governance Monitoring',
             default_description=(
                 'No actionable workload recommendation was generated from the current '
                 'quota, request, limit, QoS, and right-sizing signals.'
@@ -2498,7 +2498,7 @@ def present_workload_materialized_context(
     recommendations = build_workload_actionable_recommendations(recommendation_payload)
     recommendation_cards = format_recommendation_cards(
         recommendations,
-        default_title='Continue workload governance monitoring',
+        default_title='Continue Workload Governance Monitoring',
         default_description=(
             'No actionable workload recommendation was generated from the current '
             'quota, request, limit, QoS, and right-sizing signals.'
