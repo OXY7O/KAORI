@@ -81,7 +81,6 @@
                     {% else %}
                         {{ detail_object.empty('No Placement Constraints', 'No selector, toleration, affinity, or topology spread rule is configured.', 'map-pinned') }}
                     {% endif %}
-                    {{ info_box('Network Identity', 'Pod IP identifies the Pod; Host IP identifies its node.', 'network', 'brand', true) }}
                 {% endcall %}
             {% endcall %}
             {% call detail.detail_card('Pod Conditions', 'activity', pod.ready, class_name='min-h-[32rem]') %}
@@ -115,7 +114,6 @@
                     {% if pod.message %}
                         <div class="rounded-lg border border-status-warning-border bg-status-warning-soft p-3 text-xs leading-5 text-status-warning-text">{{ pod.message }}</div>
                     {% endif %}
-                    {{ info_box('Snapshot Boundary', 'Conditions are snapshot data; history remains in Analytics.', 'info', 'brand', true) }}
                 {% endcall %}
             {% endcall %}
             {% call detail.detail_card('Pod Configuration', 'settings-2', table_label.count_text(pod.configuration.container_count, 'Container'), class_name='min-h-[30rem]') %}

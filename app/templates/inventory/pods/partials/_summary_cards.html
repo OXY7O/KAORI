@@ -21,10 +21,10 @@
     </header>
 
     {% set summary_cards = [
-        ('Total Pods', inventory.total_pods, 'container', 'Pods in the current result.'),
-        ('Running', inventory.running, 'circle-check', 'Pods currently in Running phase.'),
-        ('Unique Images', inventory.unique_image_count, 'package-search', 'Distinct container images observed.'),
-        ('Image References', inventory.total_image_references, 'boxes', 'Container image references across pods.')
+        ('Total Pods', inventory.total_pods, 'container', 'Pods In The Current Result'),
+        ('Running', inventory.running, 'circle-check', 'Pods Currently In Running Phase'),
+        ('Unique Images', inventory.unique_image_count, 'package-search', 'Distinct Container Images Observed'),
+        ('Image References', inventory.total_image_references, 'boxes', 'Container Image References Across Pods')
     ] %}
     <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
         {% for label, value, icon, description in summary_cards %}
@@ -45,7 +45,7 @@
 
     <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-[1.15fr_0.85fr_0.85fr]">
         <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-4"><div class="min-w-0 flex-1"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Running Coverage</p><div class="mt-2 flex items-end gap-3"><p class="text-2xl font-semibold text-content-primary">{{ running_percentage | int }}%</p><p class="pb-0.5 text-xs font-medium text-content-muted">{{ inventory.running }} of {{ inventory.total_pods }} Running</p></div>{{ progress_bar.bar(running_percentage, track_classes="mt-4 h-2 overflow-hidden rounded-full bg-kaori-soft", fill_classes="h-full rounded-full bg-kaori-primary", label="Pod running coverage") }}</div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-brand-outline bg-kaori-soft text-kaori-primary"><i data-lucide="badge-check" class="h-4 w-4"></i></span></div></article>
-        <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-3"><div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Pending Pods</p><p class="mt-2 text-2xl font-semibold text-content-primary">{{ inventory.pending }}</p><p class="mt-2 text-xs leading-5 text-content-muted">Pods waiting for scheduling or startup.</p></div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-status-warning-border bg-status-warning-soft text-status-warning-text"><i data-lucide="clock-3" class="h-4 w-4"></i></span></div></article>
-        <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-3"><div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Failed Pods</p><p class="mt-2 text-2xl font-semibold text-content-primary">{{ inventory.failed }}</p><p class="mt-2 text-xs leading-5 text-content-muted">Pods requiring runtime investigation.</p></div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-status-critical-border bg-status-critical-soft text-status-critical-text"><i data-lucide="circle-x" class="h-4 w-4"></i></span></div></article>
+        <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-3"><div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Pending Pods</p><p class="mt-2 text-2xl font-semibold text-content-primary">{{ inventory.pending }}</p><p class="mt-2 text-xs leading-5 text-content-muted">Pods Waiting For Scheduling Or Startup</p></div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-status-warning-border bg-status-warning-soft text-status-warning-text"><i data-lucide="clock-3" class="h-4 w-4"></i></span></div></article>
+        <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-3"><div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Failed Pods</p><p class="mt-2 text-2xl font-semibold text-content-primary">{{ inventory.failed }}</p><p class="mt-2 text-xs leading-5 text-content-muted">Pods Requiring Runtime Investigation</p></div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-status-critical-border bg-status-critical-soft text-status-critical-text"><i data-lucide="circle-x" class="h-4 w-4"></i></span></div></article>
     </div>
 </section>
