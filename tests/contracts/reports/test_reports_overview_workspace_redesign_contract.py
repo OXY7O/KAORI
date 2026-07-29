@@ -39,7 +39,7 @@ def test_reporting_overview_is_general_and_integration_driven() -> None:
     assert 'dashboard screenshots' not in source
 
 
-def test_coverage_and_pipeline_share_one_horizontal_tab_workspace() -> None:
+def test_coverage_and_pipeline_use_short_tabs_and_scalable_expandables() -> None:
     workspace = read(OVERVIEW / 'partials' / '_coverage_pipeline_workspace.html')
     coverage = read(OVERVIEW / 'partials' / '_report_type_coverage.html')
     pipeline = read(OVERVIEW / 'partials' / '_pipeline_status.html')
@@ -47,15 +47,25 @@ def test_coverage_and_pipeline_share_one_horizontal_tab_workspace() -> None:
     assert "reportWorkspaceTab: 'coverage'" in read(OVERVIEW / 'index.html')
     assert "activateReportWorkspaceTab('coverage')" in workspace
     assert "activateReportWorkspaceTab('pipeline')" in workspace
-    assert 'Report Type Coverage' in workspace
-    assert 'Reporting Pipeline Status' in workspace
-    assert 'overflow-x-auto' in coverage
-    assert 'class="flex gap-3 pb-1"' in coverage
+    assert 'Reporting Capability' in workspace
+    assert '\n                    Coverage\n' in workspace
+    assert '\n                    Pipeline\n' in workspace
+    assert 'Report Type Coverage' not in workspace
+    assert 'Reporting Pipeline Status' not in workspace
+
+    assert 'openCoverageDomain: null' in coverage
+    assert 'openCoverageDomain ===' in coverage
+    assert 'x-collapse' in coverage
     assert 'payload.report_type_coverage.domains' in coverage
-    assert 'overflow-x-auto' in pipeline
-    assert 'class="flex gap-3 pb-2"' in pipeline
+    assert 'md:grid-cols-2 2xl:grid-cols-3' in coverage
+    assert 'overflow-x-auto' not in coverage
+
+    assert 'openPipelineStage: null' in pipeline
+    assert 'openPipelineStage ===' in pipeline
+    assert 'x-collapse' in pipeline
+    assert 'lg:grid-cols-2' in pipeline
+    assert 'overflow-x-auto' not in pipeline
     assert 'min-h-[720px]' not in coverage
-    assert 'h-10 w-px' not in pipeline
 
 
 def test_current_status_and_operating_model_are_closed_by_default() -> None:
@@ -123,7 +133,7 @@ def test_report_overview_headings_use_title_case_where_appropriate() -> None:
         'Infrastructure Reporting Center',
         'Reporting Activity Snapshot',
         'Recent Generated Reports',
-        'Report Coverage & Pipeline',
+        'Reporting Capability',
         'Infrastructure Data Collection',
         'Current Status',
         'Reporting Operating Model',
