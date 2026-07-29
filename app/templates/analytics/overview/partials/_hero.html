@@ -2,107 +2,43 @@
 {% set overview_query = overview_query|default('cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range) %}
 {% set actionable = payload.actionable_recommendations|default({}) %}
 {% set active_alerts = payload.health_summary.active_alerts.value|default(0) %}
-{% set selected_cluster_name = payload.selected_cluster.name if payload.selected_cluster else 'No cluster selected' %}
-<div class="space-y-4">
-    <section class="{{ page_hero.shell_classes() }}">
-        <div class="{{ page_hero.layout_classes() }}">
-            <div class="{{ page_hero.content_classes() }}">
-                {% call page_hero.intro('chart-no-axes-combined', 'Kubernetes Analytics', 'activity') %}
-                    <h1 class="{{ page_hero.title_classes() }}">Analytics Overview</h1>
-                    <p class="mt-2 {{ page_hero.description_classes() }}">
-                        Review cluster health, resource risk, alert quality, workload posture, and actionable recommendations from one operational workspace.
-                    </p>
-                    <div class="{{ page_hero.metadata_row_classes() }}">
-                        {{ page_hero.meta_label('server', selected_cluster_name) }}
-                        {% if dependency_blocker %}
-                            {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
-                        {% else %}
-                            {{ page_hero.meta_label('bell', active_alerts ~ ' Active Alerts') }}
-                            {{ page_hero.meta_label('list-checks', actionable.total_count|default(0) ~ ' Actionable') }}
-                        {% endif %}
-                    </div>
-                {% endcall %}
-            </div>
-            <aside class="{{ page_hero.aside_classes() }}"
-                   aria-label="Analytics operational posture">
-                {% if dependency_blocker %}
-                    {% set analytics_posture_label = "Operational Posture" %}
-                    {% include 'analytics/components/_blocked_posture.html' %}
-                {% else %}
-                    <div id="overview-hero-posture"
-                         class="h-full"
-                         hx-target="this"
-                         hx-disinherit="hx-target hx-select hx-push-url hx-indicator"
-                         hx-get="{{ url_for('analytics.overview_section', section='hero-posture') }}?{{ overview_query }}"
-                         hx-trigger="load delay:650ms"
-                         hx-swap="innerHTML">
-                        {% include "analytics/overview/partials/_hero_posture_loading.html" %}
-                    </div>
-                {% endif %}
-            </aside>
+{% set selected_cluster_name = payload.selected_cluster.name if payload.selected_cluster else 'No Cluster Selected' %}
+<section class="{{ page_hero.shell_classes() }}">
+    <div class="{{ page_hero.layout_classes() }}">
+        <div class="{{ page_hero.content_classes() }}">
+            {% call page_hero.intro('chart-no-axes-combined', 'Kubernetes Analytics', 'activity') %}
+                <h1 class="{{ page_hero.title_classes() }}">Analytics Overview</h1>
+                <p class="mt-2 {{ page_hero.description_classes() }}">
+                    Consolidated operational posture for utilization, capacity, workloads, storage, consumers, forecasts, alerts, and prioritized actions.
+                </p>
+                <div class="{{ page_hero.metadata_row_classes() }}">
+                    {{ page_hero.meta_label('server', selected_cluster_name) }}
+                    {% if dependency_blocker %}
+                        {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
+                    {% else %}
+                        {{ page_hero.meta_label('clock-3', payload.selected_time_range|upper ~ ' Analysis Window') }}
+                        {{ page_hero.meta_label('bell', active_alerts ~ ' Active Alerts') }}
+                        {{ page_hero.meta_label('list-checks', actionable.total_count|default(0) ~ ' Actionable') }}
+                    {% endif %}
+                </div>
+            {% endcall %}
         </div>
-    </section>
-    {% if not dependency_blocker %}
-        <form id="analytics-overview-filter"
-              method="get"
-              hx-get="{{ url_for('analytics.overview') }}"
-              hx-trigger="change[event.target.matches('select')] delay:120ms"
-              hx-target="#analytics-overview-page"
-              hx-select="#analytics-overview-page"
-              hx-swap="outerHTML"
-              hx-push-url="true"
-              hx-indicator="#analytics-overview-refresh-indicator"
-              hx-sync="#analytics-overview-page:replace"
-              class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-            <div class="p-5">
-                <div class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(340px,420px)] lg:items-center">
-                    <div id="overview-prometheus-status"
-                         hx-target="this"
-                         hx-select="unset"
-                         hx-disinherit="hx-target hx-select hx-push-url hx-indicator"
-                         hx-get="{{ url_for('analytics.overview_section', section='prometheus-status') }}?{{ overview_query }}"
-                         hx-trigger="load delay:100ms"
-                         hx-swap="innerHTML">
-                        {% include "analytics/overview/partials/_prometheus_status_loading.html" %}
-                    </div>
-                    <div class="grid gap-3 sm:grid-cols-2">
-                        <label class="block">
-                            <span class="text-xs font-semibold text-content-secondary">Cluster</span>
-                            <select name="cluster_id"
-                                    class="mt-1.5 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary shadow-sm outline-none transition hover:border-outline-strong focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
-                                {% for cluster in payload.clusters %}
-                                    <option value="{{ cluster.id }}"
-                                            {% if cluster.id|string == payload.selected_cluster_id|string %}selected{% endif %}>{{ cluster.name }}</option>
-                                {% endfor %}
-                            </select>
-                        </label>
-                        <label class="block">
-                            <span class="text-xs font-semibold text-content-secondary">Time Range</span>
-                            <select name="time_range"
-                                    class="mt-1.5 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary shadow-sm outline-none transition hover:border-outline-strong focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
-                                <option value="1h"
-                                        {% if payload.selected_time_range == "1h" %}selected{% endif %}>Last 1 Hour</option>
-                                <option value="6h"
-                                        {% if payload.selected_time_range == "6h" %}selected{% endif %}>Last 6 Hours</option>
-                                <option value="12h"
-                                        {% if payload.selected_time_range == "12h" %}selected{% endif %}>Last 12 Hours</option>
-                                <option value="24h"
-                                        {% if payload.selected_time_range == "24h" %}selected{% endif %}>Last 24 Hours</option>
-                                <option value="7d"
-                                        {% if payload.selected_time_range == "7d" %}selected{% endif %}>Last 7 Days</option>
-                                <option value="30d"
-                                        {% if payload.selected_time_range == "30d" %}selected{% endif %}>Last 30 Days</option>
-                                <option value="60d"
-                                        {% if payload.selected_time_range == "60d" %}selected{% endif %}>Last 60 Days</option>
-                            </select>
-                        </label>
-                    </div>
+        <aside class="{{ page_hero.aside_classes() }}"
+               aria-label="Analytics Operational Posture">
+            {% if dependency_blocker %}
+                {% set analytics_posture_label = "Operational Posture" %}
+                {% include 'analytics/components/_blocked_posture.html' %}
+            {% else %}
+                <div id="overview-hero-posture"
+                     class="h-full"
+                     hx-target="this"
+                     hx-disinherit="hx-target hx-select hx-push-url hx-indicator"
+                     hx-get="{{ url_for('analytics.overview_section', section='hero-posture') }}?{{ overview_query }}"
+                     hx-trigger="load delay:650ms"
+                     hx-swap="innerHTML">
+                    {% include "analytics/overview/partials/_hero_posture_loading.html" %}
                 </div>
-                <div id="analytics-overview-refresh-indicator"
-                     class="htmx-indicator mt-4 h-1 overflow-hidden rounded-full bg-kaori-soft">
-                    <div class="h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></div>
-                </div>
-            </div>
-        </form>
-    {% endif %}
-</div>
+            {% endif %}
+        </aside>
+    </div>
+</section>

@@ -2,64 +2,89 @@
 {% set summary = payload.actionable_recommendations %}
 {% set summary_tone = {'green': 'normal', 'amber': 'warning', 'red': 'critical', 'gray': 'unknown'}.get(summary.tone, 'unknown') %}
 {% set top_sources = summary.sources|sort(attribute='count', reverse=true) %}
+{% set highest_source = top_sources[0] if top_sources else none %}
 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="list-checks" class="h-5 w-5"></i>
-                </span>
-                <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <h2 class="text-base font-semibold text-content-primary">Actionable Recommendations</h2>
-                        {{ table_label.status_label(summary.total_count ~ ' actionable · ' ~ summary.status, tone=summary_tone, size='compact') }}
-                    </div>
-                    <p class="mt-1 text-sm leading-6 text-content-muted">Top operational signals across capacity, utilization, storage, workload, forecast, consumers, and alerts.</p>
+    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <i data-lucide="list-checks" class="h-4.5 w-4.5"></i>
+            </span>
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-base font-semibold text-content-primary">Actionable Recommendation Summary</h2>
+                    {{ table_label.status_label(summary.status, summary_tone) }}
                 </div>
-            </div>
-            <div class="flex flex-wrap items-center gap-2">
-                {% for source in top_sources[:3] %}
-                    {% set source_tone = {'green': 'normal', 'amber': 'warning', 'red': 'critical', 'gray': 'unknown'}.get(source.tone, 'unknown') %}
-                    {{ table_label.status_label(source.label ~ ' · ' ~ source.count, tone=source_tone, size='compact') }}
-                {% endfor %}
+                <p class="mt-1 text-xs leading-5 text-content-muted">Consolidated action counts across all Kubernetes Analytics domains.</p>
             </div>
         </div>
+        {{ table_label.metadata_label(summary.total_count ~ ' Actionable', 'clipboard-list', size='compact') }}
     </header>
 
-    <div class="grid gap-5 p-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(260px,0.55fr)] sm:p-6">
-        <div class="divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle">
-            {% for source in summary.sources %}
-                {% set source_tone = {'green': 'normal', 'amber': 'warning', 'red': 'critical', 'gray': 'unknown'}.get(source.tone, 'unknown') %}
-                <a href="{{ source.href }}?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}"
-                   class="flex items-center justify-between gap-4 bg-surface-card px-4 py-3 transition hover:bg-surface-hover">
-                    <div class="min-w-0">
-                        <p class="text-sm font-semibold text-content-primary">{{ source.label }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ source.description }}</p>
-                    </div>
-                    {{ table_label.status_label(source.count, tone=source_tone, size='compact') }}
-                </a>
-            {% endfor %}
-        </div>
+    {% set metrics = [
+        {'label': 'Total Actionable', 'value': summary.total_count, 'icon': 'list-checks', 'tone': 'info'},
+        {'label': 'Critical Priority', 'value': summary.priority_summary.critical, 'icon': 'siren', 'tone': 'critical'},
+        {'label': 'Warning Priority', 'value': summary.priority_summary.warning, 'icon': 'triangle-alert', 'tone': 'warning'},
+        {'label': 'Highest Source', 'value': highest_source.label if highest_source else 'No Source', 'icon': 'database-zap', 'tone': 'maintenance'}
+    ] %}
+    <div class="grid grid-cols-1 divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-4">
+        {% for metric in metrics %}
+            {% set icon_class = {
+                'critical': 'bg-status-critical-soft text-status-critical',
+                'warning': 'bg-status-warning-soft text-status-warning',
+                'info': 'bg-status-info-soft text-status-info',
+                'maintenance': 'bg-status-maintenance-soft text-status-maintenance'
+            }.get(metric.tone, 'bg-kaori-soft text-kaori-primary') %}
+            <article class="min-w-0 px-4 py-4 sm:border-r sm:border-outline-subtle xl:px-5">
+                <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ icon_class }}"><i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i></span>
+                <p class="mt-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ metric.label }}</p>
+                <p class="mt-1.5 break-words text-lg font-semibold text-content-primary">{{ metric.value }}</p>
+            </article>
+        {% endfor %}
+    </div>
 
-        <aside class="rounded-lg border border-kaori-primary/20 bg-kaori-soft p-4">
-            <div class="flex items-start justify-between gap-3">
+    <div class="grid border-t border-outline-subtle xl:grid-cols-3 xl:divide-x xl:divide-outline-subtle">
+        <article class="px-4 py-4 sm:px-5 xl:col-span-2">
+            <div class="flex items-center justify-between gap-3">
                 <div>
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-content-muted">Priority Summary</p>
-                    <p class="mt-1 text-sm font-semibold text-content-primary">Operational Triage</p>
+                    <h3 class="text-sm font-semibold text-content-primary">Recommendation Source Queue</h3>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Review domains with the largest actionable count first.</p>
                 </div>
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
-                    <i data-lucide="gauge" class="h-4 w-4"></i>
-                </span>
+                {{ table_label.metadata_label(summary.sources|length ~ ' Domains', 'layers-3', size='compact') }}
             </div>
-            <div class="mt-4 grid grid-cols-2 divide-x divide-kaori-primary/15 rounded-lg border border-kaori-primary/15 bg-surface-card">
-                <div class="px-3 py-3">
-                    <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Critical</p>
-                    <p class="mt-1 text-xl font-semibold text-content-primary">{{ summary.priority_summary.critical }}</p>
+            {% if summary.sources %}
+                <div class="mt-4 divide-y divide-outline-subtle border-y border-outline-subtle">
+                    {% for source in top_sources %}
+                        {% set source_tone = {'green': 'normal', 'amber': 'warning', 'red': 'critical', 'gray': 'unknown'}.get(source.tone, 'unknown') %}
+                        <a href="{{ source.href }}?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}"
+                           class="flex items-center justify-between gap-4 py-3 transition hover:text-kaori-primary">
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">{{ source.label }}</p>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ source.description }}</p>
+                            </div>
+                            {{ table_label.status_label(source.count, source_tone, size='compact') }}
+                        </a>
+                    {% endfor %}
                 </div>
-                <div class="px-3 py-3">
-                    <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Warning</p>
-                    <p class="mt-1 text-xl font-semibold text-content-primary">{{ summary.priority_summary.warning }}</p>
-                </div>
+            {% else %}
+                <p class="mt-4 text-xs leading-5 text-content-muted">No actionable recommendation source is available.</p>
+            {% endif %}
+        </article>
+
+        <aside class="border-t border-outline-subtle px-4 py-4 sm:px-5 xl:border-t-0">
+            <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Operational Triage</p>
+            {% if summary.priority_summary.critical > 0 %}
+                <p class="mt-1 text-sm font-semibold text-status-critical">Resolve Critical Recommendations First</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Validate service impact, ownership, evidence freshness, and rollback options before planned optimization work.</p>
+            {% elif summary.priority_summary.warning > 0 %}
+                <p class="mt-1 text-sm font-semibold text-status-warning">Schedule Warning Recommendations</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Prioritize by affected resource, forecast direction, and remaining operational headroom.</p>
+            {% else %}
+                <p class="mt-1 text-sm font-semibold text-status-normal">No Immediate Action Queue</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Continue preventive review and confirm that committed snapshots remain current.</p>
+            {% endif %}
+            <div class="mt-4 border-t border-outline-subtle pt-3">
+                <p class="text-xs font-semibold text-content-primary">Decision Principle</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Risk severity determines order; source evidence and operational ownership determine whether action is safe to execute.</p>
             </div>
             <p class="mt-4 text-xs leading-5 text-content-muted">{{ summary.description }}</p>
         </aside>
