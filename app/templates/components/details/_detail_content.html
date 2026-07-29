@@ -13,6 +13,15 @@
         {{ table_label.status_label(value, tone, icon) }}
     </div>
 {%- endmacro %}
+{% macro metadata_row(label, value='-', icon=None, wrap=False) -%}
+    {% set display_value = value if value not in [None, ''] else '-' %}
+    <div class="flex items-start justify-between gap-3">
+        <span class="shrink-0 text-xs leading-5 text-content-muted">{{ label }}</span>
+        <span class="flex min-w-0 max-w-[68%] justify-end text-right">
+            {{ table_label.metadata_label(display_value, icon, wrap, 'detail') }}
+        </span>
+    </div>
+{%- endmacro %}
 {% macro detail_card(title, icon, badge=None, badge_type='metadata', badge_tone='unknown', class_name='') -%}
     <section class="flex h-full flex-col rounded-xl border border-outline-subtle bg-surface-card p-4 {{ class_name }}">
         <div class="mb-4 flex items-center justify-between gap-3">
