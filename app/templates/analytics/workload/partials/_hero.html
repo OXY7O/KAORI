@@ -31,7 +31,7 @@
                             <div>
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Workload Posture</p>
                                 <p class="mt-1 text-3xl font-semibold leading-none text-brand-foreground">{{ workload_posture.value }}</p>
-                                <p class="mt-2 text-sm leading-5 text-brand-foreground-muted">{{ workload_posture.description }}</p>
+                                {{ page_hero.context_posture_note(workload_posture.description, workload_posture.tone) }}
                             </div>
                             {{ table_label.status_label(workload_posture.value, workload_posture.tone, workload_posture.icon) }}
                         </div>

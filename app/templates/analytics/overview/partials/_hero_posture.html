@@ -30,7 +30,7 @@
         <div class="min-w-0">
             <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Operational Posture</p>
             <p class="mt-1 text-3xl font-semibold leading-none text-brand-foreground">{{ posture.value }}</p>
-            <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">{{ posture_short_description }}</p>
+            {{ page_hero.context_posture_note(posture_short_description, posture_tone) }}
         </div>
         {{ table_label.status_label(posture.status, posture_tone, posture_icon) }}
     </div>

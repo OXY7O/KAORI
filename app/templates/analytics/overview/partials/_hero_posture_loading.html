@@ -5,7 +5,10 @@
         <div class="min-w-0">
             <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Operational Posture</p>
             <div class="mt-3 h-8 w-32 animate-pulse rounded-lg bg-brand-surface"></div>
-            <div class="mt-3 h-3 w-52 animate-pulse rounded-md bg-brand-surface"></div>
+            <div class="mt-3 flex min-h-11 items-center gap-2.5 rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
+                <div class="h-7 w-7 animate-pulse rounded-md bg-brand-surface-strong"></div>
+                <div class="h-3 w-40 animate-pulse rounded-md bg-brand-surface-strong"></div>
+            </div>
         </div>
         {{ table_label.status_label('Checking', 'pending', 'loader-circle') }}
     </div>

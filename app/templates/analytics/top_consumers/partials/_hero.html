@@ -50,7 +50,7 @@
                         <div>
                             <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Consumer Posture</p>
                             <p class="mt-1 text-3xl font-bold leading-none text-brand-foreground">{{ posture_value }}</p>
-                            <p class="mt-2 text-sm leading-5 text-brand-foreground-muted">{{ posture_desc }}</p>
+                            {{ page_hero.context_posture_note(posture_desc, posture_tone) }}
                         </div>
                         {{ table_label.status_label(posture_value, posture_tone, posture_icon) }}
                     </div>

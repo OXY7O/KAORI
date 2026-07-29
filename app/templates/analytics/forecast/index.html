@@ -3,7 +3,7 @@
 {% import "components/table_label.html" as table_label %}
 {% block title %}Resource Forecast{% endblock title %}
 {% block dashboard_content %}
-    <div id="forecast-page" class="kaori-analytics-page space-y-6" data-analytics-page-request-tracking="false">
+    <div id="forecast-page" class="space-y-6" data-analytics-page-request-tracking="false">
         {% set selected_cluster_name = cluster.name if cluster else 'No Cluster Selected' %}
         {% set summary = forecast_payload.summary %}
         {% set recommendation_count = forecast_payload.recommendation_count|default(0) %}
@@ -48,7 +48,7 @@
                                 <div>
                                     <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Forecast Posture</p>
                                     <p class="mt-1 text-3xl font-bold leading-none text-brand-foreground">{{ posture_value }}</p>
-                                    <p class="mt-2 text-sm leading-5 text-brand-foreground-muted">{{ posture_desc }}</p>
+                                    {{ page_hero.context_posture_note(posture_desc, posture_tone) }}
                                 </div>
                                 {{ table_label.status_label(posture_value, posture_tone, posture_icon) }}
                             </div>
