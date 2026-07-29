@@ -1,5 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/table_label.html" as table_label %}
 {% block title %}Resource Forecast{% endblock title %}
 {% block dashboard_content %}
     <div id="forecast-page" class="space-y-6" data-analytics-page-request-tracking="false">
@@ -40,13 +41,29 @@
                         {% set analytics_posture_label = "Forecast Posture" %}
                         {% include 'analytics/components/_blocked_posture.html' %}
                     {% else %}
+                        {% set posture_tone = 'critical' if posture_value == 'Critical' else ('warning' if posture_value == 'Watch' else ('normal' if posture_value == 'Healthy' else 'unknown')) %}
+                        {% set posture_icon = 'shield-alert' if posture_value == 'Critical' else ('triangle-alert' if posture_value == 'Watch' else ('circle-check' if posture_value == 'Healthy' else 'database-zap')) %}
                         <div class="{{ page_hero.context_panel_classes() }}">
-                            <div>
-                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Forecast Posture</p>
-                                <h2 class="mt-1 text-2xl font-bold text-brand-foreground">{{ posture_value }}</h2>
-                                <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">{{ posture_desc }}</p>
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Forecast Posture</p>
+                                    <p class="mt-1 text-3xl font-bold leading-none text-brand-foreground">{{ posture_value }}</p>
+                                    <p class="mt-2 text-sm leading-5 text-brand-foreground-muted">{{ posture_desc }}</p>
+                                </div>
+                                {{ table_label.status_label(posture_value, posture_tone, posture_icon) }}
                             </div>
-                            <div class="mt-4">{{ page_hero.meta_label('list-checks', recommendation_count ~ ' Actionable') }}</div>
+                            <div class="mt-auto grid grid-cols-2 gap-3 pt-4">
+                                <div class="{{ page_hero.context_metric_card_classes() }}">
+                                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Highest Projection</p>
+                                    <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ summary.highest_projected_percent|default(0) }}%</p>
+                                    <p class="{{ page_hero.context_metric_helper_classes() }}">{{ summary.highest_projected_label|default('No projection', true) }}</p>
+                                </div>
+                                <div class="{{ page_hero.context_metric_card_classes() }}">
+                                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Actionable</p>
+                                    <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ recommendation_count }}</p>
+                                    <p class="{{ page_hero.context_metric_helper_classes() }}">Forecast recommendations</p>
+                                </div>
+                            </div>
                         </div>
                     {% endif %}
                 </aside>

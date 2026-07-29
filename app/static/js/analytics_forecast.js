@@ -141,8 +141,9 @@ function renderResourceForecastCharts() {
                         position: 'bottom',
                         labels: {
                             usePointStyle: true,
-                            boxWidth: 8,
-                            padding: 18
+                            boxWidth: 14,
+                            boxHeight: 10,
+                            padding: 16
                         }
                     },
                     tooltip: {

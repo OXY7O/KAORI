@@ -12,7 +12,7 @@ def test_forecast_filters_use_one_desktop_row_and_local_readiness_warning() -> N
     controls = read("app/templates/analytics/forecast/partials/_controls_readiness.html")
     page = read("app/templates/analytics/forecast/index.html")
 
-    assert "2xl:grid-cols-6" in controls
+    assert "xl:grid-cols-6" in controls
     assert controls.count("<select") == 6
     assert "hx-sync=\"#forecast-page:replace\"" in controls
     assert "Forecast Snapshot Available · Source Evidence Incomplete" in controls
