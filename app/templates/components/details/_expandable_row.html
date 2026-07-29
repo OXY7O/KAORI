@@ -6,6 +6,7 @@
             data-detail-item="{{ item_id }}"
             data-detail-target="{{ target_id }}"
             data-detail-row="{{ row_id }}"
+            data-detail-url="{{ detail_url or '' }}"
             aria-expanded="false"
             {% if detail_url %}
                 hx-get="{{ detail_url }}"
