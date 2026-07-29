@@ -1,116 +1,101 @@
 {% import "components/progress_bar.html" as progress_bar %}
+{% import "components/table_label.html" as table_label %}
+{% set readiness_tone = 'normal' if incident_readiness.score >= 80 else ('warning' if incident_readiness.score >= 60 else 'critical') %}
 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <div>
-        <div class="flex flex-col gap-4 px-6 py-5 lg:flex-row lg:items-start lg:justify-between">
-            <div class="flex items-start gap-3">
-                <div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl {{ incident_readiness.class }}">
-                    <i data-lucide="{{ incident_readiness.icon }}" class="h-5 w-5"></i>
-                </div>
-                <div>
+    <header class="border-b border-outline-subtle bg-kaori-soft px-5 py-4">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                    <i data-lucide="siren" class="h-5 w-5"></i>
+                </span>
+                <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h2 class="text-lg font-semibold text-content-primary">Incident Readiness</h2>
-                        <span class="inline-flex rounded-md px-2.5 py-1 text-xs font-semibold {{ incident_readiness.class }}">
-                            {{ incident_readiness.label }}
-                        </span>
+                        {{ table_label.status_label(incident_readiness.label, tone=readiness_tone, size='compact') }}
                     </div>
-                    <p class="mt-1 max-w-3xl text-sm text-content-muted">{{ incident_readiness.description }}</p>
+                    <p class="mt-1 max-w-4xl text-sm leading-6 text-content-muted">{{ incident_readiness.description }}</p>
                 </div>
             </div>
-            <div class="flex flex-wrap items-center gap-2">
-                <span class="rounded-md bg-surface-hover px-2.5 py-1 text-xs font-semibold text-content-secondary">
-                    Score {{ incident_readiness.score }}/100
-                </span>
+            <div class="flex shrink-0 items-center gap-3 rounded-lg border border-kaori-primary/20 bg-surface-card px-4 py-3 shadow-sm">
+                <div>
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Readiness Score</p>
+                    <p class="mt-1 text-xl font-bold text-content-primary">{{ incident_readiness.score }}<span class="text-sm font-semibold text-content-muted">/100</span></p>
+                </div>
+                <div class="w-24">
+                    {{ progress_bar.bar(incident_readiness.score, track_classes='h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label='Incident readiness score') }}
+                </div>
             </div>
         </div>
-        <div class="border-t border-outline-subtle p-6">
-            <div class="mb-5 rounded-xl border border-brand-outline bg-kaori-soft p-4">
-                <div class="flex items-start gap-3">
-                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-kaori-primary text-white">
-                        <i data-lucide="siren" class="h-4 w-4"></i>
+    </header>
+
+    <div class="divide-y divide-outline-subtle">
+        <div class="grid sm:grid-cols-2 xl:grid-cols-6">
+            {% for label, value, helper in [
+                ('Critical Signals', incident_readiness.critical_signals, 'Immediate attention'),
+                ('Warning Signals', incident_readiness.warning_signals, 'Review required'),
+                ('Anomaly Signals', incident_readiness.anomaly_signals, 'Restart or readiness'),
+                ('Source Score', incident_readiness.source_score ~ '/100', 'Signal confidence'),
+                ('Ownership Score', incident_readiness.ownership_score ~ '/100', 'Triage coverage'),
+                ('Routing', 'Ready' if incident_readiness.routing_ready else 'Limited', 'Alert delivery')
+            ] %}
+                <div class="border-t border-outline-subtle px-4 py-3 first:border-t-0 sm:[&:nth-child(-n+2)]:border-t-0 xl:border-l xl:border-t-0 xl:first:border-l-0">
+                    <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
+                    <p class="mt-1 break-words text-base font-semibold text-content-primary">{{ value }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="grid gap-5 px-5 py-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.6fr)]">
+            <div class="space-y-4">
+                <div class="rounded-lg border border-kaori-primary/20 bg-kaori-soft px-4 py-4">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
+                            <i data-lucide="compass" class="h-4 w-4"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-sm font-semibold text-content-primary">Recommended Action</p>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">{{ incident_readiness.recommended_action }}</p>
+                        </div>
                     </div>
+                </div>
+
+                <div class="overflow-hidden rounded-lg border border-outline-subtle">
+                    <div class="grid grid-cols-2 divide-x divide-outline-subtle">
+                        <div class="px-4 py-3">
+                            <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Silence Risk</p>
+                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ incident_readiness.silence_risk }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Matched active silences</p>
+                        </div>
+                        <div class="px-4 py-3">
+                            <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Inhibition Risk</p>
+                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ incident_readiness.inhibition_risk }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Suppressed alerts</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                        <p class="text-sm font-semibold text-content-primary">Incident decision lens</p>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">
-                            This score combines signal severity, source confidence, ownership coverage, routing readiness, and silence risk.
-                        </p>
+                        <h3 class="text-sm font-semibold text-content-primary">Readiness Checks</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Validate signal, routing, ownership, and suppression controls before incident escalation.</p>
                     </div>
+                    {{ table_label.metadata_label(incident_readiness.checks|length ~ ' Checks', 'list-checks') }}
                 </div>
-            </div>
-            <div class="rounded-xl border border-outline-default bg-surface-subtle p-4">
-                <div class="flex items-start gap-3">
-                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                        <i data-lucide="compass" class="h-4 w-4"></i>
-                    </div>
-                    <div>
-                        <p class="text-sm font-semibold text-content-primary">Recommended Action</p>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">{{ incident_readiness.recommended_action }}</p>
-                    </div>
-                </div>
-            </div>
-            <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {% set top_cards = [
-                                    ('Critical Signals', incident_readiness.critical_signals, 100 if incident_readiness.critical_signals > 0 else 0),
-                                    ('Warning Signals', incident_readiness.warning_signals, 100 if incident_readiness.warning_signals > 0 else 0),
-                                    ('Source Score', incident_readiness.source_score ~ '/100', incident_readiness.source_score),
-                                    ('Ownership Score', incident_readiness.ownership_score ~ '/100', incident_readiness.ownership_score)
-                                ] %}
-                {% for label, value, width in top_cards %}
-                    <div class="rounded-xl border border-outline-default bg-surface-subtle p-4">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
-                        <p class="mt-2 text-2xl font-semibold text-content-primary">{{ value }}</p>
-                        {{ progress_bar.bar(width, track_classes="mt-3 h-2.5 overflow-hidden rounded-full bg-outline-default", fill_classes="h-full rounded-full bg-kaori-primary", label="Coverage progress") }}
-                    </div>
-                {% endfor %}
-            </div>
-            <div class="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <div class="rounded-xl border border-outline-default p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Anomalies</p>
-                    <p class="mt-2 text-xl font-semibold text-content-primary">{{ incident_readiness.anomaly_signals }}</p>
-                    <p class="mt-1 text-xs text-content-muted">Restart/readiness candidates</p>
-                </div>
-                <div class="rounded-xl border border-outline-default p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Routing</p>
-                    <p class="mt-2 text-xl font-semibold text-content-primary">{{ 'Ready' if incident_readiness.routing_ready else 'Limited' }}</p>
-                    <p class="mt-1 text-xs text-content-muted">Alertmanager context</p>
-                </div>
-                <div class="rounded-xl border border-outline-default p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Silence Risk</p>
-                    <p class="mt-2 text-xl font-semibold text-content-primary">{{ incident_readiness.silence_risk }}</p>
-                    <p class="mt-1 text-xs text-content-muted">Matched active silences</p>
-                </div>
-                <div class="rounded-xl border border-outline-default p-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Inhibition Risk</p>
-                    <p class="mt-2 text-xl font-semibold text-content-primary">{{ incident_readiness.inhibition_risk }}</p>
-                    <p class="mt-1 text-xs text-content-muted">Suppressed alerts</p>
-                </div>
-            </div>
-            <div class="mt-5 rounded-xl border border-outline-default p-4">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="list-checks" class="h-4 w-4 text-content-muted"></i>
-                    <h3 class="text-sm font-semibold text-content-primary">Readiness Checks</h3>
-                </div>
-                <div class="mt-4 grid gap-3 lg:grid-cols-2">
+                <div class="mt-3 divide-y divide-outline-subtle overflow-hidden rounded-lg border border-outline-subtle">
                     {% for check in incident_readiness.checks %}
-                        <div class="rounded-xl bg-surface-subtle p-3 /60">
-                            <div class="flex items-start gap-2">
-                                {% if check.status == 'pass' %}
-                                    <i data-lucide="check-circle-2"
-                                       class="mt-0.5 h-4 w-4 shrink-0 text-status-normal"></i>
-                                {% elif check.status == 'warning' %}
-                                    <i data-lucide="alert-triangle"
-                                       class="mt-0.5 h-4 w-4 shrink-0 text-status-warning"></i>
-                                {% else %}
-                                    <i data-lucide="circle-alert"
-                                       class="mt-0.5 h-4 w-4 shrink-0 text-status-critical"></i>
-                                {% endif %}
-                                <div>
-                                    <p class="text-sm font-semibold text-content-primary">{{ check.label }}</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ check.description }}</p>
-                                </div>
+                        {% set check_tone = 'normal' if check.status == 'pass' else ('warning' if check.status == 'warning' else 'critical') %}
+                        <div class="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-start sm:justify-between">
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-content-primary">{{ check.label }}</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ check.description }}</p>
                             </div>
+                            {{ table_label.status_label(check.status|title, tone=check_tone, size='compact') }}
                         </div>
                     {% else %}
-                        <p class="text-sm text-content-muted">No readiness check available.</p>
+                        <div class="px-4 py-8 text-center text-sm text-content-muted">No readiness checks are available.</div>
                     {% endfor %}
                 </div>
             </div>
