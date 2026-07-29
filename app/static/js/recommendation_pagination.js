@@ -39,17 +39,11 @@
         const controls = root.querySelector('[data-kaori-recommendation-controls]')
         if (!controls) return
 
-        const start = controls.querySelector('[data-recommendation-start]')
-        const end = controls.querySelector('[data-recommendation-end]')
-        const total = controls.querySelector('[data-recommendation-total]')
         const pageOutput = controls.querySelector('[data-recommendation-page]')
         const pagesOutput = controls.querySelector('[data-recommendation-total-pages]')
         const previous = controls.querySelector('[data-recommendation-previous]')
         const next = controls.querySelector('[data-recommendation-next]')
 
-        if (start) start.textContent = String(items.length ? startIndex + 1 : 0)
-        if (end) end.textContent = String(endIndex)
-        if (total) total.textContent = String(items.length)
         if (pageOutput) pageOutput.textContent = String(page)
         if (pagesOutput) pagesOutput.textContent = String(totalPages)
 

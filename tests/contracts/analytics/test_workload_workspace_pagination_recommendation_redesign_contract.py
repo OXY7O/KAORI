@@ -29,20 +29,22 @@ def test_numeric_pagination_supports_endpoint_specific_page_parameters() -> None
     assert "numeric_pages(workload_pagination.page, workload_pagination.total_pages, 'workload_page')" in mapping
 
 
-def test_workload_detail_actions_use_full_width_accordion_rails() -> None:
+def test_workload_detail_actions_are_restored_to_the_action_column() -> None:
     tenant = read('app/templates/analytics/workload/partials/_tenant_quota_section.html')
     mapping = read('app/templates/analytics/workload/partials/_workload_mapping_section.html')
 
-    assert '>Action</div>' not in tenant
-    assert '>Action</div>' not in mapping
-    assert "expanded ? 'Hide Quota Details' : 'View Quota Details'" in tenant
+    for content in (tenant, mapping):
+        assert '>Action</div>' in content
+        assert 'components/table.html' in content
+        assert '{{ table_ui.action_classes() }} w-full whitespace-nowrap sm:w-auto' in content
+        assert "expanded ? 'Hide Details' : 'View Details'" in content
+        assert 'class="group flex w-full items-center gap-3 border-t' not in content
+        assert 'class="border-t border-outline-subtle bg-surface-subtle px-4 py-4"' in content
+
     assert 'aria-controls="tenant-quota-details-{{ loop.index }}"' in tenant
-    assert 'CPU, Memory, Governance &amp; Recommendation' in tenant
-    assert "expanded ? 'Hide Resource Details' : 'View Resource Details'" in mapping
     assert 'aria-controls="workload-mapping-details-{{ loop.index }}"' in mapping
-    assert 'Requests, Limits, Usage, QoS &amp; Pods' in mapping
-    assert 'class="group flex w-full items-center gap-3 border-t' in tenant
-    assert 'class="group flex w-full items-center gap-3 border-t' in mapping
+    assert 'col-span-2 text-right text-xs font-semibold uppercase tracking-wide text-content-muted">Action' in tenant
+    assert 'col-span-2 text-right text-xs font-semibold uppercase tracking-wide text-content-muted">Action' in mapping
 
 
 def test_workload_overview_uses_compact_metric_strip_and_scope_context() -> None:
@@ -82,9 +84,15 @@ def test_kubernetes_analytics_recommendation_lists_use_simple_previous_next_page
 
     assert 'data-recommendation-previous' in pager
     assert 'data-recommendation-next' in pager
-    assert 'Page&nbsp;' in pager
+    assert 'Page <span class="text-content-primary" data-recommendation-page>1</span>' in pager
+    assert 'data-recommendation-start' not in pager
+    assert 'data-recommendation-end' not in pager
+    assert 'data-recommendation-total>' not in pager
     assert "const ROOT_SELECTOR = '[data-kaori-recommendation-pager]'" in pager_js
     assert "document.addEventListener('htmx:afterSwap'" in pager_js
+    assert 'data-recommendation-start' not in pager_js
+    assert 'data-recommendation-end' not in pager_js
+    assert "querySelector('[data-recommendation-total]')" not in pager_js
     assert "filename='js/recommendation_pagination.js'" in layout
 
 

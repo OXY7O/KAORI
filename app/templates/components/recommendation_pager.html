@@ -2,30 +2,27 @@
 {% macro controls(total_items, item_label='Recommendations', page_size=5) -%}
     {% set total_pages = ((total_items + page_size - 1) // page_size) if total_items else 1 %}
     {% if total_items > page_size %}
-        <div class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-subtle px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-             data-kaori-recommendation-controls>
-            <p class="text-xs font-medium text-content-muted">
-                Showing <span data-recommendation-start>1</span>–<span data-recommendation-end>{{ [page_size, total_items]|min }}</span> of <span data-recommendation-total>{{ total_items }}</span> {{ item_label }}
-            </p>
-            <div class="flex items-center gap-2">
-                <button type="button"
-                        class="{{ pagination_ui.navigation_classes(disabled=true) }}"
-                        data-recommendation-previous
-                        disabled>
-                    <i data-lucide="chevron-left" class="h-4 w-4"></i>
-                    Previous
-                </button>
-                <span class="inline-flex min-h-9 items-center justify-center rounded-md border border-outline-subtle bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary"
-                      aria-live="polite">
-                    Page&nbsp;<span data-recommendation-page>1</span>&nbsp;of&nbsp;<span data-recommendation-total-pages>{{ total_pages }}</span>
-                </span>
-                <button type="button"
-                        class="{{ pagination_ui.navigation_classes() }}"
-                        data-recommendation-next>
-                    Next
-                    <i data-lucide="chevron-right" class="h-4 w-4"></i>
-                </button>
-            </div>
-        </div>
+        <nav class="flex items-center justify-between gap-3 border-t border-outline-subtle bg-surface-subtle px-4 py-3"
+             data-kaori-recommendation-controls
+             aria-label="{{ item_label }} Pagination">
+            <button type="button"
+                    class="{{ pagination_ui.navigation_classes(disabled=true) }}"
+                    data-recommendation-previous
+                    disabled>
+                <i data-lucide="chevron-left" class="h-4 w-4"></i>
+                Previous
+            </button>
+            <span class="min-w-0 text-center text-xs font-semibold text-content-muted"
+                  aria-live="polite">
+                Page <span class="text-content-primary" data-recommendation-page>1</span>
+                of <span class="text-content-primary" data-recommendation-total-pages>{{ total_pages }}</span>
+            </span>
+            <button type="button"
+                    class="{{ pagination_ui.navigation_classes() }}"
+                    data-recommendation-next>
+                Next
+                <i data-lucide="chevron-right" class="h-4 w-4"></i>
+            </button>
+        </nav>
     {% endif %}
 {%- endmacro %}

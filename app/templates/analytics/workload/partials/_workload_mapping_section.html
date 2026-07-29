@@ -2,6 +2,7 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/table.html" as table_ui %}
 {% set dynamic_workload_type_options = workload_mapping_payload.workload_type_options if workload_mapping_payload.workload_type_options else workload_mapping_rows|map(attribute='type')|unique|list %}
 {% set dynamic_resource_status_options = workload_mapping_payload.resource_status_options if workload_mapping_payload.resource_status_options else workload_mapping_rows|map(attribute='resource_status.label')|unique|list %}
 {% set dynamic_qos_options = workload_mapping_payload.qos_options if workload_mapping_payload.qos_options else workload_mapping_rows|map(attribute='qos.label')|unique|list %}
@@ -111,8 +112,9 @@
         <div class="mt-5 hidden grid-cols-12 gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3 lg:grid">
             <div class="col-span-4 text-xs font-semibold uppercase tracking-wide text-content-muted">Workload &amp; Namespace</div>
             <div class="col-span-2 text-xs font-semibold uppercase tracking-wide text-content-muted">Resource &amp; QoS</div>
-            <div class="col-span-4 text-xs font-semibold uppercase tracking-wide text-content-muted">Efficiency</div>
-            <div class="col-span-2 text-xs font-semibold uppercase tracking-wide text-content-muted">Risk</div>
+            <div class="col-span-3 text-xs font-semibold uppercase tracking-wide text-content-muted">Efficiency</div>
+            <div class="col-span-1 text-xs font-semibold uppercase tracking-wide text-content-muted">Risk</div>
+            <div class="col-span-2 text-right text-xs font-semibold uppercase tracking-wide text-content-muted">Action</div>
         </div>
 
         <div class="divide-y divide-outline-subtle border-x border-b border-outline-subtle lg:border-x-0">
@@ -142,39 +144,40 @@
                             {{ table_label.status_label(resource_label, tone=resource_tone, size='compact') }}
                             {{ table_label.status_label(qos_label, tone=qos_tone, size='compact') }}
                         </div>
-                        <div class="min-w-0 lg:col-span-4">
+                        <div class="min-w-0 lg:col-span-3">
                             <div class="flex items-center justify-between gap-2 text-xs">
                                 <span class="text-content-muted">Efficiency</span>
                                 <span class="font-semibold text-content-primary">{{ row.efficiency_display }}%</span>
                             </div>
                             {{ progress_bar.bar(row.efficiency, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=row.workload ~ ' efficiency') }}
                         </div>
-                        <div class="lg:col-span-2">
+                        <div class="lg:col-span-1">
                             <p class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-content-muted lg:hidden">Risk</p>
                             {{ table_label.status_label(risk_label, tone=risk_tone, size='compact') }}
                         </div>
+                        <div class="lg:col-span-2 lg:flex lg:justify-end">
+                            <p class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-content-muted lg:hidden">Action</p>
+                            <button type="button"
+                                    class="{{ table_ui.action_classes() }} w-full whitespace-nowrap sm:w-auto"
+                                    @click="expanded = !expanded"
+                                    :aria-expanded="expanded ? 'true' : 'false'"
+                                    aria-controls="workload-mapping-details-{{ loop.index }}">
+                                <i data-lucide="scan-search" class="h-3.5 w-3.5 shrink-0"></i>
+                                <span x-text="expanded ? 'Hide Details' : 'View Details'">View Details</span>
+                                <i data-lucide="chevron-down"
+                                   class="h-3.5 w-3.5 shrink-0 transition-transform"
+                                   :class="{ 'rotate-180': expanded }"></i>
+                            </button>
+                        </div>
                     </div>
-
-                    <button type="button"
-                            class="group flex w-full items-center gap-3 border-t border-outline-subtle bg-surface-subtle px-4 py-2.5 text-left text-xs font-semibold text-content-secondary transition hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-kaori-accent/60"
-                            @click="expanded = !expanded"
-                            :aria-expanded="expanded ? 'true' : 'false'"
-                            aria-controls="workload-mapping-details-{{ loop.index }}">
-                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary shadow-sm">
-                            <i data-lucide="scan-search" class="h-3.5 w-3.5"></i>
-                        </span>
-                        <span x-text="expanded ? 'Hide Resource Details' : 'View Resource Details'">View Resource Details</span>
-                        <span class="ml-auto hidden font-medium text-content-muted md:inline">Requests, Limits, Usage, QoS &amp; Pods</span>
-                        <i data-lucide="chevron-down" class="h-4 w-4 shrink-0 transition-transform" :class="{ 'rotate-180': expanded }"></i>
-                    </button>
 
                     <div id="workload-mapping-details-{{ loop.index }}"
                          x-show="expanded"
                          x-bind:hidden="!expanded"
                          hidden
                          x-cloak
-                         class="bg-surface-subtle px-4 pb-4">
-                        <div class="overflow-hidden rounded-b-lg border border-t-0 border-outline-subtle bg-surface-card">
+                         class="border-t border-outline-subtle bg-surface-subtle px-4 py-4">
+                        <div class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
                             <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
                                 <div>
                                     <div class="flex flex-wrap items-center gap-2">

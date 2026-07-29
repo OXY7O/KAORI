@@ -83,13 +83,12 @@ def test_desktop_column_headers_use_consistent_kaori_presentation_classes() -> N
                 assert 'tracking-' in line
 
 
-def test_workload_detail_actions_use_full_width_accordion_rails() -> None:
+def test_workload_detail_actions_use_dedicated_action_columns() -> None:
     quota = _read('workload/partials/_tenant_quota_section.html')
     mapping = _read('workload/partials/_workload_mapping_section.html')
 
-    assert 'View Quota Details' in quota
-    assert 'Hide Quota Details' in quota
-    assert '>Action</div>' not in quota
-    assert 'View Resource Details' in mapping
-    assert 'Hide Resource Details' in mapping
-    assert '>Action</div>' not in mapping
+    for content in (quota, mapping):
+        assert '>Action</div>' in content
+        assert "expanded ? 'Hide Details' : 'View Details'" in content
+        assert '{{ table_ui.action_classes() }} w-full whitespace-nowrap sm:w-auto' in content
+        assert 'class="group flex w-full items-center gap-3 border-t' not in content
