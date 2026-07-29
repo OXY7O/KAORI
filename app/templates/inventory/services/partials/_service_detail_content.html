@@ -15,6 +15,16 @@
 {% else %}
     {% set endpoint_posture = "Not Reported" %}{% set endpoint_tone = "unknown" %}
 {% endif %}
+{% set normalized_service_type = service.type|default('', true)|lower %}
+{% set service_type_tone = 'normal' if normalized_service_type in ['clusterip', 'headless'] else ('warning' if normalized_service_type == 'nodeport' else ('info' if normalized_service_type in ['loadbalancer', 'externalname'] else 'unknown')) %}
+{% set normalized_ip_policy = service.ip_family_policy|default('', true)|lower %}
+{% set ip_policy_tone = 'normal' if normalized_ip_policy == 'singlestack' else ('info' if normalized_ip_policy in ['preferdualstack', 'requiredualstack'] else 'unknown') %}
+{% set normalized_session_affinity = service.session_affinity|default('', true)|lower %}
+{% set session_affinity_tone = 'info' if normalized_session_affinity == 'clientip' else 'unknown' %}
+{% set normalized_internal_traffic = service.internal_traffic_policy|default('', true)|lower %}
+{% set internal_traffic_tone = 'normal' if normalized_internal_traffic == 'cluster' else ('info' if normalized_internal_traffic == 'local' else 'unknown') %}
+{% set normalized_external_traffic = service.external_traffic_policy|default('', true)|lower %}
+{% set external_traffic_tone = 'normal' if normalized_external_traffic == 'cluster' else ('info' if normalized_external_traffic == 'local' else 'unknown') %}
 <div class="bg-surface-hover px-4 py-4">
     <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-sm">
         <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -30,33 +40,33 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-                {{ table_label.metadata_label(service.type) }}
-                {{ table_label.status_label(endpoint_posture, endpoint_tone) }}
+                {{ table_label.status_label(service.type, service_type_tone, none, 'detail') }}
+                {{ table_label.status_label(endpoint_posture, endpoint_tone, none, 'detail') }}
             </div>
         </header>
-        <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail.detail_card('Object Identity', 'badge-info', service.age, class_name='min-h-96') %}
+        <div class="grid items-stretch gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
+            {% call detail.detail_card('Object Identity', 'badge-info', service.age, badge_size='detail') %}
                 {{ detail.detail_row('Cluster', service.cluster_name) }}
                 {{ detail.detail_row('Namespace', service.namespace) }}
-                {{ detail.detail_row('Type', service.type) }}
+                {{ detail.status_row('Type', service.type, service_type_tone, none, 'detail') }}
                 {{ detail.detail_row('Generation', service.generation) }}
                 {{ detail.detail_row('Kubernetes UID', service.uid, true) }}
                 {{ detail.detail_row('Created', service.created_at|user_datetime) }}
                 {{ detail.detail_row('Collected', service.collected_at|user_datetime) }}
                 <div class="mt-auto pt-3">{{ info_box('Inventory Identity', service.type_description, 'lightbulb', 'brand', true) }}</div>
             {% endcall %}
-            {% call detail.detail_card('Network Configuration', 'globe-2', service.cluster_ip, class_name='min-h-[28rem]') %}
+            {% call detail.detail_card('Network Configuration', 'globe-2', service.cluster_ip, badge_size='detail') %}
                 {{ detail.detail_row('Cluster IP', service.cluster_ip, true) }}
                 {{ detail.detail_row('External Addresses', service.external_ips|join(', ') if service.external_ips else '-', true) }}
                 {{ detail.detail_row('External Name', service.external_name, true) }}
-                {{ detail.detail_row('IP Families', service.ip_families|join(', ') if service.ip_families else '-') }}
-                {{ detail.detail_row('IP Family Policy', service.ip_family_policy) }}
-                {{ detail.detail_row('Session Affinity', service.session_affinity) }}
-                {{ detail.detail_row('Internal Traffic', service.internal_traffic_policy) }}
-                {{ detail.detail_row('External Traffic', service.external_traffic_policy) }}
+                {{ detail.metadata_row('IP Families', service.ip_families|join(', ') if service.ip_families else '-') }}
+                {{ detail.status_row('IP Family Policy', service.ip_family_policy, ip_policy_tone, none, 'detail') }}
+                {{ detail.status_row('Session Affinity', service.session_affinity, session_affinity_tone, none, 'detail') }}
+                {{ detail.status_row('Internal Traffic', service.internal_traffic_policy, internal_traffic_tone, none, 'detail') }}
+                {{ detail.status_row('External Traffic', service.external_traffic_policy, external_traffic_tone, none, 'detail') }}
                 <div class="mt-auto pt-3">{{ info_box('Network Identity', 'Cluster and external addresses from the current Service specification.', 'network', 'brand', true) }}</div>
             {% endcall %}
-            {% call detail.detail_card('Port Mapping', 'plug-zap', table_label.count_text(service.port_count, 'Port'), class_name='min-h-96') %}
+            {% call detail.detail_card('Port Mapping', 'plug-zap', table_label.count_text(service.port_count, 'Port'), badge_size='detail') %}
                 {{ detail.detail_row('Port Definitions', service.port_count) }}
                 {% if service.ports %}
                     {{ detail.detail_row('Primary Port', service.ports[0].port ~ '/' ~ service.ports[0].protocol) }}
@@ -69,13 +79,13 @@
                 {{ detail.detail_row('Health Check NodePort', service.health_check_node_port or '-') }}
                 <div class="mt-auto pt-3">{{ info_box('Forwarding Boundary', 'Port mappings show Service-to-target forwarding only.', 'route', 'brand', true) }}</div>
             {% endcall %}
-            {% call detail.detail_card('Selection & Endpoints', 'scan-search', service.ready_endpoint_count ~ ' Ready', class_name='min-h-[30rem]') %}
+            {% call detail.detail_card('Selection & Endpoints', 'scan-search', service.ready_endpoint_count ~ ' Ready', 'status', endpoint_tone, badge_size='detail') %}
                 {{ detail.detail_row('Selector Labels', service.selector|length) }}
                 {{ detail.detail_row('Selected Pods', service.pod_count) }}
                 {{ detail.detail_row('Ready Endpoints', service.ready_endpoint_count) }}
                 {{ detail.detail_row('Not-Ready Endpoints', service.not_ready_endpoint_count) }}
-                {{ detail.detail_row('Endpoint Metadata', 'Reported' if service.endpoints_reported else 'Not Reported') }}
-                {{ detail.detail_row('Publish Not-Ready', 'Enabled' if service.publish_not_ready_addresses else 'Disabled') }}
+                {{ detail.status_row('Endpoint Metadata', 'Reported' if service.endpoints_reported else 'Not Reported', 'normal' if service.endpoints_reported else 'unknown', none, 'detail') }}
+                {{ detail.status_row('Publish Not-Ready', 'Enabled' if service.publish_not_ready_addresses else 'Disabled', 'warning' if service.publish_not_ready_addresses else 'unknown', none, 'detail') }}
                 {% call detail_object.stack() %}
                     {% if service.selector %}
                         {% call detail_object.card('Service Selectors', table_label.count_text(service.selector|length, 'Label'), 'tags') %}
@@ -86,7 +96,6 @@
                     {% else %}
                         {{ detail_object.empty('No Selector Configured', 'This Service does not select Pods directly.', 'tags') }}
                     {% endif %}
-                    {{ info_box('Endpoint Snapshot', 'Selector and endpoint readiness from the latest inventory snapshot.', 'waypoints', 'brand', true) }}
                 {% endcall %}
             {% endcall %}
         </div>

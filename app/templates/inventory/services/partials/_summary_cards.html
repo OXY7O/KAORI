@@ -22,10 +22,10 @@
     </header>
 
     {% set summary_cards = [
-        ('Total Services', inventory.total_services, 'waypoints', 'Services in the current result.'),
-        ('ClusterIP', inventory.cluster_ip, 'shield-check', 'Internal-only service exposure.'),
-        ('NodePort', inventory.node_port, 'plug-zap', 'Services exposed through node ports.'),
-        ('LoadBalancer', inventory.load_balancer, 'globe-2', 'Services exposed through external load balancers.')
+        ('Total Services', inventory.total_services, 'waypoints', 'Services in the Current Result'),
+        ('ClusterIP', inventory.cluster_ip, 'shield-check', 'Internal Only Service Exposure'),
+        ('NodePort', inventory.node_port, 'plug-zap', 'Services Exposed through Node Ports'),
+        ('LoadBalancer', inventory.load_balancer, 'globe-2', 'Services Exposed through External Load Balancers')
     ] %}
     <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
         {% for label, value, icon, description in summary_cards %}
@@ -46,7 +46,7 @@
 
     <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-[1.15fr_0.85fr_0.85fr]">
         <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-4"><div class="min-w-0 flex-1"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Internal Coverage</p><div class="mt-2 flex items-end gap-3"><p class="text-2xl font-semibold text-content-primary">{{ internal_percentage | int }}%</p><p class="pb-0.5 text-xs font-medium text-content-muted">{{ inventory.cluster_ip }} of {{ inventory.total_services }} ClusterIP</p></div>{{ progress_bar.bar(internal_percentage, track_classes="mt-4 h-2 overflow-hidden rounded-full bg-kaori-soft", fill_classes="h-full rounded-full bg-kaori-primary", label="Service internal coverage") }}</div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-brand-outline bg-kaori-soft text-kaori-primary"><i data-lucide="badge-check" class="h-4 w-4"></i></span></div></article>
-        <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-3"><div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">NodePort</p><p class="mt-2 text-2xl font-semibold text-content-primary">{{ inventory.node_port }}</p><p class="mt-2 text-xs leading-5 text-content-muted">Node-level exposure endpoints.</p></div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-status-warning-border bg-status-warning-soft text-status-warning-text"><i data-lucide="plug-zap" class="h-4 w-4"></i></span></div></article>
-        <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-3"><div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">External Services</p><p class="mt-2 text-2xl font-semibold text-content-primary">{{ external_services }}</p><p class="mt-2 text-xs leading-5 text-content-muted">NodePort and LoadBalancer combined.</p></div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-status-info-border bg-status-info-soft text-status-info-text"><i data-lucide="globe-2" class="h-4 w-4"></i></span></div></article>
+        <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-3"><div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">NodePort</p><p class="mt-2 text-2xl font-semibold text-content-primary">{{ inventory.node_port }}</p><p class="mt-2 text-xs leading-5 text-content-muted">Node Level Exposure Endpoints</p></div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-status-warning-border bg-status-warning-soft text-status-warning-text"><i data-lucide="plug-zap" class="h-4 w-4"></i></span></div></article>
+        <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-3"><div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">External Services</p><p class="mt-2 text-2xl font-semibold text-content-primary">{{ external_services }}</p><p class="mt-2 text-xs leading-5 text-content-muted">NodePort and LoadBalancer Combined</p></div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-status-info-border bg-status-info-soft text-status-info-text"><i data-lucide="globe-2" class="h-4 w-4"></i></span></div></article>
     </div>
 </section>
