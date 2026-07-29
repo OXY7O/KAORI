@@ -24,7 +24,7 @@
     </div>
 {%- endmacro %}
 {% macro detail_card(title, icon, badge=None, badge_type='metadata', badge_tone='unknown', class_name='') -%}
-    <section class="flex self-start flex-col rounded-xl border border-outline-subtle bg-surface-card p-4 {{ class_name }}">
+    <section class="flex h-full flex-col rounded-xl border border-outline-subtle bg-surface-card p-4 {{ class_name }}">
         <div class="mb-4 flex items-center justify-between gap-3">
             <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
@@ -63,7 +63,7 @@
             </div>
             <div class="self-start sm:self-auto">{{ table_label.status_label(node.status_display, node_status_tone) }}</div>
         </header>
-        <div class="grid items-start gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
+        <div class="grid items-stretch gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
             {% call detail_card('Node Identity', 'badge-info', node.role) %}
                 {{ detail_row('System UUID', node.system_uuid, True) }}
                 {{ detail_row('Cluster', node.cluster_name) }}
