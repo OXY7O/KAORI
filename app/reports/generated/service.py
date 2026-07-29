@@ -82,11 +82,22 @@ def get_generated_reports_payload(
     )
 
     summary_cards = get_summary_cards()
+    unavailable_artifacts = sum(
+        1
+        for item in reports
+        if item.get('file_path') and not bool(item.get('storage_reachable', True))
+    )
+    storage_notice = (
+        f'{unavailable_artifacts} artifact(s) on this page could not be verified because the storage backend is unreachable. '
+        'Report records remain available; download actions stay paused until connectivity returns.'
+        if unavailable_artifacts
+        else None
+    )
 
     return {
         'page_title': 'Generated Reports',
         'page_subtitle': (
-            'Browse, filter, generate, download, and review infrastructure report artifacts from the shared reporting pipeline.'
+            'Review generated report records, artifact availability, and lifecycle actions.'
         ),
         'summary_cards': summary_cards,
         'filter_options': get_filter_options(),
@@ -99,6 +110,7 @@ def get_generated_reports_payload(
         'lifecycle_status': get_lifecycle_status(),
         'storage_context': get_storage_context(),
         'hero_posture': get_hero_posture(),
+        'storage_notice': storage_notice,
     }
 
 

@@ -359,6 +359,12 @@ class ReportSchedule(db.Model):
         default=list,
     )
 
+    notification_channels: Mapped[list[str]] = mapped_column(
+        db.JSON,
+        nullable=False,
+        default=list,
+    )
+
     cadence: Mapped[str] = mapped_column(
         db.String(50),
         nullable=False,
@@ -456,6 +462,11 @@ class ReportSchedule(db.Model):
             return self.sections
         return []
 
+    def notification_channels_as_list(self) -> list[str]:
+        if isinstance(self.notification_channels, list):
+            return [str(item) for item in self.notification_channels if str(item).strip()]
+        return []
+
     @property
     def status(self) -> str:
         return 'active' if self.is_enabled else 'paused'
@@ -473,6 +484,7 @@ class ReportSchedule(db.Model):
             'period': self.period,
             'output_format': self.output_format,
             'sections': self.sections_as_list(),
+            'notification_channels': self.notification_channels_as_list(),
             'cadence': self.cadence,
             'run_time': self.run_time,
             'day_of_week': self.day_of_week,
@@ -542,6 +554,11 @@ class ReportScheduleRun(db.Model):
         nullable=True,
     )
 
+    delivery_result: Mapped[dict[str, Any] | None] = mapped_column(
+        db.JSON,
+        nullable=True,
+    )
+
     def to_dict(self) -> dict[str, Any]:
         return {
             'id': self.id,
@@ -552,4 +569,5 @@ class ReportScheduleRun(db.Model):
             'started_at': self.started_at,
             'finished_at': self.finished_at,
             'error_message': self.error_message,
+            'delivery_result': self.delivery_result,
         }

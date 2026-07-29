@@ -1,5 +1,8 @@
-from flask import Blueprint, render_template
+import logging
+
+from flask import Blueprint, render_template, url_for
 from flask.typing import ResponseReturnValue
+from werkzeug.exceptions import HTTPException
 
 from app.rbac.decorators import permission_required
 from app.reports.export.routes import download_report_pdf, generate_report_pdf
@@ -30,6 +33,10 @@ from app.reports.schedules.routes import (
     update_schedule,
 )
 from app.reports.storage.routes import storage
+from app.reports.web import render_reports_unavailable
+
+logger = logging.getLogger(__name__)
+
 
 reports_bp = Blueprint(
     'reports',
@@ -38,10 +45,37 @@ reports_bp = Blueprint(
 )
 
 
+@reports_bp.errorhandler(Exception)
+def handle_reports_exception(exc: Exception) -> ResponseReturnValue:
+    if isinstance(exc, HTTPException):
+        return exc
+    logger.error(
+        'Unhandled Reports workspace failure.',
+        exc_info=(type(exc), exc, exc.__traceback__),
+    )
+    return render_reports_unavailable(
+        page_title='Reports Temporarily Unavailable',
+        description='KAORI could not complete the requested reporting operation.',
+        reason='A reporting dependency did not respond. The technical exception was recorded in server logs and is not exposed to the user.',
+        retry_url=url_for('reports.overview'),
+    )
+
+
 @reports_bp.route('/')
 @permission_required('reports.view')
 def overview() -> ResponseReturnValue:
-    payload = normalize_reports_overview_payload(get_reports_overview_payload())
+    try:
+        payload = normalize_reports_overview_payload(get_reports_overview_payload())
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception('Reports Overview could not be loaded.')
+        return render_reports_unavailable(
+            page_title='Reports Overview',
+            description='Review reporting readiness, generated activity, and connected data coverage.',
+            reason='KAORI could not load the reporting overview. Report records remain protected while storage or database connectivity is reviewed.',
+            retry_url=url_for('reports.overview'),
+        )
 
     return render_template(
         'reports/overview/index.html',

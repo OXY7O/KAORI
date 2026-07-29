@@ -214,7 +214,7 @@ def _build_report_type_summary(coverage: Mapping[str, Any]) -> dict[str, str]:
         'available': str(available),
         'total': str(total),
         'label': f'{available} Available Types',
-        'description': f'{total} report contracts across current and future infrastructure domains.',
+        'description': f'{total} report contracts across connected and planned infrastructure domains.',
     }
 
 

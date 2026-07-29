@@ -9,7 +9,7 @@
                 </span>
                 <div>
                     <h2 id="reporting-capability-title" class="text-base font-semibold text-content-primary">Reporting Capability</h2>
-                    <p class="mt-0.5 max-w-3xl text-xs leading-5 text-content-muted">Review available report domains and the stages that turn connected data into governed artifacts.</p>
+                    <p class="mt-0.5 max-w-3xl text-xs leading-5 text-content-muted">See available report outputs and confirm collection, generation, storage, and delivery readiness.</p>
                 </div>
             </div>
             <nav class="inline-flex w-full rounded-xl border border-kaori-primary/20 bg-kaori-soft p-1 sm:w-auto"
@@ -21,7 +21,7 @@
                         :aria-selected="reportWorkspaceTab === 'coverage'"
                         role="tab">
                     <i data-lucide="clipboard-list" class="h-4 w-4" aria-hidden="true"></i>
-                    Coverage
+                    Types
                 </button>
                 <button type="button"
                         @click="activateReportWorkspaceTab('pipeline')"
@@ -30,11 +30,27 @@
                         :aria-selected="reportWorkspaceTab === 'pipeline'"
                         role="tab">
                     <i data-lucide="git-branch" class="h-4 w-4" aria-hidden="true"></i>
-                    Pipeline
+                    Readiness
                 </button>
             </nav>
         </div>
     </header>
+    <div class="grid gap-px border-b border-outline-subtle bg-outline-subtle sm:grid-cols-2">
+        <div class="flex items-start gap-3 bg-surface-card px-5 py-3.5 sm:px-6">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="file-stack" class="h-4 w-4"></i></span>
+            <div>
+                <p class="text-xs font-semibold text-content-primary">Types</p>
+                <p class="mt-0.5 text-[11px] leading-4 text-content-muted">Shows the reports KAORI can generate from connected data sources.</p>
+            </div>
+        </div>
+        <div class="flex items-start gap-3 bg-surface-card px-5 py-3.5 sm:px-6">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="list-checks" class="h-4 w-4"></i></span>
+            <div>
+                <p class="text-xs font-semibold text-content-primary">Readiness</p>
+                <p class="mt-0.5 text-[11px] leading-4 text-content-muted">Shows whether collection, generation, storage, and delivery can complete.</p>
+            </div>
+        </div>
+    </div>
 
     <div x-show="reportWorkspaceTab === 'coverage'" x-cloak role="tabpanel">
         {% include "reports/overview/partials/_report_type_coverage.html" %}

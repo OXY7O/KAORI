@@ -208,7 +208,7 @@ def get_report_templates_payload(
     return {
         'page_title': 'Report Templates',
         'page_subtitle': (
-            'Manage reusable infrastructure report templates for Kubernetes today and server or HCI reporting later.'
+            'Manage protected defaults and reusable custom report structures.'
         ),
         'summary_cards': get_summary_cards(all_templates),
         'filter_options': get_filter_options(),

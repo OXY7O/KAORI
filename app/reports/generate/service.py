@@ -511,7 +511,7 @@ def get_generate_report_payload(
     return {
         'page_title': 'Generate Report',
         'page_subtitle': (
-            'Configure scope, source domain, period, and selected sections before creating standalone infrastructure report requests.'
+            'Build a governed report from connected data, selected scope, and reusable sections.'
         ),
         'clusters': cluster_options,
         'has_clusters': len(cluster_options) > 1,
@@ -1167,7 +1167,7 @@ def _get_report_type_guide_groups() -> list[dict[str, Any]]:
         {
             'key': 'server',
             'label': 'KAORI Server Reports',
-            'description': 'Reserved server, VM, and HCI report types for the future infrastructure inventory domain.',
+            'description': 'Server, VM, and HCI report types become available when their data providers are connected and validated.',
             'items': server_report_items,
         },
     ]

@@ -1,9 +1,13 @@
+import logging
+
 from flask import redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
+from werkzeug.exceptions import HTTPException
 
 from app.notifications.service import queue_transient_feedback, record_operational_activity
 from app.rbac.decorators import permission_required
+from app.reports.web import render_reports_unavailable
 from app.reports.schedules.service import (
     create_report_schedule,
     delete_report_schedule,
@@ -13,6 +17,9 @@ from app.reports.schedules.service import (
     toggle_report_schedule,
     update_report_schedule,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 def _current_user_id() -> int:
@@ -62,7 +69,18 @@ def _record_schedule_feedback(
 
 @permission_required('reports.manage_schedules')
 def schedules() -> ResponseReturnValue:
-    payload = get_report_schedules_payload(request.args)
+    try:
+        payload = get_report_schedules_payload(request.args)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception('Report Schedules could not be loaded.')
+        return render_reports_unavailable(
+            page_title='Report Schedules',
+            description='Automate report generation and delivery through the Reports worker.',
+            reason='KAORI could not load schedule definitions or worker readiness. Existing schedules remain stored in the database.',
+            retry_url=url_for('reports.schedules'),
+        )
     return render_template('reports/schedules/index.html', payload=payload)
 
 
@@ -129,11 +147,11 @@ def delete_schedule(schedule_id: int) -> ResponseReturnValue:
 
 @permission_required('reports.manage_schedules')
 def run_schedule(schedule_id: int) -> ResponseReturnValue:
-    success, message, report_id = run_schedule_now(schedule_id)
+    success, message, report_id = run_schedule_now(schedule_id, requested_by_user_id=_current_user_id())
     _record_schedule_feedback(
         event_type='report_schedule_run',
         success=success,
-        title='Report schedule executed' if success else 'Report schedule execution failed',
+        title='Report schedule queued' if success else 'Report schedule execution failed',
         message=message,
         schedule_id=schedule_id,
         report_id=report_id,

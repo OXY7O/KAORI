@@ -173,6 +173,60 @@ def _sync_status(synced_at: datetime | None) -> tuple[str, str]:
     return 'Fresh', 'green'
 
 
+
+def get_inventory_freshness_context(cluster_id: str = '') -> dict[str, Any]:
+    """Describe when the committed inventory snapshot for the current scope was collected."""
+    clusters, summary = get_inventory_cluster_summary()
+    selected = [cluster for cluster in clusters if not cluster_id or str(cluster.id) == str(cluster_id)]
+    snapshots = [
+        _normalize_datetime(summary.get(cluster.id, {}).get('synced_at'))
+        for cluster in selected
+    ]
+    committed = [value for value in snapshots if value is not None]
+    latest = max(committed) if committed else None
+    oldest = min(committed) if committed else None
+    missing_count = max(len(selected) - len(committed), 0)
+    stale_count = sum(1 for value in committed if _is_stale_inventory(value))
+
+    if not selected:
+        status = 'No Scope'
+        tone = 'unknown'
+        description = 'No registered Kubernetes cluster matches the selected inventory scope.'
+    elif not committed:
+        status = 'Not Collected'
+        tone = 'warning'
+        description = 'Run Inventory Sync before relying on this inventory view.'
+    elif stale_count or missing_count:
+        status = 'Review Freshness'
+        tone = 'warning'
+        description = (
+            f'{len(committed)} of {len(selected)} cluster snapshots are committed; '
+            f'{stale_count} are older than the {INVENTORY_FRESHNESS_HOURS}-hour freshness window.'
+        )
+    else:
+        status = 'Current'
+        tone = 'normal'
+        description = (
+            f'All {len(selected)} cluster snapshots are within the '
+            f'{INVENTORY_FRESHNESS_HOURS}-hour freshness window.'
+        )
+
+    return {
+        'latest_collected_at': latest,
+        'oldest_collected_at': oldest,
+        'cluster_count': len(selected),
+        'committed_count': len(committed),
+        'missing_count': missing_count,
+        'stale_count': stale_count,
+        'freshness_window_hours': INVENTORY_FRESHNESS_HOURS,
+        'scope_label': selected[0].name if len(selected) == 1 else f'{len(selected)} Clusters',
+        'status': status,
+        'tone': tone,
+        'description': description,
+        'source_label': 'Committed Database Snapshot',
+    }
+
+
 def get_inventory_overview() -> dict[str, Any]:
     clusters, inventory_summary = get_inventory_cluster_summary()
     cluster_rows: list[dict[str, Any]] = []

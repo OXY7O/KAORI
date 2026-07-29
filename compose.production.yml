@@ -182,6 +182,29 @@ services:
     cpus: "${ANALYTICS_WORKER_CPU_LIMIT:-2.0}"
     mem_limit: "${ANALYTICS_WORKER_MEMORY_LIMIT:-2g}"
 
+  reports-worker:
+    <<: *kaori-image
+    environment:
+      APP_ENV: production
+      WAIT_FOR_DB: "true"
+    init: true
+    restart: unless-stopped
+    read_only: true
+    command:
+      - sh
+      - -c
+      - >-
+        exec celery --app celery_worker:celery_app worker
+        --queues="$${REPORTS_CELERY_QUEUE:-reports}"
+        --loglevel="$${CELERY_LOG_LEVEL:-INFO}"
+        --concurrency="$${REPORTS_WORKER_CONCURRENCY:-1}"
+        --max-tasks-per-child="$${REPORTS_MAX_TASKS_PER_CHILD:-25}"
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=256m
+    stop_grace_period: 180s
+    cpus: "${REPORTS_WORKER_CPU_LIMIT:-1.0}"
+    mem_limit: "${REPORTS_WORKER_MEMORY_LIMIT:-1g}"
+
   forecasting-worker:
     <<: *kaori-image
     environment:

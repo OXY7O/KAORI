@@ -119,6 +119,14 @@ def build_job_configuration_context(*, selected_job_key: str | None = None) -> d
                 f"{selected_context.get('eligible_cluster_count', 0)} clusters"
             ),
         },
+        'reports.schedule.dispatch': {
+            'manual_action_label': 'Process Due Reports',
+            'manual_action_icon': 'file-clock',
+            'execution_scope_label': 'Enabled Report Schedules',
+            'execution_scope_detail': (
+                f"{selected_context.get('active_schedule_count', 0)} enabled schedule definitions"
+            ),
+        },
         'analytics.forecast.materialize': {
             'manual_action_label': 'Refresh Forecast',
             'manual_action_icon': 'chart-spline',

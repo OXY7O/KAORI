@@ -315,6 +315,11 @@ class Config:
     )
     ANALYTICS_CELERY_QUEUE = _env_str('ANALYTICS_CELERY_QUEUE', 'analytics-batch').strip() or 'analytics-batch'
     FORECASTING_CELERY_QUEUE = _env_str('FORECASTING_CELERY_QUEUE', 'forecasting').strip() or 'forecasting'
+    REPORTS_CELERY_QUEUE = _env_str('REPORTS_CELERY_QUEUE', 'reports').strip() or 'reports'
+    REPORT_TELEGRAM_BOT_TOKEN = _env_optional_str('REPORT_TELEGRAM_BOT_TOKEN')
+    REPORT_TELEGRAM_CHAT_ID = _env_optional_str('REPORT_TELEGRAM_CHAT_ID')
+    REPORT_PUBLIC_BASE_URL = _env_str('REPORT_PUBLIC_BASE_URL', '').strip()
+    REPORT_DELIVERY_TIMEOUT_SECONDS = _bounded_env_int('REPORT_DELIVERY_TIMEOUT_SECONDS', 10, 1, 60)
     ANALYTICS_TASK_SOFT_TIME_LIMIT_SECONDS = _bounded_env_int(
         'ANALYTICS_TASK_SOFT_TIME_LIMIT_SECONDS', 900, 60, 7200
     )
@@ -404,6 +409,7 @@ class Config:
             'app.integrations.runtime.tasks',
             'app.integrations.validation.tasks',
             'app.jobs.tasks',
+            'app.reports.schedules.tasks',
             'app.resolver.tasks',
         ),
         'task_routes': {
@@ -445,6 +451,9 @@ class Config:
             },
             'app.jobs.tasks.reconcile_stale_jobs': {
                 'queue': JOB_MAINTENANCE_CELERY_QUEUE,
+            },
+            'app.reports.schedules.tasks.run_report_schedule_job': {
+                'queue': REPORTS_CELERY_QUEUE,
             },
             'app.resolver.tasks.execute_authorized_resolution': {
                 'queue': RESOLVER_EXECUTION_CELERY_QUEUE,

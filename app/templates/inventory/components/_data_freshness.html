@@ -1,0 +1,34 @@
+{% import "components/table_label.html" as table_label %}
+<section class="rounded-2xl border border-outline-default bg-surface-card px-5 py-4 shadow-sm" aria-label="Inventory data freshness">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                <i data-lucide="clock-3" class="h-5 w-5"></i>
+            </span>
+            <div class="min-w-0">
+                <p class="text-[11px] font-bold uppercase tracking-[0.16em] text-content-muted">Inventory Data Snapshot</p>
+                <div class="mt-1 flex flex-wrap items-center gap-2">
+                    <h2 class="text-sm font-semibold text-content-primary">{{ inventory_freshness.source_label }}</h2>
+                    {{ table_label.status_label(inventory_freshness.status, inventory_freshness.tone, none, 'detail') }}
+                </div>
+                <p class="mt-1 text-xs leading-5 text-content-muted">{{ inventory_freshness.description }}</p>
+            </div>
+        </div>
+        <dl class="grid shrink-0 grid-cols-2 gap-x-6 gap-y-2 text-right sm:grid-cols-3">
+            <div>
+                <dt class="text-[11px] font-semibold uppercase tracking-wide text-content-muted">Latest Collected</dt>
+                <dd class="mt-1 text-xs font-semibold text-content-primary">
+                    {% if inventory_freshness.latest_collected_at %}{{ inventory_freshness.latest_collected_at|user_datetime }}{% else %}Not Available{% endif %}
+                </dd>
+            </div>
+            <div>
+                <dt class="text-[11px] font-semibold uppercase tracking-wide text-content-muted">Data Scope</dt>
+                <dd class="mt-1 text-xs font-semibold text-content-primary">{{ inventory_freshness.scope_label }}</dd>
+            </div>
+            <div class="col-span-2 sm:col-span-1">
+                <dt class="text-[11px] font-semibold uppercase tracking-wide text-content-muted">Coverage</dt>
+                <dd class="mt-1 text-xs font-semibold text-content-primary">{{ inventory_freshness.committed_count }}/{{ inventory_freshness.cluster_count }} Committed</dd>
+            </div>
+        </dl>
+    </div>
+</section>

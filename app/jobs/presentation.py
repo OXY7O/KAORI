@@ -43,6 +43,7 @@ _QUEUE_ICONS = {
     'forecasting': 'chart-spline',
     'maintenance': 'archive-restore',
     'inventory': 'database-zap',
+    'reports': 'file-clock',
 }
 
 

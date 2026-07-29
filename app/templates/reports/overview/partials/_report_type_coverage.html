@@ -9,8 +9,8 @@
             <p class="mt-1.5 text-xl font-semibold text-content-primary">{{ payload.report_type_coverage.total_count }}</p>
         </div>
         <div class="bg-surface-card px-4 py-3">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Coverage Model</p>
-            <p class="mt-1.5 text-sm font-semibold leading-6 text-content-primary">Integration-Driven</p>
+            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Selection Model</p>
+            <p class="mt-1.5 text-sm font-semibold leading-6 text-content-primary">Connected Sources</p>
         </div>
     </div>
 
@@ -67,7 +67,7 @@
                         {% else %}
                             <div class="rounded-lg border border-dashed border-outline-default bg-surface-card px-4 py-5 text-center md:col-span-2 2xl:col-span-3">
                                 <p class="text-sm font-semibold text-content-primary">No Report Contracts Yet</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">This domain remains reserved for future integration-backed report types.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">No report type is available for this data domain yet.</p>
                             </div>
                         {% endfor %}
                     </div>
@@ -78,6 +78,6 @@
 
     <div class="flex items-start gap-2 rounded-lg border border-outline-subtle bg-surface-hover px-3 py-2.5 text-xs leading-5 text-content-secondary">
         <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
-        <p>Expand one domain at a time. New report domains and contracts can be added without increasing the default workspace height.</p>
+        <p>Use Types to choose an output supported by the currently connected and validated data sources.</p>
     </div>
 </div>

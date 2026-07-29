@@ -1,0 +1,53 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% block title %}{{ payload.page_title }}{% endblock title %}
+{% block dashboard_content %}
+<div class="space-y-6">
+    <section class="{{ page_hero.shell_classes() }}">
+        <div class="{{ page_hero.layout_classes() }}">
+            <div class="{{ page_hero.content_classes() }}">
+                {% call page_hero.intro('file-warning', 'Reports', 'triangle-alert') %}
+                    <h1 class="{{ page_hero.title_classes() }}">{{ payload.page_title }}</h1>
+                    <p class="mt-2 {{ page_hero.description_classes() }}">{{ payload.description }}</p>
+                    <div class="{{ page_hero.metadata_row_classes() }}">
+                        {{ page_hero.meta_label('database', 'Report Record Preserved') }}
+                        {{ page_hero.meta_label('shield-alert', 'Raw Error Hidden') }}
+                    </div>
+                {% endcall %}
+            </div>
+            <aside class="{{ page_hero.aside_classes() }}" aria-label="Report recovery actions">
+                <div class="{{ page_hero.context_panel_classes() }}">
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Availability</p>
+                            <h2 class="{{ page_hero.context_panel_title_classes() }}">Temporarily Unavailable</h2>
+                        </div>
+                        {{ page_hero.context_status_badge('Needs Review', 'warning') }}
+                    </div>
+                    {{ page_hero.context_info('info', 'KAORI kept the technical exception in server logs and returned this recovery view instead.') }}
+                    <div class="{{ page_hero.context_actions_classes() }}">
+                        <a href="{{ payload.retry_url }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="refresh-cw" class="h-4 w-4"></i>{{ payload.action_label }}</a>
+                        <a href="{{ payload.storage_url }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="hard-drive" class="h-4 w-4"></i>Review Storage</a>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </section>
+    <section class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <article class="rounded-2xl border border-status-warning-border bg-status-warning-soft p-5 shadow-sm">
+            <div class="flex items-start gap-3">
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-card text-status-warning-text"><i data-lucide="wifi-off" class="h-5 w-5"></i></span>
+                <div>
+                    <h2 class="text-base font-semibold text-status-warning-text">What Happened</h2>
+                    <p class="mt-1 text-sm leading-6 text-status-warning-text">{{ payload.reason }}</p>
+                </div>
+            </div>
+        </article>
+        <aside class="rounded-2xl border border-outline-default bg-surface-card p-5 shadow-sm">
+            <h2 class="text-sm font-semibold text-content-primary">Recommended Check</h2>
+            <p class="mt-2 text-xs leading-5 text-content-muted">Verify the active report storage backend, worker connectivity, and database availability before retrying.</p>
+            <a href="{{ payload.overview_url }}" class="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-hover px-4 text-sm font-semibold text-content-primary hover:border-brand-outline hover:text-kaori-primary"><i data-lucide="layout-dashboard" class="h-4 w-4"></i>Reports Overview</a>
+        </aside>
+    </section>
+</div>
+{% endblock dashboard_content %}

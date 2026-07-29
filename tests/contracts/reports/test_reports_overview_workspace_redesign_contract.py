@@ -48,8 +48,8 @@ def test_coverage_and_pipeline_use_short_tabs_and_scalable_expandables() -> None
     assert "activateReportWorkspaceTab('coverage')" in workspace
     assert "activateReportWorkspaceTab('pipeline')" in workspace
     assert 'Reporting Capability' in workspace
-    assert '\n                    Coverage\n' in workspace
-    assert '\n                    Pipeline\n' in workspace
+    assert '\n                    Types\n' in workspace
+    assert '\n                    Readiness\n' in workspace
     assert 'Report Type Coverage' not in workspace
     assert 'Reporting Pipeline Status' not in workspace
 

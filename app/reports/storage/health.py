@@ -222,9 +222,9 @@ def build_s3_storage_health() -> dict[str, Any]:
 def build_storage_retention_policy() -> dict[str, Any]:
     """Return the current retention and cleanup policy status.
 
-    MVP2 defines the retention contract clearly, while keeping delete operations
+    KAORI defines the retention contract while keeping delete operations
     guarded. The policy is visible in the UI and cleanup dry-run uses the same
-    retention age, but destructive deletion still requires an explicit future
+    retention age, but destructive deletion still requires an explicit
     admin workflow.
     """
     retention_days = _safe_int_config(
@@ -288,7 +288,7 @@ def build_storage_retention_policy() -> dict[str, Any]:
             'Regeneration creates a new artifact. Previous artifacts remain available until they exceed the defined retention window and an approved cleanup workflow is enabled.'  # noqa: E501
         ),
         'description': (
-            'Retention is defined for MVP2 and enforced as a read-only cleanup preview. Destructive local/S3 deletion remains guarded until admin approval, audit logging, and confirmation workflow are enabled.'  # noqa: E501
+            'Retention is enforced as a read-only cleanup preview. Destructive local or S3 deletion remains guarded until approval, audit logging, and confirmation controls are enabled.'  # noqa: E501
         ),
         'policy_rules': [
             f'Ready/generated artifacts are retention candidates after {retention_days} days.',

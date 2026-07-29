@@ -400,7 +400,7 @@ def get_report_type_summary(report_type_coverage: dict[str, Any]) -> dict[str, s
         'available': str(available),
         'total': str(total),
         'label': f'{available} Available Types',
-        'description': f'{total} report contracts across current and future infrastructure domains.',
+        'description': f'{total} report contracts across connected and planned infrastructure domains.',
     }
 
 
@@ -503,7 +503,7 @@ def get_reporting_context(storage_context: dict[str, Any]) -> list[dict[str, Any
             'icon': 'layout-template',
             'detail': (
                 'The same generation workflow can support Kubernetes, server, VM, HCI, security, '
-                'storage, and future provider domains.'
+                'storage, and additional provider domains.'
             ),
         },
         {

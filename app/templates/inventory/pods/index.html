@@ -3,6 +3,7 @@
 {% block dashboard_content %}
     <div class="space-y-6">
         {% include "inventory/pods/partials/_hero.html" %}
+        {% include "inventory/components/_data_freshness.html" %}
         {% if cluster_onboarding.is_blocked %}
             {% include "components/cluster/_onboarding_banner.html" %}
         {% else %}

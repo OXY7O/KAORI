@@ -2,28 +2,38 @@
 {% import "components/page_hero.html" as page_hero %}
 {% block title %}Generate Report{% endblock title %}
 {% block dashboard_content %}
-    <div class="space-y-5">
+    <div class="space-y-6">
         <!-- Hero -->
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro('wand-sparkles', 'Infrastructure report builder', 'plus-circle') %}
+                    {% call page_hero.intro('wand-sparkles', 'Generate Report', 'plus-circle') %}
                         <h1 class="{{ page_hero.title_classes() }}">{{ payload.page_title }}</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">{{ payload.page_subtitle }}</p>
-                        <div class="{{ page_hero.metadata_row_classes() }}">{{ page_hero.meta_label('layout-template', 'Base and custom templates') }}{{ page_hero.meta_label('file-check-2', 'Standalone PDF reports') }}{{ page_hero.meta_label('hard-drive', payload.storage_context.label) }}</div>
+                        <div class="{{ page_hero.metadata_row_classes() }}">
+                            {{ page_hero.meta_label('layout-template', 'Reusable Templates') }}
+                            {{ page_hero.meta_label('layers-3', 'Selectable Sections') }}
+                            {{ page_hero.meta_label('hard-drive', payload.storage_context.label) }}
+                        </div>
                     {% endcall %}
                 </div>
-                <aside class="{{ page_hero.aside_classes() }}"
-                       aria-label="Report generation navigation">
+                <aside class="{{ page_hero.aside_classes() }}" aria-label="Report generation readiness">
                     <div class="{{ page_hero.context_panel_classes() }}">
-                        <div>
-                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Generation contract</p>
-                            <h2 class="{{ page_hero.context_panel_title_classes() }}">Ready to generate</h2>
-                            <p class="mt-2 text-xs leading-5 text-brand-foreground-muted">Select infrastructure scope, report type, period, and sections in the form below.</p>
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Generation Readiness</p>
+                                <h2 class="{{ page_hero.context_panel_title_classes() }}">Build a Report</h2>
+                            </div>
+                            {{ page_hero.context_status_badge('Ready', 'normal') }}
                         </div>
-                        <div class="mt-4 grid grid-cols-2 gap-2"><a href="{{ url_for('reports.report_templates') }}"
-   class="{{ page_hero.context_action_classes() }}">Templates</a><a href="{{ url_for('reports.generated_reports') }}"
-   class="{{ page_hero.context_action_classes() }}">Generated</a></div>
+                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                            {{ page_hero.context_metric('files', 'Report Types', payload.report_type_options|length, 'Available contracts') }}
+                            {{ page_hero.context_metric('list-checks', 'Sections', payload.form_state.sections|length, 'Currently selected') }}
+                        </div>
+                        <div class="{{ page_hero.context_actions_classes() }}">
+                            <a href="{{ url_for('reports.report_templates') }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="layout-template" class="h-4 w-4"></i>Templates</a>
+                            <a href="{{ url_for('reports.generated_reports') }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="files" class="h-4 w-4"></i>Generated</a>
+                        </div>
                     </div>
                 </aside>
             </div>
@@ -38,8 +48,8 @@
                         <i data-lucide="layers-3" class="h-[18px] w-[18px]"></i>
                     </span>
                     <span>
-                        <span class="block text-base font-semibold text-content-primary text-content-primary">Report Architecture</span>
-                        <span class="block text-xs text-content-muted dark:text-content-muted">How the generator separates KAORI Kubernetes Reports and future KAORI Server Reports domains.</span>
+                        <span class="block text-base font-semibold text-content-primary text-content-primary">Generation Guide</span>
+                        <span class="block text-xs text-content-muted dark:text-content-muted">How report type, scope, sections, and storage combine into one governed artifact.</span>
                     </span>
                 </span>
                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-outline-default text-content-muted dark:border-outline-default dark:text-content-secondary">
@@ -80,7 +90,7 @@
                 </div>
             </section>
         {% endif %}
-        <section class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <section class="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
             <div class="space-y-5">
                 <form method="POST"
                       action="{{ url_for('reports.generate_report') }}"
@@ -366,7 +376,7 @@
                         <div>
                             <p class="text-sm font-semibold text-content-primary text-content-primary">Create report request</p>
                             <p class="mt-1 text-xs text-content-muted dark:text-content-muted">
-                                Real-data PDF rendering is available. Prometheus-backed reports require a specific cluster in MVP2.
+                                Metrics-backed reports require a specific validated cluster so KAORI can collect the selected evidence safely.
                             </p>
                         </div>
                         <div class="flex flex-wrap items-center gap-3">
@@ -385,7 +395,7 @@
                 </form>
             </div>
             <!-- Right Panel -->
-            <aside class="space-y-5">
+            <aside class="space-y-5 xl:sticky xl:top-5 xl:self-start">
                 <section x-data="{ open: true }"
                          class="overflow-hidden rounded-2xl border border-outline-default bg-white shadow-sm dark:border-outline-default bg-surface-card">
                     <button type="button"

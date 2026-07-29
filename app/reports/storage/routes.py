@@ -3,9 +3,11 @@ import logging
 from flask import redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
+from werkzeug.exceptions import HTTPException
 
 from app.notifications.service import record_operational_activity
 from app.rbac.decorators import permission_required
+from app.reports.web import render_reports_unavailable
 from app.reports.storage.service import (
     build_report_cleanup_dry_run,
     get_report_storage_payload,
@@ -19,13 +21,31 @@ logger = logging.getLogger(__name__)
 @permission_required('reports.manage_storage')
 def storage() -> ResponseReturnValue:
     if request.args.get('cleanup_dry_run') == '1':
-        payload = get_report_storage_payload()
-        payload['cleanup_dry_run_result'] = build_report_cleanup_dry_run()
+        try:
+            payload = get_report_storage_payload()
+            payload['cleanup_dry_run_result'] = build_report_cleanup_dry_run()
+        except Exception:
+            logger.exception('Report storage cleanup preview failed.')
+            return render_reports_unavailable(
+                page_title='Reports Storage',
+                description='Review artifact backend, integrity, and retention readiness.',
+                reason='KAORI could not prepare the cleanup preview because the storage backend or database is unavailable.',
+                retry_url=url_for('reports.storage'),
+            )
         return render_template('reports/storage/index.html', payload=payload)
 
     if request.args.get('integrity') == '1':
-        payload = get_report_storage_payload()
-        payload['integrity_result'] = scan_report_storage_integrity()
+        try:
+            payload = get_report_storage_payload()
+            payload['integrity_result'] = scan_report_storage_integrity()
+        except Exception:
+            logger.exception('Report storage integrity scan failed.')
+            return render_reports_unavailable(
+                page_title='Reports Storage',
+                description='Review artifact backend, integrity, and retention readiness.',
+                reason='KAORI could not complete the artifact integrity scan. No report artifacts were changed.',
+                retry_url=url_for('reports.storage'),
+            )
         return render_template('reports/storage/index.html', payload=payload)
 
     if request.args.get('verify') == '1':
@@ -39,7 +59,7 @@ def storage() -> ResponseReturnValue:
             result = verify_active_report_storage()
         except Exception as exc:
             logger.exception('Report storage verification failed.')
-            detail = str(exc)
+            detail = 'The active report storage backend did not respond. Review its endpoint, credentials, and network connectivity.'
         else:
             backend = result.get('backend')
             verified = bool(result.get('verified'))
@@ -71,5 +91,16 @@ def storage() -> ResponseReturnValue:
         )
         return redirect(url_for('reports.storage'))
 
-    payload = get_report_storage_payload()
+    try:
+        payload = get_report_storage_payload()
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception('Reports Storage could not be loaded.')
+        return render_reports_unavailable(
+            page_title='Reports Storage',
+            description='Review artifact backend, integrity, and retention readiness.',
+            reason='KAORI could not inspect the active report storage backend. Configuration remains unchanged while connectivity is restored.',
+            retry_url=url_for('reports.storage'),
+        )
     return render_template('reports/storage/index.html', payload=payload)

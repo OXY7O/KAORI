@@ -177,7 +177,7 @@ def get_report_storage_payload() -> dict[str, Any]:
 
     return {
         'page_title': 'Reports Storage',
-        'page_subtitle': 'Monitor generated report artifact storage, backend configuration, and verification status.',
+        'page_subtitle': 'Review report artifact storage, integrity, and retention readiness.',
         'active_backend': backend_name,
         'summary_cards': build_storage_summary_cards(
             backend_name,
@@ -236,11 +236,11 @@ def get_report_storage_payload() -> dict[str, Any]:
         },
         'cleanup_dry_run_result': None,
         'notes': [
-            'MVP2 storage configuration is read from ENV / config.py.',
+            'Storage configuration is read from environment variables and application configuration.',
             'Secrets should be provided through environment variables or Kubernetes Secrets.',
             'The UI is read-only for configuration; it only displays status and can run a verification check.',
             'Existing report records keep their backend prefix, so local and S3 artifacts can coexist.',
-            'Retention is defined for MVP2. Cleanup remains dry-run/read-only unless destructive cleanup is explicitly enabled in configuration.',  # noqa: E501
+            'Retention cleanup remains a read-only preview unless destructive cleanup is explicitly enabled and governed.',  # noqa: E501
         ],
         'recommended_actions': build_storage_recommended_actions(
             backend_name,

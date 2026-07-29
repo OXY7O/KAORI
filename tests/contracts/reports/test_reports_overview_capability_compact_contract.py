@@ -15,8 +15,8 @@ def test_reporting_capability_tabs_are_short_and_accessible() -> None:
 
     assert 'Reporting Capability' in source
     assert 'aria-label="Reporting capability tabs"' in source
-    assert '\n                    Coverage\n' in source
-    assert '\n                    Pipeline\n' in source
+    assert '\n                    Types\n' in source
+    assert '\n                    Readiness\n' in source
     assert 'Report Type Coverage' not in source
     assert 'Reporting Pipeline Status' not in source
 

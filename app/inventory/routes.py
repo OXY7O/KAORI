@@ -8,7 +8,12 @@ from app.cluster.onboarding import has_registered_clusters
 from app.cluster.service import build_cluster_context
 from app.cluster.sync_jobs import enqueue_cluster_inventory_sync
 from app.common.pagination import paginate_sequence
-from app.inventory.overview import get_cluster_by_id, get_inventory_clusters, get_inventory_overview
+from app.inventory.overview import (
+    get_cluster_by_id,
+    get_inventory_clusters,
+    get_inventory_freshness_context,
+    get_inventory_overview,
+)
 from app.inventory.resources.configuration import (
     get_configuration_detail,
     get_configuration_filter_namespaces,
@@ -93,6 +98,13 @@ inventory_bp = Blueprint(
     __name__,
     url_prefix='/inventory',
 )
+
+
+@inventory_bp.context_processor
+def inject_inventory_freshness_context() -> dict[str, Any]:
+    """Expose one consistent snapshot timestamp across every Inventory page."""
+    cluster_id = request.args.get('cluster_id', '', type=str)
+    return {'inventory_freshness': get_inventory_freshness_context(cluster_id=cluster_id)}
 
 
 @inventory_bp.before_request

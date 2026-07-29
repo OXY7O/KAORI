@@ -1,14 +1,21 @@
+import logging
+
 from flask import redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
+from werkzeug.exceptions import HTTPException
 
 from app.notifications.service import queue_transient_feedback, record_operational_activity
 from app.rbac.decorators import permission_required
+from app.reports.web import render_reports_unavailable
 from app.reports.generate.service import (
     create_report_request,
     get_form_state_from_form,
     get_generate_report_payload,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 @permission_required('reports.generate')
@@ -44,5 +51,16 @@ def generate_report() -> ResponseReturnValue:
         return render_template('reports/generate/index.html', payload=payload)
 
     form_state = get_form_state_from_form(request.args)
-    payload = get_generate_report_payload(form_state=form_state)
+    try:
+        payload = get_generate_report_payload(form_state=form_state)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception('Generate Report workspace could not be loaded.')
+        return render_reports_unavailable(
+            page_title='Generate Report',
+            description='Build a governed report from connected KAORI data sources.',
+            reason='KAORI could not prepare the report builder. Verify database, integration, and report storage readiness before retrying.',
+            retry_url=url_for('reports.generate_report'),
+        )
     return render_template('reports/generate/index.html', payload=payload)

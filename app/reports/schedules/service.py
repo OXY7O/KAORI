@@ -15,6 +15,7 @@ from app.models.cluster import Cluster
 from app.models.report import Report, ReportSchedule, ReportScheduleRun
 from app.models.user import User
 from app.reports.export.constants import DEFAULT_REPORT_DOMAIN, DEFAULT_REPORT_SOURCE_KIND
+from app.reports.delivery import deliver_generated_report, get_delivery_channel_catalog
 from app.reports.export.service import generate_pdf_for_report
 from app.reports.generate.service import (
     OUTPUT_FORMAT_OPTIONS,
@@ -74,11 +75,11 @@ def get_report_schedules_payload(
     return {
         'page_title': 'Report Schedules',
         'page_subtitle': (
-            'Create recurring Kubernetes report automation using the same report contract as manual generation.'
+            'Automate report generation and delivery through the dedicated Reports worker.'
         ),
-        'status_label': 'MVP2 scheduler enabled',
+        'status_label': 'Report worker enabled',
         'status_description': (
-            'Schedules can create normal Generated Report records and run PDF export through the CLI worker or Run now action.'
+            'Schedules are dispatched through the dedicated Reports worker and recorded in Job Execution.'
         ),
         'summary_cards': get_summary_cards(
             schedules=schedules,
@@ -101,6 +102,7 @@ def get_report_schedules_payload(
         'storage_context': storage_context,
         'scheduler_context': get_scheduler_context(storage_context),
         'recommended_actions': get_recommended_actions(),
+        'delivery_channel_options': get_delivery_channel_catalog(),
     }
 
 
@@ -162,6 +164,7 @@ def build_default_schedule_form_state() -> dict[str, Any]:
         'day_of_month': '1',
         'timezone': _get_default_timezone(),
         'is_enabled': '1',
+        'notification_channels': [],
     }
 
 
@@ -181,6 +184,9 @@ def get_form_state_from_schedule_form(
             'day_of_month': form.get('day_of_month', '1').strip(),
             'timezone': form.get('timezone', _get_default_timezone()).strip() or _get_default_timezone(),
             'is_enabled': '1' if form.get('is_enabled') in ['1', 'true', 'on', 'yes'] else '0',
+            'notification_channels': [
+                value.strip().lower() for value in form.getlist('notification_channels') if value.strip()
+            ],
         }
     )
     return state
@@ -255,12 +261,25 @@ def delete_report_schedule(schedule_id: int) -> tuple[bool, str]:
     return True, 'Schedule deleted successfully.'
 
 
-def run_schedule_now(schedule_id: int) -> tuple[bool, str, int | None]:
+def run_schedule_now(
+    schedule_id: int,
+    *,
+    requested_by_user_id: int | None = None,
+) -> tuple[bool, str, int | None]:
     schedule = db.session.get(ReportSchedule, schedule_id)
     if schedule is None:
         return False, 'Schedule not found.', None
 
-    return execute_schedule(schedule, trigger_source='manual')
+    from app.reports.schedules.job_adapter import dispatch_report_schedule_job
+
+    result = dispatch_report_schedule_job(
+        requested_by_user_id=requested_by_user_id,
+        trigger_type='manual',
+        parameters={'schedule_id': schedule_id, 'limit': 1},
+    )
+    if not result.accepted:
+        return False, result.message, None
+    return True, result.message, None
 
 
 def run_due_schedules(
@@ -336,6 +355,14 @@ def execute_schedule(
     db.session.commit()
 
     success, message = generate_pdf_for_report(report.id)
+    delivery_result: dict[str, Any] | None = None
+    if success:
+        refreshed_report = db.session.get(Report, report.id)
+        if refreshed_report is not None:
+            delivery_result = deliver_generated_report(
+                refreshed_report,
+                schedule.notification_channels_as_list(),
+            )
 
     refreshed_run = db.session.get(ReportScheduleRun, run.id)
     refreshed_schedule = db.session.get(ReportSchedule, schedule.id)
@@ -344,6 +371,7 @@ def execute_schedule(
         refreshed_run.status = 'success' if success else 'failed'
         refreshed_run.finished_at = datetime.now(UTC)
         refreshed_run.error_message = None if success else message
+        refreshed_run.delivery_result = delivery_result
 
     if refreshed_schedule is not None:
         refreshed_schedule.last_status = 'success' if success else 'failed'
@@ -428,61 +456,49 @@ def calculate_next_run_at(
 
 
 def get_scheduler_context(storage_context: dict[str, Any]) -> list[dict[str, str]]:
+    telegram = next(
+        (item for item in get_delivery_channel_catalog() if item['value'] == 'telegram'),
+        None,
+    )
     return [
         {
-            'label': 'Schedule persistence',
-            'description': 'Report schedules are stored in the database with cadence, scope, sections, owner, and next run time.',
+            'label': 'Database Schedule',
+            'description': 'Cadence, scope, sections, owner, delivery channels, and next run time are stored with each schedule.',
             'status': 'Ready',
-            'tone': 'blue',
+            'tone': 'normal',
             'icon': 'database',
         },
         {
-            'label': 'Manual run now',
-            'description': 'Operators can trigger a scheduled report immediately from the Schedules page.',
+            'label': 'Reports Worker',
+            'description': 'Due and manual schedule runs use the dedicated Reports queue and canonical Job Execution records.',
             'status': 'Ready',
-            'tone': 'blue',
-            'icon': 'play-circle',
+            'tone': 'normal',
+            'icon': 'worker',
         },
         {
-            'label': 'CLI worker',
-            'description': 'Use flask run-report-schedules from cron, systemd timer, or Kubernetes CronJob to process due schedules.',
-            'status': 'Ready',
-            'tone': 'blue',
-            'icon': 'terminal',
-        },
-        {
-            'label': 'Storage backend',
+            'label': 'Artifact Storage',
             'description': storage_context['description'],
             'status': storage_context['status'],
-            'tone': storage_context['tone'],
+            'tone': 'normal' if storage_context['status'] == 'Ready' else 'warning',
             'icon': 'hard-drive',
         },
         {
-            'label': 'Generated artifact handoff',
-            'description': 'Each successful schedule run creates a normal generated report with detail, download, archive, and storage lifecycle actions.',
-            'status': 'Ready',
-            'tone': 'blue',
+            'label': 'Telegram Delivery',
+            'description': telegram['description'] if telegram else 'Telegram delivery is unavailable.',
+            'status': telegram['status'] if telegram else 'Unavailable',
+            'tone': telegram['tone'] if telegram else 'unknown',
             'icon': 'send',
-        },
-        {
-            'label': 'Webhook & notification delivery',
-            'description': 'Email, Slack, generic webhook, and notification channels are intentionally marked coming soon. Current MVP2 scope generates and stores the report artifact.',
-            'status': 'Coming soon',
-            'tone': 'amber',
-            'icon': 'bell-ring',
         },
     ]
 
 
 def get_recommended_actions() -> list[str]:
     return [
-        'Run flask db upgrade after applying the schedule migration.',
-        'Use flask run-report-schedules --dry-run first to verify due schedule detection.',
-        'Wire flask run-report-schedules to cron, systemd timer, or Kubernetes CronJob for actual automation.',
-        'Use Run now from the UI to validate a schedule before enabling unattended execution.',
-        'Keep webhook, email, and notification delivery as coming soon until delivery channel configuration is introduced.',
+        'Run the database migration before enabling delivery channels.',
+        'Start the dedicated Reports worker and keep the Report Schedule Dispatcher enabled in Job Configuration.',
+        'Use Run Now to validate report generation, artifact storage, and Telegram delivery before unattended execution.',
+        'Configure REPORT_TELEGRAM_BOT_TOKEN, REPORT_TELEGRAM_CHAT_ID, and REPORT_PUBLIC_BASE_URL for Telegram notifications.',
     ]
-
 
 def _apply_form_state_to_schedule(schedule: ReportSchedule, form_state: dict[str, Any]) -> None:
     schedule.name = form_state['name']
@@ -495,6 +511,7 @@ def _apply_form_state_to_schedule(schedule: ReportSchedule, form_state: dict[str
     schedule.period = form_state['period']
     schedule.output_format = form_state['output_format']
     schedule.sections = list(form_state['sections'])
+    schedule.notification_channels = list(form_state.get('notification_channels') or [])
     schedule.cadence = form_state['cadence']
     schedule.run_time = form_state['run_time']
     schedule.day_of_week = _parse_optional_int(form_state['day_of_week']) if form_state['cadence'] == 'weekly' else None
@@ -578,6 +595,7 @@ def _serialize_schedule(schedule: ReportSchedule, cluster_map: dict[str, str]) -
         'output_format': schedule.output_format.upper(),
         'sections': schedule.sections_as_list(),
         'sections_count': len(schedule.sections_as_list()),
+        'notification_channels': schedule.notification_channels_as_list(),
         'cadence': schedule.cadence.title(),
         'cadence_value': schedule.cadence,
         'run_time': schedule.run_time,
@@ -612,6 +630,7 @@ def _serialize_run(run: ReportScheduleRun, schedule_map: dict[int, str]) -> dict
         'started_at': _format_datetime(run.started_at, _get_default_timezone()),
         'finished_at': _format_datetime(run.finished_at, _get_default_timezone()),
         'error_message': run.error_message,
+        'delivery_result': run.delivery_result or {},
     }
 
 
@@ -631,6 +650,7 @@ def _schedule_edit_state(schedule: ReportSchedule) -> dict[str, Any]:
         'day_of_month': str(schedule.day_of_month if schedule.day_of_month is not None else 1),
         'timezone': schedule.timezone,
         'is_enabled': '1' if schedule.is_enabled else '0',
+        'notification_channels': schedule.notification_channels_as_list(),
     }
 
 

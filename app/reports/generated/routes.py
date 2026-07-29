@@ -1,9 +1,13 @@
+import logging
+
 from flask import redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
+from werkzeug.exceptions import HTTPException
 
 from app.notifications.service import record_operational_activity
 from app.rbac.decorators import permission_required
+from app.reports.web import render_reports_unavailable
 from app.reports.generated.service import (
     archive_report_record,
     bulk_archive_report_records,
@@ -11,6 +15,9 @@ from app.reports.generated.service import (
     get_report_detail_payload,
     restore_archived_report_record,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 def _current_user_id() -> int:
@@ -41,13 +48,35 @@ def _record_archive_feedback(
 
 @permission_required('reports.view')
 def generated_reports() -> ResponseReturnValue:
-    payload = get_generated_reports_payload(request.args)
+    try:
+        payload = get_generated_reports_payload(request.args)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception('Generated Reports could not be loaded.')
+        return render_reports_unavailable(
+            page_title='Generated Reports',
+            description='Review generated report records and stored artifacts.',
+            reason='KAORI could not load the generated report registry. The active storage backend or another reporting dependency may be unavailable.',
+            retry_url=url_for('reports.generated_reports'),
+        )
     return render_template('reports/generated/index.html', payload=payload)
 
 
 @permission_required('reports.view')
 def generated_report_detail(report_id: int) -> ResponseReturnValue:
-    payload = get_report_detail_payload(report_id)
+    try:
+        payload = get_report_detail_payload(report_id)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.exception('Generated report detail could not be loaded for report_id=%s.', report_id)
+        return render_reports_unavailable(
+            page_title='Report Detail',
+            description='Review report metadata and artifact availability.',
+            reason='KAORI could not load this report detail. The report record remains protected while storage connectivity is reviewed.',
+            retry_url=url_for('reports.generated_report_detail', report_id=report_id),
+        )
     return render_template('reports/generated/detail.html', payload=payload)
 
 

@@ -48,8 +48,8 @@
         {% for stage_key, stage_label, stage_description, stage_tone in [
             ('ready', 'Ready Now', 'Operational sources and selected artifact services available to report generation.', 'normal'),
             ('available', 'Available to Configure', 'Supported services that can be selected without changing the report contract.', 'info'),
-            ('planned', 'Planned', 'Defined integrations scheduled for a future implementation stage.', 'info'),
-            ('reserved', 'Reserved', 'Architecture placeholders retained for future provider and domain coverage.', 'unknown')
+            ('planned', 'Planned', 'Defined integrations awaiting provider implementation or validation.', 'info'),
+            ('reserved', 'Reserved', 'Provider slots retained for additional infrastructure domains.', 'unknown')
         ] %}
             {% set stage_items = payload.data_collection_status|selectattr('stage', 'equalto', stage_key)|list %}
             <div x-show="collectionTab === '{{ stage_key }}'" x-cloak role="tabpanel">
