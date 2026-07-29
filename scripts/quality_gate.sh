@@ -9,6 +9,7 @@ phase="${1:---all}"
 run_static() {
     bash scripts/verify_source_hygiene.sh
     python scripts/verify_python_syntax.py
+    python scripts/verify_single_pdf_engine.py
     python -m ruff check app migrations tests scripts
     python -m ruff format --check app migrations tests scripts
     python -m djlint app/templates --check

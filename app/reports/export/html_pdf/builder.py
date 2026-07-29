@@ -14,7 +14,7 @@ from app.reports.export.constants import (
     SECTION_LABELS,
     SOURCE_KIND_LABELS,
 )
-from app.reports.export.helpers import format_period
+from app.reports.export.formatting import format_period
 from app.reports.export.html_pdf.charts import build_alert_severity_chart, build_forecast_chart
 from app.reports.export.html_pdf.document import (
     ReportDocument,

@@ -45,7 +45,6 @@ Revert the hotfix commit. No migration, configuration, or persistent-data rollba
 - `app/integrations/runtime/__init__.py`
 - `app/inventory/resources/common.py`
 - `app/models/resolver.py`
-- `app/reports/export/sections/storage.py`
 - `app/resolver/orchestration.py`
 - `tests/contracts/architecture/test_foundation_hardening_hotfix_contract.py`
 - `tests/intelligence/test_decision_candidate_review.py`

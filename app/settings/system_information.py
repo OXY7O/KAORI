@@ -29,7 +29,7 @@ _RELEASE_HIGHLIGHTS: tuple[dict[str, str], ...] = (
         'title': 'Template-Driven PDF Reporting',
         'icon': 'file-chart-column',
         'description': (
-            'Existing report templates can render through the WeasyPrint HTML/PDF engine while ReportLab remains available as a controlled legacy fallback.'
+            'Existing report templates render through the canonical WeasyPrint HTML/PDF engine with governed sections, storage, and lifecycle controls.'
         ),
     },
 )
@@ -100,7 +100,7 @@ _RELEASE_FEATURES: tuple[dict[str, Any], ...] = (
         'description': 'Template-driven report delivery, storage, scheduling, and centralized retention controls.',
         'features': (
             'Existing system and custom report templates with configurable sections and ordering',
-            'WeasyPrint HTML/PDF rendering with ReportLab legacy fallback',
+            'Canonical WeasyPrint HTML/PDF rendering',
             'Generated report management, schedules, local storage, and S3-compatible storage',
             'Centralized data lifecycle policies, archive verification, and operational retention',
         ),

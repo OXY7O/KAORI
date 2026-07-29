@@ -27,18 +27,13 @@ All report workspaces use the KAORI Violet Infrastructure design system: solid v
 
 ## PDF renderer architecture
 
-KAORI keeps the existing Report Template System as the source of truth for report type, section order, scope, schedule, storage, and retention. PDF rendering is selected through `REPORT_PDF_RENDERER`:
+KAORI uses one canonical PDF engine: Jinja HTML, dedicated print CSS, and WeasyPrint. The existing Report Template System remains the source of truth for report type, section order, scope, schedule, storage, and retention.
 
-- `weasyprint` (default): Jinja HTML + dedicated print CSS + WeasyPrint.
-- `reportlab`: legacy renderer retained for controlled rollback.
-
-When `REPORT_PDF_LEGACY_FALLBACK_ENABLED=true`, a WeasyPrint rendering failure is logged with technical evidence and the same report request is rendered through ReportLab. User-facing report errors remain sanitized.
-
-The WeasyPrint renderer reuses the existing real-data payload collectors and never performs HTTP or Prometheus queries from Jinja templates. Selected sections are rendered in the exact order stored by the current system or custom template.
+The renderer reuses prepared real-data payload collectors and never performs HTTP or Prometheus queries from Jinja templates. Selected sections are rendered in the exact order stored by the current system or custom template. Rendering failures are logged with technical evidence and returned to users as sanitized operational feedback; KAORI does not switch to a second PDF engine.
 
 PDF-specific source lives under:
 
-- `app/reports/export/html_pdf/`: document model, payload normalization, chart SVGs, and rendering engine.
+- `app/reports/export/html_pdf/`: document model, payload normalization, chart SVGs, and the canonical WeasyPrint engine.
+- `app/reports/export/formatting.py`: renderer-neutral filename and period formatting.
 - `app/templates/reports/pdf/`: Jinja PDF document template.
 - `app/static/reports/pdf/`: dedicated print CSS tokens and layout.
-- `app/reports/export/renderers/`: renderer selection and ReportLab fallback.

@@ -4,14 +4,14 @@ from collections.abc import Callable
 from typing import Any
 
 from app.models.report import Report
-from app.reports.export.sections.alerts import get_report_alerts_anomalies_payload
-from app.reports.export.sections.analytics import get_report_analytics_overview_payload
-from app.reports.export.sections.capacity import get_report_capacity_analysis_payload
-from app.reports.export.sections.forecast import get_report_resource_forecast_payload
-from app.reports.export.sections.storage import get_report_storage_analysis_payload
-from app.reports.export.sections.top_consumers import get_report_top_consumers_payload
-from app.reports.export.sections.utilization import get_report_resource_utilization_payload
-from app.reports.export.sections.workload import get_report_workload_analysis_payload
+from app.reports.export.payloads.alerts import get_report_alerts_anomalies_payload
+from app.reports.export.payloads.analytics import get_report_analytics_overview_payload
+from app.reports.export.payloads.capacity import get_report_capacity_analysis_payload
+from app.reports.export.payloads.forecast import get_report_resource_forecast_payload
+from app.reports.export.payloads.storage import get_report_storage_analysis_payload
+from app.reports.export.payloads.top_consumers import get_report_top_consumers_payload
+from app.reports.export.payloads.utilization import get_report_resource_utilization_payload
+from app.reports.export.payloads.workload import get_report_workload_analysis_payload
 
 PayloadCollector = Callable[[Report], dict[str, Any]]
 

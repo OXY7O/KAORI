@@ -1,3 +1,1 @@
-from app.reports.export.html_pdf.renderer import render_weasyprint_pdf
-
-__all__ = ['render_weasyprint_pdf']
+"""Canonical HTML-to-PDF rendering pipeline for KAORI reports."""

@@ -175,14 +175,6 @@ def _build_maintenance_beat_schedule() -> dict[str, dict[str, object]]:
         }
     return schedule
 
-
-def _normalize_report_pdf_renderer(
-    value: str | None,
-) -> str:
-    renderer = (value or 'weasyprint').strip().lower()
-    return renderer if renderer in {'weasyprint', 'reportlab'} else 'weasyprint'
-
-
 def _normalize_storage_backend(
     value: str | None,
 ) -> str:
@@ -674,18 +666,6 @@ class Config:
     REPORT_SCHEDULE_TIMEZONE = _env_str(
         'REPORT_SCHEDULE_TIMEZONE',
         'Asia/Jakarta',
-    )
-
-    REPORT_PDF_RENDERER = _normalize_report_pdf_renderer(
-        _env_str(
-            'REPORT_PDF_RENDERER',
-            'weasyprint',
-        )
-    )
-
-    REPORT_PDF_LEGACY_FALLBACK_ENABLED = _env_bool(
-        'REPORT_PDF_LEGACY_FALLBACK_ENABLED',
-        True,
     )
 
     REPORT_PDF_CLASSIFICATION = _env_str(
