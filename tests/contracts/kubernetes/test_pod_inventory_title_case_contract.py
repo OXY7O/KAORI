@@ -24,9 +24,9 @@ def test_pod_inventory_summary_copy_is_title_case_without_periods() -> None:
 
 def test_pod_inventory_footer_uses_title_case_count_label() -> None:
     source = read("app/templates/inventory/pods/partials/_table_content.html")
-    assert "</span> Of <span" in source
+    assert "</span> of <span" in source
     assert "'Pod' if pagination.total_items == 1 else 'Pods'" in source
-    assert "</span> of <span" not in source
+    assert "</span> Of <span" not in source
 
 
 def test_pod_detail_removes_requested_guidance_boxes() -> None:

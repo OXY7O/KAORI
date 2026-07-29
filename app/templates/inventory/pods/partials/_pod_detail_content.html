@@ -25,6 +25,22 @@
 {% else %}
     {% set ready_tone = "unknown" %}
 {% endif %}
+{% set qos_tones = {
+    'besteffort': 'warning',
+    'burstable': 'info',
+    'guaranteed': 'normal'
+} %}
+{% set restart_policy_tones = {
+    'always': 'normal',
+    'onfailure': 'info',
+    'never': 'warning'
+} %}
+{% set dns_policy_tones = {
+    'clusterfirst': 'normal',
+    'clusterfirstwithhostnet': 'info',
+    'default': 'info',
+    'none': 'warning'
+} %}
 <div class="bg-surface-hover px-4 py-4">
     <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-sm">
         <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -45,7 +61,7 @@
             </div>
         </header>
         <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail.detail_card('Pod Identity', 'badge-info', pod.age, class_name='min-h-96') %}
+            {% call detail.detail_card('Pod Identity', 'badge-info', pod.age, class_name='min-h-96', badge_size='detail') %}
                 {{ detail.detail_row('Cluster', pod.cluster_name) }}
                 {{ detail.detail_row('Namespace', pod.namespace) }}
                 {{ detail.detail_row('Owner', (pod.owner_type ~ ' · ' ~ pod.owner_name) if pod.owner_type != 'Standalone' else 'Standalone') }}
@@ -55,15 +71,15 @@
                 {{ detail.detail_row('Collected', pod.collected_at|user_datetime) }}
                 <div class="mt-auto pt-3">{{ info_box('Inventory Identity', 'Pod identity and owner from the latest inventory snapshot.', 'lightbulb', 'brand', true) }}</div>
             {% endcall %}
-            {% call detail.detail_card('Placement & Network', 'map-pin', pod.host_ip or 'Host IP Unavailable', class_name='min-h-[32rem]') %}
+            {% call detail.detail_card('Placement & Network', 'map-pin', pod.host_ip or 'Host IP Unavailable', class_name='min-h-[32rem]', badge_size='detail') %}
                 {{ detail.detail_row('Node', pod.node or 'Not Scheduled') }}
                 {{ detail.detail_row('Pod IP', pod.ip or '-', true) }}
                 {{ detail.detail_row('Host IP', pod.host_ip or '-', true) }}
                 {{ detail.detail_row('Scheduler', pod.placement.scheduler) }}
                 {{ detail.detail_row('Priority Class', pod.placement.priority_class) }}
                 {{ detail.detail_row('Topology Spread', pod.placement.topology_spread_count) }}
-                {{ detail.status_row('Affinity', 'Configured' if pod.placement.affinity_configured else 'Not Configured', 'info' if pod.placement.affinity_configured else 'unknown') }}
-                {{ detail.status_row('Host Network', 'Enabled' if pod.placement.host_network else 'Disabled', 'warning' if pod.placement.host_network else 'disabled') }}
+                {{ detail.status_row('Affinity', 'Configured' if pod.placement.affinity_configured else 'Not Configured', 'info' if pod.placement.affinity_configured else 'unknown', none, 'detail') }}
+                {{ detail.status_row('Host Network', 'Enabled' if pod.placement.host_network else 'Disabled', 'warning' if pod.placement.host_network else 'disabled', none, 'detail') }}
                 {% call detail_object.stack() %}
                     {% set placement_constraint_count = (pod.placement.node_selector|length) + (pod.placement.tolerations|length) + (1 if pod.placement.affinity_configured else 0) + pod.placement.topology_spread_count %}
                     {% if placement_constraint_count > 0 %}
@@ -74,7 +90,17 @@
                             {% if pod.placement.topology_spread_count %}{{ detail_object.row('Topology Spread', pod.placement.topology_spread_count) }}{% endif %}
                             {% if pod.placement.node_selector %}
                                 <div class="flex flex-wrap gap-1.5 pt-1">
-                                    {% for key, value in pod.placement.node_selector.items() %}{{ table_label.metadata_label(key ~ '=' ~ value, none, false, 'detail') }}{% endfor %}
+                                    {% for key, value in pod.placement.node_selector.items() %}
+                                        {% set selector = key ~ '=' ~ value %}
+                                        {% set normalized_selector = selector|lower %}
+                                        {% if normalized_selector in ['kubernetes.io/os=linux', 'beta.kubernetes.io/os=linux'] %}
+                                            {{ table_label.status_label(selector, 'normal', none, 'detail') }}
+                                        {% elif normalized_selector in ['kubernetes.io/os=windows', 'beta.kubernetes.io/os=windows'] %}
+                                            {{ table_label.status_label(selector, 'info', none, 'detail') }}
+                                        {% else %}
+                                            {{ table_label.metadata_label(selector, none, false, 'detail') }}
+                                        {% endif %}
+                                    {% endfor %}
                                 </div>
                             {% endif %}
                         {% endcall %}
@@ -83,13 +109,14 @@
                     {% endif %}
                 {% endcall %}
             {% endcall %}
-            {% call detail.detail_card('Pod Conditions', 'activity', pod.ready, class_name='min-h-[32rem]') %}
-                {{ detail.status_row('Phase', pod.status or 'Unknown', phase_tone) }}
-                {{ detail.status_row('Ready Containers', pod.ready, ready_tone) }}
+            {% call detail.detail_card('Pod Conditions', 'activity', pod.ready, class_name='min-h-[32rem]', badge_size='detail') %}
+                {{ detail.status_row('Phase', pod.status or 'Unknown', phase_tone, none, 'detail') }}
+                {{ detail.status_row('Ready Containers', pod.ready, ready_tone, none, 'detail') }}
                 {{ detail.detail_row('Regular Containers', pod.configuration.container_count) }}
                 {{ detail.detail_row('Init Containers', pod.configuration.init_container_count) }}
                 {{ detail.detail_row('Restarts', pod.restarts) }}
-                {{ detail.detail_row('QoS Class', pod.qos_class) }}
+                {% set normalized_qos_class = pod.qos_class|default('', true)|lower|replace(' ', '') %}
+                {{ detail.status_row('QoS Class', pod.qos_class or 'Unknown', qos_tones.get(normalized_qos_class, 'unknown'), none, 'detail') }}
                 {{ detail.detail_row('Reason', pod.reason or '-') }}
                 {% call detail_object.stack() %}
                     {% if pod.conditions %}
@@ -116,12 +143,14 @@
                     {% endif %}
                 {% endcall %}
             {% endcall %}
-            {% call detail.detail_card('Pod Configuration', 'settings-2', table_label.count_text(pod.configuration.container_count, 'Container'), class_name='min-h-[30rem]') %}
+            {% call detail.detail_card('Pod Configuration', 'settings-2', table_label.count_text(pod.configuration.container_count, 'Container'), class_name='min-h-[30rem]', badge_size='detail') %}
                 {{ detail.detail_row('Service Account', pod.configuration.service_account) }}
-                {{ detail.detail_row('Restart Policy', pod.configuration.restart_policy) }}
-                {{ detail.detail_row('DNS Policy', pod.configuration.dns_policy) }}
+                {% set normalized_restart_policy = pod.configuration.restart_policy|default('', true)|lower|replace(' ', '') %}
+                {{ detail.status_row('Restart Policy', pod.configuration.restart_policy or 'Unknown', restart_policy_tones.get(normalized_restart_policy, 'unknown'), none, 'detail') }}
+                {% set normalized_dns_policy = pod.configuration.dns_policy|default('', true)|lower|replace(' ', '') %}
+                {{ detail.status_row('DNS Policy', pod.configuration.dns_policy or 'Unknown', dns_policy_tones.get(normalized_dns_policy, 'unknown'), none, 'detail') }}
                 {{ detail.detail_row('Runtime Class', pod.configuration.runtime_class) }}
-                {{ detail.status_row('Security Context', 'Configured' if pod.configuration.security_context_configured else 'Not Configured', 'info' if pod.configuration.security_context_configured else 'unknown') }}
+                {{ detail.status_row('Security Context', 'Configured' if pod.configuration.security_context_configured else 'Not Configured', 'info' if pod.configuration.security_context_configured else 'unknown', none, 'detail') }}
                 {{ detail.detail_row('Image Pull Secrets', pod.configuration.image_pull_secret_count) }}
                 {{ detail.detail_row('Volumes', pod.configuration.volume_count) }}
                 {{ detail.detail_row('Regular Containers', pod.configuration.container_count) }}
@@ -227,7 +256,7 @@
                                 {% for volume in pod.volumes %}
                                     <tr class="hover:bg-surface-hover">
                                         <td class="px-4 py-3 font-semibold text-content-primary">{{ volume.name }}</td>
-                                        <td class="px-4 py-3"><span class="text-xs font-normal leading-5 text-content-secondary">{{ volume.type }}</span></td>
+                                        <td class="px-4 py-3">{{ table_label.metadata_label(volume.type, none, false, 'detail') }}</td>
                                         <td class="max-w-[380px] break-all px-4 py-3 font-medium leading-5 text-content-secondary">{{ volume.source }}</td>
                                         <td class="px-4 py-3">
                                             {% if volume.mounted_by %}
