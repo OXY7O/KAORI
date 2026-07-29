@@ -1,0 +1,31 @@
+{% import "components/progress_bar.html" as progress_bar %}
+{% import "components/table_label.html" as table_label %}
+{% macro status(value) -%}
+    {% if value > 90 %}{{ table_label.status_label('Critical', 'critical', 'shield-alert') }}{% elif value >= 75 %}{{ table_label.status_label('Warning', 'warning', 'triangle-alert') }}{% else %}{{ table_label.status_label('Normal', 'normal', 'circle-check') }}{% endif %}
+{%- endmacro %}
+<section class="space-y-5">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="gauge" class="h-5 w-5"></i></span><div><h3 class="text-lg font-semibold text-content-primary">Current Resource Utilization</h3><p class="mt-1 text-sm leading-6 text-content-muted">Compare current consumption with allocatable capacity and identify the resource that requires immediate drill-down.</p></div></div>
+        {{ table_label.metadata_label(analytics_materialization.generated_at|user_datetime('Snapshot Unavailable'), 'database-clock', false, 'detail') }}
+    </div>
+
+    <div class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
+        {% set utilization_rows = [
+            {'label': 'CPU', 'value': summary.cpu_utilization|default(0), 'detail': summary.cpu_usage|default(0) ~ ' / ' ~ summary.cpu_capacity|default(0) ~ ' Cores', 'description': 'Processor usage against allocatable worker CPU.', 'icon': 'cpu'},
+            {'label': 'Memory', 'value': summary.memory_utilization|default(0), 'detail': '%.2f GiB / %.2f GiB'|format(summary.memory_usage|default(0) / 1024**3, summary.memory_capacity|default(0) / 1024**3), 'description': 'Working-set memory against allocatable worker memory.', 'icon': 'memory-stick'},
+            {'label': 'Node Filesystem', 'value': summary.storage_utilization|default(0), 'detail': summary.storage_usage_gib|default(0) ~ ' GiB / ' ~ summary.storage_capacity_gib|default(0) ~ ' GiB', 'description': 'Mounted /var or / filesystem usage across monitored nodes.', 'icon': 'hard-drive'},
+            {'label': 'Pod Density', 'value': summary.pod_utilization|default(0), 'detail': summary.pod_count|default(0) ~ ' / ' ~ summary.pod_capacity|default(0) ~ ' Pods', 'description': 'Scheduled pods against Ready-worker pod capacity.', 'icon': 'boxes'}
+        ] %}
+        <div class="grid md:grid-cols-2">
+            {% for metric in utilization_rows %}
+                <article class="min-w-0 border-b border-outline-subtle p-4 md:odd:border-r">
+                    <div class="grid gap-3 sm:grid-cols-2 sm:items-center">
+                        <div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i></span><div><p class="text-sm font-semibold text-content-primary">{{ metric.label }}</p><div class="mt-1">{{ status(metric.value) }}</div></div></div>
+                        <div><div class="flex items-end justify-between gap-3"><div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Current Utilization</p><p class="mt-1 text-2xl font-semibold tabular-nums text-content-primary">{{ '%.1f'|format(metric.value|float) }}%</p></div><p class="max-w-[58%] text-right text-xs font-semibold leading-5 text-content-secondary">{{ metric.detail }}</p></div>{{ progress_bar.bar(metric.value, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-card', fill_classes='h-full rounded-full bg-kaori-primary', label=metric.label ~ ' utilization') }}<p class="mt-2 text-xs leading-5 text-content-muted">{{ metric.description }}</p></div>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+        <div class="grid gap-3 border-t border-outline-subtle bg-surface-card px-4 py-3 sm:grid-cols-2"><div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">How To Read</p><p class="mt-1 text-xs leading-5 text-content-secondary">Compare percentage pressure with the absolute used and capacity values. A high percentage on a small capacity pool may require different action than broad cluster saturation.</p></div><div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">What To Do</p><p class="mt-1 text-xs leading-5 text-content-secondary">Open Trend Analysis for sustained pressure and Node Detail for concentration. Resize workloads or expand capacity only after both views confirm the risk.</p></div></div>
+    </div>
+</section>

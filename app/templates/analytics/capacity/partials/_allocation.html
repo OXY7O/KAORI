@@ -3,46 +3,66 @@
 {% import "components/table_label.html" as table_label %}
 {% set resources = [('cpu','CPU','cpu'),('memory','Memory','memory-stick'),('pods','Pods','boxes'),('storage','Storage','hard-drive')] %}
 <div class="space-y-5">
-    <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="chart-pie" class="h-5 w-5"></i></span><div><h3 class="text-lg font-semibold text-content-primary">Cluster Resource Allocation & Headroom</h3><p class="mt-1 text-sm leading-6 text-content-muted">Compare capacity, current usage, utilization, and remaining headroom across the primary resource domains.</p></div></div>
-    <div class="grid gap-4 sm:grid-cols-2">
-        {% for key, label, icon in resources %}
-            {% set item = capacity_summary[key] %}
-            <div class="rounded-lg border border-outline-subtle bg-surface-hover p-5">
-                <div class="flex items-start justify-between gap-3"><div class="flex items-center gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm"><i data-lucide="{{ icon }}" class="h-5 w-5"></i></span><div><h4 class="font-semibold text-content-primary">{{ label }}</h4><p class="mt-1 text-xs text-content-muted">{{ capacity_ui.resource_value(key, item.used) }} used</p></div></div>{{ capacity_ui.headroom_status(item.headroom, item.capacity) }}</div>
-                <div class="mt-4 grid grid-cols-3 gap-3"><div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Capacity</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ capacity_ui.resource_value(key, item.capacity) }}</p></div><div class="border-l border-outline-subtle pl-3"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Utilization</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ item.utilization_percent }}%</p></div><div class="border-l border-outline-subtle pl-3"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Headroom</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ item.headroom }}%</p></div></div>
-                {{ progress_bar.bar(item.utilization_percent, track_classes='mt-4 h-2 overflow-hidden rounded-full bg-surface-card', fill_classes='h-full rounded-full bg-kaori-primary', label=label ~ ' utilization') }}
-            </div>
-        {% endfor %}
+    <div class="flex items-start gap-3">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="chart-pie" class="h-5 w-5"></i></span>
+        <div><h3 class="text-lg font-semibold text-content-primary">Cluster Resource Allocation &amp; Headroom</h3><p class="mt-1 text-sm leading-6 text-content-muted">Compare the complete resource envelope first, then inspect request, limit, and actual allocation pressure.</p></div>
     </div>
-    <div class="grid gap-4 lg:grid-cols-3">
-        {% for key, section in allocation_summary.items() %}
-            {% set section_status = section['status'] %}
-            <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
-                <div class="flex items-center justify-between gap-3">
-                    <h4 class="font-semibold text-content-primary">{{ section['title'] }} Allocation</h4>
-                    {{ table_label.status_label(
-                        section_status['label'],
-                        tone='warning' if 'warning' in section_status['class'] else ('critical' if 'critical' in section_status['class'] else 'normal'),
-                        size='compact'
-                    ) }}
-                </div>
-                <div class="mt-4 space-y-3">
-                    {% for allocation_item in section['items']|default([], true) %}
-                        <div>
-                            <div class="flex items-center justify-between gap-3 text-xs">
-                                <span class="font-medium text-content-secondary">{{ allocation_item['label'] }}</span>
-                                <span class="text-content-muted">{{ allocation_item['display'] }}</span>
+
+    <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
+        <header class="grid gap-2 border-b border-outline-subtle bg-surface-card px-4 py-3 lg:grid-cols-12">
+            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted lg:col-span-4">Resource Envelope</p>
+            <p class="hidden text-xs font-semibold uppercase tracking-wide text-content-muted lg:col-span-4 lg:block">Used / Capacity</p>
+            <p class="hidden text-right text-xs font-semibold uppercase tracking-wide text-content-muted lg:col-span-2 lg:block">Utilization</p>
+            <p class="hidden text-right text-xs font-semibold uppercase tracking-wide text-content-muted lg:col-span-2 lg:block">Headroom</p>
+        </header>
+        <div class="divide-y divide-outline-subtle">
+            {% for key, label, icon in resources %}
+                {% set item = capacity_summary[key] %}
+                <article class="grid gap-3 px-4 py-4 lg:grid-cols-12 lg:items-center">
+                    <div class="flex items-center gap-3 lg:col-span-4">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                        <div><p class="text-sm font-semibold text-content-primary">{{ label }}</p><div class="mt-1">{{ capacity_ui.headroom_status(item.headroom, item.capacity) }}</div></div>
+                    </div>
+                    <div class="min-w-0 lg:col-span-4">
+                        <div class="flex items-center justify-between gap-3 text-xs lg:hidden"><span class="text-content-muted">Used / Capacity</span></div>
+                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ capacity_ui.resource_value(key, item.used) }} <span class="font-normal text-content-muted">/ {{ capacity_ui.resource_value(key, item.capacity) }}</span></p>
+                        {{ progress_bar.bar(item.utilization_percent, track_classes='mt-2 h-1.5 overflow-hidden rounded-full bg-surface-card', fill_classes='h-full rounded-full bg-kaori-primary', label=label ~ ' utilization') }}
+                    </div>
+                    <div class="flex items-center justify-between lg:col-span-2 lg:block lg:text-right"><span class="text-xs text-content-muted lg:hidden">Utilization</span><span class="text-sm font-semibold tabular-nums text-content-primary">{{ capacity_ui.percent(item.utilization_percent) }}</span></div>
+                    <div class="flex items-center justify-between lg:col-span-2 lg:block lg:text-right"><span class="text-xs text-content-muted lg:hidden">Headroom</span><span class="text-sm font-semibold tabular-nums text-content-primary">{{ capacity_ui.percent(item.headroom) }}</span></div>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
+        <header class="border-b border-outline-subtle px-4 py-3">
+            <h4 class="font-semibold text-content-primary">Commitment Profile</h4>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Requests represent scheduling commitments, limits represent configured ceilings, and actual usage shows current pressure.</p>
+        </header>
+        <div class="grid divide-y divide-outline-subtle lg:grid-cols-3 lg:divide-x lg:divide-y-0">
+            {% for key, section in allocation_summary.items() %}
+                {% set section_status = section['status'] %}
+                <article class="p-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <h4 class="font-semibold text-content-primary">{{ section['title'] }} Allocation</h4>
+                        {{ table_label.status_label(section_status['label'], tone='warning' if 'warning' in section_status['class'] else ('critical' if 'critical' in section_status['class'] else 'normal'), size='compact') }}
+                    </div>
+                    <div class="mt-4 space-y-3">
+                        {% for allocation_item in section['items']|default([], true) %}
+                            <div>
+                                <div class="flex items-center justify-between gap-3 text-xs"><span class="font-medium text-content-secondary">{{ allocation_item['label'] }}</span><span class="font-semibold tabular-nums text-content-primary">{{ allocation_item['display'] }}</span></div>
+                                {{ progress_bar.bar(allocation_item['percent'], track_classes='mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-card', fill_classes='h-full rounded-full bg-kaori-primary', label=allocation_item['label']) }}
                             </div>
-                            {{ progress_bar.bar(
-                                allocation_item['percent'],
-                                track_classes='mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-card',
-                                fill_classes='h-full rounded-full bg-kaori-primary',
-                                label=allocation_item['label']
-                            ) }}
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-        {% endfor %}
+                        {% endfor %}
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    <div class="grid gap-3 rounded-lg border border-kaori-primary/20 bg-kaori-soft px-4 py-3 sm:grid-cols-2">
+        <div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">How To Read</p><p class="mt-1 text-xs leading-5 text-content-secondary">High utilization with low headroom indicates immediate capacity pressure. High requests with low actual usage indicates reservation inefficiency.</p></div>
+        <div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">What To Do</p><p class="mt-1 text-xs leading-5 text-content-secondary">Validate the constrained resource, identify the workloads driving commitments, then resize requests or expand Ready-worker capacity.</p></div>
     </div>
 </div>

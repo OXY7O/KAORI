@@ -554,7 +554,7 @@ class CapacityService(AnalyticsBaseService):
             },
             {
                 'label': 'Allocatable CPU',
-                'value': f'{capacity_summary["cpu"]["capacity"]} cores',
+                'value': f'{float(capacity_summary["cpu"]["capacity"] or 0):.2f} Cores',
                 'caption': 'Ready worker nodes only',
                 'footer': '',
                 'icon': 'cpu',
@@ -562,7 +562,7 @@ class CapacityService(AnalyticsBaseService):
             },
             {
                 'label': 'Allocatable Memory',
-                'value': f'{capacity_summary["memory"]["capacity"]} GiB',
+                'value': f'{float(capacity_summary["memory"]["capacity"] or 0):.2f} GiB',
                 'caption': 'Ready worker nodes only',
                 'footer': '',
                 'icon': 'memory-stick',
@@ -570,7 +570,7 @@ class CapacityService(AnalyticsBaseService):
             },
             {
                 'label': 'Pod Capacity',
-                'value': f'{int(capacity_summary["pods"]["capacity"])} pods',
+                'value': f'{int(float(capacity_summary["pods"]["capacity"] or 0))} Pods',
                 'caption': 'Ready worker nodes only',
                 'footer': '',
                 'icon': 'box',

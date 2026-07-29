@@ -6,23 +6,43 @@
 {% set pvc = storage_summary.persistent_storage.pvc %}
 {% call analytics_workspace.overview(
     'Storage Analysis Overview',
-    'Summarize filesystem capacity, persistent-volume inventory, claim demand, and the highest observed storage pressure.',
+    'Summarize node filesystem pressure, provisioned persistent capacity, claim demand, and the highest observed storage risk.',
     'hard-drive',
     selected_namespace if selected_namespace else 'All Namespaces'
 ) %}
-    <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {% set overview_metrics = [
-            ('Filesystem Capacity', filesystem.capacity, filesystem.used ~ ' used', 'server'),
-            ('Filesystem Usage', filesystem.usage_percent ~ '%', 'Highest node ' ~ filesystem.highest_node, 'gauge'),
-            ('Persistent Volumes', pv.count, pv.capacity ~ ' capacity', 'database'),
-            ('Persistent Claims', pvc.count, pvc.requested ~ ' requested', 'box')
-        ] %}
-        {% for label, value, helper, icon in overview_metrics %}
-            <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4"><div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><div class="min-w-0"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p><p class="mt-1 break-words text-xl font-semibold text-content-primary">{{ value }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p></div></div></div>
-        {% endfor %}
+    <div class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
+        <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+            {% set overview_metrics = [
+                ('Filesystem Capacity', filesystem.capacity, filesystem.used ~ ' Used', 'server'),
+                ('Filesystem Utilization', filesystem.usage_percent ~ '%', filesystem.free ~ ' Free', 'gauge'),
+                ('Persistent Volumes', pv.count, pv.capacity ~ ' Provisioned', 'database'),
+                ('Persistent Claims', pvc.count, pvc.requested ~ ' Requested', 'box')
+            ] %}
+            {% for label, value, helper, icon in overview_metrics %}
+                <article class="min-w-0 p-4">
+                    <div class="flex items-center gap-2.5"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p></div>
+                    <p class="mt-3 break-words text-2xl font-semibold tabular-nums text-content-primary">{{ value }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                </article>
+            {% endfor %}
+        </div>
     </div>
-    <div class="mt-4 grid gap-4 lg:grid-cols-2">
-        <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4"><div class="flex items-center justify-between gap-3"><div><h3 class="text-sm font-semibold text-content-primary">Node Filesystem Pressure</h3><p class="mt-1 text-xs text-content-muted">Current aggregate utilization across monitored node filesystems.</p></div>{{ table_label.status_label('Critical' if filesystem.usage_percent >= 90 else ('Watch' if filesystem.usage_percent >= 75 else 'Healthy'), tone='critical' if filesystem.usage_percent >= 90 else ('warning' if filesystem.usage_percent >= 75 else 'normal'), size='compact') }}</div>{{ progress_bar.bar(filesystem.usage_percent, track_classes='mt-4 h-2 overflow-hidden rounded-full bg-surface-card', fill_classes='h-full rounded-full bg-kaori-primary', label='Filesystem utilization') }}</div>
-        <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4"><div class="flex items-center justify-between gap-3"><div><h3 class="text-sm font-semibold text-content-primary">Persistent Storage Demand</h3><p class="mt-1 text-xs text-content-muted">PVC request and utilization pressure within the selected namespace scope.</p></div>{{ table_label.status_label('Critical' if pvc.used_percent >= 90 else ('Watch' if pvc.used_percent >= 75 else 'Healthy'), tone='critical' if pvc.used_percent >= 90 else ('warning' if pvc.used_percent >= 75 else 'normal'), size='compact') }}</div>{{ progress_bar.bar(pvc.used_percent, track_classes='mt-4 h-2 overflow-hidden rounded-full bg-surface-card', fill_classes='h-full rounded-full bg-kaori-primary', label='PVC utilization') }}</div>
+
+    <div class="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]">
+        <section class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
+            <div class="flex items-start justify-between gap-3"><div><h3 class="text-sm font-semibold text-content-primary">Storage Pressure Snapshot</h3><p class="mt-1 text-xs leading-5 text-content-muted">Compare node filesystem consumption with claim-level demand.</p></div>{{ table_label.status_label('Critical' if filesystem.usage_percent >= 90 or pvc.used_percent >= 90 else ('Watch' if filesystem.usage_percent >= 75 or pvc.used_percent >= 75 else 'Healthy'), tone='critical' if filesystem.usage_percent >= 90 or pvc.used_percent >= 90 else ('warning' if filesystem.usage_percent >= 75 or pvc.used_percent >= 75 else 'normal'), size='compact') }}</div>
+            <div class="mt-4 space-y-4">
+                <div><div class="flex items-center justify-between gap-3 text-xs"><span class="font-medium text-content-secondary">Node Filesystem</span><span class="font-semibold tabular-nums text-content-primary">{{ filesystem.usage_percent }}% Used</span></div>{{ progress_bar.bar(filesystem.usage_percent, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-card', fill_classes='h-full rounded-full bg-kaori-primary', label='Filesystem utilization') }}</div>
+                <div><div class="flex items-center justify-between gap-3 text-xs"><span class="font-medium text-content-secondary">PVC Requested Capacity</span><span class="font-semibold tabular-nums text-content-primary">{{ pvc.used_percent }}% Used</span></div>{{ progress_bar.bar(pvc.used_percent, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-card', fill_classes='h-full rounded-full bg-kaori-primary', label='PVC utilization') }}</div>
+                <div><div class="flex items-center justify-between gap-3 text-xs"><span class="font-medium text-content-secondary">PV Provisioned Capacity</span><span class="font-semibold tabular-nums text-content-primary">{{ pv.used_percent }}% Consumed</span></div>{{ progress_bar.bar(pv.used_percent, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-card', fill_classes='h-full rounded-full bg-kaori-primary', label='PV consumption') }}</div>
+            </div>
+        </section>
+        <section class="rounded-lg border border-kaori-primary/20 bg-kaori-soft p-4">
+            <div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="scan-search" class="h-4 w-4"></i></span><div><h3 class="text-sm font-semibold text-content-primary">Operational Reading</h3><p class="mt-1 text-xs leading-5 text-content-secondary">Highest node filesystem usage is <span class="font-semibold">{{ filesystem.highest_usage }}%</span> on <span class="break-all font-semibold">{{ filesystem.highest_node }}</span>.</p></div></div>
+            <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                <div class="rounded-lg border border-kaori-primary/15 bg-surface-card/70 px-3 py-3"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Claim Demand</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ pvc.requested }} Requested</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ pvc.used }} used with {{ pvc.free }} remaining.</p></div>
+                <div class="rounded-lg border border-kaori-primary/15 bg-surface-card/70 px-3 py-3"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Next Check</p><p class="mt-1 text-xs leading-5 text-content-secondary">Review the highest-pressure node, then open PVC and PV tabs to identify demand concentration, binding status, storage class, and reclaim-policy risk.</p></div>
+            </div>
+        </section>
     </div>
 {% endcall %}

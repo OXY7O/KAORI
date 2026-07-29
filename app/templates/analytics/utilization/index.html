@@ -125,44 +125,7 @@
                          data-analytics-tab-panel="summary"
                          x-show="activeTab === 'summary'"
                          x-bind:hidden="activeTab !== 'summary'">
-                        <section>
-                            <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                <div class="flex items-start gap-3">
-                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                        <i data-lucide="gauge" class="h-5 w-5"></i>
-                                    </span>
-                                    <div>
-                                        <h3 class="text-lg font-semibold text-content-primary">Current Resource Utilization</h3>
-                                        <p class="mt-1 text-sm leading-6 text-content-muted">Current consumption compared with allocatable capacity for the active cluster snapshot.</p>
-                                    </div>
-                                </div>
-                                {{ table_label.metadata_label(analytics_materialization.generated_at|user_datetime('Snapshot Unavailable'), 'database-clock', false, 'detail') }}
-                            </div>
-
-                            <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                                {% set utilization_cards = [
-                                    {'label': 'CPU Utilization', 'value': summary.cpu_utilization|default(0), 'detail': summary.cpu_usage|default(0) ~ ' / ' ~ summary.cpu_capacity|default(0) ~ ' Cores', 'description': 'Current usage versus allocatable capacity.', 'icon': 'cpu', 'tone': 'info'},
-                                    {'label': 'Memory Utilization', 'value': summary.memory_utilization|default(0), 'detail': '%.2f GiB / %.2f GiB'|format(summary.memory_usage|default(0) / 1024**3, summary.memory_capacity|default(0) / 1024**3), 'description': 'Cluster memory usage from the committed snapshot.', 'icon': 'memory-stick', 'tone': 'normal'},
-                                    {'label': 'Disk /var or / Utilization', 'value': summary.storage_utilization|default(0), 'detail': summary.storage_usage_gib|default(0) ~ ' GiB / ' ~ summary.storage_capacity_gib|default(0) ~ ' GiB', 'description': 'Mounted node filesystem utilization snapshot.', 'icon': 'hard-drive', 'tone': 'warning'},
-                                    {'label': 'Pod Utilization', 'value': summary.pod_utilization|default(0), 'detail': summary.pod_count|default(0) ~ ' / ' ~ summary.pod_capacity|default(0) ~ ' Pods', 'description': 'Pod density across the selected cluster.', 'icon': 'boxes', 'tone': 'maintenance'}
-                                ] %}
-                                {% for metric in utilization_cards %}
-                                    <article class="flex h-full min-w-0 flex-col rounded-lg border border-outline-subtle bg-surface-hover p-4">
-                                        <div class="flex items-start justify-between gap-3">
-                                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                                <i data-lucide="{{ metric.icon }}" class="h-4.5 w-4.5"></i>
-                                            </span>
-                                            {{ utilization_status(metric.value) }}
-                                        </div>
-                                        <p class="mt-4 text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ metric.label }}</p>
-                                        <p class="mt-1 text-3xl font-semibold tracking-tight text-content-primary">{{ metric.value }}%</p>
-                                        {{ utilization_fill_bar(metric.value, metric.tone) }}
-                                        <p class="mt-4 break-words text-sm font-semibold text-content-primary">{{ metric.detail }}</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ metric.description }}</p>
-                                    </article>
-                                {% endfor %}
-                            </div>
-                        </section>
+                        {% include "analytics/utilization/partials/_current_summary.html" %}
                     </div>
 
                     <div id="utilization-content-panel-trend"

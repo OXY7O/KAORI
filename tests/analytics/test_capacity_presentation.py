@@ -67,3 +67,28 @@ def test_capacity_presenter_marks_missing_capacity_as_zero_utilization() -> None
     )
     assert context['capacity_headroom_available'] is False
     assert context['lowest_headroom_display'] == 'N/A'
+
+
+def test_capacity_presenter_normalizes_long_float_units() -> None:
+    presentation = _load_presentation_module()
+    context = presentation.present_capacity_context(
+        {
+            'capacity_summary': {
+                'cpu': {
+                    'capacity': 12.3456789,
+                    'used': 3.14159265,
+                    'available': 9.20408625,
+                    'headroom': 74.55321987,
+                }
+            }
+        }
+    )
+
+    cpu = context['capacity_summary']['cpu']
+
+    assert cpu['capacity'] == 12.35
+    assert cpu['used'] == 3.14
+    assert cpu['available'] == 9.2
+    assert cpu['headroom'] == 74.6
+    assert cpu['utilization_percent'] == 25.4
+    assert context['cpu_headroom_display'] == '74.6%'

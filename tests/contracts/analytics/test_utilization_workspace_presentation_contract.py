@@ -42,7 +42,7 @@ def test_utilization_trend_has_operational_summary() -> None:
     ).read_text()
 
     assert 'Trend Posture' in trend
-    assert 'Current utilization' in trend
+    assert 'Current Utilization' in trend
     assert 'Average' in trend
     assert 'Peak' in trend
     assert 'Historical Signal Behavior' in trend

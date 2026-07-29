@@ -22,12 +22,11 @@ from app.analytics.common.context import build_analysis_utilization_context
 from app.analytics.common.params import (
     ALLOWED_PER_PAGE_VALUES,
     get_allowed_time_ranges,
-    get_per_page_arg,
-    get_positive_int_arg,
     get_query_value,
     get_selected_time_range,
 )
 from app.analytics.common.payloads import get_empty_storage_payload
+from app.analytics.storage.pagination import resolve_storage_pagination
 from app.analytics.utilization.service import UtilizationService
 from app.common.dependencies import prometheus_capability_blocker, prometheus_connection_blocker
 from app.integrations.prometheus.capabilities import definition as capability_definition
@@ -1265,35 +1264,24 @@ def get_storage_analysis_context(
         return context
 
     try:
+        pagination_state = resolve_storage_pagination(
+            query_args,
+            allowed_per_page=ALLOWED_PER_PAGE_VALUES,
+            default_per_page=5,
+        )
         storage_summary = storage_service.get_storage_capacity_summary(
             selected_namespace=selected_namespace,
             selected_node=selected_storage_node,
             selected_pvc_search=selected_pvc_search,
             selected_pvc_status=selected_pvc_status,
             selected_pvc_storage_class=selected_pvc_storage_class,
-            pvc_page=get_positive_int_arg(
-                query_args=query_args,
-                name='pvc_page',
-                default=1,
-            ),
-            pvc_per_page=get_per_page_arg(
-                query_args=query_args,
-                name='pvc_per_page',
-                default=5,
-            ),
+            pvc_page=pagination_state['pvc']['page'],
+            pvc_per_page=pagination_state['pvc']['per_page'],
             selected_pv_search=selected_pv_search,
             selected_pv_status=selected_pv_status,
             selected_pv_storage_class=selected_pv_storage_class,
-            pv_page=get_positive_int_arg(
-                query_args=query_args,
-                name='pv_page',
-                default=1,
-            ),
-            pv_per_page=get_per_page_arg(
-                query_args=query_args,
-                name='pv_per_page',
-                default=5,
-            ),
+            pv_page=pagination_state['pv']['page'],
+            pv_per_page=pagination_state['pv']['per_page'],
         )
         namespace_options = storage_service.get_storage_namespace_options()
     except Exception as exc:
@@ -1592,17 +1580,22 @@ def present_storage_materialized_context(
         selected_storage_class=selected_pv_storage_class,
     )
     paginator = AnalyticsBaseService()
+    pagination_state = resolve_storage_pagination(
+        query_args,
+        allowed_per_page=ALLOWED_PER_PAGE_VALUES,
+        default_per_page=5,
+    )
     pvc_page = paginator.paginate_rows_with_options(
         rows=pvc_filtered,
-        page=get_positive_int_arg(query_args=query_args, name='pvc_page', default=1),
-        per_page=get_per_page_arg(query_args=query_args, name='pvc_per_page', default=5),
+        page=pagination_state['pvc']['page'],
+        per_page=pagination_state['pvc']['per_page'],
         allowed_per_page=ALLOWED_PER_PAGE_VALUES,
         default_per_page=5,
     )
     pv_page = paginator.paginate_rows_with_options(
         rows=pv_filtered,
-        page=get_positive_int_arg(query_args=query_args, name='pv_page', default=1),
-        per_page=get_per_page_arg(query_args=query_args, name='pv_per_page', default=5),
+        page=pagination_state['pv']['page'],
+        per_page=pagination_state['pv']['per_page'],
         allowed_per_page=ALLOWED_PER_PAGE_VALUES,
         default_per_page=5,
     )

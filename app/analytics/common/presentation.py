@@ -44,12 +44,16 @@ def present_capacity_context(context: dict[str, Any]) -> dict[str, Any]:
         except (TypeError, ValueError):
             headroom = 0.0
 
-        item.setdefault('capacity', 0)
-        item.setdefault('used', 0)
-        item.setdefault('available', 0)
+        item['capacity'] = round(capacity, 2)
+        for field in ('used', 'available'):
+            try:
+                item[field] = round(float(item.get(field) or 0), 2)
+            except (TypeError, ValueError):
+                item[field] = 0.0
+        headroom = round(max(min(headroom, 100.0), 0.0), 1)
         item['headroom'] = headroom
         item['utilization_percent'] = (
-            max(min(100.0 - headroom, 100.0), 0.0)
+            round(max(min(100.0 - headroom, 100.0), 0.0), 1)
             if capacity > 0
             else 0.0
         )

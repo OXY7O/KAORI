@@ -97,15 +97,17 @@ def test_analytics_filter_forms_have_loading_and_request_synchronization() -> No
 def test_large_analytics_record_sections_use_responsive_rows() -> None:
     anomaly = read("app/templates/analytics/alerts/partials/_anomalies_table.html")
     filesystem = read("app/templates/analytics/storage/partials/_filesystem_panel.html")
-    persistent = read("app/templates/analytics/storage/partials/_persistent_storage_panel.html")
+    pvc = read("app/templates/analytics/storage/partials/_persistent_volume_claims_panel.html")
+    pv = read("app/templates/analytics/storage/partials/_persistent_volumes_panel.html")
     quota = read("app/templates/analytics/workload/partials/_tenant_quota_section.html")
     mapping = read("app/templates/analytics/workload/partials/_workload_mapping_section.html")
 
-    for content in (anomaly, filesystem, persistent, quota, mapping):
+    for content in (anomaly, filesystem, pvc, pv, quota, mapping):
         assert "overflow-x-auto" not in content
     assert "Detected Anomaly Candidates" in anomaly
     assert "Node Filesystem Usage" in filesystem
-    assert "Persistent Storage" in persistent
+    assert "Persistent Volume Claims" in pvc
+    assert "Persistent Volumes" in pv
     assert "Tenant Quota Analysis" in quota
     assert "Workload Resource Mapping" in mapping
 

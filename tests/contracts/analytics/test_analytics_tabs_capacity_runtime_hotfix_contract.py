@@ -43,7 +43,8 @@ def test_target_analytics_pages_expose_native_tab_panels() -> None:
         "app/templates/analytics/storage/partials/_storage_section.html": (
             "capacity",
             "filesystem",
-            "persistent",
+            "pvc",
+            "pv",
             "recommendations",
         ),
         "app/templates/analytics/workload/index.html": (

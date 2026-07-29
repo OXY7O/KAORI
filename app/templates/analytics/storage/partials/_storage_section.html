@@ -2,7 +2,8 @@
 {% set storage_tabs = [
     ('capacity', 'Capacity & Utilization', 'hard-drive'),
     ('filesystem', 'Node Filesystem Usage', 'server'),
-    ('persistent', 'Persistent Storage', 'database'),
+    ('pvc', 'Persistent Volume Claims', 'box'),
+    ('pv', 'Persistent Volumes', 'database'),
     ('recommendations', 'Storage Recommendations', 'list-checks')
 ] %}
 {% call analytics_workspace.tabbed(
@@ -10,21 +11,14 @@
     storage_tabs,
     'Storage Analysis Content',
     'Storage Analysis Workspace',
-    'Review storage capacity, node filesystem pressure, persistent storage demand, and prioritized recommendations.',
+    'Review capacity pressure, node filesystems, claims, volumes, and prioritized storage actions in one workspace.',
     'database',
     'capacity',
-    ['capacity', 'filesystem', 'persistent', 'recommendations']
+    ['capacity', 'filesystem', 'pvc', 'pv', 'recommendations']
 ) %}
-    <div id="storage-content-panel-capacity" role="tabpanel" aria-labelledby="storage-content-tab-capacity" data-analytics-tab-panel="capacity" x-show="activeTab === 'capacity'" x-bind:hidden="activeTab !== 'capacity'">
-        <div class="space-y-5">
-            <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="hard-drive" class="h-5 w-5"></i></span><div><h3 class="text-lg font-semibold text-content-primary">Storage Capacity & Utilization</h3><p class="mt-1 text-sm leading-6 text-content-muted">Compare aggregate filesystem utilization and persistent-storage demand within the active scope.</p></div></div>
-            <div class="grid gap-4 lg:grid-cols-2">
-                <div class="rounded-lg border border-outline-subtle bg-surface-hover p-5"><div class="flex items-center justify-between gap-3"><div><h4 class="font-semibold text-content-primary">Filesystem Capacity</h4><p class="mt-1 text-xs text-content-muted">{{ storage_summary.node_filesystem.summary.highest_node }} has the highest observed usage.</p></div><span class="text-2xl font-semibold text-content-primary">{{ storage_summary.node_filesystem.summary.usage_percent }}%</span></div><div class="mt-4 grid gap-3 sm:grid-cols-2"><div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Used</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ storage_summary.node_filesystem.summary.used }}</p></div><div class="sm:border-l sm:border-outline-subtle sm:pl-3"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Capacity</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ storage_summary.node_filesystem.summary.capacity }}</p></div></div></div>
-                <div class="rounded-lg border border-outline-subtle bg-surface-hover p-5"><div class="flex items-center justify-between gap-3"><div><h4 class="font-semibold text-content-primary">Persistent Storage</h4><p class="mt-1 text-xs text-content-muted">PersistentVolumeClaim pressure for {{ selected_namespace if selected_namespace else 'all namespaces' }}.</p></div><span class="text-2xl font-semibold text-content-primary">{{ storage_summary.persistent_storage.pvc.used_percent }}%</span></div><div class="mt-4 grid gap-3 sm:grid-cols-2"><div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Requested</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ storage_summary.persistent_storage.pvc.requested }}</p></div><div class="sm:border-l sm:border-outline-subtle sm:pl-3"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">PV Capacity</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ storage_summary.persistent_storage.pv.capacity }}</p></div></div></div>
-            </div>
-        </div>
-    </div>
+    <div id="storage-content-panel-capacity" role="tabpanel" aria-labelledby="storage-content-tab-capacity" data-analytics-tab-panel="capacity" x-show="activeTab === 'capacity'" x-bind:hidden="activeTab !== 'capacity'">{% include "analytics/storage/partials/_capacity_utilization_panel.html" %}</div>
     <div id="storage-content-panel-filesystem" role="tabpanel" aria-labelledby="storage-content-tab-filesystem" data-analytics-tab-panel="filesystem" x-show="activeTab === 'filesystem'" x-bind:hidden="activeTab !== 'filesystem'" hidden x-cloak>{% include "analytics/storage/partials/_filesystem_panel.html" %}</div>
-    <div id="storage-content-panel-persistent" role="tabpanel" aria-labelledby="storage-content-tab-persistent" data-analytics-tab-panel="persistent" x-show="activeTab === 'persistent'" x-bind:hidden="activeTab !== 'persistent'" hidden x-cloak>{% include "analytics/storage/partials/_persistent_storage_panel.html" %}</div>
+    <div id="storage-content-panel-pvc" role="tabpanel" aria-labelledby="storage-content-tab-pvc" data-analytics-tab-panel="pvc" x-show="activeTab === 'pvc'" x-bind:hidden="activeTab !== 'pvc'" hidden x-cloak>{% include "analytics/storage/partials/_persistent_volume_claims_panel.html" %}</div>
+    <div id="storage-content-panel-pv" role="tabpanel" aria-labelledby="storage-content-tab-pv" data-analytics-tab-panel="pv" x-show="activeTab === 'pv'" x-bind:hidden="activeTab !== 'pv'" hidden x-cloak>{% include "analytics/storage/partials/_persistent_volumes_panel.html" %}</div>
     <div id="storage-content-panel-recommendations" role="tabpanel" aria-labelledby="storage-content-tab-recommendations" data-analytics-tab-panel="recommendations" x-show="activeTab === 'recommendations'" x-bind:hidden="activeTab !== 'recommendations'" hidden x-cloak>{% include "analytics/storage/partials/_recommendations.html" %}</div>
 {% endcall %}

@@ -1,141 +1,52 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/loading_bar.html" as loading_bar %}
+{% import "components/progress_bar.html" as progress_bar %}
 {% set trend_info = trend_summary|default({}) %}
 {% set resource_summaries = trend_info.resources|default({}) %}
 <div id="utilization-trend-panel" class="min-w-0">
     <header class="border-b border-outline-subtle pb-5">
         <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="line-chart" class="h-5 w-5"></i>
-                </span>
-                <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <h3 class="text-lg font-semibold text-content-primary">Resource Utilization Trend</h3>
-                        {{ table_label.status_label(trend_info.posture|default('No Data'), trend_info.tone|default('unknown'), none, 'detail') }}
-                    </div>
-                    <p class="mt-1 text-sm leading-6 text-content-muted">Historical CPU, memory, and pod utilization with current, average, and peak values for validating sustained pressure.</p>
-                    <div class="mt-2 flex flex-wrap gap-2">
-                        {{ table_label.metadata_label(selected_trend_node if selected_trend_node else 'All Worker Nodes', 'crosshair', false, 'detail') }}
-                        {{ table_label.metadata_label(
-                            ('Last ' ~ trend_hours ~ ' Hours') if trend_hours < 24 else ('Last 24 Hours' if trend_hours == 24 else ('Last 7 Days' if trend_hours == 168 else ('Last 30 Days' if trend_hours == 720 else ('Last 60 Days' if trend_hours == 1440 else trend_hours ~ ' Hours')))),
-                            'clock-3',
-                            false,
-                            'detail'
-                        ) }}
-                        {{ table_label.metadata_label((trend_info.sample_count|default(0)) ~ ' Samples', 'database', false, 'detail') }}
-                    </div>
-                </div>
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="line-chart" class="h-5 w-5"></i></span>
+                <div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><h3 class="text-lg font-semibold text-content-primary">Resource Utilization Trend</h3>{{ table_label.status_label(trend_info.posture|default('No Data'), trend_info.tone|default('unknown'), none, 'detail') }}</div><p class="mt-1 text-sm leading-6 text-content-muted">Validate whether CPU, memory, and pod pressure is sustained, rising, or isolated to a short-lived peak.</p><div class="mt-2 flex flex-wrap gap-2">{{ table_label.metadata_label(selected_trend_node if selected_trend_node else 'All Worker Nodes', 'crosshair', false, 'detail') }}{{ table_label.metadata_label(('Last ' ~ trend_hours ~ ' Hours') if trend_hours < 24 else ('Last 24 Hours' if trend_hours == 24 else ('Last 7 Days' if trend_hours == 168 else ('Last 30 Days' if trend_hours == 720 else ('Last 60 Days' if trend_hours == 1440 else trend_hours ~ ' Hours')))), 'clock-3', false, 'detail') }}</div></div>
             </div>
-            <form method="get"
-                  action="{{ url_for('analytics.utilization_trend') }}"
-                  hx-get="{{ url_for('analytics.utilization_trend') }}"
-                  hx-target="#utilization-trend-panel"
-                  hx-swap="outerHTML"
-                  hx-trigger="change delay:120ms"
-                  hx-indicator="#utilization-trend-indicator"
-                  hx-sync="#utilization-trend-panel:replace"
-                  hx-disinherit="hx-target hx-select hx-push-url hx-indicator"
-                  class="sm:w-[280px]">
-                <input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}" />
-                <input type="hidden" name="trend_hours" value="{{ trend_hours }}" />
-                <label class="block">
-                    <span class="text-xs font-semibold text-content-secondary">Worker Node</span>
-                    <select name="trend_node"
-                            class="mt-1.5 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary shadow-sm outline-none transition hover:border-outline-strong focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
-                        <option value="">All Worker Nodes</option>
-                        {% for node in available_worker_nodes %}
-                            <option value="{{ node }}" {% if selected_trend_node == node %}selected{% endif %}>{{ node }}</option>
-                        {% endfor %}
-                    </select>
-                </label>
+            <form method="get" action="{{ url_for('analytics.utilization_trend') }}" hx-get="{{ url_for('analytics.utilization_trend') }}" hx-target="#utilization-trend-panel" hx-swap="outerHTML" hx-trigger="change delay:120ms" hx-indicator="#utilization-trend-indicator" hx-sync="#utilization-trend-panel:replace" hx-disinherit="hx-target hx-select hx-push-url hx-indicator" class="sm:w-[280px]">
+                <input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}" /><input type="hidden" name="trend_hours" value="{{ trend_hours }}" />
+                <label class="block"><span class="text-xs font-semibold text-content-secondary">Worker Node</span><select name="trend_node" class="mt-1.5 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary shadow-sm outline-none transition hover:border-outline-strong focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10"><option value="">All Worker Nodes</option>{% for node in available_worker_nodes %}<option value="{{ node }}" {% if selected_trend_node == node %}selected{% endif %}>{{ node }}</option>{% endfor %}</select></label>
             </form>
         </div>
-        {{ loading_bar.render('utilization-trend-indicator', label='Refreshing utilization trend') }}
+        {{ loading_bar.render('utilization-trend-indicator', label='Refreshing Utilization Trend') }}
     </header>
 
-    {% if cluster_onboarding.has_clusters and error %}
-        <div class="mt-5 rounded-lg border border-status-warning-border bg-status-warning-soft px-4 py-3 text-sm text-content-secondary">
-            <span class="font-semibold text-status-warning">Trend data unavailable.</span> {{ error }}
-        </div>
-    {% endif %}
+    {% if cluster_onboarding.has_clusters and error %}<div class="mt-5 rounded-lg border border-status-warning-border bg-status-warning-soft px-4 py-3 text-sm text-content-secondary"><span class="font-semibold text-status-warning">Trend Data Unavailable.</span> {{ error }}</div>{% endif %}
 
-    <section class="mt-5">
-        <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-            <article class="flex h-full flex-col rounded-lg bg-kaori-soft p-4">
-                <div class="flex items-start justify-between gap-3">
-                    <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-card text-kaori-primary">
-                        <i data-lucide="activity" class="h-4 w-4"></i>
-                    </span>
-                    {{ table_label.status_label(trend_info.posture|default('No Data'), trend_info.tone|default('unknown'), none, 'detail') }}
-                </div>
-                <p class="mt-4 text-[10px] font-semibold uppercase tracking-wide text-content-muted">Trend Posture</p>
-                <p class="mt-1 text-xl font-semibold text-content-primary">{{ trend_info.posture|default('No Data') }}</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">
-                    Peak signal: {{ trend_info.peak_resource|default('None') }} at {{ '%.2f'|format(trend_info.peak_value|default(0)|float) }}%.
-                </p>
-            </article>
-
-            {% for resource, label, icon in [('cpu', 'CPU', 'cpu'), ('memory', 'Memory', 'memory-stick'), ('pods', 'Pods', 'boxes')] %}
-                {% set metric = resource_summaries.get(resource, {}) %}
-                <article class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
-                    <div class="flex items-center gap-2">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                            <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                        </span>
-                        <h4 class="text-sm font-semibold text-content-primary">{{ label }} Trend</h4>
-                    </div>
-                    <p class="mt-4 text-2xl font-semibold text-content-primary">{{ '%.2f'|format(metric.current|default(0)|float) }}%</p>
-                    <p class="mt-1 text-xs text-content-muted">Current utilization</p>
-                    <div class="mt-4 grid grid-cols-2 gap-3 border-t border-outline-subtle pt-3">
-                        <div>
-                            <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Average</p>
-                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ '%.2f'|format(metric.average|default(0)|float) }}%</p>
-                        </div>
-                        <div>
-                            <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Peak</p>
-                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ '%.2f'|format(metric.peak|default(0)|float) }}%</p>
-                        </div>
-                    </div>
-                </article>
-            {% endfor %}
+    <section class="mt-5 overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
+        <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+            <div class="p-4"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Trend Posture</p><div class="mt-2 flex items-center justify-between gap-3"><p class="text-xl font-semibold text-content-primary">{{ trend_info.posture|default('No Data') }}</p>{{ table_label.status_label(trend_info.posture|default('No Data'), trend_info.tone|default('unknown'), none, 'compact') }}</div></div>
+            <div class="p-4"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Peak Signal</p><p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ '%.2f'|format(trend_info.peak_value|default(0)|float) }}%</p><p class="mt-1 text-xs text-content-muted">{{ trend_info.peak_resource|default('None') }}</p></div>
+            <div class="p-4"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Samples</p><p class="mt-2 text-xl font-semibold tabular-nums text-content-primary">{{ trend_info.sample_count|default(0) }}</p><p class="mt-1 text-xs text-content-muted">Committed observations</p></div>
+            <div class="p-4"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Scope</p><p class="mt-2 break-all text-sm font-semibold leading-5 text-content-primary">{{ selected_trend_node if selected_trend_node else 'All Worker Nodes' }}</p><p class="mt-1 text-xs text-content-muted">Selected trend boundary</p></div>
         </div>
     </section>
 
-    <section class="mt-5 rounded-lg border border-outline-subtle bg-surface-hover p-4">
-        <div class="mb-4 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div>
-                <h4 class="text-sm font-semibold text-content-primary">Historical Signal Behavior</h4>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Compare current values with sustained movement and peaks before changing capacity or workload placement.</p>
-            </div>
-            <div class="grid gap-2 sm:grid-cols-3 lg:w-full">
-                {% for label, helper, icon in [
-                    ('CPU', 'Processor utilization', 'cpu'),
-                    ('Memory', 'Working-set utilization', 'memory-stick'),
-                    ('Pods', 'Pod density utilization', 'boxes')
-                ] %}
-                    <div class="flex items-center gap-2 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2">
-                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i></span>
-                        <div><p class="text-xs font-semibold text-content-primary">{{ label }}</p><p class="text-[10px] text-content-muted">{{ helper }}</p></div>
-                    </div>
+    <div class="mt-5 grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]">
+        <section class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><h4 class="text-sm font-semibold text-content-primary">Historical Signal Behavior</h4><p class="mt-1 text-xs leading-5 text-content-muted">Compare movement across the selected observation window before changing capacity or workload placement.</p></div>{{ table_label.metadata_label('CPU · Memory · Pods', 'chart-no-axes-combined') }}</div>
+            <div id="utilizationTrendChartContainer" class="relative mt-4 h-[340px] rounded-lg border border-outline-subtle bg-surface-card p-3"><canvas id="utilizationTrendChart" class="block h-full w-full" width="1200" height="340"></canvas></div>
+            <div id="trendEmptyState" class="hidden">{% set empty_state_icon = "line-chart" %}{% set empty_state_title = "No Trend Data Available" %}{% set empty_state_description = "Trend data will appear after Prometheus returns historical CPU, memory, or pod utilization samples for the selected scope." %}{% set empty_state_min_height = "min-h-[340px]" %}{% include "components/states/_empty_state.html" %}</div>
+            <div class="mt-4 grid gap-3 border-t border-outline-subtle pt-4 sm:grid-cols-2"><div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">How To Read</p><p class="mt-1 text-xs leading-5 text-content-secondary">Current shows the latest sample, Average shows sustained pressure, and Peak shows the maximum observed excursion.</p></div><div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">What To Do</p><p class="mt-1 text-xs leading-5 text-content-secondary">Investigate a resource when current and average remain elevated. Use Node Detail to locate concentration before resizing the cluster.</p></div></div>
+        </section>
+
+        <aside class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
+            <header class="border-b border-outline-subtle bg-surface-card px-4 py-3"><h4 class="font-semibold text-content-primary">Resource Trend Outlook</h4><p class="mt-1 text-xs leading-5 text-content-muted">Current, average, and peak pressure by resource.</p></header>
+            <div class="divide-y divide-outline-subtle">
+                {% for resource, label, icon in [('cpu', 'CPU', 'cpu'), ('memory', 'Memory', 'memory-stick'), ('pods', 'Pods', 'boxes')] %}
+                    {% set metric = resource_summaries.get(resource, {}) %}
+                    <article class="p-4"><div class="flex items-center justify-between gap-3"><div class="flex items-center gap-2.5"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><div><p class="text-sm font-semibold text-content-primary">{{ label }}</p><p class="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-content-muted">Current Utilization</p></div></div><span class="text-xl font-semibold tabular-nums text-content-primary">{{ '%.2f'|format(metric.current|default(0)|float) }}%</span></div>{{ progress_bar.bar(metric.current|default(0), track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-card', fill_classes='h-full rounded-full bg-kaori-primary', label=label ~ ' current utilization') }}<div class="mt-3 grid grid-cols-2 gap-3"><div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Average</p><p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ '%.2f'|format(metric.average|default(0)|float) }}%</p></div><div class="border-l border-outline-subtle pl-3"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Peak</p><p class="mt-1 text-sm font-semibold tabular-nums text-content-primary">{{ '%.2f'|format(metric.peak|default(0)|float) }}%</p></div></div></article>
                 {% endfor %}
             </div>
-        </div>
-        <div id="utilizationTrendChartContainer"
-             class="relative h-[360px] rounded-lg border border-outline-subtle bg-surface-card p-3">
-            <canvas id="utilizationTrendChart"
-                    class="block h-full w-full"
-                    width="1200"
-                    height="360"></canvas>
-        </div>
-        <div id="trendEmptyState" class="hidden">
-            {% set empty_state_icon = "line-chart" %}
-            {% set empty_state_title = "No Trend Data Available" %}
-            {% set empty_state_description = "Trend data will appear after Prometheus returns historical CPU, memory, or pod utilization samples for the selected scope." %}
-            {% set empty_state_min_height = "min-h-[360px]" %}
-            {% include "components/states/_empty_state.html" %}
-        </div>
-    </section>
+        </aside>
+    </div>
     <script>
 (function() {
     const panelId = 'utilization-trend-panel';

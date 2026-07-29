@@ -23,7 +23,8 @@
           hx-select="#analytics-overview-page"
           hx-swap="outerHTML"
           hx-push-url="true"
-          hx-indicator="#analytics-overview-refresh-indicator">
+          hx-indicator="#analytics-overview-refresh-indicator"
+          hx-sync="#analytics-overview-filter:replace">
         <div class="grid grid-cols-1 gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3 sm:grid-cols-2 sm:px-5">
             <label class="flex min-w-0 flex-col gap-1.5 sm:flex-row sm:items-center">
                 <span class="text-xs font-semibold text-content-secondary w-20 shrink-0">Cluster</span>
