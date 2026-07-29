@@ -64,3 +64,13 @@ def test_recommendations_use_operational_rows_and_semantic_labels() -> None:
     assert 'recommendation.icon_class' not in section
     assert 'recommendation.priority_class' not in section
     assert '<details' not in section
+
+
+def test_summary_uses_compact_metric_header_and_bounded_identity_panel() -> None:
+    summary = _read('partials/_summary.html')
+
+    assert 'px-5 py-3.5' in summary
+    assert 'text-xl font-semibold tabular-nums' in summary
+    assert 'bg-surface-subtle px-3 py-2' in summary
+    assert 'line-clamp-2 min-h-10' in summary
+    assert 'mt-2 break-words text-sm font-semibold' not in summary
