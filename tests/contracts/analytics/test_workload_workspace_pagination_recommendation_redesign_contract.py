@@ -14,7 +14,7 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_workload_table_pagination_uses_endpoint_parameters_and_simple_page_indicator() -> None:
+def test_workload_table_pagination_uses_endpoint_parameters_and_numeric_page_buttons() -> None:
     pagination = read('app/templates/components/pagination.html')
     pagination_js = read('app/static/js/pagination.js')
     tenant = read('app/templates/analytics/workload/partials/_tenant_quota_section.html')
@@ -27,13 +27,11 @@ def test_workload_table_pagination_uses_endpoint_parameters_and_simple_page_indi
     assert 'replacePage(href, page, pageParam)' in pagination_js
     assert 'data-kaori-generated-page' in pagination_js
 
-    # Workload tables use the stable KAORI Previous / Page / Next pattern.
-    assert "numeric_pages(quota_pagination.page, quota_pagination.total_pages, 'quota_page')" not in tenant
-    assert "numeric_pages(workload_pagination.page, workload_pagination.total_pages, 'workload_page')" not in mapping
-    assert 'Page <span class="text-content-primary">{{ quota_pagination.page }}</span>' in tenant
-    assert 'of <span class="text-content-primary">{{ quota_pagination.total_pages }}</span>' in tenant
-    assert 'Page <span class="text-content-primary">{{ workload_pagination.page }}</span>' in mapping
-    assert 'of <span class="text-content-primary">{{ workload_pagination.total_pages }}</span>' in mapping
+    # Workload tables follow the inventory pagination standard: Previous, numbered pages, and Next.
+    assert "numeric_pages(quota_pagination.page, quota_pagination.total_pages, 'quota_page')" in tenant
+    assert "numeric_pages(workload_pagination.page, workload_pagination.total_pages, 'workload_page')" in mapping
+    assert 'Page <span class="text-content-primary">{{ quota_pagination.page }}</span>' not in tenant
+    assert 'Page <span class="text-content-primary">{{ workload_pagination.page }}</span>' not in mapping
     assert 'quota_page=quota_pagination.previous_page' in tenant
     assert 'quota_page=quota_pagination.next_page' in tenant
     assert 'workload_page=workload_pagination.previous_page' in mapping
@@ -49,6 +47,8 @@ def test_workload_detail_actions_are_restored_to_the_action_column() -> None:
         assert 'components/table.html' in content
         assert '{{ table_ui.action_classes() }} w-full whitespace-nowrap sm:w-auto' in content
         assert "expanded ? 'Hide Details' : 'View Details'" in content
+        assert 'data-lucide="scan-search"' not in content
+        assert content.count('data-lucide="chevron-down"') >= 1
         assert 'class="group flex w-full items-center gap-3 border-t' not in content
         assert 'class="border-t border-outline-subtle bg-surface-subtle px-4 py-4"' in content
 

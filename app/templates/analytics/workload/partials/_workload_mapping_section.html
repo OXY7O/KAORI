@@ -162,11 +162,10 @@
                                     @click="expanded = !expanded"
                                     :aria-expanded="expanded ? 'true' : 'false'"
                                     aria-controls="workload-mapping-details-{{ loop.index }}">
-                                <i data-lucide="scan-search" class="h-3.5 w-3.5 shrink-0"></i>
-                                <span x-text="expanded ? 'Hide Details' : 'View Details'">View Details</span>
                                 <i data-lucide="chevron-down"
                                    class="h-3.5 w-3.5 shrink-0 transition-transform"
                                    :class="{ 'rotate-180': expanded }"></i>
+                                <span x-text="expanded ? 'Hide Details' : 'View Details'">View Details</span>
                             </button>
                         </div>
                     </div>
@@ -310,10 +309,7 @@
                         Previous
                     </span>
                 {% endif %}
-                <span class="shrink-0 text-center text-xs font-semibold text-content-muted" aria-live="polite">
-                    Page <span class="text-content-primary">{{ workload_pagination.page }}</span>
-                    of <span class="text-content-primary">{{ workload_pagination.total_pages }}</span>
-                </span>
+                {{ pagination_ui.numeric_pages(workload_pagination.page, workload_pagination.total_pages, 'workload_page') }}
                 {% if workload_pagination.page < workload_pagination.total_pages %}
                     <a href="{{ workload_next_url }}" hx-get="{{ workload_next_url }}" hx-target="#workload-resource-mapping" hx-swap="outerHTML" hx-sync="#workload-resource-mapping:replace" hx-indicator="#{{ indicator_id }}" class="{{ pagination_ui.navigation_classes() }}">
                         Next
