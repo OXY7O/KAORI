@@ -15,7 +15,7 @@
         ('action-summary', 'Action Summary', 'list-checks'),
         ('recommendations', 'Recommendations', 'clipboard-check')
     ] %}
-    <div id="analytics-overview-page" class="space-y-6" data-analytics-page-request-tracking="false">
+    <div id="analytics-overview-page" class="kaori-analytics-page space-y-6" data-analytics-page-request-tracking="false">
         {% include "analytics/overview/partials/_hero.html" %}
         {% if dependency_blocker %}
             {% include "components/dependencies/_blocker.html" %}

@@ -2,7 +2,7 @@
 {% import "analytics/components/_status_notice.html" as status_notice %}
 {% block title %}Storage Analysis{% endblock title %}
 {% block dashboard_content %}
-    <div id="storage-page" class="space-y-6" data-analytics-page-tracker="storage-load-tracker" data-analytics-page-request-tracking="false">
+    <div id="storage-page" class="kaori-analytics-page space-y-6" data-analytics-page-tracker="storage-load-tracker" data-analytics-page-request-tracking="false">
         {% include "analytics/storage/partials/_hero.html" %}
         {% if dependency_blocker %}
             {% include "components/dependencies/_blocker.html" %}

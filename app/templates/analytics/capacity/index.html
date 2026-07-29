@@ -3,7 +3,7 @@
 {% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
 {% block title %}Capacity Analysis{% endblock title %}
 {% block dashboard_content %}
-    <div id="capacity-page" class="space-y-6" data-analytics-page-tracker="capacity-load-tracker" data-analytics-page-request-tracking="false">
+    <div id="capacity-page" class="kaori-analytics-page space-y-6" data-analytics-page-tracker="capacity-load-tracker" data-analytics-page-request-tracking="false">
         {% include "analytics/capacity/partials/_hero.html" %}
         {% if dependency_blocker %}
             {% include "components/dependencies/_blocker.html" %}

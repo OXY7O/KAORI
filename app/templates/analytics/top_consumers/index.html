@@ -1,7 +1,7 @@
 {% extends "layouts/app.html" %}
 {% block title %}Top Consumers{% endblock title %}
 {% block dashboard_content %}
-    <div id="top-consumers-page" class="space-y-6" data-analytics-page-request-tracking="false">
+    <div id="top-consumers-page" class="kaori-analytics-page space-y-6" data-analytics-page-request-tracking="false">
         {% set selected_cluster_name = cluster.name if cluster else 'No Cluster Selected' %}
         {% set payload = consumer_payload %}
         {% set overview = payload.overview %}
