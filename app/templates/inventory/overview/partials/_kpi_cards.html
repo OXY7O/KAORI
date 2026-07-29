@@ -83,7 +83,7 @@
                 <div class="min-w-0 flex-1">
                     <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Average Objects</p>
                     <p class="mt-2 text-xl font-semibold text-content-primary">{{ cluster_average }}</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Objects Per Cluster.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Objects per Cluster.</p>
                 </div>
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
                       aria-hidden="true">
@@ -125,7 +125,7 @@
                 <div class="min-w-0 flex-1">
                     <p class="text-[10px] font-semibold uppercase tracking-[0.12em] {% if fresh_clusters == overview.total_clusters and overview.total_clusters > 0 %}text-status-normal-text{% elif overview.total_clusters > 0 %}text-status-warning-text{% else %}text-status-unknown-text{% endif %}">Fresh Collections</p>
                     <p class="mt-2 text-xl font-semibold text-content-primary">{{ fresh_clusters }}/{{ overview.total_clusters }}</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Within The Freshness Window.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Within the Freshness Window.</p>
                 </div>
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md {% if fresh_clusters == overview.total_clusters and overview.total_clusters > 0 %}bg-status-normal-soft text-status-normal-text{% elif overview.total_clusters > 0 %}bg-status-warning-soft text-status-warning-text{% else %}bg-status-unknown-soft text-status-unknown-text{% endif %}"
                       aria-hidden="true">
