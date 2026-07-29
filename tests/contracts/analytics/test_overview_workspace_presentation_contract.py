@@ -16,7 +16,8 @@ def test_overview_controls_and_readiness_share_one_compact_box() -> None:
     assert 'id="analytics-overview-filter"' in source
     assert 'h-9 min-w-0 flex-1' in source
     assert 'prometheus_status_panel.render' in source
-    assert 'compact=true, flat=true' in source
+    assert 'embedded=true' not in source
+    assert 'payload.last_analyzed_at, compact=true, flat=true' in source
     assert 'Latest Analytics Data Snapshot' in source
     assert 'Latest Sync' in source
     assert 'Coverage' in source

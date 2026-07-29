@@ -55,7 +55,7 @@
 
     <div class="grid grid-cols-1 xl:grid-cols-12">
         <div class="border-b border-outline-subtle px-4 py-3 sm:px-5 xl:col-span-4 xl:border-b-0 xl:border-r">
-            {{ prometheus_status_panel.render(payload.prometheus, payload.last_analyzed_at, embedded=true, compact=true, flat=true) }}
+            {{ prometheus_status_panel.render(payload.prometheus, payload.last_analyzed_at, compact=true, flat=true) }}
         </div>
 
         <article class="min-w-0 px-4 py-3 sm:px-5 xl:col-span-8">
