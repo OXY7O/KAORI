@@ -14,6 +14,12 @@
 {% else %}
     {% set status_tone = "unknown" %}
 {% endif %}
+{% set storage_class_value = item.storage_class if item.storage_class not in [None, '', '-'] else 'Not Reported' %}
+{% set normalized_storage_class = storage_class_value|lower|trim %}
+{% set storage_class_tone = 'normal' if normalized_storage_class == 'cstor-csi' else ('unknown' if normalized_storage_class == 'not reported' else 'info') %}
+{% set reclaim_policy_value = item.reclaim_policy if item.reclaim_policy not in [None, '', '-'] else 'Not Reported' %}
+{% set normalized_reclaim_policy = reclaim_policy_value|lower|trim %}
+{% set reclaim_policy_tone = 'warning' if normalized_reclaim_policy == 'delete' else ('normal' if normalized_reclaim_policy == 'retain' else ('info' if normalized_reclaim_policy == 'recycle' else 'unknown')) %}
 <div class="bg-surface-hover px-4 py-4">
     <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-sm">
         <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -29,15 +35,37 @@
             </div>
             <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">{{ table_label.metadata_label('PV' if item.type == 'PersistentVolume' else 'PVC' if item.type == 'PersistentVolumeClaim' else item.type) }}{{ table_label.status_label(item.status, status_tone) }}</div>
         </header>
-        <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail.detail_card('Storage Identity', 'badge-info', item.age, class_name='min-h-[30rem]') %}
-                {{ detail.detail_row('Cluster', item.cluster_name) }}{{ detail.detail_row('Namespace Scope', item.namespace) }}{{ detail.detail_row('Type', item.type) }}{{ detail.detail_row('Storage Class', item.storage_class) }}{{ detail.detail_row('Kubernetes UID', item.uid, true) }}{{ detail.detail_row('Created', item.created_at|user_datetime) }}{{ detail.detail_row('Collected', item.collected_at|user_datetime) }}
+        <div class="grid items-stretch gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
+            {% call detail.detail_card('Storage Identity', 'badge-info', item.age, badge_size='detail') %}
+                {{ detail.detail_row('Cluster', item.cluster_name) }}
+                {{ detail.detail_row('Namespace Scope', item.namespace) }}
+                {{ detail.detail_row('Type', item.type) }}
+                {{ detail.status_row('Storage Class', storage_class_value, storage_class_tone, none, 'detail') }}
+                {{ detail.detail_row('Kubernetes UID', item.uid, true) }}
+                {{ detail.detail_row('Created', item.created_at|user_datetime) }}
+                {{ detail.detail_row('Collected', item.collected_at|user_datetime) }}
                 <div class="mt-auto pt-3">{{ info_box('Inventory Identity', item.type_description, 'lightbulb') }}</div>
             {% endcall %}
-            {% call detail.detail_card('Capacity & Mode', 'hard-drive', item.capacity, class_name='min-h-[30rem]') %}
-                {{ detail.detail_row('Status', item.status) }}{{ detail.detail_row('Capacity', item.capacity) }}
+            {% call detail.detail_card('Capacity & Mode', 'hard-drive', item.capacity, badge_size='detail') %}
+                {{ detail.status_row('Status', item.status, status_tone, none, 'detail') }}
+                {{ detail.detail_row('Capacity', item.capacity) }}
                 {% if item.type == 'PersistentVolumeClaim' %}{{ detail.detail_row('Requested Storage', item.requested_storage) }}{% endif %}
-                {{ detail.detail_row('Access Modes', item.access_modes|join(', ') if item.access_modes else '-') }}{{ detail.detail_row('Volume Mode', item.volume_mode) }}{{ detail.detail_row('Storage Class', item.storage_class) }}
+                <div class="flex items-start justify-between gap-3">
+                    <span class="shrink-0 text-xs leading-5 text-content-muted">Access Modes</span>
+                    <span class="flex max-w-[68%] flex-wrap justify-end gap-1.5 text-right">
+                        {% if item.access_modes %}
+                            {% for access_mode in item.access_modes %}
+                                {% set normalized_access_mode = access_mode|lower|trim %}
+                                {% set access_mode_tone = 'normal' if normalized_access_mode in ['readwriteonce', 'readwriteoncepod'] else ('info' if normalized_access_mode in ['readwritemany', 'readonlymany'] else 'unknown') %}
+                                {{ table_label.status_label(access_mode, access_mode_tone, none, 'detail') }}
+                            {% endfor %}
+                        {% else %}
+                            {{ table_label.status_label('Not Reported', 'unknown', none, 'detail') }}
+                        {% endif %}
+                    </span>
+                </div>
+                {{ detail.detail_row('Volume Mode', item.volume_mode) }}
+                {{ detail.status_row('Storage Class', storage_class_value, storage_class_tone, none, 'detail') }}
                 {% call detail_object.stack() %}
                     {% if item.mount_options %}
                         {% call detail_object.card('Mount Options', table_label.count_text(item.mount_options|length, 'Option'), 'list-checks') %}
@@ -46,11 +74,16 @@
                     {% else %}
                         {{ detail_object.empty('No Mount Options', 'No mount option is recorded for this storage object.', 'list-checks') }}
                     {% endif %}
-                    {{ info_box('Capacity Boundary', 'Declared capacity only; filesystem utilization remains in Storage Analysis.', 'database') }}
                 {% endcall %}
             {% endcall %}
-            {% call detail.detail_card('Binding & Lifecycle', 'link-2', item.reclaim_policy, class_name='min-h-[34rem]') %}
-                {{ detail.detail_row('Binding', item.binding_reference) }}{{ detail.detail_row('Reclaim Policy', item.reclaim_policy) }}{{ detail.detail_row('Binding Mode', item.binding_mode) }}{{ detail.detail_row('Expansion', 'Allowed' if item.allow_expansion else 'Not Enabled') }}{{ detail.detail_row('Default Class', 'Yes' if item.is_default else 'No') }}{{ detail.detail_row('Node Affinity', 'Configured' if item.node_affinity_configured else 'Not Configured') }}{{ detail.detail_row('Finalizers', item.finalizers|length) }}
+            {% call detail.detail_card('Binding & Lifecycle', 'link-2', reclaim_policy_value, 'status', reclaim_policy_tone, badge_size='detail') %}
+                {{ detail.detail_row('Binding', item.binding_reference) }}
+                {{ detail.status_row('Reclaim Policy', reclaim_policy_value, reclaim_policy_tone, none, 'detail') }}
+                {{ detail.detail_row('Binding Mode', item.binding_mode) }}
+                {{ detail.detail_row('Expansion', 'Allowed' if item.allow_expansion else 'Not Enabled') }}
+                {{ detail.detail_row('Default Class', 'Yes' if item.is_default else 'No') }}
+                {{ detail.detail_row('Node Affinity', 'Configured' if item.node_affinity_configured else 'Not Configured') }}
+                {{ detail.detail_row('Finalizers', item.finalizers|length) }}
                 {% call detail_object.stack() %}
                     {% if item.conditions %}
                         {% call detail_object.card('Reported Conditions', table_label.count_text(item.conditions|length, 'Condition'), 'activity') %}
@@ -61,11 +94,10 @@
                     {% else %}
                         {{ detail_object.empty('No Conditions Reported', 'The current snapshot does not contain storage condition records.', 'activity') }}
                     {% endif %}
-                    {{ info_box('Lifecycle Boundary', 'Bindings and lifecycle controls reflect the current Kubernetes object state.', 'link-2') }}
                 {% endcall %}
             {% endcall %}
             {% set provisioning_badge = item.provisioner if item.type == 'StorageClass' else item.source.type if item.source else '-' %}
-            {% call detail.detail_card('Provisioning Details', 'settings-2', provisioning_badge, class_name='min-h-[34rem]') %}
+            {% call detail.detail_card('Provisioning Details', 'settings-2', provisioning_badge, badge_size='detail') %}
                 {% if item.type == 'StorageClass' %}
                     {{ detail.detail_row('Provisioner', item.provisioner) }}{{ detail.detail_row('Parameters', item.parameters|length) }}{{ detail.detail_row('Allowed Topologies', item.allowed_topology_count) }}{{ detail.detail_row('Mount Options', item.mount_options|length) }}
                 {% elif item.type == 'PersistentVolume' %}

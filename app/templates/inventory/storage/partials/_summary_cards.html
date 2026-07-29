@@ -25,10 +25,10 @@
     </header>
 
     {% set summary_cards = [
-        ('Total Objects', total_storage, 'database', 'StorageClass, PV, and PVC records.'),
-        ('Storage Classes', sc_total, 'layers-3', 'Provisioning classes available.'),
-        ('Persistent Volumes', pv_total, 'hard-drive', 'Cluster-scoped persistent volumes.'),
-        ('Persistent Volume Claims', pvc_total, 'folder', 'Namespace-scoped storage claims.')
+        ('Total Objects', total_storage, 'database', 'StorageClass, PV, and PVC Records'),
+        ('Storage Classes', sc_total, 'layers-3', 'Provisioning Classes Available'),
+        ('Persistent Volumes', pv_total, 'hard-drive', 'Cluster Scoped Persistent Volumes'),
+        ('Persistent Volume Claims', pvc_total, 'folder', 'Namespace Scoped Storage Claims')
     ] %}
     <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
         {% for label, value, icon, description in summary_cards %}
@@ -49,7 +49,7 @@
 
     <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-[1.15fr_0.85fr_0.85fr]">
         <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-4"><div class="min-w-0 flex-1"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Persistent Volume Coverage</p><div class="mt-2 flex items-end gap-3"><p class="text-2xl font-semibold text-content-primary">{{ pv_ratio | int }}%</p><p class="pb-0.5 text-xs font-medium text-content-muted">{{ pv_total }} of {{ total_storage }} Objects</p></div>{{ progress_bar.bar(pv_ratio, track_classes="mt-4 h-2 overflow-hidden rounded-full bg-kaori-soft", fill_classes="h-full rounded-full bg-kaori-primary", label="Persistent volume coverage") }}</div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-brand-outline bg-kaori-soft text-kaori-primary"><i data-lucide="badge-check" class="h-4 w-4"></i></span></div></article>
-        <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-3"><div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Storage Classes</p><p class="mt-2 text-2xl font-semibold text-content-primary">{{ sc_total }}</p><p class="mt-2 text-xs leading-5 text-content-muted">Provisioning classes in scope.</p></div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-status-info-border bg-status-info-soft text-status-info-text"><i data-lucide="layers-3" class="h-4 w-4"></i></span></div></article>
-        <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-3"><div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Volume Claims</p><p class="mt-2 text-2xl font-semibold text-content-primary">{{ pvc_total }}</p><p class="mt-2 text-xs leading-5 text-content-muted">Namespace storage claims in scope.</p></div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-status-info-border bg-status-info-soft text-status-info-text"><i data-lucide="folder" class="h-4 w-4"></i></span></div></article>
+        <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-3"><div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Storage Classes</p><p class="mt-2 text-2xl font-semibold text-content-primary">{{ sc_total }}</p><p class="mt-2 text-xs leading-5 text-content-muted">Provisioning Classes in Scope</p></div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-status-info-border bg-status-info-soft text-status-info-text"><i data-lucide="layers-3" class="h-4 w-4"></i></span></div></article>
+        <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-3"><div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Volume Claims</p><p class="mt-2 text-2xl font-semibold text-content-primary">{{ pvc_total }}</p><p class="mt-2 text-xs leading-5 text-content-muted">Namespace Storage Claims in Scope</p></div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-status-info-border bg-status-info-soft text-status-info-text"><i data-lucide="folder" class="h-4 w-4"></i></span></div></article>
     </div>
 </section>
