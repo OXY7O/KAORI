@@ -245,6 +245,26 @@
                             <div class="h-[360px] p-4">
                                 <canvas id="forecast-trend-chart" aria-label="Forecast trend analysis chart"></canvas>
                             </div>
+                            <div class="grid border-t border-outline-subtle bg-surface-card/60 lg:grid-cols-2">
+                                <div class="flex items-start gap-3 px-4 py-3">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                        <i data-lucide="scan-search" class="h-4 w-4"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-semibold text-content-primary">How To Read The Combined Forecast</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">Compare each solid historical line with its dashed projection. A steeper upward projection indicates faster capacity consumption; use the Resource Outlook panel to identify the affected domain and its Warning ETA.</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-start gap-3 border-t border-outline-subtle px-4 py-3 lg:border-l lg:border-t-0">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                        <i data-lucide="list-checks" class="h-4 w-4"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="text-xs font-semibold text-content-primary">What To Do</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">Prioritize resources whose projected line approaches the {{ forecast_payload.chart.warning_threshold|default(75) }}% warning threshold. Validate growth drivers, review model confidence, and schedule capacity remediation before the nearest Warning ETA.</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     {% else %}
                         <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
