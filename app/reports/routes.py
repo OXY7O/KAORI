@@ -11,6 +11,7 @@ from app.reports.generated.routes import (
     generated_reports,
     restore_generated_report,
 )
+from app.reports.overview.presentation import normalize_reports_overview_payload
 from app.reports.overview.service import get_reports_overview_payload
 from app.reports.report_templates.routes import (
     create_report_template,
@@ -40,7 +41,7 @@ reports_bp = Blueprint(
 @reports_bp.route('/')
 @permission_required('reports.view')
 def overview() -> ResponseReturnValue:
-    payload = get_reports_overview_payload()
+    payload = normalize_reports_overview_payload(get_reports_overview_payload())
 
     return render_template(
         'reports/overview/index.html',
