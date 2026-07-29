@@ -123,6 +123,26 @@
                                             <p class="mt-0.5 text-xs text-content-muted">{{ item.critical_eta.date|default('No forecasted date', true) }}</p>
                                         </div>
                                     </div>
+                                    <div class="mt-3 space-y-3 border-t border-outline-subtle pt-3">
+                                        <div class="flex items-start gap-2.5">
+                                            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary">
+                                                <i data-lucide="chart-no-axes-combined" class="h-3.5 w-3.5"></i>
+                                            </span>
+                                            <div class="min-w-0">
+                                                <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">How To Read The Graph</p>
+                                                <p class="mt-1 text-xs leading-5 text-content-secondary">Follow the solid line for observed utilization and the dashed line for projection. Compare the projected line with the {{ forecast_payload.chart.warning_threshold|default(75) }}% warning and {{ forecast_payload.chart.critical_threshold|default(90) }}% critical thresholds.</p>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-start gap-2.5">
+                                            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md {% if tone == 'critical' %}bg-status-critical-soft text-status-critical{% elif tone == 'warning' %}bg-status-warning-soft text-status-warning{% else %}bg-status-normal-soft text-status-normal{% endif %}">
+                                                <i data-lucide="{% if tone == 'critical' %}shield-alert{% elif tone == 'warning' %}triangle-alert{% else %}circle-check-big{% endif %}" class="h-3.5 w-3.5"></i>
+                                            </span>
+                                            <div class="min-w-0">
+                                                <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Recommended Action</p>
+                                                <p class="mt-1 text-xs leading-5 text-content-secondary">{% if tone == 'critical' %}Prioritize capacity expansion or workload reduction before the critical ETA, then verify the projection after the next committed snapshot.{% elif tone == 'warning' %}Review growth drivers and schedule capacity remediation before the warning ETA. Recheck the forecast after the next committed snapshot.{% else %}Continue monitoring the projected line and model confidence. No immediate capacity change is required unless growth or threshold timing worsens.{% endif %}</p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4">

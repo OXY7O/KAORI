@@ -8,6 +8,13 @@ const FORECAST_SERIES_COLORS = {
     warning: '#F59E0B',
     critical: '#DC2626'
 };
+function buildLegendLabelsWithTextGap(chart) {
+    return Chart.defaults.plugins.legend.labels.generateLabels(chart).map((label) => ({
+        ...label,
+        text: `\u00A0\u00A0${label.text}`
+    }));
+}
+
 
 function safeParseForecastJson(elementId) {
     const element = document.getElementById(elementId);
@@ -143,7 +150,8 @@ function renderResourceForecastCharts() {
                             usePointStyle: true,
                             boxWidth: 14,
                             boxHeight: 10,
-                            padding: 16
+                            padding: 18,
+                            generateLabels: buildLegendLabelsWithTextGap
                         }
                     },
                     tooltip: {
@@ -285,8 +293,10 @@ function renderTrendForecastChart() {
                     position: 'bottom',
                     labels: {
                         usePointStyle: true,
-                        boxWidth: 8,
-                        padding: 18
+                        boxWidth: 14,
+                        boxHeight: 10,
+                        padding: 18,
+                        generateLabels: buildLegendLabelsWithTextGap
                     }
                 },
                 tooltip: {
