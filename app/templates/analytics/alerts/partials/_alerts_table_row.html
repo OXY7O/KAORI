@@ -27,11 +27,6 @@
             {{ table_label.status_label(alert.severity|title, tone=severity_tone, size='compact') }}
         </div>
 
-        <div class="min-w-0 lg:col-span-1">
-            <p class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-content-muted lg:hidden">State</p>
-            {{ table_label.status_label(alert.status|title, tone=status_tone, size='compact') }}
-        </div>
-
         <div class="min-w-0 space-y-1 lg:col-span-2">
             <div class="flex min-w-0 items-center gap-2 text-sm font-medium text-content-secondary">
                 <i data-lucide="box" class="h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
@@ -41,6 +36,11 @@
                 <i data-lucide="database" class="h-3.5 w-3.5 shrink-0"></i>
                 <span class="min-w-0 break-words">{{ alert.source }}</span>
             </div>
+        </div>
+
+        <div class="min-w-0 lg:col-span-1">
+            <p class="mb-1 text-[10px] font-semibold uppercase tracking-wide text-content-muted lg:hidden">State</p>
+            {{ table_label.status_label(alert.status|title, tone=status_tone, size='compact') }}
         </div>
 
         <div class="lg:col-span-2">

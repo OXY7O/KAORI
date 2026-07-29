@@ -478,3 +478,9 @@ span.inline-flex[class*='bg-kaori-soft'] {
     opacity: 1;
     transform: translateY(0);
 }
+
+/* KAORI table-column standard: every semantic table header is rendered in
+ * display capitals without rewriting technical labels in template content. */
+thead th {
+    text-transform: uppercase;
+}

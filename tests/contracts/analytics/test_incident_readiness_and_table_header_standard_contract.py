@@ -32,7 +32,7 @@ def test_incident_readiness_uses_compact_operational_workspace() -> None:
 def test_analytics_table_headers_follow_kaori_title_case_contract() -> None:
     expected_headers = {
         'alerts/partials/_alerts_table.html': [
-            'Alert', 'Severity', 'State', 'Scope &amp; Source', 'Started', 'Action'
+            'Alert', 'Severity', 'Scope &amp; Source', 'State', 'Started', 'Action'
         ],
         'alerts/partials/_anomalies_table.html': [
             'Anomaly', 'Severity', 'Namespace &amp; Pod', 'Signal', 'Action'
