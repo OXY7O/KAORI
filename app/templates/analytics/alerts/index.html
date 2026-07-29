@@ -40,7 +40,7 @@
                      data-analytics-tabset
                      data-analytics-tabset-id="alerts-content"
                      data-default-tab="alerts"
-                     x-data='kaoriAnalyticsTabs("alerts", ["alerts", "anomalies", "routing", "ownership", "recommendations"], "alerts-content")'
+                     x-data='kaoriAnalyticsTabs("alerts", ["alerts", "anomalies", "routing", "ownership", "readiness", "recommendations", "resources"], "alerts-content")'
                      class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                 <div class="flex flex-col gap-3 px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
                     <div class="flex min-w-0 items-start gap-3">
@@ -49,7 +49,7 @@
                         </span>
                         <div class="min-w-0">
                             <h2 class="text-lg font-semibold text-content-primary">Alerts &amp; Anomalies Workspace</h2>
-                            <p class="mt-1 text-sm leading-6 text-content-muted">Review alert records, anomaly candidates, routing behavior, operational readiness, and recommended actions.</p>
+                            <p class="mt-1 text-sm leading-6 text-content-muted">Review alert records, anomaly candidates, routing behavior, ownership coverage, incident readiness, recommendations, and operational resources.</p>
                         </div>
                     </div>
                     <div class="flex flex-wrap items-center gap-2 text-xs text-content-muted">
@@ -64,7 +64,9 @@
                     ('anomalies', 'Anomalies', 'radar'),
                     ('routing', 'Routing & Suppression', 'route'),
                     ('ownership', 'Ownership & Runbook Coverage', 'book-open-check'),
-                    ('recommendations', 'Recommendations', 'list-checks')
+                    ('readiness', 'Incident Readiness', 'siren'),
+                    ('recommendations', 'Recommendations', 'list-checks'),
+                    ('resources', 'Operational Resources', 'external-link')
                 ] %}
                 {{ analytics_content_tabs.render('alerts-content', alert_tabs, 'Alerts & Anomalies Workspace', embedded=true) }}
 
@@ -133,22 +135,19 @@
                          x-bind:hidden="activeTab !== 'ownership'"
                          hidden
                          x-cloak>
-                        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
-                            <div class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:px-6 lg:flex-row lg:items-start lg:justify-between">
-                                <div class="flex min-w-0 items-start gap-3">
-                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                        <i data-lucide="book-open-check" class="h-5 w-5"></i>
-                                    </span>
-                                    <div class="min-w-0">
-                                        <h3 class="text-base font-semibold text-content-primary">Ownership &amp; Runbook Coverage</h3>
-                                        <p class="mt-1 text-sm leading-6 text-content-muted">Verify accountable owners, escalation contacts, runbook availability, and metadata gaps for active signals.</p>
-                                    </div>
-                                </div>
-                                {{ table_label.status_label(ownership_summary.label, tone=ownership_summary.level|default('info'), size='detail') }}
-                            </div>
-                            {% include "analytics/alerts/partials/_ownership_summary.html" %}
-                            {% include "analytics/alerts/partials/_incident_readiness.html" %}
-                        </section>
+                        {% include "analytics/alerts/partials/_ownership_summary.html" %}
+                    </div>
+
+                    <div id="alerts-content-panel-readiness"
+                         role="tabpanel"
+                         data-analytics-tab-panel="readiness"
+                         data-alerts-tab-panel="readiness"
+                         aria-labelledby="alerts-content-tab-readiness"
+                         x-show="activeTab === 'readiness'"
+                         x-bind:hidden="activeTab !== 'readiness'"
+                         hidden
+                         x-cloak>
+                        {% include "analytics/alerts/partials/_incident_readiness.html" %}
                     </div>
 
                     <div id="alerts-content-panel-recommendations"
@@ -161,6 +160,18 @@
                          hidden
                          x-cloak>
                         {% include "analytics/alerts/partials/_recommendations.html" %}
+                    </div>
+
+                    <div id="alerts-content-panel-resources"
+                         role="tabpanel"
+                         data-analytics-tab-panel="resources"
+                         data-alerts-tab-panel="resources"
+                         aria-labelledby="alerts-content-tab-resources"
+                         x-show="activeTab === 'resources'"
+                         x-bind:hidden="activeTab !== 'resources'"
+                         hidden
+                         x-cloak>
+                        {% include "analytics/alerts/partials/_operational_resources.html" %}
                     </div>
                 </div>
             </section>
