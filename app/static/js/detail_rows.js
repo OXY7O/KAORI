@@ -1,8 +1,13 @@
 (() => {
     const SELECTOR = '[data-detail-toggle]'
+    const inFlight = new Map()
 
     function refreshIcons() {
         if (window.lucide) window.lucide.createIcons()
+    }
+
+    function processHtmx(root) {
+        if (window.htmx?.process) window.htmx.process(root)
     }
 
     function setButtonState(button, open) {
@@ -23,10 +28,17 @@
         }
     }
 
+    function cancelRequest(target) {
+        const controller = inFlight.get(target.id)
+        if (controller) controller.abort()
+        inFlight.delete(target.id)
+    }
+
     function closeButton(button) {
         const { target, row } = resolveElements(button)
 
         if (target) {
+            cancelRequest(target)
             if (target.dataset.detailStatic !== 'true') target.innerHTML = ''
             target.dataset.open = 'false'
             target.removeAttribute('aria-busy')
@@ -53,10 +65,54 @@
         `
     }
 
+    function renderError(target) {
+        target.removeAttribute('aria-busy')
+        target.innerHTML = `
+            <div class="border-t border-critical/30 bg-critical/5 px-5 py-5">
+                <p class="text-sm font-semibold text-critical">Unable To Load Details</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Refresh the inventory data or try opening the detail again.</p>
+            </div>
+        `
+    }
+
+    async function loadDetail(button, target, detailUrl) {
+        cancelRequest(target)
+        const controller = new AbortController()
+        inFlight.set(target.id, controller)
+
+        try {
+            const response = await fetch(detailUrl, {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    'HX-Request': 'true',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                signal: controller.signal,
+            })
+
+            if (!response.ok) throw new Error(`Detail request failed with ${response.status}`)
+            const html = await response.text()
+
+            if (target.dataset.open !== 'true') return
+            target.innerHTML = html
+            target.removeAttribute('aria-busy')
+            processHtmx(target)
+            refreshIcons()
+        } catch (error) {
+            if (error.name === 'AbortError') return
+            renderError(target)
+            setButtonState(button, true)
+            target.dataset.open = 'true'
+        } finally {
+            if (inFlight.get(target.id) === controller) inFlight.delete(target.id)
+        }
+    }
+
     function openButton(button) {
         const { target, row } = resolveElements(button)
-        const detailUrl = button.dataset.detailUrl || button.getAttribute('hx-get') || ''
-        if (!target || !row || !detailUrl || !window.htmx) return
+        const detailUrl = button.dataset.detailUrl || ''
+        if (!target || !row || !detailUrl) return
 
         closeGroup(button.dataset.detailGroup || 'default', button)
         row.classList.remove('hidden')
@@ -64,11 +120,7 @@
         setButtonState(button, true)
         renderLoading(target)
         refreshIcons()
-
-        window.htmx.ajax('GET', detailUrl, {
-            target: `#${CSS.escape(target.id)}`,
-            swap: 'innerHTML',
-        })
+        loadDetail(button, target, detailUrl)
     }
 
     document.addEventListener('click', (event) => {
@@ -77,8 +129,6 @@
         if (!button) return
 
         event.preventDefault()
-        event.stopImmediatePropagation()
-
         const { target, row } = resolveElements(button)
         if (!target || !row) return
 
@@ -89,20 +139,5 @@
         }
 
         openButton(button)
-    }, true)
-
-    document.addEventListener('htmx:afterSwap', (event) => {
-        const target = event.target
-        if (!target?.matches?.('[data-detail-content]')) return
-        target.removeAttribute('aria-busy')
-        target.dataset.open = 'true'
-        refreshIcons()
-    })
-
-    document.addEventListener('htmx:responseError', (event) => {
-        const target = event.detail?.target
-        if (!target?.matches?.('[data-detail-content]')) return
-        const button = document.querySelector(`${SELECTOR}[data-detail-target="${CSS.escape(target.id)}"]`)
-        if (button) closeButton(button)
     })
 })()

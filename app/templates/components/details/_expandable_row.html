@@ -8,11 +8,6 @@
             data-detail-row="{{ row_id }}"
             data-detail-url="{{ detail_url or '' }}"
             aria-expanded="false"
-            {% if detail_url %}
-                hx-get="{{ detail_url }}"
-                hx-target="#{{ target_id }}"
-                hx-swap="innerHTML"
-            {% endif %}
             class="{{ table_ui.action_classes() }} {{ class_name }}">
         <i data-lucide="chevron-down" class="h-3.5 w-3.5"></i>
         <span data-detail-toggle-label>View More</span>
