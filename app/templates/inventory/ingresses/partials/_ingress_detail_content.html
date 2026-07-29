@@ -10,6 +10,9 @@
 {% else %}
     {% set tls_label = "No TLS" %}{% set tls_tone = "warning" %}
 {% endif %}
+{% set ingress_class_value = ingress.class if ingress.class not in [None, ''] else 'Not Reported' %}
+{% set normalized_ingress_class = ingress_class_value|lower|trim %}
+{% set ingress_class_tone = 'normal' if normalized_ingress_class == 'nginx' else ('unknown' if normalized_ingress_class == 'not reported' else 'info') %}
 <div class="bg-surface-hover px-4 py-4">
     <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-sm">
         <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -25,22 +28,22 @@
                 </div>
             </div>
             <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-                {{ table_label.metadata_label(ingress.class) }}
-                {{ table_label.status_label(tls_label, tls_tone) }}
+                {{ table_label.status_label(ingress_class_value, ingress_class_tone, none, 'detail') }}
+                {{ table_label.status_label(tls_label, tls_tone, none, 'detail') }}
             </div>
         </header>
-        <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail.detail_card('Object Identity', 'badge-info', ingress.age, class_name='min-h-[30rem]') %}
+        <div class="grid items-stretch gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
+            {% call detail.detail_card('Object Identity', 'badge-info', ingress.age, badge_size='detail') %}
                 {{ detail.detail_row('Cluster', ingress.cluster_name) }}
                 {{ detail.detail_row('Namespace', ingress.namespace) }}
-                {{ detail.detail_row('Ingress Class', ingress.class) }}
+                {{ detail.status_row('Ingress Class', ingress_class_value, ingress_class_tone, none, 'detail') }}
                 {{ detail.detail_row('Generation', ingress.generation) }}
                 {{ detail.detail_row('Kubernetes UID', ingress.uid, true) }}
                 {{ detail.detail_row('Created', ingress.created_at|user_datetime) }}
                 {{ detail.detail_row('Collected', ingress.collected_at|user_datetime) }}
                 <div class="mt-auto pt-3">{{ info_box('Inventory Identity', 'Ingress identity from the latest Kubernetes snapshot.', 'badge-info', 'brand', true) }}</div>
             {% endcall %}
-            {% call detail.detail_card('Exposure', 'globe-2', table_label.count_text(ingress.host_count, 'Host'), class_name='min-h-[32rem]') %}
+            {% call detail.detail_card('Exposure', 'globe-2', table_label.count_text(ingress.host_count, 'Host'), badge_size='detail') %}
                 {{ detail.detail_row('Load Balancer Address', ingress.address, true) }}
                 {{ detail.detail_row('Hosts', ingress.host_count) }}
                 {{ detail.detail_row('Routing Rules', ingress.rule_count) }}
@@ -73,11 +76,10 @@
                     {% else %}
                         {{ detail_object.empty('No Host Declared', 'No published hostname is recorded for this Ingress.', 'globe-2') }}
                     {% endif %}
-                    {{ info_box('Exposure Boundary', 'Addresses appear after the controller publishes status.', 'network', 'brand', true) }}
                 {% endcall %}
             {% endcall %}
-            {% call detail.detail_card('TLS Configuration', 'shield-check', table_label.count_text(ingress.tls_entries|length, 'Entry'), class_name='min-h-[34rem]') %}
-                {{ detail.detail_row('TLS Enabled', 'Yes' if ingress.tls else 'No') }}
+            {% call detail.detail_card('TLS Configuration', 'shield-check', table_label.count_text(ingress.tls_entries|length, 'Entry'), badge_size='detail') %}
+                {{ detail.status_row('TLS Enabled', 'Enabled' if ingress.tls else 'Disabled', 'normal' if ingress.tls else 'warning', none, 'detail') }}
                 {{ detail.detail_row('TLS Entries', ingress.tls_entries|length) }}
                 {{ detail.detail_row('Secret References', ingress.tls_secrets|length) }}
                 {% call detail_object.stack() %}
@@ -104,10 +106,9 @@
                     {% else %}
                         {{ detail_object.empty('No TLS Configuration', 'No TLS Secret reference is configured for this Ingress.', 'shield-off') }}
                     {% endif %}
-                    {{ info_box('TLS Boundary', 'Secret references only; validity remains in TLS Governance.', 'lock-keyhole', 'brand', true) }}
                 {% endcall %}
             {% endcall %}
-            {% call detail.detail_card('Routing Summary', 'git-branch', table_label.count_text(ingress.backend_count, 'Path'), class_name='min-h-[30rem]') %}
+            {% call detail.detail_card('Routing Summary', 'git-branch', table_label.count_text(ingress.backend_count, 'Path'), badge_size='detail') %}
                 {{ detail.detail_row('Rules', ingress.rule_count) }}
                 {{ detail.detail_row('Hosts', ingress.host_count) }}
                 {{ detail.detail_row('Paths', ingress.backend_count) }}
@@ -123,7 +124,6 @@
                     {% else %}
                         {{ detail_object.empty('No Finalizers Configured', 'This Ingress has no recorded finalizer.', 'lock-open') }}
                     {% endif %}
-                    {{ info_box('Routing Boundary', 'Routes show configuration, not traffic or latency.', 'route', 'brand', true) }}
                 {% endcall %}
             {% endcall %}
         </div>
@@ -137,7 +137,7 @@
                             <p class="mt-0.5 text-xs text-content-muted">Declared host, path, path type, backend Service, and port mappings.</p>
                         </div>
                     </div>
-                    {{ table_label.metadata_label(table_label.count_text(ingress.backend_count, 'Route'), 'route') }}
+                    {{ table_label.metadata_label(table_label.count_text(ingress.backend_count, 'Route'), none, false, 'detail') }}
                 </header>
                 {% if ingress.backend_paths %}
                     <div class="overflow-x-auto">
@@ -184,7 +184,11 @@
                     </div>
                     {% if ingress.labels %}
                         <div class="flex max-h-44 flex-wrap gap-1.5 overflow-y-auto pr-1">
-                            {% for key, value in ingress.labels %}{{ table_label.metadata_label(key ~ (('=' ~ value) if value not in [None, ''] else ''), 'tag') }}{% endfor %}
+                            {% for key, value in ingress.labels %}
+                                {% set label_text = key ~ (('=' ~ value) if value not in [None, ''] else '') %}
+                                {% set label_icon = none if key == 'app.kubernetes.io/instance' else 'tag' %}
+                                {{ table_label.metadata_label(label_text, label_icon, false, 'detail') }}
+                            {% endfor %}
                         </div>
                         <div class="mt-4">{{ inventory_tip.tip('Labels describe the Ingress and controller selection context.', 'tags') }}</div>
                     {% else %}
@@ -200,7 +204,7 @@
                                 <p class="mt-0.5 text-xs text-content-muted">Controller and integration annotations displayed as key-value rows.</p>
                             </div>
                         </div>
-                        {{ table_label.metadata_label(table_label.count_text(ingress.annotations|length, 'Annotation'), 'braces') }}
+                        {{ table_label.metadata_label(table_label.count_text(ingress.annotations|length, 'Annotation'), none, false, 'detail') }}
                     </header>
                     {% if ingress.annotations %}
                         <div class="max-h-64 overflow-y-auto">
