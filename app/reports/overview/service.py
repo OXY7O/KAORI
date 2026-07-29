@@ -253,12 +253,21 @@ def get_recent_reports(limit: int = 5) -> list[dict[str, Any]]:
 
 def serialize_recent_report(report: Report) -> dict[str, Any]:
     status = str(report.status or 'requested').lower()
+    report_type_option = next(
+        (
+            option
+            for option in REPORT_TYPE_OPTIONS
+            if str(option.get('value', '')) == str(report.report_type or '')
+        ),
+        {},
+    )
 
     return {
         'id': report.id,
         'name': report.name,
         'report_type': report.report_type,
         'report_type_label': format_report_type(report.report_type),
+        'icon': str(report_type_option.get('icon', 'file-text')),
         'status': status,
         'status_label': format_status_label(status),
         'status_tone': get_status_tone(status),

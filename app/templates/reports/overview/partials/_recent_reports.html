@@ -34,9 +34,17 @@
                     {% for report in payload.recent_reports %}
                         <tr class="transition hover:bg-surface-hover">
                             <td class="px-5 py-4">
-                                <p class="max-w-xs truncate text-sm font-semibold text-content-primary"
-                                   title="{{ report.name }}">{{ report.name }}</p>
-                                <p class="mt-1 text-xs text-content-muted">{{ report.file_size }}</p>
+                                <div class="flex min-w-0 items-start gap-3">
+                                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/20 bg-kaori-soft text-kaori-primary"
+                                          aria-hidden="true">
+                                        <i data-lucide="{{ report.icon|default('file-text') }}" class="h-4 w-4"></i>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <p class="max-w-xs truncate text-sm font-semibold text-content-primary"
+                                           title="{{ report.name }}">{{ report.name }}</p>
+                                        <p class="mt-1 text-xs text-content-muted">{{ report.file_size }}</p>
+                                    </div>
+                                </div>
                             </td>
                             <td class="px-5 py-4 text-sm text-content-secondary">{{ report.scope }}</td>
                             <td class="px-5 py-4 text-sm text-content-secondary">{{ report.report_type_label }}</td>

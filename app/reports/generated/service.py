@@ -4,7 +4,7 @@ from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from flask import abort
+from flask import abort, current_app
 from sqlalchemy import Select, func, or_, select
 
 from app.extensions.db import db
@@ -13,6 +13,7 @@ from app.models.report import Report
 from app.models.user import User
 from app.reports.storage.service import (
     get_configured_storage_backend_name,
+    parse_report_storage_uri,
     report_file_exists,
 )
 
@@ -130,6 +131,7 @@ def get_report_detail_payload(
         cluster_map,
         user_map,
     )
+    artifact_access = report_detail['artifact_access']
 
     return {
         'page_title': 'Report Detail',
@@ -140,10 +142,18 @@ def get_report_detail_payload(
         ),
         'export_readiness': get_report_detail_export_readiness(
             report,
+            artifact_access,
         ),
-        'storage_context': get_storage_context(),
+        'storage_context': get_storage_context(
+            artifact_access,
+        ),
         'recommended_actions': get_report_detail_recommended_actions(
             report,
+            artifact_access,
+        ),
+        'artifact_access_notice': get_report_artifact_access_notice(
+            report,
+            artifact_access,
         ),
     }
 
@@ -588,7 +598,9 @@ def get_lifecycle_status() -> list[dict[str, str]]:
     ]
 
 
-def get_storage_context() -> list[dict[str, str]]:
+def get_storage_context(
+    artifact_access: Mapping[str, Any] | None = None,
+) -> list[dict[str, str]]:
     backend_name = _get_active_storage_backend_name()
     ready_reports = _count_reports_by_status(
         [
@@ -600,7 +612,11 @@ def get_storage_context() -> list[dict[str, str]]:
             'archived',
         ]
     )
-    missing_artifacts = _count_missing_artifacts()
+    missing_artifacts = (
+        _count_missing_artifacts()
+        if artifact_access is None
+        else 0
+    )
 
     storage_tone = 'green'
     storage_status = 'Active'
@@ -609,7 +625,14 @@ def get_storage_context() -> list[dict[str, str]]:
         'Existing records keep their own backend prefix, so mixed local/S3 history remains readable.'
     )
 
-    if missing_artifacts > 0:
+    if artifact_access is not None and not bool(artifact_access.get('reachable', True)):
+        storage_tone = 'amber'
+        storage_status = 'Unavailable'
+        storage_description = (
+            f"KAORI could not reach {artifact_access.get('backend_label', 'Report Storage')} "
+            'to verify this report artifact. The report record remains available for review.'
+        )
+    elif missing_artifacts > 0:
         storage_tone = 'amber'
         storage_status = 'Review needed'
         storage_description = (
@@ -845,13 +868,14 @@ def _serialize_report(
         report.status,
     )
 
-    file_exists = _report_file_exists(
+    artifact_access = _probe_report_file(
         report.file_path,
     )
+    file_exists = bool(artifact_access['exists'])
 
     file_state = _get_file_state(
         report,
-        file_exists,
+        artifact_access,
     )
     storage_location = _parse_storage_location(
         report.file_path,
@@ -910,6 +934,8 @@ def _serialize_report(
         ),
         'file_path': report.file_path or '',
         'file_exists': file_exists,
+        'storage_reachable': bool(artifact_access['reachable']),
+        'artifact_access': artifact_access,
         'file_state': file_state,
         'storage_backend': storage_location['backend'],
         'storage_backend_label': storage_location['backend_label'],
@@ -1160,32 +1186,58 @@ def get_report_detail_status_context(
 
 def get_report_detail_export_readiness(
     report: Report,
+    artifact_access: Mapping[str, Any] | None = None,
 ) -> list[dict[str, str]]:
-    file_exists = _report_file_exists(
-        report.file_path,
-    )
+    access = dict(artifact_access or _probe_report_file(report.file_path))
+    file_exists = bool(access.get('exists'))
+    storage_reachable = bool(access.get('reachable', True))
 
     file_status = 'Not generated'
     file_tone = 'amber'
+    file_description = (
+        'Checks whether the file_path metadata still points to an existing report artifact in configured storage.'
+    )
 
     if report.file_path and file_exists:
         file_status = 'Available'
         file_tone = 'blue'
 
-    if report.file_path and not file_exists:
+    if report.file_path and storage_reachable and not file_exists:
         file_status = 'Missing file'
         file_tone = 'red'
 
+    if report.file_path and not storage_reachable:
+        file_status = 'Storage unavailable'
+        file_tone = 'amber'
+        file_description = (
+            'KAORI could not verify the stored artifact because its storage backend is temporarily unavailable.'
+        )
+
     download_status = 'Waiting'
     download_tone = 'amber'
+    download_description = (
+        'Download is enabled only for Ready reports with an existing generated artifact in configured storage.'
+    )
 
     if report.status in ['ready', 'archived'] and report.file_path and file_exists:
         download_status = 'Ready'
         download_tone = 'green'
 
-    if report.status in ['ready', 'archived'] and report.file_path and not file_exists:
+    if (
+        report.status in ['ready', 'archived']
+        and report.file_path
+        and storage_reachable
+        and not file_exists
+    ):
         download_status = 'Blocked'
         download_tone = 'red'
+
+    if report.status in ['ready', 'archived'] and report.file_path and not storage_reachable:
+        download_status = 'Paused'
+        download_tone = 'amber'
+        download_description = (
+            'Download is paused until KAORI can reach the artifact storage backend and verify the file.'
+        )
 
     renderer_status = 'Available'
     renderer_tone = 'blue'
@@ -1213,13 +1265,13 @@ def get_report_detail_export_readiness(
         },
         {
             'label': 'Generated file',
-            'description': 'Checks whether the file_path metadata still points to an existing report artifact in configured storage.',  # noqa: E501
+            'description': file_description,
             'status': file_status,
             'tone': file_tone,
         },
         {
             'label': 'Download action',
-            'description': 'Download is enabled only for Ready reports with an existing generated artifact in configured storage.',  # noqa: E501
+            'description': download_description,
             'status': download_status,
             'tone': download_tone,
         },
@@ -1228,22 +1280,18 @@ def get_report_detail_export_readiness(
 
 def get_report_detail_recommended_actions(
     report: Report,
+    artifact_access: Mapping[str, Any] | None = None,
 ) -> list[dict[str, str]]:
     storage_href = '/reports/storage'
     generated_href = '/reports/generated'
     generate_href = f'/reports/generate?report_type={report.report_type}'
 
-    file_exists = _report_file_exists(
-        report.file_path,
-    )
+    access = dict(artifact_access or _probe_report_file(report.file_path))
+    file_exists = bool(access.get('exists'))
+    storage_reachable = bool(access.get('reachable', True))
 
     if report.status == 'ready':
         actions = [
-            {
-                'label': 'Download PDF',
-                'description': 'Download the generated PDF when the artifact exists in configured storage.',
-                'href': f'/reports/generated/{report.id}/download' if file_exists else '#file-output',
-            },
             {
                 'label': 'Review artifact metadata',
                 'description': 'Confirm backend, object key, file size, and availability in the Artifact Output section.',  # noqa: E501
@@ -1261,7 +1309,27 @@ def get_report_detail_recommended_actions(
             },
         ]
 
-        if not file_exists:
+        if report.file_path and not storage_reachable:
+            actions.insert(
+                0,
+                {
+                    'label': 'Review Report Storage',
+                    'description': (
+                        'KAORI could not verify this artifact. Restore storage connectivity, run a storage check, and then retry.'
+                    ),
+                    'href': storage_href,
+                },
+            )
+        elif file_exists:
+            actions.insert(
+                0,
+                {
+                    'label': 'Download PDF',
+                    'description': 'Download the verified PDF artifact from configured storage.',
+                    'href': f'/reports/generated/{report.id}/download',
+                },
+            )
+        elif not file_exists:
             actions.insert(
                 0,
                 {
@@ -1732,18 +1800,111 @@ def _count_missing_artifacts() -> int:
 def _report_file_exists(
     file_path: str | None,
 ) -> bool:
-    if not file_path:
-        return False
-
-    return report_file_exists(
-        file_path,
+    return bool(
+        _probe_report_file(
+            file_path,
+        )['exists']
     )
+
+
+def _probe_report_file(
+    file_path: str | None,
+) -> dict[str, Any]:
+    if not file_path:
+        return {
+            'exists': False,
+            'reachable': True,
+            'backend': 'none',
+            'backend_label': 'Report Storage',
+            'state': 'not_generated',
+        }
+
+    backend_name = 'unknown'
+
+    try:
+        backend_name, _object_key = parse_report_storage_uri(
+            file_path,
+        )
+        file_exists = report_file_exists(
+            file_path,
+        )
+    except Exception:  # External storage failures must not break report detail rendering.
+        current_app.logger.warning(
+            'Unable to verify generated report artifact in storage backend.',
+            exc_info=True,
+        )
+        return {
+            'exists': False,
+            'reachable': False,
+            'backend': backend_name,
+            'backend_label': _format_storage_backend_label(backend_name),
+            'state': 'unavailable',
+        }
+
+    return {
+        'exists': bool(file_exists),
+        'reachable': True,
+        'backend': backend_name,
+        'backend_label': _format_storage_backend_label(backend_name),
+        'state': 'available' if file_exists else 'missing',
+    }
+
+
+def _format_storage_backend_label(
+    backend_name: str,
+) -> str:
+    normalized_backend = str(backend_name or '').lower().strip()
+
+    if normalized_backend == 's3':
+        return 'S3-Compatible Storage'
+
+    if normalized_backend == 'local':
+        return 'Local Storage'
+
+    return 'Report Storage'
+
+
+def get_report_artifact_access_notice(
+    report: Report,
+    artifact_access: Mapping[str, Any],
+) -> dict[str, str] | None:
+    if not report.file_path or bool(artifact_access.get('reachable', True)):
+        return None
+
+    backend_label = str(
+        artifact_access.get('backend_label')
+        or 'Report Storage'
+    )
+
+    return {
+        'title': 'Artifact Storage Is Temporarily Unavailable',
+        'description': (
+            f'KAORI loaded the report record, but could not verify its artifact in {backend_label}. '
+            'Download is paused to avoid a failed request. Restore storage connectivity or review Reports Storage, then retry.'
+        ),
+        'action_label': 'Review Report Storage',
+        'action_href': '/reports/storage',
+        'icon': 'cloud-off',
+    }
 
 
 def _get_file_state(
     report: Report,
-    file_exists: bool,
+    artifact_access: Mapping[str, Any],
 ) -> dict[str, str]:
+    file_exists = bool(artifact_access.get('exists'))
+    storage_reachable = bool(artifact_access.get('reachable', True))
+
+    if report.file_path and not storage_reachable:
+        return {
+            'label': 'Storage unavailable',
+            'description': (
+                'KAORI could not verify this report artifact because its storage backend is temporarily unavailable.'
+            ),
+            'tone': 'amber',
+            'icon': 'cloud-off',
+        }
+
     if report.status == 'ready' and report.file_path and file_exists:
         return {
             'label': 'Available',

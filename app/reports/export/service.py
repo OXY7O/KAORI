@@ -209,14 +209,25 @@ def get_download_file_path(
     if not report.file_path:
         return False, 'Report file path is not available.', None
 
-    if not report_file_exists(
-        report.file_path,
-    ):
-        return False, 'Report file does not exist in configured storage.', None
+    try:
+        if not report_file_exists(
+            report.file_path,
+        ):
+            return False, 'Report file does not exist in configured storage.', None
 
-    file_path = build_report_download_path(
-        report.file_path,
-    )
+        file_path = build_report_download_path(
+            report.file_path,
+        )
+    except Exception:  # External storage errors are converted to user-facing feedback.
+        current_app.logger.warning(
+            'Unable to access report artifact for download.',
+            exc_info=True,
+        )
+        return (
+            False,
+            'Report storage is temporarily unavailable. Restore storage connectivity and try again.',
+            None,
+        )
 
     if not file_path.exists():
         return False, 'Report file is not available for download.', None

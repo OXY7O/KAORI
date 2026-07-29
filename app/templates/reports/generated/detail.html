@@ -31,6 +31,9 @@
                             {% if payload.report.can_download_pdf %}
                                 <a href="{{ url_for('reports.download_report_pdf', report_id=payload.report.id) }}"
                                    class="{{ page_hero.context_action_classes() }}"><i data-lucide="download" class="h-4 w-4"></i>Download PDF</a>
+                            {% elif payload.artifact_access_notice %}
+                                <a href="{{ payload.artifact_access_notice.action_href }}"
+                                   class="{{ page_hero.context_action_classes() }}"><i data-lucide="hard-drive" class="h-4 w-4"></i>Review Storage</a>
                             {% elif payload.report.can_generate_pdf %}
                                 <form method="POST"
                                       action="{{ url_for('reports.generate_report_pdf', report_id=payload.report.id) }}">
@@ -86,7 +89,30 @@
                 </div>
             </section>
         {% endif %}
-        {% if payload.report.raw_status == 'ready' and payload.report.file_path and not payload.report.file_exists %}
+        {% if payload.artifact_access_notice %}
+            <section class="rounded-2xl border border-status-warning-border bg-status-warning-soft p-5 shadow-sm"
+                     role="status"
+                     aria-labelledby="artifact-storage-unavailable-title">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-status-warning-border bg-surface-card text-status-warning-text"
+                              aria-hidden="true">
+                            <i data-lucide="{{ payload.artifact_access_notice.icon }}" class="h-5 w-5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 id="artifact-storage-unavailable-title"
+                                class="text-sm font-semibold text-status-warning-text">{{ payload.artifact_access_notice.title }}</h2>
+                            <p class="mt-1 text-sm leading-6 text-content-secondary">{{ payload.artifact_access_notice.description }}</p>
+                        </div>
+                    </div>
+                    <a href="{{ payload.artifact_access_notice.action_href }}"
+                       class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-status-warning-border bg-surface-card px-3 text-xs font-semibold text-status-warning-text transition hover:bg-status-warning-soft">
+                        <i data-lucide="settings-2" class="h-4 w-4" aria-hidden="true"></i>
+                        {{ payload.artifact_access_notice.action_label }}
+                    </a>
+                </div>
+            </section>
+        {% elif payload.report.raw_status == 'ready' and payload.report.file_path and not payload.report.file_exists %}
             <section class="rounded-2xl border border-rose-200 bg-rose-50 p-5 shadow-sm dark:border-rose-900 dark:bg-rose-950/40">
                 <div class="flex items-start gap-3">
                     <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-rose-600 shadow-sm dark:bg-rose-950 dark:text-rose-300">
