@@ -78,7 +78,6 @@
                     {% else %}
                         {{ detail_object.empty('No Placement Constraints', 'No selector, toleration, affinity, or topology spread rule is configured.', 'map-pinned') }}
                     {% endif %}
-                    {{ inventory_tip.tip('Placement rules guide scheduling; actual placement is shown in Pod inventory.', 'map-pin') }}
                 {% endcall %}
             {% endcall %}
         </div>
