@@ -62,7 +62,7 @@
             {% call detail.detail_card('Object Identity', 'badge-info', workload.age, class_name='min-h-96', badge_size='detail') %}
                 {{ detail.detail_row('Cluster', workload.cluster_name) }}
                 {{ detail.detail_row('Namespace', workload.namespace) }}
-                {{ detail.metadata_row('Kind', workload.type, 'boxes') }}
+                {{ detail.metadata_row('Kind', workload.type) }}
                 {{ detail.detail_row('Age', workload.age) }}
                 {{ detail.detail_row('Kubernetes UID', workload.uid, true) }}
                 {{ detail.detail_row('Created', workload.created_at|user_datetime) }}
@@ -109,7 +109,16 @@
                             {% for row in workload.placement_summary_rows %}{{ detail_object.row(row.label, row.value) }}{% endfor %}
                             {% if workload.node_selectors %}
                                 <div class="flex flex-wrap gap-1.5 pt-1">
-                                    {% for selector in workload.node_selectors %}{{ table_label.metadata_label(selector, none, false, 'detail') }}{% endfor %}
+                                    {% for selector in workload.node_selectors %}
+                                        {% set normalized_selector = selector|default('', true)|lower|replace(' ', '') %}
+                                        {% if normalized_selector in ['kubernetes.io/os=linux', 'beta.kubernetes.io/os=linux'] %}
+                                            {{ table_label.status_label(selector, 'normal', none, 'detail') }}
+                                        {% elif normalized_selector in ['kubernetes.io/os=windows', 'beta.kubernetes.io/os=windows'] %}
+                                            {{ table_label.status_label(selector, 'info', none, 'detail') }}
+                                        {% else %}
+                                            {{ table_label.metadata_label(selector, none, false, 'detail') }}
+                                        {% endif %}
+                                    {% endfor %}
                                 </div>
                             {% endif %}
                         {% endcall %}
@@ -146,7 +155,7 @@
                                 {% for container in workload.containers %}
                                     <tr>
                                         <td class="px-4 py-3 font-semibold text-content-primary">{{ container.name }}</td>
-                                        <td class="px-4 py-3">{{ table_label.metadata_label(container.kind, 'container', false, 'detail') }}</td>
+                                        <td class="px-4 py-3">{{ table_label.metadata_label(container.kind, none, false, 'detail') }}</td>
                                         <td class="max-w-[680px] break-all px-4 py-3 font-medium text-content-secondary">{{ container.image }}</td>
                                         <td class="px-4 py-3">
                                             {% set normalized_pull_policy = container.pull_policy|default('', true)|lower|replace('_', '')|replace('-', '')|replace(' ', '') %}
