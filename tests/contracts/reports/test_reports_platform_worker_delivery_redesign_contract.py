@@ -30,11 +30,14 @@ def test_reporting_capability_explains_types_and_readiness() -> None:
 
     assert 'Reporting Capability' in workspace
     assert '\n                    Types\n' in workspace
-    assert '\n                    Readiness\n' in workspace
-    assert 'Shows the reports KAORI can generate from connected data sources.' in workspace
-    assert 'Shows whether collection, generation, storage, and delivery can complete.' in workspace
+    assert '\n                    Pipeline\n' in workspace
+    assert 'Browse report contracts currently supported by connected and validated data sources.' in workspace
+    assert 'Follow request creation, PDF execution, artifact storage, and optional Telegram delivery.' in workspace
     assert 'output supported by the currently connected and validated data sources' in coverage
-    assert 'before generating or scheduling a report' in pipeline
+    assert 'Manual flow:' in pipeline
+    assert 'Scheduled flow:' in pipeline
+    assert 'text-sm font-semibold leading-5 text-content-primary' in workspace
+    assert 'text-xs leading-5 text-content-muted' in workspace
     assert 'Expand one domain at a time' not in workspace + coverage + pipeline
 
 
@@ -110,6 +113,11 @@ def test_report_delivery_is_telegram_first_and_channel_extensible() -> None:
     assert 'Delivery Channels' in schedule_template
     assert 'notification_channels' in schedule_template
     assert 'Delivery:' in schedule_template
+
+    overview_service = read(ROOT / 'app' / 'reports' / 'overview' / 'service.py')
+    assert "'name': 'Telegram'" in overview_service
+    assert "'status': 'Telegram Ready' if telegram_ready else 'Telegram Setup Required'" in overview_service
+    assert 'Email, webhook, and notification delivery remain planned' not in overview_service
 
 
 def test_report_user_interfaces_do_not_expose_mvp_copy() -> None:

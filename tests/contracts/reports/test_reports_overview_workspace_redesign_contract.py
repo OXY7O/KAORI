@@ -49,7 +49,7 @@ def test_coverage_and_pipeline_use_short_tabs_and_scalable_expandables() -> None
     assert "activateReportWorkspaceTab('pipeline')" in workspace
     assert 'Reporting Capability' in workspace
     assert '\n                    Types\n' in workspace
-    assert '\n                    Readiness\n' in workspace
+    assert '\n                    Pipeline\n' in workspace
     assert 'Report Type Coverage' not in workspace
     assert 'Reporting Pipeline Status' not in workspace
 
@@ -63,7 +63,8 @@ def test_coverage_and_pipeline_use_short_tabs_and_scalable_expandables() -> None
     assert 'openPipelineStage: null' in pipeline
     assert 'openPipelineStage ===' in pipeline
     assert 'x-collapse' in pipeline
-    assert 'lg:grid-cols-2' in pipeline
+    assert 'aria-label="Generate report pipeline stages"' in pipeline
+    assert 'space-y-2' in pipeline
     assert 'overflow-x-auto' not in pipeline
     assert 'min-h-[720px]' not in coverage
 
@@ -93,7 +94,8 @@ def test_infrastructure_collection_covers_ready_available_planned_and_reserved_i
         'Server & VM Inventory',
         'HCI Provider APIs',
         'Vault & Secret Providers',
-        'Email, Webhook & Notifications',
+        'Telegram',
+        'Email, Slack & Webhook',
     ):
         assert label in source
 

@@ -16,7 +16,7 @@ def test_reporting_capability_tabs_are_short_and_accessible() -> None:
     assert 'Reporting Capability' in source
     assert 'aria-label="Reporting capability tabs"' in source
     assert '\n                    Types\n' in source
-    assert '\n                    Readiness\n' in source
+    assert '\n                    Pipeline\n' in source
     assert 'Report Type Coverage' not in source
     assert 'Reporting Pipeline Status' not in source
 
@@ -40,6 +40,7 @@ def test_pipeline_uses_compact_expandable_stage_rows() -> None:
     assert '@click="openPipelineStage = openPipelineStage ===' in source
     assert ':aria-expanded="openPipelineStage ===' in source
     assert 'x-collapse' in source
-    assert 'lg:grid-cols-2' in source
+    assert 'aria-label="Generate report pipeline stages"' in source
+    assert 'space-y-2' in source
     assert 'overflow-x-auto' not in source
     assert 'w-64 shrink-0' not in source

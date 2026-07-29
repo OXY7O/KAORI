@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 
 from app.extensions.db import db
 from app.models.report import Report, ReportSchedule, ReportTemplate
+from app.reports.delivery.service import get_delivery_channel_catalog
 from app.reports.export.constants import (
     DEFAULT_REPORT_DOMAIN,
     DEFAULT_REPORT_SOURCE_KIND,
@@ -123,14 +124,12 @@ HCI_REPORT_TYPE_COVERAGE = [
 ]
 
 
-SCHEDULE_STATUS = 'Ready'
-
-
 def get_reports_overview_payload() -> dict[str, Any]:
     report_counts = get_report_counts()
     storage_context = get_storage_context()
     report_type_coverage = get_report_type_coverage()
-    pipeline_status = get_pipeline_status(storage_context)
+    telegram_delivery = get_telegram_delivery_context()
+    pipeline_status = get_pipeline_status(storage_context, telegram_delivery)
     current_status = get_current_status(report_counts, storage_context, report_type_coverage)
 
     return {
@@ -146,13 +145,13 @@ def get_reports_overview_payload() -> dict[str, Any]:
         'report_architecture_context': get_report_architecture_context(),
         'pipeline_status': pipeline_status,
         'pipeline_summary': get_pipeline_summary(pipeline_status),
-        'reporting_context': get_reporting_context(storage_context),
+        'reporting_context': get_reporting_context(storage_context, telegram_delivery),
         'current_status': current_status,
         'current_status_summary': get_current_status_summary(current_status),
         'reporting_operating_model': get_reporting_operating_model(
-            report_counts, storage_context, report_type_coverage
+            report_counts, storage_context, report_type_coverage, telegram_delivery
         ),
-        'data_collection_status': get_data_collection_status(storage_context),
+        'data_collection_status': get_data_collection_status(storage_context, telegram_delivery),
         'related_information': get_related_information(),
         'storage_context': storage_context,
     }
@@ -404,66 +403,101 @@ def get_report_type_summary(report_type_coverage: dict[str, Any]) -> dict[str, s
     }
 
 
-def get_pipeline_status(storage_context: dict[str, Any]) -> list[dict[str, str]]:
+def get_telegram_delivery_context() -> dict[str, Any]:
+    telegram = next(
+        (item for item in get_delivery_channel_catalog() if item.get('value') == 'telegram'),
+        None,
+    )
+    if telegram is None:
+        return {
+            'label': 'Telegram',
+            'status': 'Unavailable',
+            'tone': 'unknown',
+            'ready': False,
+            'description': 'Telegram delivery is not registered.',
+        }
+
+    return {
+        'label': str(telegram.get('label', 'Telegram')),
+        'status': str(telegram.get('status', 'Configuration Required')),
+        'tone': str(telegram.get('tone', 'warning')),
+        'ready': str(telegram.get('status', '')).strip().lower() == 'ready',
+        'description': str(telegram.get('description', 'Telegram report delivery.')),
+    }
+
+
+def get_pipeline_status(
+    storage_context: dict[str, Any],
+    telegram_delivery: dict[str, Any] | None = None,
+) -> list[dict[str, str]]:
     storage_tone = 'normal' if str(storage_context.get('tone')) == 'green' else 'warning'
+    telegram = telegram_delivery or get_telegram_delivery_context()
+    telegram_ready = bool(telegram.get('ready'))
 
     return [
         {
-            'name': 'Source Collection',
+            'name': 'Configure Report',
+            'summary': 'Choose the report type, scope, period, sections, and PDF output.',
             'description': (
-                'Connected infrastructure integrations provide inventory, metrics, alerts, '
-                'and source metadata.'
+                'The Generate Report form validates the selected report contract, required cluster scope, '
+                'section selection, and active artifact storage before a request is created.'
             ),
             'status': 'Ready',
             'tone': 'normal',
-            'icon': 'database-zap',
+            'icon': 'sliders-horizontal',
         },
         {
-            'name': 'Scope & Template Contract',
+            'name': 'Create Report Request',
+            'summary': 'KAORI saves the report definition with Requested status.',
             'description': (
-                'The request stores audience, scope, report type, selected sections, output format, '
-                'and owner context.'
+                'Submitting Generate Report persists the request. Manual reports continue from Generated Reports, '
+                'while scheduled runs create the same request automatically.'
             ),
             'status': 'Ready',
             'tone': 'normal',
-            'icon': 'layout-template',
+            'icon': 'clipboard-plus',
         },
         {
-            'name': 'Report Generation',
+            'name': 'Start Generation',
+            'summary': 'A manual action or the Reports worker starts PDF generation.',
             'description': (
-                'The export engine builds a standalone PDF with reader guidance, metadata, evidence, '
-                'and selected sections.'
+                'Manual requests are started with Generate PDF from Generated Reports. Scheduled requests are '
+                'started by the dedicated Reports worker through the canonical job execution flow.'
             ),
             'status': 'Ready',
             'tone': 'normal',
-            'icon': 'file-check-2',
+            'icon': 'play-circle',
         },
         {
-            'name': 'Artifact Storage',
+            'name': 'Collect Data & Render PDF',
+            'summary': 'Connected evidence is collected and rendered by the canonical PDF engine.',
+            'description': (
+                'KAORI collects the selected report payloads from validated integrations, builds the chosen '
+                'sections, and renders one standalone PDF artifact.'
+            ),
+            'status': 'Ready',
+            'tone': 'normal',
+            'icon': 'file-cog',
+        },
+        {
+            'name': 'Store Artifact',
+            'summary': 'The PDF is saved to the active Local or S3-compatible backend.',
             'description': str(storage_context.get('description', 'Report storage backend status is unavailable.')),
             'status': str(storage_context.get('display_status', 'Storage Review')),
             'tone': storage_tone,
             'icon': 'hard-drive',
         },
         {
-            'name': 'Schedule Automation',
+            'name': 'Complete & Optional Delivery',
+            'summary': 'The report becomes Ready; scheduled reports can notify Telegram.',
             'description': (
-                'Recurring generation is available through saved schedules, Run Now, '
-                'and the schedule worker.'
+                'After storage succeeds, KAORI records the artifact metadata and marks the report Ready. '
+                'When a schedule selects Telegram, KAORI sends a notification and report detail link. '
+                'Manual reports remain available from Generated Reports.'
             ),
-            'status': SCHEDULE_STATUS,
-            'tone': 'normal',
-            'icon': 'calendar-clock',
-        },
-        {
-            'name': 'Delivery Channels',
-            'description': (
-                'Email, webhook, and notification delivery remain planned channel integrations '
-                'over generated artifacts.'
-            ),
-            'status': 'Planned',
-            'tone': 'info',
-            'icon': 'send-horizontal',
+            'status': 'Telegram Ready' if telegram_ready else 'Telegram Setup Required',
+            'tone': 'normal' if telegram_ready else 'warning',
+            'icon': 'send',
         },
     ]
 
@@ -480,7 +514,11 @@ def get_pipeline_summary(pipeline_status: list[dict[str, str]]) -> dict[str, int
     }
 
 
-def get_reporting_context(storage_context: dict[str, Any]) -> list[dict[str, Any]]:
+def get_reporting_context(
+    storage_context: dict[str, Any],
+    telegram_delivery: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    telegram = telegram_delivery or get_telegram_delivery_context()
     return [
         {
             'title': 'Integration-Driven Coverage',
@@ -521,8 +559,9 @@ def get_reporting_context(storage_context: dict[str, Any]) -> list[dict[str, Any
         {
             'title': 'Automation & Delivery',
             'description': (
-                'Manual generation and recurring schedules are available now; notification and webhook '
-                'channels can be added as separate delivery integrations.'
+                f'Manual generation and recurring schedules are available now. Telegram delivery is '
+                f'{str(telegram.get("status", "Configuration Required")).lower()}; email, Slack, and webhook '
+                'remain unconnected channels.'
             ),
             'icon': 'workflow',
             'detail': (
@@ -612,8 +651,10 @@ def get_reporting_operating_model(
     report_counts: dict[str, int],
     storage_context: dict[str, Any],
     report_type_coverage: dict[str, Any],
+    telegram_delivery: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     type_summary = get_report_type_summary(report_type_coverage)
+    telegram = telegram_delivery or get_telegram_delivery_context()
     return {
         'title': 'Reporting Operating Model',
         'description': 'How KAORI composes, governs, stores, and automates infrastructure reports.',
@@ -650,19 +691,24 @@ def get_reporting_operating_model(
             },
             {
                 'label': 'Automate and Deliver',
-                'value': str(report_counts['active_schedules']),
+                'value': str(telegram.get('status', 'Configuration Required')),
                 'description': (
-                    'Schedules are available now; email, webhook, and notification channels '
-                    'remain planned integrations.'
+                    f'{report_counts["active_schedules"]} active schedules can generate reports automatically. '
+                    'Telegram delivery is implemented for scheduled report notifications; email, Slack, and '
+                    'webhook remain unconnected.'
                 ),
                 'icon': 'send-horizontal',
-                'tone': 'info',
+                'tone': 'normal' if bool(telegram.get('ready')) else 'warning',
             },
         ],
     }
 
 
-def get_data_collection_status(storage_context: dict[str, Any]) -> list[dict[str, Any]]:
+def get_data_collection_status(
+    storage_context: dict[str, Any],
+    telegram_delivery: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
+    telegram = telegram_delivery or get_telegram_delivery_context()
     s3_context = storage_context.get('s3', {})
     s3_selected = storage_context.get('backend') == 's3'
     custom_endpoint = bool(s3_context.get('endpoint_url')) and s3_context.get('endpoint_url') != 'AWS default endpoint'
@@ -770,16 +816,28 @@ def get_data_collection_status(storage_context: dict[str, Any]) -> list[dict[str
             ),
         },
         {
+            'stage': 'ready' if bool(telegram.get('ready')) else 'available',
+            'stage_label': 'Ready Now' if bool(telegram.get('ready')) else 'Available to Configure',
+            'name': 'Telegram',
+            'category': 'Delivery Channel',
+            'status': str(telegram.get('status', 'Configuration Required')),
+            'tone': 'normal' if bool(telegram.get('ready')) else 'warning',
+            'icon': 'send',
+            'description': (
+                'Implemented delivery channel for scheduled report notifications and report detail links. '
+                'Bot token and chat ID configuration determine runtime readiness.'
+            ),
+        },
+        {
             'stage': 'planned',
             'stage_label': 'Planned',
-            'name': 'Email, Webhook & Notifications',
+            'name': 'Email, Slack & Webhook',
             'category': 'Delivery Channel',
-            'status': 'Planned',
+            'status': 'Not Connected',
             'tone': 'info',
             'icon': 'send-horizontal',
             'description': (
-                'Delivery integrations for distributing completed reports after artifact '
-                'generation succeeds.'
+                'Additional delivery adapters can extend the same post-generation delivery contract.'
             ),
         },
     ]

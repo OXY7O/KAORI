@@ -1,53 +1,58 @@
 <div class="space-y-4 p-5 sm:p-6" x-data="{ openPipelineStage: null }">
     <div class="grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-3">
         <div class="bg-surface-card px-4 py-3">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Ready Stages</p>
-            <p class="mt-1.5 text-xl font-semibold text-content-primary">{{ payload.pipeline_summary.ready }}</p>
+            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Entry Modes</p>
+            <p class="mt-1.5 text-sm font-semibold leading-6 text-content-primary">Manual + Scheduled</p>
         </div>
         <div class="bg-surface-card px-4 py-3">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Needs Review</p>
-            <p class="mt-1.5 text-xl font-semibold text-content-primary">{{ payload.pipeline_summary.review }}</p>
+            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Primary Output</p>
+            <p class="mt-1.5 text-sm font-semibold leading-6 text-content-primary">PDF Artifact</p>
         </div>
         <div class="bg-surface-card px-4 py-3">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Planned Stages</p>
-            <p class="mt-1.5 text-xl font-semibold text-content-primary">{{ payload.pipeline_summary.planned }}</p>
+            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Delivery Channel</p>
+            <p class="mt-1.5 text-sm font-semibold leading-6 text-content-primary">Telegram</p>
         </div>
     </div>
 
-    <div class="grid gap-2 lg:grid-cols-2" aria-label="Reporting pipeline stages">
+    <div class="space-y-2" aria-label="Generate report pipeline stages">
         {% for item in payload.pipeline_status %}
-            <article class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+            <article class="relative overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
                 <button type="button"
-                        class="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-surface-hover"
+                        class="flex w-full items-start gap-3 px-4 py-3.5 text-left transition hover:bg-surface-hover"
                         @click="openPipelineStage = openPipelineStage === {{ loop.index0 }} ? null : {{ loop.index0 }}"
                         :aria-expanded="openPipelineStage === {{ loop.index0 }}"
                         aria-controls="report-pipeline-stage-{{ loop.index0 }}">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-primary text-xs font-semibold text-white"
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-primary text-xs font-semibold text-white"
                           aria-hidden="true">{{ loop.index }}</span>
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                           aria-hidden="true">
                         <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
                     </span>
-                    <span class="min-w-0 flex-1 text-sm font-semibold text-content-primary">{{ item.name }}</span>
-                    {{ table_label.status_label(item.status, item.tone, none, 'detail') }}
-                    <i data-lucide="chevron-down"
-                       class="h-4 w-4 shrink-0 text-content-muted transition-transform"
-                       :class="{ 'rotate-180': openPipelineStage === {{ loop.index0 }} }"
-                       aria-hidden="true"></i>
+                    <span class="min-w-0 flex-1">
+                        <span class="block text-sm font-semibold leading-5 text-content-primary">{{ item.name }}</span>
+                        <span class="mt-1 block text-xs leading-5 text-content-muted">{{ item.summary|default(item.description) }}</span>
+                    </span>
+                    <span class="flex shrink-0 items-center gap-2 pt-0.5">
+                        {{ table_label.status_label(item.status, item.tone, none, 'detail') }}
+                        <i data-lucide="chevron-down"
+                           class="h-4 w-4 shrink-0 text-content-muted transition-transform"
+                           :class="{ 'rotate-180': openPipelineStage === {{ loop.index0 }} }"
+                           aria-hidden="true"></i>
+                    </span>
                 </button>
                 <div id="report-pipeline-stage-{{ loop.index0 }}"
                      x-show="openPipelineStage === {{ loop.index0 }}"
                      x-collapse
                      x-cloak
-                     class="border-t border-outline-subtle bg-surface-hover px-4 py-3">
+                     class="border-t border-outline-subtle bg-surface-hover px-4 py-3 sm:pl-[6.75rem]">
                     <p class="text-xs leading-5 text-content-secondary">{{ item.description }}</p>
                 </div>
             </article>
         {% endfor %}
     </div>
 
-    <div class="flex items-start gap-2 rounded-lg border border-outline-subtle bg-surface-hover px-3 py-2.5 text-xs leading-5 text-content-secondary">
+    <div class="flex items-start gap-2 rounded-lg border border-kaori-primary/20 bg-kaori-soft px-3 py-2.5 text-xs leading-5 text-content-secondary">
         <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
-        <p>Use Readiness to find the stage that needs attention before generating or scheduling a report.</p>
+        <p><span class="font-semibold text-content-primary">Manual flow:</span> Generate Report creates a Requested record, then Generate PDF is started from Generated Reports. <span class="font-semibold text-content-primary">Scheduled flow:</span> the Reports worker creates and generates the report automatically, then sends Telegram when selected and configured.</p>
     </div>
 </div>
