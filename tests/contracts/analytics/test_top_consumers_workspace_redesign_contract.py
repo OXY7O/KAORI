@@ -66,14 +66,18 @@ def test_recommendations_use_operational_rows_and_semantic_labels() -> None:
     assert '<details' not in section
 
 
-def test_summary_uses_compact_metric_header_and_bounded_identity_panel() -> None:
+def test_summary_uses_compact_metric_header_and_stacked_identity_rows() -> None:
     summary = _read('partials/_summary.html')
 
     assert 'px-5 py-3.5' in summary
     assert 'text-xl font-semibold tabular-nums' in summary
     assert "card.label.split(' / ', 1)" in summary
     assert 'border-t border-outline-subtle pt-2.5' in summary
-    assert 'max-w-[38%] shrink-0 truncate' in summary
-    assert 'min-w-0 truncate font-semibold' in summary
+    assert '>Namespace</dt>' in summary
+    assert '>Pod</dt>' in summary
+    assert '>Resource</span>' in summary
+    assert 'grid-cols-[4.75rem_minmax(0,1fr)]' in summary
+    assert 'max-w-[38%] shrink-0 truncate' not in summary
+    assert 'shrink-0 text-content-faint">/</span>' not in summary
     assert 'line-clamp-2 min-h-10' not in summary
     assert 'rounded-lg border border-outline-subtle bg-surface-subtle' not in summary
