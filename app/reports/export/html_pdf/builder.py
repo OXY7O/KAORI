@@ -6,6 +6,7 @@ from typing import Any
 
 from app.reports.export.constants import (
     DEFAULT_RECOMMENDATIONS,
+    KUBERNETES_INVENTORY_REPORT_TYPES,
     REPORT_DOMAIN_LABELS,
     REPORT_TYPE_DESCRIPTIONS,
     REPORT_TYPE_LABELS,
@@ -29,6 +30,7 @@ from app.reports.export.html_pdf.normalization import (
     metrics_from_mapping,
     sanitize_error_message,
     sanitize_text,
+    table_from_rows,
     tables_from_value,
     tone_from_value,
 )
@@ -76,6 +78,9 @@ _SECTION_SOURCE_PATHS: dict[str, tuple[str, ...]] = {
     'incident_readiness': ('incident_readiness',),
     'anomaly_context': ('anomalies',),
     'affected_resources': ('alerts', 'anomalies'),
+    'inventory_summary': ('inventory_summary', 'summary'),
+    'inventory_distribution': ('inventory_distribution',),
+    'inventory_assets': ('inventory_assets',),
 }
 
 _SECTION_DESCRIPTIONS: dict[str, str] = {
@@ -88,6 +93,9 @@ _SECTION_DESCRIPTIONS: dict[str, str] = {
     'forecast_summary': 'Projected resource growth, threshold exposure, and forecast confidence for the selected horizon.',
     'alert_severity_summary': 'Distribution of active alert signals by operational severity.',
     'source_health': 'Connectivity and readiness posture of the alert and analytics source integrations.',
+    'inventory_summary': 'Current asset totals, selected scope, status coverage, and committed snapshot time.',
+    'inventory_distribution': 'Distribution of the selected asset type across clusters, statuses, and Kubernetes classifications.',
+    'inventory_assets': 'Asset-level records from the latest committed Kubernetes inventory snapshot.',
 }
 
 
@@ -154,7 +162,7 @@ def build_report_document(
         source_kind_label=SOURCE_KIND_LABELS.get(getattr(report, 'source_kind', ''), 'Kubernetes'),
         cluster_scope=cluster_scope,
         namespace_scope=namespace_scope,
-        period_label=format_period(getattr(report, 'period', '30d')),
+        period_label=_report_period_label(report),
         generated_at=generated_at.strftime('%d %b %Y %H:%M UTC'),
         data_cutoff=_derive_data_cutoff(payload, generated_at),
         generated_by=sanitize_text(generated_by),
@@ -211,7 +219,20 @@ def _build_section(report: Any, payload: Mapping[str, Any], section_key: str, nu
         ]
 
     metrics = metrics_from_mapping(value) if isinstance(value, Mapping) else ()
-    tables = tables_from_value(title, value)
+    if section_key == 'inventory_assets' and isinstance(value, Sequence) and not isinstance(
+        value,
+        (str, bytes, bytearray),
+    ):
+        inventory_table = table_from_rows(
+            title,
+            value,
+            max_rows=500,
+            max_columns=7,
+            note='Asset records from the latest committed inventory snapshot.',
+        )
+        tables = (inventory_table,) if inventory_table is not None else ()
+    else:
+        tables = tables_from_value(title, value)
     findings = findings_from_value(value) if not tables or section_key in {'risk_overview', 'capacity_pressure_risk', 'governance_findings', 'resource_hotspots'} else ()
 
     chart_svg = ''
@@ -255,7 +276,7 @@ def _build_executive_summary(report: Any, payload: Mapping[str, Any], number: in
     metrics: list[ReportMetric] = [
         ReportMetric('Cluster Scope', _cluster_scope(report, payload), tone='info'),
         ReportMetric('Namespace Scope', sanitize_text(getattr(report, 'namespace', None), fallback='All Namespaces')),
-        ReportMetric('Reporting Period', format_period(getattr(report, 'period', '30d'))),
+        ReportMetric('Reporting Period', _report_period_label(report)),
     ]
 
     cluster = payload.get('cluster') or payload.get('selected_cluster')
@@ -264,7 +285,7 @@ def _build_executive_summary(report: Any, payload: Mapping[str, Any], number: in
         if environment:
             metrics.append(ReportMetric('Environment', sanitize_text(environment), tone='info'))
 
-    for status_key in ('prometheus_status', 'source_status', 'integration_status'):
+    for status_key in ('inventory_status', 'prometheus_status', 'source_status', 'integration_status'):
         status = payload.get(status_key)
         if isinstance(status, Mapping):
             label = status.get('label') or status.get('status_label') or status.get('status')
@@ -348,6 +369,12 @@ def _build_error_section(payload: Mapping[str, Any], *, number: int) -> ReportSe
     )
 
 
+def _report_period_label(report: Any) -> str:
+    if getattr(report, 'report_type', '') in KUBERNETES_INVENTORY_REPORT_TYPES:
+        return 'Current Inventory Snapshot'
+    return format_period(getattr(report, 'period', '30d'))
+
+
 def _cluster_scope(report: Any, payload: Mapping[str, Any]) -> str:
     cluster = payload.get('cluster') or payload.get('selected_cluster')
     if isinstance(cluster, Mapping):
@@ -375,6 +402,7 @@ def _build_source_metrics(report: Any, payload: Mapping[str, Any]) -> tuple[Repo
     ]
 
     for label, key in (
+        ('Inventory', 'inventory_status'),
         ('Prometheus', 'prometheus_status'),
         ('Alert Source', 'source_status'),
         ('Integration', 'integration_status'),

@@ -46,6 +46,13 @@ REPORT_TYPE_LABELS = {
     'resource_forecast': 'Resource Forecast',
     'top_consumers': 'Top Consumers',
     'alerts_anomalies': 'Alerts & Anomalies',
+    'node_inventory': 'Node Inventory',
+    'namespace_inventory': 'Namespace Inventory',
+    'workload_inventory': 'Workload Inventory',
+    'pod_inventory': 'Pod Inventory',
+    'service_inventory': 'Service Inventory',
+    'ingress_inventory': 'Ingress Inventory',
+    'storage_inventory': 'Storage Inventory',
 }
 
 REPORT_TYPE_DESCRIPTIONS = {
@@ -76,6 +83,27 @@ REPORT_TYPE_DESCRIPTIONS = {
     'alerts_anomalies': (
         'Alert and anomaly report focused on active alert state, severity distribution, '
         'affected resources, and operational response context.'
+    ),
+    'node_inventory': (
+        'Current Kubernetes node asset register covering role, readiness, platform capacity, runtime, and addressing.'
+    ),
+    'namespace_inventory': (
+        'Current Kubernetes namespace asset register covering lifecycle status, controls, and service account posture.'
+    ),
+    'workload_inventory': (
+        'Current Kubernetes workload asset register covering workload kind, readiness, runtime status, and strategy.'
+    ),
+    'pod_inventory': (
+        'Current Kubernetes pod asset register covering phase, readiness, node placement, and restart count.'
+    ),
+    'service_inventory': (
+        'Current Kubernetes service asset register covering service type, ports, addresses, and network exposure.'
+    ),
+    'ingress_inventory': (
+        'Current Kubernetes ingress asset register covering class, host, address, backend exposure, and TLS posture.'
+    ),
+    'storage_inventory': (
+        'Current Kubernetes storage asset register covering StorageClasses, persistent volumes, claims, capacity, and state.'
     ),
 }
 
@@ -127,6 +155,9 @@ SECTION_LABELS = {
     'incident_readiness': 'Incident Readiness',
     'anomaly_context': 'Anomaly Context',
     'affected_resources': 'Affected Resources',
+    'inventory_summary': 'Inventory Summary',
+    'inventory_distribution': 'Asset Distribution',
+    'inventory_assets': 'Asset Inventory',
 }
 
 SECTION_DESCRIPTIONS = {
@@ -196,6 +227,15 @@ SECTION_DESCRIPTIONS = {
     ),
     'anomaly_context': ('Prepared section for anomaly signals, unusual behavior, and correlation context.'),
     'affected_resources': ('Prepared section for resources affected by alerts, anomalies, or capacity risk.'),
+    'inventory_summary': (
+        'Summarizes current asset totals, selected scope, status coverage, and the committed inventory collection time.'
+    ),
+    'inventory_distribution': (
+        'Groups the selected asset type by cluster, operational status, and Kubernetes resource classification.'
+    ),
+    'inventory_assets': (
+        'Lists asset-level records from the latest committed Kubernetes inventory snapshot for the selected scope.'
+    ),
     'operational_recommendations': (
         'Provides operational recommendations. For supported report types, recommendations are derived from real findings, risk signals, and utilization/capacity pressure instead of static cards only.'  # noqa: E501
     ),
@@ -242,6 +282,41 @@ REPORT_TYPE_RECOMMENDATIONS = {
         'Review repeated anomalies for recurring platform or application issues.',
         'Confirm runbook, contact point, and escalation ownership for critical alerts.',
     ],
+    'node_inventory': [
+        'Review Not Ready or cordoned nodes before scheduling additional workloads.',
+        'Validate node role, runtime, operating system, and address metadata against the intended platform baseline.',
+        'Use the asset register as evidence for capacity, lifecycle, and maintenance reviews.',
+    ],
+    'namespace_inventory': [
+        'Review inactive namespaces and confirm ownership before cleanup.',
+        'Validate namespace controls, network policies, and service account posture against governance requirements.',
+        'Use the namespace asset register to confirm tenant and application boundaries.',
+    ],
+    'workload_inventory': [
+        'Review workloads with incomplete readiness or unknown runtime status.',
+        'Confirm workload kind and update strategy match the intended deployment model.',
+        'Coordinate remediation with application owners using cluster and namespace scope.',
+    ],
+    'pod_inventory': [
+        'Review Pending, Failed, or repeatedly restarting pods.',
+        'Validate node placement and readiness for pods supporting critical services.',
+        'Use workload ownership context before deleting or rescheduling pod assets.',
+    ],
+    'service_inventory': [
+        'Review externally exposed services and confirm the exposure is intentional.',
+        'Validate service type, address, selector, and port configuration against application design.',
+        'Investigate services without expected endpoints through the live inventory workspace.',
+    ],
+    'ingress_inventory': [
+        'Review ingress resources without TLS for externally reachable hosts.',
+        'Validate host, class, address, and backend routing against the intended application entry point.',
+        'Confirm certificate and ownership readiness through Kubernetes Governance.',
+    ],
+    'storage_inventory': [
+        'Review unbound or non-ready persistent volumes and claims.',
+        'Validate StorageClass, capacity, reclaim policy, and binding relationships before lifecycle changes.',
+        'Use the storage asset register to support capacity and data protection reviews.',
+    ],
 }
 
 DEFAULT_RECOMMENDATIONS = [
@@ -249,6 +324,17 @@ DEFAULT_RECOMMENDATIONS = [
     'Validate findings with live cluster data when the report is used for incident response.',
     'Use generated reports as operational evidence and attach them to follow-up tasks when needed.',
 ]
+
+KUBERNETES_INVENTORY_REPORT_TYPES = {
+    'node_inventory',
+    'namespace_inventory',
+    'workload_inventory',
+    'pod_inventory',
+    'service_inventory',
+    'ingress_inventory',
+    'storage_inventory',
+}
+
 
 REAL_DATA_REPORT_TYPES = {
     'analytics_overview',
@@ -259,6 +345,7 @@ REAL_DATA_REPORT_TYPES = {
     'resource_forecast',
     'top_consumers',
     'alerts_anomalies',
+    *KUBERNETES_INVENTORY_REPORT_TYPES,
 }
 
 REQUIRES_SINGLE_CLUSTER_REPORT_TYPES = {
@@ -347,6 +434,55 @@ REAL_DATA_SECTION_MAP = {
         'incident_readiness',
         'anomaly_context',
         'affected_resources',
+        'operational_recommendations',
+    },
+    'node_inventory': {
+        'executive_summary',
+        'inventory_summary',
+        'inventory_distribution',
+        'inventory_assets',
+        'operational_recommendations',
+    },
+    'namespace_inventory': {
+        'executive_summary',
+        'inventory_summary',
+        'inventory_distribution',
+        'inventory_assets',
+        'operational_recommendations',
+    },
+    'workload_inventory': {
+        'executive_summary',
+        'inventory_summary',
+        'inventory_distribution',
+        'inventory_assets',
+        'operational_recommendations',
+    },
+    'pod_inventory': {
+        'executive_summary',
+        'inventory_summary',
+        'inventory_distribution',
+        'inventory_assets',
+        'operational_recommendations',
+    },
+    'service_inventory': {
+        'executive_summary',
+        'inventory_summary',
+        'inventory_distribution',
+        'inventory_assets',
+        'operational_recommendations',
+    },
+    'ingress_inventory': {
+        'executive_summary',
+        'inventory_summary',
+        'inventory_distribution',
+        'inventory_assets',
+        'operational_recommendations',
+    },
+    'storage_inventory': {
+        'executive_summary',
+        'inventory_summary',
+        'inventory_distribution',
+        'inventory_assets',
         'operational_recommendations',
     },
 }

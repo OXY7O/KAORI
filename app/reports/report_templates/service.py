@@ -188,7 +188,28 @@ SYSTEM_TEMPLATE_ITEMS: list[dict[str, Any]] = [
             'operational_recommendations',
         ],
     },
+
 ]
+
+SYSTEM_TEMPLATE_ITEMS.extend(
+    [
+        {
+            'id': str(option['value']),
+            'name': f"{str(option['label']).removesuffix(' Report')} Template",
+            'report_type': str(option['value']),
+            'report_type_label': str(option['label']).removesuffix(' Report'),
+            'description': str(option['description']),
+            'status': 'system',
+            'report_domain': DEFAULT_REPORT_DOMAIN,
+            'source_kind': DEFAULT_REPORT_SOURCE_KIND,
+            'output_format': 'PDF',
+            'icon': str(option['icon']),
+            'sections': list(option['default_sections']),
+        }
+        for option in REPORT_TYPE_OPTIONS
+        if option.get('family') == 'inventory'
+    ]
+)
 
 IMPLEMENTED_TEMPLATE_IDS = {item['id'] for item in SYSTEM_TEMPLATE_ITEMS}
 

@@ -8,6 +8,7 @@ from app.reports.export.payloads.alerts import get_report_alerts_anomalies_paylo
 from app.reports.export.payloads.analytics import get_report_analytics_overview_payload
 from app.reports.export.payloads.capacity import get_report_capacity_analysis_payload
 from app.reports.export.payloads.forecast import get_report_resource_forecast_payload
+from app.reports.export.payloads.inventory import get_report_kubernetes_inventory_payload
 from app.reports.export.payloads.storage import get_report_storage_analysis_payload
 from app.reports.export.payloads.top_consumers import get_report_top_consumers_payload
 from app.reports.export.payloads.utilization import get_report_resource_utilization_payload
@@ -24,6 +25,13 @@ _PAYLOAD_COLLECTORS: dict[str, PayloadCollector] = {
     'resource_forecast': get_report_resource_forecast_payload,
     'top_consumers': get_report_top_consumers_payload,
     'alerts_anomalies': get_report_alerts_anomalies_payload,
+    'node_inventory': get_report_kubernetes_inventory_payload,
+    'namespace_inventory': get_report_kubernetes_inventory_payload,
+    'workload_inventory': get_report_kubernetes_inventory_payload,
+    'pod_inventory': get_report_kubernetes_inventory_payload,
+    'service_inventory': get_report_kubernetes_inventory_payload,
+    'ingress_inventory': get_report_kubernetes_inventory_payload,
+    'storage_inventory': get_report_kubernetes_inventory_payload,
 }
 
 

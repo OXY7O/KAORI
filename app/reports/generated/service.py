@@ -11,22 +11,15 @@ from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.report import Report
 from app.models.user import User
+from app.reports.export.constants import REPORT_TYPE_LABELS as CANONICAL_REPORT_TYPE_LABELS
+from app.reports.generate.service import REPORT_TYPE_OPTIONS
 from app.reports.storage.service import (
     get_configured_storage_backend_name,
     parse_report_storage_uri,
     report_file_exists,
 )
 
-REPORT_TYPE_LABELS = {
-    'analytics_overview': 'Analytics Overview',
-    'resource_utilization': 'Resource Utilization',
-    'capacity_analysis': 'Capacity Analysis',
-    'storage_analysis': 'Storage Analysis',
-    'workload_analysis': 'Workload Analysis',
-    'resource_forecast': 'Resource Forecast',
-    'top_consumers': 'Top Consumers',
-    'alerts_anomalies': 'Alerts & Anomalies',
-}
+REPORT_TYPE_LABELS = dict(CANONICAL_REPORT_TYPE_LABELS)
 
 STATUS_LABELS = {
     'requested': 'Requested',
@@ -273,38 +266,16 @@ def get_filter_options() -> dict[str, list[dict[str, str]]]:
                 'value': '',
                 'label': 'All Types',
             },
-            {
-                'value': 'analytics_overview',
-                'label': 'Analytics Overview',
-            },
-            {
-                'value': 'resource_utilization',
-                'label': 'Resource Utilization',
-            },
-            {
-                'value': 'capacity_analysis',
-                'label': 'Capacity Analysis',
-            },
-            {
-                'value': 'storage_analysis',
-                'label': 'Storage Analysis',
-            },
-            {
-                'value': 'workload_analysis',
-                'label': 'Workload Analysis',
-            },
-            {
-                'value': 'resource_forecast',
-                'label': 'Resource Forecast',
-            },
-            {
-                'value': 'top_consumers',
-                'label': 'Top Consumers',
-            },
-            {
-                'value': 'alerts_anomalies',
-                'label': 'Alerts & Anomalies',
-            },
+            *[
+                {
+                    'value': str(item['value']),
+                    'label': REPORT_TYPE_LABELS.get(
+                        str(item['value']),
+                        str(item['label']).removesuffix(' Report'),
+                    ),
+                }
+                for item in REPORT_TYPE_OPTIONS
+            ],
         ],
         'statuses': [
             {
@@ -333,6 +304,10 @@ def get_filter_options() -> dict[str, list[dict[str, str]]]:
             },
         ],
         'periods': [
+            {
+                'value': 'snapshot',
+                'label': 'Current Inventory Snapshot',
+            },
             {
                 'value': '30d',
                 'label': 'Last 30 days',
@@ -1683,18 +1658,7 @@ def _get_known_section_options() -> list[dict[str, str]]:
 def format_report_type(
     value: str,
 ) -> str:
-    labels = {
-        'analytics_overview': 'Analytics Overview',
-        'resource_utilization': 'Resource Utilization',
-        'capacity_analysis': 'Capacity Analysis',
-        'storage_analysis': 'Storage Analysis',
-        'workload_analysis': 'Workload Analysis',
-        'resource_forecast': 'Resource Forecast',
-        'top_consumers': 'Top Consumers',
-        'alerts_anomalies': 'Alerts & Anomalies',
-    }
-
-    return labels.get(
+    return REPORT_TYPE_LABELS.get(
         value,
         value.replace(
             '_',
@@ -2242,6 +2206,7 @@ def _format_period(
     value: str,
 ) -> str:
     labels = {
+        'snapshot': 'Current Inventory Snapshot',
         '24h': 'Last 24 hours',
         '7d': 'Last 7 days',
         '30d': 'Last 30 days',

@@ -137,11 +137,15 @@
                                 <select name="report_type"
                                         id="report-type-select"
                                         class="mt-1 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
-                                    {% for option in payload.report_type_options %}
-                                        <option value="{{ option.value }}"
-                                                {% if payload.form_state.report_type == option.value %}selected{% endif %}>
-                                            {{ option.label }}
-                                        </option>
+                                    {% for family_key, family_label in [('analytics', 'Kubernetes Analytics'), ('inventory', 'Kubernetes Inventory')] %}
+                                        <optgroup label="{{ family_label }}">
+                                            {% for option in payload.report_type_options if option.family == family_key %}
+                                                <option value="{{ option.value }}"
+                                                        {% if payload.form_state.report_type == option.value %}selected{% endif %}>
+                                                    {{ option.label }}
+                                                </option>
+                                            {% endfor %}
+                                        </optgroup>
                                     {% endfor %}
                                 </select>
                             </label>
@@ -267,7 +271,7 @@
                         </div>
                     </section>
                     <!-- Report Type Guide -->
-                    <section x-data="{ activeTab: 'kubernetes' }"
+                    <section x-data="{ activeTab: 'kubernetes_analytics' }"
                              class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
                         <header class="flex flex-col gap-4 border-b border-outline-default px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
                             <div class="flex items-start gap-3">
@@ -545,7 +549,7 @@
                     'Open Reports Storage',
                     icon='hard-drive',
                     eyebrow='Storage Context',
-                    boundary='Current status: ' ~ payload.storage_context.status ~ '. Generated artifacts use this backend after PDF rendering.'
+                    boundary='Status: ' ~ payload.storage_context.status ~ '. Generated PDFs are saved to this backend.'
                 ) }}
 
                 {% set request_ready = payload.readiness[0].tone == 'blue' and payload.readiness[1].tone == 'blue' %}
@@ -919,6 +923,31 @@
                     element.classList.toggle('hidden', !isVisible);
                 }
 
+                function syncPeriodMode() {
+                    if (!periodSelect) {
+                        return;
+                    }
+
+                    const reportType = getReportTypeOption();
+                    const isInventoryReport = reportType && reportType.family === 'inventory';
+
+                    Array.from(periodSelect.options).forEach(function (option) {
+                        option.hidden = isInventoryReport
+                            ? option.value !== 'snapshot'
+                            : option.value === 'snapshot';
+                    });
+
+                    if (isInventoryReport) {
+                        periodSelect.value = 'snapshot';
+                    } else if (periodSelect.value === 'snapshot') {
+                        periodSelect.value = '30d';
+                    }
+
+                    if (previewPeriod && periodSelect.options[periodSelect.selectedIndex]) {
+                        previewPeriod.textContent = periodSelect.options[periodSelect.selectedIndex].text.trim();
+                    }
+                }
+
                 function getDefaultReportName() {
                     const reportType = getReportTypeOption();
                     const periodLabel = periodSelect && periodSelect.options[periodSelect.selectedIndex]
@@ -1093,6 +1122,7 @@
                 }
 
                 function syncForm() {
+                    syncPeriodMode();
                     syncReportTypeSummary();
                     renderSectionList();
                     syncClusterGuard();

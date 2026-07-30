@@ -137,9 +137,86 @@ REPORT_TYPE_OPTIONS: list[dict[str, Any]] = [
             'operational_recommendations',
         ],
     },
+
 ]
 
+for report_type_option in REPORT_TYPE_OPTIONS:
+    report_type_option['family'] = 'analytics'
+
+_INVENTORY_REPORT_SECTIONS = [
+    'executive_summary',
+    'inventory_summary',
+    'inventory_distribution',
+    'inventory_assets',
+    'operational_recommendations',
+]
+
+REPORT_TYPE_OPTIONS.extend(
+    [
+        {
+            'value': 'node_inventory',
+            'label': 'Node Inventory Report',
+            'description': 'Node asset register covering role, readiness, platform capacity, and addresses.',
+            'icon': 'server-cog',
+            'family': 'inventory',
+            'default_sections': list(_INVENTORY_REPORT_SECTIONS),
+        },
+        {
+            'value': 'namespace_inventory',
+            'label': 'Namespace Inventory Report',
+            'description': 'Namespace asset register covering status, controls, and service account posture.',
+            'icon': 'folder-tree',
+            'family': 'inventory',
+            'default_sections': list(_INVENTORY_REPORT_SECTIONS),
+        },
+        {
+            'value': 'workload_inventory',
+            'label': 'Workload Inventory Report',
+            'description': 'Workload asset register covering kind, readiness, runtime status, and update strategy.',
+            'icon': 'boxes',
+            'family': 'inventory',
+            'default_sections': list(_INVENTORY_REPORT_SECTIONS),
+        },
+        {
+            'value': 'pod_inventory',
+            'label': 'Pod Inventory Report',
+            'description': 'Pod asset register covering phase, readiness, placement, and restart count.',
+            'icon': 'box',
+            'family': 'inventory',
+            'default_sections': list(_INVENTORY_REPORT_SECTIONS),
+        },
+        {
+            'value': 'service_inventory',
+            'label': 'Service Inventory Report',
+            'description': 'Service asset register covering type, network exposure, ports, and addresses.',
+            'icon': 'waypoints',
+            'family': 'inventory',
+            'default_sections': list(_INVENTORY_REPORT_SECTIONS),
+        },
+        {
+            'value': 'ingress_inventory',
+            'label': 'Ingress Inventory Report',
+            'description': 'Ingress asset register covering class, host, address, and TLS exposure.',
+            'icon': 'route',
+            'family': 'inventory',
+            'default_sections': list(_INVENTORY_REPORT_SECTIONS),
+        },
+        {
+            'value': 'storage_inventory',
+            'label': 'Storage Inventory Report',
+            'description': 'Storage asset register covering StorageClasses, PVs, PVCs, capacity, and binding state.',
+            'icon': 'database-zap',
+            'family': 'inventory',
+            'default_sections': list(_INVENTORY_REPORT_SECTIONS),
+        },
+    ]
+)
+
 PERIOD_OPTIONS: list[dict[str, str]] = [
+    {
+        'value': 'snapshot',
+        'label': 'Current Inventory Snapshot',
+    },
     {
         'value': '24h',
         'label': 'Last 24 hours',
@@ -419,6 +496,21 @@ SECTION_OPTIONS: list[dict[str, str]] = [
         'description': 'High-level risk posture across analytics signals.',
     },
     {
+        'value': 'inventory_summary',
+        'label': 'Inventory Summary',
+        'description': 'Snapshot totals, selected scope, status coverage, and collection time.',
+    },
+    {
+        'value': 'inventory_distribution',
+        'label': 'Asset Distribution',
+        'description': 'Asset distribution by cluster, status, and Kubernetes resource type.',
+    },
+    {
+        'value': 'inventory_assets',
+        'label': 'Asset Inventory',
+        'description': 'Asset-level records from the latest committed Kubernetes inventory snapshot.',
+    },
+    {
         'value': 'operational_recommendations',
         'label': 'Operational Recommendations',
         'description': 'Recommended actions based on report findings.',
@@ -625,7 +717,7 @@ def build_default_form_state(
         'cluster_id': '',
         'namespace': '',
         'report_type': normalized_report_type,
-        'period': '30d',
+        'period': _get_default_period(normalized_report_type),
         'output_format': 'pdf',
         'sections': _get_default_sections(
             normalized_report_type,
@@ -776,6 +868,18 @@ def get_form_state_from_form(
             report_type,
         )
 
+    period = str(
+        form.get(
+            'period',
+            _get_default_period(report_type),
+        )
+        or ''
+    ).strip()
+    if _get_default_period(report_type) == 'snapshot':
+        period = 'snapshot'
+    elif period == 'snapshot':
+        period = '30d'
+
     return {
         'name': form.get(
             'name',
@@ -790,10 +894,7 @@ def get_form_state_from_form(
             '',
         ),
         'report_type': report_type,
-        'period': form.get(
-            'period',
-            '30d',
-        ),
+        'period': period,
         'output_format': form.get(
             'output_format',
             'pdf',
@@ -912,6 +1013,13 @@ def validate_form_state(
             )
 
     return errors
+
+
+def _get_default_period(report_type: str) -> str:
+    for item in REPORT_TYPE_OPTIONS:
+        if item['value'] == report_type and item.get('family') == 'inventory':
+            return 'snapshot'
+    return '30d'
 
 
 def build_default_report_name(
@@ -1158,48 +1266,17 @@ def _get_generation_flow() -> list[tuple[str, str]]:
 
 
 def _get_report_type_guide_groups() -> list[dict[str, Any]]:
-    kubernetes_report_items = [
-        {
-            'label': 'Analytics Overview',
-            'description': 'High-level summary for analytics landing page information.',
-            'icon': 'layout-dashboard',
-        },
-        {
-            'label': 'Resource Utilization',
-            'description': 'CPU, memory, storage, pod, and node usage details.',
-            'icon': 'activity',
-        },
-        {
-            'label': 'Capacity Analysis',
-            'description': 'Worker capacity, headroom, allocation, and pressure risk information.',
-            'icon': 'database',
-        },
-        {
-            'label': 'Storage Analysis',
-            'description': 'Filesystem, PV, PVC, used/free capacity, and storage risk.',
-            'icon': 'hard-drive',
-        },
-        {
-            'label': 'Workload Analysis',
-            'description': 'Workload requests, limits, quota, and namespace mapping.',
-            'icon': 'boxes',
-        },
-        {
-            'label': 'Resource Forecast',
-            'description': 'Future resource growth and projected utilization.',
-            'icon': 'line-chart',
-        },
-        {
-            'label': 'Top Consumers',
-            'description': 'Highest resource consuming namespaces, workloads, and pods.',
-            'icon': 'users',
-        },
-        {
-            'label': 'Alerts & Anomalies',
-            'description': 'Alert visibility, source health, routing context, ownership readiness, incident readiness, and recommendations.',
-            'icon': 'triangle-alert',
-        },
-    ]
+    def guide_items(family: str) -> list[dict[str, str]]:
+        return [
+            {
+                'label': str(item['label']).removesuffix(' Report'),
+                'description': str(item['description']),
+                'icon': str(item['icon']),
+                'status': 'System Template',
+            }
+            for item in REPORT_TYPE_OPTIONS
+            if item.get('family') == family
+        ]
 
     server_report_items = [
         {
@@ -1240,15 +1317,18 @@ def _get_report_type_guide_groups() -> list[dict[str, Any]]:
         },
     ]
 
-    for item in kubernetes_report_items:
-        item['status'] = 'System Template'
-
     return [
         {
-            'key': 'kubernetes',
-            'label': 'KAORI Kubernetes Reports',
-            'description': 'Container platform report types backed by Kubernetes inventory and analytics data.',
-            'items': kubernetes_report_items,
+            'key': 'kubernetes_analytics',
+            'label': 'Kubernetes Analytics',
+            'description': 'Metrics-backed reports for utilization, capacity, forecast, alerts, and operational analysis.',
+            'items': guide_items('analytics'),
+        },
+        {
+            'key': 'kubernetes_inventory',
+            'label': 'Kubernetes Inventory',
+            'description': 'Snapshot reports focused on one Kubernetes asset type at a time.',
+            'items': guide_items('inventory'),
         },
         {
             'key': 'server',
@@ -1262,9 +1342,9 @@ def _get_report_type_guide_groups() -> list[dict[str, Any]]:
 def _get_recommended_actions() -> list[dict[str, str]]:
     return [
         {
-            'label': 'Start with Analytics Overview',
-            'description': 'Use Analytics Overview as the first end-to-end validation because it supports All Clusters.',
-            'href': '/reports/generate?report_type=analytics_overview',
+            'label': 'Start with a Kubernetes Report',
+            'description': 'Use Analytics Overview for metrics or select an Inventory report for a current asset snapshot.',
+            'href': '#report-configuration',
         },
         {
             'label': 'Use a specific cluster for Prometheus-backed reports',

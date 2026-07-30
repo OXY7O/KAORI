@@ -175,3 +175,50 @@ def test_report_user_interfaces_do_not_expose_mvp_copy() -> None:
     combined = '\n'.join(read(path) for path in paths)
     assert 'MVP2' not in combined
     assert ' MVP ' not in combined
+
+
+def test_generate_report_supports_asset_focused_kubernetes_inventory_reports() -> None:
+    generate_service = read(ROOT / 'app' / 'reports' / 'generate' / 'service.py')
+    generate_template = read(REPORT_TEMPLATES / 'generate' / 'index.html')
+    export_constants = read(ROOT / 'app' / 'reports' / 'export' / 'constants.py')
+    collectors = read(ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'collectors.py')
+    inventory_payload = read(ROOT / 'app' / 'reports' / 'export' / 'payloads' / 'inventory.py')
+    overview_service = read(ROOT / 'app' / 'reports' / 'overview' / 'service.py')
+    template_service = read(ROOT / 'app' / 'reports' / 'report_templates' / 'service.py')
+
+    inventory_report_types = (
+        'node_inventory',
+        'namespace_inventory',
+        'workload_inventory',
+        'pod_inventory',
+        'service_inventory',
+        'ingress_inventory',
+        'storage_inventory',
+    )
+
+    for report_type in inventory_report_types:
+        assert f"'value': '{report_type}'" in generate_service
+        assert f"'{report_type}': get_report_kubernetes_inventory_payload" in collectors
+        assert f"'{report_type}'" in export_constants
+        assert f"'{report_type}'" in overview_service
+
+    assert "'key': 'kubernetes_analytics'" in generate_service
+    assert "'key': 'kubernetes_inventory'" in generate_service
+    assert "'description': 'Snapshot reports focused on one Kubernetes asset type at a time.'" in generate_service
+    assert "'value': 'snapshot'" in generate_service
+    assert "'label': 'Current Inventory Snapshot'" in generate_service
+    assert "reportType.family === 'inventory'" in generate_template
+    assert "activeTab: 'kubernetes_analytics'" in generate_template
+    assert '<optgroup label="{{ family_label }}">' in generate_template
+    assert "('analytics', 'Kubernetes Analytics')" in generate_template
+    assert "('inventory', 'Kubernetes Inventory')" in generate_template
+    assert "boundary='Status: ' ~ payload.storage_context.status ~ '. Generated PDFs are saved to this backend.'" in generate_template
+    assert 'Current status: Ready. Generated artifacts use this backend after PDF rendering.' not in generate_template
+    assert 'def get_report_kubernetes_inventory_payload' in inventory_payload
+    assert 'filter_current_generation(query, model)' in inventory_payload
+    assert "'inventory_summary':" in inventory_payload
+    assert "'inventory_distribution':" in inventory_payload
+    assert "'inventory_assets': rows" in inventory_payload
+    assert "section_key == 'inventory_assets'" in read(ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'builder.py')
+    assert 'max_rows=500' in read(ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'builder.py')
+    assert "if option.get('family') == 'inventory'" in template_service

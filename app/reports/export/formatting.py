@@ -13,6 +13,7 @@ def format_period(
     value: str,
 ) -> str:
     labels = {
+        'snapshot': 'Current Inventory Snapshot',
         '24h': 'Last 24 Hours',
         '7d': 'Last 7 Days',
         '30d': 'Last 30 Days',

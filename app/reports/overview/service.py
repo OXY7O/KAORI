@@ -49,6 +49,13 @@ IMPLEMENTED_REPORT_TYPES = {
     'resource_forecast',
     'top_consumers',
     'alerts_anomalies',
+    'node_inventory',
+    'namespace_inventory',
+    'workload_inventory',
+    'pod_inventory',
+    'service_inventory',
+    'ingress_inventory',
+    'storage_inventory',
 }
 
 SERVER_REPORT_TYPE_COVERAGE = [
