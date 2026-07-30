@@ -640,13 +640,8 @@
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 2
     },
-    "app/templates/inventory/topology/partials/_hero.html": {
-      "arbitrary_text_sizes": 2
-    },
     "app/templates/inventory/topology/partials/_workspace.html": {
-      "arbitrary_text_sizes": 5,
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 14
+      "semantic_border_utilities": 3
     },
     "app/templates/inventory/workloads/partials/_hero.html": {
       "arbitrary_text_sizes": 4

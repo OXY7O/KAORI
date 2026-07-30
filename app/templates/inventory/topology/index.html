@@ -16,30 +16,13 @@
         <script>
             window.KAORI_TOPOLOGY = {{ {
                 'data_url': url_for('inventory.topology_data'),
+                'renderer_url': url_for('static', filename='vendor/cytoscape/cytoscape.esm.min.js'),
+                'workspace_url': url_for('static', filename='js/inventory/topology.js'),
                 'initial_graph': graph,
                 'namespace_map': namespace_map,
                 'filters': filters
             } | tojson }};
         </script>
-        <script type="module">
-            const statusPanel = document.getElementById('topology-runtime-status');
-            const errorPanel = document.getElementById('topology-error');
-
-            try {
-                const cytoscapeModule = await import("{{ url_for('static', filename='vendor/cytoscape/cytoscape.esm.min.js') }}");
-                window.cytoscape = cytoscapeModule.c;
-                window.KAORI_TOPOLOGY_LIBRARY_VERSION = window.cytoscape?.version || 'unknown';
-                await import("{{ url_for('static', filename='js/inventory/topology.js') }}");
-            } catch (error) {
-                console.error('KAORI topology startup failed.', error);
-                if (statusPanel) {
-                    statusPanel.classList.add('hidden');
-                }
-                if (errorPanel) {
-                    errorPanel.textContent = `Topology could not start: ${error?.message || 'unknown JavaScript error'}`;
-                    errorPanel.classList.remove('hidden');
-                }
-            }
-        </script>
+        <script type="module" src="{{ url_for('static', filename='js/inventory/topology_bootstrap.js') }}"></script>
     {% endif %}
 {% endblock scripts %}

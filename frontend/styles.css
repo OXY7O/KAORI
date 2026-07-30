@@ -86,6 +86,30 @@
     --kaori-status-pending-soft: #eff6ff;
     --kaori-status-pending-border: #bfdbfe;
     --kaori-status-pending-text: #1d4ed8;
+
+    --kaori-topology-domain-scope-fill: #2563eb;
+    --kaori-topology-domain-scope-border: #1d4ed8;
+    --kaori-topology-domain-scope-text: #ffffff;
+    --kaori-topology-domain-compute-fill: #7c3aed;
+    --kaori-topology-domain-compute-border: #6d28d9;
+    --kaori-topology-domain-compute-text: #ffffff;
+    --kaori-topology-domain-networking-fill: #059669;
+    --kaori-topology-domain-networking-border: #047857;
+    --kaori-topology-domain-networking-text: #ffffff;
+    --kaori-topology-domain-configuration-fill: #0284c7;
+    --kaori-topology-domain-configuration-border: #0369a1;
+    --kaori-topology-domain-configuration-text: #ffffff;
+    --kaori-topology-domain-storage-fill: #d97706;
+    --kaori-topology-domain-storage-border: #b45309;
+    --kaori-topology-domain-storage-text: #ffffff;
+    --kaori-topology-edge-contains: #94a3b8;
+    --kaori-topology-edge-owns: #8b5cf6;
+    --kaori-topology-edge-scheduled: #64748b;
+    --kaori-topology-edge-selects: #10b981;
+    --kaori-topology-edge-routes: #14b8a6;
+    --kaori-topology-edge-uses: #0ea5e9;
+    --kaori-topology-edge-mounts: #f97316;
+    --kaori-topology-edge-binds: #65a30d;
 }
 
 .dark {
@@ -161,6 +185,30 @@
     --kaori-status-pending-soft: rgba(37, 99, 235, 0.18);
     --kaori-status-pending-border: rgba(191, 219, 254, 0.32);
     --kaori-status-pending-text: #bfdbfe;
+
+    --kaori-topology-domain-scope-fill: #3b82f6;
+    --kaori-topology-domain-scope-border: #60a5fa;
+    --kaori-topology-domain-scope-text: #ffffff;
+    --kaori-topology-domain-compute-fill: #8b5cf6;
+    --kaori-topology-domain-compute-border: #a78bfa;
+    --kaori-topology-domain-compute-text: #ffffff;
+    --kaori-topology-domain-networking-fill: #10b981;
+    --kaori-topology-domain-networking-border: #34d399;
+    --kaori-topology-domain-networking-text: #ffffff;
+    --kaori-topology-domain-configuration-fill: #0ea5e9;
+    --kaori-topology-domain-configuration-border: #38bdf8;
+    --kaori-topology-domain-configuration-text: #ffffff;
+    --kaori-topology-domain-storage-fill: #f59e0b;
+    --kaori-topology-domain-storage-border: #fbbf24;
+    --kaori-topology-domain-storage-text: #241f2e;
+    --kaori-topology-edge-contains: #94a3b8;
+    --kaori-topology-edge-owns: #a78bfa;
+    --kaori-topology-edge-scheduled: #94a3b8;
+    --kaori-topology-edge-selects: #34d399;
+    --kaori-topology-edge-routes: #2dd4bf;
+    --kaori-topology-edge-uses: #38bdf8;
+    --kaori-topology-edge-mounts: #fb923c;
+    --kaori-topology-edge-binds: #a3e635;
 }
 
 
@@ -504,3 +552,34 @@ span.inline-flex[class*='bg-kaori-soft'] {
 thead th {
     text-transform: uppercase;
 }
+
+
+/* Visualization Workspace Style 1 — Adaptive Explorer. */
+.kaori-visualization-canvas {
+    height: clamp(38rem, 72vh, 48rem);
+}
+
+.kaori-topology-domain-scope {
+    color: var(--kaori-topology-domain-scope-fill);
+}
+.kaori-topology-domain-compute {
+    color: var(--kaori-topology-domain-compute-fill);
+}
+.kaori-topology-domain-networking {
+    color: var(--kaori-topology-domain-networking-fill);
+}
+.kaori-topology-domain-configuration {
+    color: var(--kaori-topology-domain-configuration-fill);
+}
+.kaori-topology-domain-storage {
+    color: var(--kaori-topology-domain-storage-fill);
+}
+
+.kaori-topology-edge-contains { background-color: var(--kaori-topology-edge-contains); }
+.kaori-topology-edge-owns { background-color: var(--kaori-topology-edge-owns); }
+.kaori-topology-edge-scheduled { background-color: var(--kaori-topology-edge-scheduled); }
+.kaori-topology-edge-selects { background-color: var(--kaori-topology-edge-selects); }
+.kaori-topology-edge-routes { background-color: var(--kaori-topology-edge-routes); }
+.kaori-topology-edge-uses { background-color: var(--kaori-topology-edge-uses); }
+.kaori-topology-edge-mounts { background-color: var(--kaori-topology-edge-mounts); }
+.kaori-topology-edge-binds { background-color: var(--kaori-topology-edge-binds); }

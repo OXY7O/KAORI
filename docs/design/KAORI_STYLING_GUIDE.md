@@ -47,6 +47,9 @@ Review the baseline diff before committing. A lower count is expected; moving de
 | Pagination | `components/PAGINATION.md` | `components/pagination.html` |
 | Tab style registry | `components/TAB_STYLES.md` | Approved semantic tab components |
 | Tab Style 1 — Integrated Workspace Tabs | `components/WORKSPACE_TABS.md` | `components/workspace_tabs.html` |
+| Tab Style 2 — Compact Segmented Tabs | `components/SEGMENTED_TABS.md` | `components/segmented_tabs.html` |
+| Visualization Workspace Style 1 | `components/VISUALIZATION_WORKSPACE.md` | `components/visualization_workspace.html` |
+| Topology visualization palette | `components/TOPOLOGY_PALETTE.md` | `frontend/styles.css` tokens |
 | Operational section card | `components/OPERATIONAL_SECTION_CARD.md` | `components/operational_section_card.html` |
 | Snapshot context bar | `components/SNAPSHOT_CONTEXT_BAR.md` | `components/snapshot_context_bar.html` |
 | Inventory asset card | `components/INVENTORY_ASSET_CARD.md` | `components/inventory_asset_card.html` |
@@ -254,6 +257,16 @@ Required behavior:
 - page-local `role="tablist"` geometry is prohibited when the shared component can represent the workspace.
 
 Tabs switch peer content. They do not hide blockers, required form fields, errors, or a primary flow. New tab styles require a distinct information architecture, a semantic key, one shared component owner, and registration in `TAB_STYLES.md`; visual variation alone is insufficient.
+
+### Tab Style 2 — Compact Segmented Tabs
+
+Use `components/segmented_tabs.html` (`compact-segmented`) for two or three local mutually exclusive views inside one component, inspector, drawer, or visualization toolbar. It is not a top-level workspace navigation style. The owning controller provides Left/Right/Home/End keyboard behavior and may persist the selected view in the URL when sharing or refresh continuity is useful.
+
+### Visualization Workspace Style 1 — Adaptive Explorer
+
+Use `components/visualization_workspace.html` (`adaptive-explorer`) for dense interactive visualizations. At very wide breakpoints it may expose persistent Controls, Canvas, and Inspector panes. On normal laptops the canvas remains primary while Controls and Details become adaptive drawers. A fixed `context_rail` is not an inspector substitute.
+
+Visualization workspaces must provide a keyboard-accessible textual representation when graph interaction is not equivalent for keyboard and screen-reader users. Renderer failure preserves the committed data through that textual view. Raw visualization colors belong in tokenized CSS variables, never page templates or JavaScript.
 
 ## 11. Right-Side Context Boxes
 
@@ -505,6 +518,9 @@ Review one main page at a time using this sequence:
 - [ ] Hero geometry and content limits are unchanged.
 - [ ] Pagination defaults to 5 with 5/10/25/50 options.
 - [ ] Workspace tabs use the shared component and preserve URL/HTMX state.
+- [ ] Local two/three-view switches use Tab Style 2 rather than page-local segmented geometry.
+- [ ] Dense visualization pages use the Adaptive Explorer owner and provide an accessible Resource List fallback.
+- [ ] Visualization colors come from documented CSS tokens; templates and JavaScript contain no raw palette values.
 - [ ] Repeated operational sections use `operational_section_card.html`.
 - [ ] Forecast charts use the shared projection chart.
 - [ ] Right-side boxes use the semantic component decision table.

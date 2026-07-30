@@ -135,3 +135,14 @@ View Details → Side Drawer
 - The cluster comparison table remains compact. Asset counts belong in the `components/side_drawer.html` detail view. The drawer uses shared section and metric primitives, ends with Operational Context, and provides one state-aware next action.
 - Cluster posture is Healthy only when the target is connected and its committed snapshot is inside the freshness window.
 - Per-cluster overview counts must use grouped aggregates across the selected clusters. Do not reintroduce one count query per cluster and asset type.
+
+
+## Kubernetes Topology Reference Pattern
+
+Topology uses Visualization Workspace Style 1 (`adaptive-explorer`) through `components/visualization_workspace.html`. On `2xl` it presents persistent Controls, Canvas, and Inspector panes; below `2xl`, Controls and Details become adaptive drawers so the visualization keeps primary width.
+
+Graph / Resource List and Details / Relationships use Tab Style 2 (`compact-segmented`) through `components/segmented_tabs.html`. Resource List is the keyboard-accessible representation and remains available from the committed payload if Cytoscape cannot load. Exact snapshot time and coverage remain owned by the shared Inventory Data Snapshot, not the hero.
+
+Topology colors use the five-domain token set in `frontend/styles.css`: Scope, Compute, Networking, Configuration, and Storage. Operational health remains a separate semantic status dot. Page templates and JavaScript do not define raw palette values.
+
+`app.inventory.topology.service.build_topology_graph` caches payloads by committed-generation signature and normalized filters, conditionally queries only resource families needed by scope/depth, and indexes Service/Pod matching by cluster and namespace.

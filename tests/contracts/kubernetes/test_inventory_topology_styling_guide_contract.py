@@ -1,0 +1,128 @@
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+def _read(relative: str) -> str:
+    return (ROOT / relative).read_text(encoding='utf-8')
+
+
+def test_topology_uses_the_adaptive_visualization_workspace() -> None:
+    workspace = _read('app/templates/inventory/topology/partials/_workspace.html')
+    component = _read('app/templates/components/visualization_workspace.html')
+
+    assert '{% import "components/visualization_workspace.html" as visualization_workspace %}' in workspace
+    assert 'visualization_workspace.render(' in workspace
+    assert 'data-kaori-visualization-workspace="adaptive-explorer"' in component
+    assert '2xl:grid-cols-[18rem_minmax(0,1fr)_22rem]' in component
+    assert 'topology-controls-panel' in workspace
+    assert 'topology-details-panel' in workspace
+    assert 'topology-pane-backdrop' in workspace
+    assert 'components/loading_bar.html' in component
+
+
+def test_topology_registers_compact_segmented_tab_style() -> None:
+    workspace = _read('app/templates/inventory/topology/partials/_workspace.html')
+    inspector = _read('app/templates/inventory/topology/partials/_inspector_templates.html')
+    component = _read('app/templates/components/segmented_tabs.html')
+    registry = _read('docs/design/components/TAB_STYLES.md')
+
+    assert 'Tab Style 2 — Compact Segmented Tabs' in registry
+    assert '`compact-segmented`' in registry
+    assert 'data-kaori-tab-variant="compact-segmented"' in component
+    assert "[('graph', 'Graph', 'share-2'), ('list', 'Resource List', 'list-tree')]" in workspace
+    assert "[('details', 'Details', 'list-tree'), ('relationships', 'Relationships', 'git-branch')]" in inspector
+    assert 'role="tablist"' not in workspace
+    assert 'role="tablist"' not in inspector
+
+
+def test_topology_graph_has_an_accessible_resource_list_fallback() -> None:
+    workspace = _read('app/templates/inventory/topology/partials/_workspace.html')
+    script = _read('app/static/js/inventory/topology.js')
+    index = _read('app/templates/inventory/topology/index.html')
+
+    assert 'role="application"' not in workspace
+    assert 'role="img"' in workspace
+    assert 'topology-view-panel-list' in workspace
+    assert 'topology-resource-list-body' in workspace
+    assert 'role="combobox"' in workspace
+    assert 'role="listbox"' in workspace
+    assert "event.key === 'ArrowDown'" in script
+    assert "event.key === 'ArrowUp'" in script
+    assert "event.key === 'Enter'" in script
+    assert 'Resource List remains available from the committed inventory snapshot.' in script
+    assert 'renderPayloadNodeDetails' in script
+    assert "setActiveView('list')" in script
+    bootstrap = _read('app/static/js/inventory/topology_bootstrap.js')
+    assert "filename='js/inventory/topology_bootstrap.js'" in index
+    assert "'renderer_url':" in index
+    assert "'workspace_url':" in index
+    assert 'KAORI_TOPOLOGY_RENDERER_ERROR' in bootstrap
+
+
+def test_topology_inspector_uses_native_templates_instead_of_tailwind_html_strings() -> None:
+    workspace = _read('app/templates/inventory/topology/partials/_workspace.html')
+    inspector = _read('app/templates/inventory/topology/partials/_inspector_templates.html')
+    script = _read('app/static/js/inventory/topology.js')
+
+    assert '_inspector_templates.html' in workspace
+    assert 'topology-node-inspector-template' in inspector
+    assert 'topology-edge-inspector-template' in inspector
+    assert 'topology-resource-list-row-template' in inspector
+    assert 'cloneTemplate' in script
+    assert 'detailContent.innerHTML' not in script
+    assert 'searchResults.innerHTML' not in script
+
+
+def test_topology_palette_is_tokenized_and_contains_no_raw_js_colors() -> None:
+    styles = _read('frontend/styles.css')
+    script = _read('app/static/js/inventory/topology.js')
+    contract = _read('docs/design/components/TOPOLOGY_PALETTE.md')
+
+    for domain in ('scope', 'compute', 'networking', 'configuration', 'storage'):
+        assert f'--kaori-topology-domain-{domain}-fill' in styles
+        assert f'kaori-topology-domain-{domain}' in styles
+    for relationship in ('contains', 'owns', 'scheduled', 'selects', 'routes', 'uses', 'mounts', 'binds'):
+        assert f'--kaori-topology-edge-{relationship}' in styles
+    assert re.search(r'(?<![\w-])#[0-9a-fA-F]{3,8}\b', script) is None
+    assert 'five-domain palette' in contract
+
+
+def test_topology_hero_does_not_duplicate_snapshot_context() -> None:
+    hero = _read('app/templates/inventory/topology/partials/_hero.html')
+
+    assert 'Graph Coverage' in hero
+    assert 'Relationships' in hero
+    assert 'Last Collected' not in hero
+    assert 'Inventory Database Snapshot' not in hero
+
+
+def test_topology_service_bounds_queries_and_caches_committed_payloads() -> None:
+    service = _read('app/inventory/topology/service.py')
+
+    assert '_TOPOLOGY_CACHE_MAX_ENTRIES' in service
+    assert '_topology_cache_get' in service
+    assert '_topology_cache_put' in service
+    assert '_TOPOLOGY_CACHE_LOCK' in service
+    assert 'generation_signature' in service
+    assert 'if include_level_2 and show_networking' in service
+    assert 'if include_level_2 and show_configuration' in service
+    assert 'if include_level_2 and show_storage' in service
+    assert 'services_by_scope' in service
+    assert 'pods_by_scope' in service
+    assert 'omitted_by_type' in service
+
+
+def test_topology_reference_pattern_is_documented() -> None:
+    pattern = _read('docs/design/patterns/KUBERNETES_TOPOLOGY.md')
+    audit = _read('docs/design/audits/KUBERNETES_TOPOLOGY_STYLING_AUDIT_2026_07.md')
+    inventory_readme = _read('app/inventory/README.md')
+
+    assert 'Visualization Workspace Style 1 — Adaptive Explorer' in pattern
+    assert 'Tab Style 2: Graph / Resource List' in pattern
+    assert 'Renderer failure must not remove access' in pattern or 'Renderer errors preserve Resource List access' in pattern
+    assert 'Approved package' in audit
+    assert 'Kubernetes Topology Reference Pattern' in inventory_readme

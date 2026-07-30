@@ -28,8 +28,22 @@ A new style is justified only when the content relationship or interaction model
 
 Use Tab Style 1 for operational dashboards, analytics workspaces, and similar pages where each tab is a peer perspective on the same governed context.
 
+## Tab Style 2 — Compact Segmented Tabs
+
+| Property | Contract |
+|---|---|
+| Semantic key | `compact-segmented` |
+| Component | `components/segmented_tabs.html` |
+| References | Kubernetes Topology Graph/List and Details/Relationships |
+| Content relationship | Two or three mutually exclusive local views |
+| Surface | Compact segmented control inside one component or toolbar |
+| State | Local by default; URL-backed when the view must survive refresh/share |
+| Layout | Horizontal segments with roving keyboard focus |
+
+Use Tab Style 2 for local view switching in a visualization, inspector, drawer, or compact component. Do not use it for top-level workspace domains or four-plus peer sections. The detailed contract lives in `SEGMENTED_TABS.md`.
+
 ## Future Styles
 
-Future styles must be added to this registry before implementation. Use a semantic name in addition to the next numeric review label. Examples of potentially distinct patterns include a compact segmented switch for two mutually exclusive views or a vertical navigation model for a dense configuration workspace, but neither is approved until reviewed.
+Future styles must be added to this registry before implementation. Use a semantic name in addition to the next numeric review label. A vertical navigation model for a dense configuration workspace may justify another style when a real page requires it.
 
-Never name implementation files `tab_style_2.html` or similar. File and component names remain semantic; the numeric label is a review shorthand.
+Never name implementation files `tab_style_3.html` or similar. File and component names remain semantic; the numeric label is a review shorthand.

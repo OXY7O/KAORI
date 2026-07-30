@@ -236,3 +236,33 @@ def test_inventory_overview_components_and_pattern_are_documented() -> None:
     assert 'Operational Context' in pattern
     assert 'The hero does not show last sync' in pattern
     assert 'Cluster | Connection | Total Objects | Last Snapshot | Inventory Signals | Details' in pattern
+
+
+def test_visualization_workspace_and_tab_style_two_are_documented() -> None:
+    guide = _read('docs/design/KAORI_STYLING_GUIDE.md')
+    design_readme = _read('docs/design/README.md')
+    registry = _read('docs/design/components/TAB_STYLES.md')
+    visualization = _read('docs/design/components/VISUALIZATION_WORKSPACE.md')
+    segmented = _read('docs/design/components/SEGMENTED_TABS.md')
+    palette = _read('docs/design/components/TOPOLOGY_PALETTE.md')
+
+    assert 'Tab Style 2 — Compact Segmented Tabs' in guide
+    assert 'Visualization Workspace Style 1 — Adaptive Explorer' in guide
+    assert 'components/SEGMENTED_TABS.md' in design_readme
+    assert 'components/VISUALIZATION_WORKSPACE.md' in design_readme
+    assert 'components/TOPOLOGY_PALETTE.md' in design_readme
+    assert 'patterns/KUBERNETES_TOPOLOGY.md' in design_readme
+    assert 'Tab Style 2 — Compact Segmented Tabs' in registry
+    assert '`compact-segmented`' in registry
+    assert 'adaptive-explorer' in visualization
+    assert 'Resource List' in visualization
+    assert 'Left/Right/Home/End' in segmented
+    assert 'five-domain palette' in palette
+
+
+def test_visualization_workspace_is_an_approved_shared_surface_owner() -> None:
+    verifier = _read('scripts/verify_ui_style.py')
+    component = _read('app/templates/components/visualization_workspace.html')
+
+    assert "'app/templates/components/visualization_workspace.html'" in verifier
+    assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' in component

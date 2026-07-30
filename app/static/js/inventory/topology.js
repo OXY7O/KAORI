@@ -13,6 +13,14 @@
     const searchInput = $('topology-search')
     const searchResults = $('topology-search-results')
     const loading = $('topology-loading')
+    const controlsPanel = $('topology-controls-panel')
+    const detailsPanel = $('topology-details-panel')
+    const paneBackdrop = $('topology-pane-backdrop')
+    const graphPanel = $('topology-view-panel-graph')
+    const listPanel = $('topology-view-panel-list')
+    const resourceListBody = $('topology-resource-list-body')
+    const resourceListEmpty = $('topology-resource-list-empty')
+    const viewTabs = Array.from(document.querySelectorAll('[data-topology-view-tab]'))
     const errorPanel = $('topology-error')
     const runtimeStatus = $('topology-runtime-status')
     const emptyState = $('topology-empty-state')
@@ -40,6 +48,9 @@
     let searchTimer = null
     let selectedNodeId = null
     let activeDrawerTab = 'details'
+    let activeView = new URL(window.location.href).searchParams.get('view') === 'list' ? 'list' : 'graph'
+    let searchResultNodes = []
+    let activeSearchIndex = -1
     let pathHighlightActive = false
     let boundaryFrame = null
     let drawerMiniMapFrame = null
@@ -51,75 +62,87 @@
         window.getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
     )
 
-    const typeVisuals = {
-        cluster: { fill: '#2563eb', border: '#1d4ed8', text: '#ffffff' },
-        namespace: { fill: '#4f46e5', border: '#4338ca', text: '#ffffff' },
-        node: { fill: '#475569', border: '#334155', text: '#ffffff' },
-        workload: { fill: '#7c3aed', border: '#6d28d9', text: '#ffffff' },
-        pod: { fill: '#cffafe', border: '#06b6d4', text: '#155e75' },
-        service: { fill: '#059669', border: '#047857', text: '#ffffff' },
-        ingress: { fill: '#0f766e', border: '#115e59', text: '#ffffff' },
-        configmap: { fill: '#0284c7', border: '#0369a1', text: '#ffffff' },
-        secret: { fill: '#fef3c7', border: '#f59e0b', text: '#92400e' },
-        pvc: { fill: '#ea580c', border: '#c2410c', text: '#ffffff' },
-        pv: { fill: '#ecfccb', border: '#84cc16', text: '#3f6212' },
+    const domainForType = (type) => ({
+        cluster: 'scope', namespace: 'scope',
+        node: 'compute', workload: 'compute', pod: 'compute',
+        service: 'networking', ingress: 'networking',
+        configmap: 'configuration', secret: 'configuration',
+        pvc: 'storage', pv: 'storage',
+    }[type] || 'compute')
+
+    const shapeForType = (type) => ({
+        cluster: 'round-rectangle', namespace: 'round-rectangle', node: 'rectangle',
+        workload: 'round-rectangle', pod: 'ellipse', service: 'diamond', ingress: 'hexagon',
+        configmap: 'round-tag', secret: 'tag', pvc: 'round-rectangle', pv: 'rectangle',
+    }[type] || 'round-rectangle')
+
+    const getTypeVisual = (type) => {
+        const domain = domainForType(type)
+        return {
+            fill: cssToken(`--kaori-topology-domain-${domain}-fill`, 'CanvasText'),
+            border: cssToken(`--kaori-topology-domain-${domain}-border`, 'CanvasText'),
+            text: cssToken(`--kaori-topology-domain-${domain}-text`, 'Canvas'),
+            shape: shapeForType(type),
+        }
     }
 
     const typeUi = {
-        cluster: { icon: 'server-cog', value: 'text-kaori-primary', badge: 'border-outline-default bg-kaori-soft text-kaori-primary', iconClass: 'bg-kaori-soft text-kaori-primary ring-outline-default' },
-        namespace: { icon: 'layers-3', value: 'text-kaori-primary', badge: 'border-outline-default bg-kaori-soft text-kaori-primary', iconClass: 'bg-kaori-soft text-kaori-primary ring-outline-default' },
-        node: { icon: 'server', value: 'text-kaori-primary', badge: 'border-outline-default bg-kaori-soft text-kaori-primary', iconClass: 'bg-kaori-soft text-kaori-primary ring-outline-default' },
-        workload: { icon: 'boxes', value: 'text-kaori-primary', badge: 'border-outline-default bg-kaori-soft text-kaori-primary', iconClass: 'bg-kaori-soft text-kaori-primary ring-outline-default' },
-        pod: { icon: 'circle-dot', value: 'text-kaori-primary', badge: 'border-outline-default bg-kaori-soft text-kaori-primary', iconClass: 'bg-kaori-soft text-kaori-primary ring-outline-default' },
-        service: { icon: 'network', value: 'text-kaori-primary', badge: 'border-outline-default bg-kaori-soft text-kaori-primary', iconClass: 'bg-kaori-soft text-kaori-primary ring-outline-default' },
-        ingress: { icon: 'route', value: 'text-kaori-primary', badge: 'border-outline-default bg-kaori-soft text-kaori-primary', iconClass: 'bg-kaori-soft text-kaori-primary ring-outline-default' },
-        configmap: { icon: 'file-cog', value: 'text-kaori-primary', badge: 'border-outline-default bg-kaori-soft text-kaori-primary', iconClass: 'bg-kaori-soft text-kaori-primary ring-outline-default' },
-        secret: { icon: 'key-round', value: 'text-kaori-primary', badge: 'border-outline-default bg-kaori-soft text-kaori-primary', iconClass: 'bg-kaori-soft text-kaori-primary ring-outline-default' },
-        pvc: { icon: 'database', value: 'text-kaori-primary', badge: 'border-outline-default bg-kaori-soft text-kaori-primary', iconClass: 'bg-kaori-soft text-kaori-primary ring-outline-default' },
-        pv: { icon: 'hard-drive', value: 'text-kaori-primary', badge: 'border-outline-default bg-kaori-soft text-kaori-primary', iconClass: 'bg-kaori-soft text-kaori-primary ring-outline-default' },
+        cluster: { icon: 'server-cog', domain: 'scope' },
+        namespace: { icon: 'layers-3', domain: 'scope' },
+        node: { icon: 'server', domain: 'compute' },
+        workload: { icon: 'boxes', domain: 'compute' },
+        pod: { icon: 'circle-dot', domain: 'compute' },
+        service: { icon: 'network', domain: 'networking' },
+        ingress: { icon: 'route', domain: 'networking' },
+        configmap: { icon: 'file-cog', domain: 'configuration' },
+        secret: { icon: 'key-round', domain: 'configuration' },
+        pvc: { icon: 'database', domain: 'storage' },
+        pv: { icon: 'hard-drive', domain: 'storage' },
     }
 
-    const edgeColors = {
-        owns: '#8b5cf6', scheduled_on: '#64748b', selects: '#10b981', routes_to: '#14b8a6',
-        uses: '#0ea5e9', mounts: '#f97316', binds: '#65a30d', contains: '#94a3b8',
+    const edgeTokenNames = {
+        owns: '--kaori-topology-edge-owns', scheduled_on: '--kaori-topology-edge-scheduled',
+        selects: '--kaori-topology-edge-selects', routes_to: '--kaori-topology-edge-routes',
+        uses: '--kaori-topology-edge-uses', mounts: '--kaori-topology-edge-mounts',
+        binds: '--kaori-topology-edge-binds', contains: '--kaori-topology-edge-contains',
     }
+    const edgeColor = (relationship) => cssToken(edgeTokenNames[relationship] || '--kaori-topology-edge-contains', 'CanvasText')
 
     const relationshipUi = {
-        owns: { icon: 'boxes', badge: typeUi.workload.badge },
-        scheduled_on: { icon: 'server', badge: typeUi.node.badge },
-        selects: { icon: 'network', badge: typeUi.service.badge },
-        routes_to: { icon: 'route', badge: typeUi.ingress.badge },
-        uses: { icon: 'link-2', badge: typeUi.configmap.badge },
-        mounts: { icon: 'database', badge: typeUi.pvc.badge },
-        binds: { icon: 'hard-drive', badge: typeUi.pv.badge },
-        contains: { icon: 'folder-tree', badge: typeUi.namespace.badge },
+        owns: { icon: 'boxes' }, scheduled_on: { icon: 'server' }, selects: { icon: 'network' },
+        routes_to: { icon: 'route' }, uses: { icon: 'link-2' }, mounts: { icon: 'database' },
+        binds: { icon: 'hard-drive' }, contains: { icon: 'folder-tree' },
     }
 
-    const statusClasses = {
-        healthy: 'border-status-normal-border bg-status-normal-soft text-status-normal-text',
-        warning: 'border-status-warning-border bg-status-warning-soft text-status-warning-text',
-        critical: 'border-status-critical-border bg-status-critical-soft text-status-critical-text',
-        info: 'border-status-info-border bg-status-info-soft text-status-info-text',
-        unknown: 'border-status-unknown-border bg-status-unknown-soft text-status-unknown-text',
+    const statusSurfaceClasses = {
+        healthy: ['bg-status-normal-soft', 'text-status-normal-text', 'bg-status-normal'],
+        warning: ['bg-status-warning-soft', 'text-status-warning-text', 'bg-status-warning'],
+        critical: ['bg-status-critical-soft', 'text-status-critical-text', 'bg-status-critical'],
+        info: ['bg-status-info-soft', 'text-status-info-text', 'bg-status-info'],
+        unknown: ['bg-status-unknown-soft', 'text-status-unknown-text', 'bg-status-unknown'],
     }
 
     const statusDotColor = (tone) => ({
-        healthy: cssToken('--kaori-status-normal', '#16a34a'),
-        warning: cssToken('--kaori-status-warning', '#d97706'),
-        critical: cssToken('--kaori-status-critical', '#dc2626'),
-        info: cssToken('--kaori-status-info', '#2563eb'),
-        unknown: cssToken('--kaori-status-unknown', '#64748b'),
-    }[tone] || cssToken('--kaori-status-unknown', '#64748b'))
+        healthy: cssToken('--kaori-status-normal', 'CanvasText'),
+        warning: cssToken('--kaori-status-warning', 'CanvasText'),
+        critical: cssToken('--kaori-status-critical', 'CanvasText'),
+        info: cssToken('--kaori-status-info', 'CanvasText'),
+        unknown: cssToken('--kaori-status-unknown', 'GrayText'),
+    }[tone] || cssToken('--kaori-status-unknown', 'GrayText'))
     const statusDotCache = new Map()
-
-    const escapeHtml = (value) => String(value ?? '')
-        .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;').replaceAll("'", '&#039;')
 
     const humanizeType = (value) => ({
         cluster: 'Cluster', namespace: 'Namespace', node: 'Node', workload: 'Workload', pod: 'Pod',
         service: 'Service', ingress: 'Ingress', configmap: 'ConfigMap', secret: 'Secret', pvc: 'PVC', pv: 'PV',
     }[value] || value)
+
+    const pluralizeType = (value, count) => {
+        if (Number(count) === 1) return humanizeType(value)
+        return ({
+            cluster: 'Clusters', namespace: 'Namespaces', node: 'Nodes', workload: 'Workloads', pod: 'Pods',
+            service: 'Services', ingress: 'Ingresses', configmap: 'ConfigMaps', secret: 'Secrets', pvc: 'PVCs', pv: 'PVs',
+        }[value] || `${humanizeType(value)} Resources`)
+    }
 
     const titleCaseText = (value) => String(value ?? '')
         .replaceAll('_', ' ')
@@ -147,8 +170,7 @@
     }
 
     const getTypeUi = (type) => typeUi[type] || typeUi.node
-    const getTypeVisual = (type) => typeVisuals[type] || typeVisuals.node
-    const getRelationshipUi = (relationship) => relationshipUi[relationship] || { icon: 'git-commit-horizontal', badge: typeUi.node.badge }
+    const getRelationshipUi = (relationship) => relationshipUi[relationship] || { icon: 'git-commit-horizontal' }
 
     const defaultWorkspaceState = () => ({
         nodeLabels: true,
@@ -184,10 +206,138 @@
         }
     }
 
+    const isPersistentExplorer = () => window.matchMedia('(min-width: 1536px)').matches
+
+    const closePanes = () => {
+        paneBackdrop?.classList.add('hidden')
+        document.body.classList.remove('overflow-hidden')
+        controlsPanel?.classList.add('hidden')
+        detailsPanel?.classList.add('hidden')
+    }
+
+    const openPane = (panel) => {
+        if (!panel || isPersistentExplorer()) return
+        controlsPanel?.classList.add('hidden')
+        detailsPanel?.classList.add('hidden')
+        panel.classList.remove('hidden')
+        paneBackdrop?.classList.remove('hidden')
+        document.body.classList.add('overflow-hidden')
+        panel.querySelector('button, [href], input, select')?.focus({ preventScroll: true })
+    }
+
+    const setActiveView = (view, { updateUrl = true } = {}) => {
+        const graphTab = viewTabs.find((button) => button.dataset.topologyViewTab === 'graph')
+        activeView = view === 'list' || graphTab?.disabled ? 'list' : 'graph'
+        if (graphPanel) graphPanel.hidden = activeView !== 'graph'
+        if (listPanel) listPanel.hidden = activeView !== 'list'
+        viewTabs.forEach((button) => {
+            const active = button.dataset.topologyViewTab === activeView
+            button.setAttribute('aria-selected', active ? 'true' : 'false')
+            button.tabIndex = active ? 0 : -1
+            button.classList.toggle('bg-surface-card', active)
+            button.classList.toggle('text-kaori-primary', active)
+            button.classList.toggle('shadow-sm', active)
+            button.classList.toggle('text-content-muted', !active)
+        })
+        if (activeView === 'list') renderResourceList()
+        else if (cy) window.requestAnimationFrame(() => { cy.resize(); fitGraphToCanvas() })
+        if (updateUrl) updateUrl()
+    }
+
+    const bindSegmentedKeyboard = (buttons, activate) => {
+        buttons.forEach((button) => button.addEventListener('keydown', (event) => {
+            if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+            const enabledButtons = buttons.filter((item) => !item.disabled)
+            const index = enabledButtons.indexOf(button)
+            if (index < 0 || !enabledButtons.length) return
+            event.preventDefault()
+            let nextIndex = index
+            if (event.key === 'ArrowRight') nextIndex = (index + 1) % enabledButtons.length
+            if (event.key === 'ArrowLeft') nextIndex = (index - 1 + enabledButtons.length) % enabledButtons.length
+            if (event.key === 'Home') nextIndex = 0
+            if (event.key === 'End') nextIndex = enabledButtons.length - 1
+            enabledButtons[nextIndex]?.focus()
+            activate(enabledButtons[nextIndex])
+        }))
+    }
+
+    const relationshipCountsByNode = () => {
+        const counts = new Map()
+        ;(currentPayload.edges || []).forEach((edge) => {
+            const data = edge?.data || {}
+            if (workspaceState.relationships[data.relationship] === false) return
+            if (data.source) counts.set(data.source, (counts.get(data.source) || 0) + 1)
+            if (data.target) counts.set(data.target, (counts.get(data.target) || 0) + 1)
+        })
+        return counts
+    }
+
+    const visibleNodeRecords = () => {
+        if (cy) {
+            return cy.nodes(':visible').map((node) => ({
+                id: () => node.id(),
+                data: (key) => key ? node.data(key) : node.data(),
+                relationshipCount: () => node.connectedEdges(':visible').length,
+                graphNode: node,
+            }))
+        }
+        const relationshipCounts = relationshipCountsByNode()
+        return (currentPayload.nodes || [])
+            .filter((item) => {
+                const type = item?.data?.type
+                return item?.data?.id && workspaceState.resources[type] !== false
+            })
+            .map((item) => {
+                const data = item.data || {}
+                return {
+                    id: () => data.id,
+                    data: (key) => key ? data[key] : data,
+                    relationshipCount: () => relationshipCounts.get(data.id) || 0,
+                    graphNode: null,
+                }
+            })
+    }
+
+    const sortedVisibleNodeRecords = () => visibleNodeRecords().sort((a, b) => {
+        const typeCompare = humanizeType(a.data('type')).localeCompare(humanizeType(b.data('type')))
+        return typeCompare || String(a.data('label') || '').localeCompare(String(b.data('label') || ''))
+    })
+
+    const renderResourceList = () => {
+        if (!resourceListBody) return
+        resourceListBody.replaceChildren()
+        const nodes = sortedVisibleNodeRecords()
+        resourceListEmpty?.classList.toggle('hidden', nodes.length > 0)
+        if (!nodes.length) return
+        nodes.forEach((node) => {
+            const data = node.data()
+            const ui = getTypeUi(data.type)
+            const row = cloneTemplate('topology-resource-list-row-template')
+            if (!row) return
+            row.querySelector('[data-list-icon]')?.setAttribute('data-lucide', ui.icon)
+            row.querySelector('[data-list-icon-shell]')?.classList.add(`kaori-topology-domain-${ui.domain}`)
+            text(row, '[data-list-name]', data.label || node.id())
+            text(row, '[data-list-kind]', data.kind || humanizeType(data.type))
+            text(row, '[data-list-type]', humanizeType(data.type))
+            text(row, '[data-list-cluster]', data.cluster_name || 'Not Reported')
+            text(row, '[data-list-namespace]', data.namespace || 'Cluster Scoped')
+            text(row, '[data-list-status-text]', titleCaseText(data.status || 'Unknown'))
+            applyStatusSurface(
+                row.querySelector('[data-list-status]'),
+                row.querySelector('[data-list-status-dot]'),
+                data.status_tone,
+            )
+            text(row, '[data-list-relationships]', node.relationshipCount())
+            row.querySelector('[data-list-details]')?.addEventListener('click', () => selectNodeById(node.id()))
+            resourceListBody.appendChild(row)
+        })
+        window.lucide?.createIcons()
+    }
+
     const graphStyle = () => {
-        const labelBackground = cssToken('--kaori-surface-card', '#ffffff')
-        const brandPrimary = cssToken('--kaori-brand-primary', '#7c3aed')
-        const brandAccent = cssToken('--kaori-brand-accent', '#a78bfa')
+        const labelBackground = cssToken('--kaori-surface-card', 'Canvas')
+        const brandPrimary = cssToken('--kaori-brand-primary', 'CanvasText')
+        const brandAccent = cssToken('--kaori-brand-accent', 'CanvasText')
         return [
             {
                 selector: 'node',
@@ -204,9 +354,9 @@
                     'min-zoomed-font-size': 7,
                     'overlay-opacity': 0,
                     'padding': 10,
-                    'shape': 'round-rectangle',
+                    'shape': (node) => getTypeVisual(node.data('type')).shape,
                     'shadow-blur': 8,
-                    'shadow-color': '#0f172a',
+                    'shadow-color': cssToken('--kaori-content-primary', 'CanvasText'),
                     'shadow-offset-x': 0,
                     'shadow-offset-y': 2,
                     'shadow-opacity': 0.12,
@@ -236,11 +386,11 @@
                     'font-family': 'Inter, sans-serif',
                     'font-size': 8,
                     'label': '',
-                    'line-color': (edge) => edgeColors[edge.data('relationship')] || '#cbd5e1',
+                    'line-color': (edge) => edgeColor(edge.data('relationship')),
                     'line-opacity': 0.55,
                     'min-zoomed-font-size': 7,
                     'overlay-opacity': 0,
-                    'target-arrow-color': (edge) => edgeColors[edge.data('relationship')] || '#cbd5e1',
+                    'target-arrow-color': (edge) => edgeColor(edge.data('relationship')),
                     'target-arrow-shape': 'triangle',
                     'arrow-scale': 0.72,
                     'text-background-color': labelBackground,
@@ -342,11 +492,18 @@
         if (!runtimeStatus) return
         if (!message) {
             runtimeStatus.classList.add('hidden')
-            runtimeStatus.innerHTML = ''
+            runtimeStatus.replaceChildren()
             return
         }
         runtimeStatus.classList.remove('hidden')
-        runtimeStatus.innerHTML = `<span class="inline-flex items-center gap-2"><span class="h-2 w-2 rounded-full bg-status-pending"></span>${escapeHtml(message)}</span>`
+        const row = document.createElement('span')
+        row.className = 'inline-flex items-center gap-2'
+        const dot = document.createElement('span')
+        dot.className = 'h-2 w-2 rounded-full bg-status-pending'
+        const copy = document.createElement('span')
+        copy.textContent = message
+        row.append(dot, copy)
+        runtimeStatus.replaceChildren(row)
     }
 
     const showError = (message = '') => {
@@ -363,7 +520,10 @@
     const updateNamespaceOptions = (selectedValue = '') => {
         const clusterId = clusterSelect.value
         const namespaces = config.namespace_map?.[clusterId] || []
-        namespaceSelect.innerHTML = '<option value="">All Namespaces</option>'
+        const allOption = document.createElement('option')
+        allOption.value = ''
+        allOption.textContent = 'All Namespaces'
+        namespaceSelect.replaceChildren(allOption)
         namespaces.forEach((namespace) => {
             const option = document.createElement('option')
             option.value = namespace
@@ -389,9 +549,10 @@
             scope: scopeSelect.value,
             depth: depthSelect.value,
             layout: getLayoutMode(),
+            view: activeView,
         }
         Object.entries(values).forEach(([key, value]) => {
-            const isDefault = (key === 'scope' && value === 'all') || (key === 'depth' && value === '1') || (key === 'layout' && value === 'hierarchy')
+            const isDefault = (key === 'scope' && value === 'all') || (key === 'depth' && value === '1') || (key === 'layout' && value === 'hierarchy') || (key === 'view' && value === 'graph')
             if (value && !isDefault) url.searchParams.set(key, value)
             else url.searchParams.delete(key)
         })
@@ -413,14 +574,25 @@
         setText('topology-hero-namespaces', summary.namespaces ?? 0)
         setText('topology-hero-resources', summary.resources ?? 0)
         setText('topology-hero-relationships', summary.relationships ?? 0)
-        setText('topology-hero-collected', summary.last_collected_at ? formatDateTime(summary.last_collected_at) : 'No snapshot')
+        setText('topology-hero-coverage', `${summary.resources ?? 0} Shown`)
+        setText('topology-hero-coverage-helper', summary.truncated ? `${summary.omitted_nodes || 0} hidden by graph limit` : 'No resources omitted')
+        $('topology-hero-coverage-complete')?.classList.toggle('hidden', Boolean(summary.truncated))
+        $('topology-hero-coverage-limited')?.classList.toggle('hidden', !summary.truncated)
         if (filterSummary) filterSummary.textContent = `${summary.scope_label || 'All Resources'} · ${summary.depth_label || '1 Level'}`
         document.querySelectorAll('[data-topology-count-type]').forEach((element) => {
             element.textContent = payload.type_counts?.[element.dataset.topologyCountType] ?? 0
         })
         if (summary.truncated) {
             limitWarning?.classList.remove('hidden')
-            if (limitMessage) limitMessage.textContent = `${summary.omitted_nodes || 0} resources were omitted. Narrow the cluster or namespace scope to display them.`
+            const omittedBreakdown = Object.entries(summary.omitted_by_type || {})
+                .filter(([, count]) => Number(count) > 0)
+                .sort((a, b) => Number(b[1]) - Number(a[1]))
+                .slice(0, 3)
+                .map(([type, count]) => `${count} ${pluralizeType(type, count)}`)
+                .join(', ')
+            if (limitMessage) {
+                limitMessage.textContent = `${summary.omitted_nodes || 0} resources were omitted${omittedBreakdown ? ` (${omittedBreakdown})` : ''}. Narrow the cluster or namespace scope to display them.`
+            }
         } else {
             limitWarning?.classList.add('hidden')
         }
@@ -479,7 +651,10 @@
     }
 
     const applyVisibility = ({ relayout = false } = {}) => {
-        if (!cy) return
+        if (!cy) {
+            renderResourceList()
+            return
+        }
         recomputeCollapsedHidden()
         const resources = enabledResourceTypes()
         const relationships = enabledRelationshipTypes()
@@ -515,6 +690,7 @@
             if (selected?.length && selected.style('display') !== 'none') renderNodeDetails(selected, activeDrawerTab)
             else clearSelection()
         }
+        renderResourceList()
         if (relayout) applyCurrentLayout()
     }
 
@@ -572,50 +748,75 @@
         updateEdgeLabelClasses()
     }
 
-    const emptyDetailHtml = () => `
-        <div class="rounded-xl border border-dashed border-outline-strong bg-kaori-soft px-4 py-8 text-center">
-            <i data-lucide="mouse-pointer-click" class="mx-auto h-7 w-7 text-kaori-primary"></i>
-            <p class="mt-3 text-sm font-semibold text-kaori-primary">Nothing Selected</p>
-            <p class="mt-1 text-xs leading-5 text-content-secondary">Select a resource or relationship to inspect its inventory context.</p>
-        </div>`
+    const cloneTemplate = (templateId) => {
+        const template = $(templateId)
+        return template?.content?.firstElementChild?.cloneNode(true) || null
+    }
 
-    const renderValueRows = (fields, type) => {
-        const ui = getTypeUi(type)
-        return fields.map((field) => {
+    const text = (root, selector, value) => {
+        const element = root?.querySelector(selector)
+        if (element) element.textContent = value ?? ''
+        return element
+    }
+
+    const statusTone = (value) => (
+        ['healthy', 'warning', 'critical', 'info'].includes(value) ? value : 'unknown'
+    )
+
+    const applyStatusSurface = (label, dot, tone) => {
+        const normalized = statusTone(tone)
+        const allClasses = Object.values(statusSurfaceClasses).flat()
+        label?.classList.remove(...allClasses)
+        dot?.classList.remove(...allClasses)
+        const [surfaceClass, textClass, dotClass] = statusSurfaceClasses[normalized]
+        label?.classList.add(surfaceClass, textClass)
+        dot?.classList.add(dotClass)
+    }
+
+    const renderEmptyInspector = () => {
+        if (!detailContent) return
+        detailContent.replaceChildren(cloneTemplate('topology-inspector-empty-template'))
+        window.lucide?.createIcons()
+    }
+
+    const renderValueRows = (container, fields) => {
+        container?.replaceChildren()
+        fields.forEach((field) => {
+            const row = cloneTemplate('topology-field-row-template')
+            if (!row) return
+            text(row, '[data-field-label]', field.label)
             const displayValue = String(field.label || '').trim().toLowerCase() === 'status'
                 ? titleCaseText(field.value)
                 : field.value
-            return `
-                <div class="flex items-start justify-between gap-3 border-b border-outline-subtle py-2.5 last:border-b-0">
-                    <dt class="text-xs font-normal text-content-muted">${escapeHtml(field.label)}</dt>
-                    <dd class="max-w-[12rem] break-words text-right text-xs font-medium ${ui.value}">${escapeHtml(displayValue)}</dd>
-                </div>`
-        }).join('')
+            text(row, '[data-field-value]', displayValue || 'Not Reported')
+            container.appendChild(row)
+        })
     }
 
-    const renderRelationshipRows = (node) => {
+    const renderRelationshipRows = (container, node) => {
+        container?.replaceChildren()
         const edges = node.connectedEdges(':visible')
         if (!edges.length) {
-            return `<div class="rounded-xl border border-dashed border-outline-strong bg-kaori-soft px-4 py-6 text-center text-xs font-medium text-kaori-primary">No Visible Relationships.</div>`
+            container?.appendChild(cloneTemplate('topology-relationships-empty-template'))
+            return
         }
-        return edges.map((edge) => {
+        edges.forEach((edge) => {
             const sourceSelected = edge.source().id() === node.id()
             const peer = sourceSelected ? edge.target() : edge.source()
             const edgeData = edge.data()
             const ui = getRelationshipUi(edgeData.relationship)
-            return `
-                <button type="button" data-topology-related-node="${escapeHtml(peer.id())}" class="flex w-full items-start gap-3 rounded-lg border border-outline-subtle bg-surface-card px-3 py-3 text-left transition hover:border-outline-focus hover:bg-kaori-soft">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border ${ui.badge}"><i data-lucide="${ui.icon}" class="h-4 w-4"></i></span>
-                    <span class="min-w-0 flex-1">
-                        <span class="flex flex-wrap items-center gap-2"><span class="text-[10px] font-medium uppercase tracking-wide text-content-muted">${sourceSelected ? 'Outbound' : 'Inbound'}</span><span class="inline-flex min-h-6 items-center rounded-md border px-2 py-1 text-[10px] font-semibold ${ui.badge}">${escapeHtml(titleCaseText(edgeData.label || edgeData.relationship))}</span></span>
-                        <span class="mt-1 block break-words text-xs font-medium text-content-primary">${escapeHtml(peer.data('label') || peer.id())}</span>
-                        <span class="mt-1 block text-[10px] text-content-muted">${escapeHtml(humanizeType(peer.data('type')))}</span>
-                    </span>
-                    <i data-lucide="chevron-right" class="mt-2 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
-                </button>`
-        }).join('')
+            const row = cloneTemplate('topology-relationship-row-template')
+            if (!row) return
+            row.dataset.topologyRelatedNode = peer.id()
+            row.querySelector('[data-relationship-icon]')?.setAttribute('data-lucide', ui.icon)
+            text(row, '[data-relationship-direction]', sourceSelected ? 'Outbound' : 'Inbound')
+            text(row, '[data-relationship-label]', titleCaseText(edgeData.label || edgeData.relationship))
+            text(row, '[data-relationship-peer]', peer.data('label') || peer.id())
+            text(row, '[data-relationship-peer-type]', humanizeType(peer.data('type')))
+            row.addEventListener('click', () => selectNodeById(peer.id(), 'relationships'))
+            container.appendChild(row)
+        })
     }
-
 
     const drawDrawerMiniMap = () => {
         drawerMiniMapFrame = null
@@ -651,7 +852,7 @@
         ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
         ctx.clearRect(0, 0, logicalWidth, logicalHeight)
 
-        ctx.fillStyle = cssToken('--kaori-surface-card', '#ffffff')
+        ctx.fillStyle = cssToken('--kaori-surface-card', 'Canvas')
         ctx.fillRect(0, 0, logicalWidth, logicalHeight)
 
         const positions = clusterNodes.map((item) => item.position())
@@ -678,7 +879,7 @@
         })
 
         ctx.lineWidth = 1
-        ctx.strokeStyle = cssToken('--kaori-outline-strong', '#cfc7da')
+        ctx.strokeStyle = cssToken('--kaori-outline-strong', 'GrayText')
         clusterEdges.forEach((edge) => {
             const source = mapPoint(edge.source().position())
             const target = mapPoint(edge.target().position())
@@ -697,7 +898,7 @@
             ctx.fillStyle = visual.fill
             ctx.fill()
             ctx.lineWidth = selected ? 2 : 1
-            ctx.strokeStyle = selected ? cssToken('--kaori-brand-primary', '#7c3aed') : visual.border
+            ctx.strokeStyle = selected ? cssToken('--kaori-brand-primary', 'CanvasText') : visual.border
             ctx.stroke()
         })
 
@@ -708,7 +909,7 @@
         const viewportY = Math.max(1, Math.min(topLeft.y, bottomRight.y))
         const viewportWidth = Math.min(logicalWidth - viewportX - 1, Math.abs(bottomRight.x - topLeft.x))
         const viewportHeight = Math.min(logicalHeight - viewportY - 1, Math.abs(bottomRight.y - topLeft.y))
-        ctx.strokeStyle = '#2563eb'
+        ctx.strokeStyle = cssToken('--kaori-status-info', 'CanvasText')
         ctx.lineWidth = 1.5
         ctx.setLineDash([4, 3])
         ctx.strokeRect(viewportX, viewportY, Math.max(4, viewportWidth), Math.max(4, viewportHeight))
@@ -751,96 +952,88 @@
     }
 
     const renderNodeDetails = (node, initialTab = activeDrawerTab) => {
-        if (!node?.length) return
+        if (!detailContent) return
         selectedNodeId = node.id()
         activeDrawerTab = initialTab === 'relationships' ? 'relationships' : 'details'
         const data = node.data()
         const ui = getTypeUi(data.type)
-        const statusClass = statusClasses[data.status_tone] || statusClasses.unknown
         const childCount = descendantsOf(node.id()).size
         const isCollapsed = collapsedNodeIds.has(node.id())
         const connectedCount = node.connectedEdges(':visible').length
-        const fields = Array.isArray(data.fields) ? data.fields : []
+        const view = cloneTemplate('topology-node-inspector-template')
+        if (!view) return
 
-        const detailsHtml = `
-            <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                <div class="flex items-center justify-between gap-3">
-                    <h5 class="text-xs font-semibold text-content-primary">Resource Context</h5>
-                    <span class="inline-flex min-h-6 items-center rounded-md border px-2 py-1 text-[10px] font-semibold ${ui.badge}">${connectedCount} ${connectedCount === 1 ? 'Relationship' : 'Relationships'}</span>
-                </div>
-                <dl class="mt-3">
-                    <div class="flex items-start justify-between gap-3 border-b border-outline-subtle py-2.5"><dt class="text-xs text-content-muted">Cluster</dt><dd class="max-w-[12rem] break-words text-right text-xs font-medium ${ui.value}">${escapeHtml(data.cluster_name || 'Not Reported')}</dd></div>
-                    ${data.namespace ? `<div class="flex items-start justify-between gap-3 border-b border-outline-subtle py-2.5"><dt class="text-xs text-content-muted">Namespace</dt><dd class="max-w-[12rem] break-words text-right text-xs font-medium ${ui.value}">${escapeHtml(data.namespace)}</dd></div>` : ''}
-                    ${renderValueRows(fields, data.type)}
-                    <div class="flex items-start justify-between gap-3 py-2.5"><dt class="text-xs text-content-muted">Collected</dt><dd class="max-w-[12rem] break-words text-right text-xs font-medium ${ui.value}">${escapeHtml(formatDateTime(data.collected_at))}</dd></div>
-                </dl>
-            </div>
-            ${data.action_url ? `<a href="${escapeHtml(data.action_url)}" class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">Open ${escapeHtml(humanizeType(data.type))} Inventory<i data-lucide="arrow-up-right" class="h-4 w-4"></i></a>` : ''}
-            ${data.type === 'cluster' ? `
-                <div class="mt-4 rounded-xl border border-outline-subtle bg-surface-elevated p-3">
-                    <div class="flex items-center justify-between gap-3">
-                        <div>
-                            <h6 class="text-xs font-semibold text-content-primary">Cluster Topology Overview</h6>
-                            <p class="mt-0.5 text-[10px] text-content-muted">Click the mini-map to center the graph.</p>
-                        </div>
-                        <span class="rounded-md border border-outline-default bg-kaori-soft px-2 py-0.5 text-[9px] font-semibold text-kaori-primary">Overview</span>
-                    </div>
-                    <canvas id="topology-drawer-minimap" class="mt-3 block h-36 w-full cursor-crosshair rounded-lg border border-outline-default bg-surface-card" aria-label="Cluster topology mini-map"></canvas>
-                </div>
-            ` : ''}`
+        view.querySelector('[data-node-icon]')?.setAttribute('data-lucide', ui.icon)
+        view.querySelector('[data-node-icon-shell]')?.classList.add(`kaori-topology-domain-${ui.domain}`)
+        text(view, '[data-node-label]', data.label)
+        text(view, '[data-node-kind]', data.kind || humanizeType(data.type))
+        text(view, '[data-node-type]', humanizeType(data.type))
+        text(view, '[data-node-status-text]', titleCaseText(data.status || 'Unknown'))
+        applyStatusSurface(
+            view.querySelector('[data-node-status]'),
+            view.querySelector('[data-node-status-dot]'),
+            data.status_tone,
+        )
+        const description = view.querySelector('[data-node-description]')
+        if (description && data.description) {
+            description.textContent = data.description
+            description.classList.remove('hidden')
+        }
 
-        detailContent.innerHTML = `
-            <div class="space-y-4">
-                <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
-                    <div class="flex items-start gap-3">
-                        <span class="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg ring-1 ${ui.iconClass}"><i data-lucide="${ui.icon}" class="h-5 w-5"></i></span>
-                        <div class="min-w-0 flex-1">
-                            <h4 class="break-words text-sm font-semibold text-content-primary">${escapeHtml(data.label)}</h4>
-                            <p class="mt-1 text-xs text-content-muted">${escapeHtml(data.kind || humanizeType(data.type))}</p>
-                            <div class="mt-2 flex flex-wrap gap-2">
-                                <span class="inline-flex min-h-6 items-center rounded-md border px-2 py-1 text-[10px] font-semibold ${ui.badge}">${escapeHtml(humanizeType(data.type))}</span>
-                                <span class="inline-flex min-h-6 items-center rounded-md border px-2 py-1 text-[10px] font-semibold ${statusClass}">${escapeHtml(titleCaseText(data.status || 'Unknown'))}</span>
-                            </div>
-                        </div>
-                    </div>
-                    ${data.description ? `<p class="mt-3 text-xs leading-5 text-content-secondary">${escapeHtml(data.description)}</p>` : ''}
-                </div>
+        text(view, '[data-highlight-label]', pathHighlightActive ? 'Clear Path' : 'Highlight Path')
+        const collapseButton = view.querySelector('#topology-collapse-button')
+        collapseButton.disabled = !childCount
+        view.querySelector('[data-collapse-icon]')?.setAttribute('data-lucide', isCollapsed ? 'unfold-vertical' : 'fold-vertical')
+        text(view, '[data-collapse-label]', childCount ? (isCollapsed ? `Expand ${childCount}` : `Collapse ${childCount}`) : 'No Loaded Children')
 
-                <div class="grid grid-cols-2 gap-2">
-                    <button type="button" id="topology-highlight-path-button" class="inline-flex items-center justify-center gap-2 rounded-lg border border-outline-default bg-kaori-soft px-3 py-2 text-xs font-semibold text-kaori-primary transition hover:border-outline-focus hover:bg-surface-selected"><i data-lucide="route" class="h-3.5 w-3.5"></i>${pathHighlightActive ? 'Clear Path' : 'Highlight Path'}</button>
-                    <button type="button" id="topology-collapse-button" ${childCount ? '' : 'disabled'} class="inline-flex items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary transition hover:border-outline-focus hover:bg-surface-hover hover:text-kaori-primary disabled:cursor-not-allowed disabled:opacity-45"><i data-lucide="${isCollapsed ? 'unfold-vertical' : 'fold-vertical'}" class="h-3.5 w-3.5"></i>${childCount ? (isCollapsed ? `Expand ${childCount}` : `Collapse ${childCount}`) : 'No Loaded Children'}</button>
-                </div>
+        const fields = [
+            { label: 'Cluster', value: data.cluster_name || 'Not Reported' },
+            { label: 'Namespace', value: data.namespace || 'Cluster Scoped' },
+            ...(Array.isArray(data.fields) ? data.fields : []),
+            { label: 'Collected At', value: formatDateTime(data.collected_at) },
+        ]
+        renderValueRows(view.querySelector('[data-node-fields]'), fields)
 
-                <div class="grid grid-cols-2 rounded-lg border border-outline-subtle bg-surface-hover p-1">
-                    <button type="button" data-topology-node-tab="details" class="rounded-md px-3 py-2 text-xs font-medium">Details</button>
-                    <button type="button" data-topology-node-tab="relationships" class="rounded-md px-3 py-2 text-xs font-medium">Relationships <span class="ml-1 text-[10px] opacity-70">${connectedCount}</span></button>
-                </div>
-                <div id="topology-node-tab-panel"></div>
-            </div>`
+        const minimap = view.querySelector('[data-node-minimap]')
+        minimap?.classList.toggle('hidden', data.type !== 'cluster')
+        const action = view.querySelector('[data-node-action]')
+        if (action && data.action_url) {
+            action.href = data.action_url
+            action.classList.remove('hidden')
+            action.classList.add('inline-flex')
+        }
 
-        const panel = detailContent.querySelector('#topology-node-tab-panel')
-        const tabButtons = Array.from(detailContent.querySelectorAll('[data-topology-node-tab]'))
+        const tabButtons = Array.from(view.querySelectorAll('[data-topology-node-tab]'))
+        const detailsPanelLocal = view.querySelector('#topology-inspector-panel-details')
+        const relationshipsPanel = view.querySelector('#topology-inspector-panel-relationships')
         const activateTab = (tab) => {
             activeDrawerTab = tab === 'relationships' ? 'relationships' : 'details'
-            panel.innerHTML = activeDrawerTab === 'relationships' ? `<div class="space-y-2">${renderRelationshipRows(node)}</div>` : detailsHtml
             tabButtons.forEach((button) => {
                 const active = button.dataset.topologyNodeTab === activeDrawerTab
-                button.className = active
-                    ? 'rounded-md bg-surface-card px-3 py-2 text-xs font-semibold text-kaori-primary shadow-sm'
-                    : 'rounded-md px-3 py-2 text-xs font-medium text-content-muted transition hover:text-content-primary'
+                button.setAttribute('aria-selected', active ? 'true' : 'false')
+                button.tabIndex = active ? 0 : -1
+                button.classList.toggle('bg-surface-card', active)
+                button.classList.toggle('text-kaori-primary', active)
+                button.classList.toggle('shadow-sm', active)
+                button.classList.toggle('text-content-muted', !active)
             })
-            panel.querySelectorAll('[data-topology-related-node]').forEach((button) => button.addEventListener('click', () => selectNodeById(button.dataset.topologyRelatedNode, 'relationships')))
-            window.lucide?.createIcons()
+            detailsPanelLocal.hidden = activeDrawerTab !== 'details'
+            relationshipsPanel.hidden = activeDrawerTab !== 'relationships'
+            if (activeDrawerTab === 'relationships') renderRelationshipRows(relationshipsPanel.querySelector('[data-node-relationships]'), node)
             if (activeDrawerTab === 'details') scheduleDrawerMiniMapUpdate()
+            window.lucide?.createIcons()
         }
         tabButtons.forEach((button) => button.addEventListener('click', () => activateTab(button.dataset.topologyNodeTab)))
-        detailContent.querySelector('#topology-highlight-path-button')?.addEventListener('click', () => {
+        bindSegmentedKeyboard(tabButtons, (button) => activateTab(button.dataset.topologyNodeTab))
+        view.querySelector('#topology-highlight-path-button')?.addEventListener('click', () => {
             if (pathHighlightActive) {
                 clearPathHighlight()
                 renderNodeDetails(node, activeDrawerTab)
-            } else highlightPaths(node)
+            } else {
+                highlightPaths(node)
+            }
         })
-        detailContent.querySelector('#topology-collapse-button')?.addEventListener('click', () => {
+        collapseButton?.addEventListener('click', () => {
             if (!childCount) return
             if (isCollapsed) collapsedNodeIds.delete(node.id())
             else collapsedNodeIds.add(node.id())
@@ -848,56 +1041,168 @@
             const refreshed = cy.getElementById(node.id())
             if (refreshed?.length) renderNodeDetails(refreshed, activeDrawerTab)
         })
+
+        detailContent.replaceChildren(view)
         activateTab(activeDrawerTab)
+        openPane(detailsPanel)
         window.lucide?.createIcons()
     }
 
     const renderEdgeDetails = (edge) => {
+        if (!detailContent) return
         selectedNodeId = null
         pathHighlightActive = false
         const data = edge.data()
         const ui = getRelationshipUi(data.relationship)
-        const color = edgeColors[data.relationship] || cssToken('--kaori-status-unknown', '#64748b')
-        detailContent.innerHTML = `
-            <div class="space-y-4">
-                <div class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-11 w-11 items-center justify-center rounded-lg border ${ui.badge}"><i data-lucide="${ui.icon}" class="h-5 w-5"></i></span>
-                        <div class="min-w-0 flex-1">
-                            <h4 class="break-words text-sm font-semibold text-content-primary">${escapeHtml(data.label || 'Relationship')}</h4>
-                            <p class="mt-1 text-xs text-content-muted">Topology Relationship</p>
-                            <span class="mt-2 inline-flex min-h-6 items-center rounded-md border px-2 py-1 text-[10px] font-semibold ${ui.badge}">${escapeHtml(titleCaseText(data.relationship))}</span>
-                        </div>
-                    </div>
-                    ${data.description ? `<p class="mt-3 text-xs leading-5 text-content-secondary">${escapeHtml(data.description)}</p>` : ''}
-                </div>
-                <div class="rounded-xl border border-outline-subtle bg-surface-card p-4">
-                    <div class="flex items-center gap-3 rounded-lg bg-surface-hover px-3 py-3">
-                        <span class="h-3 w-3 rounded-full" style="background:${color}"></span>
-                        <div class="min-w-0 flex-1 space-y-1">
-                            <p class="break-words text-xs font-medium text-content-primary">${escapeHtml(data.source_label)}</p>
-                            <p class="text-[10px] uppercase tracking-wide text-content-muted">${escapeHtml(data.label)}</p>
-                            <p class="break-words text-xs font-medium text-content-primary">${escapeHtml(data.target_label)}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>`
+        const view = cloneTemplate('topology-edge-inspector-template')
+        if (!view) return
+        view.querySelector('[data-edge-icon]')?.setAttribute('data-lucide', ui.icon)
+        text(view, '[data-edge-title]', data.label || 'Relationship')
+        text(view, '[data-edge-type]', titleCaseText(data.relationship))
+        text(view, '[data-edge-source]', data.source_label)
+        text(view, '[data-edge-label]', data.label)
+        text(view, '[data-edge-target]', data.target_label)
+        const swatch = view.querySelector('[data-edge-swatch]')
+        if (swatch) swatch.style.backgroundColor = edgeColor(data.relationship)
+        const description = view.querySelector('[data-edge-description]')
+        if (description && data.description) {
+            description.textContent = data.description
+            description.classList.remove('hidden')
+        }
+        detailContent.replaceChildren(view)
+        openPane(detailsPanel)
+        window.lucide?.createIcons()
+    }
+
+    const renderPayloadRelationshipRows = (container, nodeId) => {
+        container?.replaceChildren()
+        const nodeMap = new Map((currentPayload.nodes || []).map((item) => [item?.data?.id, item?.data || {}]))
+        const edges = (currentPayload.edges || []).filter((item) => {
+            const data = item?.data || {}
+            return data.source === nodeId || data.target === nodeId
+        })
+        if (!edges.length) {
+            container?.appendChild(cloneTemplate('topology-relationships-empty-template'))
+            return
+        }
+        edges.forEach((item) => {
+            const data = item.data || {}
+            const sourceSelected = data.source === nodeId
+            const peerId = sourceSelected ? data.target : data.source
+            const peer = nodeMap.get(peerId) || {}
+            const ui = getRelationshipUi(data.relationship)
+            const row = cloneTemplate('topology-relationship-row-template')
+            if (!row) return
+            row.dataset.topologyRelatedNode = peerId || ''
+            row.querySelector('[data-relationship-icon]')?.setAttribute('data-lucide', ui.icon)
+            text(row, '[data-relationship-direction]', sourceSelected ? 'Outbound' : 'Inbound')
+            text(row, '[data-relationship-label]', titleCaseText(data.label || data.relationship))
+            text(row, '[data-relationship-peer]', peer.label || peerId || 'Unknown Resource')
+            text(row, '[data-relationship-peer-type]', humanizeType(peer.type || 'resource'))
+            if (peerId) row.addEventListener('click', () => selectNodeById(peerId, 'relationships'))
+            else row.disabled = true
+            container.appendChild(row)
+        })
+    }
+
+    const renderPayloadNodeDetails = (data, initialTab = activeDrawerTab) => {
+        if (!detailContent || !data) return
+        selectedNodeId = data.id || null
+        activeDrawerTab = initialTab === 'relationships' ? 'relationships' : 'details'
+        const ui = getTypeUi(data.type)
+        const view = cloneTemplate('topology-node-inspector-template')
+        if (!view) return
+
+        view.querySelector('[data-node-icon]')?.setAttribute('data-lucide', ui.icon)
+        view.querySelector('[data-node-icon-shell]')?.classList.add(`kaori-topology-domain-${ui.domain}`)
+        text(view, '[data-node-label]', data.label || data.id || 'Inventory Resource')
+        text(view, '[data-node-kind]', data.kind || humanizeType(data.type))
+        text(view, '[data-node-type]', humanizeType(data.type))
+        text(view, '[data-node-status-text]', titleCaseText(data.status || 'Unknown'))
+        applyStatusSurface(
+            view.querySelector('[data-node-status]'),
+            view.querySelector('[data-node-status-dot]'),
+            data.status_tone,
+        )
+        const description = view.querySelector('[data-node-description]')
+        if (description && data.description) {
+            description.textContent = data.description
+            description.classList.remove('hidden')
+        }
+
+        const highlightButton = view.querySelector('#topology-highlight-path-button')
+        const collapseButton = view.querySelector('#topology-collapse-button')
+        ;[highlightButton, collapseButton].forEach((button) => {
+            if (!button) return
+            button.disabled = true
+            button.classList.add('cursor-not-allowed', 'opacity-45')
+        })
+        text(view, '[data-highlight-label]', 'Graph Renderer Required')
+        view.querySelector('[data-collapse-icon]')?.setAttribute('data-lucide', 'fold-vertical')
+        text(view, '[data-collapse-label]', 'Graph Renderer Required')
+
+        const fields = [
+            { label: 'Cluster', value: data.cluster_name || 'Not Reported' },
+            { label: 'Namespace', value: data.namespace || 'Cluster Scoped' },
+            ...(Array.isArray(data.fields) ? data.fields : []),
+            { label: 'Collected At', value: formatDateTime(data.collected_at) },
+        ]
+        renderValueRows(view.querySelector('[data-node-fields]'), fields)
+        view.querySelector('[data-node-minimap]')?.classList.add('hidden')
+        const action = view.querySelector('[data-node-action]')
+        if (action && data.action_url) {
+            action.href = data.action_url
+            action.classList.remove('hidden')
+            action.classList.add('inline-flex')
+        }
+
+        const tabButtons = Array.from(view.querySelectorAll('[data-topology-node-tab]'))
+        const detailsPanelLocal = view.querySelector('#topology-inspector-panel-details')
+        const relationshipsPanel = view.querySelector('#topology-inspector-panel-relationships')
+        const activateTab = (tab) => {
+            activeDrawerTab = tab === 'relationships' ? 'relationships' : 'details'
+            tabButtons.forEach((button) => {
+                const active = button.dataset.topologyNodeTab === activeDrawerTab
+                button.setAttribute('aria-selected', active ? 'true' : 'false')
+                button.tabIndex = active ? 0 : -1
+                button.classList.toggle('bg-surface-card', active)
+                button.classList.toggle('text-kaori-primary', active)
+                button.classList.toggle('shadow-sm', active)
+                button.classList.toggle('text-content-muted', !active)
+            })
+            detailsPanelLocal.hidden = activeDrawerTab !== 'details'
+            relationshipsPanel.hidden = activeDrawerTab !== 'relationships'
+            if (activeDrawerTab === 'relationships') {
+                renderPayloadRelationshipRows(relationshipsPanel.querySelector('[data-node-relationships]'), data.id)
+            }
+            window.lucide?.createIcons()
+        }
+        tabButtons.forEach((button) => button.addEventListener('click', () => activateTab(button.dataset.topologyNodeTab)))
+        bindSegmentedKeyboard(tabButtons, (button) => activateTab(button.dataset.topologyNodeTab))
+        detailContent.replaceChildren(view)
+        activateTab(activeDrawerTab)
+        openPane(detailsPanel)
         window.lucide?.createIcons()
     }
 
     const clearSelection = () => {
-        if (!cy) return
         selectedNodeId = null
         pathHighlightActive = false
-        cy.elements().removeClass('dimmed focused path-active edge-label-visible search-match')
-        cy.elements().unselect()
-        updateEdgeLabelClasses()
-        detailContent.innerHTML = emptyDetailHtml()
-        window.lucide?.createIcons()
+        if (cy) {
+            cy.elements().removeClass('dimmed focused path-active edge-label-visible search-match')
+            cy.elements().unselect()
+            updateEdgeLabelClasses()
+        }
+        renderEmptyInspector()
     }
 
     const selectNodeById = (id, tab = 'details') => {
-        if (!cy) return
+        if (!cy) {
+            const data = (currentPayload.nodes || []).find((item) => item?.data?.id === id)?.data
+            if (data) renderPayloadNodeDetails(data, tab)
+            hideSearchResults()
+            return
+        }
         const node = cy.getElementById(id)
         if (!node?.length || !node.visible()) return
         focusNeighborhood(node)
@@ -958,16 +1263,35 @@
         window.setTimeout(finalize, 700)
     }
 
+    const updateActiveSearchOption = () => {
+        const options = Array.from(searchResults?.querySelectorAll('[role="option"]') || [])
+        options.forEach((option, index) => {
+            const active = index === activeSearchIndex
+            option.setAttribute('aria-selected', active ? 'true' : 'false')
+            option.classList.toggle('bg-kaori-soft', active)
+        })
+        const activeOption = options[activeSearchIndex]
+        if (activeOption) {
+            searchInput.setAttribute('aria-activedescendant', activeOption.id)
+            activeOption.scrollIntoView({ block: 'nearest' })
+        } else {
+            searchInput.removeAttribute('aria-activedescendant')
+        }
+    }
+
     const renderSearchResults = (term) => {
-        if (!cy || !searchResults) return
-        const normalized = term.trim().toLowerCase()
-        cy.nodes().removeClass('search-match')
-        if (normalized.length < 2) {
+        if (!searchResults) return
+        const normalized = String(term || '').trim().toLowerCase()
+        cy?.nodes().removeClass('search-match')
+        searchResults.replaceChildren()
+        searchResultNodes = []
+        activeSearchIndex = -1
+        if (!normalized) {
             hideSearchResults()
-            if (searchSummary) searchSummary.textContent = 'Search and open a resource directly in the graph.'
+            if (searchSummary) searchSummary.textContent = 'Search and open a resource in the current topology scope.'
             return
         }
-        const matches = cy.nodes(':visible').filter((node) => {
+        const matches = visibleNodeRecords().filter((node) => {
             const data = node.data()
             return [data.label, data.kind, data.type, data.cluster_name, data.namespace, data.status]
                 .filter(Boolean).join(' ').toLowerCase().includes(normalized)
@@ -976,24 +1300,57 @@
             const bLabel = String(b.data('label') || '').toLowerCase()
             return Number(bLabel.startsWith(normalized)) - Number(aLabel.startsWith(normalized)) || aLabel.localeCompare(bLabel)
         })
-        matches.addClass('search-match')
-        const limited = matches.slice(0, 8)
-        if (!limited.length) {
-            searchResults.innerHTML = '<div class="px-3 py-3 text-xs text-content-muted">No Matching Resource In The Current Graph.</div>'
+        if (cy) {
+            matches.forEach((node) => cy.getElementById(node.id()).addClass('search-match'))
+        }
+        searchResultNodes = matches.slice(0, 8)
+        if (!searchResultNodes.length) {
+            const empty = document.createElement('div')
+            empty.className = 'px-3 py-3 text-xs text-content-muted'
+            empty.textContent = 'No matching resource in the current topology.'
+            searchResults.appendChild(empty)
         } else {
-            searchResults.innerHTML = limited.map((node) => {
+            searchResultNodes.forEach((node, index) => {
                 const data = node.data()
                 const ui = getTypeUi(data.type)
-                return `<button type="button" data-topology-search-node="${escapeHtml(node.id())}" class="flex w-full items-start gap-3 border-b border-outline-subtle px-3 py-2.5 text-left last:border-b-0 hover:bg-kaori-soft"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1 ${ui.iconClass}"><i data-lucide="${ui.icon}" class="h-4 w-4"></i></span><span class="min-w-0 flex-1"><span class="block truncate text-xs font-medium text-content-primary">${escapeHtml(data.label)}</span><span class="mt-1 block truncate text-[10px] text-content-muted">${escapeHtml(humanizeType(data.type))}${data.namespace ? ` · ${escapeHtml(data.namespace)}` : ''} · ${escapeHtml(data.cluster_name || 'Unknown Cluster')}</span></span></button>`
-            }).join('')
+                const button = document.createElement('button')
+                button.type = 'button'
+                button.id = `topology-search-option-${index}`
+                button.setAttribute('role', 'option')
+                button.setAttribute('aria-selected', 'false')
+                button.className = 'flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus'
+                const iconShell = document.createElement('span')
+                iconShell.className = `flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft kaori-topology-domain-${ui.domain}`
+                const icon = document.createElement('i')
+                icon.setAttribute('data-lucide', ui.icon)
+                icon.className = 'h-4 w-4'
+                iconShell.appendChild(icon)
+                const copy = document.createElement('span')
+                copy.className = 'min-w-0 flex-1'
+                const title = document.createElement('span')
+                title.className = 'block truncate text-xs font-medium text-content-primary'
+                title.textContent = data.label
+                const helper = document.createElement('span')
+                helper.className = 'mt-1 block truncate text-xs text-content-muted'
+                helper.textContent = `${humanizeType(data.type)}${data.namespace ? ` · ${data.namespace}` : ''} · ${data.cluster_name || 'Unknown Cluster'}`
+                copy.append(title, helper)
+                button.append(iconShell, copy)
+                button.addEventListener('click', () => selectNodeById(node.id()))
+                searchResults.appendChild(button)
+            })
         }
         searchResults.classList.remove('hidden')
-        searchResults.querySelectorAll('[data-topology-search-node]').forEach((button) => button.addEventListener('click', () => selectNodeById(button.dataset.topologySearchNode)))
+        searchInput.setAttribute('aria-expanded', 'true')
         if (searchSummary) searchSummary.textContent = `${matches.length} matching ${matches.length === 1 ? 'resource' : 'resources'} found.`
         window.lucide?.createIcons()
     }
 
-    const hideSearchResults = () => searchResults?.classList.add('hidden')
+    const hideSearchResults = () => {
+        searchResults?.classList.add('hidden')
+        searchInput?.setAttribute('aria-expanded', 'false')
+        searchInput?.removeAttribute('aria-activedescendant')
+        activeSearchIndex = -1
+    }
 
     const scheduleBoundaryUpdate = () => {
         if (boundaryFrame) cancelAnimationFrame(boundaryFrame)
@@ -1003,7 +1360,7 @@
     const updateNamespaceBoundaries = () => {
         boundaryFrame = null
         if (!boundaryLayer) return
-        boundaryLayer.innerHTML = ''
+        boundaryLayer.replaceChildren()
         if (!cy || !workspaceState.groupByNamespace) return
         const groups = new Map()
         cy.nodes(':visible').forEach((node) => {
@@ -1023,7 +1380,10 @@
             boundary.style.top = `${box.y1 - padding}px`
             boundary.style.width = `${box.w + padding * 2}px`
             boundary.style.height = `${box.h + padding * 2}px`
-            boundary.innerHTML = `<span class="absolute -top-3 left-3 rounded-md border border-outline-default bg-surface-card px-2 py-0.5 text-[9px] font-semibold text-kaori-primary shadow-sm">${escapeHtml(namespace)}</span>`
+            const label = document.createElement('span')
+            label.className = 'absolute -top-3 left-3 rounded-md border border-outline-default bg-surface-card px-2 py-0.5 text-xs font-semibold text-kaori-primary shadow-sm'
+            label.textContent = namespace
+            boundary.appendChild(label)
             boundaryLayer.appendChild(boundary)
         })
     }
@@ -1041,21 +1401,25 @@
     }
 
     const exportJson = () => {
-        if (!cy) return
+        const visibleNodes = visibleNodeRecords().map((node) => node.data())
+        const visibleIds = new Set(visibleNodes.map((node) => node.id))
+        const visibleEdges = cy
+            ? cy.edges(':visible').map((edge) => edge.data())
+            : (currentPayload.edges || []).map((edge) => edge?.data || {}).filter((edge) => visibleIds.has(edge.source) && visibleIds.has(edge.target))
         const payload = {
             product: 'KAORI',
             generated_at: new Date().toISOString(),
-            filters: { cluster_id: clusterSelect.value, namespace: namespaceSelect.value, scope: scopeSelect.value, depth: depthSelect.value, layout: getLayoutMode() },
+            filters: { cluster_id: clusterSelect.value, namespace: namespaceSelect.value, scope: scopeSelect.value, depth: depthSelect.value, layout: getLayoutMode(), view: activeView },
             summary: currentPayload.summary || {},
-            nodes: cy.nodes(':visible').map((node) => node.data()),
-            edges: cy.edges(':visible').map((edge) => edge.data()),
+            nodes: visibleNodes,
+            edges: visibleEdges,
         }
         downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }), `kaori-topology-${Date.now()}.json`)
     }
 
     const exportPng = () => {
         if (!cy) return
-        const dataUrl = cy.png({ full: true, scale: 2, bg: '#ffffff' })
+        const dataUrl = cy.png({ full: true, scale: 2, bg: cssToken('--kaori-surface-card', 'white') })
         const image = new Image()
         image.onload = () => {
             const footer = 42
@@ -1063,9 +1427,9 @@
             output.width = image.width
             output.height = image.height + footer
             const ctx = output.getContext('2d')
-            ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, output.width, output.height)
+            ctx.fillStyle = cssToken('--kaori-surface-card', 'white'); ctx.fillRect(0, 0, output.width, output.height)
             ctx.drawImage(image, 0, 0)
-            ctx.fillStyle = '#475569'; ctx.font = '24px sans-serif'
+            ctx.fillStyle = cssToken('--kaori-content-secondary', 'GrayText'); ctx.font = '24px sans-serif'
             const collected = currentPayload.summary?.last_collected_at ? formatDateTime(currentPayload.summary.last_collected_at) : 'No snapshot timestamp'
             ctx.fillText(`KAORI · Kubernetes Topology · ${collected}`, 18, image.height + 29)
             output.toBlob((blob) => { if (blob) downloadBlob(blob, `kaori-topology-${Date.now()}.png`) }, 'image/png')
@@ -1074,7 +1438,7 @@
     }
 
     const setLoading = (state) => {
-        loading?.classList.toggle('hidden', !state)
+        loading?.classList.toggle('htmx-request', state)
         const refresh = $('topology-refresh-button')
         if (refresh) refresh.disabled = state
     }
@@ -1082,10 +1446,33 @@
     const createGraph = (payload) => {
         currentPayload = payload
         if (cy) cy.destroy()
+        if (!window.cytoscape) {
+            cy = null
+            const graphTab = viewTabs.find((button) => button.dataset.topologyViewTab === 'graph')
+            if (graphTab) {
+                graphTab.disabled = true
+                graphTab.setAttribute('aria-disabled', 'true')
+            }
+            updateSummary(payload)
+            renderEmptyInspector()
+            renderResourceList()
+            setRuntimeStatus()
+            showError('The graph renderer is unavailable. Resource List remains available from the committed inventory snapshot.')
+            const pngButton = $('topology-export-png-button')
+            if (pngButton) pngButton.disabled = true
+            setActiveView('list')
+            return
+        }
+        const graphTab = viewTabs.find((button) => button.dataset.topologyViewTab === 'graph')
+        if (graphTab) {
+            graphTab.disabled = false
+            graphTab.removeAttribute('aria-disabled')
+        }
         collapsedNodeIds = new Set()
         collapsedHiddenIds = new Set()
         selectedNodeId = null
         pathHighlightActive = false
+        renderEmptyInspector()
         const prepared = prepareElements(payload)
         const hasNodes = prepared.nodes.length > 0
         emptyState?.classList.toggle('hidden', hasNodes)
@@ -1093,6 +1480,7 @@
         updateSummary(payload)
         if (!hasNodes) {
             cy = null
+            renderResourceList()
             setRuntimeStatus()
             return
         }
@@ -1112,6 +1500,7 @@
             buildHierarchyIndex()
             attachGraphEvents()
             applyVisibility()
+            renderResourceList()
 
             let finalized = false
             const finalize = () => {
@@ -1171,16 +1560,11 @@
         }
     }
 
-    if (!window.cytoscape) {
-        setRuntimeStatus()
-        showError('The local Cytoscape.js renderer could not be loaded.')
-        return
-    }
-
     applyStateToControls()
     syncLayoutFromUrl()
     updateNamespaceOptions(config.filters?.namespace || '')
     createGraph(currentPayload)
+    setActiveView(activeView, { updateUrl: false })
 
     clusterSelect.addEventListener('change', () => { updateNamespaceOptions(''); fetchGraph() })
     namespaceSelect.addEventListener('change', fetchGraph)
@@ -1221,9 +1605,35 @@
         searchTimer = window.setTimeout(() => renderSearchResults(searchInput.value), 160)
     })
     searchInput.addEventListener('focus', () => renderSearchResults(searchInput.value))
+    searchInput.addEventListener('keydown', (event) => {
+        if (!searchResultNodes.length && !['Escape'].includes(event.key)) return
+        if (event.key === 'ArrowDown') {
+            event.preventDefault()
+            activeSearchIndex = Math.min(activeSearchIndex + 1, searchResultNodes.length - 1)
+            updateActiveSearchOption()
+        } else if (event.key === 'ArrowUp') {
+            event.preventDefault()
+            activeSearchIndex = Math.max(activeSearchIndex - 1, 0)
+            updateActiveSearchOption()
+        } else if (event.key === 'Enter' && activeSearchIndex >= 0) {
+            event.preventDefault()
+            selectNodeById(searchResultNodes[activeSearchIndex].id())
+        } else if (event.key === 'Escape') {
+            hideSearchResults()
+        }
+    })
     document.addEventListener('click', (event) => {
         if (!searchResults?.contains(event.target) && event.target !== searchInput) hideSearchResults()
     })
+
+    viewTabs.forEach((button) => button.addEventListener('click', () => setActiveView(button.dataset.topologyViewTab)))
+    bindSegmentedKeyboard(viewTabs, (button) => setActiveView(button.dataset.topologyViewTab))
+    $('topology-controls-button')?.addEventListener('click', () => openPane(controlsPanel))
+    $('topology-details-button')?.addEventListener('click', () => openPane(detailsPanel))
+    paneBackdrop?.addEventListener('click', closePanes)
+    document.querySelectorAll('[data-topology-close-pane]').forEach((button) => button.addEventListener('click', closePanes))
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closePanes() })
+    window.addEventListener('resize', () => { if (isPersistentExplorer()) closePanes() })
 
     $('topology-fit-button')?.addEventListener('click', fitGraphToCanvas)
     $('topology-reset-button')?.addEventListener('click', () => {
@@ -1232,7 +1642,7 @@
         collapsedNodeIds = new Set()
         clearSelection()
         applyVisibility({ relayout: true })
-        if (searchSummary) searchSummary.textContent = 'Search and open a resource directly in the graph.'
+        if (searchSummary) searchSummary.textContent = 'Search and open a resource in the current topology scope.'
     })
     $('topology-refresh-button')?.addEventListener('click', fetchGraph)
     $('topology-export-png-button')?.addEventListener('click', exportPng)

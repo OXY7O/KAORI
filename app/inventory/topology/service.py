@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-from collections import defaultdict
+from collections import OrderedDict, defaultdict
+from copy import deepcopy
 from datetime import UTC, datetime
+from threading import RLock
 from typing import Any
 
 from flask import url_for
@@ -39,6 +41,9 @@ _TOPOLOGY_DEPTHS = {
 }
 
 _TOPOLOGY_MAX_NODES = 350
+_TOPOLOGY_CACHE_MAX_ENTRIES = 24
+_TOPOLOGY_CACHE: OrderedDict[tuple[Any, ...], dict[str, Any]] = OrderedDict()
+_TOPOLOGY_CACHE_LOCK = RLock()
 
 _RESOURCE_GROUP_ORDER = (
     'node',
@@ -221,9 +226,9 @@ def _limit_graph(
     nodes: list[dict[str, Any]],
     edges: list[dict[str, Any]],
     max_nodes: int,
-) -> tuple[list[dict[str, Any]], list[dict[str, Any]], int]:
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], int, dict[str, int]]:
     if len(nodes) <= max_nodes:
-        return nodes, edges, 0
+        return nodes, edges, 0, {}
 
     parents = [node for node in nodes if node['data']['type'] in {'cluster', 'namespace'}]
     groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -264,7 +269,28 @@ def _limit_graph(
     limited_edges = [
         edge for edge in edges if edge['data']['source'] in kept_ids and edge['data']['target'] in kept_ids
     ]
-    return kept, limited_edges, len(nodes) - len(kept)
+    omitted_by_type: dict[str, int] = defaultdict(int)
+    for node in nodes:
+        if node['data']['id'] not in kept_ids:
+            omitted_by_type[node['data']['type']] += 1
+    return kept, limited_edges, len(nodes) - len(kept), dict(omitted_by_type)
+
+
+def _topology_cache_get(key: tuple[Any, ...]) -> dict[str, Any] | None:
+    with _TOPOLOGY_CACHE_LOCK:
+        cached = _TOPOLOGY_CACHE.get(key)
+        if cached is None:
+            return None
+        _TOPOLOGY_CACHE.move_to_end(key)
+        return deepcopy(cached)
+
+
+def _topology_cache_put(key: tuple[Any, ...], payload: dict[str, Any]) -> None:
+    with _TOPOLOGY_CACHE_LOCK:
+        _TOPOLOGY_CACHE[key] = deepcopy(payload)
+        _TOPOLOGY_CACHE.move_to_end(key)
+        while len(_TOPOLOGY_CACHE) > _TOPOLOGY_CACHE_MAX_ENTRIES:
+            _TOPOLOGY_CACHE.popitem(last=False)
 
 
 def normalize_topology_filters(
@@ -386,12 +412,53 @@ def build_topology_graph(
                 'depth_label': _TOPOLOGY_DEPTHS[depth],
                 'truncated': False,
                 'omitted_nodes': 0,
+                'omitted_by_type': {},
             },
             'type_counts': {},
             'filters': filters,
         }
 
     cluster_by_id = {cluster.id: cluster for cluster in clusters}
+
+    cluster_inventory_rows = (
+        ClusterInventory.query.filter(ClusterInventory.cluster_id.in_(cluster_ids))
+        .order_by(ClusterInventory.collected_at.desc())
+        .all()
+    )
+    latest_cluster_inventory: dict[str, ClusterInventory] = {}
+    for row in cluster_inventory_rows:
+        latest_cluster_inventory.setdefault(row.cluster_id, row)
+
+    generation_signature = tuple(
+        (
+            cluster.id,
+            _iso_datetime(cluster.updated_at),
+            _iso_datetime(latest_cluster_inventory.get(cluster.id).collected_at)
+            if latest_cluster_inventory.get(cluster.id)
+            else None,
+        )
+        for cluster in clusters
+    )
+    cache_key = (
+        generation_signature,
+        cluster_id,
+        namespace,
+        scope,
+        depth,
+    )
+    cached_payload = _topology_cache_get(cache_key)
+    if cached_payload is not None:
+        return cached_payload
+
+    include_level_1 = True
+    include_level_2 = depth in {'2', '3', 'full'}
+    include_pods = depth in {'3', 'full'}
+    include_all_relationships = depth == 'full'
+
+    show_compute = scope in {'all', 'compute'}
+    show_networking = scope in {'all', 'networking'}
+    show_configuration = scope in {'all', 'configuration'}
+    show_storage = scope in {'all', 'storage'}
 
     namespace_query = _apply_cluster_filter(NamespaceInventory.query, NamespaceInventory, cluster_ids)
     if namespace:
@@ -405,6 +472,7 @@ def build_topology_graph(
         query = _apply_cluster_filter(model.query, model, cluster_ids)
         return _apply_namespace_filter(query, model, namespace)
 
+    needs_pods = include_pods or (bool(namespace) and show_compute)
     pods = (
         namespaced_query(PodInventory)
         .order_by(
@@ -413,19 +481,23 @@ def build_topology_graph(
             PodInventory.pod_name.asc(),
         )
         .all()
+        if needs_pods
+        else []
     )
 
-    node_query = _apply_cluster_filter(NodeInventory.query, NodeInventory, cluster_ids)
-    if namespace:
-        referenced_nodes = sorted({pod.node_name for pod in pods if pod.node_name})
-        if referenced_nodes:
-            node_query = node_query.filter(NodeInventory.node_name.in_(referenced_nodes))
-        else:
-            node_query = node_query.filter(false())
-    nodes_inventory = node_query.order_by(
-        NodeInventory.cluster_id.asc(),
-        NodeInventory.node_name.asc(),
-    ).all()
+    nodes_inventory = []
+    if include_level_1 and show_compute:
+        node_query = _apply_cluster_filter(NodeInventory.query, NodeInventory, cluster_ids)
+        if namespace:
+            referenced_nodes = sorted({pod.node_name for pod in pods if pod.node_name})
+            if referenced_nodes:
+                node_query = node_query.filter(NodeInventory.node_name.in_(referenced_nodes))
+            else:
+                node_query = node_query.filter(false())
+        nodes_inventory = node_query.order_by(
+            NodeInventory.cluster_id.asc(),
+            NodeInventory.node_name.asc(),
+        ).all()
 
     workloads = (
         namespaced_query(WorkloadInventory)
@@ -436,6 +508,8 @@ def build_topology_graph(
             WorkloadInventory.name.asc(),
         )
         .all()
+        if include_level_2 and show_compute
+        else []
     )
     services = (
         namespaced_query(ServiceInventory)
@@ -445,6 +519,8 @@ def build_topology_graph(
             ServiceInventory.service_name.asc(),
         )
         .all()
+        if include_level_2 and show_networking
+        else []
     )
     ingresses = (
         namespaced_query(IngressInventory)
@@ -454,6 +530,8 @@ def build_topology_graph(
             IngressInventory.ingress_name.asc(),
         )
         .all()
+        if include_level_2 and show_networking
+        else []
     )
     configurations = (
         namespaced_query(ConfigurationInventory)
@@ -464,57 +542,42 @@ def build_topology_graph(
             ConfigurationInventory.name.asc(),
         )
         .all()
+        if include_level_2 and show_configuration
+        else []
     )
 
-    storage_query = _apply_cluster_filter(StorageInventory.query, StorageInventory, cluster_ids)
-    if namespace:
-        storage_query = storage_query.filter(
-            (StorageInventory.namespace == namespace)
-            | (StorageInventory.namespace.is_(None) & (StorageInventory.storage_type == 'PersistentVolume'))
-        )
-    storage_items = storage_query.order_by(
-        StorageInventory.cluster_id.asc(),
-        StorageInventory.storage_type.asc(),
-        StorageInventory.namespace.asc(),
-        StorageInventory.name.asc(),
-    ).all()
+    storage_items = []
+    if include_level_2 and show_storage:
+        storage_query = _apply_cluster_filter(StorageInventory.query, StorageInventory, cluster_ids)
+        if namespace:
+            storage_query = storage_query.filter(
+                (StorageInventory.namespace == namespace)
+                | (StorageInventory.namespace.is_(None) & (StorageInventory.storage_type == 'PersistentVolume'))
+            )
+        storage_items = storage_query.order_by(
+            StorageInventory.cluster_id.asc(),
+            StorageInventory.storage_type.asc(),
+            StorageInventory.namespace.asc(),
+            StorageInventory.name.asc(),
+        ).all()
 
-    if namespace:
-        selected_claims = [
-            item
-            for item in storage_items
-            if item.storage_type == 'PersistentVolumeClaim' and item.namespace == namespace
-        ]
-        selected_volume_names = {
-            str((item.details or {}).get('volume_name') or '').strip()
-            for item in selected_claims
-            if str((item.details or {}).get('volume_name') or '').strip()
-        }
-        storage_items = [
-            item
-            for item in storage_items
-            if (item.storage_type == 'PersistentVolumeClaim' and item.namespace == namespace)
-            or (item.storage_type == 'PersistentVolume' and item.name in selected_volume_names)
-        ]
-
-    cluster_inventory_rows = (
-        ClusterInventory.query.filter(ClusterInventory.cluster_id.in_(cluster_ids))
-        .order_by(ClusterInventory.collected_at.desc())
-        .all()
-    )
-    latest_cluster_inventory: dict[str, ClusterInventory] = {}
-    for row in cluster_inventory_rows:
-        latest_cluster_inventory.setdefault(row.cluster_id, row)
-
-    include_level_1 = True
-    include_level_2 = depth in {'2', '3', 'full'}
-    include_pods = depth in {'3', 'full'}
-    include_all_relationships = depth == 'full'
-
-    show_compute = scope in {'all', 'compute'}
-    show_networking = scope in {'all', 'networking'}
-    show_configuration = scope in {'all', 'configuration'}
-    show_storage = scope in {'all', 'storage'}
+        if namespace:
+            selected_claims = [
+                item
+                for item in storage_items
+                if item.storage_type == 'PersistentVolumeClaim' and item.namespace == namespace
+            ]
+            selected_volume_names = {
+                str((item.details or {}).get('volume_name') or '').strip()
+                for item in selected_claims
+                if str((item.details or {}).get('volume_name') or '').strip()
+            }
+            storage_items = [
+                item
+                for item in storage_items
+                if (item.storage_type == 'PersistentVolumeClaim' and item.namespace == namespace)
+                or (item.storage_type == 'PersistentVolume' and item.name in selected_volume_names)
+            ]
 
     graph_nodes: list[dict[str, Any]] = []
     graph_edges: list[dict[str, Any]] = []
@@ -848,6 +911,14 @@ def build_topology_graph(
                 )
             )
 
+    services_by_scope: dict[tuple[str, str], list[ServiceInventory]] = defaultdict(list)
+    for service in services:
+        services_by_scope[(service.cluster_id, service.namespace)].append(service)
+
+    pods_by_scope: dict[tuple[str, str], list[PodInventory]] = defaultdict(list)
+    for pod in pods:
+        pods_by_scope[(pod.cluster_id, pod.namespace)].append(pod)
+
     if include_pods:
         for item in pods:
             parent = namespace_node_ids.get((item.cluster_id, item.namespace))
@@ -858,7 +929,10 @@ def build_topology_graph(
             if scope == 'compute':
                 relevant = True
             elif scope == 'networking':
-                relevant = any(_selector_matches(service.selector or {}, item.labels or {}) for service in services)
+                relevant = any(
+                    _selector_matches(service.selector or {}, item.labels or {})
+                    for service in services_by_scope.get((item.cluster_id, item.namespace), [])
+                )
             elif scope == 'configuration':
                 relevant = bool(item.configuration_references)
             elif scope == 'storage':
@@ -978,9 +1052,7 @@ def build_topology_graph(
                 service_id = service_node_ids.get((service.cluster_id, service.namespace, service.service_name))
                 if not service_id or not service.selector:
                     continue
-                for pod in pods:
-                    if pod.cluster_id != service.cluster_id or pod.namespace != service.namespace:
-                        continue
+                for pod in pods_by_scope.get((service.cluster_id, service.namespace), []):
                     pod_id = pod_node_ids.get((pod.cluster_id, pod.namespace, pod.pod_name))
                     if not pod_id or not _selector_matches(service.selector or {}, pod.labels or {}):
                         continue
@@ -1074,7 +1146,7 @@ def build_topology_graph(
         allowed_relationships = {'owns', 'scheduled_on', 'selects', 'routes_to'}
         graph_edges = [edge for edge in graph_edges if edge['data']['relationship'] in allowed_relationships]
 
-    graph_nodes, graph_edges, omitted_nodes = _limit_graph(
+    graph_nodes, graph_edges, omitted_nodes, omitted_by_type = _limit_graph(
         graph_nodes,
         graph_edges,
         _TOPOLOGY_MAX_NODES,
@@ -1093,7 +1165,7 @@ def build_topology_graph(
     namespace_count = type_counts.get('namespace', 0)
     resource_count = max(len(graph_nodes) - cluster_count - namespace_count, 0)
 
-    return {
+    payload = {
         'nodes': graph_nodes,
         'edges': graph_edges,
         'summary': {
@@ -1106,7 +1178,10 @@ def build_topology_graph(
             'depth_label': _TOPOLOGY_DEPTHS[depth],
             'truncated': omitted_nodes > 0,
             'omitted_nodes': omitted_nodes,
+            'omitted_by_type': omitted_by_type,
         },
         'type_counts': dict(type_counts),
         'filters': filters,
     }
+    _topology_cache_put(cache_key, payload)
+    return payload

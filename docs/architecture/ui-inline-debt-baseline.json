@@ -57,7 +57,7 @@
     },
     "app/templates/inventory/topology/index.html": {
       "inline_event_handlers": 0,
-      "inline_scripts": 2,
+      "inline_scripts": 1,
       "inline_styles": 0
     },
     "app/templates/jobs/executions/partials/_registry.html": {
