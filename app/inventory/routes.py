@@ -462,6 +462,7 @@ def workloads():
     workload_statuses = get_workload_filter_statuses(
         cluster_id=cluster_id,
         namespace=namespace,
+        workload_type=workload_type,
     )
     if status and status not in workload_statuses:
         status = ''
@@ -478,6 +479,11 @@ def workloads():
     inventory['namespaces'] = namespaces
     inventory['workload_types'] = workload_types
     inventory['workload_statuses'] = workload_statuses
+    selected_cluster = next(
+        (cluster for cluster in clusters if str(cluster.id) == str(cluster_id)),
+        None,
+    )
+    inventory['scope_label'] = selected_cluster.name if selected_cluster else 'All Clusters'
 
     return render_template(
         _inventory_template('workloads'),

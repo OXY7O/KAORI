@@ -1,87 +1,55 @@
 {% import "components/table.html" as table_ui %}
-{% import "components/loading_bar.html" as loading_bar %}
 <section id="workloads-table-card" class="{{ table_ui.block_classes() }}">
-    <header class="border-b border-outline-subtle px-5 py-4">
-        <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-            <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="layout-grid" class="h-5 w-5"></i>
-                </span>
-                <div>
-                    <h2 class="text-lg font-semibold text-content-primary">Workload Inventory</h2>
-                    <p class="mt-1 text-sm leading-6 text-content-muted">Kubernetes workload resources collected from connected clusters.</p>
-                </div>
-            </div>
-            <a href="{{ url_for('integrations.kubernetes') }}"
-               class="{{ table_ui.action_classes() }}">
-                <i data-lucide="external-link" class="h-4 w-4"></i>
-                Open Cluster List
-            </a>
-        </div>
-        {{ loading_bar.render('workloads-table-loading', label='Refreshing Workloads Inventory') }}
-    </header>
-    <div class="border-b border-outline-subtle bg-surface-hover px-5 py-4">
+    {{ table_ui.inventory_block_header(
+        'layout-grid',
+        'Workload Inventory',
+        'Kubernetes controller and batch workloads collected from connected clusters.',
+        'workloads-table-loading',
+        'Refreshing Workload Inventory',
+        url_for('integrations.kubernetes'),
+        'Open Cluster List'
+    ) }}
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form hx-get="{{ url_for('inventory.workloads') }}"
               hx-target="#workloads-inventory-scope"
               hx-swap="outerHTML"
               hx-trigger="change from:select, keyup changed delay:500ms from:input[name='search']"
               hx-indicator="#workloads-table-loading"
-              class="grid gap-4 xl:grid-cols-12 xl:items-end">
+              class="grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.85fr)_minmax(0,0.85fr)_minmax(16rem,1.4fr)] xl:items-end">
             <input type="hidden" name="page" value="1" />
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}" />
             <input type="hidden" name="partial_mode" value="inventory_scope" />
-            {% set select_class = "h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20" %}
-            <div class="xl:col-span-2">
-                <label class="mb-2 block text-sm font-semibold text-content-secondary">Cluster</label>
-                <select name="cluster_id" class="{{ select_class }}">
+            <div>
+                <label class="{{ table_ui.filter_label_classes() }}">Cluster</label>
+                <select name="cluster_id" class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Clusters</option>
-                    {% for cluster in clusters %}
-                        <option value="{{ cluster.id }}"
-                                {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
-                    {% endfor %}
+                    {% for cluster in clusters %}<option value="{{ cluster.id }}" {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>{% endfor %}
                 </select>
             </div>
-            <div class="xl:col-span-2">
-                <label class="mb-2 block text-sm font-semibold text-content-secondary">Namespace</label>
-                <select name="namespace" class="{{ select_class }}">
+            <div>
+                <label class="{{ table_ui.filter_label_classes() }}">Namespace</label>
+                <select name="namespace" class="{{ table_ui.filter_select_classes() }}">
                     <option value="" {% if not selected_namespace %}selected{% endif %}>All Namespaces</option>
-                    {% for namespace_name in inventory.namespaces %}
-                        <option value="{{ namespace_name }}"
-                                {% if selected_namespace == namespace_name %}selected{% endif %}>{{ namespace_name }}</option>
-                    {% endfor %}
+                    {% for namespace_name in inventory.namespaces %}<option value="{{ namespace_name }}" {% if selected_namespace == namespace_name %}selected{% endif %}>{{ namespace_name }}</option>{% endfor %}
                 </select>
             </div>
-            <div class="xl:col-span-2">
-                <label class="mb-2 block text-sm font-semibold text-content-secondary">Type</label>
-                <select name="type" class="{{ select_class }}">
+            <div>
+                <label class="{{ table_ui.filter_label_classes() }}">Type</label>
+                <select name="type" class="{{ table_ui.filter_select_classes() }}">
                     <option value="" {% if not selected_type %}selected{% endif %}>All Types</option>
-                    {% for type_name in inventory.workload_types %}
-                        <option value="{{ type_name }}"
-                                {% if selected_type == type_name %}selected{% endif %}>{{ type_name }}</option>
-                    {% endfor %}
+                    {% for type_name in inventory.workload_types %}<option value="{{ type_name }}" {% if selected_type == type_name %}selected{% endif %}>{{ type_name }}</option>{% endfor %}
                 </select>
             </div>
-            <div class="xl:col-span-2">
-                <label class="mb-2 block text-sm font-semibold text-content-secondary">Status</label>
-                <select name="status" class="{{ select_class }}">
+            <div>
+                <label class="{{ table_ui.filter_label_classes() }}">Status</label>
+                <select name="status" class="{{ table_ui.filter_select_classes() }}">
                     <option value="" {% if not selected_status %}selected{% endif %}>All Statuses</option>
-                    {% for status_name in inventory.workload_statuses %}
-                        <option value="{{ status_name }}"
-                                {% if selected_status == status_name %}selected{% endif %}>{{ status_name }}</option>
-                    {% endfor %}
+                    {% for status_name in inventory.workload_statuses %}<option value="{{ status_name }}" {% if selected_status == status_name %}selected{% endif %}>{{ status_name }}</option>{% endfor %}
                 </select>
             </div>
-            <div class="xl:col-span-4">
-                <label class="mb-2 block text-sm font-semibold text-content-secondary">Search Workload</label>
-                <div class="relative">
-                    <i data-lucide="search"
-                       class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
-                    <input type="text"
-                           name="search"
-                           value="{{ search }}"
-                           placeholder="Search Workload"
-                           class="{{ table_ui.filter_input_classes() }} pl-10" />
-                </div>
+            <div>
+                <label class="{{ table_ui.filter_label_classes() }}">Search Workloads</label>
+                {{ table_ui.search_field('search', search, 'Search workload name') }}
             </div>
         </form>
     </div>

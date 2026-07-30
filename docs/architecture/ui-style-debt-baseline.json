@@ -627,15 +627,6 @@
     "app/templates/inventory/topology/partials/_workspace.html": {
       "semantic_border_utilities": 3
     },
-    "app/templates/inventory/workloads/partials/_hero.html": {
-      "arbitrary_text_sizes": 4
-    },
-    "app/templates/inventory/workloads/partials/_summary_cards.html": {
-      "arbitrary_text_sizes": 5,
-      "arbitrary_tracking": 5,
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 2
-    },
     "app/templates/jobs/configuration/_execution_activity.html": {
       "arbitrary_text_sizes": 7,
       "arbitrary_tracking": 6,

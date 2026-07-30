@@ -21,9 +21,9 @@ def test_workload_table_pagination_uses_endpoint_parameters_and_numeric_page_but
     mapping = read('app/templates/analytics/workload/partials/_workload_mapping_section.html')
 
     # The shared numeric helper remains available to other workspaces.
-    assert "numeric_pages(current_page, total_pages, page_param='page', hx_target=None, hx_indicator=None)" in pagination
+    assert "numeric_pages(current_page, total_pages, page_param='page', hx_target=None, hx_indicator=None, endpoint=None, query_params=None)" in pagination
     assert 'request.args.to_dict()' in pagination
-    assert 'url_for(request.endpoint, **page_args)' in pagination
+    assert 'url_for(endpoint_name, **page_args)' in pagination
     assert 'data-page-param="{{ page_param }}"' in pagination
     assert 'container.dataset.pageParam || PAGE_PARAM' in pagination_js
     assert 'replacePage(href, page, pageParam)' in pagination_js

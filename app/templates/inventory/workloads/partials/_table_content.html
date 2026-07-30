@@ -2,72 +2,42 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/details/_expandable_row.html" as expandable %}
-<div class="overflow-x-auto overscroll-x-contain">
-    <table class="{{ table_ui.table_classes('min-w-[1080px]') }}">
+<div class="overflow-x-auto">
+    <table class="{{ table_ui.table_classes('min-w-[76rem]') }}">
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
-                <th class="min-w-[12rem] px-4 py-3">Cluster</th>
-                <th class="px-4 py-3">Namespace</th>
-                <th class="px-4 py-3">Workload</th>
-                <th class="px-4 py-3">Type</th>
-                <th class="px-4 py-3">State</th>
-                <th class="px-4 py-3">Pods</th>
-                <th class="px-4 py-3">Update Strategy</th>
-                <th class="px-3 py-3 text-right">Details</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[16rem]">Workload</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[13rem]">Scope</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Operational State</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Runtime Footprint</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[13rem]">Delivery Model</th>
+                <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
             </tr>
         </thead>
         <tbody class="{{ table_ui.body_classes() }}">
             {% for workload in inventory.workloads %}
                 <tr class="{{ table_ui.row_classes() }}">
-                    <td class="px-4 py-3.5 align-middle">
-                        {{ table_ui.cluster_identity(workload.cluster_name, workload.cluster_environment) }}
+                    <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(workload.name, workload.identity_supporting, 'boxes') }}</td>
+                    <td class="{{ table_ui.cell_classes() }}">{{ table_ui.namespaced_scope_identity(workload.cluster_name, workload.cluster_environment, workload.namespace) }}</td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        {{ table_label.status_indicator_label(workload.operational_state_label, workload.operational_state_tone) }}
+                        <p class="mt-1.5 text-xs leading-5 text-content-muted">{{ workload.state_display }}</p>
                     </td>
-                    <td class="px-4 py-3.5 align-middle">
-                        {{ table_ui.namespace_identity(workload.namespace) }}
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <p class="text-sm font-semibold leading-5 text-content-primary">{{ workload.runtime_primary }}</p>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ workload.runtime_secondary }}</p>
                     </td>
-                    <td class="max-w-[260px] px-4 py-3.5 align-middle">
-                        <span class="block truncate text-sm font-semibold leading-5 text-content-primary"
-                              title="{{ workload.name }}">{{ workload.name }}</span>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <p class="text-sm font-semibold leading-5 text-content-primary">{{ workload.delivery_model }}</p>
+                        <p class="mt-0.5 break-all text-xs leading-5 text-content-muted">{{ workload.delivery_supporting }}</p>
                     </td>
-                    <td class="px-4 py-3.5 align-middle text-sm font-semibold leading-5 text-content-primary">{{ workload.type }}</td>
-                    <td class="px-4 py-3.5 align-middle"><span class="text-sm font-semibold leading-5 text-content-primary">{{ workload.state_display }}</span></td>
-                    <td class="px-4 py-3.5 align-middle text-sm font-semibold tabular-nums text-content-primary">{{ workload.pod_count }}</td>
-                    {% set normalized_strategy = workload.update_strategy|default('', true)|lower|replace('_', ' ')|replace('-', ' ') %}
-                    {% if normalized_strategy in ['rollingupdate', 'rolling update'] %}
-                        {% set strategy_tone = 'normal' %}
-                    {% elif normalized_strategy == 'recreate' %}
-                        {% set strategy_tone = 'warning' %}
-                    {% elif normalized_strategy in ['ondelete', 'on delete'] %}
-                        {% set strategy_tone = 'info' %}
-                    {% else %}
-                        {% set strategy_tone = 'unknown' %}
-                    {% endif %}
-                    <td class="px-4 py-3.5 align-middle">{{ table_label.status_label(workload.update_strategy or 'Unknown', strategy_tone) }}</td>
-                    <td class="px-4 py-3.5 text-right align-middle">
-                        {{ expandable.toggle_button(
-                            'inventory-workloads',
-                            workload.id,
-                            url_for('inventory.workload_details', workload_id=workload.id),
-                            'workload-detail-content-' ~ workload.id,
-                            'workload-detail-row-' ~ workload.id
-                        ) }}
+                    <td class="{{ table_ui.cell_classes(true) }}">
+                        {{ expandable.toggle_button('inventory-workloads', workload.id, url_for('inventory.workload_details', workload_id=workload.id), 'workload-detail-content-' ~ workload.id, 'workload-detail-row-' ~ workload.id, open_label='View Details') }}
                     </td>
                 </tr>
-                {{ expandable.detail_row(
-                    'workload-detail-row-' ~ workload.id,
-                    'workload-detail-content-' ~ workload.id,
-                    8
-                ) }}
+                {{ expandable.detail_row('workload-detail-row-' ~ workload.id, 'workload-detail-content-' ~ workload.id, 6) }}
             {% else %}
-                <tr>
-                    <td colspan="8" class="p-0">
-                        {% set empty_state_icon = "boxes" %}
-                        {% set empty_state_title = "No Workload Inventory Found" %}
-                        {% set empty_state_description = "Adjust the active filters or sync cluster inventory to collect Kubernetes workload data." %}
-                        {% set empty_state_min_height = "min-h-[190px]" %}
-                        {% include 'components/states/_empty_state.html' %}
-                    </td>
-                </tr>
+                <tr><td colspan="6" class="p-0">{% set empty_state_icon = "boxes" %}{% set empty_state_title = "No Workload Inventory Found" %}{% set empty_state_description = "Adjust the active filters or sync cluster inventory to collect Kubernetes workload data." %}{% set empty_state_min_height = "min-h-[190px]" %}{% include 'components/states/_empty_state.html' %}</td></tr>
             {% endfor %}
         </tbody>
     </table>
@@ -75,51 +45,15 @@
 <footer class="flex flex-col gap-4 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs text-content-muted lg:flex-row lg:items-center lg:justify-between">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ 'Workload' if pagination.total_items == 1 else 'Workloads' }}</p>
-        <form hx-get="{{ url_for('inventory.workloads') }}"
-              hx-target="#workloads-table-content"
-              hx-swap="innerHTML"
-              hx-indicator="#workloads-table-loading"
-              class="flex items-center">
-            <input type="hidden" name="page" value="1">
-            <input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}">
-            <input type="hidden" name="namespace" value="{{ selected_namespace }}">
-            <input type="hidden" name="type" value="{{ selected_type }}">
-            <input type="hidden" name="status" value="{{ selected_status }}">
-            <input type="hidden" name="search" value="{{ search }}">
-            <select name="per_page"
-                    aria-label="Rows Per Page"
-                    data-kaori-auto-submit
-                    class="{{ pagination_ui.page_size_classes() }}">
-                {% for option in pagination.allowed_per_page %}
-                    <option value="{{ option }}"
-                            {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
-                {% endfor %}
-            </select>
+        <form hx-get="{{ url_for('inventory.workloads') }}" hx-target="#workloads-table-content" hx-swap="innerHTML" hx-indicator="#workloads-table-loading" class="flex items-center gap-2">
+            <input type="hidden" name="page" value="1"><input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}"><input type="hidden" name="namespace" value="{{ selected_namespace }}"><input type="hidden" name="type" value="{{ selected_type }}"><input type="hidden" name="status" value="{{ selected_status }}"><input type="hidden" name="search" value="{{ search }}">
+            <label for="workloads-per-page" class="font-semibold text-content-secondary">Rows</label>
+            <select id="workloads-per-page" name="per_page" aria-label="Rows Per Page" data-kaori-auto-submit class="{{ pagination_ui.page_size_classes() }}">{% for option in pagination.allowed_per_page %}<option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}</select>
         </form>
     </div>
     <div class="flex flex-wrap items-center gap-2">
-        {% if pagination.has_prev %}
-            {% set prev_url = url_for('inventory.workloads', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, status=selected_status, search=search, page=pagination.prev_page, per_page=pagination.per_page) %}
-            <a href="{{ prev_url }}"
-               hx-get="{{ prev_url }}"
-               hx-target="#workloads-table-content"
-               hx-swap="innerHTML"
-               hx-indicator="#workloads-table-loading"
-               class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
-        {% else %}
-            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
-        {% endif %}
-        {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages) }}
-        {% if pagination.has_next %}
-            {% set next_url = url_for('inventory.workloads', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, status=selected_status, search=search, page=pagination.next_page, per_page=pagination.per_page) %}
-            <a href="{{ next_url }}"
-               hx-get="{{ next_url }}"
-               hx-target="#workloads-table-content"
-               hx-swap="innerHTML"
-               hx-indicator="#workloads-table-loading"
-               class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
-        {% else %}
-            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
-        {% endif %}
+        {% if pagination.has_prev %}{% set prev_url = url_for('inventory.workloads', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, status=selected_status, search=search, page=pagination.prev_page, per_page=pagination.per_page) %}<a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#workloads-table-content" hx-swap="innerHTML" hx-indicator="#workloads-table-loading" class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>{% else %}<span class="{{ pagination_ui.navigation_classes(true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>{% endif %}
+        {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, endpoint='inventory.workloads', query_params={'cluster_id': selected_cluster_id, 'namespace': selected_namespace, 'type': selected_type, 'status': selected_status, 'search': search, 'per_page': pagination.per_page}, hx_target='#workloads-table-content', hx_indicator='#workloads-table-loading') }}
+        {% if pagination.has_next %}{% set next_url = url_for('inventory.workloads', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, status=selected_status, search=search, page=pagination.next_page, per_page=pagination.per_page) %}<a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#workloads-table-content" hx-swap="innerHTML" hx-indicator="#workloads-table-loading" class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>{% else %}<span class="{{ pagination_ui.navigation_classes(true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>{% endif %}
     </div>
 </footer>

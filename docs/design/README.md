@@ -83,7 +83,10 @@ Domain-specific UI rules live under `docs/modules/` or the owning module README.
 - `audits/PROMETHEUS_ALERTMANAGER_HTMX_AND_REGISTRY_AUDIT_2026_07.md`
 
 - `components/TECHNICAL_METADATA_COLLECTION.md` — dense Kubernetes key/value metadata.
+- `components/RELATED_RESOURCE_COLLECTION.md` — peer related-resource evidence without timeline geometry.
 
 - `patterns/KUBERNETES_NAMESPACE_INVENTORY.md` — canonical Namespace Inventory composition.
+- `patterns/KUBERNETES_WORKLOAD_INVENTORY.md` — canonical Workload Inventory composition.
 
 - `audits/KUBERNETES_NAMESPACE_INVENTORY_STYLING_AUDIT_2026_07.md` — Namespace Inventory audit record.
+- `audits/KUBERNETES_WORKLOAD_INVENTORY_STYLING_AUDIT_2026_07.md` — Workload Inventory audit record.

@@ -4,42 +4,39 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 def _read(relative_path: str) -> str:
-    return (ROOT / relative_path).read_text(encoding="utf-8")
+    return (ROOT / relative_path).read_text(encoding='utf-8')
 
 
-def test_workload_inventory_summary_copy_uses_kaori_title_case() -> None:
-    template = _read("app/templates/inventory/workloads/partials/_summary_cards.html")
+def test_workload_inventory_uses_canonical_titles_and_sentence_case() -> None:
+    summary = _read('app/templates/inventory/workloads/partials/_summary_cards.html')
+    table = _read('app/templates/inventory/workloads/partials/_table_card.html')
 
-    expected = (
-        "Deployments, StatefulSets, and DaemonSets",
-        "% of Matching Workloads",
-        "State Aware Workloads with Stable Identity",
-        "Node Level Agents and Platform Components",
-        "Rollouts Currently Progressing",
-        "Workloads Outside Running or Progressing",
-    )
-    for copy in expected:
-        assert copy in template
+    for copy in (
+        'Workload Delivery Posture',
+        'Controller Workloads',
+        'Batch Workloads',
+        'Unknown State',
+        'Search Workloads',
+        'Search workload name',
+    ):
+        assert copy in summary + table
 
-    forbidden = (
-        "Deployments, StatefulSets, And DaemonSets",
-        "State-Aware Workloads With Stable Identity",
-        "Node-Level Agents And Platform Components",
-        "% Of Matching Workloads",
-        "Workloads Outside Running Or Progressing",
-    )
-    for copy in forbidden:
-        assert copy not in template
+    assert 'Search Workload</label>' not in table
+    assert 'Running Ratio' not in summary
+    assert 'Running Coverage' not in summary
 
 
-def test_workload_inventory_footer_uses_lowercase_preposition() -> None:
-    template = _read("app/templates/inventory/workloads/partials/_table_content.html")
-    assert "</span> of <span" in template
-    assert "</span> Of <span" not in template
+def test_workload_pagination_uses_lowercase_preposition() -> None:
+    template = _read('app/templates/inventory/workloads/partials/_table_content.html')
+    assert '</span> of <span' in template
+    assert '</span> Of <span' not in template
     assert "'Workload' if pagination.total_items == 1 else 'Workloads'" in template
 
 
-def test_delivery_placement_tip_is_removed() -> None:
-    template = _read("app/templates/inventory/workloads/partials/_workload_detail_content.html")
-    assert "Placement rules guide scheduling; actual placement is shown in Pod inventory." not in template
-    assert "detail.detail_card('Delivery & Placement'" in template
+def test_delivery_and_placement_is_full_width_factual_evidence() -> None:
+    template = _read('app/templates/inventory/workloads/partials/_workload_detail_content.html')
+    assert 'Delivery & Placement' in template
+    assert 'Delivery Configuration' in template
+    assert 'Placement Constraints' in template
+    assert 'No Implicit Workload Configuration Scoring' not in template
+    assert 'table_label.status_label(container.pull_policy' not in template

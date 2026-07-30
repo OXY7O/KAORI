@@ -557,3 +557,13 @@ Namespace Inventory follows `patterns/KUBERNETES_NAMESPACE_INVENTORY.md` and is 
 `Terminating` is an informational lifecycle transition unless KAORI has duration, finalizer, or explicit policy evidence that the transition is stuck. Missing ResourceQuota, LimitRange, NetworkPolicy, or PSA labels remain neutral evidence until evaluated against an explicit governance policy. Do not infer compliance failure from absence alone.
 
 Dense labels, annotations, selectors, and key/value metadata use `components/technical_metadata_collection.html`. Do not render large chip clouds or page-local metadata grids. The component owns entry count, wrapping, scrolling, empty evidence, and optional context.
+
+## 22. Workload Inventory and Related Resources
+
+Workload Inventory follows `patterns/KUBERNETES_WORKLOAD_INVENTORY.md` and is the third canonical Inventory Resource Page implementation.
+
+Workload resources have heterogeneous factual states. Templates must separate semantic operational posture (`Stable`, `Progressing`, `Failed`, `Suspended`, `Unknown`) from type-specific evidence such as replica readiness, Job completion, or CronJob schedule state.
+
+Update strategy, restart policy, DNS policy, pull policy, selectors, tolerations, and other workload configuration remain factual evidence until an explicit KAORI governance policy evaluates them. Do not assign warning or success colors based only on a configuration choice.
+
+Use `components/related_resource_collection.html` for peer related resources such as Workload Pods. Do not represent peer resources as a timeline. The component owns identity, supporting evidence, semantic status, truncation context, empty evidence, and the optional destination action.

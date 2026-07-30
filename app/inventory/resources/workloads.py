@@ -17,11 +17,15 @@ _WORKLOAD_UPDATE_STRATEGIES = {
     'ondelete': ('On Delete', 'on_delete'),
 }
 
+_OPERATIONAL_STATES = {
+    'running': ('Stable', 'normal'),
+    'progressing': ('Progressing', 'pending'),
+    'failed': ('Failed', 'critical'),
+    'suspended': ('Suspended', 'info'),
+}
 
-def _workload_detail_rows(
-    details: dict[str, Any],
-    key: str,
-) -> list[dict[str, str]]:
+
+def _workload_detail_rows(details: dict[str, Any], key: str) -> list[dict[str, str]]:
     rows = details.get(key) or []
     return [
         {
@@ -33,21 +37,26 @@ def _workload_detail_rows(
     ]
 
 
-def _compact_runtime_state_rows(
-    workload_type: str,
-    rows: list[dict[str, str]],
-) -> list[dict[str, str]]:
+def _row_value(rows: list[dict[str, str]], *labels: str, default: str = '-') -> str:
+    wanted = {label.casefold() for label in labels}
+    for row in rows:
+        if str(row.get('label') or '').casefold() in wanted:
+            value = str(row.get('value') or '').strip()
+            return value if value and value not in {'None'} else default
+    return default
+
+
+def _compact_runtime_state_rows(workload_type: str, rows: list[dict[str, str]]) -> list[dict[str, str]]:
     preferred_labels = {
-        'Deployment': ('Desired replicas', 'Ready replicas', 'Available replicas', 'Unavailable replicas'),
-        'StatefulSet': ('Desired replicas', 'Ready replicas', 'Available replicas', 'Current revision'),
-        'DaemonSet': ('Desired scheduled', 'Ready', 'Available', 'Unavailable'),
-        'Job': ('Completions', 'Active', 'Succeeded', 'Failed'),
-        'CronJob': ('Schedule', 'Suspended', 'Active Jobs', 'Last schedule'),
+        'Deployment': ('Desired Replicas', 'Updated Replicas', 'Ready Replicas', 'Available Replicas', 'Unavailable Replicas'),
+        'StatefulSet': ('Desired Replicas', 'Updated Replicas', 'Ready Replicas', 'Available Replicas', 'Current Revision'),
+        'DaemonSet': ('Desired Scheduled', 'Ready', 'Available', 'Unavailable', 'Misscheduled'),
+        'Job': ('Completions', 'Active', 'Succeeded', 'Failed', 'Backoff Limit'),
+        'CronJob': ('Schedule', 'Suspended', 'Active Jobs', 'Last Schedule', 'Last Successful Execution'),
     }
-    preferred = preferred_labels.get(workload_type, ())
-    indexed = {str(row.get('label')): row for row in rows}
-    compact = [indexed[label] for label in preferred if label in indexed]
-    fallback = [row for row in rows if row.get('label') != 'Managed Pods'][:4]
+    preferred = {label.casefold() for label in preferred_labels.get(workload_type, ())}
+    compact = [row for row in rows if str(row.get('label') or '').casefold() in preferred]
+    fallback = [row for row in rows if str(row.get('label') or '').casefold() != 'managed pods'][:5]
     return compact or fallback
 
 
@@ -55,13 +64,10 @@ def _workload_pod_template(details: dict[str, Any]) -> dict[str, Any]:
     pod_template = details.get('pod_template')
     if isinstance(pod_template, dict) and pod_template.get('reported') is True:
         return pod_template
-
     return {}
 
 
-def _pod_configuration_rows(
-    pod_template: dict[str, Any],
-) -> list[dict[str, str]]:
+def _pod_configuration_rows(pod_template: dict[str, Any]) -> list[dict[str, str]]:
     return [
         {'label': 'Containers', 'value': str(pod_template.get('container_count', 0))},
         {'label': 'Init Containers', 'value': str(pod_template.get('init_container_count', 0))},
@@ -72,67 +78,155 @@ def _pod_configuration_rows(
         {'label': 'Host Network', 'value': _display_boolean(pod_template.get('host_network'))},
         {'label': 'DNS Policy', 'value': str(pod_template.get('dns_policy') or '-')},
         {'label': 'Volumes', 'value': str(pod_template.get('volume_count', 0))},
+        {'label': 'Runtime Class', 'value': str(pod_template.get('runtime_class') or '-')},
     ]
 
 
-def _placement_rows(
-    pod_template: dict[str, Any],
-) -> list[dict[str, str]]:
+def _placement_rows(pod_template: dict[str, Any]) -> list[dict[str, str]]:
     node_selector = pod_template.get('node_selector') or {}
     tolerations = pod_template.get('tolerations') or []
-
     return [
-        {
-            'label': 'Node Selector',
-            'value': f'{len(node_selector)} rule' + ('s' if len(node_selector) != 1 else ''),
-        },
-        {
-            'label': 'Affinity',
-            'value': 'Configured' if pod_template.get('affinity_configured') else 'Not Configured',
-        },
-        {
-            'label': 'Tolerations',
-            'value': str(len(tolerations)),
-        },
-        {
-            'label': 'Topology Spread',
-            'value': str(pod_template.get('topology_spread_count', 0)),
-        },
-        {
-            'label': 'Runtime Class',
-            'value': str(pod_template.get('runtime_class') or '-'),
-        },
+        {'label': 'Node Selector', 'value': f'{len(node_selector)} rule' + ('s' if len(node_selector) != 1 else '')},
+        {'label': 'Affinity', 'value': 'Configured' if pod_template.get('affinity_configured') else 'Not Configured'},
+        {'label': 'Tolerations', 'value': str(len(tolerations))},
+        {'label': 'Topology Spread', 'value': str(pod_template.get('topology_spread_count', 0))},
+        {'label': 'Runtime Class', 'value': str(pod_template.get('runtime_class') or '-')},
     ]
+
+
+def _operational_state(status: str | None) -> tuple[str, str]:
+    return _OPERATIONAL_STATES.get(str(status or '').strip().casefold(), ('Unknown', 'unknown'))
+
+
+def _pod_tone(status: str | None) -> str:
+    normalized = str(status or '').casefold()
+    if normalized in {'running', 'succeeded'}:
+        return 'normal'
+    if normalized == 'pending':
+        return 'pending'
+    if normalized == 'failed':
+        return 'critical'
+    return 'unknown'
+
+
+def _workload_update_strategy(workload_type: str, details: dict[str, Any]) -> tuple[str, str]:
+    if workload_type in {'Job', 'CronJob'}:
+        return 'Not Applicable', 'not_applicable'
+    delivery_rows = details.get('delivery_rows') or []
+    if not isinstance(delivery_rows, list):
+        return 'Not Reported', 'unknown'
+    for row in delivery_rows:
+        if not isinstance(row, dict):
+            continue
+        label = str(row.get('label') or '').strip().casefold()
+        if label not in {'strategy', 'update strategy'}:
+            continue
+        raw_value = str(row.get('value') or '').strip()
+        if not raw_value or raw_value in {'-', 'None'}:
+            break
+        normalized_value = raw_value.replace(' ', '').casefold()
+        return _WORKLOAD_UPDATE_STRATEGIES.get(normalized_value, (raw_value, 'other'))
+    return 'Not Reported', 'unknown'
+
+
+def _delivery_model(workload_type: str, details: dict[str, Any], placement_count: int = 0) -> tuple[str, str]:
+    state_rows = _workload_detail_rows(details, 'state_rows')
+    delivery_rows = _workload_detail_rows(details, 'delivery_rows')
+    if workload_type == 'Job':
+        backoff = _row_value(delivery_rows, 'Backoff Limit')
+        return 'Job Execution', f'Backoff Limit {backoff}' if backoff != '-' else 'Batch completion policy'
+    if workload_type == 'CronJob':
+        schedule = _row_value(state_rows, 'Schedule')
+        return 'Scheduled Execution', schedule if schedule != '-' else 'Schedule not reported'
+    strategy, _ = _workload_update_strategy(workload_type, details)
+    support = f'{placement_count} Placement Constraint' + ('s' if placement_count != 1 else '')
+    return strategy, support
+
+
+def _overall_posture(total: int, counts: dict[str, int]) -> tuple[str, str]:
+    if total == 0:
+        return 'No Data', 'unknown'
+    if counts.get('failed', 0) > 0:
+        return 'Critical', 'critical'
+    if counts.get('unknown', 0) > 0:
+        return 'Review Required', 'warning'
+    if counts.get('progressing', 0) > 0:
+        return 'Progressing', 'pending'
+    if counts.get('stable', 0) == 0 and counts.get('suspended', 0) > 0:
+        return 'Paused', 'info'
+    return 'Stable', 'normal'
+
+
+def _operational_context(
+    state_label: str,
+    pod_count: int,
+    pod_template_reported: bool,
+) -> dict[str, str]:
+    if state_label == 'Failed':
+        return {
+            'title': 'Investigate Workload Failure',
+            'description': 'Review controller conditions, failed Pods, image delivery, placement constraints, and recent rollout changes.',
+            'icon': 'circle-x',
+            'tone': 'critical',
+        }
+    if state_label == 'Progressing':
+        return {
+            'title': 'Validate Rollout Progress',
+            'description': 'Confirm updated and available replicas continue moving toward the desired state within the configured deadline.',
+            'icon': 'loader-circle',
+            'tone': 'warning',
+        }
+    if state_label == 'Suspended':
+        return {
+            'title': 'Confirm Planned Suspension',
+            'description': 'Verify that the workload pause is intentional before resuming scheduled or batch execution.',
+            'icon': 'circle-pause',
+            'tone': 'info',
+        }
+    if pod_count == 0:
+        return {
+            'title': 'Review Workload Ownership',
+            'description': 'No associated Pods are represented in the committed snapshot. Confirm rollout state and controller ownership.',
+            'icon': 'git-branch',
+            'tone': 'warning',
+        }
+    if not pod_template_reported:
+        return {
+            'title': 'Refresh Workload Template Evidence',
+            'description': 'Pod template evidence has not been reported. Refresh inventory before reviewing delivery and placement configuration.',
+            'icon': 'refresh-cw',
+            'tone': 'warning',
+        }
+    return {
+        'title': 'Workload Snapshot Ready for Review',
+        'description': 'No exceptional delivery or runtime signal is present in the current committed inventory snapshot.',
+        'icon': 'circle-check',
+        'tone': 'normal',
+    }
 
 
 def get_workload_detail(workload_id: int) -> dict[str, Any] | None:
-    query = db.session.query(
-        WorkloadInventory,
-        Cluster.name.label('cluster_name'),
-    ).join(Cluster, Cluster.id == WorkloadInventory.cluster_id)
+    query = db.session.query(WorkloadInventory, Cluster.name.label('cluster_name')).join(
+        Cluster, Cluster.id == WorkloadInventory.cluster_id
+    )
     query = filter_current_generation(query, WorkloadInventory)
     result = query.filter(WorkloadInventory.id == workload_id).first()
-
     if result is None:
         return None
 
     workload, cluster_name = result
     workload_type = workload.workload_type or 'Unknown'
     details = workload.details or {}
-
-    related_pods = (
-        filter_current_generation(PodInventory.query, PodInventory)
-        .filter_by(
-            cluster_id=workload.cluster_id,
-            namespace=workload.namespace,
-            workload_type=workload_type,
-            workload_name=workload.name,
-        )
-        .order_by(PodInventory.pod_name)
-        .all()
-    )
-
     pod_template = _workload_pod_template(details)
+
+    related_query = filter_current_generation(PodInventory.query, PodInventory).filter_by(
+        cluster_id=workload.cluster_id,
+        namespace=workload.namespace,
+        workload_type=workload_type,
+        workload_name=workload.name,
+    )
+    related_pod_count = related_query.count()
+    related_pods = related_query.order_by(PodInventory.pod_name).limit(8).all()
 
     labels = details.get('labels') or {}
     annotations = details.get('annotations') or {}
@@ -145,14 +239,30 @@ def get_workload_detail(workload_id: int) -> dict[str, Any] | None:
         state_rows = [
             {'label': 'Ready', 'value': workload.ready or '-'},
             {'label': 'Status', 'value': workload.status or 'Unknown'},
-            {'label': 'Managed Pods', 'value': str(len(related_pods))},
+            {'label': 'Managed Pods', 'value': str(related_pod_count)},
         ]
 
     delivery_rows = _workload_detail_rows(details, 'delivery_rows')
     placement_rows = _placement_rows(pod_template)
-    placement_summary_rows = [
-        row for row in placement_rows if row['value'] not in {'0', '0 Rules', 'Not Configured', '-'}
-    ]
+    placement_constraint_count = (
+        len(node_selector)
+        + len(tolerations)
+        + (1 if pod_template.get('affinity_configured') else 0)
+        + int(pod_template.get('topology_spread_count') or 0)
+    )
+    delivery_model, delivery_supporting = _delivery_model(workload_type, details, placement_constraint_count)
+    state_label, state_tone = _operational_state(workload.status)
+    template_containers = int(pod_template.get('container_count') or 0) + int(
+        pod_template.get('init_container_count') or 0
+    )
+
+    pods = []
+    for pod in related_pods:
+        item = _pod_summary(pod)
+        item['status_tone'] = _pod_tone(item.get('status'))
+        item['supporting_primary'] = f"Node {item.get('node') or '-'} · Ready {item.get('ready') or '-'}"
+        item['supporting_secondary'] = f"{item.get('container_count', 0)} Containers · Age {item.get('age') or '-'}"
+        pods.append(item)
 
     return {
         'id': workload.id,
@@ -168,6 +278,8 @@ def get_workload_detail(workload_id: int) -> dict[str, Any] | None:
         'uid': details.get('uid') or '-',
         'ready': workload.ready or '-',
         'status': workload.status or 'Unknown',
+        'operational_state_label': state_label,
+        'operational_state_tone': state_tone,
         'state_display': details.get('state_display') or workload.ready or workload.status or 'Unknown',
         'age': format_age(workload.created_at),
         'created_at': workload.created_at,
@@ -178,113 +290,58 @@ def get_workload_detail(workload_id: int) -> dict[str, Any] | None:
         'pod_configuration_reported': bool(pod_template),
         'delivery_rows': delivery_rows,
         'placement_rows': placement_rows,
-        'placement_summary_rows': placement_summary_rows,
-        'placement_constraint_count': (
-            len(node_selector)
-            + len(tolerations)
-            + (1 if pod_template.get('affinity_configured') else 0)
-            + int(pod_template.get('topology_spread_count') or 0)
-        ),
-        'placement_configured': bool(
-            node_selector
-            or tolerations
-            or pod_template.get('affinity_configured')
-            or pod_template.get('topology_spread_count')
-        ),
-        'node_selectors': [f'{key}={value}' for key, value in sorted(node_selector.items())],
-        'tolerations': [str(item) for item in tolerations],
+        'placement_constraint_count': placement_constraint_count,
+        'node_selectors': dict(sorted(node_selector.items())),
+        'tolerations': {str(index + 1): str(item) for index, item in enumerate(tolerations)},
         'containers': containers,
         'container_count': int(pod_template.get('container_count') or 0),
         'init_container_count': int(pod_template.get('init_container_count') or 0),
-        'pod_count': len(related_pods),
-        'pods': [_pod_summary(pod) for pod in related_pods[:8]],
-        'pods_truncated': len(related_pods) > 8,
-        'labels': sorted(labels.items()),
-        'annotations': sorted(annotations.items()),
+        'template_container_count': template_containers,
+        'delivery_model': delivery_model,
+        'delivery_supporting': delivery_supporting,
+        'pod_count': related_pod_count,
+        'pods': pods,
+        'pods_truncated': related_pod_count > len(pods),
+        'labels': dict(sorted(labels.items())),
+        'annotations': dict(sorted(annotations.items())),
+        'operational_context': _operational_context(state_label, related_pod_count, bool(pod_template)),
     }
 
 
-def get_workload_filter_namespaces(
-    cluster_id: str | None = None,
-) -> list[str]:
-    query = db.session.query(
-        WorkloadInventory.namespace,
-    )
+def get_workload_filter_namespaces(cluster_id: str | None = None) -> list[str]:
+    query = db.session.query(WorkloadInventory.namespace)
     query = filter_current_generation(query, WorkloadInventory)
-
     if cluster_id:
-        query = query.filter(
-            WorkloadInventory.cluster_id == cluster_id,
-        )
-
-    rows = (
-        query.distinct()
-        .order_by(
-            WorkloadInventory.namespace,
-        )
-        .all()
-    )
-
+        query = query.filter(WorkloadInventory.cluster_id == cluster_id)
+    rows = query.distinct().order_by(WorkloadInventory.namespace).all()
     return [row[0] for row in rows if row[0]]
 
 
-def get_workload_filter_types(
-    cluster_id: str | None = None,
-    namespace: str | None = None,
-) -> list[str]:
-    query = db.session.query(
-        WorkloadInventory.workload_type,
-    )
+def get_workload_filter_types(cluster_id: str | None = None, namespace: str | None = None) -> list[str]:
+    query = db.session.query(WorkloadInventory.workload_type)
     query = filter_current_generation(query, WorkloadInventory)
-
     if cluster_id:
-        query = query.filter(
-            WorkloadInventory.cluster_id == cluster_id,
-        )
-
+        query = query.filter(WorkloadInventory.cluster_id == cluster_id)
     if namespace:
-        query = query.filter(
-            WorkloadInventory.namespace == namespace,
-        )
-
-    rows = (
-        query.distinct()
-        .order_by(
-            WorkloadInventory.workload_type,
-        )
-        .all()
-    )
-
+        query = query.filter(WorkloadInventory.namespace == namespace)
+    rows = query.distinct().order_by(WorkloadInventory.workload_type).all()
     return [row[0] for row in rows if row[0]]
 
 
 def get_workload_filter_statuses(
     cluster_id: str | None = None,
     namespace: str | None = None,
+    workload_type: str | None = None,
 ) -> list[str]:
-    query = db.session.query(
-        WorkloadInventory.status,
-    )
+    query = db.session.query(WorkloadInventory.status)
     query = filter_current_generation(query, WorkloadInventory)
-
     if cluster_id:
-        query = query.filter(
-            WorkloadInventory.cluster_id == cluster_id,
-        )
-
+        query = query.filter(WorkloadInventory.cluster_id == cluster_id)
     if namespace:
-        query = query.filter(
-            WorkloadInventory.namespace == namespace,
-        )
-
-    rows = (
-        query.distinct()
-        .order_by(
-            WorkloadInventory.status,
-        )
-        .all()
-    )
-
+        query = query.filter(WorkloadInventory.namespace == namespace)
+    if workload_type:
+        query = query.filter(WorkloadInventory.workload_type == workload_type)
+    rows = query.distinct().order_by(WorkloadInventory.status).all()
     return [row[0] for row in rows if row[0]]
 
 
@@ -299,42 +356,6 @@ def _workload_pod_count_query():
     return filter_current_generation(query, PodInventory)
 
 
-def _workload_update_strategy(
-    workload_type: str,
-    details: dict[str, Any],
-) -> tuple[str, str]:
-    if workload_type in {'Job', 'CronJob'}:
-        return 'Not applicable', 'not_applicable'
-
-    delivery_rows = details.get('delivery_rows') or []
-
-    if not isinstance(delivery_rows, list):
-        return 'Not Reported', 'unknown'
-
-    for row in delivery_rows:
-        if not isinstance(row, dict):
-            continue
-
-        label = str(row.get('label') or '').strip().lower()
-
-        if label not in {'strategy', 'update strategy'}:
-            continue
-
-        raw_value = str(row.get('value') or '').strip()
-
-        if not raw_value or raw_value in {'-', 'None'}:
-            break
-
-        normalized_value = raw_value.replace(' ', '').lower()
-
-        return _WORKLOAD_UPDATE_STRATEGIES.get(
-            normalized_value,
-            (raw_value, 'other'),
-        )
-
-    return 'Not Reported', 'unknown'
-
-
 def get_workload_inventory(
     cluster_id=None,
     namespace=None,
@@ -346,43 +367,33 @@ def get_workload_inventory(
 ):
     query = db.session.query(
         WorkloadInventory,
-        Cluster.name.label(
-            'cluster_name',
-        ),
-        Cluster.environment.label(
-            'cluster_environment',
-        ),
-    ).join(
-        Cluster,
-        Cluster.id == WorkloadInventory.cluster_id,
-    )
+        Cluster.name.label('cluster_name'),
+        Cluster.environment.label('cluster_environment'),
+    ).join(Cluster, Cluster.id == WorkloadInventory.cluster_id)
     query = filter_current_generation(query, WorkloadInventory)
 
     if cluster_id:
         query = query.filter(WorkloadInventory.cluster_id == cluster_id)
-
     if namespace:
         query = query.filter(WorkloadInventory.namespace == namespace)
-
     if workload_type:
         query = query.filter(WorkloadInventory.workload_type == workload_type)
-
     if status:
         query = query.filter(WorkloadInventory.status == status)
-
     if search:
         query = query.filter(WorkloadInventory.name.ilike(f'%{search}%'))
 
-    summary_rows = query.with_entities(
-        WorkloadInventory.workload_type,
-        WorkloadInventory.status,
-    ).all()
+    summary_rows = (
+        query.with_entities(
+            WorkloadInventory.workload_type,
+            WorkloadInventory.status,
+            func.count(WorkloadInventory.id),
+        )
+        .group_by(WorkloadInventory.workload_type, WorkloadInventory.status)
+        .all()
+    )
     workloads, pagination = paginate_query(
-        query.order_by(
-            Cluster.name,
-            WorkloadInventory.namespace,
-            WorkloadInventory.name,
-        ),
+        query.order_by(Cluster.name, WorkloadInventory.namespace, WorkloadInventory.name),
         page=page,
         per_page=per_page,
     )
@@ -418,12 +429,20 @@ def get_workload_inventory(
         }
 
     type_counts: dict[str, int] = {}
-    status_counts: dict[str, int] = {}
-    for summary_type, summary_status in summary_rows:
+    raw_status_counts: dict[str, int] = {}
+    posture_counts = {'stable': 0, 'progressing': 0, 'failed': 0, 'suspended': 0, 'unknown': 0}
+    for summary_type, summary_status, count in summary_rows:
         normalized_type = summary_type or 'Unknown'
         normalized_status = summary_status or 'Unknown'
-        type_counts[normalized_type] = type_counts.get(normalized_type, 0) + 1
-        status_counts[normalized_status] = status_counts.get(normalized_status, 0) + 1
+        type_counts[normalized_type] = type_counts.get(normalized_type, 0) + int(count)
+        raw_status_counts[normalized_status] = raw_status_counts.get(normalized_status, 0) + int(count)
+        state_label, _ = _operational_state(normalized_status)
+        posture_counts[state_label.casefold().replace(' ', '_')] = posture_counts.get(
+            state_label.casefold().replace(' ', '_'), 0
+        ) + int(count)
+
+    total = pagination['total_items']
+    posture_label, posture_tone = _overall_posture(total, posture_counts)
 
     workloads_data = []
     for workload, cluster_name, cluster_environment in workloads:
@@ -431,22 +450,17 @@ def get_workload_inventory(
         status_name = workload.status or 'Unknown'
         details = workload.details or {}
         pod_template = _workload_pod_template(details)
-
-        pod_count = pod_count_map.get(
-            (
-                workload.cluster_id,
-                workload.namespace,
-                current_type,
-                workload.name,
-            ),
-            0,
+        pod_count = pod_count_map.get((workload.cluster_id, workload.namespace, current_type, workload.name), 0)
+        state_label, state_tone = _operational_state(status_name)
+        placement_count = (
+            len(pod_template.get('node_selector') or {})
+            + len(pod_template.get('tolerations') or [])
+            + (1 if pod_template.get('affinity_configured') else 0)
+            + int(pod_template.get('topology_spread_count') or 0)
         )
-
-        update_strategy, update_strategy_key = _workload_update_strategy(
-            current_type,
-            details,
-        )
-
+        delivery_model, delivery_supporting = _delivery_model(current_type, details, placement_count)
+        container_count = int(pod_template.get('container_count') or 0)
+        init_container_count = int(pod_template.get('init_container_count') or 0)
         workloads_data.append(
             {
                 'id': workload.id,
@@ -455,31 +469,47 @@ def get_workload_inventory(
                 'namespace': workload.namespace,
                 'name': workload.name,
                 'type': current_type,
+                'identity_supporting': f'{current_type} · {format_age(workload.created_at)}',
                 'ready': workload.ready,
                 'status': status_name,
+                'operational_state_label': state_label,
+                'operational_state_tone': state_tone,
                 'state_display': details.get('state_display') or workload.ready or status_name,
                 'pod_count': pod_count,
-                'update_strategy': update_strategy,
-                'update_strategy_key': update_strategy_key,
-                'container_count': int(pod_template.get('container_count') or 0),
-                'init_container_count': int(pod_template.get('init_container_count') or 0),
-                'age': format_age(
-                    workload.created_at,
-                ),
+                'runtime_primary': f'{pod_count} Managed ' + ('Pod' if pod_count == 1 else 'Pods'),
+                'runtime_secondary': f'{container_count} Containers · {init_container_count} Init',
+                'delivery_model': delivery_model,
+                'delivery_supporting': delivery_supporting,
+                'age': format_age(workload.created_at),
                 'created_at': workload.created_at,
                 'collected_at': workload.collected_at,
             }
         )
 
+    controller_count = sum(type_counts.get(item, 0) for item in ('Deployment', 'StatefulSet', 'DaemonSet'))
+    batch_count = sum(type_counts.get(item, 0) for item in ('Job', 'CronJob'))
+    exception_count = posture_counts.get('progressing', 0) + posture_counts.get('failed', 0) + posture_counts.get('unknown', 0)
+
     return {
-        'total_workloads': pagination['total_items'],
+        'total_workloads': total,
         'deployments': type_counts.get('Deployment', 0),
         'statefulsets': type_counts.get('StatefulSet', 0),
         'daemonsets': type_counts.get('DaemonSet', 0),
         'jobs': type_counts.get('Job', 0),
         'cronjobs': type_counts.get('CronJob', 0),
+        'workload_type_count': len([key for key, value in type_counts.items() if value > 0]),
+        'controller_workloads': controller_count,
+        'batch_workloads': batch_count,
+        'stable_workloads': posture_counts.get('stable', 0),
+        'progressing_workloads': posture_counts.get('progressing', 0),
+        'failed_workloads': posture_counts.get('failed', 0),
+        'suspended_workloads': posture_counts.get('suspended', 0),
+        'unknown_workloads': posture_counts.get('unknown', 0),
+        'exception_workloads': exception_count,
+        'posture_label': posture_label,
+        'posture_tone': posture_tone,
         'type_counts': type_counts,
-        'status_counts': status_counts,
+        'status_counts': raw_status_counts,
         'workloads': workloads_data,
         'pagination': pagination,
     }

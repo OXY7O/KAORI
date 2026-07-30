@@ -1,270 +1,124 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/table.html" as table_ui %}
+{% import "components/technical_value.html" as technical_value %}
 {% import "components/details/_detail_content.html" as detail %}
-{% import "components/detail_object.html" as detail_object %}
-{% import "components/detail_tip.html" as inventory_tip %}
-{% macro info_box(title, message, icon='info', tone='brand', equal_height=false) -%}
-    {{ inventory_tip.info_box(title, message, icon, tone, equal_height) }}
-{%- endmacro %}
-{% if workload.status == 'Running' %}
-    {% set status_tone = "normal" %}
-{% elif workload.status == 'Progressing' %}
-    {% set status_tone = "pending" %}
-{% elif workload.status == 'Failed' %}
-    {% set status_tone = "critical" %}
-{% elif workload.status == 'Suspended' %}
-    {% set status_tone = "disabled" %}
-{% else %}
-    {% set status_tone = "warning" %}
-{% endif %}
-{% set normalized_update_strategy = workload.update_strategy|default('', true)|lower|replace('_', '')|replace('-', '')|replace(' ', '') %}
-{% set update_strategy_tones = {
-    'rollingupdate': 'normal',
-    'recreate': 'warning',
-    'ondelete': 'info'
-} %}
-{% set update_strategy_tone = update_strategy_tones.get(normalized_update_strategy, 'unknown') %}
-{% set restart_policy_tones = {
-    'always': 'normal',
-    'onfailure': 'info',
-    'never': 'warning'
-} %}
-{% set dns_policy_tones = {
-    'clusterfirst': 'normal',
-    'clusterfirstwithhostnet': 'info',
-    'default': 'info',
-    'none': 'warning'
-} %}
-{% set pull_policy_tones = {
-    'ifnotpresent': 'normal',
-    'always': 'info',
-    'never': 'warning'
-} %}
-<div class="bg-surface-hover px-4 py-4">
-    <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-sm">
-        <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+{% import "components/technical_metadata_collection.html" as metadata_collection %}
+{% import "components/related_resource_collection.html" as related_collection %}
+{% import "components/operational_callout.html" as operational_callout %}
+<div data-kaori-detail-variant="inline-expanded" class="bg-surface-hover px-4 py-4">
+    <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+        <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-elevated px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="boxes" class="h-4 w-4"></i></span>
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="boxes" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                        <h3 class="truncate text-sm font-semibold text-content-primary">{{ workload.name }}</h3>
-                        {{ table_label.metadata_label(workload.cluster_name, 'server') }}
+                        <h3 class="truncate text-base font-semibold text-content-primary">{{ workload.name }}</h3>
+                        {{ table_label.metadata_label(workload.type) }}
                         {{ table_label.metadata_label(workload.namespace, 'folder-tree') }}
                     </div>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ workload.type_description }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Runtime, delivery, Pod-template, placement, relationship, and metadata evidence from the committed workload snapshot.</p>
                 </div>
             </div>
-            <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-                {{ table_label.metadata_label(workload.type, 'boxes', false, 'detail') }}
-                {{ table_label.status_label(workload.state_display, status_tone, none, 'detail') }}
-            </div>
+            <div class="self-start sm:self-auto">{{ table_label.status_indicator_label(workload.operational_state_label, workload.operational_state_tone, size='detail') }}</div>
         </header>
-        <div class="grid items-stretch gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail.detail_card('Object Identity', 'badge-info', workload.age, class_name='min-h-96', badge_size='detail') %}
+
+        {{ detail.summary_strip([
+            ('Operational State', workload.operational_state_label, workload.state_display),
+            ('Managed Pods', workload.pod_count, 'Pods mapped to this workload controller.'),
+            ('Template Containers', workload.template_container_count, 'Regular and init containers in the reported Pod template.'),
+            ('Delivery Model', workload.delivery_model, workload.delivery_supporting)
+        ]) }}
+
+        <div class="grid items-stretch gap-4 p-5 md:grid-cols-2 2xl:grid-cols-3">
+            {% call detail.detail_card('Workload Identity', 'badge-info', workload.age, badge_size='detail') %}
                 {{ detail.detail_row('Cluster', workload.cluster_name) }}
                 {{ detail.detail_row('Namespace', workload.namespace) }}
                 {{ detail.metadata_row('Kind', workload.type) }}
                 {{ detail.detail_row('Age', workload.age) }}
-                {{ detail.detail_row('Kubernetes UID', workload.uid, true) }}
-                {{ detail.detail_row('Created', workload.created_at|user_datetime) }}
+                {{ detail.technical_row('UID', workload.uid) }}
+                {{ detail.detail_row('Created', workload.created_at|user_datetime if workload.created_at else '-') }}
                 {{ detail.detail_row('Collected', workload.collected_at|user_datetime) }}
-                <div class="mt-auto pt-3">{{ info_box('Inventory Identity', 'Identifies the workload object and the latest snapshot collected by KAORI.', 'lightbulb', 'brand', true) }}</div>
             {% endcall %}
-            {% call detail.detail_card('Runtime State', 'activity', workload.state_display, 'status', status_tone, 'min-h-80', 'detail') %}
+
+            {% call detail.detail_card('Runtime State', 'activity', workload.operational_state_label, 'status', workload.operational_state_tone, badge_size='detail') %}
                 {% for row in workload.runtime_state_rows %}{{ detail.detail_row(row.label, row.value) }}{% endfor %}
-                {{ detail.detail_row('Managed Pods', workload.pod_count) }}
-                <div class="mt-auto pt-3">{{ info_box('Snapshot Boundary', 'Current controller state only; history remains in Analytics.', 'info', 'brand', true) }}</div>
+                {% if not workload.runtime_state_rows %}{{ detail.empty_evidence('Runtime State Not Reported', 'Controller-specific runtime evidence was not present in the committed snapshot.', 'activity') }}{% endif %}
             {% endcall %}
-            {% call detail.detail_card('Pod Configuration', 'settings-2', table_label.count_text(workload.container_count, 'Container'), class_name='min-h-96', badge_size='detail') %}
-                {% for row in workload.pod_configuration_rows %}
-                    {% set normalized_value = row.value|default('', true)|lower|replace('_', '')|replace('-', '')|replace(' ', '') %}
-                    {% if row.label == 'Restart Policy' %}
-                        {{ detail.status_row(row.label, row.value, restart_policy_tones.get(normalized_value, 'unknown'), none, 'detail') }}
-                    {% elif row.label == 'DNS Policy' %}
-                        {{ detail.status_row(row.label, row.value, dns_policy_tones.get(normalized_value, 'unknown'), none, 'detail') }}
-                    {% else %}
-                        {{ detail.detail_row(row.label, row.value) }}
-                    {% endif %}
-                {% endfor %}
-                <div class="mt-auto pt-3">
-                    {% if workload.pod_configuration_reported %}
-                        {{ info_box('Template Configuration', 'Pod configuration comes from the workload template. Runtime utilization remains in Analytics.', 'info', 'brand', true) }}
-                    {% elif workload.pod_configuration_source == 'associated-pod-fallback' %}
-                        {{ info_box('Fallback Source', 'Configuration is inferred from associated Pods. Sync again to collect the workload template.', 'triangle-alert', 'warning', true) }}
-                    {% else %}
-                        {{ info_box('Configuration Unavailable', 'Pod template metadata is unavailable. Restart the worker and sync this cluster again.', 'triangle-alert', 'warning', true) }}
-                    {% endif %}
+
+            {% call detail.detail_card('Pod Template', 'container', workload.template_container_count ~ ' Containers', badge_size='detail') %}
+                {% if workload.pod_configuration_reported %}
+                    {% for row in workload.pod_configuration_rows %}{{ detail.detail_row(row.label, row.value) }}{% endfor %}
+                {% else %}
+                    {{ detail.empty_evidence('Pod Template Not Reported', 'The workload collector did not report authoritative Pod-template evidence for this snapshot.', 'container') }}
+                {% endif %}
+            {% endcall %}
+
+            <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 md:col-span-2 2xl:col-span-3">
+                <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-2 text-sm font-semibold text-content-primary"><span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="route" class="h-4 w-4"></i></span>Delivery & Placement</div>
+                    {{ table_label.metadata_label(workload.delivery_model) }}
                 </div>
-            {% endcall %}
-            {% call detail.detail_card('Delivery & Placement', 'route', workload.update_strategy, 'status', update_strategy_tone, 'min-h-[28rem]', 'detail') %}
-                {% for row in workload.delivery_rows %}
-                    {% if row.label == 'Update Strategy' %}
-                        {{ detail.status_row(row.label, row.value, update_strategy_tone, none, 'detail') }}
-                    {% else %}
-                        {{ detail.detail_row(row.label, row.value) }}
-                    {% endif %}
-                {% endfor %}
-                {% call detail_object.stack() %}
-                    {% if workload.placement_configured %}
-                        {% call detail_object.card('Placement Constraints', table_label.count_text(workload.placement_summary_rows|length, 'Field'), 'map-pinned') %}
-                            {% for row in workload.placement_summary_rows %}{{ detail_object.row(row.label, row.value) }}{% endfor %}
-                            {% if workload.node_selectors %}
-                                <div class="flex flex-wrap gap-1.5 pt-1">
-                                    {% for selector in workload.node_selectors %}
-                                        {% set normalized_selector = selector|default('', true)|lower|replace(' ', '') %}
-                                        {% if normalized_selector in ['kubernetes.io/os=linux', 'beta.kubernetes.io/os=linux'] %}
-                                            {{ table_label.status_label(selector, 'normal', none, 'detail') }}
-                                        {% elif normalized_selector in ['kubernetes.io/os=windows', 'beta.kubernetes.io/os=windows'] %}
-                                            {{ table_label.status_label(selector, 'info', none, 'detail') }}
-                                        {% else %}
-                                            {{ table_label.metadata_label(selector, none, false, 'detail') }}
-                                        {% endif %}
-                                    {% endfor %}
-                                </div>
-                            {% endif %}
-                        {% endcall %}
-                    {% else %}
-                        {{ detail_object.empty('No Placement Constraints', 'No selector, toleration, affinity, or topology spread rule is configured.', 'map-pinned') }}
-                    {% endif %}
-                {% endcall %}
-            {% endcall %}
-        </div>
-        <div class="space-y-4 px-5 pb-5">
-            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
-                <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3">
-                    <div class="flex items-center gap-2">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="container" class="h-4 w-4"></i></span>
-                        <div>
-                            <h4 class="text-sm font-semibold text-content-primary">Container Images</h4>
-                            <p class="text-xs leading-5 text-content-muted">Images declared by regular and init containers.</p>
+                <div class="grid gap-4 lg:grid-cols-2">
+                    <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                        <p class="mb-3 text-xs font-semibold text-content-secondary">Delivery Configuration</p>
+                        <div class="space-y-2.5">
+                            {% for row in workload.delivery_rows %}{{ detail.detail_row(row.label, row.value) }}{% else %}{{ detail.empty_evidence('Delivery Configuration Not Reported', 'Controller-specific delivery settings were not present in the committed snapshot.', 'route') }}{% endfor %}
                         </div>
                     </div>
-                    {{ table_label.metadata_label(table_label.count_text(workload.containers|length, 'Image')) }}
+                    <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                        <p class="mb-3 text-xs font-semibold text-content-secondary">Placement Constraints</p>
+                        <div class="space-y-2.5">{% for row in workload.placement_rows %}{{ detail.detail_row(row.label, row.value) }}{% endfor %}</div>
+                    </div>
+                </div>
+                <div class="mt-4 grid gap-4 lg:grid-cols-2">
+                    {{ metadata_collection.render('Node Selectors', workload.node_selectors, 'binary', 'No Node Selectors', 'No node selector was declared in the reported Pod template.', 'Selectors remain factual scheduling evidence until evaluated against an explicit policy.') }}
+                    {{ metadata_collection.render('Tolerations', workload.tolerations, 'shield', 'No Tolerations', 'No toleration was declared in the reported Pod template.', 'Tolerations remain factual scheduling evidence until evaluated against an explicit policy.') }}
+                </div>
+            </section>
+
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card md:col-span-2 2xl:col-span-3">
+                <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3.5">
+                    <div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="images" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Container Images</h4><p class="mt-1 text-xs leading-5 text-content-muted">Images and pull policies declared by regular and init containers.</p></div></div>
+                    {{ table_label.metadata_label(workload.containers|length ~ ' ' ~ ('Image' if workload.containers|length == 1 else 'Images')) }}
                 </header>
                 {% if workload.containers %}
                     <div class="overflow-x-auto">
-                        <table class="min-w-full text-left text-xs">
-                            <thead class="bg-surface-hover text-xs font-semibold text-content-muted">
-                                <tr>
-                                    <th class="px-4 py-2.5">Container</th>
-                                    <th class="px-4 py-2.5">Kind</th>
-                                    <th class="px-4 py-2.5">Image</th>
-                                    <th class="px-4 py-2.5">Pull Policy</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-outline-subtle">
-                                {% for container in workload.containers %}
-                                    <tr>
-                                        <td class="px-4 py-3 font-semibold text-content-primary">{{ container.name }}</td>
-                                        <td class="px-4 py-3">{{ table_label.metadata_label(container.kind, none, false, 'detail') }}</td>
-                                        <td class="max-w-[680px] break-all px-4 py-3 font-medium text-content-secondary">{{ container.image }}</td>
-                                        <td class="px-4 py-3">
-                                            {% set normalized_pull_policy = container.pull_policy|default('', true)|lower|replace('_', '')|replace('-', '')|replace(' ', '') %}
-                                            {{ table_label.status_label(container.pull_policy, pull_policy_tones.get(normalized_pull_policy, 'unknown'), none, 'detail') }}
-                                        </td>
-                                    </tr>
-                                {% endfor %}
+                        <table class="{{ table_ui.table_classes('min-w-[52rem]') }}">
+                            <thead class="{{ table_ui.head_classes() }}"><tr><th class="{{ table_ui.header_cell_classes() }}">Container</th><th class="{{ table_ui.header_cell_classes() }}">Kind</th><th class="{{ table_ui.header_cell_classes() }} min-w-[24rem]">Image</th><th class="{{ table_ui.header_cell_classes() }}">Pull Policy</th></tr></thead>
+                            <tbody class="{{ table_ui.body_classes() }}">
+                                {% for container in workload.containers %}<tr class="{{ table_ui.row_classes() }}"><td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ container.name }}</span></td><td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(container.kind) }}</td><td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(container.image, break_all=true) }}</td><td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-medium text-content-primary">{{ container.pull_policy or 'Not Reported' }}</span></td></tr>{% endfor %}
                             </tbody>
                         </table>
                     </div>
                 {% else %}
-                    <div class="p-4">{{ info_box('Container Metadata Unavailable', 'Container template metadata has not been collected yet. Sync the cluster to refresh workload details.', 'info') }}</div>
-                {% endif %}
-                {% if workload.containers %}{{ inventory_tip.footer('Image references come from the workload template; runtime health remains in Pod inventory.', 'images') }}{% endif %}
-            </section>
-            <section class="rounded-xl border border-outline-default bg-surface-card p-4">
-                <div class="mb-4 flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-2">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="git-branch" class="h-4 w-4"></i></span>
-                        <div>
-                            <h4 class="text-sm font-semibold text-content-primary">Associated Pods</h4>
-                            <p class="text-xs leading-5 text-content-muted">Pods currently mapped to this workload snapshot.</p>
-                        </div>
-                    </div>
-                    {{ table_label.metadata_label(table_label.count_text(workload.pod_count, 'Pod')) }}
-                </div>
-                {% if workload.pods %}
-                    <div>
-                        {% for pod in workload.pods %}
-                            {% if pod.status in ['Running', 'Succeeded'] %}
-                                {% set pod_tone = "normal" %}
-                            {% elif pod.status == 'Pending' %}
-                                {% set pod_tone = "pending" %}
-                            {% elif pod.status == 'Failed' %}
-                                {% set pod_tone = "critical" %}
-                            {% else %}
-                                {% set pod_tone = "unknown" %}
-                            {% endif %}
-                            <div class="relative flex gap-3 pb-5 last:pb-0">
-                                <div class="relative flex w-3 shrink-0 justify-center">
-                                    {% if not loop.last %}<span class="absolute bottom-0 left-1/2 top-2.5 w-px -translate-x-1/2 bg-outline-default"></span>{% endif %}
-                                    <span class="relative mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full {% if pod_tone == 'normal' %}bg-status-normal-text{% elif pod_tone == 'pending' %}bg-status-pending-text{% elif pod_tone == 'critical' %}bg-status-critical-text{% else %}bg-status-unknown-text{% endif %}"></span>
-                                </div>
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                                        <span class="truncate text-xs font-semibold text-content-primary"
-                                              title="{{ pod.name }}">{{ pod.name }}</span>
-                                        {{ table_label.status_label(pod.status, pod_tone) }}
-                                    </div>
-                                    <div class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs leading-5 text-content-muted"><span>Node {{ pod.node }}</span><span>Ready {{ pod.ready }}</span><span>{{ pod.container_count }} containers</span><span>Age {{ pod.age }}</span></div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                    {% if workload.pods_truncated %}
-                        <p class="mt-3 text-xs text-content-muted">Showing the first 8 associated Pods.</p>
-                    {% endif %}
-                {% else %}
-                    {{ info_box('No Associated Pods', 'No Pods are currently resolved to this workload. Re-sync inventory after rollout or ownership changes.', 'info') }}
-                {% endif %}
-                {% if workload.pods %}
-                    <div class="mt-4">{{ inventory_tip.tip('Pod mapping reflects current controller ownership in the latest snapshot.', 'git-branch') }}</div>
+                    <div class="p-4">{{ detail.empty_evidence('Container Metadata Unavailable', 'Container template metadata has not been collected for this workload.', 'images') }}</div>
                 {% endif %}
             </section>
-            <section class="rounded-xl border border-outline-default bg-surface-card p-4">
-                <div class="mb-4 flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-2">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="tags" class="h-4 w-4"></i></span>
-                        <div>
-                            <h4 class="text-sm font-semibold text-content-primary">Workload Labels</h4>
-                            <p class="text-xs leading-5 text-content-muted">Kubernetes labels stored with this workload object.</p>
-                        </div>
-                    </div>
-                    {{ table_label.metadata_label(table_label.count_text(workload.labels|length, 'Label')) }}
-                </div>
-                {% if workload.labels %}
-                    <div class="flex flex-wrap gap-1.5">
-                        {% for key, value in workload.labels %}{{ table_label.metadata_label(key ~ ('=' ~ value if value else ''), none, true) }}{% endfor %}
-                    </div>
-                {% else %}
-                    {{ info_box('No Workload Labels', 'No workload labels were reported in the latest inventory snapshot.', 'tag') }}
-                {% endif %}
-                {% if workload.labels %}
-                    <div class="mt-4">{{ inventory_tip.tip('Labels support workload organization and selection.', 'tags') }}</div>
-                {% endif %}
+
+            <div class="md:col-span-2 2xl:col-span-3">
+                {{ related_collection.render(
+                    'Associated Pods',
+                    'Pods currently mapped to this workload in the committed snapshot.',
+                    workload.pods,
+                    workload.pod_count,
+                    'git-branch',
+                    'No Associated Pods',
+                    'No Pods are currently resolved to this workload in the committed snapshot.',
+                    workload.pods_truncated,
+                    url_for('inventory.pods', cluster_id=workload.cluster_id, namespace=workload.namespace, owner_type=workload.type),
+                    'Open Pod Inventory'
+                ) }}
+            </div>
+
+            <div class="md:col-span-2 2xl:col-span-3 grid gap-4 lg:grid-cols-2">
+                {{ metadata_collection.render('Workload Labels', workload.labels, 'tags', 'No Workload Labels', 'No workload labels were reported in the committed snapshot.', 'Labels remain factual selection and organization metadata.') }}
+                {{ metadata_collection.render('Workload Annotations', workload.annotations, 'notebook-tabs', 'No Workload Annotations', 'No workload annotations were reported in the committed snapshot.', 'Annotations may be managed by controllers and integrations.') }}
+            </div>
+
+            <section class="space-y-3 md:col-span-2 2xl:col-span-3">
+                {{ operational_callout.render('Committed Snapshot Boundary', 'This detail reads the latest committed database snapshot. It does not query the Kubernetes API live.', 'database', 'info') }}
+                {{ operational_callout.render(workload.operational_context.title, workload.operational_context.description, workload.operational_context.icon, workload.operational_context.tone, 'semantic') }}
             </section>
-            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
-                <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3">
-                    <div class="flex items-center gap-2">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="notebook-tabs" class="h-4 w-4"></i></span>
-                        <div>
-                            <h4 class="text-sm font-semibold text-content-primary">Workload Annotations</h4>
-                            <p class="text-xs leading-5 text-content-muted">Annotation metadata is shown as compact wrap-safe labels.</p>
-                        </div>
-                    </div>
-                    {{ table_label.metadata_label(table_label.count_text(workload.annotations|length, 'Annotation')) }}
-                </header>
-                {% if workload.annotations %}
-                    <div class="flex max-h-72 flex-wrap gap-1.5 overflow-y-auto p-4">
-                        {% for key, value in workload.annotations %}
-                            {{ table_label.metadata_label(key ~ '=' ~ (value or '-'), none, true) }}
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    <div class="p-4">{{ info_box('No Workload Annotations', 'No workload annotations were reported in the latest inventory snapshot.', 'info') }}</div>
-                {% endif %}
-                {% if workload.annotations %}{{ inventory_tip.footer('Annotations may be managed by workload controllers and integrations.', 'notebook-tabs') }}{% endif %}
-            </section>
-            {{ info_box('Inventory Boundary', 'This section contains point-in-time workload inventory data. Utilization, performance trends, anomalies, forecasts, and recommendations remain in Analytics and Intelligence.', 'info') }}
         </div>
     </div>
 </div>

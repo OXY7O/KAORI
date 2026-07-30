@@ -170,3 +170,7 @@ Canonical Hero → Snapshot Context → Namespace Control Posture → Compact Ta
 ```
 
 Lifecycle transition, resource controls, and security configuration are factual inventory evidence. `Terminating` is informational until stuck-transition evidence exists. Missing quota, LimitRange, NetworkPolicy, or PSA labels do not imply a compliance failure without an explicit governance policy. Labels and annotations use `technical_metadata_collection.html`.
+
+## Workload Inventory presentation
+
+Workload Inventory follows the canonical Inventory Resource Page Pattern. The hero owns delivery and runtime posture, the posture grid owns workload composition and exceptions, and the compact table separates semantic operational state from controller-specific evidence. Associated Pods use the shared Related Resource Collection. Workload configuration is factual evidence until an explicit governance policy evaluates it.

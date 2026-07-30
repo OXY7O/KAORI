@@ -38,3 +38,7 @@ All list, summary, and detail views read the latest committed inventory generati
 ## Namespace implementation
 
 Namespace Inventory is the second canonical implementation. It uses Namespace Control Posture, a governance-focused compact table, Technical Metadata Collection, and neutral factual evidence when no explicit governance policy is available.
+
+## Workload implementation
+
+Workload Inventory is the third canonical implementation. It separates semantic operational posture from type-specific factual state, uses a compact namespaced table, Related Resource Collection for associated Pods, and neutral factual treatment for workload configuration.

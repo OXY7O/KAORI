@@ -98,6 +98,16 @@
         </div>
     </div>
 {%- endmacro %}
+
+{% macro namespaced_scope_identity(cluster_name, cluster_environment, namespace) -%}
+    <div class="min-w-[12rem]">
+        {{ cluster_identity(cluster_name, cluster_environment) }}
+        <div class="mt-1.5 pl-10">
+            <p class="truncate text-xs leading-5 text-content-muted" title="{{ namespace or '-' }}">Namespace · {{ namespace or '-' }}</p>
+        </div>
+    </div>
+{%- endmacro %}
+
 {% macro action_classes(destructive=false) -%}
     inline-flex min-h-8 items-center justify-center gap-1.5 rounded-md border px-2.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 {{ 'border-status-critical/30 bg-surface-card text-status-critical-text hover:bg-status-critical-soft focus-visible:ring-status-critical/30' if destructive else 'border-outline-default bg-surface-card text-content-secondary hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:ring-outline-focus' }}
 {%- endmacro %}
