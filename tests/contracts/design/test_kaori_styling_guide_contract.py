@@ -23,9 +23,12 @@ def test_canonical_styling_guide_and_component_contracts_exist() -> None:
     assert 'Label Standard' in guide
     assert 'View More Content' in guide
     assert 'Table Standard' in guide
+    assert 'Workspace Catalog and Landing Pages' in guide
     assert 'KAORI_STYLING_GUIDE.md' in design_readme
     assert 'components/RIGHT_CONTEXT_RAIL.md' in design_readme
     assert 'components/VIEW_MORE_CONTENT.md' in design_readme
+    assert 'components/WORKSPACE_LINK_CARD.md' in design_readme
+    assert 'patterns/WELCOME_WORKSPACE_CATALOG.md' in design_readme
 
 
 def test_standard_labels_are_borderless_and_special_label_is_explicit() -> None:
@@ -89,3 +92,35 @@ def test_static_quality_gate_runs_the_style_drift_verifier() -> None:
     quality_gate = _read('scripts/quality_gate.sh')
     assert 'python scripts/verify_ui_reuse.py' in quality_gate
     assert 'python scripts/verify_ui_style.py' in quality_gate
+
+
+def test_workspace_catalog_components_and_contracts_are_documented() -> None:
+    card = _read('app/templates/components/workspace_link_card.html')
+    group = _read('app/templates/components/welcome_capability_group.html')
+    card_contract = _read('docs/design/components/WORKSPACE_LINK_CARD.md')
+    catalog_contract = _read('docs/design/patterns/WELCOME_WORKSPACE_CATALOG.md')
+
+    assert 'table_label.metadata_label(workspace.scope)' in card
+    assert 'hover:-translate-y' not in card
+    assert 'shadow-xl' not in card
+    assert 'data-lucide="star"' not in group
+    assert 'decorative rings' in catalog_contract
+    assert 'components/workspace_link_card.html' in card_contract
+
+
+def test_shared_empty_state_uses_canonical_label_macros() -> None:
+    source = _read('app/templates/components/states/_empty_state.html')
+
+    assert '{% import "components/table_label.html" as table_label %}' in source
+    assert 'table_label.status_label(state_label, state_tone)' in source
+    assert "table_label.special_label('Admin Required', 'unknown', 'shield')" in source
+    assert 'text-[10px]' not in source
+
+
+def test_style_verifier_tracks_compact_pill_label_drift() -> None:
+    source = _read('scripts/verify_ui_style.py')
+
+    assert "'page_local_compact_pill_labels'" in source
+    assert "'arbitrary_tracking'" in source
+    assert "'font_extrabold_utilities'" in source
+    assert 'def _count_page_local_compact_pill_labels' in source

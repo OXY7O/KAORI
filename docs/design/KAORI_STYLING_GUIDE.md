@@ -341,7 +341,25 @@ Readiness and status blocks use semantic state, not Violet decoration. A blockin
 
 Avoid stacking multiple dark or tinted backgrounds. Use whitespace, divider, border, and hierarchy before adding another nested surface.
 
-## 15. Loading, Empty, Error, and Permission States
+## 15. Workspace Catalog and Landing Pages
+
+Role-aware landing catalogs use the pattern documented in `patterns/WELCOME_WORKSPACE_CATALOG.md`.
+
+Required rules:
+
+- keep the canonical hero unchanged;
+- use a section-level catalog title rather than a second page title;
+- show access scope and visible result count as inline metadata, not a separate tinted summary box;
+- use the standard 40 px search control;
+- use `workspace_link_card.html` for a card whose complete purpose is opening one peer workspace;
+- use `table_label.metadata_label(...)` for scope, category, and type;
+- do not use pill labels, hover translation, heavy floating shadows, or decorative elements without semantic purpose;
+- use the shared empty-state component when search returns no authorized destination;
+- keep search limited to server-authorized cards already rendered for the user.
+
+Welcome may use `welcome_capability_group.html` as a documented dark Violet category anchor. This is a landing-page orientation pattern, not a second hero and not a general content-card variant.
+
+## 16. Loading, Empty, Error, and Permission States
 
 - Loading appears in the affected region, never by replacing the hero.
 - Empty states explain what is absent and the next valid action when one exists.
@@ -349,7 +367,7 @@ Avoid stacking multiple dark or tinted backgrounds. Use whitespace, divider, bor
 - Unknown, unavailable, permission denied, and not configured are separate states.
 - Permission-restricted actions follow the authorization contract and must not look like temporary loading.
 
-## 16. Responsive, Dark Mode, and Accessibility
+## 17. Responsive, Dark Mode, and Accessibility
 
 Every reusable component is reviewed in:
 
@@ -361,7 +379,7 @@ Every reusable component is reviewed in:
 
 Responsive reflow preserves semantic order. Primary content appears before contextual rail content. Icon-only actions require accessible names. Status never relies on color alone.
 
-## 17. Page Review Workflow
+## 18. Page Review Workflow
 
 Review one main page at a time using this sequence:
 
@@ -378,7 +396,7 @@ Review one main page at a time using this sequence:
 11. Update the style baseline only when the reviewed page's counts decrease.
 12. Record any genuinely new reusable pattern in this guide and its own component contract before using it elsewhere.
 
-## 18. Pull Request Checklist
+## 19. Pull Request Checklist
 
 - [ ] Existing shared components were reused.
 - [ ] No copied hero, pagination, table, label, or right-rail classes were introduced.

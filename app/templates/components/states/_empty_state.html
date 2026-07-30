@@ -1,5 +1,8 @@
+{% import "components/table_label.html" as table_label %}
 {% set state_icon = empty_state_icon|default('inbox') %}
 {% set state_label = empty_state_label|default('No Data') %}
+{% set default_state_tone = 'warning' if state_label in ['Setup Required', 'Sync Required'] else 'unknown' %}
+{% set state_tone = empty_state_tone|default(default_state_tone) %}
 {% set state_title = empty_state_title|default('No Data Available') %}
 {% set state_description = empty_state_description|default('Data will appear after the required source has been configured and collected.') %}
 {% set state_min_height = empty_state_min_height|default('min-h-[180px]') %}
@@ -25,9 +28,7 @@
         <i data-lucide="{{ state_icon }}" class="h-6 w-6"></i>
     </span>
     {% if state_label %}
-        <span class="mt-4 inline-flex min-h-6 items-center rounded-md border border-brand-outline bg-kaori-soft px-2 text-[10px] font-semibold text-kaori-primary">
-            {{ state_label }}
-        </span>
+        <div class="mt-4">{{ table_label.status_label(state_label, state_tone) }}</div>
     {% endif %}
     <h3 class="{{ 'mt-3' if state_label else 'mt-4' }} text-base font-semibold text-content-primary">{{ state_title }}</h3>
     <p class="mt-2 max-w-2xl text-sm leading-6 text-content-secondary">{{ state_description }}</p>
@@ -49,6 +50,6 @@
             {% endif %}
         </div>
     {% elif not permission_granted and show_admin_required %}
-        <span class="mt-5 inline-flex min-h-6 items-center rounded-md border border-outline-default bg-surface-card px-2 text-[10px] font-semibold text-content-secondary">Admin Required</span>
+        <div class="mt-5">{{ table_label.special_label('Admin Required', 'unknown', 'shield') }}</div>
     {% endif %}
 </div>

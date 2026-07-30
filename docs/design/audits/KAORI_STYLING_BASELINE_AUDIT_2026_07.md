@@ -104,3 +104,7 @@ A page is considered standardized when:
 - no new raw palette, arbitrary radius, inline style, inline event handler, or page-local script debt is added;
 - the per-file style baseline is reduced or unchanged;
 - relevant contract tests pass.
+
+## First Reference Migration
+
+The Welcome page is the first page reviewed against this baseline. It establishes the documented workspace catalog pattern, reusable destination card, simplified capability anchor, inline catalog metadata, and shared search empty state. See `WELCOME_STYLING_AUDIT_2026_07.md`.

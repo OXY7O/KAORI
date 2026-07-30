@@ -1,0 +1,61 @@
+# Welcome Workspace Catalog Pattern
+
+## Purpose
+
+The Welcome page is a role-aware product landing page. It helps users choose an authorized KAORI workspace without behaving like an infrastructure dashboard.
+
+## Required structure
+
+```text
+Canonical Hero
+Catalog Header and Search
+Inline Access and Result Metadata
+Capability Groups
+Shared Empty State
+```
+
+## Catalog header
+
+- use one metadata label: `Available Workspaces`;
+- use one section title: `Choose a Workspace`;
+- keep the description to one sentence;
+- place role access and visible result count as inline metadata;
+- do not add a separate tinted summary strip;
+- search uses the standard 40 px form control and `rounded-lg` geometry.
+
+## Capability group
+
+`components/welcome_capability_group.html` owns the Welcome-specific group layout.
+
+A capability group may use one dark Violet anchor panel because Welcome is a product landing page. This exception is limited to category orientation and must not become a second hero.
+
+The anchor contains:
+
+- one icon;
+- one action-oriented eyebrow;
+- one group title;
+- one concise description;
+- one visible workspace count.
+
+The anchor does not contain decorative rings, decorative stars, gradients, heavy shadows, or unrelated actions.
+
+## Workspace cards
+
+Every destination uses `components/workspace_link_card.html`. Scope is contextual metadata and therefore uses `table_label.metadata_label(...)`, not a status label or pill.
+
+Cards do not translate vertically on hover. Border, restrained shadow, and icon treatment provide the interactive response.
+
+## Search and authorization
+
+Search operates only on workspaces rendered after server-side permission checks. Empty groups are hidden after filtering. Search must never reveal unavailable workspaces or permission names.
+
+## Pagination decision
+
+Do not paginate the current Welcome catalog. Add pagination only when the catalog becomes server-driven or too large to scan after grouping and search. Any future pagination must use `components/pagination.html`.
+
+## Responsive behavior
+
+- capability anchor appears before its workspace cards;
+- desktop uses a fixed category anchor and flexible card grid;
+- smaller screens stack the anchor above the cards;
+- semantic reading order is unchanged.

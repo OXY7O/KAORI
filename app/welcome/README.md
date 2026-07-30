@@ -18,9 +18,18 @@ Welcome is the authenticated platform landing page and is not an infrastructure 
 - Empty capability groups are not rendered. This prevents headings or counts from exposing inaccessible features.
 - New integrations should extend existing capability groups where possible instead of creating product-specific global navigation categories.
 
-## Scalability and presentation
+## Presentation contract
+
+- `templates/welcome/index.html` composes the canonical hero, catalog toolbar, capability groups, shared workspace cards, and shared empty state.
+- `templates/components/welcome_capability_group.html` owns the Welcome-specific dark Violet category anchor. Do not recreate its geometry in the page template.
+- `templates/components/workspace_link_card.html` owns reusable destination-card geometry and scope metadata.
+- `static/js/welcome.js` only filters already-authorized rendered cards and synchronizes visible counts.
+- `docs/design/patterns/WELCOME_WORKSPACE_CATALOG.md` is the canonical layout and interaction pattern.
+- Do not add a Welcome-specific CSS file or inline style bundle. Use semantic Tailwind tokens and shared components.
+
+## Scalability
 
 - The catalog groups workspaces by operational purpose: visibility, operations, assurance, and platform administration.
 - Workspace search operates only on cards already rendered for the current user, so client-side filtering cannot reveal unauthorized destinations.
-- Presentation is maintained in `templates/welcome/index.html`, `static/css/welcome.css`, and `static/js/welcome.js`.
-- Keep workspace cards compact, consistently structured, and suitable for a growing number of features.
+- Keep workspace descriptions concise and suitable for a growing number of features.
+- Do not add pagination while the grouped catalog remains compact. Any future server-driven pagination must use the shared pagination component.

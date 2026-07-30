@@ -26,6 +26,7 @@ The Styling Guide selects the correct reusable component. The Design System and 
 - `components/CONTEXT_GUIDANCE_CARD.md`
 - `components/INFORMATION_GUIDE_CARD.md`
 - `components/WORKSPACE_SUMMARY_CARD.md`
+- `components/WORKSPACE_LINK_CARD.md`
 - `components/HEALTH_INTERPRETATION.md`
 - `components/INTEGRATION_MANAGE_WORKSPACE.md`
 - `components/OPERATIONAL_ACTION_FEEDBACK.md`
@@ -33,6 +34,7 @@ The Styling Guide selects the correct reusable component. The Design System and 
 ## Reusable Page Patterns
 
 - `patterns/INVENTORY_AND_OPERATIONAL_PAGES.md`
+- `patterns/WELCOME_WORKSPACE_CATALOG.md`
 
 ## Domain Specifications
 
@@ -48,6 +50,7 @@ Domain-specific UI rules live under `docs/modules/` or the owning module README.
 ## Current Baseline Audit
 
 - `audits/KAORI_STYLING_BASELINE_AUDIT_2026_07.md`
+- `audits/WELCOME_STYLING_AUDIT_2026_07.md`
 - `audits/PROMETHEUS_STYLE_AND_LIFECYCLE_AUDIT_2026_07.md`
 - `audits/PROMETHEUS_ALERTMANAGER_ALIGNMENT_AUDIT_2026_07.md`
 - `audits/PROMETHEUS_MANAGE_ALERTMANAGER_PARITY_AUDIT_2026_07.md`

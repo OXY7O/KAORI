@@ -8,11 +8,14 @@ from pathlib import Path
 
 _METRICS = (
     'arbitrary_text_sizes',
+    'arbitrary_tracking',
+    'font_extrabold_utilities',
     'arbitrary_radii',
     'raw_hex_colors',
     'raw_palette_utilities',
     'semantic_border_utilities',
     'page_local_compact_status_labels',
+    'page_local_compact_pill_labels',
     'custom_hero_titles',
     'custom_previous_next_pagination',
     'copied_standard_surface_shells',
@@ -20,6 +23,8 @@ _METRICS = (
 )
 
 _ARBITRARY_TEXT = re.compile(r'\btext-\[[^\]]+\]')
+_ARBITRARY_TRACKING = re.compile(r'\btracking-\[[^\]]+\]')
+_FONT_EXTRABOLD = re.compile(r'\bfont-extrabold\b')
 _ARBITRARY_RADIUS = re.compile(r'\b(?:rounded-3xl|rounded-\[[^\]]+\])')
 _RAW_HEX = re.compile(r'(?<![\w-])#[0-9a-fA-F]{3,8}\b')
 _RAW_PALETTE = re.compile(
@@ -52,6 +57,27 @@ def _count_page_local_compact_status_labels(relative: str, source: str) -> int:
             continue
         if 'text-[10px]' in classes or 'text-[11px]' in classes:
             count += 1
+    return count
+
+
+def _count_page_local_compact_pill_labels(relative: str, source: str) -> int:
+    if relative in {
+        'app/templates/components/table_label.html',
+        'app/templates/components/page_hero.html',
+    }:
+        return 0
+    count = 0
+    for match in _TAG_WITH_CLASS.finditer(source):
+        classes = match.group('class')
+        has_compact_padding = re.search(
+            r'\bpx-(?:1|1\.5|2|2\.5|3)\b',
+            classes,
+        )
+        if 'rounded-full' not in classes or not has_compact_padding:
+            continue
+        if not re.search(r'\b(?:text-xs|text-\[(?:9|10|11)px\])\b', classes):
+            continue
+        count += 1
     return count
 
 
@@ -92,11 +118,16 @@ def _metrics(relative: str, source: str) -> dict[str, int]:
     )
     return {
         'arbitrary_text_sizes': len(_ARBITRARY_TEXT.findall(source)),
+        'arbitrary_tracking': len(_ARBITRARY_TRACKING.findall(source)),
+        'font_extrabold_utilities': len(_FONT_EXTRABOLD.findall(source)),
         'arbitrary_radii': len(_ARBITRARY_RADIUS.findall(source)),
         'raw_hex_colors': len(_RAW_HEX.findall(source)),
         'raw_palette_utilities': len(_RAW_PALETTE.findall(source)),
         'semantic_border_utilities': len(_SEMANTIC_BORDER.findall(source)),
         'page_local_compact_status_labels': _count_page_local_compact_status_labels(
+            relative, source
+        ),
+        'page_local_compact_pill_labels': _count_page_local_compact_pill_labels(
             relative, source
         ),
         'custom_hero_titles': _count_custom_hero_titles(relative, source),
@@ -129,7 +160,7 @@ def scan(root: Path) -> dict[str, dict[str, int]]:
 
 def write_baseline(root: Path, baseline_path: Path) -> None:
     payload = {
-        'version': 1,
+        'version': 2,
         'description': (
             'Per-template ceiling for style-drift review candidates. Counts are not all defects; '
             'they must not increase and should fall during page-by-page standardization.'

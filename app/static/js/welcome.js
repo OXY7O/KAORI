@@ -30,8 +30,6 @@
                 const groupResultCount = group.querySelector('[data-group-result-count]')
 
                 group.hidden = visibleGroupCards.length === 0
-                group.open = Boolean(query) && visibleGroupCards.length > 0
-
                 if (groupResultCount) {
                     groupResultCount.textContent = String(visibleGroupCards.length)
                 }
@@ -39,7 +37,7 @@
 
             if (resultCount) {
                 const noun = visibleCardCount === 1 ? 'Workspace' : 'Workspaces'
-                resultCount.textContent = `${visibleCardCount} ${noun} Available`
+                resultCount.textContent = `${visibleCardCount} ${noun}`
             }
 
             if (emptyState) {
