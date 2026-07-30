@@ -1,5 +1,13 @@
 # Expandable Content Standard
 
-Expandable titles use Title Case, 14–16 px medium or semibold. Supporting descriptions use sentence case. Default state is closed unless immediate visibility is operationally necessary.
+The canonical implementation and decision rules are defined in `VIEW_MORE_CONTENT.md`.
 
-The trigger has a visible focus state, exposes expanded state to assistive technology, and does not use color alone to communicate state.
+Summary:
+
+- Secondary guidance and reference content use `components/view_more_content.html` through a semantic wrapper.
+- Expandable titles use Title Case and the shared 14 px semibold hierarchy.
+- Supporting descriptions use sentence case and the shared 12 px hierarchy.
+- Default state is closed unless immediate visibility is operationally necessary.
+- Required fields, blockers, readiness requirements, critical errors, and primary request previews must remain visible.
+- Primary ordered workflows use `components/info_flow.html` rather than generic expandable content.
+- The trigger preserves native `details`/`summary` behavior, visible focus, and accessible expanded state.

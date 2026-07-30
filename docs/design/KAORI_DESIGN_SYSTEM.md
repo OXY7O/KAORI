@@ -7,9 +7,10 @@ This document is the authoritative global visual and interaction contract for KA
 KAORI UI documentation is organized into four layers:
 
 1. **Global Design System** — universal foundations and cross-application rules in this document.
-2. **Component Standards** — detailed contracts for reusable components under `docs/design/components/`.
-3. **Page Pattern Standards** — reusable page structures under `docs/design/patterns/`.
-4. **Module UI Specifications** — domain-specific page behavior under `docs/modules/` or the owning module README.
+2. **Styling Guide** — practical component selection and page-review workflow in `docs/design/KAORI_STYLING_GUIDE.md`.
+3. **Component Standards** — detailed contracts for reusable components under `docs/design/components/`.
+4. **Page Pattern Standards** — reusable page structures under `docs/design/patterns/`.
+5. **Module UI Specifications** — domain-specific page behavior under `docs/modules/` or the owning module README.
 
 A reference implementation demonstrates a contract; its domain-specific content is never a global rule.
 
@@ -31,6 +32,8 @@ The interface is information-first. Violet establishes KAORI identity, hierarchy
 - Authenticated pages do not use gradient backgrounds.
 - Status must not rely on color alone; pair color with text and, when useful, an icon.
 - Shared component geometry and typography are changed in the shared component first, never patched locally per page.
+- The practical component-selection and page-review contract is `docs/design/KAORI_STYLING_GUIDE.md`.
+- Page-local copies of hero, pagination, table, label, expandable-content, or right-context-rail utility bundles are prohibited.
 
 ## Brand palette
 
@@ -130,10 +133,12 @@ KAORI uses comfortable-compact density suitable for operational work at 100% bro
 
 ## Shape and elevation
 
-- Compact controls, navigation rows, and icon surfaces: 8 px (`rounded-lg`).
-- Standard cards, topbar controls, and dropdowns: 12 px (`rounded-xl`).
-- Sidebar frame, main application frame, hero, and large grouped surfaces: 16 px (`rounded-2xl`).
-- Status and metadata labels: 6 px (`rounded-md`), borderless, never pill-shaped.
+- Page-level form controls, action buttons, navigation rows, and ordinary icon surfaces: 8 px (`rounded-lg`).
+- Compact table filters, table actions, pagination controls, and status/metadata labels: 6 px (`rounded-md`).
+- Standard cards, dropdown/menu surfaces, and expandable supporting content: 12 px (`rounded-xl`).
+- Sidebar frame, main application frame, hero, primary Info Flow, Related Page Card, and large grouped surfaces: 16 px (`rounded-2xl`).
+- Status and metadata labels are borderless and never pill-shaped.
+- A compact icon + border label is a documented special-label exception and must use the shared special-label component; it is not the default status treatment.
 - Full radius is reserved for avatars, status dots, toggles, and progress tracks where the shape has semantic purpose.
 - Avoid `rounded-3xl` and arbitrary authenticated-shell radii above 16 px.
 
@@ -177,6 +182,8 @@ Detailed component rules are maintained separately:
 - Hero: `docs/design/components/HERO.md`
 - Tables and compact labels: `docs/design/components/TABLE_AND_LABEL.md`
 - Related page relationships: `docs/design/components/RELATED_PAGE_CARD.md`
+- Right contextual rail: `docs/design/components/RIGHT_CONTEXT_RAIL.md`
+- View More Content: `docs/design/components/VIEW_MORE_CONTENT.md`
 - Form submission actions: `docs/design/components/FORM_ACTION_BAR.md`
 - Operational action feedback: `docs/design/components/OPERATIONAL_ACTION_FEEDBACK.md`
 - Reusable page composition: `docs/design/patterns/`

@@ -1,0 +1,969 @@
+{
+  "description": "Per-template ceiling for style-drift review candidates. Counts are not all defects; they must not increase and should fall during page-by-page standardization.",
+  "files": {
+    "app/templates/alertmanager/instance_detail.html": {
+      "arbitrary_text_sizes": 5
+    },
+    "app/templates/alertmanager/instance_form.html": {
+      "arbitrary_text_sizes": 10,
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 6
+    },
+    "app/templates/alertmanager/partials/_delete_confirmation_modal.html": {
+      "semantic_border_utilities": 2
+    },
+    "app/templates/alertmanager/partials/_detail_configuration.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/alertmanager/partials/_detail_scope.html": {
+      "arbitrary_text_sizes": 1,
+      "copied_standard_surface_shells": 2,
+      "page_local_compact_status_labels": 1,
+      "semantic_border_utilities": 7
+    },
+    "app/templates/alertmanager/partials/_detail_validation_content.html": {
+      "arbitrary_text_sizes": 5,
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 5
+    },
+    "app/templates/alertmanager/partials/_runtime_panel.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/analytics/alerts/index.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/analytics/alerts/partials/_alerts_table_row.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/analytics/alerts/partials/_anomalies_table_row.html": {
+      "arbitrary_text_sizes": 4
+    },
+    "app/templates/analytics/alerts/partials/_cluster_signal_overview.html": {
+      "arbitrary_text_sizes": 5,
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 1
+    },
+    "app/templates/analytics/alerts/partials/_filters.html": {
+      "arbitrary_text_sizes": 7,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/analytics/alerts/partials/_hero.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/analytics/alerts/partials/_incident_readiness.html": {
+      "arbitrary_text_sizes": 5,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/analytics/alerts/partials/_ownership_summary.html": {
+      "arbitrary_text_sizes": 1
+    },
+    "app/templates/analytics/alerts/partials/_source_status.html": {
+      "semantic_border_utilities": 3
+    },
+    "app/templates/analytics/capacity/partials/_allocation.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/analytics/capacity/partials/_hero.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/analytics/capacity/partials/_overview.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/analytics/capacity/partials/_risk.html": {
+      "arbitrary_text_sizes": 1
+    },
+    "app/templates/analytics/capacity/partials/_worker_summary.html": {
+      "arbitrary_text_sizes": 4
+    },
+    "app/templates/analytics/components/_analysis_workspace.html": {
+      "arbitrary_text_sizes": 5,
+      "copied_standard_surface_shells": 3
+    },
+    "app/templates/analytics/components/_controls.html": {
+      "arbitrary_text_sizes": 1,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/analytics/components/_status_notice.html": {
+      "semantic_border_utilities": 3
+    },
+    "app/templates/analytics/forecast/index.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/analytics/forecast/partials/_controls_readiness.html": {
+      "semantic_border_utilities": 1
+    },
+    "app/templates/analytics/forecast/partials/_forecast_section.html": {
+      "arbitrary_text_sizes": 13
+    },
+    "app/templates/analytics/forecast/partials/_methodology.html": {
+      "arbitrary_text_sizes": 2,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/analytics/forecast/partials/_overview_methodology.html": {
+      "arbitrary_text_sizes": 3
+    },
+    "app/templates/analytics/materialization/_freshness.html": {
+      "semantic_border_utilities": 4
+    },
+    "app/templates/analytics/materialization/_pending.html": {
+      "semantic_border_utilities": 2
+    },
+    "app/templates/analytics/overview/index.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/analytics/overview/partials/_actionable_recommendation_summary.html": {
+      "arbitrary_text_sizes": 2,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/analytics/overview/partials/_alerts_snapshot.html": {
+      "arbitrary_text_sizes": 3,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/analytics/overview/partials/_capacity_snapshot.html": {
+      "arbitrary_text_sizes": 3,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/analytics/overview/partials/_forecast_snapshot.html": {
+      "arbitrary_text_sizes": 4,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/analytics/overview/partials/_health_summary.html": {
+      "arbitrary_text_sizes": 8,
+      "copied_standard_surface_shells": 2
+    },
+    "app/templates/analytics/overview/partials/_hero_posture.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/analytics/overview/partials/_hero_posture_loading.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/analytics/overview/partials/_load_tracker.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/analytics/overview/partials/_recommendations.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/analytics/overview/partials/_resource_snapshot.html": {
+      "arbitrary_text_sizes": 5,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/analytics/overview/partials/_storage_snapshot.html": {
+      "arbitrary_text_sizes": 4,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/analytics/overview/partials/_top_consumers_snapshot.html": {
+      "arbitrary_text_sizes": 2,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/analytics/overview/partials/_workload_snapshot.html": {
+      "arbitrary_text_sizes": 4,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/analytics/partials/_load_tracker.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/analytics/storage/partials/_capacity_utilization_panel.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/analytics/storage/partials/_filesystem_panel.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/analytics/storage/partials/_hero.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/analytics/storage/partials/_overview.html": {
+      "arbitrary_text_sizes": 3
+    },
+    "app/templates/analytics/storage/partials/_persistent_volume_claims_panel.html": {
+      "arbitrary_text_sizes": 3
+    },
+    "app/templates/analytics/storage/partials/_persistent_volumes_panel.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/analytics/top_consumers/partials/_hero.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/analytics/top_consumers/partials/_summary.html": {
+      "arbitrary_text_sizes": 5,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/analytics/top_consumers/partials/_top_consumers_section.html": {
+      "arbitrary_text_sizes": 5,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/analytics/utilization/index.html": {
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 2
+    },
+    "app/templates/analytics/utilization/partials/_current_summary.html": {
+      "arbitrary_text_sizes": 3
+    },
+    "app/templates/analytics/utilization/partials/_hero.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/analytics/utilization/partials/_node_detail.html": {
+      "arbitrary_text_sizes": 6,
+      "semantic_border_utilities": 1
+    },
+    "app/templates/analytics/utilization/partials/_overview.html": {
+      "arbitrary_text_sizes": 1
+    },
+    "app/templates/analytics/utilization/partials/_readiness_scope.html": {
+      "arbitrary_text_sizes": 1
+    },
+    "app/templates/analytics/utilization/partials/_trend.html": {
+      "arbitrary_text_sizes": 9,
+      "semantic_border_utilities": 1
+    },
+    "app/templates/analytics/workload/partials/_hero.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/analytics/workload/partials/_overview.html": {
+      "arbitrary_text_sizes": 3
+    },
+    "app/templates/analytics/workload/partials/_tenant_quota_section.html": {
+      "arbitrary_text_sizes": 6
+    },
+    "app/templates/analytics/workload/partials/_workload_mapping_section.html": {
+      "arbitrary_text_sizes": 4
+    },
+    "app/templates/auth/partials/_brand_panel.html": {
+      "custom_hero_titles": 1
+    },
+    "app/templates/auth/partials/_login_alerts.html": {
+      "semantic_border_utilities": 2
+    },
+    "app/templates/auth/setup_required.html": {
+      "arbitrary_text_sizes": 1,
+      "custom_hero_titles": 1,
+      "semantic_border_utilities": 3
+    },
+    "app/templates/cluster/index.html": {
+      "arbitrary_text_sizes": 2,
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 1
+    },
+    "app/templates/cluster/partials/_delete_modal.html": {
+      "semantic_border_utilities": 2
+    },
+    "app/templates/cluster/partials/_form.html": {
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 3
+    },
+    "app/templates/cluster/partials/_inventory_badge.html": {
+      "semantic_border_utilities": 2
+    },
+    "app/templates/cluster/partials/_status_badge.html": {
+      "semantic_border_utilities": 3
+    },
+    "app/templates/cluster/partials/_table.html": {
+      "semantic_border_utilities": 1
+    },
+    "app/templates/components/action_button.html": {
+      "semantic_border_utilities": 2
+    },
+    "app/templates/components/dependencies/_blocker.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/components/detail_tip.html": {
+      "semantic_border_utilities": 1
+    },
+    "app/templates/components/health_interpretation.html": {
+      "arbitrary_text_sizes": 3,
+      "semantic_border_utilities": 6
+    },
+    "app/templates/components/integration_workspace_tabs.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/components/live_lookup_notice.html": {
+      "semantic_border_utilities": 1
+    },
+    "app/templates/components/navigation/_individual_sync_status.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/components/navigation/_notification_center.html": {
+      "arbitrary_text_sizes": 12,
+      "page_local_compact_status_labels": 1
+    },
+    "app/templates/components/navigation/_quick_sync_result.html": {
+      "arbitrary_text_sizes": 6,
+      "page_local_compact_status_labels": 1,
+      "semantic_border_utilities": 2
+    },
+    "app/templates/components/navigation/_quick_sync_status.html": {
+      "arbitrary_text_sizes": 6,
+      "raw_palette_utilities": 19
+    },
+    "app/templates/components/navigation/access_management_menu.html": {
+      "arbitrary_text_sizes": 6
+    },
+    "app/templates/components/navigation/analytics_menu.html": {
+      "arbitrary_text_sizes": 10
+    },
+    "app/templates/components/navigation/dashboards_menu.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/components/navigation/governance_menu.html": {
+      "arbitrary_text_sizes": 3
+    },
+    "app/templates/components/navigation/integrations_menu.html": {
+      "arbitrary_text_sizes": 5
+    },
+    "app/templates/components/navigation/intelligence_menu.html": {
+      "arbitrary_text_sizes": 6
+    },
+    "app/templates/components/navigation/inventory_menu.html": {
+      "arbitrary_text_sizes": 12
+    },
+    "app/templates/components/navigation/kubernetes_operations_menu.html": {
+      "arbitrary_text_sizes": 3
+    },
+    "app/templates/components/navigation/navbar.html": {
+      "arbitrary_text_sizes": 4,
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 1
+    },
+    "app/templates/components/navigation/platform_operations_menu.html": {
+      "arbitrary_text_sizes": 3
+    },
+    "app/templates/components/navigation/reports_menu.html": {
+      "arbitrary_text_sizes": 8
+    },
+    "app/templates/components/navigation/settings_menu.html": {
+      "arbitrary_text_sizes": 5
+    },
+    "app/templates/components/navigation/sidebar.html": {
+      "arbitrary_text_sizes": 8,
+      "custom_hero_titles": 1
+    },
+    "app/templates/components/navigation/topbar.html": {
+      "raw_palette_utilities": 11
+    },
+    "app/templates/components/operational_metric_card.html": {
+      "arbitrary_text_sizes": 1,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/components/operational_toggle.html": {
+      "semantic_border_utilities": 3
+    },
+    "app/templates/components/page_context_card.html": {
+      "arbitrary_text_sizes": 1
+    },
+    "app/templates/components/page_hero.html": {
+      "arbitrary_text_sizes": 9,
+      "semantic_border_utilities": 5
+    },
+    "app/templates/components/related_page_card.html": {
+      "arbitrary_text_sizes": 1
+    },
+    "app/templates/components/states/_blocked_state.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/components/states/_empty_state.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/components/states/_flash_messages.html": {
+      "raw_palette_utilities": 24
+    },
+    "app/templates/components/table_label.html": {
+      "arbitrary_text_sizes": 4,
+      "semantic_border_utilities": 5
+    },
+    "app/templates/components/technical_check.html": {
+      "semantic_border_utilities": 1
+    },
+    "app/templates/components/terminal_command.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/components/view_more_content.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/dashboards/kubernetes/partials/_alert_response_guidance.html": {
+      "semantic_border_utilities": 4
+    },
+    "app/templates/dashboards/kubernetes/partials/_alerts_summary.html": {
+      "semantic_border_utilities": 12
+    },
+    "app/templates/dashboards/kubernetes/partials/_capacity_snapshot.html": {
+      "semantic_border_utilities": 8
+    },
+    "app/templates/dashboards/kubernetes/partials/_cluster_health.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/dashboards/kubernetes/partials/_content.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/dashboards/kubernetes/partials/_forecast_risk.html": {
+      "arbitrary_text_sizes": 12,
+      "page_local_compact_status_labels": 1,
+      "semantic_border_utilities": 12
+    },
+    "app/templates/dashboards/kubernetes/partials/_hero.html": {
+      "arbitrary_text_sizes": 1
+    },
+    "app/templates/dashboards/kubernetes/partials/_recommended_actions.html": {
+      "semantic_border_utilities": 4
+    },
+    "app/templates/dashboards/kubernetes/partials/_reporting_guidance.html": {
+      "semantic_border_utilities": 1
+    },
+    "app/templates/dashboards/kubernetes/partials/_reporting_summary.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/dashboards/kubernetes/partials/_section_loading.html": {
+      "semantic_border_utilities": 1
+    },
+    "app/templates/dashboards/kubernetes/partials/_signal_overview.html": {
+      "arbitrary_text_sizes": 5,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/dashboards/kubernetes/partials/_top_consumers.html": {
+      "semantic_border_utilities": 3
+    },
+    "app/templates/governance/tls_certificates/detail.html": {
+      "arbitrary_text_sizes": 3,
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 1
+    },
+    "app/templates/governance/tls_certificates/partials/_summary_cards.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/governance/tls_certificates/partials/_sync_live_state.html": {
+      "arbitrary_text_sizes": 1
+    },
+    "app/templates/governance/tls_certificates/partials/_sync_toast.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/governance/tls_certificates/partials/_table.html": {
+      "arbitrary_text_sizes": 5,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/integrations/alertmanager.html": {
+      "arbitrary_text_sizes": 4
+    },
+    "app/templates/integrations/bindings/partials/_workspace.html": {
+      "arbitrary_text_sizes": 1,
+      "semantic_border_utilities": 4
+    },
+    "app/templates/integrations/kubernetes/detail.html": {
+      "arbitrary_text_sizes": 3
+    },
+    "app/templates/integrations/kubernetes/partials/_capability_workspace.html": {
+      "arbitrary_text_sizes": 9,
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 6
+    },
+    "app/templates/integrations/kubernetes/partials/_connection_contract.html": {
+      "arbitrary_text_sizes": 5,
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 1
+    },
+    "app/templates/integrations/kubernetes/partials/_delete_modal.html": {
+      "semantic_border_utilities": 1
+    },
+    "app/templates/integrations/kubernetes/partials/_integration_coverage.html": {
+      "arbitrary_text_sizes": 1,
+      "semantic_border_utilities": 1
+    },
+    "app/templates/integrations/kubernetes/partials/_inventory_lifecycle.html": {
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 2
+    },
+    "app/templates/integrations/kubernetes/partials/_minimum_validation_rbac.html": {
+      "arbitrary_text_sizes": 1,
+      "copied_standard_surface_shells": 1,
+      "raw_palette_utilities": 2,
+      "semantic_border_utilities": 1
+    },
+    "app/templates/integrations/kubernetes/partials/_registry.html": {
+      "arbitrary_text_sizes": 1
+    },
+    "app/templates/integrations/kubernetes/partials/_registry_detail_content.html": {
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 3
+    },
+    "app/templates/integrations/kubernetes/partials/_runtime_workspace.html": {
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 4
+    },
+    "app/templates/integrations/overview.html": {
+      "arbitrary_text_sizes": 13,
+      "copied_standard_surface_shells": 2,
+      "page_local_compact_status_labels": 4,
+      "semantic_border_utilities": 1
+    },
+    "app/templates/integrations/partials/_runtime_history.html": {
+      "arbitrary_text_sizes": 7,
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 6
+    },
+    "app/templates/integrations/partials/_runtime_overview.html": {
+      "arbitrary_text_sizes": 5,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/integrations/partials/_status_badge.html": {
+      "arbitrary_text_sizes": 1,
+      "page_local_compact_status_labels": 1
+    },
+    "app/templates/integrations/prometheus.html": {
+      "arbitrary_text_sizes": 4
+    },
+    "app/templates/intelligence/partials/automation_control/_decisions.html": {
+      "arbitrary_text_sizes": 4,
+      "copied_standard_surface_shells": 3
+    },
+    "app/templates/intelligence/partials/automation_control/_operations.html": {
+      "arbitrary_text_sizes": 4,
+      "copied_standard_surface_shells": 3
+    },
+    "app/templates/intelligence/partials/automation_control/_overview.html": {
+      "arbitrary_text_sizes": 1,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/intelligence/partials/automation_control/_readiness.html": {
+      "arbitrary_text_sizes": 2,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/intelligence/partials/automation_control/_runbooks.html": {
+      "arbitrary_text_sizes": 3,
+      "copied_standard_surface_shells": 3
+    },
+    "app/templates/intelligence/recommendations.html": {
+      "arbitrary_text_sizes": 3,
+      "copied_standard_surface_shells": 1,
+      "raw_palette_utilities": 73
+    },
+    "app/templates/inventory/components/_data_freshness.html": {
+      "arbitrary_text_sizes": 4
+    },
+    "app/templates/inventory/components/_detail_macros.html": {
+      "arbitrary_radii": 1,
+      "raw_palette_utilities": 266
+    },
+    "app/templates/inventory/components/_summary.html": {
+      "arbitrary_text_sizes": 4,
+      "semantic_border_utilities": 5
+    },
+    "app/templates/inventory/configuration/partials/_hero.html": {
+      "arbitrary_text_sizes": 4
+    },
+    "app/templates/inventory/configuration/partials/_summary_cards.html": {
+      "arbitrary_text_sizes": 5,
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 2
+    },
+    "app/templates/inventory/ingresses/partials/_hero.html": {
+      "arbitrary_text_sizes": 4
+    },
+    "app/templates/inventory/ingresses/partials/_summary_cards.html": {
+      "arbitrary_text_sizes": 5,
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 2
+    },
+    "app/templates/inventory/namespaces/partials/_hero.html": {
+      "arbitrary_text_sizes": 4
+    },
+    "app/templates/inventory/namespaces/partials/_namespace_detail_content.html": {
+      "arbitrary_text_sizes": 1,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/inventory/namespaces/partials/_summary_cards.html": {
+      "arbitrary_text_sizes": 5,
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 2
+    },
+    "app/templates/inventory/nodes/partials/_node_detail_content.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/inventory/nodes/partials/_summary_cards.html": {
+      "arbitrary_text_sizes": 5,
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 2
+    },
+    "app/templates/inventory/overview/partials/_hero.html": {
+      "arbitrary_text_sizes": 5,
+      "page_local_compact_status_labels": 1,
+      "semantic_border_utilities": 3
+    },
+    "app/templates/inventory/overview/partials/_kpi_cards.html": {
+      "arbitrary_text_sizes": 7,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/inventory/overview/partials/_resources_by_cluster.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/inventory/pods/partials/_hero.html": {
+      "arbitrary_text_sizes": 4
+    },
+    "app/templates/inventory/pods/partials/_pod_detail_content.html": {
+      "arbitrary_text_sizes": 2,
+      "semantic_border_utilities": 1
+    },
+    "app/templates/inventory/pods/partials/_summary_cards.html": {
+      "arbitrary_text_sizes": 5,
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 2
+    },
+    "app/templates/inventory/services/partials/_hero.html": {
+      "arbitrary_text_sizes": 4
+    },
+    "app/templates/inventory/services/partials/_summary_cards.html": {
+      "arbitrary_text_sizes": 5,
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 2
+    },
+    "app/templates/inventory/storage/partials/_hero.html": {
+      "arbitrary_text_sizes": 4
+    },
+    "app/templates/inventory/storage/partials/_storage_detail_content.html": {
+      "arbitrary_text_sizes": 1
+    },
+    "app/templates/inventory/storage/partials/_summary_cards.html": {
+      "arbitrary_text_sizes": 5,
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 2
+    },
+    "app/templates/inventory/topology/partials/_hero.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/inventory/topology/partials/_workspace.html": {
+      "arbitrary_text_sizes": 5,
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 14
+    },
+    "app/templates/inventory/workloads/partials/_hero.html": {
+      "arbitrary_text_sizes": 4
+    },
+    "app/templates/inventory/workloads/partials/_summary_cards.html": {
+      "arbitrary_text_sizes": 5,
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 2
+    },
+    "app/templates/jobs/configuration/_execution_activity.html": {
+      "arbitrary_text_sizes": 7,
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 2
+    },
+    "app/templates/jobs/configuration/_job_overview.html": {
+      "arbitrary_text_sizes": 2,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/jobs/configuration/_workspace.html": {
+      "arbitrary_text_sizes": 4
+    },
+    "app/templates/jobs/configuration/definitions/_materialization_job.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/jobs/configuration/definitions/inventory_sync.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/jobs/configuration/definitions/report_schedule.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/jobs/configuration/definitions/tls_certificate_sync.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/jobs/executions/_workspace.html": {
+      "arbitrary_text_sizes": 1,
+      "copied_standard_surface_shells": 2
+    },
+    "app/templates/jobs/executions/partials/_active_jobs.html": {
+      "arbitrary_text_sizes": 4
+    },
+    "app/templates/jobs/executions/partials/_queue_activity.html": {
+      "arbitrary_text_sizes": 2,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/jobs/executions/partials/_registry.html": {
+      "arbitrary_text_sizes": 5
+    },
+    "app/templates/jobs/executions/partials/_status_refresh.html": {
+      "arbitrary_text_sizes": 3
+    },
+    "app/templates/kubernetes_operations/_components.html": {
+      "arbitrary_text_sizes": 6,
+      "page_local_compact_status_labels": 2,
+      "semantic_border_utilities": 11
+    },
+    "app/templates/kubernetes_operations/configmaps/_delete_target.html": {
+      "semantic_border_utilities": 3
+    },
+    "app/templates/kubernetes_operations/configmaps/_editor.html": {
+      "semantic_border_utilities": 3
+    },
+    "app/templates/kubernetes_operations/configmaps/_entries_editor.html": {
+      "semantic_border_utilities": 2
+    },
+    "app/templates/kubernetes_operations/configmaps/create.html": {
+      "copied_standard_surface_shells": 3
+    },
+    "app/templates/kubernetes_operations/configmaps/delete.html": {
+      "copied_standard_surface_shells": 3
+    },
+    "app/templates/kubernetes_operations/configmaps/index.html": {
+      "semantic_border_utilities": 1
+    },
+    "app/templates/kubernetes_operations/configmaps/update.html": {
+      "copied_standard_surface_shells": 3
+    },
+    "app/templates/kubernetes_operations/secrets/_delete_target.html": {
+      "semantic_border_utilities": 3
+    },
+    "app/templates/kubernetes_operations/secrets/_replace_content_form.html": {
+      "arbitrary_text_sizes": 1,
+      "semantic_border_utilities": 7
+    },
+    "app/templates/kubernetes_operations/secrets/_reveal_pending_approvals.html": {
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 1
+    },
+    "app/templates/kubernetes_operations/secrets/_reveal_request_form.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/kubernetes_operations/secrets/_reveal_request_status.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/kubernetes_operations/secrets/_reveal_value.html": {
+      "semantic_border_utilities": 1
+    },
+    "app/templates/kubernetes_operations/secrets/_update_preview.html": {
+      "semantic_border_utilities": 4
+    },
+    "app/templates/kubernetes_operations/secrets/create.html": {
+      "arbitrary_text_sizes": 2,
+      "copied_standard_surface_shells": 5,
+      "semantic_border_utilities": 4
+    },
+    "app/templates/kubernetes_operations/secrets/delete.html": {
+      "copied_standard_surface_shells": 3
+    },
+    "app/templates/kubernetes_operations/secrets/index.html": {
+      "semantic_border_utilities": 1
+    },
+    "app/templates/kubernetes_operations/secrets/replace.html": {
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 1
+    },
+    "app/templates/kubernetes_operations/secrets/reveal.html": {
+      "copied_standard_surface_shells": 2,
+      "semantic_border_utilities": 1
+    },
+    "app/templates/kubernetes_operations/secrets/tls_rotate.html": {
+      "copied_standard_surface_shells": 2
+    },
+    "app/templates/kubernetes_operations/secrets/tls_rotation.html": {
+      "arbitrary_text_sizes": 3,
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 2
+    },
+    "app/templates/notifications/activity.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/notifications/partials/_activity_summary_cards.html": {
+      "semantic_border_utilities": 2
+    },
+    "app/templates/notifications/partials/_activity_table_card.html": {
+      "raw_palette_utilities": 5
+    },
+    "app/templates/notifications/partials/_activity_table_content.html": {
+      "arbitrary_text_sizes": 36,
+      "raw_palette_utilities": 191
+    },
+    "app/templates/platform_operations/kubernetes/_overview_workspace.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/platform_operations/kubernetes/_secret_reveal_workspace.html": {
+      "semantic_border_utilities": 1
+    },
+    "app/templates/platform_operations/kubernetes/index.html": {
+      "arbitrary_text_sizes": 1
+    },
+    "app/templates/prometheus/instance_detail.html": {
+      "arbitrary_text_sizes": 1
+    },
+    "app/templates/prometheus/instance_form.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/prometheus/partials/_analytics_readiness.html": {
+      "arbitrary_text_sizes": 10,
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 2
+    },
+    "app/templates/prometheus/partials/_delete_confirmation_modal.html": {
+      "semantic_border_utilities": 2
+    },
+    "app/templates/prometheus/partials/_detail_configuration.html": {
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 1
+    },
+    "app/templates/prometheus/partials/_detail_scope.html": {
+      "arbitrary_text_sizes": 3,
+      "copied_standard_surface_shells": 1,
+      "page_local_compact_status_labels": 1,
+      "semantic_border_utilities": 7
+    },
+    "app/templates/prometheus/partials/_detail_validation_content.html": {
+      "arbitrary_text_sizes": 5,
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 4
+    },
+    "app/templates/prometheus/partials/_runtime_panel.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/reports/_unavailable.html": {
+      "semantic_border_utilities": 1
+    },
+    "app/templates/reports/components/_summary_strip.html": {
+      "arbitrary_text_sizes": 1
+    },
+    "app/templates/reports/generate/index.html": {
+      "arbitrary_text_sizes": 25,
+      "page_local_compact_status_labels": 5,
+      "raw_palette_utilities": 18,
+      "semantic_border_utilities": 16
+    },
+    "app/templates/reports/generated/detail.html": {
+      "copied_standard_surface_shells": 1,
+      "raw_palette_utilities": 74,
+      "semantic_border_utilities": 4
+    },
+    "app/templates/reports/generated/index.html": {
+      "arbitrary_text_sizes": 4,
+      "raw_palette_utilities": 63,
+      "semantic_border_utilities": 2
+    },
+    "app/templates/reports/overview/partials/_data_collection_status.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/reports/overview/partials/_pipeline_status.html": {
+      "arbitrary_text_sizes": 3
+    },
+    "app/templates/reports/overview/partials/_report_type_coverage.html": {
+      "arbitrary_text_sizes": 3
+    },
+    "app/templates/reports/overview/partials/_reporting_context.html": {
+      "arbitrary_text_sizes": 1
+    },
+    "app/templates/reports/overview/partials/_summary_cards.html": {
+      "arbitrary_text_sizes": 1
+    },
+    "app/templates/reports/pdf/report.html": {
+      "custom_hero_titles": 1,
+      "raw_hex_colors": 3
+    },
+    "app/templates/reports/report_templates/index.html": {
+      "raw_palette_utilities": 34
+    },
+    "app/templates/reports/schedules/index.html": {
+      "arbitrary_text_sizes": 2,
+      "raw_palette_utilities": 36
+    },
+    "app/templates/reports/storage/index.html": {
+      "raw_palette_utilities": 81
+    },
+    "app/templates/settings/account/partials/_activity_information.html": {
+      "copied_standard_surface_shells": 2
+    },
+    "app/templates/settings/account/partials/_change_password.html": {
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 3
+    },
+    "app/templates/settings/account/partials/_credential_information.html": {
+      "copied_standard_surface_shells": 2
+    },
+    "app/templates/settings/account/partials/_profile_cards.html": {
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 2
+    },
+    "app/templates/settings/account/partials/_profile_information.html": {
+      "copied_standard_surface_shells": 2,
+      "semantic_border_utilities": 2
+    },
+    "app/templates/settings/account/partials/_recent_login_activity.html": {
+      "copied_standard_surface_shells": 1,
+      "semantic_border_utilities": 2
+    },
+    "app/templates/settings/data_lifecycle/index.html": {
+      "arbitrary_text_sizes": 5
+    },
+    "app/templates/settings/data_lifecycle/partials/_storage.html": {
+      "arbitrary_text_sizes": 1
+    },
+    "app/templates/settings/general/partials/_compatibility_versions.html": {
+      "arbitrary_text_sizes": 2
+    },
+    "app/templates/settings/general/partials/_system_information.html": {
+      "arbitrary_text_sizes": 3,
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/settings/general/partials/_time_locale.html": {
+      "raw_palette_utilities": 3
+    },
+    "app/templates/settings/permissions/index.html": {
+      "arbitrary_text_sizes": 3
+    },
+    "app/templates/settings/roles/form.html": {
+      "arbitrary_text_sizes": 12,
+      "page_local_compact_status_labels": 3,
+      "semantic_border_utilities": 5
+    },
+    "app/templates/settings/roles/index.html": {
+      "arbitrary_text_sizes": 4,
+      "page_local_compact_status_labels": 2,
+      "semantic_border_utilities": 1
+    },
+    "app/templates/users/external_identities.html": {
+      "arbitrary_text_sizes": 6,
+      "copied_standard_surface_shells": 2
+    },
+    "app/templates/users/form.html": {
+      "arbitrary_text_sizes": 10,
+      "copied_standard_surface_shells": 5,
+      "page_local_compact_status_labels": 1,
+      "semantic_border_utilities": 7
+    },
+    "app/templates/users/partials/_content.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/users/partials/_delete_modal.html": {
+      "raw_palette_utilities": 14
+    },
+    "app/templates/users/partials/_summary_cards.html": {
+      "arbitrary_text_sizes": 4,
+      "raw_palette_utilities": 16
+    },
+    "app/templates/users/partials/_table.html": {
+      "arbitrary_text_sizes": 3,
+      "raw_palette_utilities": 52
+    },
+    "app/templates/users/providers/form.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/users/providers/index.html": {
+      "arbitrary_text_sizes": 5,
+      "copied_standard_surface_shells": 3
+    },
+    "app/templates/users/providers/partials/_ldap_configuration.html": {
+      "copied_standard_surface_shells": 2
+    },
+    "app/templates/users/providers/partials/_provider_guidance.html": {
+      "copied_standard_surface_shells": 5
+    },
+    "app/templates/users/providers/partials/_provider_selector.html": {
+      "copied_standard_surface_shells": 1
+    },
+    "app/templates/users/providers/partials/_sso_configuration.html": {
+      "copied_standard_surface_shells": 2,
+      "semantic_border_utilities": 1
+    },
+    "app/templates/users/reset_password.html": {
+      "arbitrary_text_sizes": 1,
+      "copied_standard_surface_shells": 2,
+      "semantic_border_utilities": 12
+    },
+    "app/templates/welcome/index.html": {
+      "arbitrary_text_sizes": 13
+    }
+  },
+  "version": 1
+}

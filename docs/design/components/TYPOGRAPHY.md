@@ -90,23 +90,26 @@ Examples that retain their source casing:
 
 ## 4. Approved typography hierarchy
 
-The following hierarchy summarizes the scale already implemented across KAORI and becomes the global reference.
+The hierarchy is semantic and fixed. Page templates do not shrink or enlarge a role to make local content fit; content and layout must be corrected instead.
 
 | Semantic role | Tailwind baseline | Approx. size | Weight | Default casing | Typical color |
 |---|---:|---:|---:|---|---|
-| Hero title | `text-2xl` to `text-3xl` | 24–30 px | `font-semibold` or `font-bold` only when required by the hero composition | Title Case | Primary content |
-| Page or major section title | `text-xl` to `text-2xl` | 20–24 px | `font-semibold` | Title Case | Primary content |
-| Card / table-block / modal title | `text-base` to `text-lg` | 16–18 px | `font-semibold` | Title Case | Primary content |
-| Subsection / expandable title | `text-sm` to `text-base` | 14–16 px | `font-semibold` or `font-medium` | Title Case | Primary content |
+| Hero title | `page_hero.title_classes()` only | 30 px compact / 36 px from `sm` | `font-bold` | Title Case | Brand foreground |
+| Major page title outside hero | `text-2xl` | 24 px | `font-semibold` | Title Case | Primary content |
+| Section title | `text-lg` | 18 px | `font-semibold` | Title Case | Primary content |
+| Card / table-block / modal title | `text-base` | 16 px | `font-semibold` | Title Case | Primary content |
+| Subsection / expandable title | `text-sm` | 14 px | `font-semibold` | Title Case | Primary content |
 | Primary resource/title cell | `text-sm` | 14 px | `font-semibold` | Preserve resource casing | Primary content |
-| Ordinary content/body | `text-sm` | 14 px | `font-normal` or `font-medium` where emphasis is needed | Sentence case | Primary/secondary content |
-| Description/helper/supporting text | `text-xs` to `text-sm` | 12–14 px | `font-normal` | Sentence case | Muted/secondary content |
+| Ordinary content/body | `text-sm` | 14 px | `font-normal` or deliberate `font-medium` | Sentence case | Primary/secondary content |
+| Description/helper/supporting text | `text-xs`; `text-sm` only when the owning component defines it | 12–14 px | `font-normal` | Sentence case | Muted/secondary content |
 | Table column header | `text-xs` | 12 px | `font-semibold` | Title Case | Muted content |
 | Filter label / form label | `text-xs` | 12 px | `font-semibold` | Title Case | Secondary content |
-| Table action / compact control | `text-xs` | 12 px | `font-medium` | Title Case, maximum two words where practical | Secondary content |
-| Compact semantic label | dedicated label contract | 10 px | `font-semibold` | Short status/category text | Semantic color |
+| Table action / compact control | `text-xs` | 12 px | `font-medium` | Title Case | Secondary content |
+| Compact semantic label | shared label component only | 10 px | `font-semibold` | Short status/category text | Semantic color |
 | Fine metadata | `text-xs` | 12 px | `font-normal` | Preserve value casing | Muted content |
-| Technical code/value | `text-xs` to `text-sm` plus monospace | 12–14 px | `font-normal` or `font-medium` | Preserve exact casing | Primary/secondary content |
+| Technical code/value | `text-xs` to `text-sm` plus monospace only when alignment matters | 12–14 px | `font-normal` or `font-medium` | Preserve exact casing | Primary/secondary content |
+
+Shared components may contain documented arbitrary values such as the 13 px hero description. Page templates may not introduce new arbitrary typography values.
 
 ## 5. Heading treatment
 

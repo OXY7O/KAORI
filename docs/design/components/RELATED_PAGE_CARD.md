@@ -106,13 +106,7 @@ Preferred desktop placement:
 Primary Workspace Context | Related Page Card
 ```
 
-Use:
-
-```text
-xl:grid-cols-[minmax(0,1fr)_20rem]
-```
-
-On smaller screens, the card stacks below the primary block. Do not place it between a table header and its table, inside a filter bar, or inside a Hero action area.
+Use the shared geometry from `components/context_rail.html`; do not copy the 20rem grid utility into the page template. On smaller screens, the card stacks below the primary block. Do not place it between a table header and its table, inside a filter bar, or inside a Hero action area.
 
 ## Content Rules
 

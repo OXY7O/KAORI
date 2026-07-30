@@ -8,3 +8,6 @@ Peer summary cards immediately below tabs use the shared Workspace Summary Card 
 
 
 Runtime score explanation uses the shared Health Interpretation component rather than a generic card or decorative gauge. The component keeps current posture, score ranges, readiness boundary, and contributing evidence together. See `HEALTH_INTERPRETATION.md`.
+
+
+Right-side contextual composition uses `RIGHT_CONTEXT_RAIL.md`. Secondary expandable guidance uses `VIEW_MORE_CONTENT.md`; primary ordered workflows continue to use Info Flow.

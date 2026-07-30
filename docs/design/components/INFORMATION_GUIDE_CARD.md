@@ -21,7 +21,7 @@ The header contains:
 - one contextual icon;
 - one Title Case title;
 - one short sentence-case description;
-- a native Details / Collapse affordance.
+- the shared `View Details` / `Collapse` affordance.
 
 Each body item contains:
 
@@ -178,6 +178,8 @@ Use Related Page Card for one directly related KAORI destination. It contains on
 Use semantic information, warning, or critical surfaces for current state, exception, risk, or required attention.
 
 ## Shared implementation
+
+The component delegates its expandable shell to `components/view_more_content.html`. The wrapper owns only the semantic body structure.
 
 Import:
 

@@ -125,7 +125,11 @@ Geometry:
 - radius: `rounded-md`;
 - never `rounded-full`.
 
-Status labels use the global semantic palette. Metadata labels use Violet or neutral context styling. Timestamps stay plain text.
+Standard status labels use the global semantic palette with a soft background and semantic text. They are borderless. Use `table_label.status_label(...)` for text-first status and `table_label.status_indicator_label(...)` when a small status dot improves scanning.
+
+Metadata labels use borderless Violet or neutral context styling through `table_label.metadata_label(...)`. Timestamps stay plain text.
+
+A compact icon + border treatment is an explicit exception for a special posture, eligibility, security, or high-attention state. It must use `table_label.special_label(...)`. Do not add borders or icons to ordinary status labels inline.
 
 Labels remain brief, such as `Ready`, `Degraded`, `Pending`, `Not Observed`, or `Disabled`. Longer evidence belongs outside the label.
 

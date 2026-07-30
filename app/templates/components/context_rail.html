@@ -1,0 +1,17 @@
+{#
+  KAORI right-side contextual rail geometry.
+
+  This component owns the shared desktop split and rail spacing only. The rail
+  content must be composed from canonical side-box components such as Info Flow,
+  Related Page Card, Information Guide Card, Page Context Card, or a semantic
+  readiness block.
+#}
+{% macro layout_classes() -%}
+    grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start
+{%- endmacro %}
+{% macro main_classes() -%}
+    min-w-0 space-y-6
+{%- endmacro %}
+{% macro rail_classes() -%}
+    min-w-0 space-y-4
+{%- endmacro %}

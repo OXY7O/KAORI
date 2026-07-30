@@ -1,5 +1,7 @@
 # KAORI Pagination Component Standard
 
+`app/templates/components/pagination.html` owns the global pagination control geometry. Page templates own routes, parameters, and HTMX targets, but must not recreate Previous, numeric-page, Next, or page-size classes.
+
 ## Purpose
 
 Pagination keeps operational tables bounded, stable, and understandable while preserving the active filter context. This contract applies to every paginated table or list unless a module specification explicitly documents an approved exception.
@@ -57,7 +59,7 @@ On narrow screens, groups may wrap. The resource summary and page-size selector 
 
 - Pagination controls use the shared secondary-control geometry.
 - Control minimum height: `36px`.
-- Radius: `rounded-md` or the current global control radius until the radius migration is complete.
+- Radius: `rounded-md`; pagination is a compact table-navigation control.
 - Active page: Primary Soft background with Strong Violet text and a visible Violet border.
 - Disabled Previous/Next: muted surface, muted text, `cursor-not-allowed`, and no active hover treatment.
 - Page-size selector: neutral surface, soft border, and Violet focus ring.

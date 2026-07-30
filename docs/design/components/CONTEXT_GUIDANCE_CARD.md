@@ -23,7 +23,7 @@ The header contains:
 - one contextual icon;
 - one Title Case title;
 - one short sentence-case description;
-- a native Details / Collapse affordance.
+- the shared `View Details` / `Collapse` affordance.
 
 The body contains two to five concise **ordered** items with generated two-digit markers.
 
@@ -145,6 +145,8 @@ Use semantic info, warning, or critical surfaces when the message represents a c
 Do not color a Context Guidance Card merely because its subject is security or validation.
 
 ## Shared implementation
+
+The component delegates its expandable shell to `components/view_more_content.html`. The wrapper owns only the semantic body structure.
 
 Import:
 

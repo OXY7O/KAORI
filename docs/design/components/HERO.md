@@ -63,7 +63,7 @@ Preferred order:
 2. Provider, mode, object type, or page context.
 3. Count, source role, compatibility profile, or other operational metadata.
 
-Metadata uses Violet because it communicates identity or context. Health, severity, readiness, failure, and process state use semantic status components. Labels are borderless, rectangular, and never pills.
+Metadata uses Violet because it communicates identity or context. Health, severity, readiness, failure, and process state use semantic status components. Metadata labels are borderless, rectangular, and never pills. The context-panel posture badge is a documented special-label exception because it combines an explicit status icon and semantic border; ordinary hero metadata must not copy that treatment.
 
 ## Right-side context panel
 

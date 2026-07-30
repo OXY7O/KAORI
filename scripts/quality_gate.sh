@@ -24,6 +24,7 @@ run_static() {
     python scripts/verify_test_taxonomy.py
     python scripts/verify_feature_test_coverage.py
     python scripts/verify_ui_reuse.py
+    python scripts/verify_ui_style.py
     pytest -q tests/contracts tests/migrations -m 'contract or migration'
 }
 
