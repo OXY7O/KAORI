@@ -4,7 +4,7 @@
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('waypoints', 'Kubernetes Service Inventory', 'network') %}
                 <h1 class="{{ page_hero.title_classes() }}">Service Inventory</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review Service access models, port mappings, backend registration, selected Pods, and network configuration from committed Kubernetes inventory snapshots.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review Service access, ports, backend registration, and selected Pods.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('network', inventory.total_services ~ ' Services in Scope') }}
                     {{ page_hero.meta_label('scan-search', inventory.scope_label) }}
@@ -19,8 +19,8 @@
             inventory.overall_posture_label,
             inventory.overall_posture_tone,
             [
-                ('circle-check', 'Registered', inventory.registered_backends, 'Selector-based Services with ready backend registration'),
-                ('triangle-alert', 'Exceptions', inventory.backend_exceptions, 'Partial, not-ready, missing, or unreported backend evidence')
+                ('circle-check', 'Registered', inventory.registered_backends),
+                ('triangle-alert', 'Exceptions', inventory.backend_exceptions)
             ],
             'Manage Clusters',
             url_for('integrations.kubernetes'),

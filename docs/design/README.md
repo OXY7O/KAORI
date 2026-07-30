@@ -113,3 +113,5 @@ Domain-specific UI rules live under `docs/modules/` or the owning module README.
 
 - `components/RESOURCE_DETAIL_MODAL.md` — Detail Style 2, URL state, focus, loading, and maximized modal geometry.
 - `components/DETAIL_STYLES.md` — canonical Detail Style registry.
+
+- `audits/KUBERNETES_INVENTORY_HERO_COPY_AUDIT_2026_07.md` — Inventory hero copy-density audit and guardrail.

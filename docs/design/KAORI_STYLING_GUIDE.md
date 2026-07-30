@@ -148,6 +148,16 @@ Required content hierarchy:
 Identity → Purpose → Context → Action
 ```
 
+Hero copy budget:
+
+- description target: 7–12 words, hard maximum 16 words;
+- right-panel title: 2–4 words;
+- status label: 1–3 words;
+- metric label: 1–3 words;
+- metric helper: optional, maximum 4 words.
+
+Use label + value only when the metric is self-explanatory. Snapshot boundaries, diagnostic explanations, and interpretation belong below the hero.
+
 Hero limits:
 
 - one eyebrow;

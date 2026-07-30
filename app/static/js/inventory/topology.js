@@ -587,8 +587,7 @@
         setText('topology-hero-namespaces', summary.namespaces ?? 0)
         setText('topology-hero-resources', summary.resources ?? 0)
         setText('topology-hero-relationships', summary.relationships ?? 0)
-        setText('topology-hero-coverage', `${summary.resources ?? 0} Shown`)
-        setText('topology-hero-coverage-helper', summary.truncated ? `${summary.omitted_nodes || 0} hidden by graph limit` : 'No resources omitted')
+        setText('topology-hero-coverage', summary.omitted_nodes ?? 0)
         $('topology-hero-coverage-complete')?.classList.toggle('hidden', Boolean(summary.truncated))
         $('topology-hero-coverage-limited')?.classList.toggle('hidden', !summary.truncated)
         if (filterSummary) filterSummary.textContent = `${summary.scope_label || 'All Resources'} · ${summary.depth_label || '1 Level'}`

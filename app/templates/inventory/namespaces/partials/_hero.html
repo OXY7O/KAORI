@@ -5,7 +5,7 @@
             {% call page_hero.intro('folder-tree', 'Kubernetes Namespace Inventory', 'layers-3') %}
                 <h1 class="{{ page_hero.title_classes() }}">Namespace Inventory</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">
-                    Review namespace lifecycle, resource controls, security context, and tracked object composition from committed Kubernetes inventory snapshots.
+                    Review namespace lifecycle, controls, security, and object composition.
                 </p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('folder-tree', inventory.total_namespaces ~ ' Namespaces in Scope') }}
@@ -16,13 +16,13 @@
         </div>
         {{ page_hero.context_card(
             'Namespace Lifecycle Posture',
-            'Namespace Lifecycle',
+            'Namespace Posture',
             'Lifecycle Posture',
             inventory.lifecycle_label,
             inventory.lifecycle_tone,
             [
-                ('circle-check', 'Active', inventory.active_namespaces, 'Namespaces in the active lifecycle state'),
-                ('hourglass', 'Transitioning or Unknown', inventory.lifecycle_exceptions, 'Namespaces requiring lifecycle context')
+                ('circle-check', 'Active', inventory.active_namespaces),
+                ('hourglass', 'Exceptions', inventory.lifecycle_exceptions)
             ],
             'Manage Clusters',
             url_for('integrations.kubernetes'),

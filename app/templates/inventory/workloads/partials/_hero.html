@@ -4,7 +4,7 @@
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('layout-grid', 'Kubernetes Workload Inventory', 'boxes') %}
                 <h1 class="{{ page_hero.title_classes() }}">Workload Inventory</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review workload delivery posture, runtime evidence, Pod templates, placement constraints, and controller relationships from committed Kubernetes inventory snapshots.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review workload state, delivery, placement, and Pod template evidence.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('boxes', inventory.total_workloads ~ ' Workloads in Scope') }}
                     {{ page_hero.meta_label('scan-search', inventory.scope_label) }}
@@ -15,12 +15,12 @@
         {{ page_hero.context_card(
             'Delivery & Runtime Posture',
             'Workload Posture',
-            'Controller and Batch State',
+            'Runtime Posture',
             inventory.posture_label,
             inventory.posture_tone,
             [
-                ('circle-check', 'Stable', inventory.stable_workloads, 'Workloads in an expected operational state'),
-                ('triangle-alert', 'Exceptions', inventory.exception_workloads, 'Progressing, failed, or unknown workloads')
+                ('circle-check', 'Stable', inventory.stable_workloads),
+                ('triangle-alert', 'Exceptions', inventory.exception_workloads)
             ],
             'Manage Clusters',
             url_for('integrations.kubernetes'),

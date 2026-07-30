@@ -5,7 +5,7 @@
             {% call page_hero.intro('server-cog', 'Kubernetes Node Inventory', 'server') %}
                 <h1 class="{{ page_hero.title_classes() }}">Node Inventory</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">
-                    Review node readiness, scheduling posture, capacity, runtime identity, and placement context from committed Kubernetes inventory snapshots.
+                    Review node readiness, capacity, runtime, and scheduling evidence.
                 </p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('server', inventory.total_nodes ~ ' Nodes in Scope') }}
@@ -16,13 +16,13 @@
         </div>
         {{ page_hero.context_card(
             'Node Fleet Posture',
+            'Node Posture',
             'Node Readiness',
-            'Scheduling Posture',
             inventory.readiness_label,
             inventory.readiness_tone,
             [
-                ('circle-check', 'Ready', inventory.ready_nodes, 'Available for workload scheduling'),
-                ('triangle-alert', 'Not Ready', inventory.not_ready_nodes, 'Requires operational review')
+                ('circle-check', 'Ready', inventory.ready_nodes),
+                ('triangle-alert', 'Not Ready', inventory.not_ready_nodes)
             ],
             'Manage Clusters',
             url_for('integrations.kubernetes'),

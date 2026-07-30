@@ -227,6 +227,18 @@ Required hierarchy:
 
 Content that does not answer one of these questions belongs below the hero.
 
+## Copy density budget
+
+Hero geometry does not compensate for verbose copy. Authenticated workspace heroes use the following content budget:
+
+- description target: 7–12 words; hard maximum 16 words;
+- right-panel title: normally 2–4 words;
+- status label: normally 1–3 words;
+- metric label: normally 1–3 words;
+- metric helper: optional and normally no more than 4 words.
+
+A straightforward metric uses label + value only. Explanations, evidence boundaries, and interpretation belong below the hero. Repeated phrases such as “from committed Kubernetes inventory snapshots” must not appear on every resource page when the shared Snapshot Context already owns that boundary.
+
 ## Density
 
 Maximum content:

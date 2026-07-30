@@ -4,7 +4,7 @@
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('package-search', 'Kubernetes Pod Inventory', 'package') %}
                 <h1 class="{{ page_hero.title_classes() }}">Pod Inventory</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review Pod runtime posture, placement, ownership, container evidence, storage references, and configuration context from committed Kubernetes inventory snapshots.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review Pod readiness, placement, ownership, and container runtime evidence.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('package', inventory.total_pods ~ ' Pods in Scope') }}
                     {{ page_hero.meta_label('scan-search', inventory.scope_label) }}
@@ -15,12 +15,12 @@
         {{ page_hero.context_card(
             'Pod Runtime Posture',
             'Pod Posture',
-            'Runtime Readiness',
+            'Runtime Posture',
             inventory.overall_posture,
             inventory.overall_posture_tone,
             [
-                ('circle-check', 'Ready', inventory.ready_count, 'Pods with all regular containers ready'),
-                ('triangle-alert', 'Exceptions', inventory.exception_count, 'Starting, not ready, failed, or unknown Pods')
+                ('circle-check', 'Ready', inventory.ready_count),
+                ('triangle-alert', 'Exceptions', inventory.exception_count)
             ],
             'Manage Clusters',
             url_for('integrations.kubernetes'),
