@@ -14,6 +14,7 @@ The Styling Guide selects the correct reusable component. The Design System and 
 - `components/COLOR_AND_SEMANTIC.md`
 - `components/BUTTON.md`
 - `components/TABLE_AND_LABEL.md`
+- `components/TECHNICAL_VALUE.md`
 - `components/PAGINATION.md`
 - `components/TAB_STYLES.md`
 - `components/WORKSPACE_TABS.md`
@@ -21,9 +22,11 @@ The Styling Guide selects the correct reusable component. The Design System and 
 - `components/VISUALIZATION_WORKSPACE.md`
 - `components/TOPOLOGY_PALETTE.md`
 - `components/OPERATIONAL_SECTION_CARD.md`
+- `components/RESOURCE_POSTURE_GRID.md`
 - `components/SNAPSHOT_CONTEXT_BAR.md`
 - `components/INVENTORY_ASSET_CARD.md`
 - `components/SIDE_DRAWER.md`
+- `components/DETAIL_STYLES.md`
 - `components/OPERATIONAL_CALLOUT.md`
 - `components/OPERATIONAL_FLOW_STEPS.md`
 - `components/FORECAST_PROJECTION_CHART.md`
@@ -52,6 +55,7 @@ The Styling Guide selects the correct reusable component. The Design System and 
 - `patterns/WELCOME_WORKSPACE_CATALOG.md`
 - `patterns/OPERATIONAL_DASHBOARD.md`
 - `patterns/KUBERNETES_INVENTORY_OVERVIEW.md`
+- `patterns/INVENTORY_RESOURCE_PAGE.md`
 - `patterns/KUBERNETES_TOPOLOGY.md`
 
 ## Domain Specifications
@@ -71,6 +75,7 @@ Domain-specific UI rules live under `docs/modules/` or the owning module README.
 - `audits/WELCOME_STYLING_AUDIT_2026_07.md`
 - `audits/KUBERNETES_OPERATIONS_DASHBOARD_STYLING_AUDIT_2026_07.md`
 - `audits/KUBERNETES_INVENTORY_OVERVIEW_STYLING_AUDIT_2026_07.md`
+- `audits/KUBERNETES_NODE_INVENTORY_STYLING_AUDIT_2026_07.md`
 - `audits/KUBERNETES_TOPOLOGY_STYLING_AUDIT_2026_07.md`
 - `audits/PROMETHEUS_STYLE_AND_LIFECYCLE_AUDIT_2026_07.md`
 - `audits/PROMETHEUS_ALERTMANAGER_ALIGNMENT_AUDIT_2026_07.md`

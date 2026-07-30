@@ -310,6 +310,11 @@ def nodes():
     )
     inventory['node_roles'] = node_roles
     inventory['node_statuses'] = node_statuses
+    selected_cluster = next(
+        (cluster for cluster in clusters if str(cluster.id) == str(cluster_id)),
+        None,
+    )
+    inventory['scope_label'] = selected_cluster.name if selected_cluster else 'All Clusters'
 
     return render_template(
         _inventory_template('nodes'),

@@ -15,7 +15,9 @@
         const icon = button.querySelector('[data-lucide]')
 
         button.setAttribute('aria-expanded', open ? 'true' : 'false')
-        if (label) label.textContent = open ? 'Hide Details' : 'View More'
+        if (label) label.textContent = open
+            ? (button.dataset.detailCloseLabel || 'Hide Details')
+            : (button.dataset.detailOpenLabel || 'View More')
         if (icon) icon.setAttribute('data-lucide', open ? 'chevron-up' : 'chevron-down')
     }
 

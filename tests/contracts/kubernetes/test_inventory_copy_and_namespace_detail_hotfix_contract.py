@@ -22,22 +22,25 @@ def test_inventory_overview_and_pagination_copy() -> None:
     assert "\n            Of <span" not in namespaces
 
 
-def test_node_summary_copy_has_no_trailing_periods_and_tip_is_removed() -> None:
+def test_node_posture_copy_is_functional_and_does_not_duplicate_hero_readiness() -> None:
     summary = read("app/templates/inventory/nodes/partials/_summary_cards.html")
     detail = read("app/templates/inventory/nodes/partials/_node_detail_content.html")
 
     expected = (
-        "Nodes in the Current Scope",
-        "Reported CPU Cores",
-        "Reported Memory Capacity in GiB",
-        "Local Ephemeral Capacity in GiB",
-        "Available for Workload Scheduling",
-        "% of Nodes Require Attention",
+        "Node Resource Posture",
+        "Reported CPU capacity in the active node scope.",
+        "Reported memory capacity across filtered nodes.",
+        "Reported local ephemeral storage capacity.",
+        "Nodes excluded from new workload scheduling.",
+        "Nodes reporting memory, disk, or PID pressure.",
+        "Nodes reporting unavailable network condition.",
     )
     for text in expected:
         assert text in summary
-        assert f"{text}." not in summary
 
+    assert "Ready Ratio" not in summary
+    assert "Ready Nodes" not in summary
+    assert "Not Ready Nodes" not in summary
     assert "Conditions show current readiness, pressure, and scheduling state." not in detail
 
 

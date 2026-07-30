@@ -1,5 +1,5 @@
 {% import "components/table.html" as table_ui %}
-{% macro toggle_button(group, item_id, detail_url, target_id, row_id, class_name='') -%}
+{% macro toggle_button(group, item_id, detail_url, target_id, row_id, class_name='', open_label='View More', close_label='Hide Details') -%}
     <button type="button"
             data-detail-toggle
             data-detail-group="{{ group }}"
@@ -7,10 +7,12 @@
             data-detail-target="{{ target_id }}"
             data-detail-row="{{ row_id }}"
             data-detail-url="{{ detail_url or '' }}"
+            data-detail-open-label="{{ open_label }}"
+            data-detail-close-label="{{ close_label }}"
             aria-expanded="false"
             class="{{ table_ui.action_classes() }} {{ class_name }}">
         <i data-lucide="chevron-down" class="h-3.5 w-3.5"></i>
-        <span data-detail-toggle-label>View More</span>
+        <span data-detail-toggle-label>{{ open_label }}</span>
     </button>
 {%- endmacro %}
 {% macro detail_row(row_id, target_id, colspan, content_classes='w-full min-w-0 overflow-x-auto') -%}

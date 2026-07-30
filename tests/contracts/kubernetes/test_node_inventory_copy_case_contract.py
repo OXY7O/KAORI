@@ -8,25 +8,24 @@ def read(path: Path) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def test_node_inventory_supporting_copy_uses_kaori_display_case() -> None:
+def test_node_inventory_supporting_copy_uses_kaori_sentence_case() -> None:
     template = read(SUMMARY)
 
     expected = [
-        "Nodes in the Current Scope",
-        "Reported Memory Capacity in GiB",
-        "Local Ephemeral Capacity in GiB",
-        "Available for Workload Scheduling",
-        "% of Nodes Require Attention",
+        "Reported CPU capacity in the active node scope.",
+        "Reported memory capacity across filtered nodes.",
+        "Reported local ephemeral storage capacity.",
+        "Nodes excluded from new workload scheduling.",
+        "Nodes reporting memory, disk, or PID pressure.",
+        "Nodes reporting unavailable network condition.",
     ]
     for copy in expected:
         assert copy in template
 
     removed = [
-        "Nodes In The Current Scope",
-        "Reported Memory Capacity In GiB",
-        "Local Ephemeral Capacity In GiB",
-        "Available For Workload Scheduling",
-        "% Of Nodes Require Attention",
+        "Reported CPU Capacity In The Active Node Scope.",
+        "Reported Memory Capacity Across Filtered Nodes.",
+        "Nodes Excluded From New Workload Scheduling.",
     ]
     for copy in removed:
         assert copy not in template
@@ -35,5 +34,6 @@ def test_node_inventory_supporting_copy_uses_kaori_display_case() -> None:
 def test_node_inventory_copy_keeps_technical_acronyms() -> None:
     template = read(SUMMARY)
 
-    assert "Reported CPU Cores" in template
+    assert "Total CPU" in template
     assert "GiB" in template
+    assert "PID pressure" in template

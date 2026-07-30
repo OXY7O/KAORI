@@ -1,10 +1,19 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/technical_value.html" as technical_value %}
 {% macro detail_row(label, value='-', break_all=False) -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
     <div class="flex items-start justify-between gap-3">
         <span class="shrink-0 text-xs leading-5 text-content-muted">{{ label }}</span>
         <span class="max-w-[68%] {{ 'break-all' if break_all else 'break-words' }} text-right text-xs font-medium leading-5 text-content-primary"
               title="{{ display_value }}">{{ display_value }}</span>
+    </div>
+{%- endmacro %}
+{% macro technical_row(label, value='-', break_all=True) -%}
+    <div class="flex items-start justify-between gap-3">
+        <span class="shrink-0 text-xs leading-5 text-content-muted">{{ label }}</span>
+        <span class="flex min-w-0 max-w-[68%] justify-end text-right">
+            {{ technical_value.render(value, align='right', break_all=break_all) }}
+        </span>
     </div>
 {%- endmacro %}
 {% macro status_row(label, value, tone='unknown', icon=None, size='compact') -%}
@@ -41,4 +50,19 @@
         </div>
         <div class="flex min-h-0 flex-1 flex-col gap-2.5">{{ caller() }}</div>
     </section>
+{%- endmacro %}
+{% macro summary_metric(label, value, description, icon='info', tone='brand') -%}
+    {% set icon_classes = 'bg-status-normal-soft text-status-normal-text' if tone == 'normal' else ('bg-status-warning-soft text-status-warning-text' if tone == 'warning' else ('bg-status-critical-soft text-status-critical-text' if tone == 'critical' else ('bg-status-unknown-soft text-status-unknown-text' if tone == 'unknown' else 'bg-kaori-soft text-kaori-primary'))) %}
+    <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+        <div class="flex items-start gap-3">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ icon_classes }}" aria-hidden="true">
+                <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0">
+                <p class="text-xs font-semibold leading-4 text-content-secondary">{{ label }}</p>
+                <p class="mt-1 text-base font-semibold leading-6 text-content-primary">{{ value }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+            </div>
+        </div>
+    </article>
 {%- endmacro %}

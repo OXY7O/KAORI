@@ -1,0 +1,6 @@
+{# Canonical presentation for technical identifiers and machine-oriented values. #}
+{% macro render(value, empty='-', title=None, align='left', break_all=true, class_name='') -%}
+    {% set display_value = value if value not in [None, ''] else empty %}
+    <code class="inline-block max-w-full font-mono text-xs font-medium leading-5 text-content-primary {{ 'break-all' if break_all else 'break-words' }} {{ 'text-right' if align == 'right' else 'text-left' }} {{ class_name }}"
+          {% if title or display_value %}title="{{ title or display_value }}"{% endif %}>{{ display_value }}</code>
+{%- endmacro %}

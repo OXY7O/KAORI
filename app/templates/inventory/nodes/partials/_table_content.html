@@ -1,65 +1,53 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table.html" as table_ui %}
+{% import "components/technical_value.html" as technical_value %}
 {% import "components/details/_expandable_row.html" as expandable %}
 <div class="overflow-x-auto">
-    <table class="min-w-full divide-y divide-outline-subtle text-sm leading-5 text-content-secondary">
-        <thead class="bg-surface-hover text-xs text-content-muted">
+    <table class="{{ table_ui.table_classes('min-w-[68rem]') }}">
+        <thead class="{{ table_ui.head_classes() }}">
             <tr>
-                <th class="min-w-[12rem] px-4 py-3 text-left font-semibold">Cluster</th>
-                <th class="px-4 py-3 text-left font-semibold">Node</th>
-                <th class="px-4 py-3 text-left font-semibold">Internal IP</th>
-                <th class="px-4 py-3 text-left font-semibold">Status</th>
-                <th class="px-4 py-3 text-left font-semibold">Role</th>
-                <th class="px-4 py-3 text-left font-semibold">CPU</th>
-                <th class="px-4 py-3 text-left font-semibold">Memory</th>
-                <th class="px-4 py-3 text-left font-semibold">Storage</th>
-                <th class="px-4 py-3 text-right font-semibold">Details</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[16rem]">Node</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Cluster</th>
+                <th class="{{ table_ui.header_cell_classes() }}">Readiness</th>
+                <th class="{{ table_ui.header_cell_classes() }}">Role</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Capacity</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[11rem]">Network</th>
+                <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
             </tr>
         </thead>
-        <tbody class="divide-y divide-outline-subtle">
+        <tbody class="{{ table_ui.body_classes() }}">
             {% for node in inventory.nodes %}
-                {% set status_tone = 'normal' if node.status == 'Ready' else ('critical' if node.status == 'NotReady' else 'warning') %}
-                {% set role_key = node.role|default('Unknown', true)|lower %}
-                {% set role_tone = 'maintenance' if role_key in ['control-plane', 'master'] else ('info' if role_key == 'worker' else ('warning' if role_key in ['infrastructure', 'infra'] else 'unknown')) %}
-                {% set role_display = 'Control Plane' if role_key in ['control-plane', 'master'] else (node.role|default('Unknown', true)|replace('_', ' ')|replace('-', ' ')|title) %}
-                <tr class="transition hover:bg-surface-hover">
-                    <td class="px-4 py-3.5 align-middle">
-                        {{ table_ui.cluster_identity(node.cluster_name, node.cluster_environment) }}
+                <tr class="{{ table_ui.row_classes() }}">
+                    <td class="{{ table_ui.cell_classes() }}">
+                        {{ table_ui.title_cell(node.node_name, node.identity_supporting, 'server') }}
                     </td>
-                    <td class="px-4 py-3.5 align-middle">
-                        <div class="flex max-w-[260px] items-center gap-2">
-                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
-                                <i data-lucide="server" class="h-4 w-4"></i>
-                            </span>
-                            <span class="min-w-0 truncate text-sm font-semibold leading-5 text-content-primary"
-                                  title="{{ node.node_name }}">{{ node.node_name }}</span>
-                        </div>
+                    <td class="{{ table_ui.cell_classes() }}">{{ table_ui.cluster_identity(node.cluster_name, node.cluster_environment) }}</td>
+                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(node.status_display, node.status_tone) }}</td>
+                    <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(node.role_display) }}</td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <p class="text-sm font-semibold leading-5 text-content-primary">{{ node.capacity_primary }}</p>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ node.capacity_secondary }}</p>
                     </td>
-                    <td class="px-4 py-3.5 align-middle text-sm font-semibold leading-5 text-content-primary">{{ node.internal_ip or '-' }}</td>
-                    <td class="px-4 py-3.5 align-middle">{{ table_label.status_label(node.status_display, status_tone) }}</td>
-                    <td class="px-4 py-3.5 align-middle">{{ table_label.status_label(role_display, role_tone) }}</td>
-                    <td class="px-4 py-3.5 align-middle text-sm font-semibold leading-5 text-content-primary">{{ node.cpu or '-' }}</td>
-                    <td class="px-4 py-3.5 align-middle text-sm font-semibold leading-5 text-content-primary">{{ node.memory_display }}</td>
-                    <td class="px-4 py-3.5 align-middle text-sm font-semibold leading-5 text-content-primary">{{ node.ephemeral_storage_display }}</td>
-                    <td class="px-4 py-3.5 text-right align-middle">
+                    <td class="{{ table_ui.cell_classes() }}">
+                        {{ technical_value.render(node.internal_ip) }}
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ node.network_scope }}</p>
+                    </td>
+                    <td class="{{ table_ui.cell_classes(true) }}">
                         {{ expandable.toggle_button(
                             'inventory-nodes',
                             node.id,
                             url_for('inventory.node_details', node_id=node.id),
                             'node-detail-content-' ~ node.id,
-                            'node-detail-row-' ~ node.id
+                            'node-detail-row-' ~ node.id,
+                            open_label='View Details'
                         ) }}
                     </td>
                 </tr>
-                {{ expandable.detail_row(
-                    'node-detail-row-' ~ node.id,
-                    'node-detail-content-' ~ node.id,
-                    9
-                ) }}
+                {{ expandable.detail_row('node-detail-row-' ~ node.id, 'node-detail-content-' ~ node.id, 7) }}
             {% else %}
                 <tr>
-                    <td colspan="9" class="p-0">
+                    <td colspan="7" class="p-0">
                         {% set empty_state_icon = "server-cog" %}
                         {% set empty_state_title = "No Node Inventory Found" %}
                         {% set empty_state_description = "Adjust the active filters or sync cluster inventory to collect Kubernetes node data." %}
@@ -73,58 +61,32 @@
 </div>
 <footer class="flex flex-col gap-4 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs text-content-muted lg:flex-row lg:items-center lg:justify-between">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-        <p>
-            Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span>
-            of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ 'Node' if pagination.total_items == 1 else 'Nodes' }}
-        </p>
-        <form hx-get="{{ url_for('inventory.nodes') }}"
-              hx-target="#nodes-table-content"
-              hx-swap="innerHTML"
-              hx-indicator="#nodes-table-loading"
-              class="flex items-center">
+        <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ 'Node' if pagination.total_items == 1 else 'Nodes' }}</p>
+        <form hx-get="{{ url_for('inventory.nodes') }}" hx-target="#nodes-table-content" hx-swap="innerHTML" hx-indicator="#nodes-table-loading" class="flex items-center gap-2">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}">
             <input type="hidden" name="role" value="{{ selected_role }}">
             <input type="hidden" name="status" value="{{ selected_status }}">
             <input type="hidden" name="search" value="{{ search }}">
-            <select name="per_page"
-                    aria-label="Rows Per Page"
-                    data-kaori-auto-submit
-                    class="{{ pagination_ui.page_size_classes() }}">
-                {% for option in pagination.allowed_per_page %}
-                    <option value="{{ option }}"
-                            {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
-                {% endfor %}
+            <label for="nodes-per-page" class="font-semibold text-content-secondary">Rows</label>
+            <select id="nodes-per-page" name="per_page" aria-label="Rows Per Page" data-kaori-auto-submit class="{{ pagination_ui.page_size_classes() }}">
+                {% for option in pagination.allowed_per_page %}<option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
             </select>
         </form>
     </div>
     <div class="flex flex-wrap items-center gap-2">
         {% if pagination.has_prev %}
             {% set prev_url = url_for('inventory.nodes', cluster_id=selected_cluster_id, role=selected_role, status=selected_status, search=search, page=pagination.prev_page, per_page=pagination.per_page) %}
-            <a href="{{ prev_url }}"
-               hx-get="{{ prev_url }}"
-               hx-target="#nodes-table-content"
-               hx-swap="innerHTML"
-               hx-indicator="#nodes-table-loading"
-               class="{{ pagination_ui.navigation_classes(disabled=false) }}">
-                <i data-lucide="chevron-left" class="h-4 w-4"></i>Previous
-            </a>
+            <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#nodes-table-content" hx-swap="innerHTML" hx-indicator="#nodes-table-loading" class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
         {% else %}
-            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+            <span class="{{ pagination_ui.navigation_classes(true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
         {% endif %}
-        {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages) }}
+        {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, hx_target='#nodes-table-content', hx_indicator='#nodes-table-loading') }}
         {% if pagination.has_next %}
             {% set next_url = url_for('inventory.nodes', cluster_id=selected_cluster_id, role=selected_role, status=selected_status, search=search, page=pagination.next_page, per_page=pagination.per_page) %}
-            <a href="{{ next_url }}"
-               hx-get="{{ next_url }}"
-               hx-target="#nodes-table-content"
-               hx-swap="innerHTML"
-               hx-indicator="#nodes-table-loading"
-               class="{{ pagination_ui.navigation_classes(disabled=false) }}">
-                Next<i data-lucide="chevron-right" class="h-4 w-4"></i>
-            </a>
+            <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#nodes-table-content" hx-swap="innerHTML" hx-indicator="#nodes-table-loading" class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
         {% else %}
-            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+            <span class="{{ pagination_ui.navigation_classes(true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
         {% endif %}
     </div>
 </footer>

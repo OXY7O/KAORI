@@ -528,3 +528,23 @@ Review one main page at a time using this sequence:
 - [ ] No raw hex, page-local CSS, or new inline script/event debt was added.
 - [ ] Light/dark, responsive, loading, empty, error, disabled, and permission states were reviewed.
 - [ ] `verify_ui_reuse.py`, `verify_ui_style.py`, and relevant contract tests pass.
+
+## 16. Inventory Resource Page Pattern
+
+Use `patterns/INVENTORY_RESOURCE_PAGE.md` for per-asset inventory pages such as Nodes, Namespaces, Workloads, Pods, Services, Ingresses, Storage, and Configuration.
+
+Canonical order:
+
+```text
+Hero → Snapshot Context → Resource Posture → Filtered Table → Inline Detail
+```
+
+The hero owns identity, active scope, and high-level health. Snapshot time and coverage belong only to the Snapshot Context Bar. Capacity and resource-specific signals belong to a shared Resource Posture section.
+
+### Detail Style 1 — Inline Expanded Detail
+
+Use semantic key `inline-expanded` for dense row-owned details. The shared expandable row and detail primitives own loading, geometry, typography, and the open/close action. The detail must finish with a visible committed-data boundary and state-aware operational guidance.
+
+### Technical values
+
+Use `components/technical_value.html` for IP addresses, UUIDs, versions, runtime identifiers, kernel versions, architecture, and similar machine-oriented values. Do not represent ordinary technical values as labels.

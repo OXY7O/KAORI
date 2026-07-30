@@ -146,3 +146,13 @@ Graph / Resource List and Details / Relationships use Tab Style 2 (`compact-segm
 Topology colors use the five-domain token set in `frontend/styles.css`: Scope, Compute, Networking, Configuration, and Storage. Operational health remains a separate semantic status dot. Page templates and JavaScript do not define raw palette values.
 
 `app.inventory.topology.service.build_topology_graph` caches payloads by committed-generation signature and normalized filters, conditionally queries only resource families needed by scope/depth, and indexes Service/Pod matching by cluster and namespace.
+
+## Node Inventory Reference Pattern
+
+Node Inventory is the canonical implementation of the per-resource inventory page pattern:
+
+```text
+Canonical Hero → Snapshot Context → Node Resource Posture → Compact Table → Inline Expanded Detail
+```
+
+The compact table groups Node identity, cluster, readiness, role, capacity, and network evidence. Role is metadata, readiness is operational status, and technical identifiers use the shared Technical Value component. Detail requests remain on demand and read the latest committed generation; they do not query the Kubernetes API live.

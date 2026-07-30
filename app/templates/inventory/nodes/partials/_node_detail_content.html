@@ -1,154 +1,128 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/details/_detail_content.html" as detail %}
 {% import "components/detail_tip.html" as inventory_tip %}
-{% set node_status_tone = 'normal' if node.status == 'Ready' else ('critical' if node.status == 'NotReady' else 'warning') %}
-{% set has_pressure = node.memory_pressure == 'Pressure Detected' or node.disk_pressure == 'Pressure Detected' or node.pid_pressure == 'Pressure Detected' %}
-{% if node.status == 'NotReady' or node.ready_condition == 'Not Ready' %}
-    {% set condition_posture = "Critical" %}
-    {% set condition_tone = "critical" %}
-{% elif node.status != 'Ready' or node.ready_condition not in ['Ready', 'Not Ready'] %}
-    {% set condition_posture = "Unknown" %}
-    {% set condition_tone = "unknown" %}
-{% elif has_pressure or node.scheduling_display == 'Cordoned' %}
-    {% set condition_posture = "Warning" %}
-    {% set condition_tone = "warning" %}
-{% else %}
-    {% set condition_posture = "Normal" %}
-    {% set condition_tone = "normal" %}
-{% endif %}
-{% macro detail_row(label, value='-', break_all=False) -%}
-    {% set display_value = value if value not in [None, ''] else '-' %}
-    <div class="flex items-start justify-between gap-3">
-        <span class="shrink-0 text-xs leading-5 text-content-muted">{{ label }}</span>
-        <span class="max-w-[68%] {{ 'break-all' if break_all else 'break-words' }} text-right text-xs font-medium leading-5 text-content-primary"
-              title="{{ display_value }}">{{ display_value }}</span>
-    </div>
-{%- endmacro %}
-{% macro detail_card(title, icon, badge=None, badge_type='metadata', badge_tone='unknown', class_name='') -%}
-    <section class="flex h-full flex-col rounded-xl border border-outline-subtle bg-surface-card p-4 {{ class_name }}">
-        <div class="mb-4 flex items-center justify-between gap-3">
-            <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                </span>
-                {{ title }}
-            </div>
-            {% if badge %}
-                {% if badge_type == 'status' %}
-                    {{ table_label.status_label(badge, badge_tone, none, 'detail') }}
-                {% else %}
-                    {{ table_label.metadata_label(badge, none, false, 'detail') }}
-                {% endif %}
-            {% endif %}
-        </div>
-        <div class="flex min-h-0 flex-1 flex-col gap-2.5">{{ caller() }}</div>
-    </section>
-{%- endmacro %}
-{% macro detail_tip(message, icon='info') -%}
-    {{ inventory_tip.tip(message, icon, true) }}
-{%- endmacro %}
-<div class="bg-surface-hover px-4 py-4">
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/technical_value.html" as technical_value %}
+{% set node_status_tone = 'normal' if node.status == 'Ready' else ('critical' if node.status == 'NotReady' else 'unknown') %}
+{% set condition_tone = 'critical' if node.ready_condition == 'Not Ready' else ('warning' if node.has_pressure or node.scheduling_display == 'Cordoned' else ('normal' if node.ready_condition == 'Ready' else 'unknown')) %}
+{% set condition_posture = 'Critical' if condition_tone == 'critical' else ('Warning' if condition_tone == 'warning' else ('Normal' if condition_tone == 'normal' else 'Unknown')) %}
+<div data-kaori-detail-variant="inline-expanded" class="bg-surface-hover px-4 py-4">
     <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
         <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-elevated px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="server" class="h-5 w-5"></i>
-                </span>
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="server" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                        <h3 class="truncate text-sm font-semibold text-content-primary">{{ node.node_name }}</h3>
+                        <h3 class="truncate text-base font-semibold text-content-primary">{{ node.node_name }}</h3>
                         {{ table_label.metadata_label(node.cluster_name, 'building-2') }}
+                        {{ table_label.metadata_label(node.role_display) }}
                     </div>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ node.role_description }}</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Node capacity, runtime, connectivity, scheduling conditions, and labels from the latest committed inventory snapshot.</p>
                 </div>
             </div>
-            <div class="self-start sm:self-auto">{{ table_label.status_label(node.status_display, node_status_tone) }}</div>
+            <div class="self-start sm:self-auto">{{ table_label.status_indicator_label(node.status_display, node_status_tone, size='detail') }}</div>
         </header>
-        <div class="grid items-stretch gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail_card('Node Identity', 'badge-info', node.role) %}
-                {{ detail_row('System UUID', node.system_uuid, True) }}
-                {{ detail_row('Cluster', node.cluster_name) }}
-                {{ detail_row('Age', node.age) }}
-                {{ detail_row('Collected', node.collected_at|user_datetime) }}
-                {{ detail_tip('Age comes from node creation time; Collected is the latest KAORI snapshot.', 'clock-3') }}
+
+        <div class="grid gap-3 border-b border-outline-subtle bg-surface-card p-4 sm:grid-cols-2 xl:grid-cols-4">
+            {{ detail.summary_metric('Readiness', node.status_display, 'Current node readiness condition.', 'circle-check' if node.status == 'Ready' else 'triangle-alert', node_status_tone) }}
+            {{ detail.summary_metric('Scheduling', node.scheduling_display, 'Whether new Pods can be scheduled.', 'calendar-clock', 'warning' if node.scheduling_display == 'Cordoned' else ('normal' if node.scheduling_display == 'Schedulable' else 'unknown')) }}
+            {{ detail.summary_metric('Scheduled Pods', node.scheduled_pod_count, 'Pods assigned in the committed snapshot.', 'boxes', 'brand') }}
+            {{ detail.summary_metric('Capacity', (node.cpu or '-') ~ ' CPU · ' ~ node.memory_display, 'Reported CPU and memory capacity.', 'gauge', 'brand') }}
+        </div>
+
+        <div class="grid items-stretch gap-4 p-5 md:grid-cols-2 2xl:grid-cols-3">
+            {% call detail.detail_card('Node Identity', 'badge-info', node.age, badge_size='detail') %}
+                {{ detail.technical_row('System UUID', node.system_uuid) }}
+                {{ detail.detail_row('Cluster', node.cluster_name) }}
+                {{ detail.detail_row('Environment', node.cluster_environment|environment_name(empty='Not Specified')) }}
+                {{ detail.detail_row('Age', node.age) }}
+                {{ detail.detail_row('Collected', node.collected_at|user_datetime) }}
+                {{ inventory_tip.tip('Age comes from node creation time; Collected is the latest KAORI snapshot.', 'clock-3', true) }}
             {% endcall %}
+
+            {% call detail.detail_card('Node Capacity', 'gauge', (node.cpu or '-') ~ ' CPU', badge_size='detail') %}
+                {{ detail.detail_row('CPU', (node.cpu or '-') ~ ' Cores') }}
+                {{ detail.detail_row('Memory', node.memory_display) }}
+                {{ detail.detail_row('Ephemeral Storage', node.ephemeral_storage_display) }}
+                {{ detail.detail_row('Allocatable Ephemeral', node.ephemeral_storage_allocatable_display) }}
+                {{ inventory_tip.tip('Capacity values are reported by Kubernetes in the committed Node snapshot.', 'database', true) }}
+            {% endcall %}
+
             {% set network_tone = 'normal' if node.network_availability == 'Available' else ('critical' if node.network_availability == 'Unavailable' else 'unknown') %}
-            {% call detail_card('Connectivity', 'network', node.scheduled_pod_count ~ ' Pods') %}
-                {{ detail_row('Internal IP', node.internal_ip or '-', True) }}
-                {{ detail_row('External IP', node.external_ip or '-', True) }}
-                {{ detail_row('Scheduled Pods', node.scheduled_pod_count) }}
-                <div class="flex items-start justify-between gap-3">
-                    <span class="text-xs leading-5 text-content-muted">Network Availability</span>
-                    {{ table_label.status_label(node.network_availability, network_tone, none, 'detail') }}
-                </div>
-                {{ detail_tip('Internal IP is the cluster address; External IP may be empty on private nodes.', 'network') }}
+            {% call detail.detail_card('Connectivity', 'network', node.network_availability, 'status', network_tone, badge_size='detail') %}
+                {{ detail.technical_row('Internal IP', node.internal_ip or '-') }}
+                {{ detail.technical_row('External IP', node.external_ip or '-') }}
+                {{ detail.technical_row('Hostname', node.hostname_address or '-') }}
+                {{ detail.detail_row('Scheduled Pods', node.scheduled_pod_count) }}
+                {{ inventory_tip.tip('Internal IP is the cluster address; External IP may be empty on private nodes.', 'network', true) }}
             {% endcall %}
-            {% call detail_card('Platform & Runtime', 'cpu', node.operating_system_display) %}
-                {{ detail_row('Operating System', node.os_image or '-') }}
-                {{ detail_row('Kubelet Version', node.kubelet_version) }}
-                {{ detail_row('Kube-Proxy Version', node.kube_proxy_version) }}
-                {{ detail_row('Architecture', node.architecture) }}
-                {{ detail_tip('Versions come from node status; missing values were not reported.', 'cpu') }}
+
+            {% call detail.detail_card('Platform & Runtime', 'cpu', node.operating_system_display, class_name='2xl:col-span-1', badge_size='detail') %}
+                {{ detail.detail_row('Operating System', node.operating_system_display) }}
+                {{ detail.detail_row('OS Image', node.os_image) }}
+                {{ detail.technical_row('Architecture', node.architecture, False) }}
+                {{ detail.technical_row('Kernel Version', node.kernel_version) }}
+                {{ detail.technical_row('Container Runtime', node.container_runtime_identifier) }}
+                {{ detail.technical_row('Kubelet Version', node.kubelet_version) }}
+                {{ detail.technical_row('Kube-Proxy Version', node.kube_proxy_version) }}
             {% endcall %}
-            {% call detail_card('Scheduling & Conditions', 'clipboard-check', condition_posture, 'status', condition_tone) %}
-                {% set scheduling_tone = 'normal' if node.scheduling_display == 'Schedulable' else ('warning' if node.scheduling_display == 'Cordoned' else 'unknown') %}
-                <div class="flex items-start justify-between gap-3">
-                    <span class="text-xs leading-5 text-content-muted">Scheduling</span>
-                    {{ table_label.status_label(node.scheduling_display, scheduling_tone, none, 'detail') }}
+
+            {% call detail.detail_card('Scheduling & Conditions', 'clipboard-check', condition_posture, 'status', condition_tone, class_name='md:col-span-2 2xl:col-span-2', badge_size='detail') %}
+                <div class="grid gap-3 sm:grid-cols-2">
+                    {{ detail.status_row('Scheduling', node.scheduling_display, 'warning' if node.scheduling_display == 'Cordoned' else ('normal' if node.scheduling_display == 'Schedulable' else 'unknown'), size='detail') }}
+                    {{ detail.status_row('Ready', node.ready_condition, 'normal' if node.ready_condition == 'Ready' else ('critical' if node.ready_condition == 'Not Ready' else 'unknown'), size='detail') }}
+                    {% for label, value in [('Memory Pressure', node.memory_pressure), ('Disk Pressure', node.disk_pressure), ('PID Pressure', node.pid_pressure)] %}
+                        {{ detail.status_row(label, value, 'critical' if value == 'Pressure Detected' else ('normal' if value == 'Normal' else 'unknown'), size='detail') }}
+                    {% endfor %}
                 </div>
-                {% set ready_tone = 'normal' if node.ready_condition == 'Ready' else ('critical' if node.ready_condition == 'Not Ready' else 'unknown') %}
-                <div class="flex items-start justify-between gap-3">
-                    <span class="text-xs leading-5 text-content-muted">Ready</span>
-                    {{ table_label.status_label(node.ready_condition, ready_tone, none, 'detail') }}
-                </div>
-                {% for label, value in [('Memory Pressure', node.memory_pressure), ('Disk Pressure', node.disk_pressure), ('PID Pressure', node.pid_pressure)] %}
-                    {% set pressure_tone = 'critical' if value == 'Pressure Detected' else ('normal' if value == 'Normal' else 'unknown') %}
-                    <div class="flex items-start justify-between gap-3">
-                        <span class="text-xs leading-5 text-content-muted">{{ label }}</span>
-                        {{ table_label.status_label(value, pressure_tone, none, 'detail') }}
+                <div class="mt-2 border-t border-outline-subtle pt-3">
+                    <p class="mb-2 text-xs font-semibold text-content-secondary">Taints</p>
+                    <div class="flex flex-wrap gap-1.5">
+                        {% if node.taints %}
+                            {% for taint in node.taints %}{{ table_label.metadata_label(taint, 'tag', true, 'detail') }}{% endfor %}
+                        {% else %}
+                            {{ table_label.metadata_label('No Taints', none, false, 'detail') }}
+                        {% endif %}
                     </div>
-                {% endfor %}
-                <div class="pt-1">
-                    <p class="mb-2 text-xs leading-5 text-content-muted">Taints</p>
-                    {% if node.taints %}
-                        <div class="flex flex-wrap gap-1.5">
-                            {% for taint in node.taints %}
-                                {{ table_label.status_label(taint, 'warning', none, 'detail') }}
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        {{ table_label.metadata_label("No Taints", none, false, 'detail') }}
-                    {% endif %}
                 </div>
             {% endcall %}
-            <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 md:col-span-2 xl:col-span-4">
+
+            <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 md:col-span-2 2xl:col-span-3">
                 <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
                     <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
-                            <i data-lucide="tags" class="h-4 w-4"></i>
-                        </span>
+                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="tags" class="h-4 w-4"></i></span>
                         Node Labels
                     </div>
-                    {{ table_label.metadata_label(node.labels|length ~ ' ' ~ ('label' if node.labels|length == 1 else 'labels') ) }}
+                    {{ table_label.metadata_label(node.labels|length ~ ' ' ~ ('Label' if node.labels|length == 1 else 'Labels')) }}
                 </div>
                 {% if node.labels %}
-                    <div class="max-h-36 overflow-y-auto pr-1">
-                        <div class="flex flex-wrap gap-1.5">
-                            {% for key, value in node.labels.items() %}
-                                {{ table_label.metadata_label(key ~ ('=' ~ (value|string) if value else '')) }}
-                            {% endfor %}
-                        </div>
+                    <div class="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                        {% for key, value in node.labels.items() %}
+                            <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5">{{ technical_value.render(key ~ '=' ~ value) }}</div>
+                        {% endfor %}
                     </div>
                 {% else %}
-                    <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-4 text-center">
-                        <i data-lucide="tags" class="mx-auto h-5 w-5 text-kaori-primary"></i>
-                        <p class="mt-2 text-xs font-semibold text-kaori-primary">No Node Labels Collected</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Labels will appear after the next inventory collection when provided by the node.</p>
-                    </div>
-                {% endif %}
-                {% if node.labels %}
-                    <div class="mt-4">{{ inventory_tip.tip('Labels describe node identity and scheduling attributes.', 'tags') }}</div>
+                    <p class="text-xs leading-5 text-content-muted">No node labels were collected in the current snapshot.</p>
                 {% endif %}
             </section>
         </div>
+
+        <section class="border-t border-outline-subtle bg-surface-elevated p-5" aria-label="Node Operational Context">
+            <div class="grid gap-3 lg:grid-cols-2">
+                {{ operational_callout.render(
+                    'Committed Snapshot Boundary',
+                    'This detail reads the latest committed database snapshot. It does not query the Kubernetes API live.',
+                    icon='database',
+                    tone='info'
+                ) }}
+                {{ operational_callout.render(
+                    node.operational_context.title,
+                    node.operational_context.description,
+                    icon=node.operational_context.icon,
+                    tone=node.operational_context.tone,
+                    variant='semantic'
+                ) }}
+            </div>
+        </section>
     </div>
 </div>

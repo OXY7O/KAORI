@@ -1,0 +1,21 @@
+{#
+  Reusable metric grid for inventory resource posture sections.
+  Each metric tuple: (icon, label, value, description, tone).
+#}
+{% macro render(metrics, columns=3) -%}
+    <div class="grid gap-px bg-outline-subtle {{ 'sm:grid-cols-2 xl:grid-cols-3' if columns == 3 else 'sm:grid-cols-2 xl:grid-cols-4' }}">
+        {% for icon, label, value, description, tone in metrics %}
+            {% set icon_surface = 'bg-status-normal-soft text-status-normal-text' if tone == 'normal' else ('bg-status-warning-soft text-status-warning-text' if tone == 'warning' else ('bg-status-critical-soft text-status-critical-text' if tone == 'critical' else ('bg-status-unknown-soft text-status-unknown-text' if tone == 'unknown' else 'bg-kaori-soft text-kaori-primary'))) %}
+            <article class="flex min-h-32 items-start justify-between gap-4 bg-surface-card p-5">
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold leading-4 text-content-secondary">{{ label }}</p>
+                    <p class="mt-2 text-xl font-semibold leading-7 text-content-primary">{{ value }}</p>
+                    <p class="mt-2 text-xs leading-5 text-content-muted">{{ description }}</p>
+                </div>
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ icon_surface }}" aria-hidden="true">
+                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                </span>
+            </article>
+        {% endfor %}
+    </div>
+{%- endmacro %}

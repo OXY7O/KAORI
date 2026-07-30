@@ -1,26 +1,15 @@
 {% import "components/table.html" as table_ui %}
-{% import "components/loading_bar.html" as loading_bar %}
 <section class="{{ table_ui.block_classes() }}">
-    <header class="border-b border-outline-subtle px-5 py-4">
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex items-center gap-3">
-                <span class="flex h-10 w-10 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="server-cog" class="h-5 w-5"></i>
-                </span>
-                <div>
-                    <h2 class="text-base font-semibold text-content-primary">Node Inventory</h2>
-                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Kubernetes nodes collected from connected clusters.</p>
-                </div>
-            </div>
-            <a href="{{ url_for('integrations.kubernetes') }}"
-               class="{{ table_ui.action_classes() }}">
-                <i data-lucide="external-link" class="h-4 w-4"></i>
-                Open Cluster List
-            </a>
-        </div>
-        {{ loading_bar.render('nodes-table-loading', label='Refreshing Node Inventory') }}
-    </header>
-    <div class="border-b border-outline-subtle bg-surface-hover px-5 py-4">
+    {{ table_ui.inventory_block_header(
+        'server-cog',
+        'Node Inventory',
+        'Kubernetes nodes collected from connected clusters.',
+        'nodes-table-loading',
+        'Refreshing Node Inventory',
+        url_for('integrations.kubernetes'),
+        'Open Cluster List'
+    ) }}
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form hx-get="{{ url_for('inventory.nodes') }}"
               hx-target="#nodes-inventory-scope"
               hx-swap="outerHTML"
@@ -30,49 +19,35 @@
             <input type="hidden" name="page" value="1" />
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}" />
             <div>
-                <label class="mb-2 block text-sm font-semibold text-content-secondary">Cluster</label>
-                <select name="cluster_id"
-                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                <label class="{{ table_ui.filter_label_classes() }}">Cluster</label>
+                <select name="cluster_id" class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Clusters</option>
                     {% for cluster in clusters %}
-                        <option value="{{ cluster.id }}"
-                                {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
+                        <option value="{{ cluster.id }}" {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
-                <label class="mb-2 block text-sm font-semibold text-content-secondary">Role</label>
-                <select name="role"
-                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                <label class="{{ table_ui.filter_label_classes() }}">Role</label>
+                <select name="role" class="{{ table_ui.filter_select_classes() }}">
                     <option value="" {% if not selected_role %}selected{% endif %}>All Roles</option>
                     {% for role_name in inventory.node_roles %}
-                        <option value="{{ role_name }}"
-                                {% if selected_role == role_name %}selected{% endif %}>{{ role_name }}</option>
+                        <option value="{{ role_name }}" {% if selected_role == role_name %}selected{% endif %}>{{ role_name }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
-                <label class="mb-2 block text-sm font-semibold text-content-secondary">Status</label>
-                <select name="status"
-                        class="h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                <label class="{{ table_ui.filter_label_classes() }}">Status</label>
+                <select name="status" class="{{ table_ui.filter_select_classes() }}">
                     <option value="" {% if not selected_status %}selected{% endif %}>All Statuses</option>
                     {% for status_name in inventory.node_statuses %}
-                        <option value="{{ status_name }}"
-                                {% if selected_status == status_name %}selected{% endif %}>{{ status_name }}</option>
+                        <option value="{{ status_name }}" {% if selected_status == status_name %}selected{% endif %}>{{ status_name }}</option>
                     {% endfor %}
                 </select>
             </div>
             <div>
-                <label class="mb-2 block text-sm font-semibold text-content-secondary">Search Node</label>
-                <div class="relative">
-                    <i data-lucide="search"
-                       class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
-                    <input type="text"
-                           name="search"
-                           value="{{ search }}"
-                           placeholder="Search Name, IP, or Hostname..."
-                           class="h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20" />
-                </div>
+                <label class="{{ table_ui.filter_label_classes() }}">Search Nodes</label>
+                {{ table_ui.search_field('search', search, 'Search node name, IP, or hostname') }}
             </div>
         </form>
     </div>

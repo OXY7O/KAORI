@@ -31,15 +31,15 @@ def test_node_inventory_supporting_copy_uses_sentence_case_and_footer_resource_c
     table = _read('app/templates/inventory/nodes/partials/_table_content.html')
 
     expected = (
-        'Nodes in the Current Scope',
-        'Reported CPU Cores',
-        'Reported Memory Capacity in GiB',
-        'Local Ephemeral Capacity in GiB',
-        'Available for Workload Scheduling',
-        '% of Nodes Require Attention',
+        'Reported CPU capacity in the active node scope.',
+        'Reported memory capacity across filtered nodes.',
+        'Reported local ephemeral storage capacity.',
+        'Nodes excluded from new workload scheduling.',
+        'Nodes reporting memory, disk, or PID pressure.',
+        'Nodes reporting unavailable network condition.',
     )
-    for label in expected:
-        assert label in summary
+    for description in expected:
+        assert description in summary
 
     assert "{{ 'Node' if pagination.total_items == 1 else 'Nodes' }}" in table
     assert "{{ 'node' if pagination.total_items == 1 else 'nodes' }}" not in table
