@@ -1,18 +1,43 @@
-{% import "components/context_guidance_card.html" as context_guidance_card %}
-{% set reporting_steps = [
-    ('Validate', 'Confirm cluster scope, reporting period, and source freshness.'),
-    ('Select', 'Choose the approved analytics or inventory report type.'),
-    ('Create', 'Save the governed report request and selected sections.'),
-    ('Generate', 'Render the PDF through the canonical report engine.'),
-    ('Review', 'Check status, warnings, content, and artifact availability.'),
-    ('Retain', 'Schedule delivery or keep the verified artifact for audit and operations.')
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/operational_flow_steps.html" as operational_flow_steps %}
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% set reporting_rows = [
+    [
+        ('scan-search', 'Validate', 'Cluster, period, and freshness'),
+        ('layout-template', 'Select', 'Approved report type and scope'),
+        ('file-cog', 'Create', 'Save the governed report request')
+    ],
+    [
+        ('file-check-2', 'Generate', 'Render and review the PDF output'),
+        ('calendar-clock', 'Schedule', 'Set cadence and delivery channel'),
+        ('archive', 'Retain', 'Store, archive, and preserve evidence')
+    ]
 ] %}
-{{ context_guidance_card.render(
-    'Reporting Flow',
-    'Follow the controlled path from report scope to retained artifact.',
-    reporting_steps,
-    icon='notebook-tabs',
-    open_by_default=true,
-    aria_label='Reporting Flow',
+{% call operational_section_card.render(
+    'Reporting Interpretation & Next Steps',
+    'Validate reporting activity and continue through the controlled KAORI reporting workflow.',
+    'notebook-tabs',
+    body_classes='space-y-4 p-5',
     extra_classes='h-full'
-) }}
+) %}
+    {{ operational_callout.render(
+        'What This Summary Means',
+        'Reporting Summary shows recent generated reports together with template and schedule counts. It represents reporting activity, not Kubernetes health or analytics freshness.',
+        icon='info',
+        tone='info'
+    ) }}
+
+    <div>
+        <p class="text-xs font-semibold text-content-muted">Controlled Reporting Flow</p>
+        <div class="mt-3">
+            {{ operational_flow_steps.render(reporting_rows, aria_label='Controlled Reporting Flow') }}
+        </div>
+    </div>
+
+    {{ operational_callout.render(
+        'Reporting Tip',
+        'Use schedules for recurring operational evidence. For one-time reviews, generate the report manually and verify the stored PDF before sharing or archiving it.',
+        icon='lightbulb',
+        tone='info'
+    ) }}
+{% endcall %}

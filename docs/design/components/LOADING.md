@@ -6,12 +6,13 @@ The loading bar belongs **inside the owning header**, directly below the title/a
 
 ## Dashboard section loading
 
-Read-only dashboards use a different loading treatment from mutable operational tables:
+Read-only dashboards combine section skeletons with section-owned loading bars:
 
 - Initial asynchronous dashboard sections render the shared skeleton placeholder inside the exact section that will be replaced.
-- The current dashboard content remains visible during in-place pagination or scope refresh until the replacement response arrives.
+- A table or block with pagination, filters, or in-place refresh also renders its own loading bar inside its header.
+- `hx-indicator` points only to the loading bar owned by the same partial region.
+- The current table content remains visible during pagination or filter requests until the replacement response arrives.
 - Do not place one global loading bar in a summary card and use it as the indicator for unrelated sections.
-- A table-specific loading bar remains valid only when it is owned by that table block and sits inside its header.
 
 Canonical structure:
 
@@ -28,9 +29,9 @@ Rules:
 
 - The track is `h-1`, rounded, Violet Soft, and constrained by the header padding.
 - The visible segment is one-third width, KAORI Violet, rounded, and pulse-animated.
-- Worker-active states may render the same bar as `block`; HTMX-only states use `htmx-indicator`.
-- `hx-indicator` must point to the loading bar owned by the same partial region.
+- Initial loading placeholders may render the same bar as active while also showing section-local skeleton content.
+- HTMX-only states use `htmx-indicator` and an explicit `hx-indicator` selector.
 - HTMX replaces only the relevant region; the loading bar must not shift the hero or unrelated content.
 - Real execution progress bars are separate from loading indicators and may be determinate or indeterminate based on worker progress evidence.
 
-This contract applies to Jobs & Executions, Endpoint & Access, Compatibility & Capability Matrix, Runtime Health & Diagnostics, Recent Runtime Observations, and equivalent operational blocks.
+This contract applies to Cluster Health Summary, Jobs & Executions, Endpoint & Access, Compatibility & Capability Matrix, Runtime Health & Diagnostics, Recent Runtime Observations, and equivalent operational blocks.

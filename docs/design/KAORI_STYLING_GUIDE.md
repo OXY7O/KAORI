@@ -45,12 +45,15 @@ Review the baseline diff before committing. A lower count is expected; moving de
 | Typography | `components/TYPOGRAPHY.md` | Owning shared component classes |
 | Tables and labels | `components/TABLE_AND_LABEL.md` | `components/table.html`, `components/table_label.html` |
 | Pagination | `components/PAGINATION.md` | `components/pagination.html` |
-| Standalone workspace tabs | `components/WORKSPACE_TABS.md` | `components/workspace_tabs.html` |
+| Tab style registry | `components/TAB_STYLES.md` | Approved semantic tab components |
+| Tab Style 1 — Integrated Workspace Tabs | `components/WORKSPACE_TABS.md` | `components/workspace_tabs.html` |
 | Operational section card | `components/OPERATIONAL_SECTION_CARD.md` | `components/operational_section_card.html` |
+| Operational callout | `components/OPERATIONAL_CALLOUT.md` | `components/operational_callout.html` |
 | Forecast projection chart | `components/FORECAST_PROJECTION_CHART.md` | `components/forecast_projection_chart.html` |
 | Compact section-header action | `components/SECTION_HEADER_ACTION.md` | `components/section_link_button.html` |
 | Right contextual rail | `components/RIGHT_CONTEXT_RAIL.md` | `components/context_rail.html` |
 | Primary flow box | `components/INFO_FLOW.md` | `components/info_flow.html` |
+| Operational flow steps | `components/OPERATIONAL_FLOW_STEPS.md` | `components/operational_flow_steps.html` |
 | Related workspace box | `components/RELATED_PAGE_CARD.md` | `components/related_page_card.html` |
 | Expandable supporting content | `components/VIEW_MORE_CONTENT.md` | `components/view_more_content.html` and wrappers |
 | Form actions | `components/FORM_ACTION_BAR.md`, `components/BUTTON.md` | `components/form_action_bar.html`, `components/action_button.html` |
@@ -233,20 +236,21 @@ Do not create custom Previous/Next geometry or page counters per page.
 
 Operational dashboard tables follow the same contract. Page-size changes reset to page 1, preserve the active scope, and update only the owning section through HTMX. Enabled navigation uses `pagination.navigation_classes()`; disabled navigation is a non-interactive element using `pagination.navigation_classes(disabled=true)`.
 
-## 10. Standalone Workspace Tabs
+## 10. Tab Style 1 — Integrated Workspace Tabs
 
-Use `components/workspace_tabs.html` for peer sections inside one operational workspace. Tabs are navigation, not a large card that wraps every panel.
+Use **Tab Style 1** (`integrated-workspace`) through `components/workspace_tabs.html` for peer sections inside one operational workspace. Tabs are navigation, not a large card that wraps every panel. The complete multi-style registry lives in `components/TAB_STYLES.md`.
 
 Required behavior:
 
-- the tab bar is a standalone shared surface;
+- the tab bar attaches to the workspace through a simple bottom divider;
+- it does not render its own rounded card, background, border shell, or shadow;
 - each tab has `role="tab"`, `aria-controls`, selected state, and keyboard focus treatment;
 - each panel has the matching `role="tabpanel"` and `aria-labelledby`;
 - the active tab is stored in the URL, for example `?tab=capacity`;
 - HTMX scope or filter changes preserve the active tab;
 - page-local `role="tablist"` geometry is prohibited when the shared component can represent the workspace.
 
-Tabs switch peer content. They do not hide blockers, required form fields, errors, or a primary flow.
+Tabs switch peer content. They do not hide blockers, required form fields, errors, or a primary flow. New tab styles require a distinct information architecture, a semantic key, one shared component owner, and registration in `TAB_STYLES.md`; visual variation alone is insufficient.
 
 ## 11. Right-Side Context Boxes
 
@@ -368,9 +372,13 @@ Avoid stacking multiple dark or tinted backgrounds. Use whitespace, divider, bor
 
 Repeated dashboard blocks use `components/operational_section_card.html`. The shared component owns the shell, header spacing, 40 px icon surface, `text-base font-semibold` title, supporting description, optional compact badge, and one optional section-header action. Domain templates own the data and body content through `caller()`.
 
+### Operational callout
+
+Use `components/operational_callout.html` for reusable explanatory or semantic cards inside an operational section. Neutral callouts use an elevated surface with a semantic icon tile. Semantic callouts may use a matching semantic border and surface because they are interpretation cards, not compact labels. Page templates must not copy the semantic class bundle inline.
+
 Do not copy the standard `rounded-xl border bg-surface-card shadow-sm` section shell into every dashboard partial. Do not wrap a tab workspace in another card when each section already has its own surface.
 
-When two dashboard blocks are both primary content, use `components/peer_content_grid.html`. Use an equal 6/6 split or the documented 7/5 split. Do not force a peer chart, readiness summary, or operational guidance block into the fixed 20rem context rail.
+When two dashboard blocks are both primary content, use `components/peer_content_grid.html`. Use an equal 6/6 split or the documented 7/5 split. Both peer sections use `h-full`, and asynchronous wrappers use `h-full w-full`, so the shorter card stretches to the tallest box in the row. Do not force a peer chart, readiness summary, or operational guidance block into the fixed 20rem context rail.
 
 ### Dashboard metric typography
 
@@ -394,9 +402,11 @@ Historical and projected utilization visuals use `components/forecast_projection
 
 ### Primary and secondary flows
 
-`components/info_flow.html` is static and always visible. It is reserved for a primary ordered process that users must understand to complete or operate the page. The legacy `open_by_default` argument remains accepted only for call-site compatibility and has no visual effect.
+`components/info_flow.html` is static and always visible. It is reserved for a page-level primary ordered process that users must understand to complete or operate the page. The legacy `open_by_default` argument remains accepted only for call-site compatibility and has no visual effect.
 
-Secondary ordered guidance may use `components/context_guidance_card.html`, normally in a contextual rail. Do not duplicate the same sequence in both components.
+When an action, response, or validation sequence is one of two peer main-content boxes, use `components/operational_flow_steps.html`. The flow is static, uses visible step boxes, and stretches with its peer card. This pattern applies to capacity action, alert response, reporting, and equivalent operational sequences.
+
+`components/context_guidance_card.html` remains expandable only for optional secondary guidance in a genuine supporting rail. Do not use it for peer main content and do not duplicate the same sequence in multiple components.
 
 ## 16. Workspace Catalog and Landing Pages
 
@@ -419,6 +429,8 @@ Welcome may use `welcome_capability_group.html` as a documented dark Violet cate
 ## 17. Loading, Empty, Error, and Permission States
 
 - Loading appears in the affected region, never by replacing the hero.
+- Initial dashboard sections use local skeletons; paginated or filterable dashboard tables also own a loading bar inside their section header.
+- `hx-indicator` always points to the bar owned by the same partial region; a global dashboard loading bar is prohibited.
 - Dashboard initial loads use section-owned skeleton placeholders. A global loading bar must not represent several unrelated asynchronous dashboard sections.
 - Empty states explain what is absent and the next valid action when one exists.
 - Error copy is concise; technical evidence belongs in detail views, toast, or Activity Audit Log.

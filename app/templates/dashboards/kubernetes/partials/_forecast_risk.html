@@ -8,7 +8,8 @@
     id='dashboard-forecast-risk',
     action_href=url_for('analytics.forecast'),
     action_label='View Forecast',
-    body_classes='p-5'
+    body_classes='p-5',
+    extra_classes='h-full'
 ) %}
     {% if not dashboard.selected_cluster_id %}
         {% set blocked_state_icon = 'server-off' %}

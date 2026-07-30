@@ -34,6 +34,8 @@ def test_canonical_styling_guide_and_component_contracts_exist() -> None:
     assert 'components/FORECAST_PROJECTION_CHART.md' in design_readme
     assert 'components/SECTION_HEADER_ACTION.md' in design_readme
     assert 'components/PEER_CONTENT_GRID.md' in design_readme
+    assert 'components/OPERATIONAL_FLOW_STEPS.md' in design_readme
+    assert 'components/OPERATIONAL_CALLOUT.md' in design_readme
     assert 'components/LOADING.md' in design_readme
     assert 'patterns/OPERATIONAL_DASHBOARD.md' in design_readme
 
@@ -140,16 +142,36 @@ def test_operational_dashboard_components_and_contracts_are_documented() -> None
     chart = _read('app/templates/components/forecast_projection_chart.html')
     info_flow = _read('app/templates/components/info_flow.html')
 
-    assert 'Standalone Workspace Tabs' in guide
+    assert 'Tab Style 1 — Integrated Workspace Tabs' in guide
+    assert 'components/TAB_STYLES.md' in guide
     assert 'Dashboard metric typography' in guide
     assert 'Compact section-header action' in guide
     assert 'Forecast projection chart' in guide
     assert 'Primary and secondary flows' in guide
     assert 'components/peer_content_grid.html' in guide
+    assert 'components/operational_flow_steps.html' in guide
+    assert 'components/operational_callout.html' in guide
     assert 'text-base font-semibold' in section_card
     assert 'role="tablist"' in tabs
+    assert 'rounded-xl' not in tabs
+    assert 'border-b border-outline-subtle' in tabs
     assert '<svg' in chart
     assert '<details' not in info_flow
+
+
+def test_tab_style_registry_names_the_integrated_workspace_pattern() -> None:
+    registry = _read('docs/design/components/TAB_STYLES.md')
+    contract = _read('docs/design/components/WORKSPACE_TABS.md')
+    tabs = _read('app/templates/components/workspace_tabs.html')
+    design_readme = _read('docs/design/README.md')
+
+    assert 'Tab Style 1 — Integrated Workspace Tabs' in registry
+    assert '`integrated-workspace`' in registry
+    assert 'Kubernetes Operations Dashboard' in registry
+    assert 'visual variation alone' in registry or 'Color, radius, spacing' in registry
+    assert 'Review name: **Tab Style 1**' in contract
+    assert 'data-kaori-tab-variant="integrated-workspace"' in tabs
+    assert 'components/TAB_STYLES.md' in design_readme
 
 
 def test_style_verifier_tracks_page_local_workspace_tablists() -> None:
@@ -171,3 +193,15 @@ def test_peer_content_grid_is_distinct_from_the_context_rail() -> None:
     assert 'both columns are primary page content' in grid_contract
     assert 'supporting context' in grid_contract
     assert 'supporting information' in rail_contract
+    assert 'tallest peer block' in grid_contract
+
+
+def test_operational_callout_owns_semantic_border_variants() -> None:
+    component = _read('app/templates/components/operational_callout.html')
+    verifier = _read('scripts/verify_ui_style.py')
+    contract = _read('docs/design/components/OPERATIONAL_CALLOUT.md')
+
+    assert 'border-status-critical-border' in component
+    assert "variant == 'semantic'" in component
+    assert "'app/templates/components/operational_callout.html'" in verifier
+    assert 'not a compact status label' in contract

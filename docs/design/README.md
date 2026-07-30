@@ -15,8 +15,11 @@ The Styling Guide selects the correct reusable component. The Design System and 
 - `components/BUTTON.md`
 - `components/TABLE_AND_LABEL.md`
 - `components/PAGINATION.md`
+- `components/TAB_STYLES.md`
 - `components/WORKSPACE_TABS.md`
 - `components/OPERATIONAL_SECTION_CARD.md`
+- `components/OPERATIONAL_CALLOUT.md`
+- `components/OPERATIONAL_FLOW_STEPS.md`
 - `components/FORECAST_PROJECTION_CHART.md`
 - `components/SECTION_HEADER_ACTION.md`
 - `components/PEER_CONTENT_GRID.md`

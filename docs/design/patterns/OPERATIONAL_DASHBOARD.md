@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This pattern defines a read-only, snapshot-backed operational dashboard that combines scope, KPIs, peer workspace tabs, tables, charts, and contextual guidance without creating page-local styling systems.
+This pattern defines a read-only, snapshot-backed operational dashboard that combines scope, KPIs, integrated tabs, tables, charts, and visible action guidance without creating page-local styling systems.
 
 ## Canonical composition
 
@@ -10,10 +10,10 @@ This pattern defines a read-only, snapshot-backed operational dashboard that com
 Canonical Hero
 Scope and Freshness Toolbar
 Operational KPI Grid
-Standalone Workspace Tabs
+Tab Style 1 — Integrated Workspace Tabs
 ├── Primary Operational Sections
-├── Full-Width Complex Charts or Tables
-└── Peer Content Grid for primary content pairs
+├── Full-Width Complex Tables
+└── Equal-Height Peer Content Grid
 ```
 
 ## Rules
@@ -21,14 +21,17 @@ Standalone Workspace Tabs
 - Web requests read committed database or worker snapshots only; styling changes must not weaken the data boundary.
 - Keep hero geometry canonical and avoid duplicate freshness metadata.
 - Use `operational_metric_card.html` for KPI cards.
-- Use `workspace_tabs.html` and persist the active tab in the URL.
+- Use Tab Style 1 (`integrated-workspace`) through `workspace_tabs.html`; tabs attach to the workspace and do not become a separate card.
+- Persist the active tab in the URL.
 - Use `operational_section_card.html` for repeated block shells.
 - Use `peer_content_grid.html` when both dashboard blocks are primary tab content.
+- Peer boxes stretch to the tallest box in the row.
 - Use `context_rail.html` only when the right side is genuinely secondary supporting context.
+- Use `operational_flow_steps.html` for static action or response flow boxes inside peer main content. Supporting tips may follow the flow through `operational_callout.html` and remain visible.
 - Use `forecast_projection_chart.html` for historical/projected resource visuals.
-- Use canonical tables, labels, states, and pagination.
-- Avoid card-inside-card composition and duplicate actions.
-- Initial asynchronous dashboard sections use skeleton placeholders. Do not attach one global loading bar to unrelated dashboard regions.
+- Use canonical tables, labels, states, pagination, and resource-aware copy.
+- Initial asynchronous sections use local skeleton placeholders. Tables with in-place pagination or filtering also use a section-owned loading bar.
+- Avoid card-inside-card composition, duplicate actions, and expandable primary flows.
 
 ## Reference implementation
 

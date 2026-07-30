@@ -31,6 +31,8 @@ For a 7/5 split:
 - Equal split uses 6/6 columns.
 - Emphasized split uses 7/5 columns.
 - Both blocks remain primary content and may contain metrics, charts, tables, or operational guidance.
+- The grid row follows the tallest peer block.
+- Both direct peer sections must use `h-full`; asynchronous wrapper elements use `h-full w-full` so the shorter card stretches to the same height.
 
 ## Decision Rule
 

@@ -59,11 +59,12 @@ The Kubernetes Operations Dashboard is the reference implementation for the KAOR
 
 - Hero: `components/page_hero.html`.
 - KPI cards: `components/operational_metric_card.html`.
-- Peer navigation: `components/workspace_tabs.html`; active state is stored in `?tab=` and preserved during HTMX scope changes.
+- Peer navigation: **Tab Style 1 — Integrated Workspace Tabs** (`integrated-workspace`) through `components/workspace_tabs.html`; active state is stored in `?tab=` and preserved during HTMX scope changes.
 - Repeated blocks: `components/operational_section_card.html`.
-- Main + contextual guidance layout: `components/context_rail.html`.
-- Secondary ordered guidance: `components/context_guidance_card.html`.
-- Related destinations: `components/related_page_card.html`.
+- Peer main-content layout: `components/peer_content_grid.html`; both boxes stretch to the tallest peer in the row.
+- Static action and response flows: `components/operational_flow_steps.html`.
+- Visible supporting tips and interpretation: `components/operational_callout.html`.
+- `components/context_rail.html` remains reserved for a genuine supporting sidebar, not two peer dashboard boxes.
 - Forecast chart: `components/forecast_projection_chart.html`, shared with Kubernetes Analytics.
 - Cluster Health: canonical table, semantic labels, shared empty state, and pagination with default 5 and options 5/10/25/50.
 
@@ -75,11 +76,11 @@ Canonical layout:
 Canonical Hero
 Scope and Freshness Toolbar
 Operational KPI Grid
-Standalone Workspace Tabs
-├── Operations Overview: Cluster Health + Inventory/Freshness Context Rail
-├── Capacity & Demand: Capacity + Full-Width Forecast + Top Consumers
-├── Signals & Actions: Alerts/Response Context Rail + Recommended Actions
-└── Reporting: Reporting Summary/Guidance Context Rail
+Tab Style 1 — Integrated Workspace Tabs
+├── Operations Overview: Cluster Health + Inventory/Freshness Peer Grid
+├── Capacity & Demand: Capacity/Forecast Peer Grid + Top Consumers
+├── Signals & Actions: Alerts/Response Peer Grid + Recommended Actions
+└── Reporting: Reporting Summary/Guidance Peer Grid
 ```
 
 ## Alert Source Failure Presentation and Recovery

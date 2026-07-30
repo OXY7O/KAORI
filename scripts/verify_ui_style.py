@@ -44,6 +44,10 @@ _H1_TAG = re.compile(r'<h1\b[^>]*>', re.IGNORECASE | re.DOTALL)
 _PREVIOUS = re.compile(r'>\s*Previous\s*<', re.IGNORECASE)
 _NEXT = re.compile(r'>\s*Next\s*<', re.IGNORECASE)
 _TABLIST = re.compile(r'role=[\"\']tablist[\"\']', re.IGNORECASE)
+_APPROVED_SEMANTIC_BORDER_COMPONENTS = {
+    'app/templates/components/operational_callout.html',
+}
+
 _APPROVED_ARBITRARY_TEXT_COMPONENTS = {
     'app/templates/components/forecast_projection_chart.html',
     'app/templates/components/page_hero.html',
@@ -138,7 +142,11 @@ def _metrics(relative: str, source: str) -> dict[str, int]:
         'arbitrary_radii': len(_ARBITRARY_RADIUS.findall(source)),
         'raw_hex_colors': len(_RAW_HEX.findall(source)),
         'raw_palette_utilities': len(_RAW_PALETTE.findall(source)),
-        'semantic_border_utilities': len(_SEMANTIC_BORDER.findall(source)),
+        'semantic_border_utilities': (
+            0
+            if relative in _APPROVED_SEMANTIC_BORDER_COMPONENTS
+            else len(_SEMANTIC_BORDER.findall(source))
+        ),
         'page_local_compact_status_labels': _count_page_local_compact_status_labels(
             relative, source
         ),

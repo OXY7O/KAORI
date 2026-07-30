@@ -46,7 +46,7 @@
                          hx-trigger="revealed"
                          hx-target="this"
                          hx-swap="outerHTML">
-                        {% with title="Cluster Health Summary", description="Preparing per-cluster health, metric, and alert source signals.", icon="heart-pulse" %}
+                        {% with title="Cluster Health Summary", description="Preparing per-cluster health, metric, and alert source signals.", icon="heart-pulse", loading_bar_id="dashboard-cluster-health-loading" %}
                             {% include "dashboards/kubernetes/partials/_section_loading.html" %}
                         {% endwith %}
                     </div>
@@ -57,6 +57,7 @@
                         </div>
                         <div class="{{ peer_content_grid.column_classes('secondary') }}">
                             <div id="dashboard-data-freshness"
+                                 class="h-full w-full"
                                  hx-get="{{ url_for('kubernetes_dashboard.section', section='data_freshness') }}?{{ dashboard_cluster_query }}"
                                  hx-trigger="revealed"
                                  hx-target="this"
@@ -80,6 +81,7 @@
                     <div class="{{ peer_content_grid.layout_classes() }}">
                         <div class="{{ peer_content_grid.column_classes('primary') }}">
                             <div id="dashboard-capacity-snapshot"
+                                 class="h-full w-full"
                                  hx-get="{{ url_for('kubernetes_dashboard.section', section='capacity_snapshot') }}?{{ dashboard_cluster_query }}"
                                  hx-trigger="revealed"
                                  hx-target="this"
@@ -91,6 +93,7 @@
                         </div>
                         <div class="{{ peer_content_grid.column_classes('secondary') }}">
                             <div id="dashboard-forecast-risk"
+                                 class="h-full w-full"
                                  hx-get="{{ url_for('kubernetes_dashboard.section', section='forecast_risk') }}?{{ dashboard_cluster_query }}"
                                  hx-trigger="revealed"
                                  hx-target="this"
@@ -124,6 +127,7 @@
                     <div class="{{ peer_content_grid.layout_classes() }}">
                         <div class="{{ peer_content_grid.column_classes('primary') }}">
                             <div id="dashboard-alerts-summary"
+                                 class="h-full w-full"
                                  hx-get="{{ url_for('kubernetes_dashboard.section', section='alerts_summary') }}?{{ dashboard_cluster_query }}"
                                  hx-trigger="revealed"
                                  hx-target="this"

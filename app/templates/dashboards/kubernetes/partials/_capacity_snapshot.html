@@ -1,3 +1,5 @@
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/operational_flow_steps.html" as operational_flow_steps %}
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
@@ -8,7 +10,8 @@
     id='dashboard-capacity-snapshot',
     action_href=url_for('analytics.capacity'),
     action_label='View Capacity',
-    body_classes='p-5'
+    body_classes='p-5',
+    extra_classes='h-full'
 ) %}
     {% if not dashboard.selected_cluster_id %}
         {% set blocked_state_icon = 'server-off' %}
@@ -71,6 +74,30 @@
                         <p class="text-xs font-semibold text-content-primary">Recommended Action</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">{{ dashboard.capacity_snapshot.recommended_action }}</p>
                     </div>
+                </div>
+            </div>
+            {% set capacity_action_rows = [
+                [
+                    ('scan-search', 'Validate', 'Confirm cluster scope and snapshot freshness'),
+                    ('gauge', 'Assess', 'Review utilization, headroom, and forecast risk'),
+                    ('list-filter', 'Prioritize', 'Identify the node or workload driving pressure')
+                ],
+                [
+                    ('wrench', 'Act', 'Apply the approved capacity or workload adjustment'),
+                    ('circle-check-big', 'Verify', 'Confirm headroom and projected risk improve'),
+                    ('clipboard-check', 'Record', 'Capture the change and operational evidence')
+                ]
+            ] %}
+            {{ operational_callout.render(
+                'Capacity Action Flow',
+                'Turn the current recommendation into a controlled change and verification sequence.',
+                icon='list-checks',
+                tone='info'
+            ) }}
+            <div>
+                <p class="text-xs font-semibold text-content-muted">Recommended Capacity Action Flow</p>
+                <div class="mt-3">
+                    {{ operational_flow_steps.render(capacity_action_rows, aria_label='Recommended Capacity Action Flow') }}
                 </div>
             </div>
         </div>

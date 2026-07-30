@@ -3,7 +3,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% set pagination = dashboard.cluster_health_pagination %}
-{% set result_summary = 'Showing ' ~ pagination.start_item ~ '–' ~ pagination.end_item ~ ' of ' ~ pagination.total_items ~ ' clusters. Committed worker snapshots are used when available.' %}
+{% set result_summary = 'Showing ' ~ pagination.start_item ~ '–' ~ pagination.end_item ~ ' of ' ~ pagination.total_items ~ ' Clusters. Committed worker snapshots are used when available.' %}
 {% call operational_section_card.render(
     'Cluster Health Summary',
     result_summary,
@@ -11,6 +11,8 @@
     id='dashboard-cluster-health-section',
     action_href=url_for('integrations.kubernetes'),
     action_label='Open Cluster List',
+    loading_bar_id='dashboard-cluster-health-loading',
+    loading_bar_label='Cluster Health Loading',
     body_classes='p-0'
 ) %}
     <div class="overflow-x-auto">
@@ -106,7 +108,7 @@
         <footer class="flex flex-col gap-3 border-t border-outline-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <p class="text-xs text-content-muted">
-                    Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} clusters
+                    Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} Clusters
                 </p>
                 <div class="flex items-center gap-2">
                     <input id="cluster-health-scope" type="hidden" name="cluster_id" value="{{ dashboard.selected_cluster_id or '' }}" />
@@ -120,7 +122,8 @@
                             hx-swap="outerHTML"
                             hx-include="#cluster-health-scope, #cluster-health-page-reset"
                             hx-trigger="change"
-                            hx-disabled-elt="this">
+                            hx-disabled-elt="this"
+                            hx-indicator="#dashboard-cluster-health-loading">
                         {% for size in [5, 10, 25, 50] %}
                             <option value="{{ size }}" {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>
                         {% endfor %}
@@ -137,6 +140,7 @@
                             hx-target="#dashboard-cluster-health-section"
                             hx-swap="outerHTML"
                             hx-disabled-elt="this"
+                            hx-indicator="#dashboard-cluster-health-loading"
                             class="{{ pagination_ui.navigation_classes() }}">
                         <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
                         Previous
@@ -154,6 +158,7 @@
                             hx-target="#dashboard-cluster-health-section"
                             hx-swap="outerHTML"
                             hx-disabled-elt="this"
+                            hx-indicator="#dashboard-cluster-health-loading"
                             class="{{ pagination_ui.navigation_classes() }}">
                         Next
                         <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
