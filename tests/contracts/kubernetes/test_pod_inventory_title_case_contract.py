@@ -4,36 +4,35 @@ ROOT = Path(__file__).resolve().parents[3]
 
 
 def read(rel: str) -> str:
-    return (ROOT / rel).read_text(encoding="utf-8")
+    return (ROOT / rel).read_text(encoding='utf-8')
 
 
-def test_pod_inventory_summary_copy_is_title_case_without_periods() -> None:
-    source = read("app/templates/inventory/pods/partials/_summary_cards.html")
-    expected = [
-        "Pods In The Current Result",
-        "Pods Currently In Running Phase",
-        "Distinct Container Images Observed",
-        "Container Image References Across Pods",
-        "Pods Waiting For Scheduling Or Startup",
-        "Pods Requiring Runtime Investigation",
-    ]
-    for text in expected:
-        assert text in source
-        assert f"{text}." not in source
+def test_pod_inventory_posture_copy_uses_canonical_sentence_case() -> None:
+    source = read('app/templates/inventory/pods/partials/_summary_cards.html')
+
+    assert 'Pod Runtime Posture' in source
+    assert 'Runtime exceptions, completion evidence, restart activity, and image diversity' in source
+    assert 'Pods In The Current Result' not in source
+    assert 'Running Coverage' not in source
 
 
-def test_pod_inventory_footer_uses_title_case_count_label() -> None:
-    source = read("app/templates/inventory/pods/partials/_table_content.html")
-    assert "</span> of <span" in source
+def test_pod_inventory_footer_uses_resource_aware_count_and_rows_label() -> None:
+    source = read('app/templates/inventory/pods/partials/_table_content.html')
+
     assert "'Pod' if pagination.total_items == 1 else 'Pods'" in source
-    assert "</span> Of <span" not in source
+    assert 'for="pods-per-page"' in source
+    assert '>Rows</label>' in source
+    assert 'hx-target="#pods-inventory-scope"' in source
+    assert "value=\"inventory_scope\"" in source
 
 
-def test_pod_detail_removes_requested_guidance_boxes() -> None:
-    source = read("app/templates/inventory/pods/partials/_pod_detail_content.html")
-    assert "info_box('Network Identity'" not in source
-    assert "Pod IP identifies the Pod; Host IP identifies its node." not in source
-    assert "info_box('Snapshot Boundary'" not in source
-    assert "Conditions are snapshot data; history remains in Analytics." not in source
-    assert "Placement & Network" in source
-    assert "Pod Configuration" in source
+def test_pod_detail_uses_canonical_section_names_and_operational_context() -> None:
+    source = read('app/templates/inventory/pods/partials/_pod_detail_content.html')
+
+    assert 'Placement & Network' in source
+    assert 'Pod Specification' in source
+    assert 'Container Runtime' in read('app/templates/components/container_runtime_collection.html')
+    assert 'Volumes & Resource References' in source
+    assert 'Technical Metadata' not in source  # labels and annotations are named explicitly
+    assert 'Committed Snapshot Boundary' in source
+    assert 'pod.operational_context.title' in source

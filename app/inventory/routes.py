@@ -526,13 +526,22 @@ def pods():
     if namespace and namespace not in namespaces:
         namespace = ''
 
-    pod_statuses = get_pod_filter_statuses(cluster_id=cluster_id, namespace=namespace)
     owner_types = get_pod_filter_owner_types(cluster_id=cluster_id, namespace=namespace)
-    nodes = get_pod_filter_nodes(cluster_id=cluster_id, namespace=namespace)
-    if status and status not in pod_statuses:
-        status = ''
     if owner_type and owner_type not in owner_types:
         owner_type = ''
+
+    pod_statuses = get_pod_filter_statuses(
+        cluster_id=cluster_id,
+        namespace=namespace,
+        owner_type=owner_type,
+    )
+    nodes = get_pod_filter_nodes(
+        cluster_id=cluster_id,
+        namespace=namespace,
+        owner_type=owner_type,
+    )
+    if status and status not in pod_statuses:
+        status = ''
     if node and node not in nodes:
         node = ''
 
@@ -550,6 +559,10 @@ def pods():
     inventory['pod_statuses'] = pod_statuses
     inventory['owner_types'] = owner_types
     inventory['nodes'] = nodes
+    inventory['scope_label'] = next(
+        (cluster.name for cluster in clusters if str(cluster.id) == str(cluster_id)),
+        'All Clusters',
+    )
 
     return render_template(
         _inventory_template('pods'),

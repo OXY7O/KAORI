@@ -590,19 +590,6 @@
     "app/templates/inventory/nodes/partials/_node_detail_content.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/inventory/pods/partials/_hero.html": {
-      "arbitrary_text_sizes": 4
-    },
-    "app/templates/inventory/pods/partials/_pod_detail_content.html": {
-      "arbitrary_text_sizes": 2,
-      "semantic_border_utilities": 1
-    },
-    "app/templates/inventory/pods/partials/_summary_cards.html": {
-      "arbitrary_text_sizes": 5,
-      "arbitrary_tracking": 5,
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 2
-    },
     "app/templates/inventory/services/partials/_hero.html": {
       "arbitrary_text_sizes": 4
     },

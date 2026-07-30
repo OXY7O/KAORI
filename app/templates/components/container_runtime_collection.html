@@ -1,0 +1,66 @@
+{% import "components/table.html" as table_ui %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/technical_value.html" as technical_value %}
+{% import "components/details/_detail_content.html" as detail %}
+{% macro render(containers, title='Container Runtime', description='Current regular, init, and ephemeral container runtime evidence.', icon='container') -%}
+    <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card">
+        <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3.5">
+            <div class="flex items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                </span>
+                <div>
+                    <h4 class="text-sm font-semibold text-content-primary">{{ title }}</h4>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+                </div>
+            </div>
+            {{ table_label.metadata_label(containers|length ~ ' ' ~ ('Container' if containers|length == 1 else 'Containers')) }}
+        </header>
+        {% if containers %}
+            <div class="overflow-x-auto">
+                <table class="{{ table_ui.table_classes('min-w-[68rem]') }}">
+                    <thead class="{{ table_ui.head_classes() }}">
+                        <tr>
+                            <th class="{{ table_ui.header_cell_classes() }}">Container</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Kind</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Runtime State</th>
+                            <th class="{{ table_ui.header_cell_classes() }} min-w-[22rem]">Image</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Restart Activity</th>
+                            <th class="{{ table_ui.header_cell_classes() }}">Timing</th>
+                        </tr>
+                    </thead>
+                    <tbody class="{{ table_ui.body_classes() }}">
+                        {% for container in containers %}
+                            <tr class="{{ table_ui.row_classes() }}">
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    <p class="text-sm font-semibold text-content-primary">{{ container.name }}</p>
+                                    {% if container.reason %}<p class="mt-0.5 max-w-[16rem] break-words text-xs leading-5 text-content-muted">{{ container.reason }}</p>{% endif %}
+                                    {% if container.exit_code is not none %}<p class="text-xs leading-5 text-content-muted">Exit Code {{ container.exit_code }}</p>{% endif %}
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(container.kind) }}</td>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    {{ table_label.status_indicator_label(container.runtime_state_label, container.runtime_state_tone) }}
+                                    {% if container.state and container.state != container.runtime_state_label %}<p class="mt-1 text-xs leading-5 text-content-muted">Kubernetes State · {{ container.state }}</p>{% endif %}
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    {{ technical_value.render(container.image or 'Not Reported', break_all=true) }}
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Pull Policy · {{ container.pull_policy or 'Not Reported' }}</p>
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    <span class="text-sm font-medium tabular-nums text-content-primary">{{ container.restart_activity }}</span>
+                                </td>
+                                <td class="{{ table_ui.cell_classes() }}">
+                                    {% if container.started_at_value %}<p class="text-xs leading-5 text-content-secondary">Started {{ container.started_at_value|user_datetime }}</p>{% endif %}
+                                    {% if container.finished_at_value %}<p class="text-xs leading-5 text-content-secondary">Finished {{ container.finished_at_value|user_datetime }}</p>{% endif %}
+                                    {% if not container.started_at_value and not container.finished_at_value %}<span class="text-xs text-content-muted">Not Reported</span>{% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="p-4">{{ detail.empty_evidence('Container Runtime Not Reported', 'Container runtime evidence is not present in the committed inventory snapshot.', icon) }}</div>
+        {% endif %}
+    </section>
+{%- endmacro %}

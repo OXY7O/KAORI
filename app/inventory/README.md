@@ -85,9 +85,9 @@ All resource inventory pages use the shared KAORI table block, loading bar, filt
 ## Presentation Contracts
 
 - Inventory row identity icons are reserved for Cluster identity, shared Namespace identity, and section-level context. Workload, Pod, owner, role, status, condition, label, and annotation values remain text-only unless an icon materially improves identification.
-- Phase, readiness, restart, and lifecycle states may use compact semantic labels without icons. Pod restart tone is Normal at `0`, Warning at `1–4`, and Critical at `5+`, matching the canonical high-restart rule.
+- Phase and readiness are separate evidence. Pod operational state uses Ready, Starting, Not Ready, Failed, Completed, or Unknown. Restart counts remain cumulative factual values unless a time-windowed signal exists.
 - Kubernetes labels and annotations use compact wrap-safe text labels without decorative icons. Long annotation values must wrap inside the card boundary.
-- Image policy, volume type, and mounted-container names use regular-weight text. Workload/Pod namespace and primary operational values use semibold text for scanning consistency.
+- Image pull policy, QoS, restart policy, DNS policy, host network, security-context presence, selectors, and tolerations remain factual evidence until an explicit governance policy evaluates them. Volume type is metadata and runtime state remains semantic.
 - Topology detail status values are normalized to Title Case before presentation.
 
 
@@ -178,3 +178,7 @@ Workload Inventory follows the canonical Inventory Resource Page Pattern. The he
 ### Inventory detail density and Rows behavior
 
 Namespace and Workload details use the shared Adaptive Detail Stacks contract from `components/details/_detail_content.html`. Natural-height cards replace equal-height rows when evidence volumes differ. The Node, Namespace, and Workload Rows selectors refresh their owning inventory scope so the selected page size remains synchronized with subsequent filter requests. Resource filter forms must use local bubbled `change` handling rather than a global `from:select` listener.
+
+## Pod Inventory Reference Pattern
+
+Pod Inventory is the fourth Inventory Resource Page reference. It uses Pod Runtime Posture, a compact grouped table, Adaptive Detail Stacks, Container Runtime Collection, reference-only Related Resource Collection rows, and Technical Metadata Collection. Pod page-size changes refresh `#pods-inventory-scope`, and owner type constrains available Phase and Node filters.

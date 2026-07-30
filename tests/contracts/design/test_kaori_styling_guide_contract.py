@@ -293,3 +293,21 @@ def test_adaptive_detail_density_and_page_size_ownership_are_documented() -> Non
     assert 'detail.evidence_grid(...)' in detail_contract
     assert 'macro evidence_grid' in shared_detail
     assert "{{ 'h-full' if stretch else '' }}" in shared_detail
+
+
+def test_pod_runtime_components_and_pattern_are_documented() -> None:
+    guide = _read('docs/design/KAORI_STYLING_GUIDE.md')
+    design_readme = _read('docs/design/README.md')
+    runtime_contract = _read('docs/design/components/CONTAINER_RUNTIME_COLLECTION.md')
+    pod_pattern = _read('docs/design/patterns/KUBERNETES_POD_INVENTORY.md')
+    runtime_component = _read('app/templates/components/container_runtime_collection.html')
+    related_component = _read('app/templates/components/related_resource_collection.html')
+
+    assert 'Pod Runtime and Container Evidence' in guide
+    assert 'Ready, Starting, Not Ready, Failed, Completed, and Unknown' in guide
+    assert 'components/CONTAINER_RUNTIME_COLLECTION.md' in design_readme
+    assert 'patterns/KUBERNETES_POD_INVENTORY.md' in design_readme
+    assert 'terminated exit code `0` is Completed' in runtime_contract
+    assert 'Pod | Scope | Runtime State | Placement | Ownership & Activity | Details' in pod_pattern
+    assert 'table_label.status_indicator_label(container.runtime_state_label' in runtime_component
+    assert '{% if resource.status %}' in related_component

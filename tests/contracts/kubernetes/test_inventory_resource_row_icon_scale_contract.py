@@ -35,7 +35,7 @@ def test_namespaced_inventory_tables_use_shared_namespace_identity() -> None:
 
     for resource in NAMESPACED_RESOURCE_TABLES:
         content = _table(resource)
-        if resource == 'workloads':
+        if resource in {'workloads', 'pods'}:
             assert 'table_ui.namespaced_scope_identity(' in content
         else:
             assert 'table_ui.namespace_identity(' in content, resource
@@ -64,14 +64,14 @@ def test_workload_resource_cell_uses_namespaced_scope_and_operational_state() ->
     assert '{{ workload.runtime_primary }}' in content
 
 
-def test_pod_resource_cell_uses_namespace_identity_and_semantic_phase() -> None:
+def test_pod_resource_cell_uses_namespaced_scope_and_runtime_posture() -> None:
     content = _table('pods')
 
-    assert 'data-lucide="package"' not in content
-    assert 'table_ui.namespace_identity(pod.namespace)' in content
-    assert "metadata_label(pod.namespace" not in content
-    assert "status_label(pod.status or 'Unknown', phase_tone)" in content
-    assert 'font-semibold leading-5 text-content-primary' in content
-    assert 'phase_icon' not in content
-    assert 'ready_icon' not in content
-    assert 'restart_tone' in content
+    assert 'table_ui.namespaced_scope_identity(' in content
+    assert "table_ui.title_cell(pod.name, pod.identity_supporting, 'package')" in content
+    assert 'table_label.status_indicator_label(pod.operational_state_label, pod.operational_state_tone)' in content
+    assert '{{ pod.state_evidence }}' in content
+    assert '{{ pod.owner_display }}' in content
+    assert '{{ pod.activity_secondary }}' in content
+    assert 'phase_tone' not in content
+    assert 'restart_tone' not in content

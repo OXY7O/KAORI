@@ -42,3 +42,7 @@ Namespace Inventory is the second canonical implementation. It uses Namespace Co
 ## Workload implementation
 
 Workload Inventory is the third canonical implementation. It separates semantic operational posture from type-specific factual state, uses a compact namespaced table, Related Resource Collection for associated Pods, and neutral factual treatment for workload configuration.
+
+## Pod implementation
+
+Pod Inventory is the fourth canonical implementation. It separates operational state from Kubernetes phase/readiness evidence, uses the shared Container Runtime Collection, exposes configuration and storage references, and treats Pod configuration as factual evidence until an explicit policy evaluates it.

@@ -582,3 +582,18 @@ Required rules:
 - do not add fixed `min-height` values to hide content imbalance.
 
 Inventory page-size controls must refresh the owning `*-inventory-scope` with `outerHTML`, not only the table body. This keeps the filter form's hidden `per_page` value synchronized. Filter forms listen to their own bubbled `change` events and scoped search input events; do not use a global `change from:select` trigger that can capture the separate Rows selector.
+
+## 21. Pod Runtime and Container Evidence
+
+Pod Inventory follows `patterns/KUBERNETES_POD_INVENTORY.md`.
+
+- Separate semantic operational state from Kubernetes phase and readiness evidence.
+- Use Ready, Starting, Not Ready, Failed, Completed, and Unknown for Pod posture.
+- Running is not equivalent to Ready; every regular container must be Ready.
+- Succeeded is Completed, not a currently running healthy Pod.
+- Restart counts are cumulative factual values unless a time-windowed signal exists.
+- Use `container_runtime_collection.html` for regular, init, and ephemeral container runtime rows.
+- A terminated init container with exit code `0` is Completed; non-zero termination is Failed.
+- Related Resource Collection may omit status for ConfigMap, Secret, and PVC references.
+- QoS, restart policy, DNS policy, host network, security-context presence, pull policy, selectors, and tolerations remain neutral factual evidence until an explicit governance policy evaluates them.
+- Pod Rows selectors refresh the owning inventory scope, matching Node, Namespace, and Workload page-size ownership.

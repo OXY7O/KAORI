@@ -90,3 +90,8 @@ Domain-specific UI rules live under `docs/modules/` or the owning module README.
 
 - `audits/KUBERNETES_NAMESPACE_INVENTORY_STYLING_AUDIT_2026_07.md` — Namespace Inventory audit record.
 - `audits/KUBERNETES_WORKLOAD_INVENTORY_STYLING_AUDIT_2026_07.md` — Workload Inventory audit record.
+
+## Pod Inventory
+
+- [Container Runtime Collection](components/CONTAINER_RUNTIME_COLLECTION.md)
+- [Kubernetes Pod Inventory](patterns/KUBERNETES_POD_INVENTORY.md)

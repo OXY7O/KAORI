@@ -21,7 +21,7 @@
                             <p class="mt-1 text-xs leading-5 text-content-muted">{{ resource.supporting_primary }}</p>
                             <p class="text-xs leading-5 text-content-muted">{{ resource.supporting_secondary }}</p>
                         </div>
-                        <div class="shrink-0">{{ table_label.status_indicator_label(resource.status, resource.status_tone) }}</div>
+                        {% if resource.status %}<div class="shrink-0">{{ table_label.status_indicator_label(resource.status, resource.status_tone or 'unknown') }}</div>{% endif %}
                     </article>
                 {% endfor %}
             </div>
