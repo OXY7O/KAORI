@@ -68,7 +68,7 @@
                         {{ detail.subsection('Placement Constraints') }}
                         {{ detail.evidence_grid(pod.placement_evidence_rows, columns=2) }}
                     </div>
-                    <div class="mt-4 grid gap-4 lg:grid-cols-2">
+                    <div class="mt-4 grid items-start gap-4 lg:grid-cols-2">
                         {{ metadata_collection.render('Node Selectors', pod.node_selectors, 'binary', 'No Node Selectors', 'No node selector was declared in the committed Pod specification.', 'Selectors remain factual scheduling evidence until evaluated against an explicit policy.') }}
                         {{ metadata_collection.render('Tolerations', pod.toleration_entries, 'shield', 'No Tolerations', 'No toleration was declared in the committed Pod specification.', 'Tolerations remain factual scheduling evidence until evaluated against an explicit policy.') }}
                     </div>
@@ -104,7 +104,7 @@
                                     <tr class="{{ table_ui.row_classes() }}">
                                         <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ volume.name }}</span></td>
                                         <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(volume.type) }}</td>
-                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(volume.source, break_all=true) }}</td>
+                                        <td class="{{ table_ui.cell_classes() }}">{{ technical_value.render(volume.source, break_all=true, size='body') }}</td>
                                         <td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-medium text-content-primary">{{ volume.mounted_by|join(', ') if volume.mounted_by else 'Not Mounted' }}</span></td>
                                     </tr>
                                 {% endfor %}

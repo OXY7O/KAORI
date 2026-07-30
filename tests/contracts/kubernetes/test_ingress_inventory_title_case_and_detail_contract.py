@@ -1,75 +1,61 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-SUMMARY = ROOT / "app/templates/inventory/ingresses/partials/_summary_cards.html"
-TABLE = ROOT / "app/templates/inventory/ingresses/partials/_table_content.html"
-DETAIL = ROOT / "app/templates/inventory/ingresses/partials/_ingress_detail_content.html"
 
 
-def read(path: Path) -> str:
-    return path.read_text(encoding="utf-8")
+def read(relative: str) -> str:
+    return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_ingress_inventory_copy_uses_requested_display_capitalization() -> None:
-    summary = read(SUMMARY)
-    table = read(TABLE)
+def test_ingress_inventory_uses_canonical_resource_page_pattern() -> None:
+    hero = read('app/templates/inventory/ingresses/partials/_hero.html')
+    summary = read('app/templates/inventory/ingresses/partials/_summary_cards.html')
+    table = read('app/templates/inventory/ingresses/partials/_table_content.html')
 
-    expected = [
-        "Ingress Resources in the Current Result",
-        "Ingresses with TLS Configuration",
-        "Unique Declared Hostnames",
-        "Namespaces Publishing Ingress Routes",
-        "Unique Hostnames in the Current Scope",
-        "Ingresses Requiring Encryption Review",
-    ]
-    for copy in expected:
-        assert copy in summary
-
-    removed = [
-        "Ingress resources in the current result.",
-        "Ingresses with TLS configuration.",
-        "Unique declared hostnames.",
-        "Namespaces publishing ingress routes.",
-        "Unique hostnames in the current scope.",
-        "Ingresses requiring encryption review.",
-    ]
-    for copy in removed:
-        assert copy not in summary
-
-    assert "{{ 'Ingress' if pagination.total_items == 1 else 'Ingresses' }}" in table
-    assert "{{ 'ingress' if pagination.total_items == 1 else 'ingresses' }}" not in table
+    assert 'page_hero.context_card(' in hero
+    assert 'Ingress Publication Posture' in summary
+    assert 'posture_grid.render(metrics, columns=3)' in summary
+    for column in ('Ingress', 'Scope', 'Publication', 'TLS References', 'Routing', 'Details'):
+        assert column in table
+    assert 'table_ui.namespaced_scope_identity(' in table
+    assert "open_label='View Details'" in table
 
 
-def test_ingress_detail_cards_share_tallest_height_and_detail_label_scale() -> None:
-    detail = read(DETAIL)
+def test_ingress_detail_uses_adaptive_stacks_and_factual_tls_evidence() -> None:
+    detail = read('app/templates/inventory/ingresses/partials/_ingress_detail_content.html')
+    service = read('app/inventory/resources/ingresses.py')
 
-    assert "grid items-stretch gap-4 p-5 md:grid-cols-2 xl:grid-cols-4" in detail
-    assert "min-h-[30rem]" not in detail
-    assert "min-h-[32rem]" not in detail
-    assert "min-h-[34rem]" not in detail
+    assert 'data-kaori-detail-density="adaptive-stacks"' in detail
+    assert 'detail.inline_detail_shell_classes()' in detail
+    assert 'TLS Secret References' in detail
+    assert 'does not validate certificate existence, validity, expiry, or hostname coverage' in detail
+    assert 'Open Declared Host' in detail
+    assert 'Reference State' in detail
+    assert "'Resolve Backend References'" in service
+    assert "'TLS Reference Not Configured'" in service
+    assert 'No TLS Reference' in detail
+    assert 'TLS review' not in detail
+    assert 'TLS covered' not in detail
 
-    assert detail.count("badge_size='detail'") >= 4
-    assert "table_label.status_label(ingress_class_value, ingress_class_tone, none, 'detail')" in detail
-    assert "detail.status_row('Ingress Class', ingress_class_value, ingress_class_tone, none, 'detail')" in detail
-    assert "normalized_ingress_class == 'nginx'" in detail
+
+def test_ingress_backend_services_resolve_against_committed_service_inventory() -> None:
+    service = read('app/inventory/resources/ingresses.py')
+    detail = read('app/templates/inventory/ingresses/partials/_ingress_detail_content.html')
+
+    assert 'filter_current_generation(ServiceInventory.query, ServiceInventory)' in service
+    assert "'reference_state': state" in service
+    assert "'Resolved'" in service
+    assert "'Missing'" in service
+    assert "related_collection.render('Backend Services'" in detail
+    assert "url_for('inventory.services'" in detail
 
 
-def test_ingress_detail_boundary_tips_and_requested_label_icons_are_removed() -> None:
-    detail = read(DETAIL)
+def test_ingress_page_size_refreshes_owning_scope() -> None:
+    table = read('app/templates/inventory/ingresses/partials/_table_content.html')
+    card = read('app/templates/inventory/ingresses/partials/_table_card.html')
 
-    for removed in [
-        "Exposure Boundary",
-        "TLS Boundary",
-        "Routing Boundary",
-        "Addresses appear after the controller publishes status.",
-        "Secret references only; validity remains in TLS Governance.",
-        "Routes show configuration, not traffic or latency.",
-    ]:
-        assert removed not in detail
-
-    assert "metadata_label(table_label.count_text(ingress.backend_count, 'Route'), none, false, 'detail')" in detail
-    assert "metadata_label(table_label.count_text(ingress.annotations|length, 'Annotation'), none, false, 'detail')" in detail
-    assert "label_icon = none if key == 'app.kubernetes.io/instance' else 'tag'" in detail
-
-    assert "metadata_label(table_label.count_text(ingress.backend_count, 'Route'), 'route')" not in detail
-    assert "metadata_label(table_label.count_text(ingress.annotations|length, 'Annotation'), 'braces')" not in detail
+    assert 'hx-target="#ingresses-inventory-scope"' in table
+    assert 'name="partial_mode" value="inventory_scope"' in table
+    assert '>Rows</label>' in table
+    assert "endpoint='inventory.ingresses'" in table
+    assert "hx-trigger=\"change, keyup changed delay:500ms from:find input[name='search']\"" in card

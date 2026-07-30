@@ -311,3 +311,13 @@ def test_pod_runtime_components_and_pattern_are_documented() -> None:
     assert 'Pod | Scope | Runtime State | Placement | Ownership & Activity | Details' in pod_pattern
     assert 'table_label.status_indicator_label(container.runtime_state_label' in runtime_component
     assert '{% if resource.status %}' in related_component
+
+
+def test_network_inventory_pattern_is_registered() -> None:
+    guide = (ROOT / 'docs/design/KAORI_STYLING_GUIDE.md').read_text(encoding='utf-8')
+    pattern = (ROOT / 'docs/design/patterns/KUBERNETES_NETWORK_INVENTORY.md').read_text(encoding='utf-8')
+
+    assert 'Service and Ingress Network Inventory' in guide
+    assert 'EndpointSlice first' in guide
+    assert 'No TLS reference remains neutral inventory evidence' in guide
+    assert 'Kubernetes Network Inventory Pattern' in pattern

@@ -1,289 +1,114 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/details/_detail_content.html" as detail %}
-{% import "components/detail_object.html" as detail_object %}
-{% import "components/detail_tip.html" as inventory_tip %}
-{% macro info_box(title, message, icon='info', tone='brand', equal_height=false) -%}
-    {{ inventory_tip.info_box(title, message, icon, tone, equal_height) }}
-{%- endmacro %}
-{% set endpoint_total = service.ready_endpoint_count + service.not_ready_endpoint_count %}
-{% if service.endpoints_reported %}
-    {% if service.not_ready_endpoint_count > 0 %}
-        {% set endpoint_posture = "Needs Review" %}{% set endpoint_tone = "warning" %}
-    {% else %}
-        {% set endpoint_posture = "Ready" %}{% set endpoint_tone = "normal" %}
-    {% endif %}
-{% else %}
-    {% set endpoint_posture = "Not Reported" %}{% set endpoint_tone = "unknown" %}
-{% endif %}
-{% set normalized_service_type = service.type|default('', true)|lower %}
-{% set service_type_tone = 'normal' if normalized_service_type in ['clusterip', 'headless'] else ('warning' if normalized_service_type == 'nodeport' else ('info' if normalized_service_type in ['loadbalancer', 'externalname'] else 'unknown')) %}
-{% set normalized_ip_policy = service.ip_family_policy|default('', true)|lower %}
-{% set ip_policy_tone = 'normal' if normalized_ip_policy == 'singlestack' else ('info' if normalized_ip_policy in ['preferdualstack', 'requiredualstack'] else 'unknown') %}
-{% set normalized_session_affinity = service.session_affinity|default('', true)|lower %}
-{% set session_affinity_tone = 'info' if normalized_session_affinity == 'clientip' else 'unknown' %}
-{% set normalized_internal_traffic = service.internal_traffic_policy|default('', true)|lower %}
-{% set internal_traffic_tone = 'normal' if normalized_internal_traffic == 'cluster' else ('info' if normalized_internal_traffic == 'local' else 'unknown') %}
-{% set normalized_external_traffic = service.external_traffic_policy|default('', true)|lower %}
-{% set external_traffic_tone = 'normal' if normalized_external_traffic == 'cluster' else ('info' if normalized_external_traffic == 'local' else 'unknown') %}
-<div class="bg-surface-hover px-4 py-4">
-    <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-sm">
-        <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+{% import "components/technical_metadata_collection.html" as metadata_collection %}
+{% import "components/related_resource_collection.html" as related_collection %}
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/table.html" as table_ui %}
+{% import "components/technical_value.html" as technical_value %}
+<div data-kaori-detail-variant="inline-expanded" data-kaori-detail-density="adaptive-stacks" class="bg-surface-hover px-4 py-4">
+    <div class="{{ detail.inline_detail_shell_classes() }}">
+        <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-elevated px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="network" class="h-4 w-4"></i></span>
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="network" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                        <h3 class="truncate text-sm font-semibold text-content-primary">{{ service.name }}</h3>
-                        {{ table_label.metadata_label(service.cluster_name, 'server') }}
+                        <h3 class="truncate text-base font-semibold text-content-primary">{{ service.name }}</h3>
+                        {{ table_label.metadata_label(service.cluster_name, 'building-2') }}
                         {{ table_label.metadata_label(service.namespace, 'folder-tree') }}
+                        {{ table_label.metadata_label(service.type) }}
                     </div>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Service identity, network exposure, port mappings, selectors, and endpoints from the latest inventory snapshot.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Access model, backend registration, port mapping, selected Pods, and network configuration from the committed snapshot.</p>
                 </div>
             </div>
-            <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-                {{ table_label.status_label(service.type, service_type_tone, none, 'detail') }}
-                {{ table_label.status_label(endpoint_posture, endpoint_tone, none, 'detail') }}
-            </div>
+            <div class="self-start sm:self-auto">{{ table_label.status_indicator_label(service.backend.label, service.backend.tone, size='detail') }}</div>
         </header>
-        <div class="grid items-stretch gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail.detail_card('Object Identity', 'badge-info', service.age, badge_size='detail') %}
-                {{ detail.detail_row('Cluster', service.cluster_name) }}
-                {{ detail.detail_row('Namespace', service.namespace) }}
-                {{ detail.status_row('Type', service.type, service_type_tone, none, 'detail') }}
-                {{ detail.detail_row('Generation', service.generation) }}
-                {{ detail.detail_row('Kubernetes UID', service.uid, true) }}
-                {{ detail.detail_row('Created', service.created_at|user_datetime) }}
-                {{ detail.detail_row('Collected', service.collected_at|user_datetime) }}
-                <div class="mt-auto pt-3">{{ info_box('Inventory Identity', service.type_description, 'lightbulb', 'brand', true) }}</div>
-            {% endcall %}
-            {% call detail.detail_card('Network Configuration', 'globe-2', service.cluster_ip, badge_size='detail') %}
-                {{ detail.detail_row('Cluster IP', service.cluster_ip, true) }}
-                {{ detail.detail_row('External Addresses', service.external_ips|join(', ') if service.external_ips else '-', true) }}
-                {{ detail.detail_row('External Name', service.external_name, true) }}
-                {{ detail.metadata_row('IP Families', service.ip_families|join(', ') if service.ip_families else '-') }}
-                {{ detail.status_row('IP Family Policy', service.ip_family_policy, ip_policy_tone, none, 'detail') }}
-                {{ detail.status_row('Session Affinity', service.session_affinity, session_affinity_tone, none, 'detail') }}
-                {{ detail.status_row('Internal Traffic', service.internal_traffic_policy, internal_traffic_tone, none, 'detail') }}
-                {{ detail.status_row('External Traffic', service.external_traffic_policy, external_traffic_tone, none, 'detail') }}
-                <div class="mt-auto pt-3">{{ info_box('Network Identity', 'Cluster and external addresses from the current Service specification.', 'network', 'brand', true) }}</div>
-            {% endcall %}
-            {% call detail.detail_card('Port Mapping', 'plug-zap', table_label.count_text(service.port_count, 'Port'), badge_size='detail') %}
-                {{ detail.detail_row('Port Definitions', service.port_count) }}
-                {% if service.ports %}
-                    {{ detail.detail_row('Primary Port', service.ports[0].port ~ '/' ~ service.ports[0].protocol) }}
-                    {{ detail.detail_row('Primary Target', service.ports[0].target_port) }}
-                    {{ detail.detail_row('Primary NodePort', service.ports[0].node_port or '-') }}
-                    {{ detail.detail_row('Application Protocol', service.ports[0].app_protocol) }}
-                {% else %}
-                    {{ detail.detail_row('Primary Port', 'Not Configured') }}
-                {% endif %}
-                {{ detail.detail_row('Health Check NodePort', service.health_check_node_port or '-') }}
-                <div class="mt-auto pt-3">{{ info_box('Forwarding Boundary', 'Port mappings show Service-to-target forwarding only.', 'route', 'brand', true) }}</div>
-            {% endcall %}
-            {% call detail.detail_card('Selection & Endpoints', 'scan-search', service.ready_endpoint_count ~ ' Ready', 'status', endpoint_tone, badge_size='detail') %}
-                {{ detail.detail_row('Selector Labels', service.selector|length) }}
-                {{ detail.detail_row('Selected Pods', service.pod_count) }}
-                {{ detail.detail_row('Ready Endpoints', service.ready_endpoint_count) }}
-                {{ detail.detail_row('Not-Ready Endpoints', service.not_ready_endpoint_count) }}
-                {{ detail.status_row('Endpoint Metadata', 'Reported' if service.endpoints_reported else 'Not Reported', 'normal' if service.endpoints_reported else 'unknown', none, 'detail') }}
-                {{ detail.status_row('Publish Not-Ready', 'Enabled' if service.publish_not_ready_addresses else 'Disabled', 'warning' if service.publish_not_ready_addresses else 'unknown', none, 'detail') }}
-                {% call detail_object.stack() %}
-                    {% if service.selector %}
-                        {% call detail_object.card('Service Selectors', table_label.count_text(service.selector|length, 'Label'), 'tags') %}
-                            {% for key, value in service.selector|dictsort %}
-                                {{ detail_object.stacked_row(key, value, true) }}
-                            {% endfor %}
-                        {% endcall %}
-                    {% else %}
-                        {{ detail_object.empty('No Selector Configured', 'This Service does not select Pods directly.', 'tags') }}
-                    {% endif %}
+
+        {{ detail.summary_strip([
+            ('Access Model', service.access_model, service.type),
+            ('Ports', service.port_count, 'Declared Service ports'),
+            ('Ready Endpoints', service.ready_endpoint_count, service.endpoint_source),
+            ('Selected Pods', service.pod_count, 'Selector matches')
+        ], compact=true) }}
+
+        <div class="grid items-start gap-4 p-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+            <div class="space-y-4">
+                {% call detail.detail_card('Service Identity', 'badge-info', service.age, badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.detail_row('Cluster', service.cluster_name) }}
+                    {{ detail.detail_row('Namespace', service.namespace) }}
+                    {{ detail.metadata_row('Service Type', service.type) }}
+                    {{ detail.detail_row('Age', service.age) }}
+                    {{ detail.technical_row('Kubernetes UID', service.uid) }}
+                    {{ detail.detail_row('Generation', service.generation) }}
+                    {{ detail.detail_row('Created', service.created_at|user_datetime if service.created_at else '-') }}
+                    {{ detail.detail_row('Collected', service.collected_at|user_datetime) }}
+                    <div class="mt-3">{{ operational_callout.render('Access Model Context', service.type_description, 'network', 'info') }}</div>
                 {% endcall %}
-            {% endcall %}
-        </div>
-        <div class="space-y-4 border-t border-outline-subtle p-5">
-            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
-                <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-4">
-                    <div class="flex items-center gap-3">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="plug-zap" class="h-4 w-4"></i></span>
-                        <div>
-                            <h4 class="text-sm font-semibold text-content-primary">Port Mappings</h4>
-                            <p class="mt-0.5 text-xs text-content-muted">Service ports, target ports, protocols, and NodePort assignments.</p>
-                        </div>
-                    </div>
-                    {{ table_label.metadata_label(table_label.count_text(service.port_count, 'Port')) }}
+
+                {% call detail.detail_card('Network Identity', 'globe-2', service.access_model, badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.evidence_grid([
+                        {'label': 'Cluster IP', 'value': service.cluster_ip},
+                        {'label': 'Cluster IPs', 'value': service.cluster_ips|join(', ') if service.cluster_ips else 'Not Reported'},
+                        {'label': 'External Addresses', 'value': service.external_ips|join(', ') if service.external_ips else 'Not Declared'},
+                        {'label': 'External Name', 'value': service.external_name},
+                        {'label': 'IP Families', 'value': service.ip_families|join(', ') if service.ip_families else 'Not Reported'},
+                        {'label': 'Load Balancer Class', 'value': service.load_balancer_class}
+                    ], columns=2) }}
+                {% endcall %}
+            </div>
+
+            <div class="space-y-4">
+                {% call detail.detail_card('Backend Registration', 'waypoints', service.backend.label, 'status', service.backend.tone, badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.evidence_grid([
+                        {'label': 'Registration State', 'value': service.backend.label, 'supporting': service.backend.supporting},
+                        {'label': 'Evidence Source', 'value': service.endpoint_source},
+                        {'label': 'Ready Addresses', 'value': service.ready_endpoint_count},
+                        {'label': 'Not-Ready Addresses', 'value': service.not_ready_endpoint_count},
+                        {'label': 'Selector Rules', 'value': service.selector|length},
+                        {'label': 'Selected Pods', 'value': service.pod_count}
+                    ], columns=3) }}
+                    {% if service.selector_entries %}<div class="mt-3">{{ metadata_collection.render('Service Selectors', service.selector_entries, 'scan-search', 'No Service Selectors', 'No Pod selector is declared for this Service.', 'Selectors remain factual matching evidence.', compact=true) }}</div>{% endif %}
+                {% endcall %}
+
+                {% call detail.detail_card('Traffic Configuration', 'sliders-horizontal', service.ip_family_policy, badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.evidence_grid([
+                        {'label': 'IP Family Policy', 'value': service.ip_family_policy},
+                        {'label': 'Session Affinity', 'value': service.session_affinity},
+                        {'label': 'Internal Traffic Policy', 'value': service.internal_traffic_policy},
+                        {'label': 'External Traffic Policy', 'value': service.external_traffic_policy},
+                        {'label': 'Publish Not-Ready', 'value': 'Enabled' if service.publish_not_ready_addresses else 'Disabled'},
+                        {'label': 'Health Check NodePort', 'value': service.health_check_node_port or 'Not Configured'}
+                    ], columns=2) }}
+                    <p class="mt-3 text-xs leading-5 text-content-muted">Traffic policies and publication configuration remain factual evidence until evaluated against an explicit governance policy.</p>
+                {% endcall %}
+            </div>
+
+            <section class="overflow-hidden rounded-xl border border-outline-subtle bg-surface-card xl:col-span-2">
+                <header class="flex flex-wrap items-start justify-between gap-3 border-b border-outline-subtle px-4 py-3.5">
+                    <div class="flex items-start gap-3"><span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="plug-zap" class="h-4 w-4"></i></span><div><h4 class="text-sm font-semibold text-content-primary">Port Mappings</h4><p class="mt-1 text-xs leading-5 text-content-muted">Declared Service ports, target ports, protocols, application protocols, and NodePort assignments.</p></div></div>
+                    {{ table_label.metadata_label(service.port_count ~ ' ' ~ ('Port' if service.port_count == 1 else 'Ports')) }}
                 </header>
                 {% if service.ports %}
-                    <div class="overflow-x-auto">
-                        <table class="min-w-[760px] w-full text-left text-xs text-content-secondary">
-                            <thead class="border-b border-outline-subtle bg-surface-hover text-xs font-semibold text-content-muted">
-                                <tr>
-                                    <th class="px-4 py-2.5">Name</th>
-                                    <th class="px-4 py-2.5">Protocol</th>
-                                    <th class="px-4 py-2.5">Service Port</th>
-                                    <th class="px-4 py-2.5">Target Port</th>
-                                    <th class="px-4 py-2.5">NodePort</th>
-                                    <th class="px-4 py-2.5">App Protocol</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-outline-subtle">
-                                {% for port in service.ports %}
-                                    <tr class="hover:bg-surface-hover">
-                                        <td class="px-4 py-3 font-semibold text-content-primary">{{ port.name if port.name != '-' else 'Unnamed port' }}</td>
-                                        <td class="px-4 py-3">{{ table_label.metadata_label(port.protocol) }}</td>
-                                        <td class="px-4 py-3 font-medium text-content-primary">{{ port.port or '-' }}</td>
-                                        <td class="px-4 py-3 font-medium text-content-primary">{{ port.target_port }}</td>
-                                        <td class="px-4 py-3 font-medium text-content-primary">{{ port.node_port or '-' }}</td>
-                                        <td class="px-4 py-3">{{ table_label.metadata_label(port.app_protocol) if port.app_protocol != '-' else '-' }}</td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                {% else %}
-                    <div class="p-4">{{ detail_object.empty('No Ports Configured', 'No Service port mapping is recorded.', 'plug-zap') }}</div>
-                {% endif %}
-                {% if service.ports %}{{ inventory_tip.footer('Port rows describe declared forwarding; traffic volume remains in Analytics.', 'plug-zap') }}{% endif %}
+                    <div class="overflow-x-auto"><table class="{{ table_ui.table_classes('min-w-[56rem]') }}"><thead class="{{ table_ui.head_classes() }}"><tr><th class="{{ table_ui.header_cell_classes() }}">Name</th><th class="{{ table_ui.header_cell_classes() }}">Service Port</th><th class="{{ table_ui.header_cell_classes() }}">Target Port</th><th class="{{ table_ui.header_cell_classes() }}">Protocol</th><th class="{{ table_ui.header_cell_classes() }}">NodePort</th><th class="{{ table_ui.header_cell_classes() }}">App Protocol</th></tr></thead><tbody class="{{ table_ui.body_classes() }}">{% for port in service.ports %}<tr class="{{ table_ui.row_classes() }}"><td class="{{ table_ui.cell_classes() }}"><span class="text-sm font-semibold text-content-primary">{{ port.name }}</span></td><td class="{{ table_ui.cell_classes() }}">{{ port.port }}</td><td class="{{ table_ui.cell_classes() }}">{{ port.target_port }}</td><td class="{{ table_ui.cell_classes() }}">{{ port.protocol }}</td><td class="{{ table_ui.cell_classes() }}">{{ port.node_port or '-' }}</td><td class="{{ table_ui.cell_classes() }}">{{ port.app_protocol }}</td></tr>{% endfor %}</tbody></table></div>
+                {% else %}<div class="p-4">{{ detail.empty_evidence('No Ports Reported', 'No Service port definition is represented in the committed snapshot.', 'plug-zap') }}</div>{% endif %}
             </section>
-            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
-                <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-4">
-                    <div class="flex items-center gap-3">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="waypoints" class="h-4 w-4"></i></span>
-                        <div>
-                            <h4 class="text-sm font-semibold text-content-primary">Endpoint Addresses</h4>
-                            <p class="mt-0.5 text-xs text-content-muted">Ready and not-ready backend addresses registered for this Service.</p>
-                        </div>
-                    </div>
-                    {{ table_label.metadata_label(table_label.count_text(endpoint_total, 'Endpoint')) }}
-                </header>
-                <div class="p-4">
-                    {% if service.endpoints or service.not_ready_endpoints %}
-                        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                            {% for endpoint in service.endpoints %}
-                                <article class="rounded-lg border border-outline-default bg-kaori-soft p-3">
-                                    <div class="flex items-start justify-between gap-3">
-                                        <p class="truncate text-xs font-semibold text-content-primary"
-                                           title="{{ endpoint.ip }}">{{ endpoint.ip }}</p>
-                                        {{ table_label.status_label('Ready', 'normal') }}
-                                    </div>
-                                    <div class="mt-3 space-y-1.5">{{ detail_object.row('Target Kind', endpoint.target_kind) }}{{ detail_object.row('Target Name', endpoint.target_name) }}</div>
-                                </article>
-                            {% endfor %}
-                            {% for endpoint in service.not_ready_endpoints %}
-                                <article class="rounded-lg border border-outline-default bg-kaori-soft p-3">
-                                    <div class="flex items-start justify-between gap-3">
-                                        <p class="truncate text-xs font-semibold text-content-primary"
-                                           title="{{ endpoint.ip }}">{{ endpoint.ip }}</p>
-                                        {{ table_label.status_label('Not Ready', 'warning') }}
-                                    </div>
-                                    <div class="mt-3 space-y-1.5">{{ detail_object.row('Target Kind', endpoint.target_kind) }}{{ detail_object.row('Target Name', endpoint.target_name) }}</div>
-                                </article>
-                            {% endfor %}
-                        </div>
-                        {% if service.endpoints_truncated %}
-                            <p class="mt-3 text-xs text-content-muted">Showing the first 12 addresses from each endpoint state.</p>
-                        {% endif %}
-                    {% elif service.endpoints_reported %}
-                        {{ detail_object.empty('No Endpoints Registered', 'No backend address is present in the latest endpoint snapshot.', 'waypoints') }}
-                    {% else %}
-                        {{ info_box('Endpoint Metadata Unavailable', 'Restart the worker and sync the cluster again.', 'triangle-alert', 'warning') }}
-                    {% endif %}
-                </div>
-                {% if service.endpoints or service.not_ready_endpoints %}{{ inventory_tip.footer('Endpoints reflect current backend registration and readiness.', 'waypoints') }}{% endif %}
-            </section>
-            <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
-                <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-4">
-                    <div class="flex items-center gap-3">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="package-check" class="h-4 w-4"></i></span>
-                        <div>
-                            <h4 class="text-sm font-semibold text-content-primary">Selected Pods</h4>
-                            <p class="mt-0.5 text-xs text-content-muted">Pods matching the Service selector in the current inventory snapshot.</p>
-                        </div>
-                    </div>
-                    {{ table_label.metadata_label(table_label.count_text(service.pod_count, 'Pod')) }}
-                </header>
-                <div class="p-4">
-                    {% if service.pods %}
-                        <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                            {% for pod in service.pods %}
-                                {% if pod.status == 'Running' %}
-                                    {% set pod_tone = "normal" %}
-                                {% elif pod.status == 'Pending' %}
-                                    {% set pod_tone = "pending" %}
-                                {% elif pod.status == 'Failed' %}
-                                    {% set pod_tone = "critical" %}
-                                {% else %}
-                                    {% set pod_tone = "unknown" %}
-                                {% endif %}
-                                <article class="rounded-lg border border-outline-default bg-kaori-soft p-3">
-                                    <div class="flex items-start justify-between gap-3">
-                                        <p class="truncate text-xs font-semibold text-content-primary"
-                                           title="{{ pod.name }}">{{ pod.name }}</p>
-                                        {{ table_label.status_label(pod.status, pod_tone) }}
-                                    </div>
-                                    <div class="mt-3 space-y-1.5">{{ detail_object.row('Ready', pod.ready) }}{{ detail_object.row('Node', pod.node) }}{{ detail_object.row('Containers', pod.container_count) }}</div>
-                                </article>
-                            {% endfor %}
-                        </div>
-                        {% if service.pods_truncated %}
-                            <p class="mt-3 text-xs text-content-muted">Showing the first 8 selected Pods.</p>
-                        {% endif %}
-                    {% elif service.has_selector %}
-                        {{ detail_object.empty('No Matching Pods', 'No Pod matches the Service selector in the latest snapshot.', 'package-x') }}
-                    {% else %}
-                        {{ detail_object.empty('No Direct Pod Selector', 'This Service uses an external or manually managed endpoint pattern.', 'package-search') }}
-                    {% endif %}
-                </div>
-                {% if service.pods %}{{ inventory_tip.footer('Pod matches are resolved from the current Service selector.', 'package-check') }}{% endif %}
-            </section>
-            <div class="grid gap-4 xl:grid-cols-2">
-                <section class="rounded-xl border border-outline-default bg-surface-card p-4">
-                    <div class="mb-4 flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-3">
-                            <span class="flex h-8 w-8 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="tags" class="h-4 w-4"></i></span>
-                            <div>
-                                <h4 class="text-sm font-semibold text-content-primary">Service Labels</h4>
-                                <p class="mt-0.5 text-xs text-content-muted">Descriptive Kubernetes labels from the Service snapshot.</p>
-                            </div>
-                        </div>
-                        {{ table_label.metadata_label(table_label.count_text(service.labels|length, 'Label')) }}
-                    </div>
-                    {% if service.labels %}
-                        <div class="flex max-h-44 flex-wrap gap-1.5 overflow-y-auto pr-1">
-                            {% for key, value in service.labels %}{{ table_label.metadata_label(key ~ (('=' ~ value) if value not in [None, ''] else ''), none, true) }}{% endfor %}
-                        </div>
-                    {% else %}
-                        {{ info_box('No Labels Recorded', 'This Service has no recorded labels.', 'tags') }}
-                    {% endif %}
-                    {% if service.labels %}
-                        <div class="mt-4">{{ inventory_tip.tip('Labels describe the Service and support selection.', 'tags') }}</div>
-                    {% endif %}
-                </section>
-                <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
-                    <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-4">
-                        <div class="flex items-center gap-3">
-                            <span class="flex h-8 w-8 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="braces" class="h-4 w-4"></i></span>
-                            <div>
-                                <h4 class="text-sm font-semibold text-content-primary">Service Annotations</h4>
-                                <p class="mt-0.5 text-xs text-content-muted">Annotation metadata displayed as readable key-value rows.</p>
-                            </div>
-                        </div>
-                        {{ table_label.metadata_label(table_label.count_text(service.annotations|length, 'Annotation')) }}
-                    </header>
-                    {% if service.annotations %}
-                        <div class="max-h-64 overflow-y-auto">
-                            {% for key, value in service.annotations %}
-                                <div class="grid gap-2 border-b border-outline-subtle px-4 py-3 last:border-b-0 md:grid-cols-[minmax(12rem,0.8fr)_minmax(0,1.2fr)]">
-                                    <div class="break-all text-xs font-semibold leading-5 text-content-secondary">{{ key }}</div>
-                                    <div class="break-all text-xs leading-5 text-content-muted">{{ value or '-' }}</div>
-                                </div>
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="p-4">{{ info_box('No Annotations Recorded', 'This Service has no recorded annotations.', 'braces') }}</div>
-                    {% endif %}
-                    {% if service.annotations %}{{ inventory_tip.footer('Annotations may influence integrations or load balancer behavior.', 'braces') }}{% endif %}
-                </section>
+
+            <div class="xl:col-span-2 grid items-start gap-4 xl:grid-cols-2">
+                {{ related_collection.render('Endpoint Addresses', 'Registered backend addresses from EndpointSlice or Endpoints evidence.', service.endpoint_resources, service.ready_endpoint_count + service.not_ready_endpoint_count, 'waypoints', 'No Endpoint Addresses', 'No registered backend address is represented in the committed snapshot.', service.endpoints_truncated) }}
+                {{ related_collection.render('Selected Pods', 'Pods matching the Service selector in the current committed snapshot.', service.pods, service.pod_count, 'package-check', 'No Selected Pods', 'No Pod matches the Service selector, or the Service is selectorless.', service.pods_truncated, url_for('inventory.pods', cluster_id=service.cluster_id, namespace=service.namespace), 'Open Pod Inventory') }}
             </div>
-            {{ info_box('Inventory Boundary', 'This view shows snapshot data. Traffic trends remain in Analytics.', 'info') }}
+
+            <div class="grid items-start gap-4 xl:col-span-2 xl:grid-cols-2">
+                {{ metadata_collection.render('Service Labels', service.labels, 'tags', 'No Service Labels', 'No Service labels were reported in the committed snapshot.', 'Labels remain factual identity and selection metadata.') }}
+                {{ metadata_collection.render('Service Annotations', service.annotations, 'notebook-tabs', 'No Service Annotations', 'No Service annotations were reported in the committed snapshot.', 'Annotations may influence controller and integration behavior.') }}
+            </div>
+
+            <section class="space-y-3 xl:col-span-2">
+                <h4 class="text-sm font-semibold text-content-primary">Operational Context</h4>
+                <div class="grid gap-3 lg:grid-cols-2">
+                    {{ operational_callout.render('Committed Snapshot Boundary', 'This detail reports Service configuration and registered backend evidence. It does not prove application reachability, traffic health, or public exposure.', 'database', 'info') }}
+                    {{ operational_callout.render(service.operational_context.title, service.operational_context.description, service.operational_context.icon, service.operational_context.tone, 'semantic') }}
+                </div>
+            </section>
         </div>
     </div>
 </div>

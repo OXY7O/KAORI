@@ -109,6 +109,7 @@ def _count_copied_standard_surface_shells(relative: str, source: str) -> int:
         'app/templates/components/operational_section_card.html',
         'app/templates/components/snapshot_context_bar.html',
         'app/templates/components/visualization_workspace.html',
+        'app/templates/components/details/_detail_content.html',
     }:
         return 0
     count = 0

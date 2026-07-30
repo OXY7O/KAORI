@@ -1,69 +1,60 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-SUMMARY = ROOT / "app/templates/inventory/services/partials/_summary_cards.html"
-TABLE = ROOT / "app/templates/inventory/services/partials/_table_content.html"
-DETAIL = ROOT / "app/templates/inventory/services/partials/_service_detail_content.html"
 
 
-def read(path: Path) -> str:
-    return path.read_text(encoding="utf-8")
+def read(relative: str) -> str:
+    return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_service_inventory_copy_uses_requested_display_capitalization() -> None:
-    summary = read(SUMMARY)
-    table = read(TABLE)
+def test_service_inventory_uses_canonical_resource_page_pattern() -> None:
+    hero = read('app/templates/inventory/services/partials/_hero.html')
+    summary = read('app/templates/inventory/services/partials/_summary_cards.html')
+    table = read('app/templates/inventory/services/partials/_table_content.html')
 
-    expected = [
-        "Services in the Current Result",
-        "Internal Only Service Exposure",
-        "Services Exposed through Node Ports",
-        "Services Exposed through External Load Balancers",
-        "Node Level Exposure Endpoints",
-        "NodePort and LoadBalancer Combined",
-    ]
-    for copy in expected:
-        assert copy in summary
-
-    removed = [
-        "Services in the current result.",
-        "Internal-only service exposure.",
-        "Services exposed through node ports.",
-        "Services exposed through external load balancers.",
-        "Node-level exposure endpoints.",
-        "NodePort and LoadBalancer combined.",
-    ]
-    for copy in removed:
-        assert copy not in summary
-
-    assert "{{ 'Service' if pagination.total_items == 1 else 'Services' }}" in table
-    assert "{{ 'service' if pagination.total_items == 1 else 'services' }}" not in table
+    assert 'page_hero.context_card(' in hero
+    assert 'Service Network Posture' in summary
+    assert 'posture_grid.render(metrics, columns=3)' in summary
+    for column in ('Service', 'Scope', 'Access Model', 'Port Mapping', 'Backend Registration', 'Details'):
+        assert column in table
+    assert 'table_ui.namespaced_scope_identity(' in table
+    assert 'status_indicator_label(service.backend.label' in table
+    assert "open_label='View Details'" in table
 
 
-def test_service_detail_cards_share_tallest_height_and_detail_label_scale() -> None:
-    detail = read(DETAIL)
+def test_service_detail_uses_adaptive_stacks_and_factual_network_configuration() -> None:
+    detail = read('app/templates/inventory/services/partials/_service_detail_content.html')
+    service = read('app/inventory/resources/services.py')
 
-    assert "grid items-stretch gap-4 p-5 md:grid-cols-2 xl:grid-cols-4" in detail
-    assert "min-h-96" not in detail
-    assert "min-h-[28rem]" not in detail
-    assert "min-h-[30rem]" not in detail
+    assert 'data-kaori-detail-density="adaptive-stacks"' in detail
+    assert "detail.inline_detail_shell_classes()" in detail
+    assert "Technical Metadata Collection" not in detail
+    assert 'metadata_collection.render(' in detail
+    assert 'related_collection.render(' in detail
+    assert 'Traffic policies and publication configuration remain factual evidence' in detail
+    assert 'status_row(\'IP Family Policy\'' not in detail
+    assert "'No Registered Backends'" in service
+    assert "'External Destination'" in service
+    assert "'Manually Managed'" in service
 
-    assert detail.count("badge_size='detail'") >= 4
-    assert "detail.status_row('Type', service.type, service_type_tone, none, 'detail')" in detail
-    assert "detail.status_row('IP Family Policy', service.ip_family_policy, ip_policy_tone, none, 'detail')" in detail
-    assert "detail.status_row('Internal Traffic', service.internal_traffic_policy, internal_traffic_tone, none, 'detail')" in detail
-    assert "detail.status_row('External Traffic', service.external_traffic_policy, external_traffic_tone, none, 'detail')" in detail
-    assert "detail.status_row('Publish Not-Ready', 'Enabled' if service.publish_not_ready_addresses else 'Disabled'" in detail
+
+def test_service_collection_prefers_endpoint_slice_with_endpoints_fallback() -> None:
+    collector = read('app/inventory/collectors/services.py')
+    sync = read('app/inventory/synchronization.py')
+
+    assert 'list_endpoint_slice_for_all_namespaces' in collector
+    assert "'EndpointSlice'" in collector
+    assert 'list_endpoints_for_all_namespaces' in collector
+    assert "'Endpoints'" in collector
+    assert 'DiscoveryV1Api(core_api.api_client)' in sync
 
 
-def test_service_detail_semantic_tones_cover_requested_values_and_tip_is_removed() -> None:
-    detail = read(DETAIL)
+def test_service_page_size_refreshes_owning_scope() -> None:
+    table = read('app/templates/inventory/services/partials/_table_content.html')
+    card = read('app/templates/inventory/services/partials/_table_card.html')
 
-    assert "normalized_service_type in ['clusterip', 'headless']" in detail
-    assert "normalized_ip_policy == 'singlestack'" in detail
-    assert "normalized_internal_traffic == 'cluster'" in detail
-    assert "normalized_external_traffic == 'cluster'" in detail
-    assert "'warning' if service.publish_not_ready_addresses else 'unknown'" in detail
-
-    assert "Endpoint Snapshot" not in detail
-    assert "Selector and endpoint readiness from the latest inventory snapshot." not in detail
+    assert 'hx-target="#services-inventory-scope"' in table
+    assert 'name="partial_mode" value="inventory_scope"' in table
+    assert '>Rows</label>' in table
+    assert "endpoint='inventory.services'" in table
+    assert "hx-trigger=\"change, keyup changed delay:500ms from:find input[name='search']\"" in card

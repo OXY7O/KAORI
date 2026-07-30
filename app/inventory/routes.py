@@ -622,6 +622,10 @@ def services():
     )
     inventory['namespaces'] = namespaces
     inventory['service_filter_types'] = service_types
+    inventory['scope_label'] = next(
+        (cluster.name for cluster in clusters if str(cluster.id) == str(cluster_id)),
+        'All Clusters',
+    )
 
     return render_template(
         _inventory_template('services'),
@@ -680,6 +684,10 @@ def ingresses():
     )
     inventory['classes'] = ingress_classes
     inventory['namespaces'] = namespaces
+    inventory['scope_label'] = next(
+        (cluster.name for cluster in clusters if str(cluster.id) == str(cluster_id)),
+        'All Clusters',
+    )
 
     return render_template(
         _inventory_template('ingresses'),

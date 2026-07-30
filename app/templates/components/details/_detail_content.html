@@ -1,5 +1,8 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/technical_value.html" as technical_value %}
+{% macro inline_detail_shell_classes() -%}
+    overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm
+{%- endmacro %}
 {% macro detail_row(label, value='-', break_all=False) -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
     <div class="flex items-start justify-between gap-3">
@@ -88,13 +91,13 @@
 {%- endmacro %}
 
 {% macro evidence_grid(rows, columns=2, compact=true) -%}
-    {% set grid_classes = 'sm:grid-cols-2 xl:grid-cols-4' if columns == 4 else ('sm:grid-cols-2 xl:grid-cols-3' if columns == 3 else 'sm:grid-cols-2') %}
-    <div class="grid overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle gap-px {{ grid_classes }}">
+    {% set grid_classes = 'sm:grid-cols-2 xl:grid-cols-5' if columns == 5 else ('sm:grid-cols-2 xl:grid-cols-4' if columns == 4 else ('sm:grid-cols-2 xl:grid-cols-3' if columns == 3 else 'sm:grid-cols-2')) %}
+    <div class="grid items-start gap-2 {{ grid_classes }}">
         {% for row in rows %}
             {% set label = row.label if row.label is defined else row[0] %}
             {% set value = row.value if row.value is defined else row[1] %}
             {% set supporting = row.supporting if row.supporting is defined else (row[2] if row|length > 2 else none) %}
-            <article class="bg-surface-elevated {{ 'px-3 py-2.5' if compact else 'p-3' }}">
+            <article class="min-w-0 rounded-lg border border-outline-subtle bg-surface-elevated {{ 'px-3 py-2.5' if compact else 'p-3' }}">
                 <p class="text-xs leading-4 text-content-muted">{{ label }}</p>
                 <p class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary">{{ value if value not in [None, ''] else '-' }}</p>
                 {% if supporting %}<p class="mt-0.5 text-xs leading-5 text-content-muted">{{ supporting }}</p>{% endif %}

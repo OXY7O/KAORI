@@ -1,7 +1,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/details/_detail_content.html" as detail %}
-{% macro render(title, entries, icon='tags', empty_title='No Metadata Collected', empty_description='Metadata will appear when it is present in the committed inventory snapshot.', context=None) -%}
-    <section class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+{% macro render(title, entries, icon='tags', empty_title='No Metadata Collected', empty_description='Metadata will appear when it is present in the committed inventory snapshot.', context=None, compact=false) -%}
+    <section class="rounded-xl border border-outline-subtle bg-surface-card {{ 'p-3.5' if compact else 'p-4' }}">
         <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
@@ -12,7 +12,7 @@
             {{ table_label.metadata_label(entries|length ~ ' ' ~ ('Entry' if entries|length == 1 else 'Entries')) }}
         </div>
         {% if entries %}
-            <div class="max-h-56 overflow-y-auto rounded-lg border border-outline-subtle bg-surface-hover">
+            <div class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
                 {% for key, value in entries.items() %}
                     <div class="grid gap-1 border-b border-outline-subtle px-3 py-2.5 last:border-b-0 md:grid-cols-[minmax(12rem,0.38fr)_minmax(0,1fr)] md:gap-4">
                         <span class="break-all text-xs font-medium leading-5 text-content-primary">{{ key }}</span>

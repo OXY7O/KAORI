@@ -95,3 +95,8 @@ Domain-specific UI rules live under `docs/modules/` or the owning module README.
 
 - [Container Runtime Collection](components/CONTAINER_RUNTIME_COLLECTION.md)
 - [Kubernetes Pod Inventory](patterns/KUBERNETES_POD_INVENTORY.md)
+
+## Kubernetes Network Inventory
+
+- [Kubernetes Network Inventory Pattern](patterns/KUBERNETES_NETWORK_INVENTORY.md)
+- [Service and Ingress Inventory Audit](audits/KUBERNETES_SERVICE_INGRESS_INVENTORY_STYLING_AUDIT_2026_07.md)

@@ -2,36 +2,89 @@ from __future__ import annotations
 
 from typing import Any, cast
 
-from kubernetes.client import CoreV1Api, V1EndpointsList, V1ServiceList
+from kubernetes.client import CoreV1Api, DiscoveryV1Api, V1EndpointSliceList, V1EndpointsList, V1ServiceList
 from kubernetes.client.exceptions import ApiException
 
 from app.inventory.collectors.common import _metadata_details, _string_value
 
 
-def _service_endpoint_map(api: CoreV1Api) -> dict[tuple[str, str], dict]:
-    endpoint_map: dict[tuple[str, str], dict] = {}
+def _empty_endpoint_evidence(source: str, *, reported: bool) -> dict[str, Any]:
+    return {
+        'reported': reported,
+        'source': source,
+        'ready_addresses': [],
+        'not_ready_addresses': [],
+        'ports': [],
+    }
+
+
+def _endpoint_slice_map(api: DiscoveryV1Api) -> tuple[dict[tuple[str, str], dict[str, Any]], bool]:
+    endpoint_map: dict[tuple[str, str], dict[str, Any]] = {}
+    try:
+        result = cast(V1EndpointSliceList, api.list_endpoint_slice_for_all_namespaces())
+    except (ApiException, AttributeError):
+        return endpoint_map, False
+
+    for endpoint_slice in result.items or []:
+        metadata = endpoint_slice.metadata
+        labels = getattr(metadata, 'labels', None) or {}
+        namespace = getattr(metadata, 'namespace', None)
+        service_name = labels.get('kubernetes.io/service-name')
+        if not namespace or not service_name:
+            continue
+
+        key = (namespace, service_name)
+        evidence = endpoint_map.setdefault(key, _empty_endpoint_evidence('EndpointSlice', reported=True))
+
+        for endpoint in getattr(endpoint_slice, 'endpoints', None) or []:
+            conditions = getattr(endpoint, 'conditions', None)
+            ready = getattr(conditions, 'ready', None)
+            target_ref = getattr(endpoint, 'target_ref', None)
+            node_name = _string_value(getattr(endpoint, 'node_name', None))
+            hostname = _string_value(getattr(endpoint, 'hostname', None))
+            for address in getattr(endpoint, 'addresses', None) or []:
+                item = {
+                    'ip': _string_value(address),
+                    'hostname': hostname,
+                    'node_name': node_name,
+                    'target_kind': _string_value(getattr(target_ref, 'kind', None)),
+                    'target_name': _string_value(getattr(target_ref, 'name', None)),
+                }
+                if ready is False:
+                    evidence['not_ready_addresses'].append(item)
+                else:
+                    evidence['ready_addresses'].append(item)
+
+        for port in getattr(endpoint_slice, 'ports', None) or []:
+            evidence['ports'].append(
+                {
+                    'name': _string_value(getattr(port, 'name', None)),
+                    'port': int(getattr(port, 'port', 0) or 0),
+                    'protocol': _string_value(getattr(port, 'protocol', None), 'TCP'),
+                }
+            )
+
+    return endpoint_map, True
+
+
+def _legacy_endpoint_map(api: CoreV1Api) -> tuple[dict[tuple[str, str], dict[str, Any]], bool]:
+    endpoint_map: dict[tuple[str, str], dict[str, Any]] = {}
 
     try:
-        result = cast(
-            V1EndpointsList,
-            api.list_endpoints_for_all_namespaces(),
-        )
+        result = cast(V1EndpointsList, api.list_endpoints_for_all_namespaces())
     except ApiException:
-        return endpoint_map
+        return endpoint_map, False
 
     for endpoint in result.items or []:
         metadata = endpoint.metadata
         if metadata is None or not metadata.namespace or not metadata.name:
             continue
 
-        ready_addresses: list[dict[str, str]] = []
-        not_ready_addresses: list[dict[str, str]] = []
-        endpoint_ports: list[dict[str, str | int]] = []
-
+        evidence = _empty_endpoint_evidence('Endpoints', reported=True)
         for subset in endpoint.subsets or []:
             for address in subset.addresses or []:
                 target_ref = getattr(address, 'target_ref', None)
-                ready_addresses.append(
+                evidence['ready_addresses'].append(
                     {
                         'ip': _string_value(getattr(address, 'ip', None)),
                         'hostname': _string_value(getattr(address, 'hostname', None)),
@@ -43,7 +96,7 @@ def _service_endpoint_map(api: CoreV1Api) -> dict[tuple[str, str], dict]:
 
             for address in subset.not_ready_addresses or []:
                 target_ref = getattr(address, 'target_ref', None)
-                not_ready_addresses.append(
+                evidence['not_ready_addresses'].append(
                     {
                         'ip': _string_value(getattr(address, 'ip', None)),
                         'hostname': _string_value(getattr(address, 'hostname', None)),
@@ -54,7 +107,7 @@ def _service_endpoint_map(api: CoreV1Api) -> dict[tuple[str, str], dict]:
                 )
 
             for port in subset.ports or []:
-                endpoint_ports.append(
+                evidence['ports'].append(
                     {
                         'name': _string_value(getattr(port, 'name', None)),
                         'port': int(getattr(port, 'port', 0) or 0),
@@ -62,24 +115,30 @@ def _service_endpoint_map(api: CoreV1Api) -> dict[tuple[str, str], dict]:
                     }
                 )
 
-        endpoint_map[(metadata.namespace, metadata.name)] = {
-            'reported': True,
-            'ready_addresses': ready_addresses,
-            'not_ready_addresses': not_ready_addresses,
-            'ports': endpoint_ports,
-        }
+        endpoint_map[(metadata.namespace, metadata.name)] = evidence
 
-    return endpoint_map
+    return endpoint_map, True
+
+
+def _service_endpoint_map(
+    core_api: CoreV1Api,
+    discovery_api: DiscoveryV1Api | None = None,
+) -> tuple[dict[tuple[str, str], dict[str, Any]], str, bool]:
+    if discovery_api is not None:
+        endpoint_map, available = _endpoint_slice_map(discovery_api)
+        if available:
+            return endpoint_map, 'EndpointSlice', True
+
+    endpoint_map, available = _legacy_endpoint_map(core_api)
+    return endpoint_map, 'Endpoints', available
 
 
 def get_services(
     api: CoreV1Api,
+    discovery_api: DiscoveryV1Api | None = None,
 ) -> list[dict]:
-    result = cast(
-        V1ServiceList,
-        api.list_service_for_all_namespaces(),
-    )
-    endpoint_map = _service_endpoint_map(api)
+    result = cast(V1ServiceList, api.list_service_for_all_namespaces())
+    endpoint_map, endpoint_source, endpoint_source_available = _service_endpoint_map(api, discovery_api)
     services: list[dict] = []
 
     for svc in result.items or []:
@@ -127,12 +186,7 @@ def get_services(
         metadata_details = _metadata_details(metadata)
         endpoints = endpoint_map.get(
             (metadata.namespace, metadata.name),
-            {
-                'reported': False,
-                'ready_addresses': [],
-                'not_ready_addresses': [],
-                'ports': [],
-            },
+            _empty_endpoint_evidence(endpoint_source, reported=endpoint_source_available),
         )
 
         details = {

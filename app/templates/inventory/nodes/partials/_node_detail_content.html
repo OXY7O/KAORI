@@ -67,21 +67,27 @@
                 {{ detail.technical_row('Kube-Proxy Version', node.kube_proxy_version) }}
             {% endcall %}
 
-            {% call detail.detail_card('Scheduling & Conditions', 'clipboard-check', condition_posture, 'status', condition_tone, class_name='md:col-span-2 2xl:col-span-2', badge_size='detail') %}
-                <div class="grid gap-3 sm:grid-cols-2">
-                    {{ detail.status_row('Scheduling', node.scheduling_display, 'warning' if node.scheduling_display == 'Cordoned' else ('normal' if node.scheduling_display == 'Schedulable' else 'unknown'), size='detail') }}
-                    {{ detail.status_row('Ready', node.ready_condition, 'normal' if node.ready_condition == 'Ready' else ('critical' if node.ready_condition == 'Not Ready' else 'unknown'), size='detail') }}
-                    {% for label, value in [('Memory Pressure', node.memory_pressure), ('Disk Pressure', node.disk_pressure), ('PID Pressure', node.pid_pressure)] %}
-                        {{ detail.status_row(label, value, 'critical' if value == 'Pressure Detected' else ('normal' if value == 'Normal' else 'unknown'), size='detail') }}
-                    {% endfor %}
-                </div>
-                <div class="mt-2 border-t border-outline-subtle pt-3">
-                    <p class="mb-2 text-xs font-semibold text-content-secondary">Taints</p>
-                    <div class="flex flex-wrap gap-1.5">
+            {% call detail.detail_card('Scheduling & Conditions', 'clipboard-check', condition_posture, 'status', condition_tone, class_name='md:col-span-2 2xl:col-span-2', badge_size='detail', stretch=false) %}
+                {{ detail.evidence_grid([
+                    {'label': 'Scheduling', 'value': node.scheduling_display, 'supporting': 'New Pod placement'},
+                    {'label': 'Readiness', 'value': node.ready_condition, 'supporting': 'Kubelet readiness'},
+                    {'label': 'Memory Pressure', 'value': node.memory_pressure, 'supporting': 'Memory condition'},
+                    {'label': 'Disk Pressure', 'value': node.disk_pressure, 'supporting': 'Disk condition'},
+                    {'label': 'PID Pressure', 'value': node.pid_pressure, 'supporting': 'Process condition'}
+                ], columns=5) }}
+                <div class="mt-3 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-3">
+                    <div class="flex flex-wrap items-start justify-between gap-3">
+                        <div>
+                            <p class="text-xs font-semibold text-content-secondary">Scheduling Taints</p>
+                            <p class="mt-0.5 text-xs leading-5 text-content-muted">Taints remain factual placement constraints until evaluated against workload tolerations.</p>
+                        </div>
+                        {{ table_label.metadata_label(node.taints|length ~ ' ' ~ ('Taint' if node.taints|length == 1 else 'Taints')) }}
+                    </div>
+                    <div class="mt-2 flex flex-wrap gap-1.5">
                         {% if node.taints %}
                             {% for taint in node.taints %}{{ table_label.metadata_label(taint, 'tag', true, 'detail') }}{% endfor %}
                         {% else %}
-                            {{ table_label.metadata_label('No Taints', none, false, 'detail') }}
+                            {{ table_label.metadata_label('No Taints') }}
                         {% endif %}
                     </div>
                 </div>

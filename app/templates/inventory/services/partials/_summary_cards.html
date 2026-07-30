@@ -1,52 +1,18 @@
-{% import "components/progress_bar.html" as progress_bar %}
-{% set external_services = inventory.node_port + inventory.load_balancer %}
-{% set internal_percentage = ((inventory.cluster_ip / inventory.total_services) * 100) | round(0) if inventory.total_services > 0 else 0 %}
-<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div class="flex items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="gauge" class="h-5 w-5"></i>
-                </span>
-                <div>
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-kaori-primary">Service Exposure Snapshot</p>
-                    <h2 class="mt-1 text-base font-semibold text-content-primary">Reachability and Exposure Coverage</h2>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Service Type and exposure posture from the current inventory scope.</p>
-                </div>
-            </div>
-            <span class="inline-flex min-h-8 items-center gap-2 self-start rounded-md border border-brand-outline bg-kaori-soft px-3 text-xs font-semibold text-kaori-primary sm:self-auto">
-                <i data-lucide="shield-check" class="h-4 w-4"></i>
-                Internal Ratio {{ internal_percentage | int }}%
-            </span>
-        </div>
-    </header>
-
-    {% set summary_cards = [
-        ('Total Services', inventory.total_services, 'waypoints', 'Services in the Current Result'),
-        ('ClusterIP', inventory.cluster_ip, 'shield-check', 'Internal Only Service Exposure'),
-        ('NodePort', inventory.node_port, 'plug-zap', 'Services Exposed through Node Ports'),
-        ('LoadBalancer', inventory.load_balancer, 'globe-2', 'Services Exposed through External Load Balancers')
-    ] %}
-    <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
-        {% for label, value, icon, description in summary_cards %}
-            <article class="bg-surface-card p-5 transition hover:bg-surface-hover">
-                <div class="flex items-start justify-between gap-4">
-                    <div class="min-w-0">
-                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-kaori-primary">{{ label }}</p>
-                        <p class="mt-2 text-2xl font-semibold tracking-tight text-content-primary">{{ value }}</p>
-                        <p class="mt-2 text-xs leading-5 text-content-muted">{{ description }}</p>
-                    </div>
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
-                        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                    </span>
-                </div>
-            </article>
-        {% endfor %}
-    </div>
-
-    <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-[1.15fr_0.85fr_0.85fr]">
-        <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-4"><div class="min-w-0 flex-1"><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Internal Coverage</p><div class="mt-2 flex items-end gap-3"><p class="text-2xl font-semibold text-content-primary">{{ internal_percentage | int }}%</p><p class="pb-0.5 text-xs font-medium text-content-muted">{{ inventory.cluster_ip }} of {{ inventory.total_services }} ClusterIP</p></div>{{ progress_bar.bar(internal_percentage, track_classes="mt-4 h-2 overflow-hidden rounded-full bg-kaori-soft", fill_classes="h-full rounded-full bg-kaori-primary", label="Service internal coverage") }}</div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-brand-outline bg-kaori-soft text-kaori-primary"><i data-lucide="badge-check" class="h-4 w-4"></i></span></div></article>
-        <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-3"><div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">NodePort</p><p class="mt-2 text-2xl font-semibold text-content-primary">{{ inventory.node_port }}</p><p class="mt-2 text-xs leading-5 text-content-muted">Node Level Exposure Endpoints</p></div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-status-warning-border bg-status-warning-soft text-status-warning-text"><i data-lucide="plug-zap" class="h-4 w-4"></i></span></div></article>
-        <article class="bg-surface-card p-5"><div class="flex items-start justify-between gap-3"><div><p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">External Services</p><p class="mt-2 text-2xl font-semibold text-content-primary">{{ external_services }}</p><p class="mt-2 text-xs leading-5 text-content-muted">NodePort and LoadBalancer Combined</p></div><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-status-info-border bg-status-info-soft text-status-info-text"><i data-lucide="globe-2" class="h-4 w-4"></i></span></div></article>
-    </div>
-</section>
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/resource_posture_grid.html" as posture_grid %}
+{% set metrics = [
+    ('shield', 'ClusterIP & Headless', inventory.cluster_ip + inventory.headless, 'Cluster-internal and direct Pod discovery access models.', 'brand'),
+    ('plug-zap', 'NodePort', inventory.node_port, 'Services declaring node-level port publication.', 'brand'),
+    ('globe-2', 'LoadBalancer', inventory.load_balancer, 'Services declaring load balancer publication.', 'brand'),
+    ('external-link', 'ExternalName', inventory.external_name, 'Services delegating resolution to external DNS.', 'brand'),
+    ('triangle-alert', 'Backend Exceptions', inventory.backend_exceptions, 'Partial, not-ready, or missing backend registration evidence.', 'warning' if inventory.backend_exceptions > 0 else 'normal'),
+    ('database-zap', 'Endpoint Evidence Missing', inventory.endpoint_evidence_missing, 'Services without reported EndpointSlice or Endpoints evidence.', 'unknown' if inventory.endpoint_evidence_missing > 0 else 'normal')
+] %}
+{% call operational_section_card.render(
+    'Service Network Posture',
+    'Access-model composition and backend registration evidence for the active Service Inventory filters.',
+    'gauge',
+    body_classes='p-0'
+) %}
+    {{ posture_grid.render(metrics, columns=3) }}
+{% endcall %}

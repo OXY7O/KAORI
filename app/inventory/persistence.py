@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, cast
 
-from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api, NetworkingV1Api, StorageV1Api, V1NamespaceList, V1Node
+from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api, DiscoveryV1Api, NetworkingV1Api, StorageV1Api, V1NamespaceList, V1Node
 from kubernetes.client.exceptions import ApiException
 
 from app.extensions.db import db
@@ -546,6 +546,7 @@ def save_services(
     cluster: Cluster,
     collected_at: datetime,
     api: CoreV1Api,
+    discovery_api: DiscoveryV1Api | None = None,
 ) -> None:
     ServiceInventory.query.filter_by(
         cluster_id=cluster.id,
@@ -555,6 +556,7 @@ def save_services(
 
     services = get_services(
         api,
+        discovery_api,
     )
 
     for service in services:

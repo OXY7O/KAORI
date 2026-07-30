@@ -1,7 +1,7 @@
 import logging
 from datetime import UTC, datetime
 
-from kubernetes.client import BatchV1Api
+from kubernetes.client import BatchV1Api, DiscoveryV1Api
 from sqlalchemy import select
 
 from app.extensions.db import db
@@ -73,6 +73,8 @@ def sync_inventory(
 
             networking_api = client.networking_api()
 
+            discovery_api = DiscoveryV1Api(core_api.api_client)
+
             storage_api = client.storage_api()
 
             current_stage = 'API discovery'
@@ -143,6 +145,7 @@ def sync_inventory(
                 cluster,
                 collected_at,
                 core_api,
+                discovery_api,
             )
             db.session.flush()
 

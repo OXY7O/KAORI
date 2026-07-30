@@ -182,3 +182,9 @@ Namespace and Workload details use the shared Adaptive Detail Stacks contract fr
 ## Pod Inventory Reference Pattern
 
 Pod Inventory is the fourth Inventory Resource Page reference. It uses Pod Runtime Posture, a compact grouped table, Adaptive Detail Stacks, Container Runtime Collection, reference-only Related Resource Collection rows, and Technical Metadata Collection. Pod page-size changes refresh `#pods-inventory-scope`, and owner type constrains available Phase and Node filters.
+
+## Service and Ingress presentation
+
+Service and Ingress Inventory use the canonical Inventory Resource Page pattern. Service backend evidence is EndpointSlice-first with Endpoints fallback. Ingress backend references are resolved from committed Service Inventory. Network publication, TLS references, traffic policy, and controller class remain factual evidence until an explicit governance policy evaluates them.
+
+Expanded details use natural-height Adaptive Detail Stacks. Evidence tiles must not create empty gray cells, metadata collections avoid nested vertical scrolling, and ordinary table technical values use the same body typography as adjacent values.

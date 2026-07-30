@@ -575,29 +575,11 @@
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 2
     },
-    "app/templates/inventory/ingresses/partials/_hero.html": {
-      "arbitrary_text_sizes": 4
-    },
-    "app/templates/inventory/ingresses/partials/_summary_cards.html": {
-      "arbitrary_text_sizes": 5,
-      "arbitrary_tracking": 5,
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 2
-    },
     "app/templates/inventory/namespaces/partials/_namespace_detail_content.html": {
       "copied_standard_surface_shells": 1
     },
     "app/templates/inventory/nodes/partials/_node_detail_content.html": {
       "copied_standard_surface_shells": 1
-    },
-    "app/templates/inventory/services/partials/_hero.html": {
-      "arbitrary_text_sizes": 4
-    },
-    "app/templates/inventory/services/partials/_summary_cards.html": {
-      "arbitrary_text_sizes": 5,
-      "arbitrary_tracking": 5,
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 2
     },
     "app/templates/inventory/storage/partials/_hero.html": {
       "arbitrary_text_sizes": 4

@@ -597,3 +597,24 @@ Pod Inventory follows `patterns/KUBERNETES_POD_INVENTORY.md`.
 - Related Resource Collection may omit status for ConfigMap, Secret, and PVC references.
 - QoS, restart policy, DNS policy, host network, security-context presence, pull policy, selectors, and tolerations remain neutral factual evidence until an explicit governance policy evaluates them.
 - Pod Rows selectors refresh the owning inventory scope, matching Node, Namespace, and Workload page-size ownership.
+
+## 24. Service and Ingress Network Inventory
+
+Service and Ingress Inventory follow `patterns/KUBERNETES_NETWORK_INVENTORY.md`.
+
+- Service table: `Service | Scope | Access Model | Port Mapping | Backend Registration | Details`.
+- Ingress table: `Ingress | Scope | Publication | TLS References | Routing | Details`.
+- NodePort and LoadBalancer are publication configuration, not proof of public exposure.
+- Service traffic policies, IP-family policy, session affinity, and publish-not-ready configuration remain factual until evaluated by an explicit governance policy.
+- Service backend evidence is collected from EndpointSlice first, with Endpoints fallback for compatibility.
+- A selector-based Service with zero reported addresses is `No Registered Backends`, not `Ready`.
+- Ingress class and path type are metadata, not health status.
+- No TLS reference remains neutral inventory evidence; a TLS Secret reference does not validate certificate existence, expiry, or hostname coverage.
+- Ingress backend Services are resolved against the current committed Service Inventory only.
+- Declared hosts are shown as technical values. Opening a declared host is an explicit user action and does not imply reachability.
+
+### Detail evidence density
+
+`detail.evidence_grid(...)` owns compact factual evidence tiles. It must not expose empty grid-background cells when the final row is incomplete. Technical Metadata Collection avoids nested vertical scrolling inside expanded details; large collections may use later progressive-disclosure patterns, but not a fixed internal scrollbar by default.
+
+Use body-size proportional Technical Value presentation for technical values inside ordinary table cells. Compact Technical Value remains appropriate in detail rows and supporting metadata.

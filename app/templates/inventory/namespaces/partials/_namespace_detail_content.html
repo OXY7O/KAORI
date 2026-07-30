@@ -45,7 +45,12 @@
                         ('PSA Audit', namespace.pod_security_audit_display, ''),
                         ('PSA Warn', namespace.pod_security_warn_display, '')
                     ], columns=2) }}
-                    <p class="border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">Inherited or absent namespace-level controls remain neutral evidence until compared with an explicit governance policy.</p>
+                    <div class="mt-3">{{ operational_callout.render(
+                        'Control Interpretation',
+                        'Inherited or absent namespace-level controls remain neutral evidence until compared with an explicit governance policy. Default ServiceAccount presence is shown separately because it affects the namespace access baseline.',
+                        'shield-check',
+                        'info'
+                    ) }}</div>
                 {% endcall %}
             </div>
 
