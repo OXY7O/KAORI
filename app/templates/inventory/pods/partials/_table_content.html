@@ -2,7 +2,7 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/technical_value.html" as technical_value %}
-{% import "components/details/_expandable_row.html" as expandable %}
+{% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <div class="overflow-x-auto overscroll-x-contain">
     <table class="{{ table_ui.table_classes('min-w-[72rem]') }}">
         <thead class="{{ table_ui.head_classes() }}">
@@ -37,18 +37,9 @@
                         <p class="mt-1 text-xs leading-5 text-content-muted">{{ pod.activity_secondary }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes(action=true) }}">
-                        {{ expandable.toggle_button(
-                            'inventory-pods',
-                            pod.id,
-                            url_for('inventory.pod_details', pod_id=pod.id),
-                            'pod-detail-content-' ~ pod.id,
-                            'pod-detail-row-' ~ pod.id,
-                            open_label='View Details',
-                            close_label='Close Details'
-                        ) }}
+                        {{ resource_detail_modal.detail_button(pod.id, url_for('inventory.pod_details', pod_id=pod.id), pod.name, 'Pod') }}
                     </td>
                 </tr>
-                {{ expandable.detail_row('pod-detail-row-' ~ pod.id, 'pod-detail-content-' ~ pod.id, 6) }}
             {% else %}
                 <tr>
                     <td colspan="6" class="p-0">

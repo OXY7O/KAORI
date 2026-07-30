@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
 {% block title %}Pod Inventory{% endblock title %}
 {% block dashboard_content %}
+    {% import "components/resource_detail_modal.html" as resource_detail_modal %}
     <div class="space-y-6">
         {% include "inventory/pods/partials/_hero.html" %}
         {% include "inventory/components/_data_freshness.html" %}
@@ -10,4 +11,5 @@
             {% include "inventory/pods/partials/_inventory_scope.html" %}
         {% endif %}
     </div>
+    {{ resource_detail_modal.host('Pod', url_for('inventory.pod_details', pod_id=0)) }}
 {% endblock dashboard_content %}

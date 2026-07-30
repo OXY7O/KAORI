@@ -1,35 +1,16 @@
 # Expanded Inventory Detail
 
-## Purpose
+Inline expanded detail remains available as **Detail Style 1** for short row-owned evidence.
 
-Provide one polished, reusable row-owned detail experience for every Kubernetes Inventory table.
-
-## Shared owners
-
-- `components/details/_expandable_row.html`
-- `components/details/_detail_content.html`
-- `app/static/js/detail_rows.js`
-
-## Action contract
-
-- closed label: `View Details`;
-- open label: `Close Details`;
-- eye icon in the closed state;
-- close icon and rotated chevron in the open state;
-- one open row per resource group;
-- `aria-expanded` and `aria-controls` are mandatory.
-
-## Workspace contract
-
-Every fetched detail uses the shared expanded workspace outer, shell, header, and icon classes. Content order is:
+Complex Kubernetes Inventory resources no longer use this pattern. Node through Configuration Inventory use **Detail Style 2 — Full Workspace Modal**, owned by:
 
 ```text
-Resource Header
-Summary Strip
-Adaptive Evidence
-Relationships and Metadata
-Committed Snapshot Boundary
-State-Aware Guidance
+components/resource_detail_modal.html
+components/details/_detail_content.html
+app/static/js/detail_rows.js
 ```
 
-The detail is visually separated from the table with a subtle Violet boundary without becoming a second page hero.
+See:
+
+- `docs/design/components/DETAIL_STYLES.md`
+- `docs/design/components/RESOURCE_DETAIL_MODAL.md`

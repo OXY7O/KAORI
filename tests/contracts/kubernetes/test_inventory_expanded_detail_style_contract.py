@@ -2,49 +2,55 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 RESOURCES = ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses', 'storage', 'configuration')
+DETAIL_FILES = {
+    'nodes': '_node_detail_content.html',
+    'namespaces': '_namespace_detail_content.html',
+    'workloads': '_workload_detail_content.html',
+    'pods': '_pod_detail_content.html',
+    'services': '_service_detail_content.html',
+    'ingresses': '_ingress_detail_content.html',
+    'storage': '_storage_detail_content.html',
+    'configuration': '_configuration_detail_content.html',
+}
 
 
 def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_all_inventory_tables_use_shared_view_details_toggle() -> None:
-    component = read('app/templates/components/details/_expandable_row.html')
+def test_all_inventory_tables_use_full_workspace_modal_action() -> None:
+    component = read('app/templates/components/resource_detail_modal.html')
     script = read('app/static/js/detail_rows.js')
 
-    assert "open_label='View Details'" in component
-    assert "close_label='Close Details'" in component
-    assert 'data-detail-state="closed"' in component
-    assert 'data-detail-chevron' in component
-    assert 'bg-kaori-mist/40' in component
-    assert "button.dataset.detailOpenLabel || 'View Details'" in script
-    assert "button.dataset.detailCloseLabel || 'Close Details'" in script
-    assert 'Loading Inventory Details' in script
+    assert 'macro detail_button(' in component
+    assert 'data-resource-detail-toggle' in component
+    assert '>View Details<' in component
+    assert 'macro host(resource_type, detail_url_template)' in component
+    assert 'role="dialog"' in component
+    assert 'aria-modal="true"' in component
+    assert 'max-w-[90rem]' in component
+    assert 'data-resource-detail-summary-host' in component
+    assert "const DETAIL_PARAM = 'detail'" in script
+    assert "history.pushState" in script
+    assert "window.addEventListener('popstate'" in script
+    assert "event.key === 'Escape'" in script
+    assert 'focusableElements(dialog)' in script
 
     for resource in RESOURCES:
         table = read(f'app/templates/inventory/{resource}/partials/_table_content.html')
-        assert 'expandable.toggle_button(' in table, resource
-        assert 'expandable.detail_row(' in table, resource
+        index = read(f'app/templates/inventory/{resource}/index.html')
+        assert 'resource_detail_modal.detail_button(' in table, resource
+        assert 'expandable.detail_row(' not in table, resource
+        assert 'resource_detail_modal.host(' in index, resource
 
 
-def test_all_inventory_detail_workspaces_use_shared_expanded_shell() -> None:
+def test_all_inventory_detail_workspaces_use_modal_extractable_header_and_summary() -> None:
     detail_component = read('app/templates/components/details/_detail_content.html')
-    assert 'macro expanded_workspace_outer_classes()' in detail_component
-    assert 'macro expanded_workspace_shell_classes()' in detail_component
-    assert 'macro expanded_workspace_header_classes()' in detail_component
+    assert 'data-resource-detail-summary' in detail_component
 
-    detail_files = {
-        'nodes': '_node_detail_content.html',
-        'namespaces': '_namespace_detail_content.html',
-        'workloads': '_workload_detail_content.html',
-        'pods': '_pod_detail_content.html',
-        'services': '_service_detail_content.html',
-        'ingresses': '_ingress_detail_content.html',
-        'storage': '_storage_detail_content.html',
-        'configuration': '_configuration_detail_content.html',
-    }
-    for resource, filename in detail_files.items():
+    for resource, filename in DETAIL_FILES.items():
         source = read(f'app/templates/inventory/{resource}/partials/{filename}')
+        assert 'data-kaori-detail-variant="full-workspace-modal"' in source, resource
+        assert 'data-resource-detail-header' in source, resource
         assert 'detail.expanded_workspace_outer_classes()' in source, resource
         assert 'detail.expanded_workspace_shell_classes()' in source, resource
-        assert 'detail.expanded_workspace_header_classes()' in source, resource

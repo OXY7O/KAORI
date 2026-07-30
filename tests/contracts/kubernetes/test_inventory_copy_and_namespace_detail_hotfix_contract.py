@@ -49,7 +49,7 @@ def test_namespace_detail_card_calls_match_shared_macro_signature() -> None:
     macro = read("app/templates/components/details/_detail_content.html")
 
     assert "macro detail_card(title, icon, badge=None, badge_type='metadata', badge_tone='unknown', class_name='', badge_size='compact', stretch=true, density='default')" in macro
-    assert 'data-kaori-detail-variant="inline-expanded"' in detail
+    assert 'data-kaori-detail-variant="full-workspace-modal"' in detail
     assert 'data-kaori-detail-density="adaptive-stacks"' in detail
     assert "xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]" in detail
     assert "items-stretch" not in detail

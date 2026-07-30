@@ -8,49 +8,64 @@ Shared owners:
 
 - `components/details/_expandable_row.html`
 - `components/details/_detail_content.html`
+- `app/static/js/detail_rows.js`
 
-Use this style when a table row owns a dense detail view that benefits from the full table width. The Node Inventory page is the canonical reference.
+Use this style only for short row-owned evidence that remains easy to scan inside the table context. It is retained for compact activity, audit, and small evidence tables.
+
+Do not use Inline Expanded Detail for Kubernetes Inventory resources with dense identity, runtime, relationship, metadata, and operational-context sections.
+
+## Detail Style 2 — Full Workspace Modal
+
+Semantic key: `full-workspace-modal`
+
+Shared owners:
+
+- `components/resource_detail_modal.html`
+- `components/details/_detail_content.html`
+- `app/static/js/detail_rows.js`
+
+Node, Namespace, Workload, Pod, Service, Ingress, Storage, and Configuration Inventory use this style.
 
 ### Required behavior
 
-- one expanded row per detail group;
-- compact `View Details` row action;
-- on-demand detail request;
-- summary first, then domain cards, metadata, and operational context;
-- two columns on ordinary laptop widths and up to three columns on larger screens;
-- visible data boundary and state-aware next action;
-- `data-kaori-detail-variant="inline-expanded"` on the detail root.
+- `View Details` opens one near-fullscreen modal without changing table height;
+- desktop width is bounded by `90rem` and available viewport space;
+- mobile uses the available viewport as a full workspace;
+- header, summary strip, and footer remain visible while the detail body scrolls;
+- Escape, backdrop, and explicit Close dismiss the modal;
+- keyboard focus is trapped inside the dialog and returned to the opener;
+- background workspace scrolling is locked while open;
+- URL query state uses `detail=<resource-id>`;
+- browser Back closes the modal and Forward reopens it;
+- refresh/deep-link can load the detail even when its row is not on the current page;
+- filter, page, Rows, and scroll position remain unchanged;
+- loading and error states stay inside the modal;
+- detail root uses `data-kaori-detail-variant="full-workspace-modal"`;
+- fetched detail marks its resource header with `data-resource-detail-header`;
+- the summary uses the shared `data-resource-detail-summary` owner.
 
-Do not use Inline Expanded Detail for a short identity summary that fits better in the shared right-side drawer. A new detail style requires a materially different information architecture and shared owner.
+### Content order
 
-
-Namespace Inventory is the second reference and demonstrates full-width resource controls plus Technical Metadata Collections inside the same `inline-expanded` detail style.
+```text
+Resource Header
+Sticky Summary Strip
+Adaptive Evidence Workspace
+Relationships and Technical Metadata
+Committed Snapshot Boundary
+State-Aware Guidance
+Optional Related Operation
+```
 
 ## Adaptive Detail Stacks
 
-Use adaptive detail stacks when cards within one expanded detail have materially different content lengths. This is the canonical density treatment for Namespace and Workload details.
+Use adaptive detail stacks when evidence cards have materially different content lengths.
 
-Contract:
+- mark adaptive implementations with `data-kaori-detail-density="adaptive-stacks"`;
+- use independent vertical stacks rather than one equal-height row;
+- use natural-height cards with `stretch=false`;
+- use asymmetric splits when one evidence domain needs more width;
+- use `detail.evidence_grid(...)` for compact factual evidence;
+- keep large tables, relationships, metadata, and Operational Context full width;
+- do not add fixed or minimum heights to mask content imbalance.
 
-- set `data-kaori-detail-density="adaptive-stacks"` on the detail root;
-- use two independent vertical stacks rather than one equal-height grid row;
-- use an asymmetric `0.82fr / 1.18fr` split when the evidence-heavy column needs more width;
-- pass `stretch=false` to `detail.detail_card(...)` so each card follows its natural content height;
-- reserve equal-height behavior for true peer boxes whose visual comparison benefits from matching height;
-- use `detail.evidence_grid(...)` for compact numeric or factual evidence instead of long repeated label/value rows;
-- keep metadata and Operational Context full-width below the primary stacks.
-
-Do not solve uneven detail content by adding fixed or minimum heights. Do not create page-local card geometry for the same pattern.
-
-## Inventory View Details Workspace
-
-All Inventory implementations use the same row-owned disclosure action and expanded workspace shell.
-
-- action labels: `View Details` / `Close Details`;
-- action state: eye or close icon plus disclosure chevron;
-- one open row per resource group;
-- expanded row uses a subtle Violet boundary;
-- loading and error content remain inside the same boundary;
-- detail roots use `expanded_workspace_*_classes()` macros rather than page-local shell bundles.
-
-This interaction supersedes legacy `View More`, `Hide Details`, and page-local expanded-row presentation.
+Adaptive stacks are valid inside Full Workspace Modal and compact inline details.

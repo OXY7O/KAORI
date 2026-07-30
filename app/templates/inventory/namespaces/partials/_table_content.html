@@ -1,7 +1,7 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table.html" as table_ui %}
-{% import "components/details/_expandable_row.html" as expandable %}
+{% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <div class="overflow-x-auto">
     <table class="{{ table_ui.table_classes('min-w-[76rem]') }}">
         <thead class="{{ table_ui.head_classes() }}">
@@ -38,17 +38,9 @@
                         </div>
                     </td>
                     <td class="{{ table_ui.cell_classes(true) }}">
-                        {{ expandable.toggle_button(
-                            'inventory-namespaces',
-                            namespace.id,
-                            url_for('inventory.namespace_details', namespace_id=namespace.id),
-                            'namespace-detail-content-' ~ namespace.id,
-                            'namespace-detail-row-' ~ namespace.id,
-                            open_label='View Details'
-                        ) }}
+                        {{ resource_detail_modal.detail_button(namespace.id, url_for('inventory.namespace_details', namespace_id=namespace.id), namespace.namespace, 'Namespace') }}
                     </td>
                 </tr>
-                {{ expandable.detail_row('namespace-detail-row-' ~ namespace.id, 'namespace-detail-content-' ~ namespace.id, 6) }}
             {% else %}
                 <tr>
                     <td colspan="6" class="p-0">

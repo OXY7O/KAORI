@@ -9,7 +9,7 @@ Canonical Hero
 Compact Snapshot Context
 Workload Delivery Posture
 Compact Workload Inventory Table
-Detail Style 1 — Inline Expanded Detail
+Detail Style 2 — Full Workspace Modal
 ```
 
 ## Operational semantics

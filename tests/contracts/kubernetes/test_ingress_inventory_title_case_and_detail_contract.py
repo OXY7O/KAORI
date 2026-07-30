@@ -18,7 +18,7 @@ def test_ingress_inventory_uses_canonical_resource_page_pattern() -> None:
     for column in ('Ingress', 'Scope', 'Publication', 'TLS References', 'Routing', 'Details'):
         assert column in table
     assert 'table_ui.namespaced_scope_identity(' in table
-    assert "open_label='View Details'" in table
+    assert 'resource_detail_modal.detail_button(' in table
 
 
 def test_ingress_detail_uses_adaptive_stacks_and_factual_tls_evidence() -> None:

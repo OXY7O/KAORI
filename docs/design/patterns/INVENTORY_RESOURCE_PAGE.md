@@ -11,7 +11,7 @@ Canonical Hero
 Compact Snapshot Context Bar
 Resource Posture Section
 Filtered Inventory Table
-Detail Style 1 — Inline Expanded Detail
+Detail Style 2 — Full Workspace Modal
 ```
 
 ## Ownership
@@ -20,7 +20,7 @@ Detail Style 1 — Inline Expanded Detail
 - Snapshot Context Bar: source, exact collection time, committed coverage, and exceptions.
 - Resource Posture: capacity and domain-specific operational evidence.
 - Table: compact comparison and one row detail action.
-- Inline Detail: complete resource evidence and operational context.
+- Full Workspace Modal: complete resource evidence and operational context.
 
 ## Table rules
 

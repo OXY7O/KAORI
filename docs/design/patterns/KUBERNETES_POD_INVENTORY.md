@@ -7,7 +7,7 @@ Canonical Hero
 Compact Snapshot Context
 Pod Runtime Posture
 Compact Pod Inventory Table
-Detail Style 1 — Adaptive Inline Expanded Detail
+Detail Style 2 — Full Workspace Modal
 ```
 
 ## Runtime semantics

@@ -152,7 +152,7 @@ Topology colors use the five-domain token set in `frontend/styles.css`: Scope, C
 Node Inventory is the canonical implementation of the per-resource inventory page pattern:
 
 ```text
-Canonical Hero → Snapshot Context → Node Resource Posture → Compact Table → Inline Expanded Detail
+Canonical Hero → Snapshot Context → Node Resource Posture → Compact Table → Full Workspace Modal
 ```
 
 The compact table groups Node identity, cluster, readiness, role, capacity, and network evidence. Role is metadata, readiness is operational status, and technical identifiers use the shared Technical Value component. Detail requests remain on demand and read the latest committed generation; they do not query the Kubernetes API live.
@@ -166,7 +166,7 @@ The compact table groups Node identity, cluster, readiness, role, capacity, and 
 Namespace Inventory follows the canonical per-resource page composition:
 
 ```text
-Canonical Hero → Snapshot Context → Namespace Control Posture → Compact Table → Inline Expanded Detail
+Canonical Hero → Snapshot Context → Namespace Control Posture → Compact Table → Full Workspace Modal
 ```
 
 Lifecycle transition, resource controls, and security configuration are factual inventory evidence. `Terminating` is informational until stuck-transition evidence exists. Missing quota, LimitRange, NetworkPolicy, or PSA labels do not imply a compliance failure without an explicit governance policy. Labels and annotations use `technical_metadata_collection.html`.
@@ -195,4 +195,4 @@ Storage Inventory uses type-adaptive provisioning, capacity/access, and binding/
 
 Configuration Inventory uses protected key-index metadata. Values are not decoded, logged, persisted, or displayed. ConfigMap and Secret collection capability is stored on `ClusterInventory.collection_evidence` for the committed generation.
 
-All Inventory row details use the shared `View Details` interaction and expanded workspace classes from `components/details/_expandable_row.html` and `components/details/_detail_content.html`.
+Node through Configuration Inventory use `Detail Style 2 — Full Workspace Modal`, owned by `components/resource_detail_modal.html`, `components/details/_detail_content.html`, and `app/static/js/detail_rows.js`. Inventory Overview retains the shared Side Drawer, and Topology retains the Adaptive Explorer Inspector.

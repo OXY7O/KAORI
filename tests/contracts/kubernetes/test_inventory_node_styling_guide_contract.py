@@ -36,9 +36,8 @@ def test_node_table_is_compact_and_uses_canonical_labels_and_values() -> None:
     assert "status_indicator_label(node.status_display" in content
     assert "metadata_label(node.role_display)" in content
     assert "components/technical_value.html" in content
-    assert "View Details" in content
-    assert "colspan, 7" not in content
-    assert "'node-detail-content-' ~ node.id, 7" in content
+    assert 'resource_detail_modal.detail_button(' in content
+    assert 'expandable.detail_row(' not in content
     assert '>Rows</label>' in content
     assert "hx_target='#nodes-table-content'" in content
 
@@ -60,7 +59,7 @@ def test_node_detail_uses_inline_detail_style_shared_primitives_and_operational_
     detail = read("app/templates/inventory/nodes/partials/_node_detail_content.html")
     shared = read("app/templates/components/details/_detail_content.html")
 
-    assert 'data-kaori-detail-variant="inline-expanded"' in detail
+    assert 'data-kaori-detail-variant="full-workspace-modal"' in detail
     assert 'components/details/_detail_content.html' in detail
     assert "Node Capacity" in detail
     assert "Kernel Version" in detail
@@ -86,8 +85,8 @@ def test_node_inventory_registers_detail_and_technical_value_standards() -> None
     component = read("app/templates/components/technical_value.html")
     assert "monospace=false" in component
     assert "{% if monospace %}" in component
-    assert "Detail Style 1 — Inline Expanded Detail" in detail_styles
-    assert "`inline-expanded`" in detail_styles
+    assert "Detail Style 2 — Full Workspace Modal" in detail_styles
+    assert "`full-workspace-modal`" in detail_styles
     assert "Kubernetes Node Inventory is the first canonical implementation" in pattern
     assert "Approved package" in audit
 

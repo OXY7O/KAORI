@@ -25,7 +25,7 @@ def test_namespace_inventory_applies_resource_page_pattern() -> None:
     ):
         assert f">{column}</th>" in table or column in table
     assert "status_indicator_label(namespace.lifecycle_label" in table
-    assert "open_label='View Details'" in table
+    assert 'resource_detail_modal.detail_button(' in table
 
 
 def test_namespace_lifecycle_and_policy_semantics_are_factual() -> None:
@@ -43,7 +43,7 @@ def test_namespace_detail_uses_shared_metadata_and_operational_context() -> None
     detail = read("app/templates/inventory/namespaces/partials/_namespace_detail_content.html")
     component = read("app/templates/components/technical_metadata_collection.html")
 
-    assert 'data-kaori-detail-variant="inline-expanded"' in detail
+    assert 'data-kaori-detail-variant="full-workspace-modal"' in detail
     assert "technical_metadata_collection.html" in detail
     assert detail.count("metadata_collection.render(") == 2
     assert "Operational Context" in detail

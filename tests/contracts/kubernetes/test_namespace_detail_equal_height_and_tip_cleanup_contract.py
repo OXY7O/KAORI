@@ -7,11 +7,11 @@ def _read(relative_path: str) -> str:
     return (ROOT / relative_path).read_text(encoding="utf-8")
 
 
-def test_namespace_detail_uses_inline_expanded_detail_grid():
+def test_namespace_detail_uses_full_workspace_modal_grid():
     detail = _read("app/templates/inventory/namespaces/partials/_namespace_detail_content.html")
     shared_detail = _read("app/templates/components/details/_detail_content.html")
 
-    assert 'data-kaori-detail-variant="inline-expanded"' in detail
+    assert 'data-kaori-detail-variant="full-workspace-modal"' in detail
     assert 'data-kaori-detail-density="adaptive-stacks"' in detail
     assert "xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]" in detail
     assert "items-stretch" not in detail

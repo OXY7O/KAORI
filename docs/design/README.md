@@ -108,3 +108,8 @@ Domain-specific UI rules live under `docs/modules/` or the owning module README.
 - [Expanded Inventory Detail](components/EXPANDED_INVENTORY_DETAIL.md)
 - [Storage and Configuration Inventory Pattern](patterns/KUBERNETES_STORAGE_CONFIGURATION_INVENTORY.md)
 - [Storage and Configuration Inventory Audit](audits/KUBERNETES_STORAGE_CONFIGURATION_INVENTORY_STYLING_AUDIT_2026_07.md)
+
+## Inventory Detail Workspace
+
+- `components/RESOURCE_DETAIL_MODAL.md` — Detail Style 2, URL state, focus, loading, and maximized modal geometry.
+- `components/DETAIL_STYLES.md` — canonical Detail Style registry.

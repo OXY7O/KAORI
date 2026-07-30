@@ -2,7 +2,7 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/technical_value.html" as technical_value %}
-{% import "components/details/_expandable_row.html" as expandable %}
+{% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <div class="overflow-x-auto overscroll-x-contain">
     <table class="{{ table_ui.table_classes('min-w-[72rem]') }}">
         <thead class="{{ table_ui.head_classes() }}">
@@ -33,10 +33,9 @@
                         <p class="mt-1 text-xs leading-5 text-content-muted">{{ service.backend.supporting }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes(action=true) }}">
-                        {{ expandable.toggle_button('inventory-services', service.id, url_for('inventory.service_details', service_id=service.id), 'service-detail-content-' ~ service.id, 'service-detail-row-' ~ service.id, open_label='View Details', close_label='Close Details') }}
+                        {{ resource_detail_modal.detail_button(service.id, url_for('inventory.service_details', service_id=service.id), service.name, 'Service') }}
                     </td>
                 </tr>
-                {{ expandable.detail_row('service-detail-row-' ~ service.id, 'service-detail-content-' ~ service.id, 6) }}
             {% else %}
                 <tr><td colspan="6" class="p-0">{% set empty_state_icon='route-off' %}{% set empty_state_title='No Service Inventory Found' %}{% set empty_state_description='Adjust the active filters or sync cluster inventory to collect Kubernetes Service data.' %}{% set empty_state_min_height='min-h-[190px]' %}{% include 'components/states/_empty_state.html' %}</td></tr>
             {% endfor %}

@@ -3,9 +3,9 @@
 {% import "components/technical_metadata_collection.html" as metadata_collection %}
 {% import "components/related_resource_collection.html" as related_collection %}
 {% import "components/operational_callout.html" as operational_callout %}
-<div data-kaori-detail-variant="inline-expanded" data-kaori-detail-density="adaptive-stacks" class="{{ detail.expanded_workspace_outer_classes() }}">
+<div data-kaori-detail-variant="full-workspace-modal" data-kaori-detail-density="adaptive-stacks" class="{{ detail.expanded_workspace_outer_classes() }}">
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
-        <header class="{{ detail.expanded_workspace_header_classes() }}">
+        <header data-resource-detail-header class="{{ detail.expanded_workspace_header_classes() }}">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="{{ detail.expanded_workspace_icon_classes() }}" aria-hidden="true"><i data-lucide="database" class="h-5 w-5"></i></span>
                 <div class="min-w-0">

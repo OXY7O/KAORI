@@ -11,7 +11,7 @@ def test_node_detail_cards_follow_tallest_card_without_fixed_min_height() -> Non
     detail = _read("app/templates/inventory/nodes/partials/_node_detail_content.html")
     shared = _read("app/templates/components/details/_detail_content.html")
 
-    assert 'data-kaori-detail-variant="inline-expanded"' in detail
+    assert 'data-kaori-detail-variant="full-workspace-modal"' in detail
     assert "grid items-stretch gap-4 p-5 md:grid-cols-2 2xl:grid-cols-3" in detail
     assert "stretch=true" in shared
     assert "{{ 'h-full' if stretch else '' }}" in shared

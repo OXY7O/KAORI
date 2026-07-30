@@ -408,7 +408,7 @@ Use `inventory_asset_card.html` for one navigable Kubernetes asset type. Asset c
 
 ### Right-side detail drawer
 
-Use `side_drawer.html` when row details are too large for an expanded row but the comparison table must remain visible. The shared drawer owns overlay, panel geometry, close behavior, scrolling, accessibility, optional footer action, and reusable `section(...)` and `metric(...)` content primitives. Rich operational drawers follow Summary → Identity/Snapshot → Domain Breakdown → Signals → Operational Context. Drawer and section descriptions stay concise; self-explanatory identity/context sections may omit descriptions. Summary values use a divided plain-metric row instead of nested metric cards when card-inside-card density would dominate. The final Operational Context remains visible, states the data boundary, and gives one state-aware next action.
+Use `side_drawer.html` for compact contextual summaries that benefit from keeping the comparison table visible, such as Inventory Overview cluster details. The shared drawer owns overlay, panel geometry, close behavior, scrolling, accessibility, optional footer action, and reusable `section(...)` and `metric(...)` content primitives. Rich operational drawers follow Summary → Identity/Snapshot → Domain Breakdown → Signals → Operational Context. Drawer and section descriptions stay concise; self-explanatory identity/context sections may omit descriptions. Summary values use a divided plain-metric row instead of nested metric cards when card-inside-card density would dominate. The final Operational Context remains visible, states the data boundary, and gives one state-aware next action.
 
 ### Operational section card
 
@@ -536,14 +536,16 @@ Use `patterns/INVENTORY_RESOURCE_PAGE.md` for per-asset inventory pages such as 
 Canonical order:
 
 ```text
-Hero → Snapshot Context → Resource Posture → Filtered Table → Inline Detail
+Hero → Snapshot Context → Resource Posture → Filtered Table → Full Workspace Modal
 ```
 
 The hero owns identity, active scope, and high-level health. Snapshot time and coverage belong only to the Snapshot Context Bar. Capacity and resource-specific signals belong to a shared Resource Posture section.
 
-### Detail Style 1 — Inline Expanded Detail
+### Detail Style 2 — Full Workspace Modal
 
-Use semantic key `inline-expanded` for dense row-owned details. The shared expandable row and detail primitives own loading, geometry, typography, and the open/close action. The detail must finish with a visible committed-data boundary and state-aware operational guidance.
+Use semantic key `full-workspace-modal` for Node through Configuration Inventory. `components/resource_detail_modal.html` owns near-fullscreen geometry, loading, URL state, focus management, and close behavior. Server-rendered detail content supplies the resource header, summary, evidence, relationships, metadata, committed-data boundary, and state-aware guidance.
+
+`Detail Style 1 — Inline Expanded Detail` remains available only for short row-owned evidence that does not justify a dedicated workspace.
 
 ### Technical values
 
@@ -570,7 +572,7 @@ Use `components/related_resource_collection.html` for peer related resources suc
 
 ## 23. Adaptive Detail Density and Page-Size Ownership
 
-Dense Inline Expanded Detail pages may use **Adaptive Detail Stacks** when evidence cards have different natural lengths. Namespace and Workload Inventory are the canonical references.
+Full Workspace Modal content may use **Adaptive Detail Stacks** when evidence cards have different natural lengths. Namespace and Workload Inventory are the canonical references.
 
 Required rules:
 
@@ -631,21 +633,30 @@ Use `technical_metadata_collection.html` with `mode='keys'` for key-name invento
 
 ## 26. Inventory Detail Workspace and View Details
 
-All Inventory tables use one canonical expanded-detail interaction owned by:
+Node, Namespace, Workload, Pod, Service, Ingress, Storage, and Configuration Inventory use **Detail Style 2 — Full Workspace Modal**.
 
-- `components/details/_expandable_row.html`
+Shared owners:
+
+- `components/resource_detail_modal.html`
 - `components/details/_detail_content.html`
 - `app/static/js/detail_rows.js`
 
-The row action label is `View Details`; the open state is `Close Details`. The action uses an eye icon, explicit active state, and a rotating disclosure chevron. Only one row per detail group may remain open.
+The table action remains `View Details`, but it opens a maximized modal workspace instead of inserting an expanded row. The modal preserves table height, current filters, pagination, Rows, and background scroll position.
 
-Expanded content uses the shared workspace geometry:
+Required behavior:
 
-- `detail.expanded_workspace_outer_classes()`
-- `detail.expanded_workspace_shell_classes()`
-- `detail.expanded_workspace_header_classes()`
-- `detail.expanded_workspace_icon_classes()`
+- near-fullscreen viewport geometry with a `90rem` desktop maximum;
+- fixed resource header, summary strip, and footer;
+- independently scrollable evidence body;
+- `?detail=<id>` URL state;
+- Back closes and Forward reopens the detail;
+- deep-link reload can fetch a detail outside the visible page;
+- focus trap, Escape close, backdrop close, and focus restoration;
+- modal-owned loading and error states;
+- fetched detail roots use `data-kaori-detail-variant="full-workspace-modal"`;
+- resource headers use `data-resource-detail-header`;
+- summary regions use `data-resource-detail-summary`.
 
-The expanded workspace uses a subtle Violet boundary, `rounded-2xl` shell, natural-height content, a visible resource header, summary strip, domain evidence, metadata, committed-snapshot boundary, and state-aware guidance. Loading and error states remain inside the expanded workspace boundary and never replace the table or page hero.
+Inventory Overview keeps the right-side drawer because it is a compact cluster summary. Topology keeps the Adaptive Explorer Inspector because selection is graph-owned.
 
-Do not create page-local `View More`, `Show More`, or alternate expanded-row geometry for Inventory pages. Use progressive disclosure only for secondary collections inside the detail when a future shared component explicitly owns that behavior.
+Do not create page-local Inventory modals, dense expanded rows, or alternate `View More` geometry.

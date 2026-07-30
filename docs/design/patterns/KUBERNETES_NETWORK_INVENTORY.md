@@ -9,7 +9,7 @@ Canonical Hero
 Compact Inventory Data Snapshot
 Network Resource Posture
 Compact Inventory Table
-Adaptive Inline Expanded Detail
+Full Workspace Modal
 ```
 
 ## Service Inventory

@@ -19,7 +19,8 @@ def test_workload_table_uses_compact_operational_columns() -> None:
 
     assert '>Update Strategy<' not in content
     assert '>Pods<' not in content
-    assert "expandable.detail_row('workload-detail-row-' ~ workload.id, 'workload-detail-content-' ~ workload.id, 6)" in content
+    assert 'resource_detail_modal.detail_button(' in content
+    assert 'expandable.detail_row(' not in content
 
 
 def test_workload_table_separates_posture_from_factual_evidence() -> None:

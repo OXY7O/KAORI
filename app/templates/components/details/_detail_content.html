@@ -91,7 +91,7 @@
 {%- endmacro %}
 
 {% macro summary_strip(metrics, columns=4, compact=false) -%}
-    <div class="grid gap-px border-b border-outline-subtle bg-outline-subtle {{ 'sm:grid-cols-2 xl:grid-cols-4' if columns == 4 else 'sm:grid-cols-2 xl:grid-cols-3' }}">
+    <div data-resource-detail-summary class="grid gap-px border-b border-outline-subtle bg-outline-subtle {{ 'sm:grid-cols-2 xl:grid-cols-4' if columns == 4 else 'sm:grid-cols-2 xl:grid-cols-3' }}">
         {% for label, value, description in metrics %}
             <article class="bg-surface-card {{ 'px-4 py-3' if compact else 'p-4' }}">
                 <p class="text-xs font-semibold leading-4 text-content-secondary">{{ label }}</p>

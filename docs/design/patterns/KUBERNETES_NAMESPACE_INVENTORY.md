@@ -7,7 +7,7 @@ Canonical Hero
 Compact Snapshot Context Bar
 Namespace Control Posture
 Compact Namespace Inventory Table
-Detail Style 1 — Inline Expanded Detail
+Detail Style 2 — Full Workspace Modal
 ```
 
 ## Lifecycle semantics

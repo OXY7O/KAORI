@@ -2,7 +2,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/table.html" as table_ui %}
 {% import "components/technical_value.html" as technical_value %}
-{% import "components/details/_expandable_row.html" as expandable %}
+{% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <div class="overflow-x-auto">
     <table class="{{ table_ui.table_classes('min-w-[68rem]') }}">
         <thead class="{{ table_ui.head_classes() }}">
@@ -34,17 +34,9 @@
                         <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ node.network_scope }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes(true) }}">
-                        {{ expandable.toggle_button(
-                            'inventory-nodes',
-                            node.id,
-                            url_for('inventory.node_details', node_id=node.id),
-                            'node-detail-content-' ~ node.id,
-                            'node-detail-row-' ~ node.id,
-                            open_label='View Details'
-                        ) }}
+                        {{ resource_detail_modal.detail_button(node.id, url_for('inventory.node_details', node_id=node.id), node.node_name, 'Node') }}
                     </td>
                 </tr>
-                {{ expandable.detail_row('node-detail-row-' ~ node.id, 'node-detail-content-' ~ node.id, 7) }}
             {% else %}
                 <tr>
                     <td colspan="7" class="p-0">

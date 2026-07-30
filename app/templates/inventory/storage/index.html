@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
 {% block title %}Storage Inventory{% endblock title %}
 {% block dashboard_content %}
+    {% import "components/resource_detail_modal.html" as resource_detail_modal %}
     <div class="space-y-6">
         {% include "inventory/storage/partials/_hero.html" %}
         {% include "inventory/components/_data_freshness.html" %}
@@ -10,4 +11,5 @@
             {% include "inventory/storage/partials/_inventory_scope.html" %}
         {% endif %}
     </div>
+    {{ resource_detail_modal.host('Storage', url_for('inventory.storage_details', storage_id=0)) }}
 {% endblock dashboard_content %}

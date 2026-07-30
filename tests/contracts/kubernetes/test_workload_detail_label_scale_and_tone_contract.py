@@ -7,10 +7,10 @@ def _read(relative_path: str) -> str:
     return (ROOT / relative_path).read_text(encoding='utf-8')
 
 
-def test_workload_detail_uses_inline_expanded_reference_structure() -> None:
+def test_workload_detail_uses_full_workspace_modal_reference_structure() -> None:
     template = _read('app/templates/inventory/workloads/partials/_workload_detail_content.html')
 
-    assert 'data-kaori-detail-variant="inline-expanded"' in template
+    assert 'data-kaori-detail-variant="full-workspace-modal"' in template
     assert "detail.detail_card('Workload Identity'" in template
     assert "detail.detail_card('Runtime State'" in template
     assert "detail.detail_card('Pod Template'" in template

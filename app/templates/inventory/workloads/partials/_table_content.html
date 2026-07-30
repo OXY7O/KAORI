@@ -1,7 +1,7 @@
 {% import "components/table.html" as table_ui %}
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table_label.html" as table_label %}
-{% import "components/details/_expandable_row.html" as expandable %}
+{% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <div class="overflow-x-auto">
     <table class="{{ table_ui.table_classes('min-w-[76rem]') }}">
         <thead class="{{ table_ui.head_classes() }}">
@@ -32,10 +32,9 @@
                         <p class="mt-0.5 break-all text-xs leading-5 text-content-muted">{{ workload.delivery_supporting }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes(true) }}">
-                        {{ expandable.toggle_button('inventory-workloads', workload.id, url_for('inventory.workload_details', workload_id=workload.id), 'workload-detail-content-' ~ workload.id, 'workload-detail-row-' ~ workload.id, open_label='View Details') }}
+                        {{ resource_detail_modal.detail_button(workload.id, url_for('inventory.workload_details', workload_id=workload.id), workload.name, 'Workload') }}
                     </td>
                 </tr>
-                {{ expandable.detail_row('workload-detail-row-' ~ workload.id, 'workload-detail-content-' ~ workload.id, 6) }}
             {% else %}
                 <tr><td colspan="6" class="p-0">{% set empty_state_icon = "boxes" %}{% set empty_state_title = "No Workload Inventory Found" %}{% set empty_state_description = "Adjust the active filters or sync cluster inventory to collect Kubernetes workload data." %}{% set empty_state_min_height = "min-h-[190px]" %}{% include 'components/states/_empty_state.html' %}</td></tr>
             {% endfor %}
