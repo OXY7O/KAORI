@@ -26,14 +26,14 @@ Exact collection timing and coverage belong here, not in the page hero.
 
 ## Visual Contract
 
-- one `rounded-xl` bordered surface;
-- a 5/7 responsive composition on wide screens;
-- a 44 px Violet-soft leading icon;
-- `text-base font-semibold` snapshot title;
-- borderless semantic status label;
-- a dedicated source strip on the left;
-- four neutral context metrics in a 2×2 grid;
-- no arbitrary font sizes, tracking, or page-local status geometry.
+- one compact `rounded-xl` bordered surface;
+- a 4/8 responsive composition on wide screens;
+- 16 px outer padding and a 36 px Violet-soft leading icon;
+- `text-base font-semibold` snapshot title with an inline borderless status label;
+- one concise sentence-case interpretation;
+- snapshot source rendered as inline metadata rather than a second nested surface;
+- four compact neutral metrics in one desktop row and a 2×2 responsive grid;
+- no arbitrary font sizes, tracking, page-local status geometry, or decorative metric icon tiles.
 
 The four canonical metrics are:
 
@@ -54,3 +54,8 @@ Appropriate for:
 - other read-only datasets with a committed generation boundary.
 
 Do not use it for live provider health, transient request progress, or a general KPI row. Do not repeat its timestamp, freshness, or coverage values in the hero.
+
+
+## Density Rule
+
+The bar is context, not a dashboard KPI section. Keep it visually compact enough to sit between the hero and the primary catalog without becoming a second hero. Do not add a separate eyebrow row, source card, large metric tiles, progress visualization, or repeated freshness explanation.

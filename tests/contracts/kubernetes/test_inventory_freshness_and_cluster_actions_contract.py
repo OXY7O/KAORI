@@ -35,10 +35,18 @@ def test_every_inventory_workspace_shows_committed_snapshot_freshness() -> None:
     assert 'Latest Collected' in shared
     assert 'Active Scope' in shared
     assert 'Committed Coverage' in shared
-    assert 'Snapshot Source' in shared
     assert 'Snapshot Exceptions' in shared
     assert 'inventory_freshness.exception_label' in freshness
     assert 'table_label.status_label' in shared
+    assert 'p-4' in shared
+    assert 'xl:col-span-4' in shared
+    assert 'xl:col-span-8' in shared
+    assert 'xl:grid-cols-4' in shared
+    assert '>Source:</span>' in shared
+    assert 'h-9 w-9' in shared
+    assert 'p-5' not in shared
+    assert 'h-11 w-11' not in shared
+    assert 'Snapshot Source</p>' not in shared
 
 
 def test_inventory_freshness_uses_committed_cluster_inventory_snapshots() -> None:

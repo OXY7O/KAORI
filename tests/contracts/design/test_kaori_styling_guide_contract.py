@@ -224,8 +224,11 @@ def test_inventory_overview_components_and_pattern_are_documented() -> None:
     assert 'components/SIDE_DRAWER.md' in design_readme
     assert 'patterns/KUBERNETES_INVENTORY_OVERVIEW.md' in design_readme
     assert 'table_label.status_label' in snapshot
-    assert 'Snapshot Source' in snapshot
+    assert '>Source:</span>' in snapshot
     assert 'Snapshot Exceptions' in snapshot
+    assert 'xl:col-span-4' in snapshot
+    assert 'xl:col-span-8' in snapshot
+    assert 'xl:grid-cols-4' in snapshot
     assert 'Open Inventory' in asset_card
     assert 'role="dialog"' in drawer
     assert '{% macro section(' in drawer

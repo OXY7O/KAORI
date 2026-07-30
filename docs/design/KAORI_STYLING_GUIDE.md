@@ -387,7 +387,7 @@ Avoid stacking multiple dark or tinted backgrounds. Use whitespace, divider, bor
 
 ### Snapshot context bar
 
-Use `snapshot_context_bar.html` for committed, archived, or worker-generated datasets. It owns the semantic snapshot state, concise interpretation, source strip, latest collected time, active scope, committed coverage, and snapshot exceptions. The canonical layout uses a 5/7 composition with four neutral context metrics. Exact sync time, freshness, and coverage belong here and must not be repeated in the hero.
+Use `snapshot_context_bar.html` for committed, archived, or worker-generated datasets. It owns the semantic snapshot state, concise interpretation, source strip, latest collected time, active scope, committed coverage, and snapshot exceptions. The canonical compact layout uses a 4/8 composition, inline source metadata, and four neutral context metrics in one desktop row. Exact sync time, freshness, and coverage belong here and must not be repeated in the hero.
 
 ### Inventory asset card
 

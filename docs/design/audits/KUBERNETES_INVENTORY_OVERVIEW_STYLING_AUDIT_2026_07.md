@@ -6,7 +6,7 @@ Approved and implemented:
 
 - A1 — reusable Inventory Asset Catalog;
 - B1 — remove duplicated supporting metric row;
-- C1 — canonical Inventory Data Snapshot;
+- C1 — canonical compact Inventory Data Snapshot;
 - D2 — Compact Cluster Inventory Table with `View Details` drawer;
 - remove sync, freshness, and coverage duplication from the hero;
 - enrich the cluster drawer with summary, condition explanations, data boundary, and state-aware guidance.
@@ -35,7 +35,7 @@ components/side_drawer.html
 
 ```text
 Hero — fleet posture only
-Inventory Data Snapshot — source, time, scope, coverage, exceptions
+Compact Inventory Data Snapshot — source, time, scope, coverage, exceptions
 Eight-Asset Catalog
 Compact Cluster Table
 Cluster Detail Drawer

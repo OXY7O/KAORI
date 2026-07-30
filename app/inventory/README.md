@@ -123,7 +123,7 @@ The Inventory Overview is the canonical reference for fleet-level inventory comp
 
 ```text
 Canonical Hero
-Inventory Data Snapshot
+Compact Inventory Data Snapshot
 Inventory Asset Catalog
 Compact Cluster Inventory Table
 View Details → Side Drawer

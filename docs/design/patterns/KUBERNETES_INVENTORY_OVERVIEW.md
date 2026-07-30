@@ -33,7 +33,7 @@ The hero does not show last sync, freshness percentage, freshness window, or com
 
 ### Inventory Data Snapshot
 
-Uses `snapshot_context_bar.html` and owns:
+Uses the compact `snapshot_context_bar.html` pattern between the hero and asset catalog. It owns:
 
 - committed source;
 - semantic snapshot state;
@@ -41,6 +41,8 @@ Uses `snapshot_context_bar.html` and owns:
 - active scope;
 - committed coverage;
 - stale and missing snapshot exceptions.
+
+The component remains one compact context row. It does not become a second hero or a multi-row KPI section.
 
 ### Inventory Asset Catalog
 

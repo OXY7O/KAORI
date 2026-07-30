@@ -1,15 +1,13 @@
 {% import "components/table_label.html" as table_label %}
-{# Canonical context bar for committed or worker-generated snapshots. #}
+{# Canonical compact context bar for committed or worker-generated snapshots. #}
 {% macro metric(icon, label, value) -%}
-    <div class="flex min-w-0 items-start gap-3 rounded-lg bg-surface-hover px-3 py-3">
-        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
-              aria-hidden="true">
-            <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-        </span>
-        <div class="min-w-0">
-            <dt class="text-xs font-semibold text-content-muted">{{ label }}</dt>
-            <dd class="mt-1 break-words text-sm font-semibold text-content-primary">{{ value }}</dd>
-        </div>
+    <div class="min-w-0 rounded-lg bg-surface-hover px-3 py-2.5">
+        <dt class="flex min-w-0 items-center gap-2 text-xs font-semibold text-content-muted">
+            <i data-lucide="{{ icon }}" class="h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+            <span class="truncate">{{ label }}</span>
+        </dt>
+        <dd class="mt-1 truncate text-sm font-semibold text-content-primary"
+            title="{{ value }}">{{ value }}</dd>
     </div>
 {%- endmacro %}
 {% macro render(
@@ -22,40 +20,30 @@
     coverage_label,
     exceptions_label='No Exceptions',
     icon='database',
-    eyebrow='Snapshot Context',
     title='Inventory Data Snapshot'
 ) -%}
     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
              aria-label="{{ title }}">
-        <div class="grid gap-5 p-5 xl:grid-cols-12 xl:items-stretch">
-            <div class="flex min-w-0 flex-col xl:col-span-5">
-                <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary"
-                          aria-hidden="true">
-                        <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
-                    </span>
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold text-kaori-primary">{{ eyebrow }}</p>
-                        <div class="mt-1 flex flex-wrap items-center gap-2">
-                            <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
-                            {{ table_label.status_label(status, tone, none, 'detail') }}
-                        </div>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">{{ description }}</p>
+        <div class="grid gap-4 p-4 xl:grid-cols-12 xl:items-center">
+            <div class="flex min-w-0 items-start gap-3 xl:col-span-4">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
+                      aria-hidden="true">
+                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0 flex-1">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
+                        {{ table_label.status_label(status, tone, none, 'detail') }}
                     </div>
-                </div>
-                <div class="mt-4 flex items-center gap-3 rounded-lg border border-outline-subtle bg-kaori-soft px-3 py-2.5">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
-                          aria-hidden="true">
-                        <i data-lucide="database" class="h-4 w-4"></i>
-                    </span>
-                    <div class="min-w-0">
-                        <p class="text-xs font-semibold text-content-muted">Snapshot Source</p>
-                        <p class="mt-0.5 truncate text-sm font-semibold text-content-primary"
-                           title="{{ source_label }}">{{ source_label }}</p>
-                    </div>
+                    <p class="mt-1 text-xs leading-5 text-content-secondary">{{ description }}</p>
+                    <p class="mt-1.5 flex min-w-0 items-center gap-1.5 text-xs text-content-muted">
+                        <i data-lucide="database" class="h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                        <span class="shrink-0 font-semibold text-content-secondary">Source:</span>
+                        <span class="truncate" title="{{ source_label }}">{{ source_label }}</span>
+                    </p>
                 </div>
             </div>
-            <dl class="grid min-w-0 gap-3 sm:grid-cols-2 xl:col-span-7">
+            <dl class="grid min-w-0 gap-2 sm:grid-cols-2 xl:col-span-8 xl:grid-cols-4">
                 {{ metric('clock-3', 'Latest Collected', latest_collected) }}
                 {{ metric('crosshair', 'Active Scope', scope_label) }}
                 {{ metric('database-backup', 'Committed Coverage', coverage_label) }}
