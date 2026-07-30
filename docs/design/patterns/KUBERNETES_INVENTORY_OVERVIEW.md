@@ -10,21 +10,37 @@ app/templates/inventory/overview/
 
 ```text
 Canonical Hero
-Snapshot Context Bar
+Inventory Data Snapshot
 Inventory Asset Catalog
 Compact Cluster Inventory Table
-└── View Details → Right Side Drawer
+└── View Details → Right-Side Drawer
 ```
 
 ## Ownership
 
 ### Hero
 
-Owns fleet posture, high-level coverage/freshness, collected-object total, and `Manage Clusters`.
+Owns fleet identity and high-level posture only:
 
-### Snapshot Context Bar
+- registered clusters;
+- inventory asset-type count;
+- collected-object total;
+- connected-cluster posture;
+- exceptional inventory-signal count;
+- `Manage Clusters` action.
 
-Owns exact source, collection timestamp, active scope, and committed coverage. It must not duplicate an asset metric grid.
+The hero does not show last sync, freshness percentage, freshness window, or committed coverage.
+
+### Inventory Data Snapshot
+
+Uses `snapshot_context_bar.html` and owns:
+
+- committed source;
+- semantic snapshot state;
+- exact latest collection time;
+- active scope;
+- committed coverage;
+- stale and missing snapshot exceptions.
 
 ### Inventory Asset Catalog
 
@@ -42,13 +58,17 @@ Asset-level counts belong in the detail drawer, not in the comparison row.
 
 ### Detail Drawer
 
-Contains:
+Uses the shared Side Drawer content primitives and contains:
 
+- Cluster Snapshot Summary;
 - Cluster Identity;
-- Inventory Breakdown;
 - Snapshot Context;
+- Inventory Breakdown;
 - Inventory Signals;
+- Operational Context;
 - `Open Cluster Inventory` action.
+
+The summary includes total objects, populated asset categories, and largest inventory segment. The final Operational Context section explains that the data is a committed database snapshot and provides one state-aware next step.
 
 ## Data Contract
 
@@ -56,7 +76,8 @@ Contains:
 - per-cluster counts use grouped aggregate queries, not one query per cluster and asset;
 - Healthy means connected and collected within the freshness window;
 - normal freshness is not repeated as an Inventory Signal;
-- signals represent only conditions requiring awareness.
+- signals represent only conditions requiring awareness;
+- state-aware drawer guidance distinguishes disconnected, never-collected, stale, signalled, and current snapshots.
 
 ## Pagination
 

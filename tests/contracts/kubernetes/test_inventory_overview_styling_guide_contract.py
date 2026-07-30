@@ -14,6 +14,11 @@ def test_inventory_overview_uses_canonical_hero_snapshot_catalog_and_table_compo
     table_shell = read('app/templates/inventory/overview/partials/_resources_by_cluster.html')
 
     assert 'page_hero.context_card' in hero
+    assert 'Last Sync' not in hero
+    assert "'Coverage'" not in hero
+    assert "'Freshness'" not in hero
+    assert "'Active Signals'" in hero
+    assert 'Asset Types' in hero
     assert 'components/snapshot_context_bar.html' in freshness
     assert 'components/inventory_asset_card.html' in catalog
     assert 'components/operational_section_card.html' in catalog
@@ -53,9 +58,16 @@ def test_compact_cluster_table_has_details_button_and_shared_right_drawer() -> N
     assert 'components/side_drawer.html' in content
     assert 'Inventory Breakdown' in content
     assert 'Snapshot Context' in content
+    assert 'Cluster Snapshot Summary' in content
+    assert 'Largest Segment' in content
+    assert 'Operational Context' in content
+    assert 'Data Boundary' in content
+    assert 'cluster.guidance.title' in content
     assert 'Open Cluster Inventory' in content
     assert 'role="dialog"' in drawer
     assert 'aria-modal="true"' in drawer
+    assert '{% macro section(' in drawer
+    assert '{% macro metric(' in drawer
 
 
 def test_cluster_table_pagination_uses_resource_case_and_visible_rows_label() -> None:
@@ -74,7 +86,10 @@ def test_inventory_overview_uses_grouped_counts_and_fresh_health_semantics() -> 
     assert '.group_by(model.cluster_id)' in backend
     assert 'def _cluster_resource_counts(' not in backend
     assert 'ConfigurationInventory' in backend
-    assert "'asset_catalog': _asset_catalog(totals)" in backend
+    assert "'asset_catalog': asset_catalog" in backend
     assert "'configuration': _grouped_current_counts(ConfigurationInventory, cluster_ids)" in backend
     assert 'if connected:' in backend
     assert 'healthy_clusters += 1' in backend
+    assert 'def _inventory_guidance(' in backend
+    assert "'active_signal_count': active_signal_count" in backend
+    assert "'dominant_asset': dominant_asset" in backend

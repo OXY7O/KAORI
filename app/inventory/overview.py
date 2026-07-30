@@ -22,6 +22,17 @@ from app.models import (
 
 INVENTORY_FRESHNESS_HOURS = 24
 
+INVENTORY_ASSET_LABELS = {
+    'nodes': 'Nodes',
+    'namespaces': 'Namespaces',
+    'workloads': 'Workloads',
+    'pods': 'Pods',
+    'services': 'Services',
+    'ingresses': 'Ingresses',
+    'storage': 'Storage',
+    'configuration': 'Configuration',
+}
+
 
 def _normalize_datetime(value: datetime | None) -> datetime | None:
     if value is None:
@@ -51,20 +62,126 @@ def _build_inventory_signals(
     signals: list[dict[str, str]] = []
 
     if not connected:
-        signals.append({'label': 'Connection Risk', 'tone': 'critical'})
+        signals.append(
+            {
+                'label': 'Connection Risk',
+                'tone': 'critical',
+                'icon': 'plug-zap',
+                'description': (
+                    'The cluster connection is unavailable, so future inventory '
+                    'updates cannot be confirmed.'
+                ),
+            }
+        )
 
     if synced_at is None:
-        signals.append({'label': 'Never Collected', 'tone': 'warning'})
+        signals.append(
+            {
+                'label': 'Never Collected',
+                'tone': 'warning',
+                'icon': 'database-zap',
+                'description': (
+                    'No committed inventory snapshot is available for this cluster.'
+                ),
+            }
+        )
     elif _is_stale_inventory(synced_at):
-        signals.append({'label': 'Stale Snapshot', 'tone': 'warning'})
+        signals.append(
+            {
+                'label': 'Stale Snapshot',
+                'tone': 'warning',
+                'icon': 'clock-alert',
+                'description': (
+                    f'The latest snapshot is older than the '
+                    f'{INVENTORY_FRESHNESS_HOURS}-hour freshness window.'
+                ),
+            }
+        )
 
     if pod_count >= 100 or workload_count >= 50:
-        signals.append({'label': 'High Density', 'tone': 'info'})
+        signals.append(
+            {
+                'label': 'High Density',
+                'tone': 'info',
+                'icon': 'boxes',
+                'description': (
+                    'The cluster contains a high number of pods or workloads and may '
+                    'need closer inventory review.'
+                ),
+            }
+        )
 
     if node_count > 0 and storage_count == 0:
-        signals.append({'label': 'No Storage Data', 'tone': 'unknown'})
+        signals.append(
+            {
+                'label': 'No Storage Data',
+                'tone': 'unknown',
+                'icon': 'hard-drive',
+                'description': (
+                    'Node inventory exists, but no current storage inventory records '
+                    'were collected.'
+                ),
+            }
+        )
 
     return signals[:3]
+
+
+def _inventory_guidance(
+    *,
+    connected: bool,
+    synced_at: datetime | None,
+    signals: list[dict[str, str]],
+) -> dict[str, str]:
+    if not connected:
+        return {
+            'title': 'Restore Cluster Connection',
+            'description': (
+                'Reconnect the cluster before relying on future inventory updates or '
+                'using this snapshot for operational decisions.'
+            ),
+            'tone': 'critical',
+            'icon': 'plug-zap',
+        }
+    if synced_at is None:
+        return {
+            'title': 'Run the First Inventory Sync',
+            'description': (
+                'Create the first committed inventory snapshot before reviewing asset '
+                'coverage or cluster-level inventory posture.'
+            ),
+            'tone': 'warning',
+            'icon': 'database-zap',
+        }
+    if _is_stale_inventory(synced_at):
+        return {
+            'title': 'Refresh the Inventory Snapshot',
+            'description': (
+                f'Run Inventory Sync because this snapshot is older than the '
+                f'{INVENTORY_FRESHNESS_HOURS}-hour freshness window.'
+            ),
+            'tone': 'warning',
+            'icon': 'refresh-cw',
+        }
+    if signals:
+        return {
+            'title': 'Review Inventory Signals',
+            'description': (
+                'Open the relevant asset inventory to validate the highlighted conditions '
+                'before planning changes.'
+            ),
+            'tone': 'info',
+            'icon': 'scan-search',
+        }
+    return {
+        'title': 'Snapshot Ready for Review',
+        'description': (
+            'The committed snapshot is current and no inventory signals require immediate '
+            'attention. Continue to an asset inventory for object-level review.'
+        ),
+        'tone': 'normal',
+        'icon': 'circle-check',
+    }
 
 
 def get_cluster_by_id(cluster_id: str) -> Cluster | None:
@@ -169,6 +286,12 @@ def get_inventory_freshness_context(cluster_id: str = '') -> dict[str, Any]:
             f'{INVENTORY_FRESHNESS_HOURS}-hour freshness window.'
         )
 
+    exception_label = (
+        f'{stale_count} Stale · {missing_count} Missing'
+        if stale_count or missing_count
+        else 'No Exceptions'
+    )
+
     return {
         'latest_collected_at': latest,
         'oldest_collected_at': oldest,
@@ -182,6 +305,7 @@ def get_inventory_freshness_context(cluster_id: str = '') -> dict[str, Any]:
         'tone': tone,
         'description': description,
         'source_label': 'Committed Database Snapshot',
+        'exception_label': exception_label,
     }
 
 
@@ -276,13 +400,24 @@ def get_inventory_overview() -> dict[str, Any]:
         counts = {key: values.get(cluster.id, 0) for key, values in count_maps.items()}
         total_objects = sum(counts.values())
         sync_label, sync_tone = _sync_status(synced_at)
+        connected = cluster.status == 'connected'
         signals = _build_inventory_signals(
-            connected=cluster.status == 'connected',
+            connected=connected,
             synced_at=synced_at,
             node_count=counts['nodes'],
             workload_count=counts['workloads'],
             pod_count=counts['pods'],
             storage_count=counts['storage'],
+        )
+        populated_asset_types = sum(1 for count in counts.values() if count > 0)
+        dominant_asset_key = max(counts, key=counts.get) if total_objects else None
+        dominant_asset = (
+            {
+                'label': INVENTORY_ASSET_LABELS[dominant_asset_key],
+                'count': counts[dominant_asset_key],
+            }
+            if dominant_asset_key
+            else {'label': 'No Assets', 'count': 0}
         )
 
         cluster_rows.append(
@@ -298,6 +433,15 @@ def get_inventory_overview() -> dict[str, Any]:
                 'counts': counts,
                 'total_objects': total_objects,
                 'signals': signals,
+                'populated_asset_types': populated_asset_types,
+                'dominant_asset': dominant_asset,
+                'snapshot_source': 'Committed Database Snapshot',
+                'freshness_window_hours': INVENTORY_FRESHNESS_HOURS,
+                'guidance': _inventory_guidance(
+                    connected=connected,
+                    synced_at=synced_at,
+                    signals=signals,
+                ),
             }
         )
 
@@ -313,6 +457,8 @@ def get_inventory_overview() -> dict[str, Any]:
         'configuration': _count_rows(ConfigurationInventory),
     }
     inventory_total = sum(value for key, value in totals.items() if key != 'clusters')
+    asset_catalog = _asset_catalog(totals)
+    active_signal_count = sum(len(cluster['signals']) for cluster in cluster_rows)
     health = get_inventory_health()
     total_clusters = totals['clusters']
     posture_status = (
@@ -335,7 +481,8 @@ def get_inventory_overview() -> dict[str, Any]:
         'total_storage': totals['storage'],
         'total_configuration': totals['configuration'],
         'inventory_total': inventory_total,
-        'asset_catalog': _asset_catalog(totals),
+        'asset_catalog': asset_catalog,
+        'active_signal_count': active_signal_count,
         'clusters': cluster_rows,
         'inventory_summary': inventory_summary,
         'health': health,

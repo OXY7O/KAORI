@@ -7,6 +7,5 @@
     inventory_freshness.latest_collected_at|user_datetime if inventory_freshness.latest_collected_at else 'Not Available',
     inventory_freshness.scope_label,
     inventory_freshness.committed_count ~ '/' ~ inventory_freshness.cluster_count ~ ' Committed',
-    icon='clock-3',
-    eyebrow='Inventory Data Snapshot'
+    inventory_freshness.exception_label
 ) }}

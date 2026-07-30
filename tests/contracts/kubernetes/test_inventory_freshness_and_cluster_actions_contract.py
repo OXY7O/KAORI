@@ -30,11 +30,14 @@ def test_every_inventory_workspace_shows_committed_snapshot_freshness() -> None:
     freshness = read(INVENTORY_TEMPLATES / 'components' / '_data_freshness.html')
     shared = read(ROOT / 'app/templates/components/snapshot_context_bar.html')
     assert 'components/snapshot_context_bar.html' in freshness
-    assert 'Inventory Data Snapshot' in freshness
+    assert 'Inventory Data Snapshot' in shared
     assert 'inventory_freshness.latest_collected_at|user_datetime' in freshness
     assert 'Latest Collected' in shared
     assert 'Active Scope' in shared
     assert 'Committed Coverage' in shared
+    assert 'Snapshot Source' in shared
+    assert 'Snapshot Exceptions' in shared
+    assert 'inventory_freshness.exception_label' in freshness
     assert 'table_label.status_label' in shared
 
 
@@ -45,6 +48,7 @@ def test_inventory_freshness_uses_committed_cluster_inventory_snapshots() -> Non
     assert 'def get_inventory_freshness_context(' in overview
     assert 'get_inventory_cluster_summary()' in overview
     assert "'source_label': 'Committed Database Snapshot'" in overview
+    assert "'exception_label': exception_label" in overview
     assert '@inventory_bp.context_processor' in routes
     assert 'get_inventory_freshness_context(cluster_id=cluster_id)' in routes
 

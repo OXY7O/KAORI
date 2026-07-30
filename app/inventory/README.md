@@ -105,7 +105,7 @@ All resource inventory pages use the shared KAORI table block, loading bar, filt
 
 ### Canonical Inventory Page Composition
 
-- Inventory Overview and every resource page use `components/page_hero.html::context_card` for the right-side hero posture. Do not rebuild hero metrics, status badges, or the Manage Clusters action with page-local markup.
+- Inventory Overview and every resource page use `components/page_hero.html::context_card` for the right-side hero posture. Do not rebuild hero metrics, status badges, or the Manage Clusters action with page-local markup. Inventory Overview keeps exact sync, freshness, and coverage values out of the hero because `snapshot_context_bar.html` owns that context.
 - Resource summary blocks use `inventory/components/_summary.html`. The component owns the summary header, four primary metrics, one progress metric, and two supporting status metrics.
 - Resource table cards use `components/table.html::inventory_block_header`, canonical filter labels/controls, and canonical table/head/body/row classes. Page templates remain responsible only for filter fields and route parameters.
 - View More cards use `components/details/_detail_content.html` for card geometry, rows, metadata rows, and status rows. Local copies of `detail_card`, `detail_row`, `metadata_row`, or `status_row` are not permitted.
@@ -123,7 +123,7 @@ The Inventory Overview is the canonical reference for fleet-level inventory comp
 
 ```text
 Canonical Hero
-Snapshot Context Bar
+Inventory Data Snapshot
 Inventory Asset Catalog
 Compact Cluster Inventory Table
 View Details → Side Drawer
@@ -131,7 +131,7 @@ View Details → Side Drawer
 
 - Asset catalog cards use `components/inventory_asset_card.html` and link to Nodes, Namespaces, Workloads, Pods, Services, Ingresses, Storage, and Configuration.
 - Cluster is a collection scope/provider, not an asset card.
-- Snapshot source, exact time, active scope, and committed coverage use `components/snapshot_context_bar.html`.
-- The cluster comparison table remains compact. Asset counts belong in the `components/side_drawer.html` detail view.
+- Snapshot source, exact time, active scope, committed coverage, and stale/missing exceptions use `components/snapshot_context_bar.html`.
+- The cluster comparison table remains compact. Asset counts belong in the `components/side_drawer.html` detail view. The drawer uses shared section and metric primitives, ends with Operational Context, and provides one state-aware next action.
 - Cluster posture is Healthy only when the target is connected and its committed snapshot is inside the freshness window.
 - Per-cluster overview counts must use grouped aggregates across the selected clusters. Do not reintroduce one count query per cluster and asset type.

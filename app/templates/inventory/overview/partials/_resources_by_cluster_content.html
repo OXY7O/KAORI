@@ -1,4 +1,6 @@
 {% import "components/pagination.html" as pagination_ui %}
+{% import "components/details/_detail_content.html" as detail_ui %}
+{% import "components/operational_callout.html" as operational_callout %}
 {% import "components/side_drawer.html" as side_drawer %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
@@ -147,43 +149,70 @@
         {% call side_drawer.render(
             drawer_id,
             cluster.name,
-            'Committed Kubernetes inventory breakdown for this cluster.',
+            'Review the committed snapshot, inventory composition, and operational context for this cluster.',
             x_show="openDrawer === '" ~ (cluster.id|string) ~ "'",
             close_expression='openDrawer = null',
             action_href=url_for('integrations.kubernetes_detail', cluster_id=cluster.id) ~ '#inventory',
             action_label='Open Cluster Inventory',
             action_icon='boxes',
-            width='lg'
+            width='xl'
         ) %}
-            <div class="space-y-6">
-                <section aria-labelledby="{{ drawer_id }}-identity-title">
-                    <div class="flex items-start justify-between gap-4">
-                        <div>
-                            <h3 id="{{ drawer_id }}-identity-title" class="text-base font-semibold text-content-primary">Cluster Identity</h3>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary">Connection and platform context for the selected inventory source.</p>
-                        </div>
-                        {% if cluster.status == 'connected' %}
-                            {{ table_label.status_indicator_label('Connected', 'normal', none, 'detail') }}
-                        {% else %}
-                            {{ table_label.status_indicator_label('Disconnected', 'critical', none, 'detail') }}
-                        {% endif %}
-                    </div>
-                    <dl class="mt-3 grid gap-3 sm:grid-cols-2">
-                        <div class="rounded-lg bg-surface-hover px-3 py-2.5">
-                            <dt class="text-xs font-semibold text-content-muted">Environment</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary">{{ cluster.environment|environment_name(empty='Not Specified') }}</dd>
-                        </div>
-                        <div class="rounded-lg bg-surface-hover px-3 py-2.5">
-                            <dt class="text-xs font-semibold text-content-muted">Kubernetes Version</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary">{{ cluster.kubernetes_version }}</dd>
-                        </div>
+            <div class="space-y-5">
+                {% set connection_badge %}
+                    {% if cluster.status == 'connected' %}
+                        {{ table_label.status_indicator_label('Connected', 'normal', none, 'detail') }}
+                    {% else %}
+                        {{ table_label.status_indicator_label('Disconnected', 'critical', none, 'detail') }}
+                    {% endif %}
+                {% endset %}
+                {% call side_drawer.section(
+                    'Cluster Snapshot Summary',
+                    'A concise view of the current committed inventory composition.',
+                    'layout-dashboard',
+                    badge=connection_badge,
+                    variant='highlight'
+                ) %}
+                    <dl class="grid gap-3 sm:grid-cols-3">
+                        {{ side_drawer.metric('Total Objects', cluster.total_objects, 'database') }}
+                        {{ side_drawer.metric('Asset Categories', cluster.populated_asset_types ~ '/8', 'layers-3', 'categories with collected objects') }}
+                        {{ side_drawer.metric('Largest Segment', cluster.dominant_asset.label, 'chart-no-axes-column', cluster.dominant_asset.count ~ ' objects') }}
                     </dl>
-                </section>
+                {% endcall %}
 
-                <section aria-labelledby="{{ drawer_id }}-breakdown-title">
-                    <h3 id="{{ drawer_id }}-breakdown-title" class="text-base font-semibold text-content-primary">Inventory Breakdown</h3>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">Object totals from the latest committed inventory generation.</p>
-                    <dl class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div class="grid gap-4 sm:grid-cols-2">
+                    {% call side_drawer.section(
+                        'Cluster Identity',
+                        'Platform and registration context for the selected inventory source.',
+                        'server'
+                    ) %}
+                        <div class="space-y-3">
+                            {{ detail_ui.detail_row('Environment', cluster.environment|environment_name(empty='Not Specified')) }}
+                            {{ detail_ui.detail_row('Kubernetes Version', cluster.kubernetes_version) }}
+                            {{ detail_ui.detail_row('Registered Cluster', cluster.name) }}
+                        </div>
+                    {% endcall %}
+
+                    {% set snapshot_badge %}{{ table_label.status_label(cluster.sync_status_label, cluster.sync_status_tone, none, 'detail') }}{% endset %}
+                    {% call side_drawer.section(
+                        'Snapshot Context',
+                        'Collection boundary and freshness for the committed generation.',
+                        'clock-3',
+                        badge=snapshot_badge
+                    ) %}
+                        <div class="space-y-3">
+                            {{ detail_ui.detail_row('Last Collected', cluster.synced_at|user_datetime if cluster.synced_at else 'Not Collected') }}
+                            {{ detail_ui.detail_row('Freshness Window', cluster.freshness_window_hours ~ ' Hours') }}
+                            {{ detail_ui.detail_row('Snapshot Source', cluster.snapshot_source) }}
+                        </div>
+                    {% endcall %}
+                </div>
+
+                {% call side_drawer.section(
+                    'Inventory Breakdown',
+                    'Object totals from the latest committed inventory generation.',
+                    'boxes'
+                ) %}
+                    <dl class="grid grid-cols-2 gap-3 sm:grid-cols-4">
                         {% for label, key, icon in [
                             ('Nodes', 'nodes', 'cpu'),
                             ('Namespaces', 'namespaces', 'folder-tree'),
@@ -194,45 +223,59 @@
                             ('Storage', 'storage', 'hard-drive'),
                             ('Configuration', 'configuration', 'file-cog')
                         ] %}
-                            <div class="rounded-lg border border-outline-default bg-surface-card p-3">
-                                <dt class="flex items-center gap-2 text-xs font-semibold text-content-muted">
-                                    <i data-lucide="{{ icon }}" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
-                                    {{ label }}
-                                </dt>
-                                <dd class="mt-2 text-xl font-semibold text-content-primary">{{ cluster.counts[key] }}</dd>
-                            </div>
+                            {{ side_drawer.metric(label, cluster.counts[key], icon) }}
                         {% endfor %}
                     </dl>
-                </section>
+                {% endcall %}
 
-                <section aria-labelledby="{{ drawer_id }}-snapshot-title">
-                    <h3 id="{{ drawer_id }}-snapshot-title" class="text-base font-semibold text-content-primary">Snapshot Context</h3>
-                    <dl class="mt-3 grid gap-3 sm:grid-cols-2">
-                        <div class="rounded-lg bg-surface-hover px-3 py-2.5">
-                            <dt class="text-xs font-semibold text-content-muted">Last Collected</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary">{% if cluster.synced_at %}{{ cluster.synced_at|user_datetime }}{% else %}Not Collected{% endif %}</dd>
-                        </div>
-                        <div class="rounded-lg bg-surface-hover px-3 py-2.5">
-                            <dt class="text-xs font-semibold text-content-muted">Snapshot Status</dt>
-                            <dd class="mt-1">{{ table_label.status_label(cluster.sync_status_label, cluster.sync_status_tone, none, 'detail') }}</dd>
-                        </div>
-                        <div class="rounded-lg bg-surface-hover px-3 py-2.5 sm:col-span-2">
-                            <dt class="text-xs font-semibold text-content-muted">Total Objects</dt>
-                            <dd class="mt-1 text-sm font-semibold text-content-primary">{{ cluster.total_objects }}</dd>
-                        </div>
-                    </dl>
-                </section>
-
-                <section aria-labelledby="{{ drawer_id }}-signals-title">
-                    <h3 id="{{ drawer_id }}-signals-title" class="text-base font-semibold text-content-primary">Inventory Signals</h3>
-                    <div class="mt-3 flex flex-wrap gap-2">
+                {% call side_drawer.section(
+                    'Inventory Signals',
+                    'Conditions that may affect how this cluster snapshot should be interpreted.',
+                    'scan-search'
+                ) %}
+                    <div class="grid gap-3 sm:grid-cols-2">
                         {% for signal in cluster.signals %}
-                            {{ table_label.status_label(signal.label, signal.tone, none, 'detail') }}
+                            {{ operational_callout.render(
+                                signal.label,
+                                signal.description,
+                                icon=signal.icon,
+                                tone=signal.tone,
+                                variant='semantic'
+                            ) }}
                         {% else %}
-                            {{ table_label.status_label('No Active Signals', 'normal', none, 'detail') }}
+                            {{ operational_callout.render(
+                                'No Active Inventory Signals',
+                                'The current committed snapshot has no exceptional inventory conditions requiring attention.',
+                                icon='circle-check',
+                                tone='normal',
+                                variant='semantic',
+                                extra_classes='sm:col-span-2'
+                            ) }}
                         {% endfor %}
                     </div>
-                </section>
+                {% endcall %}
+
+                {% call side_drawer.section(
+                    'Operational Context',
+                    'Use these boundaries and next steps before acting on the inventory data.',
+                    'compass'
+                ) %}
+                    <div class="grid gap-3">
+                        {{ operational_callout.render(
+                            'Data Boundary',
+                            'This drawer reads the latest committed database snapshot. It does not query the Kubernetes API live.',
+                            icon='database',
+                            tone='info'
+                        ) }}
+                        {{ operational_callout.render(
+                            cluster.guidance.title,
+                            cluster.guidance.description,
+                            icon=cluster.guidance.icon,
+                            tone=cluster.guidance.tone,
+                            variant='semantic'
+                        ) }}
+                    </div>
+                {% endcall %}
             </div>
         {% endcall %}
     {% endfor %}

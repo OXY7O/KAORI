@@ -387,7 +387,7 @@ Avoid stacking multiple dark or tinted backgrounds. Use whitespace, divider, bor
 
 ### Snapshot context bar
 
-Use `snapshot_context_bar.html` for committed, archived, or worker-generated datasets. It owns source, semantic snapshot status, latest collected time, active scope, and committed coverage. Do not rebuild this information as a page-local metric strip.
+Use `snapshot_context_bar.html` for committed, archived, or worker-generated datasets. It owns the semantic snapshot state, concise interpretation, source strip, latest collected time, active scope, committed coverage, and snapshot exceptions. The canonical layout uses a 5/7 composition with four neutral context metrics. Exact sync time, freshness, and coverage belong here and must not be repeated in the hero.
 
 ### Inventory asset card
 
@@ -395,7 +395,7 @@ Use `inventory_asset_card.html` for one navigable Kubernetes asset type. Asset c
 
 ### Right-side detail drawer
 
-Use `side_drawer.html` when row details are too large for an expanded row but the comparison table must remain visible. The shared drawer owns overlay, panel geometry, close behavior, scrolling, accessibility, and optional footer action.
+Use `side_drawer.html` when row details are too large for an expanded row but the comparison table must remain visible. The shared drawer owns overlay, panel geometry, close behavior, scrolling, accessibility, optional footer action, and reusable `section(...)` and `metric(...)` content primitives. Rich operational drawers follow Summary → Identity/Snapshot → Domain Breakdown → Signals → Operational Context. The final Operational Context remains visible, states the data boundary, and gives one state-aware next action.
 
 ### Operational section card
 

@@ -6,20 +6,24 @@ Approved and implemented:
 
 - A1 — reusable Inventory Asset Catalog;
 - B1 — remove duplicated supporting metric row;
-- C1 — canonical Snapshot Context Bar;
-- D2 — Compact Cluster Inventory Table with `View Details` drawer.
+- C1 — canonical Inventory Data Snapshot;
+- D2 — Compact Cluster Inventory Table with `View Details` drawer;
+- remove sync, freshness, and coverage duplication from the hero;
+- enrich the cluster drawer with summary, condition explanations, data boundary, and state-aware guidance.
 
 ## Removed Drift
 
 - page-local hero posture markup;
+- hero-level last-sync and freshness duplication;
 - non-clickable mixed Cluster/asset KPI grid;
 - duplicated coverage, freshness, healthy-target, and average-object cards;
 - wide eleven-column cluster matrix;
 - `Risk Hints` terminology and duplicated `Fresh Sync` label;
 - page-local snapshot-bar typography;
+- flat drawer sections without reusable content geometry;
 - per-cluster N+1 resource count queries.
 
-## New Shared Owners
+## Shared Owners
 
 ```text
 components/snapshot_context_bar.html
@@ -30,22 +34,32 @@ components/side_drawer.html
 ## Resulting Page Structure
 
 ```text
-Hero
-Snapshot Context
+Hero — fleet posture only
+Inventory Data Snapshot — source, time, scope, coverage, exceptions
 Eight-Asset Catalog
 Compact Cluster Table
 Cluster Detail Drawer
 ```
 
-## Table Contract
+## Drawer Contract
 
-The table shows one row per registered cluster with connection, total objects, last committed snapshot, exceptional inventory signals, and one `View Details` action. The drawer exposes the complete eight-asset breakdown without increasing table width.
+The drawer follows this order:
+
+```text
+Cluster Snapshot Summary
+Identity + Snapshot Context
+Inventory Breakdown
+Inventory Signals
+Operational Context
+```
+
+Operational Context is always placed at the bottom. It states that data comes from the latest committed database snapshot and provides one next action based on connection, collection age, and active inventory signals.
 
 ## Data Semantics
 
-Healthy cluster posture now requires both:
+Healthy cluster posture requires both:
 
 - connected cluster state; and
 - a committed snapshot within the configured freshness window.
 
-Grouped aggregate queries collect counts per asset model for all clusters. The previous six-count-query loop per cluster has been removed.
+Grouped aggregate queries collect counts per asset model for all clusters. The previous count-query loop per cluster remains prohibited.

@@ -12,24 +12,37 @@ app/templates/components/snapshot_context_bar.html
 
 ## Canonical Content
 
-The bar owns four information groups:
+The component owns:
 
-1. source and semantic snapshot status;
-2. latest collected timestamp;
-3. active scope;
-4. committed coverage.
+1. snapshot title and semantic status;
+2. concise freshness or coverage interpretation;
+3. snapshot source;
+4. latest collected timestamp;
+5. active scope;
+6. committed coverage;
+7. snapshot exceptions such as stale or missing collections.
 
-The description explains any freshness or coverage limitation in one concise sentence.
+Exact collection timing and coverage belong here, not in the page hero.
 
 ## Visual Contract
 
 - one `rounded-xl` bordered surface;
-- one 40 px Violet-soft context icon;
-- source title uses `text-base font-semibold`;
-- description uses shared body hierarchy;
-- status uses the borderless semantic status-label component;
-- context values use three neutral `rounded-lg` cells;
+- a 5/7 responsive composition on wide screens;
+- a 44 px Violet-soft leading icon;
+- `text-base font-semibold` snapshot title;
+- borderless semantic status label;
+- a dedicated source strip on the left;
+- four neutral context metrics in a 2×2 grid;
 - no arbitrary font sizes, tracking, or page-local status geometry.
+
+The four canonical metrics are:
+
+```text
+Latest Collected
+Active Scope
+Committed Coverage
+Snapshot Exceptions
+```
 
 ## Usage Boundary
 
@@ -40,4 +53,4 @@ Appropriate for:
 - worker-materialized governance datasets;
 - other read-only datasets with a committed generation boundary.
 
-Do not use it for live provider health, transient request progress, or a general KPI row.
+Do not use it for live provider health, transient request progress, or a general KPI row. Do not repeat its timestamp, freshness, or coverage values in the hero.

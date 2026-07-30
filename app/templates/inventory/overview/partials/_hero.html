@@ -5,24 +5,24 @@
             {% call page_hero.intro('package-search', 'Kubernetes Inventory', 'boxes') %}
                 <h1 class="{{ page_hero.title_classes() }}">Inventory Overview</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">
-                    Review committed Kubernetes assets, snapshot coverage, and cluster-level inventory signals across the registered fleet.
+                    Review committed Kubernetes assets and cluster-level inventory signals across the registered fleet.
                 </p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
-                    {{ page_hero.meta_label('server', overview.health.connected_clusters ~ ' / ' ~ overview.total_clusters ~ ' Clusters Connected') }}
+                    {{ page_hero.meta_label('server', overview.total_clusters ~ (' Cluster Registered' if overview.total_clusters == 1 else ' Clusters Registered')) }}
+                    {{ page_hero.meta_label('layers-3', overview.asset_catalog|length ~ ' Asset Types') }}
                     {{ page_hero.meta_label('database', overview.inventory_total ~ ' Collected Objects') }}
-                    {{ page_hero.meta_label('clock-3', 'Last Sync ' ~ (overview.health.last_sync|user_datetime)) }}
                 </div>
             {% endcall %}
         </div>
         {{ page_hero.context_card(
+            'Fleet Inventory Posture',
             'Inventory Posture',
-            'Inventory Posture',
-            'Collection Coverage and Freshness',
+            'Fleet Inventory Posture',
             overview.posture.status,
             overview.posture.tone,
             [
-                ('scan-search', 'Coverage', overview.health.coverage_score ~ '%', (overview.health.synced_clusters ~ '/' ~ overview.total_clusters ~ ' clusters collected')),
-                ('clock-check', 'Freshness', overview.health.freshness_score ~ '%', (overview.health.fresh_synced ~ '/' ~ overview.total_clusters ~ ' within ' ~ overview.health.freshness_window_hours ~ 'h'))
+                ('server-cog', 'Connected', overview.health.connected_clusters ~ '/' ~ overview.total_clusters, 'cluster connections active'),
+                ('scan-search', 'Active Signals', overview.active_signal_count, ('no conditions require review' if overview.active_signal_count == 0 else 'conditions require review'))
             ],
             'Manage Clusters',
             url_for('integrations.kubernetes'),

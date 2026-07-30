@@ -18,15 +18,44 @@ app/templates/components/side_drawer.html
 - keeps domain content scrollable while the header and optional footer remain visible;
 - may include one primary destination action in the footer.
 
+## Shared Content Primitives
+
+The component also owns reusable drawer content geometry:
+
+```jinja
+side_drawer.section(...)
+side_drawer.metric(...)
+```
+
+`section(...)` owns section radius, border, icon, title hierarchy, optional description, optional badge, and highlight variant. `metric(...)` owns compact summary geometry for a label, value, icon, and optional helper.
+
+Domain templates provide the values and operational meaning. They must not rebuild section or summary-card geometry inline.
+
 ## Visual Contract
 
 - right-aligned full-height panel;
-- default maximum width `max-w-xl`;
+- default maximum width `max-w-xl`, with `max-w-2xl` for richer read-only details;
 - standard card background and left border;
 - header title uses `text-lg font-semibold`;
 - domain sections use `text-base font-semibold`;
+- optional summary section may use the Violet-soft highlight variant;
 - footer uses shared action-button classes;
 - no page-local fixed-position drawer shell.
+
+## Detail Composition
+
+A rich operational drawer should follow this order when applicable:
+
+```text
+Summary
+Identity and Snapshot Context
+Domain Breakdown
+Signals or Conditions
+Operational Context
+Footer Destination Action
+```
+
+The final Operational Context section explains the data boundary and gives one state-aware next action. This information remains visible and is not expandable.
 
 ## Accessibility
 
