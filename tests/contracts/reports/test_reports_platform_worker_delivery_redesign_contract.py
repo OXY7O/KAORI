@@ -17,9 +17,29 @@ def test_reports_pages_use_standard_heroes_and_compact_summary_strips() -> None:
         assert 'reports/components/_summary_strip.html' in source
 
     generate = read(REPORT_TEMPLATES / 'generate' / 'index.html')
+    generate_service = read(ROOT / 'app' / 'reports' / 'generate' / 'service.py')
+
     assert 'Generation Readiness' in generate
     assert 'Generation Guide' in generate
+    assert 'Follow the governed request-to-artifact flow.' in generate
+    assert 'Storage Context' in generate
+    assert 'Request Preview' in generate
+    assert 'Create Report Request' in generate
+    assert 'Report Type Guide' in generate
     assert 'xl:sticky xl:top-5 xl:self-start' in generate
+    assert 'x-collapse' not in generate
+    assert 'Data Source Context' not in generate
+    assert 'Report Output Readiness' not in generate
+    assert 'Create report request' not in generate
+    assert 'Specific cluster required' not in generate
+    assert 'Select all' not in generate
+    assert 'Reset default' not in generate
+    assert 'rounded-full' not in generate
+    assert "'generation_flow': _get_generation_flow()" in generate_service
+    assert "'data_source_context'" not in generate_service
+    assert "'report_output_readiness'" not in generate_service
+    assert 'def _get_data_source_context' not in generate_service
+    assert 'def _get_report_output_readiness' not in generate_service
     assert 'MVP2' not in generate
 
 

@@ -12,11 +12,6 @@ from app.models.user import User
 from app.reports.export.constants import (
     DEFAULT_REPORT_DOMAIN,
     DEFAULT_REPORT_SOURCE_KIND,
-    REAL_DATA_REPORT_TYPES,
-    REAL_DATA_SECTION_MAP,
-    REPORT_DOMAIN_DESCRIPTIONS,
-    REPORT_DOMAIN_LABELS,
-    SOURCE_KIND_LABELS,
 )
 from app.reports.storage.health import build_local_storage_health, build_s3_storage_health
 from app.reports.storage.service import get_configured_storage_backend_name
@@ -532,13 +527,14 @@ def get_generate_report_payload(
         'form_state': form_state,
         'errors': errors or [],
         'readiness': _get_generation_readiness(
-            storage_context,
+            storage_context=storage_context,
+            form_state=form_state,
+            selected_report_type=selected_report_type,
+            has_clusters=len(cluster_options) > 1,
         ),
         'storage_context': storage_context,
-        'data_source_context': _get_data_source_context(),
-        'report_architecture_context': _get_report_architecture_context(),
+        'generation_flow': _get_generation_flow(),
         'report_type_guide_groups': _get_report_type_guide_groups(),
-        'report_output_readiness': _get_report_output_readiness(),
         'recommended_actions': _get_recommended_actions(),
     }
 
@@ -660,11 +656,11 @@ def _get_report_type_context(
                 'requires_cluster': report_requires_specific_cluster(
                     item['value'],
                 ),
-                'cluster_scope_label': 'Specific cluster required'
+                'cluster_scope_label': 'Specific Cluster Required'
                 if report_requires_specific_cluster(
                     item['value'],
                 )
-                else 'All clusters supported',
+                else 'All Clusters Supported',
             }
 
     fallback = REPORT_TYPE_OPTIONS[0]
@@ -680,11 +676,11 @@ def _get_report_type_context(
         'requires_cluster': report_requires_specific_cluster(
             fallback['value'],
         ),
-        'cluster_scope_label': 'Specific cluster required'
+        'cluster_scope_label': 'Specific Cluster Required'
         if report_requires_specific_cluster(
             fallback['value'],
         )
-        else 'All clusters supported',
+        else 'All Clusters Supported',
     }
 
 
@@ -974,30 +970,95 @@ def _get_label_by_value(
 
 
 def _get_generation_readiness(
+    *,
     storage_context: dict[str, Any],
+    form_state: dict[str, Any],
+    selected_report_type: dict[str, Any],
+    has_clusters: bool,
 ) -> list[dict[str, str]]:
-    storage_tone = str(
-        storage_context.get(
-            'tone',
-            'amber',
+    requires_specific_cluster = bool(
+        selected_report_type.get(
+            'requires_cluster',
+            False,
         )
+    )
+    cluster_selected = bool(
+        str(
+            form_state.get(
+                'cluster_id',
+                '',
+            )
+            or ''
+        ).strip()
+    )
+    selected_sections = form_state.get(
+        'sections',
+        [],
+    )
+    selected_section_count = (
+        len(selected_sections)
+        if isinstance(
+            selected_sections,
+            list,
+        )
+        else 0
+    )
+
+    if not has_clusters:
+        scope_status = 'Setup Required'
+        scope_tone = 'amber'
+        scope_description = 'Register at least one Kubernetes cluster before creating report requests.'
+    elif requires_specific_cluster and not cluster_selected:
+        scope_status = 'Select Cluster'
+        scope_tone = 'amber'
+        scope_description = 'This report type requires one specific validated cluster.'
+    else:
+        scope_status = 'Ready'
+        scope_tone = 'blue'
+        scope_description = (
+            'The selected report type supports the current cluster scope.'
+        )
+
+    section_status = (
+        f'{selected_section_count} Selected'
+        if selected_section_count
+        else 'Selection Required'
+    )
+    section_tone = 'blue' if selected_section_count else 'amber'
+    section_description = (
+        'At least one report section is selected for this request.'
+        if selected_section_count
+        else 'Select at least one report section before creating the request.'
     )
 
     return [
         {
-            'label': 'Report request record',
-            'description': 'Generate action creates a report request record with status Requested.',
-            'status': 'Ready',
-            'tone': 'blue',
+            'key': 'scope',
+            'label': 'Request Scope',
+            'description': scope_description,
+            'status': scope_status,
+            'tone': scope_tone,
+            'icon': 'crosshair',
         },
         {
-            'label': 'PDF export engine',
-            'description': 'Generated Reports can render and download structured PDF output for supported report types.',
-            'status': 'Ready',
-            'tone': 'blue',
+            'key': 'sections',
+            'label': 'Section Selection',
+            'description': section_description,
+            'status': section_status,
+            'tone': section_tone,
+            'icon': 'list-checks',
         },
         {
-            'label': 'Storage backend',
+            'key': 'pdf',
+            'label': 'PDF Generation',
+            'description': 'Create the request first, then render the PDF from Generated Reports.',
+            'status': 'Ready',
+            'tone': 'blue',
+            'icon': 'file-text',
+        },
+        {
+            'key': 'storage',
+            'label': 'Artifact Storage',
             'description': str(
                 storage_context.get(
                     'description',
@@ -1010,65 +1071,44 @@ def _get_generation_readiness(
                     'Needs Review',
                 )
             ),
-            'tone': storage_tone,
+            'tone': str(
+                storage_context.get(
+                    'tone',
+                    'amber',
+                )
+            ),
+            'icon': 'hard-drive',
+        },
+    ]
+
+
+def _get_generation_flow() -> list[dict[str, str]]:
+    return [
+        {
+            'step': '01',
+            'label': 'Configure Request',
+            'description': 'Choose the report type, scope, period, output format, and sections.',
+            'icon': 'settings-2',
         },
         {
-            'label': 'Scheduled generation',
-            'description': 'Report schedules can reuse this generation contract through Run now or the CLI worker.',
-            'status': 'Ready',
-            'tone': 'blue',
+            'step': '02',
+            'label': 'Create Request',
+            'description': 'KAORI saves a governed report record with Requested status.',
+            'icon': 'file-plus-2',
+        },
+        {
+            'step': '03',
+            'label': 'Generate PDF',
+            'description': 'Open Generated Reports and start PDF rendering for the request.',
+            'icon': 'file-cog',
+        },
+        {
+            'step': '04',
+            'label': 'Store and Download',
+            'description': 'KAORI stores the artifact in the active backend and makes it available for download.',
+            'icon': 'download',
         },
     ]
-
-
-def _get_data_source_context() -> list[str]:
-    return [
-        'KAORI Kubernetes Reports report types currently use Kubernetes inventory and analytics data as the primary source domain.',
-        'KAORI Server Reports covers server/VM inventory with Node Exporter metrics, while KAORI HCI Reports covers HCI provider API data.',
-        'Generate creates a report request first; PDF rendering and artifact download happen from Generated Reports.',
-        'Metrics-backed real-data reports require a specific source scope when the report type depends on one selected cluster or infrastructure domain.',
-        'PDF artifacts use the active Reports Storage backend with local: or s3: storage references.',
-    ]
-
-
-def _get_report_architecture_context() -> dict[str, Any]:
-    return {
-        'current_domain': DEFAULT_REPORT_DOMAIN,
-        'current_domain_label': REPORT_DOMAIN_LABELS.get(DEFAULT_REPORT_DOMAIN, 'KAORI Kubernetes Reports'),
-        'current_source_kind': DEFAULT_REPORT_SOURCE_KIND,
-        'current_source_label': SOURCE_KIND_LABELS.get(DEFAULT_REPORT_SOURCE_KIND, 'Kubernetes'),
-        'description': (
-            'The report generator is domain-aware. KAORI Kubernetes Reports currently owns container platform reports, '
-            'while KAORI Server Reports and KAORI HCI Reports separate server/VM and HCI report families. '
-            'Both domains share the same request, template, schedule, PDF, and artifact lifecycle.'
-        ),
-        'capabilities': [
-            {
-                'label': 'Shared report lifecycle',
-                'description': 'Generate, Generated Reports, Templates, Schedules, and Storage use the same lifecycle contract across report families.',
-                'icon': 'workflow',
-            },
-            {
-                'label': 'Protected base templates',
-                'description': 'System templates define the supported report types. Users customize by cloning templates or selecting report sections.',
-                'icon': 'shield-check',
-            },
-            {
-                'label': 'Domain-aware storage',
-                'description': 'Artifacts are stored with domain and source prefixes so KAORI Kubernetes Reports, KAORI Server Reports, and KAORI HCI Reports files do not mix.',
-                'icon': 'archive',
-            },
-        ],
-        'domains': [
-            {
-                'value': domain,
-                'label': label,
-                'description': REPORT_DOMAIN_DESCRIPTIONS.get(domain, ''),
-                'status': 'Ready' if domain == DEFAULT_REPORT_DOMAIN else 'Reserved',
-            }
-            for domain, label in REPORT_DOMAIN_LABELS.items()
-        ],
-    }
 
 
 def _get_report_type_guide_groups() -> list[dict[str, Any]]:
@@ -1155,7 +1195,7 @@ def _get_report_type_guide_groups() -> list[dict[str, Any]]:
     ]
 
     for item in kubernetes_report_items:
-        item['status'] = 'Default system template'
+        item['status'] = 'System Template'
 
     return [
         {
@@ -1171,68 +1211,6 @@ def _get_report_type_guide_groups() -> list[dict[str, Any]]:
             'items': server_report_items,
         },
     ]
-
-
-def _get_report_output_readiness() -> list[dict[str, Any]]:
-    section_option_values = {item['value'] for item in SECTION_OPTIONS}
-
-    rows: list[dict[str, Any]] = []
-
-    for report_type in REPORT_TYPE_OPTIONS:
-        value = str(
-            report_type.get(
-                'value',
-                '',
-            )
-            or ''
-        )
-        default_sections = [
-            str(
-                section,
-            )
-            for section in report_type.get(
-                'default_sections',
-                [],
-            )
-        ]
-        real_sections = REAL_DATA_SECTION_MAP.get(
-            value,
-            set(),
-        )
-        missing_section_options = [section for section in default_sections if section not in section_option_values]
-        missing_renderer_contract = [section for section in default_sections if section not in real_sections]
-        is_real_data = value in REAL_DATA_REPORT_TYPES
-        is_ready = is_real_data and not missing_section_options and not missing_renderer_contract
-
-        rows.append(
-            {
-                'label': str(
-                    report_type.get(
-                        'label',
-                        value,
-                    )
-                ),
-                'report_type': value,
-                'scope': 'Specific cluster'
-                if report_requires_specific_cluster(
-                    value,
-                )
-                else 'All clusters',
-                'sections': len(
-                    default_sections,
-                ),
-                'renderer': 'Real-data PDF output' if is_real_data else 'Structured PDF output',
-                'status': 'Ready' if is_ready else 'Review',
-                'tone': 'blue' if is_ready else 'amber',
-                'note': 'Selected default sections are supported by the PDF output renderer.'
-                if is_ready
-                else 'Some sections need output mapping review before this report type is considered fully ready.',
-                'missing_sections': missing_section_options,
-                'missing_renderer_contract': missing_renderer_contract,
-            }
-        )
-
-    return rows
 
 
 def _get_recommended_actions() -> list[dict[str, str]]:
