@@ -33,3 +33,8 @@ Detail Style 1 — Inline Expanded Detail
 ## Data boundary
 
 All list, summary, and detail views read the latest committed inventory generation. Detail requests are on demand and must not trigger a live Kubernetes API request.
+
+
+## Namespace implementation
+
+Namespace Inventory is the second canonical implementation. It uses Namespace Control Posture, a governance-focused compact table, Technical Metadata Collection, and neutral factual evidence when no explicit governance policy is available.

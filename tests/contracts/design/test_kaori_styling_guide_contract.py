@@ -266,3 +266,16 @@ def test_visualization_workspace_is_an_approved_shared_surface_owner() -> None:
 
     assert "'app/templates/components/visualization_workspace.html'" in verifier
     assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' in component
+
+
+def test_namespace_inventory_and_technical_metadata_are_documented() -> None:
+    guide = _read("docs/design/KAORI_STYLING_GUIDE.md")
+    component = _read("docs/design/components/TECHNICAL_METADATA_COLLECTION.md")
+    pattern = _read("docs/design/patterns/KUBERNETES_NAMESPACE_INVENTORY.md")
+
+    assert "Namespace Inventory and Technical Metadata" in guide
+    assert "Missing ResourceQuota" in guide
+    assert "technical_metadata_collection.html" in guide
+    assert "Technical Metadata Collection" in component
+    assert "No Implicit Compliance" not in pattern
+    assert "explicit governance policy" in pattern

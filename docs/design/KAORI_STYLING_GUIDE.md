@@ -548,3 +548,12 @@ Use semantic key `inline-expanded` for dense row-owned details. The shared expan
 ### Technical values
 
 Use `components/technical_value.html` for IP addresses, UUIDs, versions, runtime identifiers, kernel versions, architecture, and similar machine-oriented values. These values use normal proportional detail typography by default. Reserve `monospace=true` for raw-copy identifiers, hashes, commands, and code-like values where exact character alignment is useful. Do not represent ordinary technical values as labels.
+
+
+## 21. Namespace Inventory and Technical Metadata
+
+Namespace Inventory follows `patterns/KUBERNETES_NAMESPACE_INVENTORY.md` and is the second canonical Inventory Resource Page implementation. The hero owns lifecycle posture, the Snapshot Context Bar owns collection context, and `resource_posture_grid.html` owns factual control coverage.
+
+`Terminating` is an informational lifecycle transition unless KAORI has duration, finalizer, or explicit policy evidence that the transition is stuck. Missing ResourceQuota, LimitRange, NetworkPolicy, or PSA labels remain neutral evidence until evaluated against an explicit governance policy. Do not infer compliance failure from absence alone.
+
+Dense labels, annotations, selectors, and key/value metadata use `components/technical_metadata_collection.html`. Do not render large chip clouds or page-local metadata grids. The component owns entry count, wrapping, scrolling, empty evidence, and optional context.

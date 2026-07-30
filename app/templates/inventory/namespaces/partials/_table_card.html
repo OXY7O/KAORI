@@ -1,26 +1,15 @@
-{% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table.html" as table_ui %}
 <section class="{{ table_ui.block_classes() }}">
-    <header class="border-b border-outline-subtle px-5 py-4">
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex items-center gap-3">
-                <span class="flex h-10 w-10 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="folders" class="h-5 w-5"></i>
-                </span>
-                <div>
-                    <h2 class="text-base font-semibold text-content-primary">Namespace Inventory</h2>
-                    <p class="mt-0.5 text-xs leading-5 text-content-muted">Kubernetes namespaces collected from connected clusters.</p>
-                </div>
-            </div>
-            <a href="{{ url_for('integrations.kubernetes') }}"
-               class="{{ table_ui.action_classes() }}">
-                <i data-lucide="external-link" class="h-4 w-4"></i>
-                Open Cluster List
-            </a>
-        </div>
-        {{ loading_bar.render('namespaces-table-loading', label='Refreshing Namespace Inventory') }}
-    </header>
-    <div class="border-b border-outline-subtle bg-surface-hover px-5 py-4">
+    {{ table_ui.inventory_block_header(
+        'folders',
+        'Namespace Inventory',
+        'Kubernetes namespaces collected from connected clusters.',
+        'namespaces-table-loading',
+        'Refreshing Namespace Inventory',
+        url_for('integrations.kubernetes'),
+        'Open Cluster List'
+    ) }}
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form hx-get="{{ url_for('inventory.namespaces') }}"
               hx-target="#namespaces-inventory-scope"
               hx-swap="outerHTML"
@@ -30,7 +19,7 @@
             <input type="hidden" name="page" value="1" />
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}" />
             <div>
-                <label class="mb-2 block text-sm font-semibold text-content-secondary">Cluster</label>
+                <label class="{{ table_ui.filter_label_classes() }}">Cluster</label>
                 <select name="cluster_id" class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Clusters</option>
                     {% for cluster in clusters %}
@@ -39,7 +28,7 @@
                 </select>
             </div>
             <div>
-                <label class="mb-2 block text-sm font-semibold text-content-secondary">Status</label>
+                <label class="{{ table_ui.filter_label_classes() }}">Status</label>
                 <select name="status" class="{{ table_ui.filter_select_classes() }}">
                     <option value="" {% if not selected_status %}selected{% endif %}>All Statuses</option>
                     {% for status_name in inventory.namespace_statuses %}
@@ -48,11 +37,8 @@
                 </select>
             </div>
             <div>
-                <label class="mb-2 block text-sm font-semibold text-content-secondary">Search Namespace</label>
-                <div class="relative">
-                    <i data-lucide="search" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
-                    <input type="text" name="search" value="{{ search }}" placeholder="Search Namespace..." class="{{ table_ui.filter_input_classes() }} pl-10" />
-                </div>
+                <label class="{{ table_ui.filter_label_classes() }}">Search Namespaces</label>
+                {{ table_ui.search_field('search', search, 'Search namespace name') }}
             </div>
         </form>
     </div>

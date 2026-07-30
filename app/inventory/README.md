@@ -159,3 +159,14 @@ The compact table groups Node identity, cluster, readiness, role, capacity, and 
 
 - Readable topology node cards use uniform rounded geometry, soft domain surfaces, two-line labels, and quiet containment connectors.
 - Inventory detail drawers use concise section descriptions and proportional technical value typography by default.
+
+
+## Namespace Inventory Reference Pattern
+
+Namespace Inventory follows the canonical per-resource page composition:
+
+```text
+Canonical Hero → Snapshot Context → Namespace Control Posture → Compact Table → Inline Expanded Detail
+```
+
+Lifecycle transition, resource controls, and security configuration are factual inventory evidence. `Terminating` is informational until stuck-transition evidence exists. Missing quota, LimitRange, NetworkPolicy, or PSA labels do not imply a compliance failure without an explicit governance policy. Labels and annotations use `technical_metadata_collection.html`.

@@ -7,28 +7,28 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding="utf-8")
 
 
-def test_inventory_pagination_copy_uses_title_case():
+def test_inventory_pagination_copy_uses_resource_aware_title_case():
     cluster = read("app/templates/inventory/overview/partials/_resources_by_cluster_content.html")
     namespace = read("app/templates/inventory/namespaces/partials/_table_content.html")
-    assert "of <span" in cluster
     assert "'Cluster' if" in cluster and "'Clusters'" in cluster
-    assert "of <span" in namespace
     assert "'Namespace' if" in namespace and "'Namespaces'" in namespace
+    assert '>Rows</label>' in namespace
 
 
-def test_namespace_summary_copy_is_title_case_without_periods():
+def test_namespace_summary_uses_control_posture_and_sentence_case_descriptions():
     template = read("app/templates/inventory/namespaces/partials/_summary_cards.html")
-    expected = [
-        "Namespaces In The Current Scope",
-        "Clusters Contributing Namespace Inventory",
-        "Namespaces In Active Lifecycle State",
-        "Namespaces Outside Active State",
-        "Available For Workload Placement",
-        "Namespaces Requiring Lifecycle Review",
-    ]
-    for copy in expected:
-        assert copy in template
-        assert f"{copy}." not in template
+    assert "Namespace Control Posture" in template
+    assert "resource-control, and security evidence" in template
+    for label in (
+        "ResourceQuota Configured",
+        "LimitRange Configured",
+        "NetworkPolicy Configured",
+        "PSA Enforce Configured",
+        "Missing Default ServiceAccount",
+        "Lifecycle Exceptions",
+    ):
+        assert label in template
+    assert "Available For Workload Placement" not in template
 
 
 def test_expandable_rows_use_deterministic_fetch_request_flow():

@@ -22,3 +22,6 @@ Use this style when a table row owns a dense detail view that benefits from the 
 - `data-kaori-detail-variant="inline-expanded"` on the detail root.
 
 Do not use Inline Expanded Detail for a short identity summary that fits better in the shared right-side drawer. A new detail style requires a materially different information architecture and shared owner.
+
+
+Namespace Inventory is the second reference and demonstrates full-width resource controls plus Technical Metadata Collections inside the same `inline-expanded` detail style.

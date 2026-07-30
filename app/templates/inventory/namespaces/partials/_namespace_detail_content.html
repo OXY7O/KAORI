@@ -1,209 +1,151 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/details/_detail_content.html" as detail %}
-{% import "components/detail_tip.html" as inventory_tip %}
-{% set namespace_status_tone = 'normal' if namespace.status == 'Active' else ('warning' if namespace.status == 'Terminating' else 'unknown') %}
-{% set psa_enforce_display = 'No Namespace Policy' if namespace.pod_security_enforce in [None, '', 'Not Configured', 'Not Configured'] else namespace.pod_security_enforce|title %}
-{% set psa_audit_display = 'No Namespace Policy' if namespace.pod_security_audit in [None, '', 'Not Configured', 'Not Configured'] else namespace.pod_security_audit|title %}
-{% set psa_warn_display = 'No Namespace Policy' if namespace.pod_security_warn in [None, '', 'Not Configured', 'Not Configured'] else namespace.pod_security_warn|title %}
-{% set psa_configured_count = (1 if psa_enforce_display != 'No Namespace Policy' else 0)
-    + (1 if psa_audit_display != 'No Namespace Policy' else 0)
-+ (1 if psa_warn_display != 'No Namespace Policy' else 0) %}
-{% macro detail_tip(message, icon='info', push_to_bottom=True) -%}
-    {{ inventory_tip.tip(message, icon, push_to_bottom) }}
-{%- endmacro %}
-{% macro namespace_object_card(title, badge, icon='boxes') -%}
-    <div class="rounded-lg border border-outline-default bg-kaori-soft p-3">
-        <div class="flex items-start gap-2.5">
-            <span class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary">
-                <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
-            </span>
-            <div class="min-w-0 flex-1">
-                <div class="flex items-center justify-between gap-3">
-                    <span class="truncate text-xs font-semibold text-content-primary"
-                          title="{{ title }}">{{ title }}</span>
-                    {{ table_label.metadata_label(badge, none, false, 'detail') }}
-                </div>
-                <div class="mt-2 space-y-1.5">{{ caller() }}</div>
-            </div>
-        </div>
-    </div>
-{%- endmacro %}
-{% macro namespace_object_row(label, value) -%}
-    <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-3 text-xs leading-5">
-        <span class="truncate text-content-muted" title="{{ label }}">{{ label }}</span>
-        <span class="whitespace-nowrap font-medium text-content-primary">{{ value }}</span>
-    </div>
-{%- endmacro %}
-<div class="bg-surface-hover px-4 py-4">
+{% import "components/technical_metadata_collection.html" as metadata_collection %}
+{% import "components/operational_callout.html" as operational_callout %}
+<div data-kaori-detail-variant="inline-expanded" class="bg-surface-hover px-4 py-4">
     <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
         <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-elevated px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="folder-tree" class="h-5 w-5"></i>
-                </span>
+                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="folder-tree" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                        <h3 class="truncate text-sm font-semibold text-content-primary">{{ namespace.namespace }}</h3>
+                        <h3 class="truncate text-base font-semibold text-content-primary">{{ namespace.namespace }}</h3>
                         {{ table_label.metadata_label(namespace.cluster_name, 'building-2') }}
                     </div>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Namespace identity, object coverage, configured controls, and security metadata from the latest inventory snapshot.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Namespace lifecycle, object composition, controls, security evidence, and technical metadata from the committed inventory snapshot.</p>
                 </div>
             </div>
-            <div class="self-start sm:self-auto">{{ table_label.status_label(namespace.status, namespace_status_tone) }}</div>
+            <div class="self-start sm:self-auto">{{ table_label.status_indicator_label(namespace.lifecycle_label, namespace.lifecycle_tone, size='detail') }}</div>
         </header>
-        <div class="grid items-stretch gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
+
+        {{ detail.summary_strip([
+            ('Lifecycle', namespace.lifecycle_label, 'Current Namespace lifecycle state.'),
+            ('Age', namespace.age, 'Time since the Namespace was created.'),
+            ('Tracked Objects', namespace.object_counts.tracked_total, 'Objects represented in this committed snapshot.'),
+            ('Control Evidence', namespace.control_evidence_display, 'Control areas with reported inventory evidence.')
+        ]) }}
+
+        <div class="grid items-stretch gap-4 p-5 md:grid-cols-2 2xl:grid-cols-3">
             {% call detail.detail_card('Namespace Identity', 'badge-info', namespace.age, badge_size='detail') %}
-                {{ detail.status_row('Status', namespace.status, namespace_status_tone, size='detail') }}
+                {{ detail.status_row('Lifecycle', namespace.lifecycle_label, namespace.lifecycle_tone, size='detail') }}
                 {{ detail.detail_row('Age', namespace.age) }}
-                {{ detail.detail_row('UID', namespace.uid, True) }}
+                {{ detail.technical_row('UID', namespace.uid) }}
                 {{ detail.detail_row('Created', namespace.created_at|user_datetime if namespace.created_at else '-') }}
                 {{ detail.detail_row('Collected', namespace.collected_at|user_datetime) }}
-                {{ detail_tip('Age comes from creation time; Collected is the latest KAORI snapshot.', 'clock-3') }}
+                {{ detail.detail_row('Cluster', namespace.cluster_name) }}
             {% endcall %}
-            {% call detail.detail_card('Resource Inventory', 'boxes', table_label.count_text(namespace.object_counts.tracked_total, 'Tracked Object'), badge_size='detail') %}
+
+            {% call detail.detail_card('Object Composition', 'boxes', table_label.count_text(namespace.object_counts.tracked_total, 'Tracked Object'), badge_size='detail') %}
+                {{ detail.detail_row('Workloads', namespace.object_counts.workloads) }}
                 {{ detail.detail_row('Pods', namespace.object_counts.pods) }}
                 {{ detail.detail_row('Services', namespace.object_counts.services) }}
                 {{ detail.detail_row('Ingresses', namespace.object_counts.ingresses) }}
                 {{ detail.detail_row('PVCs', namespace.object_counts.persistent_volume_claims) }}
-                <div class="mt-auto space-y-3 pt-3">
-                    {% if namespace.object_counts.workloads > 0 %}
-                        {% call namespace_object_card('Workload Composition', table_label.count_text(namespace.object_counts.workloads, 'Workload'), 'layout-grid') %}
-                            {% if namespace.workload_breakdown.deployments %}{{ namespace_object_row('Deployments', namespace.workload_breakdown.deployments) }}{% endif %}
-                            {% if namespace.workload_breakdown.statefulsets %}{{ namespace_object_row('StatefulSets', namespace.workload_breakdown.statefulsets) }}{% endif %}
-                            {% if namespace.workload_breakdown.daemonsets %}{{ namespace_object_row('DaemonSets', namespace.workload_breakdown.daemonsets) }}{% endif %}
-                            {% if namespace.workload_breakdown.jobs %}{{ namespace_object_row('Jobs', namespace.workload_breakdown.jobs) }}{% endif %}
-                            {% if namespace.workload_breakdown.cronjobs %}{{ namespace_object_row('CronJobs', namespace.workload_breakdown.cronjobs) }}{% endif %}
-                        {% endcall %}
-                    {% else %}
-                        <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-3 text-center">
-                            <i data-lucide="layout-grid" class="mx-auto h-5 w-5 text-kaori-primary"></i>
-                            <p class="mt-2 text-xs font-semibold text-kaori-primary">No Workload Objects Collected</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">No Deployment, StatefulSet, DaemonSet, Job, or CronJob was present in the latest namespace snapshot.</p>
-                        </div>
-                    {% endif %}
-                </div>
-            {% endcall %}
-            {% set quota_badge = 'Configured' if namespace.quota_count > 0 else 'Not Configured' %}
-            {% set quota_tone = 'normal' if namespace.quota_count > 0 else 'disabled' %}
-            {% call detail.detail_card('Resource Controls', 'sliders-horizontal', quota_badge, 'status', quota_tone, badge_size='detail') %}
-                {{ detail.status_row('ResourceQuota', ('Configured · ' ~ namespace.quota_count) if namespace.quota_count > 0 else 'Not Configured', 'normal' if namespace.quota_count > 0 else 'disabled', size='detail') }}
-                {% if namespace.limit_range_count is none %}
-                    {{ detail.status_row('LimitRange', 'Not Reported', 'unknown', size='detail') }}
-                {% elif namespace.limit_range_count > 0 %}
-                    {{ detail.status_row('LimitRange', 'Configured · ' ~ namespace.limit_range_count, 'normal', size='detail') }}
+                {{ detail.detail_row('ConfigMaps', namespace.object_counts.config_maps) }}
+                {{ detail.detail_row('Secrets', namespace.object_counts.secrets) }}
+                {% if namespace.object_counts.workloads > 0 %}
+                    <div class="mt-2 border-t border-outline-subtle pt-3">
+                        <p class="mb-2 text-xs font-semibold text-content-secondary">Workload Breakdown</p>
+                        {{ detail.detail_row('Deployments', namespace.workload_breakdown.deployments) }}
+                        {{ detail.detail_row('StatefulSets', namespace.workload_breakdown.statefulsets) }}
+                        {{ detail.detail_row('DaemonSets', namespace.workload_breakdown.daemonsets) }}
+                        {{ detail.detail_row('Jobs', namespace.workload_breakdown.jobs) }}
+                        {{ detail.detail_row('CronJobs', namespace.workload_breakdown.cronjobs) }}
+                    </div>
                 {% else %}
-                    {{ detail.status_row('LimitRange', 'Not Configured', 'disabled', size='detail') }}
+                    <div class="mt-2">{{ detail.empty_evidence('No Workload Objects Collected', 'No Deployment, StatefulSet, DaemonSet, Job, or CronJob was present in the committed snapshot.', 'layout-grid') }}</div>
                 {% endif %}
-                <div class="mt-auto space-y-3 pt-3">
-                    {% if namespace.quotas %}
-                        <div class="space-y-2">
-                            {% for quota in namespace.quotas %}
-                                {% call namespace_object_card(quota.name, table_label.count_text(quota.resource_count, 'Limit'), 'sliders-horizontal') %}
-                                    {% for resource in quota.resources %}
-                                        {{ namespace_object_row(resource.name, resource.hard) }}
-                                    {% endfor %}
-                                    {% if quota.truncated %}
-                                        <p class="text-[10px] leading-4 text-content-muted">Additional configured limits are not shown.</p>
-                                    {% endif %}
-                                {% endcall %}
-                            {% endfor %}
-                        </div>
-                    {% else %}
-                        <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-3 text-center">
-                            <i data-lucide="sliders-horizontal"
-                               class="mx-auto h-5 w-5 text-kaori-primary"></i>
-                            <p class="mt-2 text-xs font-semibold text-kaori-primary">No ResourceQuota Collected</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">A missing ResourceQuota is inventory context and does not automatically indicate a policy violation.</p>
-                        </div>
-                    {% endif %}
-                </div>
             {% endcall %}
-            {% call detail.detail_card('Security & Access', 'shield-check', psa_configured_count ~ '/3 PSA Labels', badge_size='detail') %}
+
+            {% call detail.detail_card('Access & Security', 'shield-check', namespace.pod_security_enforce_display, badge_size='detail') %}
                 {{ detail.detail_row('NetworkPolicies', namespace.network_policy_count if namespace.network_policy_count is not none else 'Not Reported') }}
                 {{ detail.detail_row('ServiceAccounts', namespace.service_account_count if namespace.service_account_count is not none else 'Not Reported') }}
-                {% set default_sa_tone = 'normal' if namespace.default_service_account == 'Present' else ('critical' if namespace.default_service_account == 'Missing' else 'unknown') %}
+                {% set default_sa_tone = 'normal' if namespace.default_service_account == 'Present' else ('warning' if namespace.default_service_account == 'Missing' else 'unknown') %}
                 {{ detail.status_row('Default ServiceAccount', namespace.default_service_account, default_sa_tone, size='detail') }}
-                {{ detail.detail_row('Secrets', namespace.object_counts.secrets) }}
-                {{ detail.detail_row('ConfigMaps', namespace.object_counts.config_maps) }}
-                <div class="mt-auto space-y-3 pt-3">
-                    {% if psa_configured_count > 0 %}
-                        {% call namespace_object_card('Pod Security Admission', psa_configured_count ~ '/3 Configured', 'shield-check') %}
-                            {{ detail.metadata_row('Enforce', psa_enforce_display) }}
-                            {{ detail.metadata_row('Audit', psa_audit_display) }}
-                            {{ detail.metadata_row('Warn', psa_warn_display) }}
-                        {% endcall %}
-                    {% else %}
-                        <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-3 text-center">
-                            <i data-lucide="shield-check" class="mx-auto h-5 w-5 text-kaori-primary"></i>
-                            <p class="mt-2 text-xs font-semibold text-kaori-primary">No Pod Security Admission Labels Configured</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Enforce, audit, and warn behavior currently inherit the cluster admission configuration because no namespace-level PSA labels were collected.</p>
-                        </div>
-                    {% endif %}
-                </div>
+                {{ detail.metadata_row('PSA Enforce', namespace.pod_security_enforce_display) }}
+                {{ detail.metadata_row('PSA Audit', namespace.pod_security_audit_display) }}
+                {{ detail.metadata_row('PSA Warn', namespace.pod_security_warn_display) }}
+                <p class="mt-auto border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">Inherited or absent namespace-level controls remain neutral evidence until compared with an explicit governance policy.</p>
             {% endcall %}
-            <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 md:col-span-2 xl:col-span-4">
-                <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+
+            <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 md:col-span-2 2xl:col-span-3">
+                <div class="mb-4 flex items-center justify-between gap-3">
                     <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
-                            <i data-lucide="tags" class="h-4 w-4"></i>
-                        </span>
-                        Namespace Labels
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="sliders-horizontal" class="h-4 w-4"></i></span>
+                        Resource Controls
                     </div>
-                    {{ table_label.metadata_label(namespace.labels|length ~ ' ' ~ ('label' if namespace.labels|length == 1 else 'labels') ) }}
+                    {{ table_label.metadata_label(namespace.control_evidence_display) }}
                 </div>
-                {% if namespace.labels %}
-                    <div class="max-h-36 overflow-y-auto pr-1">
-                        <div class="flex flex-wrap gap-1.5">
-                            {% for key, value in namespace.labels.items() %}
-                                {{ table_label.metadata_label(key ~ ('=' ~ (value|string) if value else '')) }}
-                            {% endfor %}
-                        </div>
+                <div class="grid gap-4 lg:grid-cols-[minmax(16rem,0.7fr)_minmax(0,1.3fr)]">
+                    <div class="space-y-2.5">
+                        {{ detail.detail_row('ResourceQuota', namespace.quota_display) }}
+                        {{ detail.detail_row('LimitRange', namespace.limit_range_display) }}
+                        {{ detail.detail_row('NetworkPolicy', namespace.network_policy_display) }}
+                        {{ detail.detail_row('PSA Enforce', namespace.pod_security_enforce_display) }}
+                        <p class="pt-2 text-xs leading-5 text-content-muted">Configuration absence is factual inventory evidence and does not automatically indicate a compliance failure.</p>
                     </div>
-                {% else %}
-                    <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-4 text-center">
-                        <i data-lucide="tags" class="mx-auto h-5 w-5 text-kaori-primary"></i>
-                        <p class="mt-2 text-xs font-semibold text-kaori-primary">No Namespace Labels Collected</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Labels will appear after the next inventory collection when provided by Kubernetes.</p>
-                    </div>
-                {% endif %}
-                {% if namespace.labels %}
-                    <div class="mt-4">{{ inventory_tip.tip('Labels support namespace organization and policy selection.', 'tags') }}</div>
-                {% endif %}
-            </section>
-            <section class="rounded-xl border border-outline-subtle bg-surface-card p-4 md:col-span-2 xl:col-span-4">
-                <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-                    <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
-                            <i data-lucide="notebook-text" class="h-4 w-4"></i>
-                        </span>
-                        Namespace Annotations
-                    </div>
-                    {{ table_label.metadata_label(namespace.annotations|length ~ ' ' ~ ('annotation' if namespace.annotations|length == 1 else 'annotations') ) }}
-                </div>
-                {% if namespace.annotations %}
-                    <div class="max-h-56 overflow-y-auto rounded-lg border border-outline-subtle bg-surface-hover">
-                        {% for key, value in namespace.annotations.items() %}
-                            <div class="grid gap-1 border-b border-outline-subtle px-3 py-2.5 text-xs leading-5 last:border-b-0 md:grid-cols-[minmax(180px,0.35fr)_minmax(0,1fr)] md:gap-4">
-                                <span class="break-all font-medium text-content-primary">{{ key }}</span>
-                                <span class="break-all text-content-muted">{{ value }}</span>
+                    <div>
+                        {% if namespace.quotas %}
+                            <div class="space-y-3">
+                                {% for quota in namespace.quotas %}
+                                    <article class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
+                                        <div class="mb-2 flex items-center justify-between gap-3">
+                                            <p class="text-xs font-semibold text-content-primary">{{ quota.name }}</p>
+                                            {{ table_label.metadata_label(quota.resource_count ~ ' ' ~ ('Limit' if quota.resource_count == 1 else 'Limits')) }}
+                                        </div>
+                                        <div class="grid gap-x-4 gap-y-1.5 sm:grid-cols-2">
+                                            {% for resource in quota.resources %}
+                                                <div class="flex items-start justify-between gap-3 text-xs leading-5"><span class="break-all text-content-muted">{{ resource.name }}</span><span class="shrink-0 font-medium text-content-primary">{{ resource.hard }}</span></div>
+                                            {% endfor %}
+                                        </div>
+                                        {% if quota.truncated %}<p class="mt-2 text-xs leading-5 text-content-muted">Additional configured limits are not shown.</p>{% endif %}
+                                    </article>
+                                {% endfor %}
                             </div>
-                        {% endfor %}
+                        {% else %}
+                            {{ detail.empty_evidence('No ResourceQuota Collected', 'A missing ResourceQuota is inventory context and does not automatically indicate a policy violation.', 'sliders-horizontal') }}
+                        {% endif %}
                     </div>
-                {% else %}
-                    <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-4 text-center">
-                        <i data-lucide="notebook-text"
-                           class="mx-auto h-5 w-5 text-kaori-primary"></i>
-                        <p class="mt-2 text-xs font-semibold text-kaori-primary">No Namespace Annotations Collected</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Annotations will appear after collection when they are present on the namespace.</p>
-                    </div>
-                {% endif %}
-                {% if namespace.annotations %}
-                    <div class="mt-4">{{ inventory_tip.tip('Annotations may be managed by platform controllers and integrations.', 'notebook-text') }}</div>
-                {% endif %}
+                </div>
             </section>
-        </div>
-        <div class="px-5 pb-5">
-            {{ inventory_tip.tip('This section contains point-in-time namespace inventory. Resource utilization, quota consumption trends, risk scoring, forecasts, and recommendations remain in Analytics and Intelligence.', 'info') }}
+
+            <div class="md:col-span-2 2xl:col-span-3 grid gap-4 xl:grid-cols-2">
+                {{ metadata_collection.render(
+                    'Namespace Labels',
+                    namespace.labels,
+                    'tags',
+                    'No Namespace Labels Collected',
+                    'Labels will appear when they are present in the committed Namespace snapshot.',
+                    'Labels support organization, selection, and policy matching.'
+                ) }}
+                {{ metadata_collection.render(
+                    'Namespace Annotations',
+                    namespace.annotations,
+                    'notebook-text',
+                    'No Namespace Annotations Collected',
+                    'Annotations will appear when they are present in the committed Namespace snapshot.',
+                    'Annotations may be managed by platform controllers and integrations.'
+                ) }}
+            </div>
+
+            <section class="space-y-3 md:col-span-2 2xl:col-span-3">
+                <h4 class="text-sm font-semibold text-content-primary">Operational Context</h4>
+                <div class="grid gap-3 lg:grid-cols-2">
+                    {{ operational_callout.render(
+                        'Committed Snapshot Boundary',
+                        'This detail reads the latest committed database snapshot. It does not query the Kubernetes API live.',
+                        'database',
+                        'info'
+                    ) }}
+                    {{ operational_callout.render(
+                        namespace.operational_context.title,
+                        namespace.operational_context.description,
+                        namespace.operational_context.icon,
+                        namespace.operational_context.tone,
+                        'semantic'
+                    ) }}
+                </div>
+            </section>
         </div>
     </div>
 </div>
