@@ -20,6 +20,7 @@ _METRICS = (
     'custom_previous_next_pagination',
     'copied_standard_surface_shells',
     'copied_right_context_grids',
+    'page_local_workspace_tablists',
 )
 
 _ARBITRARY_TEXT = re.compile(r'\btext-\[[^\]]+\]')
@@ -42,6 +43,13 @@ _TAG_WITH_CLASS = re.compile(r'<[^>]+\bclass="(?P<class>[^"]+)"[^>]*>', re.IGNOR
 _H1_TAG = re.compile(r'<h1\b[^>]*>', re.IGNORECASE | re.DOTALL)
 _PREVIOUS = re.compile(r'>\s*Previous\s*<', re.IGNORECASE)
 _NEXT = re.compile(r'>\s*Next\s*<', re.IGNORECASE)
+_TABLIST = re.compile(r'role=[\"\']tablist[\"\']', re.IGNORECASE)
+_APPROVED_ARBITRARY_TEXT_COMPONENTS = {
+    'app/templates/components/forecast_projection_chart.html',
+    'app/templates/components/page_hero.html',
+    'app/templates/components/table.html',
+    'app/templates/components/table_label.html',
+}
 
 
 def _count_page_local_compact_status_labels(relative: str, source: str) -> int:
@@ -92,7 +100,10 @@ def _count_custom_hero_titles(relative: str, source: str) -> int:
 
 
 def _count_copied_standard_surface_shells(relative: str, source: str) -> int:
-    if relative == 'app/templates/components/table.html':
+    if relative in {
+        'app/templates/components/table.html',
+        'app/templates/components/operational_section_card.html',
+    }:
         return 0
     count = 0
     for match in _TAG_WITH_CLASS.finditer(source):
@@ -117,7 +128,11 @@ def _metrics(relative: str, source: str) -> dict[str, int]:
         and ('pagination' in relative.lower() or 'pagination' in source.lower())
     )
     return {
-        'arbitrary_text_sizes': len(_ARBITRARY_TEXT.findall(source)),
+        'arbitrary_text_sizes': (
+            0
+            if relative in _APPROVED_ARBITRARY_TEXT_COMPONENTS
+            else len(_ARBITRARY_TEXT.findall(source))
+        ),
         'arbitrary_tracking': len(_ARBITRARY_TRACKING.findall(source)),
         'font_extrabold_utilities': len(_FONT_EXTRABOLD.findall(source)),
         'arbitrary_radii': len(_ARBITRARY_RADIUS.findall(source)),
@@ -140,6 +155,12 @@ def _metrics(relative: str, source: str) -> dict[str, int]:
             if relative == 'app/templates/components/context_rail.html'
             else source.count('xl:grid-cols-[minmax(0,1fr)_20rem]')
         ),
+        'page_local_workspace_tablists': (
+            0
+            if relative.startswith('app/templates/components/')
+            or 'components/workspace_tabs.html' in source
+            else len(_TABLIST.findall(source))
+        ),
     }
 
 
@@ -160,7 +181,7 @@ def scan(root: Path) -> dict[str, dict[str, int]]:
 
 def write_baseline(root: Path, baseline_path: Path) -> None:
     payload = {
-        'version': 2,
+        'version': 3,
         'description': (
             'Per-template ceiling for style-drift review candidates. Counts are not all defects; '
             'they must not increase and should fall during page-by-page standardization.'

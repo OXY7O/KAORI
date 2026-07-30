@@ -1,98 +1,17 @@
-<section class="h-full rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <div class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
-        <div class="flex min-w-0 flex-1 items-center gap-3">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                <i data-lucide="notebook-tabs" class="h-5 w-5"></i>
-            </div>
-            <div class="min-w-0">
-                <h2 class="text-sm font-semibold text-content-primary">Reporting Interpretation &amp; Next Steps</h2>
-                <p class="mt-0.5 text-xs leading-5 text-content-muted">How to validate reporting activity and continue through the controlled KAORI reporting workflow.</p>
-            </div>
-        </div>
-    </div>
-
-    <div class="space-y-4 p-5">
-        <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
-            <div class="flex items-start gap-3">
-                <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-status-info-border bg-status-info-soft text-status-info-text">
-                    <i data-lucide="info" class="h-4 w-4"></i>
-                </div>
-                <div class="min-w-0">
-                    <p class="text-sm font-semibold text-content-primary">What This Summary Means</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">
-                        Reporting Summary shows the three most recent generated reports together with template and schedule counts. It represents reporting activity, not Kubernetes health or analytics freshness.
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <div>
-            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Controlled Reporting Flow</p>
-            <div class="mt-3 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-stretch">
-                {% set first_flow = [
-                    ('scan-search', 'Validate', 'Cluster, period, freshness'),
-                    ('layout-template', 'Select', 'Approved report template'),
-                    ('file-cog', 'Generate', 'Create controlled output'),
-                ] %}
-                {% for icon, title, detail in first_flow %}
-                    <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
-                        <div class="flex items-center gap-2">
-                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-kaori-outline bg-kaori-soft text-kaori-primary">
-                                <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
-                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ detail }}</p>
-                            </div>
-                        </div>
-                    </div>
-                    {% if not loop.last %}
-                        <div class="hidden items-center justify-center text-kaori-primary sm:flex">
-                            <i data-lucide="arrow-right" class="h-4 w-4"></i>
-                        </div>
-                    {% endif %}
-                {% endfor %}
-            </div>
-            <div class="my-2 flex justify-center text-kaori-primary">
-                <i data-lucide="arrow-down" class="h-4 w-4"></i>
-            </div>
-            <div class="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1fr)] sm:items-stretch">
-                {% set second_flow = [
-                    ('file-check-2', 'Review', 'Status, warnings, content'),
-                    ('calendar-clock', 'Schedule', 'Cadence and recipients'),
-                    ('archive', 'Retain', 'Store, archive, and audit'),
-                ] %}
-                {% for icon, title, detail in second_flow %}
-                    <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
-                        <div class="flex items-center gap-2">
-                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-kaori-outline bg-kaori-soft text-kaori-primary">
-                                <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <p class="text-xs font-semibold text-content-primary">{{ title }}</p>
-                                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ detail }}</p>
-                            </div>
-                        </div>
-                    </div>
-                    {% if not loop.last %}
-                        <div class="hidden items-center justify-center text-kaori-primary sm:flex">
-                            <i data-lucide="arrow-right" class="h-4 w-4"></i>
-                        </div>
-                    {% endif %}
-                {% endfor %}
-            </div>
-        </div>
-
-        <div class="flex flex-col gap-3 rounded-lg border border-outline-subtle bg-surface-hover p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div class="min-w-0">
-                <p class="text-sm font-semibold text-content-primary">Continue With Reporting</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Generate, review, schedule, or manage stored report outputs in KAORI.</p>
-            </div>
-            <a href="/reports"
-               class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg border border-kaori-primary bg-kaori-primary px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card">
-                <i data-lucide="external-link" class="h-4 w-4"></i>
-                View Reports
-            </a>
-        </div>
-    </div>
-</section>
+{% import "components/context_guidance_card.html" as context_guidance_card %}
+{% set reporting_steps = [
+    ('Validate', 'Confirm cluster scope, reporting period, and source freshness.'),
+    ('Select', 'Choose the approved analytics or inventory report type.'),
+    ('Create', 'Save the governed report request and selected sections.'),
+    ('Generate', 'Render the PDF through the canonical report engine.'),
+    ('Review', 'Check status, warnings, content, and artifact availability.'),
+    ('Retain', 'Schedule delivery or keep the verified artifact for audit and operations.')
+] %}
+{{ context_guidance_card.render(
+    'Reporting Flow',
+    'Follow the controlled path from report scope to retained artifact.',
+    reporting_steps,
+    icon='notebook-tabs',
+    open_by_default=true,
+    aria_label='Reporting Flow'
+) }}

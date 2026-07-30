@@ -45,6 +45,10 @@ Review the baseline diff before committing. A lower count is expected; moving de
 | Typography | `components/TYPOGRAPHY.md` | Owning shared component classes |
 | Tables and labels | `components/TABLE_AND_LABEL.md` | `components/table.html`, `components/table_label.html` |
 | Pagination | `components/PAGINATION.md` | `components/pagination.html` |
+| Standalone workspace tabs | `components/WORKSPACE_TABS.md` | `components/workspace_tabs.html` |
+| Operational section card | `components/OPERATIONAL_SECTION_CARD.md` | `components/operational_section_card.html` |
+| Forecast projection chart | `components/FORECAST_PROJECTION_CHART.md` | `components/forecast_projection_chart.html` |
+| Compact section-header action | `components/SECTION_HEADER_ACTION.md` | `components/section_link_button.html` |
 | Right contextual rail | `components/RIGHT_CONTEXT_RAIL.md` | `components/context_rail.html` |
 | Primary flow box | `components/INFO_FLOW.md` | `components/info_flow.html` |
 | Related workspace box | `components/RELATED_PAGE_CARD.md` | `components/related_page_card.html` |
@@ -225,7 +229,26 @@ Every server-paginated table uses `components/pagination.html` and the global pa
 
 Do not create custom Previous/Next geometry or page counters per page.
 
-## 10. Right-Side Context Boxes
+### Dashboard table pagination
+
+Operational dashboard tables follow the same contract. Page-size changes reset to page 1, preserve the active scope, and update only the owning section through HTMX. Enabled navigation uses `pagination.navigation_classes()`; disabled navigation is a non-interactive element using `pagination.navigation_classes(disabled=true)`.
+
+## 10. Standalone Workspace Tabs
+
+Use `components/workspace_tabs.html` for peer sections inside one operational workspace. Tabs are navigation, not a large card that wraps every panel.
+
+Required behavior:
+
+- the tab bar is a standalone shared surface;
+- each tab has `role="tab"`, `aria-controls`, selected state, and keyboard focus treatment;
+- each panel has the matching `role="tabpanel"` and `aria-labelledby`;
+- the active tab is stored in the URL, for example `?tab=capacity`;
+- HTMX scope or filter changes preserve the active tab;
+- page-local `role="tablist"` geometry is prohibited when the shared component can represent the workspace.
+
+Tabs switch peer content. They do not hide blockers, required form fields, errors, or a primary flow.
+
+## 11. Right-Side Context Boxes
 
 Use the shared layout:
 
@@ -255,7 +278,7 @@ Related Workspace
 Supporting Information
 ```
 
-## 11. View More Content
+## 12. View More Content
 
 Secondary expandable content uses `components/view_more_content.html` through a semantic wrapper.
 
@@ -277,7 +300,7 @@ Expandable content is allowed for secondary guidance and reference detail. It is
 
 Primary ordered workflows continue to use Info Flow.
 
-## 12. Table Standard
+## 13. Table Standard
 
 Every operational table uses `components/table.html` and `components/table_label.html`.
 
@@ -307,7 +330,7 @@ Core rules:
 
 Do not wrap every value in a badge. Plain operational data remains plain text.
 
-## 13. Forms and Actions
+## 14. Forms and Actions
 
 Use:
 
@@ -327,7 +350,7 @@ Rules:
 
 Avoid ambiguous labels such as `Submit` or `Confirm` when `Create Report Request`, `Save Configuration`, or `Run Validation` is clearer.
 
-## 14. Cards, Information Blocks, and Readiness
+## 15. Cards, Information Blocks, and Readiness
 
 A standard content card contains:
 
@@ -341,7 +364,39 @@ Readiness and status blocks use semantic state, not Violet decoration. A blockin
 
 Avoid stacking multiple dark or tinted backgrounds. Use whitespace, divider, border, and hierarchy before adding another nested surface.
 
-## 15. Workspace Catalog and Landing Pages
+### Operational section card
+
+Repeated dashboard blocks use `components/operational_section_card.html`. The shared component owns the shell, header spacing, 40 px icon surface, `text-base font-semibold` title, supporting description, optional compact badge, and one optional section-header action. Domain templates own the data and body content through `caller()`.
+
+Do not copy the standard `rounded-xl border bg-surface-card shadow-sm` section shell into every dashboard partial. Do not wrap a tab workspace in another card when each section already has its own surface.
+
+### Dashboard metric typography
+
+| Metric role | Standard |
+|---|---|
+| Primary KPI value | `text-2xl font-semibold` |
+| Secondary summary value | `text-xl font-semibold` |
+| Compact metric value | `text-base font-semibold` |
+| Row or table value | `text-sm font-semibold` |
+| Axis and chart microcopy | Owned by the shared chart component |
+
+Ordinary dashboard cards do not introduce `text-3xl` or arbitrary sizes.
+
+### Compact section-header action
+
+`components/section_link_button.html` is the approved 36 px action exception for a card header. It uses `h-9`, `rounded-lg`, and `text-xs font-semibold`. A section header may contain at most one such action. Normal page and form actions remain 40 px.
+
+### Forecast projection chart
+
+Historical and projected utilization visuals use `components/forecast_projection_chart.html`. The component owns gridlines, thresholds, historical/forecast line semantics, axis microcopy, legend, and approved arbitrary chart typography. Dashboard and Analytics templates provide the series and horizon; they do not copy SVG geometry.
+
+### Primary and secondary flows
+
+`components/info_flow.html` is static and always visible. It is reserved for a primary ordered process that users must understand to complete or operate the page. The legacy `open_by_default` argument remains accepted only for call-site compatibility and has no visual effect.
+
+Secondary ordered guidance may use `components/context_guidance_card.html`, normally in a contextual rail. Do not duplicate the same sequence in both components.
+
+## 16. Workspace Catalog and Landing Pages
 
 Role-aware landing catalogs use the pattern documented in `patterns/WELCOME_WORKSPACE_CATALOG.md`.
 
@@ -359,7 +414,7 @@ Required rules:
 
 Welcome may use `welcome_capability_group.html` as a documented dark Violet category anchor. This is a landing-page orientation pattern, not a second hero and not a general content-card variant.
 
-## 16. Loading, Empty, Error, and Permission States
+## 17. Loading, Empty, Error, and Permission States
 
 - Loading appears in the affected region, never by replacing the hero.
 - Empty states explain what is absent and the next valid action when one exists.
@@ -367,7 +422,7 @@ Welcome may use `welcome_capability_group.html` as a documented dark Violet cate
 - Unknown, unavailable, permission denied, and not configured are separate states.
 - Permission-restricted actions follow the authorization contract and must not look like temporary loading.
 
-## 17. Responsive, Dark Mode, and Accessibility
+## 18. Responsive, Dark Mode, and Accessibility
 
 Every reusable component is reviewed in:
 
@@ -379,7 +434,7 @@ Every reusable component is reviewed in:
 
 Responsive reflow preserves semantic order. Primary content appears before contextual rail content. Icon-only actions require accessible names. Status never relies on color alone.
 
-## 18. Page Review Workflow
+## 19. Page Review Workflow
 
 Review one main page at a time using this sequence:
 
@@ -396,7 +451,7 @@ Review one main page at a time using this sequence:
 11. Update the style baseline only when the reviewed page's counts decrease.
 12. Record any genuinely new reusable pattern in this guide and its own component contract before using it elsewhere.
 
-## 19. Pull Request Checklist
+## 20. Pull Request Checklist
 
 - [ ] Existing shared components were reused.
 - [ ] No copied hero, pagination, table, label, or right-rail classes were introduced.
@@ -405,6 +460,9 @@ Review one main page at a time using this sequence:
 - [ ] Icon + border labels use the explicit special-label exception.
 - [ ] Hero geometry and content limits are unchanged.
 - [ ] Pagination defaults to 5 with 5/10/25/50 options.
+- [ ] Workspace tabs use the shared component and preserve URL/HTMX state.
+- [ ] Repeated operational sections use `operational_section_card.html`.
+- [ ] Forecast charts use the shared projection chart.
 - [ ] Right-side boxes use the semantic component decision table.
 - [ ] Required content is not hidden inside expandable sections.
 - [ ] No raw hex, page-local CSS, or new inline script/event debt was added.

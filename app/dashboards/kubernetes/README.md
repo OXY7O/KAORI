@@ -52,6 +52,36 @@ Kubernetes Operations Dashboard
 ```
 
 The `analytics.materialize` policy includes both dashboard and full-page alert datasets, always retains the dashboard-required 24-hour Capacity snapshot, and materializes one current Top Consumers snapshot per eligible cluster. `analytics.forecast.materialize` always retains the dashboard-required 30-day history; horizon, resource, and method are projected locally from that committed history.
+
+## Styling and workspace composition
+
+The Kubernetes Operations Dashboard is the reference implementation for the KAORI operational dashboard pattern.
+
+- Hero: `components/page_hero.html`.
+- KPI cards: `components/operational_metric_card.html`.
+- Peer navigation: `components/workspace_tabs.html`; active state is stored in `?tab=` and preserved during HTMX scope changes.
+- Repeated blocks: `components/operational_section_card.html`.
+- Main + contextual guidance layout: `components/context_rail.html`.
+- Secondary ordered guidance: `components/context_guidance_card.html`.
+- Related destinations: `components/related_page_card.html`.
+- Forecast chart: `components/forecast_projection_chart.html`, shared with Kubernetes Analytics.
+- Cluster Health: canonical table, semantic labels, shared empty state, and pagination with default 5 and options 5/10/25/50.
+
+Card titles use `text-base font-semibold`. Dashboard metric values follow the documented KPI hierarchy. Ordinary status labels are borderless and semantic; scope and count labels use metadata labels. Page-local tab, chart, card-shell, label, and pagination geometry is prohibited.
+
+Canonical layout:
+
+```text
+Canonical Hero
+Scope and Freshness Toolbar
+Operational KPI Grid
+Standalone Workspace Tabs
+├── Operations Overview: Cluster Health + Inventory/Freshness Context Rail
+├── Capacity & Demand: Capacity + Full-Width Forecast + Top Consumers
+├── Signals & Actions: Alerts/Response Context Rail + Recommended Actions
+└── Reporting: Reporting Summary/Guidance Context Rail
+```
+
 ## Alert Source Failure Presentation and Recovery
 
 Dashboard alert snapshots never render raw provider exceptions, endpoint hostnames, query strings, or HTTP client traces. Alert source failures are converted into concise operator guidance, while technical evidence remains in server logs and integration runtime observations.

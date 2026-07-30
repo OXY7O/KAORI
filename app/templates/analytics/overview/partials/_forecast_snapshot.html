@@ -1,4 +1,5 @@
 {% import "components/section_link_button.html" as section_link_button %}
+{% import "components/forecast_projection_chart.html" as forecast_projection_chart %}
 {% import "components/table_label.html" as table_label %}
 {% set forecast = payload.forecast_snapshot %}
 {% set risk_count = forecast.risk_count|default(0)|int %}
@@ -45,40 +46,21 @@
 
     <div class="grid border-t border-outline-subtle xl:grid-cols-3 xl:divide-x xl:divide-outline-subtle">
         <article class="px-4 py-4 sm:px-5 xl:col-span-2">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                    <h3 class="text-sm font-semibold text-content-primary">Combined Forecast Projection</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Solid segments show historical utilization; dashed segments show projected continuation.</p>
-                </div>
-                <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-content-muted">
-                    <span class="inline-flex items-center gap-2.5"><span class="h-0.5 w-5 bg-kaori-primary"></span>Historical</span>
-                    <span class="inline-flex items-center gap-2.5"><span class="w-5 border-t-2 border-dashed border-kaori-primary"></span>Forecast</span>
-                    <span class="inline-flex items-center gap-2.5"><span class="h-2.5 w-2.5 rounded-full bg-status-warning"></span>Warning 75%</span>
-                    <span class="inline-flex items-center gap-2.5"><span class="h-2.5 w-2.5 rounded-full bg-status-critical"></span>Critical 90%</span>
-                </div>
+            <div>
+                <h3 class="text-sm font-semibold text-content-primary">Combined Forecast Projection</h3>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Historical lines are solid; forward projections are dashed.</p>
             </div>
 
             {% if forecast.series %}
-                <div class="relative mt-4 h-64 rounded-lg border border-outline-subtle bg-surface-hover p-3">
-                    <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="h-full w-full overflow-visible">
-                        <line x1="0" y1="10" x2="100" y2="10" class="stroke-status-critical-border" stroke-width="0.7" stroke-dasharray="2 2"></line>
-                        <line x1="0" y1="25" x2="100" y2="25" class="stroke-status-warning-border" stroke-width="0.7" stroke-dasharray="2 2"></line>
-                        <line x1="0" y1="50" x2="100" y2="50" class="stroke-outline-default" stroke-width="0.5"></line>
-                        <line x1="0" y1="75" x2="100" y2="75" class="stroke-outline-default" stroke-width="0.5"></line>
-                        <line x1="0" y1="90" x2="100" y2="90" class="stroke-outline-default" stroke-width="0.5"></line>
-                        {% for item in forecast.series %}
-                            {% set stroke_class = 'stroke-content-muted' %}
-                            {% if item.key == 'cpu' %}{% set stroke_class = 'stroke-status-info' %}
-                            {% elif item.key == 'memory' %}{% set stroke_class = 'stroke-kaori-primary' %}
-                            {% elif item.key == 'storage' %}{% set stroke_class = 'stroke-status-normal' %}
-                            {% elif item.key == 'pods' %}{% set stroke_class = 'stroke-status-pending' %}{% endif %}
-                            {% if item.historical_points %}<polyline points="{{ item.historical_points }}" fill="none" class="{{ stroke_class }}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round"></polyline>{% endif %}
-                            {% if item.forecast_points %}<polyline points="{{ item.forecast_points }}" fill="none" class="{{ stroke_class }}" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="4 4"></polyline>{% endif %}
-                        {% endfor %}
-                    </svg>
-                    <div class="pointer-events-none absolute inset-y-3 left-3 flex flex-col justify-between text-[10px] font-semibold text-content-disabled">
-                        <span>90%</span><span>75%</span><span>50%</span><span>25%</span><span>10%</span>
-                    </div>
+                <div class="mt-4">
+                    {{ forecast_projection_chart.render(
+                        forecast.series,
+                        forecast.forecast_horizon|default('30 Days')|replace(' Days', '')|int,
+                        has_historical_series=true,
+                        height_classes='h-64',
+                        surface_classes='bg-surface-hover',
+                        aria_label='Historical and projected resource utilization'
+                    ) }}
                 </div>
             {% else %}
                 <div class="mt-4 flex h-64 items-center justify-center rounded-lg border border-dashed border-outline-strong bg-surface-hover">
@@ -92,11 +74,11 @@
 
             <div class="mt-4 grid border-y border-outline-subtle lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle">
                 <div class="py-3 lg:pr-4">
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">How To Read</p>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">How to Read</p>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Compare the dashed projection with warning and critical thresholds. A rising line is actionable when current utilization or headroom is already constrained.</p>
                 </div>
                 <div class="border-t border-outline-subtle py-3 lg:border-t-0 lg:pl-4">
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">What To Do</p>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">What to Do</p>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Validate model confidence, growth drivers, and the nearest threshold ETA before scheduling capacity or workload changes.</p>
                 </div>
             </div>

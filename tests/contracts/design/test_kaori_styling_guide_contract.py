@@ -29,6 +29,11 @@ def test_canonical_styling_guide_and_component_contracts_exist() -> None:
     assert 'components/VIEW_MORE_CONTENT.md' in design_readme
     assert 'components/WORKSPACE_LINK_CARD.md' in design_readme
     assert 'patterns/WELCOME_WORKSPACE_CATALOG.md' in design_readme
+    assert 'components/WORKSPACE_TABS.md' in design_readme
+    assert 'components/OPERATIONAL_SECTION_CARD.md' in design_readme
+    assert 'components/FORECAST_PROJECTION_CHART.md' in design_readme
+    assert 'components/SECTION_HEADER_ACTION.md' in design_readme
+    assert 'patterns/OPERATIONAL_DASHBOARD.md' in design_readme
 
 
 def test_standard_labels_are_borderless_and_special_label_is_explicit() -> None:
@@ -124,3 +129,29 @@ def test_style_verifier_tracks_compact_pill_label_drift() -> None:
     assert "'arbitrary_tracking'" in source
     assert "'font_extrabold_utilities'" in source
     assert 'def _count_page_local_compact_pill_labels' in source
+
+
+def test_operational_dashboard_components_and_contracts_are_documented() -> None:
+    guide = _read('docs/design/KAORI_STYLING_GUIDE.md')
+    section_card = _read('app/templates/components/operational_section_card.html')
+    tabs = _read('app/templates/components/workspace_tabs.html')
+    chart = _read('app/templates/components/forecast_projection_chart.html')
+    info_flow = _read('app/templates/components/info_flow.html')
+
+    assert 'Standalone Workspace Tabs' in guide
+    assert 'Dashboard metric typography' in guide
+    assert 'Compact section-header action' in guide
+    assert 'Forecast projection chart' in guide
+    assert 'Primary and secondary flows' in guide
+    assert 'text-base font-semibold' in section_card
+    assert 'role="tablist"' in tabs
+    assert '<svg' in chart
+    assert '<details' not in info_flow
+
+
+def test_style_verifier_tracks_page_local_workspace_tablists() -> None:
+    source = _read('scripts/verify_ui_style.py')
+
+    assert "'page_local_workspace_tablists'" in source
+    assert '_TABLIST = re.compile' in source
+    assert "'app/templates/components/forecast_projection_chart.html'" in source

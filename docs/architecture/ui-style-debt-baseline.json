@@ -2,7 +2,8 @@
   "description": "Per-template ceiling for style-drift review candidates. Counts are not all defects; they must not increase and should fall during page-by-page standardization.",
   "files": {
     "app/templates/alertmanager/instance_detail.html": {
-      "arbitrary_text_sizes": 5
+      "arbitrary_text_sizes": 5,
+      "page_local_workspace_tablists": 1
     },
     "app/templates/alertmanager/instance_form.html": {
       "arbitrary_text_sizes": 10,
@@ -89,6 +90,9 @@
       "arbitrary_tracking": 1,
       "copied_standard_surface_shells": 3
     },
+    "app/templates/analytics/components/_content_tabs.html": {
+      "page_local_workspace_tablists": 1
+    },
     "app/templates/analytics/components/_controls.html": {
       "arbitrary_text_sizes": 1,
       "arbitrary_tracking": 1,
@@ -142,7 +146,7 @@
       "copied_standard_surface_shells": 1
     },
     "app/templates/analytics/overview/partials/_forecast_snapshot.html": {
-      "arbitrary_text_sizes": 4,
+      "arbitrary_text_sizes": 3,
       "arbitrary_tracking": 3,
       "copied_standard_surface_shells": 1
     },
@@ -392,7 +396,6 @@
       "arbitrary_tracking": 1
     },
     "app/templates/components/page_hero.html": {
-      "arbitrary_text_sizes": 9,
       "arbitrary_tracking": 4,
       "semantic_border_utilities": 5
     },
@@ -407,7 +410,6 @@
       "raw_palette_utilities": 24
     },
     "app/templates/components/table_label.html": {
-      "arbitrary_text_sizes": 4,
       "semantic_border_utilities": 5
     },
     "app/templates/components/technical_check.html": {
@@ -420,48 +422,8 @@
     "app/templates/components/view_more_content.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/dashboards/kubernetes/partials/_alert_response_guidance.html": {
-      "semantic_border_utilities": 4
-    },
     "app/templates/dashboards/kubernetes/partials/_alerts_summary.html": {
-      "semantic_border_utilities": 12
-    },
-    "app/templates/dashboards/kubernetes/partials/_capacity_snapshot.html": {
-      "semantic_border_utilities": 8
-    },
-    "app/templates/dashboards/kubernetes/partials/_cluster_health.html": {
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/dashboards/kubernetes/partials/_content.html": {
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/dashboards/kubernetes/partials/_forecast_risk.html": {
-      "arbitrary_text_sizes": 12,
-      "page_local_compact_status_labels": 1,
-      "semantic_border_utilities": 12
-    },
-    "app/templates/dashboards/kubernetes/partials/_hero.html": {
-      "arbitrary_text_sizes": 1
-    },
-    "app/templates/dashboards/kubernetes/partials/_recommended_actions.html": {
-      "semantic_border_utilities": 4
-    },
-    "app/templates/dashboards/kubernetes/partials/_reporting_guidance.html": {
       "semantic_border_utilities": 1
-    },
-    "app/templates/dashboards/kubernetes/partials/_reporting_summary.html": {
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/dashboards/kubernetes/partials/_section_loading.html": {
-      "semantic_border_utilities": 1
-    },
-    "app/templates/dashboards/kubernetes/partials/_signal_overview.html": {
-      "arbitrary_text_sizes": 5,
-      "arbitrary_tracking": 1,
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/dashboards/kubernetes/partials/_top_consumers.html": {
-      "semantic_border_utilities": 3
     },
     "app/templates/governance/tls_certificates/detail.html": {
       "arbitrary_text_sizes": 3,
@@ -491,7 +453,8 @@
       "semantic_border_utilities": 4
     },
     "app/templates/integrations/kubernetes/detail.html": {
-      "arbitrary_text_sizes": 3
+      "arbitrary_text_sizes": 3,
+      "page_local_workspace_tablists": 1
     },
     "app/templates/integrations/kubernetes/partials/_capability_workspace.html": {
       "arbitrary_text_sizes": 9,
@@ -744,7 +707,8 @@
     },
     "app/templates/jobs/executions/_workspace.html": {
       "arbitrary_text_sizes": 1,
-      "copied_standard_surface_shells": 2
+      "copied_standard_surface_shells": 2,
+      "page_local_workspace_tablists": 1
     },
     "app/templates/jobs/executions/partials/_active_jobs.html": {
       "arbitrary_text_sizes": 4,
@@ -761,6 +725,9 @@
     },
     "app/templates/jobs/executions/partials/_status_refresh.html": {
       "arbitrary_text_sizes": 3
+    },
+    "app/templates/jobs/index.html": {
+      "page_local_workspace_tablists": 1
     },
     "app/templates/kubernetes_operations/_components.html": {
       "arbitrary_text_sizes": 6,
@@ -864,12 +831,16 @@
       "arbitrary_tracking": 4,
       "semantic_border_utilities": 1
     },
+    "app/templates/platform_operations/kubernetes/_tabs.html": {
+      "page_local_workspace_tablists": 1
+    },
     "app/templates/platform_operations/kubernetes/index.html": {
       "arbitrary_text_sizes": 1,
       "arbitrary_tracking": 1
     },
     "app/templates/prometheus/instance_detail.html": {
-      "arbitrary_text_sizes": 1
+      "arbitrary_text_sizes": 1,
+      "page_local_workspace_tablists": 1
     },
     "app/templates/prometheus/instance_form.html": {
       "arbitrary_tracking": 1,
@@ -984,8 +955,12 @@
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 2
     },
+    "app/templates/settings/account/partials/_tabs.html": {
+      "page_local_workspace_tablists": 1
+    },
     "app/templates/settings/data_lifecycle/index.html": {
-      "arbitrary_text_sizes": 5
+      "arbitrary_text_sizes": 5,
+      "page_local_workspace_tablists": 1
     },
     "app/templates/settings/data_lifecycle/partials/_storage.html": {
       "arbitrary_text_sizes": 1
@@ -998,6 +973,9 @@
       "arbitrary_text_sizes": 3,
       "arbitrary_tracking": 3,
       "copied_standard_surface_shells": 1
+    },
+    "app/templates/settings/general/partials/_tabs.html": {
+      "page_local_workspace_tablists": 1
     },
     "app/templates/settings/general/partials/_time_locale.html": {
       "arbitrary_tracking": 1,
@@ -1073,5 +1051,5 @@
       "semantic_border_utilities": 12
     }
   },
-  "version": 2
+  "version": 3
 }

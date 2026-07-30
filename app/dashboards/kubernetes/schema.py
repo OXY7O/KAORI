@@ -197,6 +197,7 @@ class RecommendationItem:
 class DashboardOverview:
     clusters: list[DashboardClusterOption] = field(default_factory=list)
     selected_cluster_id: str | None = None
+    active_tab: str = 'overview'
     last_updated: str = 'Just now'
     global_kpis: list[DashboardKpi] = field(default_factory=list)
     cluster_health_snapshot: list[ClusterHealthRow] = field(default_factory=list)

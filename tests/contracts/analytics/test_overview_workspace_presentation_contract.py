@@ -140,14 +140,20 @@ def test_utilization_pressure_visual_is_not_compressed_into_small_cards() -> Non
 
 def test_forecast_snapshot_uses_one_chart_and_one_resource_outlook() -> None:
     source = read('partials/_forecast_snapshot.html')
+    shared_chart = (
+        OVERVIEW_ROOT.parents[1] / 'components/forecast_projection_chart.html'
+    ).read_text(encoding='utf-8')
 
     assert 'Combined Forecast Projection' in source
     assert 'Resource Outlook' in source
-    assert 'How To Read' in source
-    assert 'What To Do' in source
-    assert 'Warning 75%' in source
-    assert 'Critical 90%' in source
-    assert source.count('<svg') == 1
+    assert 'How to Read' in source
+    assert 'What to Do' in source
+    assert 'components/forecast_projection_chart.html' in source
+    assert 'forecast_projection_chart.render(' in source
+    assert 'Warning 75%' in shared_chart
+    assert 'Critical 90%' in shared_chart
+    assert source.count('<svg') == 0
+    assert shared_chart.count('<svg') == 1
     assert 'Trend Interpretation' not in source
 
 

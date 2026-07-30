@@ -1,158 +1,121 @@
+{% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/progress_bar.html" as progress_bar %}
-{% import "components/section_link_button.html" as section_link_button %}
-<section id="dashboard-top-consumers"
-         class="rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <div class="flex items-center gap-3 border-b border-outline-subtle px-5 py-4">
-        <div class="flex min-w-0 flex-1 items-center gap-3">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                <i data-lucide="bar-chart-3" class="h-5 w-5"></i>
+{% import "components/table_label.html" as table_label %}
+{% macro consumer_panel(title, icon, marker_class, items, empty_title, empty_description) -%}
+    <section class="rounded-lg border border-outline-subtle bg-surface-elevated p-4" aria-label="{{ title }} Consumers">
+        <div class="mb-3 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+                <span class="h-2.5 w-2.5 rounded-full {{ marker_class }}" aria-hidden="true"></span>
+                <h3 class="text-sm font-semibold text-content-primary">{{ title }}</h3>
             </div>
-            <div class="min-w-0">
-                <h2 class="text-sm font-semibold text-content-primary">Top Consumers</h2>
-                <p class="mt-0.5 text-xs leading-5 text-content-muted">Top CPU and memory consumers with request and limit context.</p>
+            {{ table_label.metadata_label('Top 3', icon=icon) }}
+        </div>
+        {% if items %}
+            <div class="space-y-2.5">
+                {% for item in items[:3] %}
+                    <article class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-xs font-semibold text-kaori-primary">{{ item.rank }}</span>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center justify-between gap-3 text-xs">
+                                    <span class="truncate font-semibold text-content-primary">{{ item.name }}</span>
+                                    <span class="shrink-0 font-semibold text-content-secondary">{{ item.value }}</span>
+                                </div>
+                                <div class="mt-1 flex items-center justify-between gap-3 text-xs text-content-muted">
+                                    <span class="truncate">{{ item.namespace }}</span>
+                                    <span class="shrink-0">{{ item.signal_label }}</span>
+                                </div>
+                                {% if item.percent is not none %}
+                                    {% set normal_class = 'bg-kaori-primary' if title == 'CPU' else 'bg-status-info' %}
+                                    {% set signal_bar_class = 'bg-status-critical' if item.signal_state == 'critical' else ('bg-status-warning' if item.signal_state == 'warning' else (normal_class if item.signal_state == 'normal' else 'bg-status-unknown')) %}
+                                    {{ progress_bar.bar(
+                                        item.percent if item.percent <= 100 else 100,
+                                        track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover',
+                                        fill_classes='h-full rounded-full ' ~ signal_bar_class,
+                                        label=item.name ~ ' utilization'
+                                    ) }}
+                                {% else %}
+                                    <div class="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover" aria-hidden="true">
+                                        <div class="h-full w-1/3 rounded-full bg-status-unknown"></div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </article>
+                {% endfor %}
             </div>
-        </div>
-        <div class="ml-auto flex shrink-0 items-center gap-2">
-            {{ section_link_button.render('/analytics/top-consumers', 'View Details') }}
-        </div>
-    </div>
-    <div class="p-5">
-        {% if not dashboard.selected_cluster_id %}
-            {% set blocked_state_icon = "server-off" %}
-            {% set blocked_state_label = "Cluster Required" %}
-            {% set blocked_state_title = "Select Cluster" %}
-            {% set blocked_state_description = "Select a cluster to view top CPU and memory consumers from Prometheus." %}
-            {% set blocked_state_tone = "warning" %}
-            {% include 'components/states/_blocked_state.html' %}
         {% else %}
-            <div class="grid gap-5 lg:grid-cols-2">
-                <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
-                    <div class="mb-3 flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-2">
-                            <span class="h-2.5 w-2.5 rounded-full bg-kaori-primary"></span>
-                            <h3 class="text-sm font-semibold text-content-primary">CPU</h3>
-                        </div>
-                        <span class="rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary">Top 3</span>
-                    </div>
-                    <div class="space-y-2.5">
-                        {% if dashboard.top_consumers_snapshot.cpu %}
-                            {% for item in dashboard.top_consumers_snapshot.cpu[:3] %}
-                                <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
-                                    <div class="flex items-center gap-3">
-                                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-xs font-semibold text-kaori-primary">{{ item.rank }}</span>
-                                        <div class="min-w-0 flex-1">
-                                            <div class="flex items-center justify-between gap-3 text-xs">
-                                                <span class="truncate font-semibold text-content-primary">{{ item.name }}</span>
-                                                <span class="shrink-0 font-semibold text-content-secondary">{{ item.value }}</span>
-                                            </div>
-                                            <div class="mt-1 flex items-center justify-between gap-3 text-xs text-content-muted">
-                                                <span class="truncate">{{ item.namespace }}</span>
-                                                <span class="shrink-0">{{ item.signal_label }}</span>
-                                            </div>
-                                            {% if item.percent is not none %}
-                                                {% set signal_bar_class = 'bg-status-critical' if item.signal_state == 'critical' else ('bg-status-warning' if item.signal_state == 'warning' else ('bg-kaori-primary' if item.signal_state == 'normal' else 'bg-status-unknown')) %}
-                                                {{ progress_bar.bar(item.percent if item.percent <= 100 else 100,
-                                                                                                track_classes="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover",
-                                                                                                fill_classes="h-full rounded-full " ~ signal_bar_class,
-                                                                                                label=item.name ~ " utilization",) }}
-                                            {% else %}
-                                                <div class="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover">
-                                                    <div class="h-full w-1/3 rounded-full bg-status-unknown"></div>
-                                                </div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        {% else %}
-                            <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-4 text-center">
-                                <i data-lucide="cpu" class="mx-auto h-5 w-5 text-kaori-primary"></i>
-                                <p class="mt-2 text-xs font-semibold text-kaori-primary">CPU Consumer Data Not Available</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">{{ dashboard.top_consumers_snapshot.message }}</p>
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
-                    <div class="mb-3 flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-2">
-                            <span class="h-2.5 w-2.5 rounded-full bg-status-info"></span>
-                            <h3 class="text-sm font-semibold text-content-primary">Memory</h3>
-                        </div>
-                        <span class="rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary">Top 3</span>
-                    </div>
-                    <div class="space-y-2.5">
-                        {% if dashboard.top_consumers_snapshot.memory %}
-                            {% for item in dashboard.top_consumers_snapshot.memory[:3] %}
-                                <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
-                                    <div class="flex items-center gap-3">
-                                        <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-xs font-semibold text-kaori-primary">{{ item.rank }}</span>
-                                        <div class="min-w-0 flex-1">
-                                            <div class="flex items-center justify-between gap-3 text-xs">
-                                                <span class="truncate font-semibold text-content-primary">{{ item.name }}</span>
-                                                <span class="shrink-0 font-semibold text-content-secondary">{{ item.value }}</span>
-                                            </div>
-                                            <div class="mt-1 flex items-center justify-between gap-3 text-xs text-content-muted">
-                                                <span class="truncate">{{ item.namespace }}</span>
-                                                <span class="shrink-0">{{ item.signal_label }}</span>
-                                            </div>
-                                            {% if item.percent is not none %}
-                                                {% set signal_bar_class = 'bg-status-critical' if item.signal_state == 'critical' else ('bg-status-warning' if item.signal_state == 'warning' else ('bg-status-info' if item.signal_state == 'normal' else 'bg-status-unknown')) %}
-                                                {{ progress_bar.bar(item.percent if item.percent <= 100 else 100,
-                                                                                                track_classes="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover",
-                                                                                                fill_classes="h-full rounded-full " ~ signal_bar_class,
-                                                                                                label=item.name ~ " utilization",) }}
-                                            {% else %}
-                                                <div class="mt-2 h-2 overflow-hidden rounded-full bg-surface-hover">
-                                                    <div class="h-full w-1/3 rounded-full bg-status-unknown"></div>
-                                                </div>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                            {% endfor %}
-                        {% else %}
-                            <div class="rounded-lg border border-dashed border-outline-strong bg-kaori-soft p-4 text-center">
-                                <i data-lucide="memory-stick" class="mx-auto h-5 w-5 text-kaori-primary"></i>
-                                <p class="mt-2 text-xs font-semibold text-kaori-primary">Memory Consumer Data Not Available</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Prometheus memory consumer data is not available yet.</p>
-                            </div>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-            <div class="mt-5 rounded-lg border border-outline-subtle bg-surface-hover p-4">
-                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div class="flex items-start gap-3">
-                        <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border {% if dashboard.top_consumers_snapshot.high_usage_count > 0 %}border-status-critical-border bg-status-critical-soft text-status-critical-text {% elif dashboard.top_consumers_snapshot.missing_request_limit_count > 0 %}border-status-warning-border bg-status-warning-soft text-status-warning-text {% else %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% endif %}">
-                            <i data-lucide="lightbulb" class="h-4 w-4"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm font-semibold text-content-primary">{{ dashboard.top_consumers_snapshot.insight_title }}</p>
-                            <p class="mt-1 max-w-2xl text-xs leading-5 text-content-muted">{{ dashboard.top_consumers_snapshot.insight_description }}</p>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2 text-xs lg:min-w-[280px]">
-                        <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2">
-                            <p class="text-content-muted">Missing Context</p>
-                            <p class="mt-1 font-semibold text-content-primary">{{ dashboard.top_consumers_snapshot.missing_request_limit_count }} Rows</p>
-                        </div>
-                        <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-2">
-                            <p class="text-content-muted">High Usage</p>
-                            <p class="mt-1 font-semibold text-content-primary">{{ dashboard.top_consumers_snapshot.high_usage_count }} Rows</p>
-                        </div>
-                    </div>
-                </div>
-                {% if dashboard.top_consumers_snapshot.insight_items %}
-                    <div class="mt-3 flex flex-wrap gap-2">
-                        {% for insight in dashboard.top_consumers_snapshot.insight_items %}
-                            <span class="inline-flex items-center rounded-md border border-outline-default bg-surface-card px-3 py-1 text-xs font-medium text-content-secondary">
-                                {{ insight }}
-                            </span>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            </div>
+            {% set empty_state_icon = icon %}
+            {% set empty_state_label = 'Unavailable' %}
+            {% set empty_state_tone = 'unknown' %}
+            {% set empty_state_title = empty_title %}
+            {% set empty_state_description = empty_description %}
+            {% set empty_state_variant = 'panel' %}
+            {% set empty_state_min_height = 'min-h-[170px]' %}
+            {% include 'components/states/_empty_state.html' %}
         {% endif %}
-    </div>
-</section>
+    </section>
+{%- endmacro %}
+
+{% call operational_section_card.render(
+    'Top Consumers',
+    'Top CPU and memory consumers with request and limit context.',
+    'bar-chart-3',
+    id='dashboard-top-consumers',
+    action_href=url_for('analytics.top_consumers'),
+    action_label='View Details',
+    body_classes='p-5'
+) %}
+    {% if not dashboard.selected_cluster_id %}
+        {% set blocked_state_icon = 'server-off' %}
+        {% set blocked_state_label = 'Cluster Required' %}
+        {% set blocked_state_title = 'Select Cluster' %}
+        {% set blocked_state_description = 'Select a cluster to view top CPU and memory consumers from Prometheus.' %}
+        {% set blocked_state_tone = 'warning' %}
+        {% include 'components/states/_blocked_state.html' %}
+    {% else %}
+        <div class="grid gap-5 lg:grid-cols-2">
+            {{ consumer_panel(
+                'CPU',
+                'cpu',
+                'bg-kaori-primary',
+                dashboard.top_consumers_snapshot.cpu,
+                'CPU Consumer Data Not Available',
+                dashboard.top_consumers_snapshot.message
+            ) }}
+            {{ consumer_panel(
+                'Memory',
+                'memory-stick',
+                'bg-status-info',
+                dashboard.top_consumers_snapshot.memory,
+                'Memory Consumer Data Not Available',
+                'Prometheus memory consumer data is not available yet.'
+            ) }}
+        </div>
+
+        <div class="mt-5 rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {% if dashboard.top_consumers_snapshot.high_usage_count > 0 %}bg-status-critical-soft text-status-critical{% elif dashboard.top_consumers_snapshot.missing_request_limit_count > 0 %}bg-status-warning-soft text-status-warning{% else %}bg-status-normal-soft text-status-normal{% endif %}" aria-hidden="true">
+                        <i data-lucide="lightbulb" class="h-4 w-4"></i>
+                    </span>
+                    <div>
+                        <h3 class="text-sm font-semibold text-content-primary">{{ dashboard.top_consumers_snapshot.insight_title }}</h3>
+                        <p class="mt-1 max-w-2xl text-xs leading-5 text-content-muted">{{ dashboard.top_consumers_snapshot.insight_description }}</p>
+                    </div>
+                </div>
+                <dl class="grid grid-cols-2 gap-4 text-xs lg:min-w-[280px]">
+                    <div><dt class="text-content-muted">Missing Context</dt><dd class="mt-1 text-base font-semibold text-content-primary">{{ dashboard.top_consumers_snapshot.missing_request_limit_count }} Rows</dd></div>
+                    <div><dt class="text-content-muted">High Usage</dt><dd class="mt-1 text-base font-semibold text-content-primary">{{ dashboard.top_consumers_snapshot.high_usage_count }} Rows</dd></div>
+                </dl>
+            </div>
+            {% if dashboard.top_consumers_snapshot.insight_items %}
+                <div class="mt-3 flex flex-wrap gap-2">
+                    {% for insight in dashboard.top_consumers_snapshot.insight_items %}
+                        {{ table_label.metadata_label(insight, icon='lightbulb') }}
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+{% endcall %}

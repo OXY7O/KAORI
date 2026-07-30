@@ -1,151 +1,170 @@
+{% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/pagination.html" as pagination_ui %}
+{% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
-{% import "components/section_link_button.html" as section_link_button %}
-<section id="dashboard-cluster-health-section"
-         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <div class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <div class="flex min-w-0 items-center gap-3">
-            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                <i data-lucide="heart-pulse" class="h-5 w-5"></i>
-            </div>
-            <div class="min-w-0">
-                <h2 class="text-sm font-semibold text-content-primary">Cluster Health Summary</h2>
-                <p class="mt-0.5 text-xs leading-5 text-content-muted">
-                    Showing {{ dashboard.cluster_health_pagination.start_item }}–{{ dashboard.cluster_health_pagination.end_item }} of {{ dashboard.cluster_health_pagination.total_items }} clusters. Committed worker snapshots are used when available.
-                </p>
-            </div>
-        </div>
-        {{ section_link_button.render('/clusters', 'View Clusters') }}
-    </div>
+{% set pagination = dashboard.cluster_health_pagination %}
+{% set result_summary = 'Showing ' ~ pagination.start_item ~ '–' ~ pagination.end_item ~ ' of ' ~ pagination.total_items ~ ' clusters. Committed worker snapshots are used when available.' %}
+{% call operational_section_card.render(
+    'Cluster Health Summary',
+    result_summary,
+    'heart-pulse',
+    id='dashboard-cluster-health-section',
+    action_href=url_for('cluster.list_clusters'),
+    action_label='View Clusters',
+    body_classes='p-0'
+) %}
     <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-outline-subtle text-sm">
-            <thead class="bg-surface-hover text-xs text-content-muted">
+        <table class="{{ table_ui.table_classes('min-w-[1040px]') }}">
+            <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th class="px-5 py-3 text-left font-semibold">Cluster</th>
-                    <th class="px-4 py-3 text-left font-semibold">Overall</th>
-                    <th class="px-4 py-3 text-left font-semibold">Nodes</th>
-                    <th class="px-4 py-3 text-left font-semibold">CPU</th>
-                    <th class="px-4 py-3 text-left font-semibold">Memory</th>
-                    <th class="px-4 py-3 text-left font-semibold">Alerts</th>
-                    <th class="px-5 py-3 text-right font-semibold">Snapshot Sources</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Cluster</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Overall</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Nodes</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">CPU</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Memory</th>
+                    <th class="{{ table_ui.header_cell_classes() }}">Alerts</th>
+                    <th class="{{ table_ui.header_cell_classes(action=true) }}">Snapshot Sources</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-outline-subtle">
+            <tbody class="{{ table_ui.body_classes() }}">
                 {% if dashboard.cluster_health_snapshot %}
                     {% for row in dashboard.cluster_health_snapshot %}
-                        <tr class="transition hover:bg-surface-hover">
-                            <td class="px-5 py-3.5">
-                                <div class="flex items-start gap-2.5">
-                                    <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                        <i data-lucide="boxes" class="h-4 w-4"></i>
-                                    </div>
-                                    <div class="min-w-0">
-                                        <div class="font-semibold text-content-primary">{{ row.cluster_name }}</div>
-                                        <div class="mt-0.5 max-w-[260px] truncate text-xs text-content-muted"
-                                             title="{{ row.cluster_endpoint }}">{{ row.cluster_endpoint }}</div>
-                                    </div>
-                                </div>
+                        <tr class="{{ table_ui.row_classes() }}">
+                            <td class="{{ table_ui.cell_classes() }}">
+                                {{ table_ui.title_cell(row.cluster_name, row.cluster_endpoint, 'boxes') }}
                             </td>
-                            <td class="px-4 py-3.5 align-top">
+                            <td class="{{ table_ui.cell_classes() }} align-top">
                                 <div class="space-y-1.5">
                                     {% set overall_tone = 'normal' if row.status == 'Healthy' else 'warning' if row.status == 'Warning' else 'critical' if row.status == 'Critical' else 'unknown' %}
-                                    {% set overall_icon = 'circle-check' if row.status == 'Healthy' else 'triangle-alert' if row.status == 'Warning' else 'octagon-alert' if row.status == 'Critical' else 'circle-help' %}
-                                    {{ table_label.status_label(row.status, overall_tone, overall_icon) }}
-                                    <p class="max-w-[190px] text-xs leading-4 text-content-muted"
+                                    {{ table_label.status_indicator_label(row.status, overall_tone) }}
+                                    <p class="max-w-[190px] text-xs leading-5 text-content-muted"
                                        title="{{ row.status_reason }}">{{ row.status_reason }}</p>
                                 </div>
                             </td>
-                            <td class="px-4 py-3.5 align-top">
+                            <td class="{{ table_ui.cell_classes() }} align-top">
                                 {% if row.nodes_ready is not none and row.nodes_total is not none %}
-                                    <div class="font-semibold text-content-primary">{{ row.nodes_ready }}/{{ row.nodes_total }}</div>
-                                    <div class="mt-1 text-xs {% if row.nodes_ready == row.nodes_total %}text-status-normal-text{% else %}text-status-warning-text{% endif %}">Ready Nodes</div>
+                                    <p class="text-sm font-semibold text-content-primary">{{ row.nodes_ready }}/{{ row.nodes_total }}</p>
+                                    <p class="mt-1 text-xs {% if row.nodes_ready == row.nodes_total %}text-status-normal-text{% else %}text-status-warning-text{% endif %}">Ready Nodes</p>
                                 {% else %}
-                                    <div class="font-semibold text-content-disabled">N/A</div>
-                                    <div class="mt-1 text-xs text-status-unknown-text">{{ row.nodes_status }}</div>
+                                    <p class="text-sm font-semibold text-content-disabled">N/A</p>
+                                    <p class="mt-1 text-xs text-status-unknown-text">{{ row.nodes_status }}</p>
                                 {% endif %}
                             </td>
-                            <td class="px-4 py-3.5 align-top">
+                            <td class="{{ table_ui.cell_classes() }} align-top">
                                 {% if row.cpu_percent is not none %}
-                                    <div class="font-semibold text-content-primary">{{ row.cpu_percent|round(0) }}%</div>
-                                    <div class="mt-1 text-xs text-content-muted">Utilized</div>
+                                    <p class="text-sm font-semibold text-content-primary">{{ row.cpu_percent|round(0) }}%</p>
+                                    <p class="mt-1 text-xs text-content-muted">Utilized</p>
                                 {% else %}
-                                    <div class="font-semibold text-content-disabled">N/A</div>
-                                    <div class="mt-1 text-xs text-status-unknown-text">{{ row.cpu_status }}</div>
+                                    <p class="text-sm font-semibold text-content-disabled">N/A</p>
+                                    <p class="mt-1 text-xs text-status-unknown-text">{{ row.cpu_status }}</p>
                                 {% endif %}
                             </td>
-                            <td class="px-4 py-3.5 align-top">
+                            <td class="{{ table_ui.cell_classes() }} align-top">
                                 {% if row.memory_percent is not none %}
-                                    <div class="font-semibold text-content-primary">{{ row.memory_percent|round(0) }}%</div>
-                                    <div class="mt-1 text-xs text-content-muted">Utilized</div>
+                                    <p class="text-sm font-semibold text-content-primary">{{ row.memory_percent|round(0) }}%</p>
+                                    <p class="mt-1 text-xs text-content-muted">Utilized</p>
                                 {% else %}
-                                    <div class="font-semibold text-content-disabled">N/A</div>
-                                    <div class="mt-1 text-xs text-status-unknown-text">{{ row.memory_status }}</div>
+                                    <p class="text-sm font-semibold text-content-disabled">N/A</p>
+                                    <p class="mt-1 text-xs text-status-unknown-text">{{ row.memory_status }}</p>
                                 {% endif %}
                             </td>
-                            <td class="px-4 py-3.5 align-top">
+                            <td class="{{ table_ui.cell_classes() }} align-top">
                                 {% if row.active_alerts is not none %}
-                                    <div class="font-semibold {% if row.active_alerts > 0 %}text-status-critical-text{% else %}text-status-normal-text{% endif %}">{{ row.active_alerts }}</div>
-                                    <div class="mt-1 text-xs text-content-muted">Active Alerts</div>
+                                    <p class="text-sm font-semibold {% if row.active_alerts > 0 %}text-status-critical-text{% else %}text-status-normal-text{% endif %}">{{ row.active_alerts }}</p>
+                                    <p class="mt-1 text-xs text-content-muted">Active Alerts</p>
                                 {% else %}
-                                    <div class="font-semibold text-content-disabled">N/A</div>
-                                    <div class="mt-1 text-xs text-status-unknown-text">{{ row.alerts_status }}</div>
+                                    <p class="text-sm font-semibold text-content-disabled">N/A</p>
+                                    <p class="mt-1 text-xs text-status-unknown-text">{{ row.alerts_status }}</p>
                                 {% endif %}
                             </td>
-                            <td class="px-5 py-3.5 text-right align-top">
+                            <td class="{{ table_ui.cell_classes(action=true) }} align-top">
                                 <div class="ml-auto flex w-fit flex-col items-end gap-1.5 text-xs">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <span class="h-2 w-2 rounded-full {% if row.nodes_status == 'Inventory' %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>
-                                        <span class="text-content-muted">Inventory</span>
-                                    </div>
-                                    <div class="flex items-center justify-end gap-2">
-                                        <span class="h-2 w-2 rounded-full {% if row.cpu_status == 'Snapshot' or row.memory_status == 'Snapshot' %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>
-                                        <span class="text-content-muted">Prometheus</span>
-                                    </div>
-                                    <div class="flex items-center justify-end gap-2">
-                                        <span class="h-2 w-2 rounded-full {% if row.alerts_status == 'Snapshot' %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>
-                                        <span class="text-content-muted">Alert Signals</span>
-                                    </div>
+                                    <span class="inline-flex items-center gap-2 text-content-muted"><span class="h-2 w-2 rounded-full {% if row.nodes_status == 'Inventory' %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>Inventory</span>
+                                    <span class="inline-flex items-center gap-2 text-content-muted"><span class="h-2 w-2 rounded-full {% if row.cpu_status == 'Snapshot' or row.memory_status == 'Snapshot' %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>Prometheus</span>
+                                    <span class="inline-flex items-center gap-2 text-content-muted"><span class="h-2 w-2 rounded-full {% if row.alerts_status == 'Snapshot' %}bg-status-normal{% else %}bg-status-unknown{% endif %}"></span>Alert Signals</span>
                                 </div>
                             </td>
                         </tr>
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="7" class="px-5 py-10 text-center">
-                            <div class="mx-auto flex max-w-md flex-col items-center">
-                                <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                    <i data-lucide="database" class="h-5 w-5"></i>
-                                </div>
-                                <p class="mt-3 text-sm font-semibold text-kaori-primary">No Cluster Inventory Data</p>
-                                <p class="mt-1 text-xs leading-5 text-content-secondary">Add a cluster and run inventory sync to populate the health summary.</p>
-                            </div>
+                        <td colspan="7" class="px-5 py-4">
+                            {% set empty_state_icon = 'database' %}
+                            {% set empty_state_label = 'No Data' %}
+                            {% set empty_state_title = 'No Cluster Inventory Data' %}
+                            {% set empty_state_description = 'Add a cluster and run inventory sync to populate the health summary.' %}
+                            {% set empty_state_min_height = 'min-h-[160px]' %}
+                            {% include 'components/states/_empty_state.html' %}
                         </td>
                     </tr>
                 {% endif %}
             </tbody>
         </table>
     </div>
-    {% if dashboard.cluster_health_pagination.total_pages > 1 %}
-        <div class="flex flex-col gap-3 border-t border-outline-subtle px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between">
-            <p class="text-xs text-content-muted">
-                Page {{ dashboard.cluster_health_pagination.page }} of {{ dashboard.cluster_health_pagination.total_pages }} · {{ dashboard.cluster_health_pagination.per_page }} clusters per page
-            </p>
-            <div class="flex items-center gap-2">
-                {% set prev_url = url_for('kubernetes_dashboard.section', section='cluster_health', cluster_id=dashboard.selected_cluster_id or '', cluster_health_page=dashboard.cluster_health_pagination.prev_page) %}
-                {% set next_url = url_for('kubernetes_dashboard.section', section='cluster_health', cluster_id=dashboard.selected_cluster_id or '', cluster_health_page=dashboard.cluster_health_pagination.next_page) %}
-                <button type="button"
-                        {% if dashboard.cluster_health_pagination.has_prev %}hx-get="{{ prev_url }}" hx-target="#dashboard-cluster-health-section" hx-swap="outerHTML" hx-indicator="#dashboard-loading-bar"{% else %}disabled{% endif %}
-                        class="{{ pagination_ui.navigation_classes(disabled=true) }}">
-                    <i data-lucide="chevron-left" class="h-4 w-4"></i>
-                    Previous
-                </button>
-                <button type="button"
-                        {% if dashboard.cluster_health_pagination.has_next %}hx-get="{{ next_url }}" hx-target="#dashboard-cluster-health-section" hx-swap="outerHTML" hx-indicator="#dashboard-loading-bar"{% else %}disabled{% endif %}
-                        class="{{ pagination_ui.navigation_classes(disabled=true) }}">
-                    Next
-                    <i data-lucide="chevron-right" class="h-4 w-4"></i>
-                </button>
+
+    {% if pagination.total_items > 0 %}
+        <footer class="flex flex-col gap-3 border-t border-outline-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <p class="text-xs text-content-muted">
+                    Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }} clusters
+                </p>
+                <div class="flex items-center gap-2">
+                    <input id="cluster-health-scope" type="hidden" name="cluster_id" value="{{ dashboard.selected_cluster_id or '' }}" />
+                    <input id="cluster-health-page-reset" type="hidden" name="cluster_health_page" value="1" />
+                    <label for="cluster-health-per-page" class="text-xs font-semibold text-content-secondary">Rows</label>
+                    <select id="cluster-health-per-page"
+                            name="cluster_health_per_page"
+                            class="{{ pagination_ui.page_size_classes() }}"
+                            hx-get="{{ url_for('kubernetes_dashboard.section', section='cluster_health') }}"
+                            hx-target="#dashboard-cluster-health-section"
+                            hx-swap="outerHTML"
+                            hx-indicator="#dashboard-loading-bar"
+                            hx-include="#cluster-health-scope, #cluster-health-page-reset"
+                            hx-trigger="change">
+                        {% for size in [5, 10, 25, 50] %}
+                            <option value="{{ size }}" {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
-        </div>
+
+            <div class="flex items-center gap-2">
+                {% set prev_url = url_for('kubernetes_dashboard.section', section='cluster_health', cluster_id=dashboard.selected_cluster_id or '', cluster_health_page=pagination.prev_page, cluster_health_per_page=pagination.per_page) %}
+                {% set next_url = url_for('kubernetes_dashboard.section', section='cluster_health', cluster_id=dashboard.selected_cluster_id or '', cluster_health_page=pagination.next_page, cluster_health_per_page=pagination.per_page) %}
+                {% if pagination.has_prev %}
+                    <button type="button"
+                            hx-get="{{ prev_url }}"
+                            hx-target="#dashboard-cluster-health-section"
+                            hx-swap="outerHTML"
+                            hx-indicator="#dashboard-loading-bar"
+                            class="{{ pagination_ui.navigation_classes() }}">
+                        <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
+                        Previous
+                    </button>
+                {% else %}
+                    <span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">
+                        <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
+                        Previous
+                    </span>
+                {% endif %}
+                {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, 'cluster_health_page') }}
+                {% if pagination.has_next %}
+                    <button type="button"
+                            hx-get="{{ next_url }}"
+                            hx-target="#dashboard-cluster-health-section"
+                            hx-swap="outerHTML"
+                            hx-indicator="#dashboard-loading-bar"
+                            class="{{ pagination_ui.navigation_classes() }}">
+                        Next
+                        <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
+                    </button>
+                {% else %}
+                    <span class="{{ pagination_ui.navigation_classes(disabled=true) }}" aria-disabled="true">
+                        Next
+                        <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>
+                    </span>
+                {% endif %}
+            </div>
+        </footer>
     {% endif %}
-</section>
+{% endcall %}

@@ -1,0 +1,30 @@
+{#
+  Canonical standalone workspace tab navigation.
+
+  The owning page supplies Alpine state through activeTab/setTab and owns the
+  tab panels. This component owns tab geometry, hierarchy, focus treatment, and
+  ARIA linkage.
+#}
+{% macro render(tabs, prefix='workspace', aria_label='Workspace Sections') -%}
+    <nav class="overflow-x-auto rounded-xl border border-outline-default bg-surface-card px-2 shadow-sm"
+         aria-label="{{ aria_label }}">
+        <div class="flex min-w-max gap-1" role="tablist" aria-label="{{ aria_label }}">
+            {% for tab_key, tab_label, tab_icon in tabs %}
+                <button id="{{ prefix }}-tab-{{ tab_key }}"
+                        type="button"
+                        role="tab"
+                        aria-controls="{{ prefix }}-panel-{{ tab_key }}"
+                        :aria-selected="activeTab === '{{ tab_key }}' ? 'true' : 'false'"
+                        :tabindex="activeTab === '{{ tab_key }}' ? '0' : '-1'"
+                        :class="activeTab === '{{ tab_key }}'
+                            ? 'border-kaori-primary text-kaori-primary'
+                            : 'border-transparent text-content-muted hover:border-outline-strong hover:text-content-primary'"
+                        class="inline-flex min-h-11 shrink-0 items-center gap-2 border-b-2 px-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-inset"
+                        @click="setTab('{{ tab_key }}')">
+                    <i data-lucide="{{ tab_icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                    <span>{{ tab_label }}</span>
+                </button>
+            {% endfor %}
+        </div>
+    </nav>
+{%- endmacro %}

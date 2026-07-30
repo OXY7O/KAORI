@@ -71,11 +71,15 @@ def _scope(
 
 
 def _base_dashboard(
-    *, clusters: list[DashboardClusterOption], selected_cluster_id: str | None
+    *,
+    clusters: list[DashboardClusterOption],
+    selected_cluster_id: str | None,
+    active_tab: str = 'overview',
 ) -> DashboardOverview:
     return DashboardOverview(
         clusters=clusters,
         selected_cluster_id=selected_cluster_id,
+        active_tab=active_tab,
         meta={'generated_at': datetime.now(UTC).isoformat()},
     )
 
@@ -175,16 +179,26 @@ def _group_by_cluster(rows: list[Any]) -> dict[str, list[Any]]:
 def get_dashboard_overview(
     selected_cluster_id: str | None = None,
     cluster_health_page: str | int | None = 1,
+    cluster_health_per_page: int = 5,
+    active_tab: str = 'overview',
     **_: Any,
 ) -> DashboardOverview:
     """Build the database-only dashboard shell; live integrations are never called here."""
     models, _clusters_raw, clusters, selected_cluster_id, _selected = _scope(selected_cluster_id)
-    dashboard = _base_dashboard(clusters=clusters, selected_cluster_id=selected_cluster_id)
+    dashboard = _base_dashboard(
+        clusters=clusters,
+        selected_cluster_id=selected_cluster_id,
+        active_tab=active_tab,
+    )
     dashboard.inventory_snapshot = _inventory_snapshot(models, selected_cluster_id)
     dashboard.reporting_snapshot = build_reporting_snapshot(selected_cluster_id=selected_cluster_id)
     latest_sync = _latest_inventory_sync(models, selected_cluster_id)
     dashboard.last_updated = human_time(latest_sync) if latest_sync else 'No sync yet'
-    _, pagination = paginate_sequence(items=clusters, page=cluster_health_page, per_page=5)
+    _, pagination = paginate_sequence(
+        items=clusters,
+        page=cluster_health_page,
+        per_page=cluster_health_per_page,
+    )
     dashboard.cluster_health_pagination = pagination
     return dashboard
 
@@ -194,6 +208,7 @@ def get_dashboard_section(
     *,
     selected_cluster_id: str | None = None,
     cluster_health_page: str | int | None = 1,
+    cluster_health_per_page: int = 5,
 ) -> DashboardOverview:
     """Build one section from inventory tables and committed worker snapshots only."""
     models, clusters_raw, clusters, selected_cluster_id, selected = _scope(selected_cluster_id)
@@ -203,7 +218,11 @@ def get_dashboard_section(
         scoped_clusters = clusters_raw
         if selected_cluster_id:
             scoped_clusters = [cluster for cluster in clusters_raw if str(cluster.id) == selected_cluster_id]
-        visible, pagination = paginate_sequence(items=scoped_clusters, page=cluster_health_page, per_page=5)
+        visible, pagination = paginate_sequence(
+            items=scoped_clusters,
+            page=cluster_health_page,
+            per_page=cluster_health_per_page,
+        )
         visible_cluster_ids = [str(cluster.id) for cluster in visible]
         node_rows = query_for_clusters(models.get('NodeInventory'), visible_cluster_ids)
         pod_rows = query_for_clusters(models.get('PodInventory'), visible_cluster_ids)

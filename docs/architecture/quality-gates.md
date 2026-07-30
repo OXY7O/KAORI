@@ -162,7 +162,7 @@ app/templates/components/progress_bar.html
 
 Templates outside that component may not use inline `style=` attributes. `scripts/verify_ui_reuse.py` also parses every Jinja template, rejects local `<style>` blocks, and prevents inline scripts or event handlers from increasing beyond the recorded burn-down baseline.
 
-`scripts/verify_ui_style.py` prevents page-local style drift from increasing. Its per-template ceiling covers arbitrary typography and radius values, raw palette usage, semantic-border review candidates, custom compact labels, custom hero titles, repeated standard surface shells, and copied right-context geometry. The counts are review candidates rather than blanket defects; they must decrease during page-by-page standardization and the baseline must be updated in the same change.
+`scripts/verify_ui_style.py` prevents page-local style drift from increasing. Its per-template ceiling covers arbitrary typography and radius values, raw palette usage, semantic-border review candidates, custom compact labels, custom hero titles, repeated standard surface shells, copied right-context geometry, and page-local workspace tablists. The counts are review candidates rather than blanket defects; they must decrease during page-by-page standardization and the baseline must be updated in the same change.
 
 The remaining inline-script, event-handler, and style-drift baselines record existing debt only. New UI work must prefer shared Jinja components, semantic tokens, Alpine behavior, HTMX attributes, and static frontend modules.
 

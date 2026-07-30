@@ -1,4 +1,7 @@
 {% import "components/loading_bar.html" as loading_bar %}
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% import "components/table_label.html" as table_label %}
+{% import "components/table.html" as table_ui %}
 {% set active_scope = namespace(name='All Clusters') %}
 {% if dashboard.selected_cluster_id %}
     {% set active_scope.name = 'Selected Cluster' %}
@@ -8,57 +11,38 @@
         {% endif %}
     {% endfor %}
 {% endif %}
-<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
-        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex min-w-0 items-center gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="scan-line" class="h-4 w-4" aria-hidden="true"></i>
-                </span>
-                <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <h2 class="text-base font-semibold text-content-primary">Operational Signal Overview</h2>
-                        <span class="inline-flex items-center rounded-md border border-brand-outline bg-brand-surface px-2 py-0.5 text-[10px] font-semibold text-brand-foreground">
-                            8 Indicators
-                        </span>
-                    </div>
-                    <p class="mt-0.5 truncate text-xs text-content-muted">
-                        Inventory, utilization, and alert posture for the active scope.
-                    </p>
-                </div>
-            </div>
-            <div class="flex shrink-0 items-center gap-1.5 text-[11px] font-medium text-content-muted">
-                <i data-lucide="clock-3" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                <span>{{ dashboard.last_updated }}</span>
-            </div>
-        </div>
-        {{ loading_bar.render('dashboard-loading-bar', label='Refreshing Kubernetes Operational Signals') }}
-    </header>
-
-    <div class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-subtle px-4 py-3 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
+{% call operational_section_card.render(
+    'Operational Signal Overview',
+    'Inventory, utilization, and alert posture for the active scope.',
+    'scan-line',
+    header_badge=table_label.metadata_label('8 Indicators', icon='scan-line'),
+    body_classes='p-0'
+) %}
+    {{ loading_bar.render('dashboard-loading-bar', label='Refreshing Kubernetes Operational Signals') }}
+    <div class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
         <div class="flex min-w-0 flex-wrap items-center gap-2">
-            <span class="text-[11px] font-semibold uppercase tracking-[0.08em] text-content-muted">Active Scope</span>
-            <span class="inline-flex max-w-full items-center gap-1.5 rounded-md border border-outline-default bg-surface-card px-2.5 py-1 text-xs font-semibold text-content-primary shadow-sm">
-                <i data-lucide="{{ 'boxes' if dashboard.selected_cluster_id else 'network' }}" class="h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
-                <span class="truncate" title="{{ active_scope.name }}">{{ active_scope.name }}</span>
-            </span>
+            <span class="text-xs font-semibold text-content-muted">Active Scope</span>
+            {{ table_label.metadata_label(
+                active_scope.name,
+                icon='boxes' if dashboard.selected_cluster_id else 'network',
+                wrap=true,
+                size='detail'
+            ) }}
             {% if dashboard.selected_cluster_id %}
-                <span class="inline-flex items-center gap-1 text-[11px] font-medium text-status-normal-text">
-                    <span class="h-1.5 w-1.5 rounded-full bg-status-normal" aria-hidden="true"></span>
-                    Live Signals Enabled
-                </span>
+                {{ table_label.status_indicator_label('Live Signals Enabled', 'normal', size='detail') }}
             {% else %}
-                <span class="inline-flex items-center gap-1 text-[11px] font-medium text-status-warning-text">
-                    <span class="h-1.5 w-1.5 rounded-full bg-status-warning" aria-hidden="true"></span>
-                    Select A Cluster For Live Signals
-                </span>
+                {{ table_label.status_indicator_label('Select a Cluster for Live Signals', 'warning', size='detail') }}
             {% endif %}
+            <span class="inline-flex items-center gap-1.5 text-xs text-content-muted">
+                <i data-lucide="clock-3" class="h-3.5 w-3.5" aria-hidden="true"></i>
+                Updated {{ dashboard.last_updated }}
+            </span>
         </div>
 
         <div class="flex w-full items-center gap-2 lg:w-auto">
             <label for="cluster_id" class="sr-only">Cluster Scope</label>
-            <div class="relative min-w-0 flex-1 lg:w-64 lg:flex-none">
-                <i data-lucide="sliders-horizontal" class="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-content-muted" aria-hidden="true"></i>
+            <div class="relative min-w-0 flex-1 lg:w-72 lg:flex-none">
+                <i data-lucide="sliders-horizontal" class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted" aria-hidden="true"></i>
                 <select id="cluster_id"
                         name="cluster_id"
                         hx-get="{{ url_for('kubernetes_dashboard.index') }}"
@@ -67,7 +51,8 @@
                         hx-push-url="true"
                         hx-indicator="#dashboard-loading-bar"
                         hx-trigger="change"
-                        class="h-9 w-full rounded-lg border border-outline-default bg-surface-card pl-9 pr-8 text-xs font-medium text-content-primary shadow-sm outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20">
+                        hx-include="#dashboard-active-tab"
+                        class="{{ table_ui.filter_select_classes() }} pl-10">
                     <option value="">All Clusters</option>
                     {% for cluster in dashboard.clusters %}
                         <option value="{{ cluster.id }}" {% if dashboard.selected_cluster_id|string == cluster.id|string %}selected{% endif %}>{{ cluster.name }}</option>
@@ -77,17 +62,16 @@
         </div>
     </div>
 
-
-    <div class="p-4 sm:p-5">
+    <div class="p-5">
         <div id="dashboard-kpi-cards"
              hx-get="{{ url_for('kubernetes_dashboard.section', section='kpi_cards') }}?{{ dashboard_cluster_query }}"
              hx-trigger="load"
              hx-target="this"
              hx-swap="outerHTML"
              hx-indicator="#dashboard-loading-bar">
-            {% with title="Operational Indicators", description="Preparing inventory, utilization, and alert signals.", icon="scan-line" %}
+            {% with title="Operational Indicators", description="Preparing inventory, utilization, and alert signals.", icon="scan-line", embedded=true %}
                 {% include "dashboards/kubernetes/partials/_section_loading.html" %}
             {% endwith %}
         </div>
     </div>
-</section>
+{% endcall %}

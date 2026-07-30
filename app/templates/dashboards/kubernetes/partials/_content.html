@@ -1,42 +1,46 @@
-{% set dashboard_cluster_query = 'cluster_id=' ~ (dashboard.selected_cluster_id or '') ~ '&cluster_health_page=' ~ dashboard.cluster_health_pagination.page %}
+{% import "components/workspace_tabs.html" as workspace_tabs %}
+{% import "components/context_rail.html" as context_rail %}
+{% import "components/related_page_card.html" as related_page_card %}
+{% set dashboard_cluster_query = 'cluster_id=' ~ (dashboard.selected_cluster_id or '') ~ '&cluster_health_page=' ~ dashboard.cluster_health_pagination.page ~ '&cluster_health_per_page=' ~ dashboard.cluster_health_pagination.per_page %}
+{% set dashboard_tabs = [
+    ('overview', 'Operations Overview', 'activity'),
+    ('capacity', 'Capacity & Demand', 'gauge'),
+    ('signals', 'Signals & Actions', 'bell-ring'),
+    ('reporting', 'Reporting', 'file-text')
+] %}
 <div class="space-y-5">
     {% include "dashboards/kubernetes/partials/_hero.html" %}
     {% if cluster_onboarding.is_blocked %}
         {% include "components/cluster/_onboarding_banner.html" %}
     {% else %}
-        {% include "dashboards/kubernetes/partials/_signal_overview.html" %}
+        <div x-data="{
+                 activeTab: '{{ dashboard.active_tab }}',
+                 allowedTabs: ['overview', 'capacity', 'signals', 'reporting'],
+                 setTab(tab) {
+                     if (!this.allowedTabs.includes(tab)) return;
+                     this.activeTab = tab;
+                     const url = new URL(window.location.href);
+                     url.searchParams.set('tab', tab);
+                     window.history.replaceState({}, '', url);
+                 }
+             }"
+             x-on:popstate.window="activeTab = allowedTabs.includes(new URL(window.location.href).searchParams.get('tab')) ? new URL(window.location.href).searchParams.get('tab') : 'overview'">
+            <input id="dashboard-active-tab" type="hidden" name="tab" x-model="activeTab" />
 
-        <section x-data="{ activeTab: 'overview' }"
-                 class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-            <div class="border-b border-outline-subtle px-4 pt-4 sm:px-5">
-                <div class="flex gap-1 overflow-x-auto"
-                     role="tablist"
-                     aria-label="Kubernetes dashboard categories">
-                    {% set dashboard_tabs = [
-                        ('overview', 'Operations Overview', 'activity'),
-                        ('capacity', 'Capacity & Demand', 'gauge'),
-                        ('signals', 'Signals & Actions', 'bell-ring'),
-                        ('reporting', 'Reporting', 'file-text')
-                    ] %}
-                    {% for tab_key, tab_label, tab_icon in dashboard_tabs %}
-                        <button type="button"
-                                role="tab"
-                                :aria-selected="activeTab === '{{ tab_key }}' ? 'true' : 'false'"
-                                :class="activeTab === '{{ tab_key }}'
-                                    ? 'border-kaori-primary text-kaori-primary'
-                                    : 'border-transparent text-content-muted hover:border-outline-strong hover:text-content-primary'"
-                                class="inline-flex shrink-0 items-center gap-2 border-b-2 px-3 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card"
-                                @click="activeTab = '{{ tab_key }}'">
-                            <i data-lucide="{{ tab_icon }}" class="h-4 w-4"></i>
-                            <span>{{ tab_label }}</span>
-                        </button>
-                    {% endfor %}
-                </div>
-            </div>
+            {% include "dashboards/kubernetes/partials/_signal_overview.html" %}
 
-            <div class="p-4 sm:p-5">
-                <div x-show="activeTab === 'overview'"
+            <div class="mt-5 space-y-5">
+                {{ workspace_tabs.render(
+                    dashboard_tabs,
+                    prefix='kubernetes-dashboard',
+                    aria_label='Kubernetes Dashboard Sections'
+                ) }}
+
+                <div id="kubernetes-dashboard-panel-overview"
                      role="tabpanel"
+                     aria-labelledby="kubernetes-dashboard-tab-overview"
+                     x-show="activeTab === 'overview'"
+                     x-bind:hidden="activeTab !== 'overview'"
                      class="space-y-5">
                     <div id="dashboard-cluster-health-section"
                          hx-get="{{ url_for('kubernetes_dashboard.section', section='cluster_health') }}?{{ dashboard_cluster_query }}"
@@ -49,11 +53,11 @@
                         {% endwith %}
                     </div>
 
-                    <div class="grid items-stretch gap-5 xl:grid-cols-12">
-                        <div class="xl:col-span-6">
+                    <div class="{{ context_rail.layout_classes() }}">
+                        <main class="{{ context_rail.main_classes() }}">
                             {% include "dashboards/kubernetes/partials/_inventory_summary.html" %}
-                        </div>
-                        <div class="xl:col-span-6">
+                        </main>
+                        <aside class="{{ context_rail.rail_classes() }}">
                             <div id="dashboard-data-freshness"
                                  hx-get="{{ url_for('kubernetes_dashboard.section', section='data_freshness') }}?{{ dashboard_cluster_query }}"
                                  hx-trigger="revealed"
@@ -64,39 +68,38 @@
                                     {% include "dashboards/kubernetes/partials/_section_loading.html" %}
                                 {% endwith %}
                             </div>
-                        </div>
+                        </aside>
                     </div>
                 </div>
 
-                <div x-cloak
-                     x-show="activeTab === 'capacity'"
+                <div id="kubernetes-dashboard-panel-capacity"
                      role="tabpanel"
+                     aria-labelledby="kubernetes-dashboard-tab-capacity"
+                     x-cloak
+                     x-show="activeTab === 'capacity'"
+                     x-bind:hidden="activeTab !== 'capacity'"
+                     hidden
                      class="space-y-5">
-                    <div class="grid items-stretch gap-5 xl:grid-cols-12">
-                        <div class="xl:col-span-6">
-                            <div id="dashboard-capacity-snapshot"
-                                 hx-get="{{ url_for('kubernetes_dashboard.section', section='capacity_snapshot') }}?{{ dashboard_cluster_query }}"
-                                 hx-trigger="revealed"
-                                 hx-target="this"
-                                 hx-swap="outerHTML"
-                                 hx-indicator="#dashboard-loading-bar">
-                                {% with title="Capacity Snapshot", description="Preparing worker-node capacity and headroom summary.", icon="gauge" %}
-                                    {% include "dashboards/kubernetes/partials/_section_loading.html" %}
-                                {% endwith %}
-                            </div>
-                        </div>
-                        <div class="xl:col-span-6">
-                            <div id="dashboard-forecast-risk"
-                                 hx-get="{{ url_for('kubernetes_dashboard.section', section='forecast_risk') }}?{{ dashboard_cluster_query }}"
-                                 hx-trigger="revealed"
-                                 hx-target="this"
-                                 hx-swap="outerHTML"
-                                 hx-indicator="#dashboard-loading-bar">
-                                {% with title="Forecast & Growth Risk", description="Preparing compact capacity growth risk snapshot.", icon="trending-up" %}
-                                    {% include "dashboards/kubernetes/partials/_section_loading.html" %}
-                                {% endwith %}
-                            </div>
-                        </div>
+                    <div id="dashboard-capacity-snapshot"
+                         hx-get="{{ url_for('kubernetes_dashboard.section', section='capacity_snapshot') }}?{{ dashboard_cluster_query }}"
+                         hx-trigger="revealed"
+                         hx-target="this"
+                         hx-swap="outerHTML"
+                         hx-indicator="#dashboard-loading-bar">
+                        {% with title="Capacity Snapshot", description="Preparing worker-node capacity and headroom summary.", icon="gauge" %}
+                            {% include "dashboards/kubernetes/partials/_section_loading.html" %}
+                        {% endwith %}
+                    </div>
+
+                    <div id="dashboard-forecast-risk"
+                         hx-get="{{ url_for('kubernetes_dashboard.section', section='forecast_risk') }}?{{ dashboard_cluster_query }}"
+                         hx-trigger="revealed"
+                         hx-target="this"
+                         hx-swap="outerHTML"
+                         hx-indicator="#dashboard-loading-bar">
+                        {% with title="Forecast & Growth Risk", description="Preparing capacity growth risk and projected utilization.", icon="trending-up" %}
+                            {% include "dashboards/kubernetes/partials/_section_loading.html" %}
+                        {% endwith %}
                     </div>
 
                     <div id="dashboard-top-consumers"
@@ -111,26 +114,39 @@
                     </div>
                 </div>
 
-                <div x-cloak
-                     x-show="activeTab === 'signals'"
+                <div id="kubernetes-dashboard-panel-signals"
                      role="tabpanel"
+                     aria-labelledby="kubernetes-dashboard-tab-signals"
+                     x-cloak
+                     x-show="activeTab === 'signals'"
+                     x-bind:hidden="activeTab !== 'signals'"
+                     hidden
                      class="space-y-5">
-                    <div class="grid items-stretch gap-5 xl:grid-cols-12">
-                        <div class="xl:col-span-6">
+                    <div class="{{ context_rail.layout_classes() }}">
+                        <main class="{{ context_rail.main_classes() }}">
                             <div id="dashboard-alerts-summary"
                                  hx-get="{{ url_for('kubernetes_dashboard.section', section='alerts_summary') }}?{{ dashboard_cluster_query }}"
                                  hx-trigger="revealed"
                                  hx-target="this"
                                  hx-swap="outerHTML"
                                  hx-indicator="#dashboard-loading-bar">
-                                {% with title="Alerts Summary", description="Preparing Alertmanager and Prometheus alert visibility.", icon="bell-ring" %}
+                                {% with title="Alerts Summary", description="Preparing active Alertmanager and Prometheus alert signals.", icon="bell-ring" %}
                                     {% include "dashboards/kubernetes/partials/_section_loading.html" %}
                                 {% endwith %}
                             </div>
-                        </div>
-                        <div class="xl:col-span-6">
+                        </main>
+                        <aside class="{{ context_rail.rail_classes() }}">
                             {% include "dashboards/kubernetes/partials/_alert_response_guidance.html" %}
-                        </div>
+                            {{ related_page_card.render(
+                                'Alerts & Anomalies',
+                                'Review complete signal context, ownership, and anomaly evidence before remediation.',
+                                url_for('analytics.alerts'),
+                                'Open Alerts Workspace',
+                                icon='bell-ring',
+                                eyebrow='Related Analytics Workspace',
+                                boundary='Use the dashboard for posture. Use Alerts & Anomalies for detailed investigation.'
+                            ) }}
+                        </aside>
                     </div>
 
                     <div id="dashboard-recommended-actions"
@@ -145,19 +161,32 @@
                     </div>
                 </div>
 
-                <div x-cloak
+                <div id="kubernetes-dashboard-panel-reporting"
+                     role="tabpanel"
+                     aria-labelledby="kubernetes-dashboard-tab-reporting"
+                     x-cloak
                      x-show="activeTab === 'reporting'"
-                     role="tabpanel">
-                    <div class="grid items-stretch gap-5 xl:grid-cols-12">
-                        <div class="xl:col-span-7">
+                     x-bind:hidden="activeTab !== 'reporting'"
+                     hidden>
+                    <div class="{{ context_rail.layout_classes() }}">
+                        <main class="{{ context_rail.main_classes() }}">
                             {% include "dashboards/kubernetes/partials/_reporting_summary.html" %}
-                        </div>
-                        <div class="xl:col-span-5">
+                        </main>
+                        <aside class="{{ context_rail.rail_classes() }}">
                             {% include "dashboards/kubernetes/partials/_reporting_guidance.html" %}
-                        </div>
+                            {{ related_page_card.render(
+                                'Reports Workspace',
+                                'Generate, review, schedule, and retain governed Kubernetes report artifacts.',
+                                url_for('reports.overview'),
+                                'Open Reports Workspace',
+                                icon='file-text',
+                                eyebrow='Related Reporting Workspace',
+                                boundary='Dashboard reporting summarizes activity. Reports owns generation and artifact lifecycle.'
+                            ) }}
+                        </aside>
                     </div>
                 </div>
             </div>
-        </section>
+        </div>
     {% endif %}
 </div>

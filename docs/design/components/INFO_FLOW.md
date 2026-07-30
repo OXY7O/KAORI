@@ -2,53 +2,44 @@
 
 ## Purpose
 
-The Info Flow component explains a short, ordered operational or governance sequence. It is used when users need to understand **what happens first, what happens next, and where authority or eligibility is established**.
+The Info Flow component explains a short, ordered operational or governance sequence that users must understand to complete or operate the current page. It communicates what happens first, what happens next, and where authority, eligibility, or state is established.
 
-The reference implementations are **Role Assignment Flow** on Roles & Access, **Alertmanager Registration Flow** on Register Alertmanager Instance, and **Configuration Flow** on Alertmanager Instance Manage.
+Reference implementations include Role Assignment Flow, Alertmanager Registration Flow, and the Generate Report flow.
 
 ## When to use
 
-Use Info Flow for a sequence of three to five meaningful stages, such as:
+Use Info Flow for three to five primary stages such as:
 
 - capability definition → role composition → user assignment;
 - connection registration → reachability verification → capability validation → scope assignment;
-- request → approval → controlled execution;
-- discovery → validation → readiness → operational use;
-- save configuration → validate → observe runtime → review effective resolution.
+- request creation → controlled execution → artifact availability;
+- discovery → validation → readiness → operational use.
 
-Do not use it for:
+Do not use it for unordered feature lists, long documentation, raw diagnostics, metrics, or actions embedded in each row.
 
-- unordered feature lists;
-- long documentation;
-- raw diagnostics;
-- more than five steps;
-- status dashboards or metrics;
-- actions that users must execute directly inside each row.
+## Visibility decision
+
+Primary flow content is always visible. `info_flow.html` renders a static `<section>` and must not hide the process in `<details>`.
+
+Use `context_guidance_card.html` for secondary ordered guidance that may be collapsed, especially in a right-side contextual rail. Do not duplicate the same sequence in both components.
+
+The `open_by_default` macro argument remains accepted only for backward compatibility and has no visual effect.
 
 ## Information architecture
 
-The required order is:
-
 ```text
-Expandable Header
+Static Header
 ↓
 Ordered Vertical Timeline
 ↓
 Optional Boundary Note
 ```
 
-### Header
-
-The header contains:
+Header content:
 
 - one contextual icon;
-- a Title Case component title;
-- one short sentence-case description;
-- one expand/collapse affordance.
-
-The component is open by default when the flow is essential to completing the current page. It may be closed by default when it is supporting guidance only.
-
-### Ordered steps
+- one Title Case title;
+- one concise sentence-case description.
 
 Each step contains:
 
@@ -56,26 +47,16 @@ Each step contains:
 - a Title Case step title;
 - one concise sentence-case explanation.
 
-Use three to five steps. Each explanation should communicate a state transition, authority boundary, eligibility rule, or required next action.
-
-### Boundary note
-
-The optional final note is reserved for a guardrail that applies to the complete flow. Examples:
-
-- emergency authority is separate from ordinary role assignment;
-- registration does not imply capability readiness;
-- validation does not automatically create a scope binding.
-
-Do not use the note as a generic tip or duplicate a step description.
+The optional note is reserved for one guardrail that applies to the complete flow.
 
 ## Visual contract
 
 Container:
 
 - `rounded-2xl`;
-- standard KAORI card border and surface;
+- standard surface and border;
 - restrained shadow;
-- expandable header separated from content by one border.
+- one divider between header and timeline.
 
 Header:
 
@@ -90,7 +71,7 @@ Timeline:
 - Violet Soft marker surface and Violet border;
 - 14 px semibold step title;
 - 12 px supporting description;
-- 16 px vertical spacing between steps;
+- 16 px vertical spacing;
 - one subtle vertical connector.
 
 Boundary note:
@@ -100,45 +81,11 @@ Boundary note:
 - 12 px text;
 - one contextual 16 px icon.
 
-## Typography and casing
-
-Use Title Case for:
-
-- Info Flow title;
-- step titles.
-
-Use sentence case for:
-
-- header description;
-- step explanations;
-- boundary note.
-
-Technical identifiers retain canonical casing. Never apply a mechanical `|title` filter to dynamic values such as `kube-system`, `OAuth`, `OIDC`, `v1beta1`, or provider profile keys.
-
-## Content rules
-
-Every step should answer at least one of these questions:
-
-- What is created or established here?
-- What prerequisite must pass?
-- What changes after this stage?
-- Which source remains authoritative?
-- When does the object become eligible for operational use?
-- What must the user do next?
-
-Avoid vague labels such as `Setup`, `Process`, or `Complete` without a precise domain object.
-
 ## Shared implementation
-
-Use:
 
 ```jinja
 {% import "components/info_flow.html" as info_flow %}
-```
 
-Then:
-
-```jinja
 {% set steps = [
     ('Register Connection Identity', 'KAORI stores one reusable connection record.'),
     ('Verify Reachability', 'Test Connection confirms endpoint access before registration.'),
@@ -151,49 +98,26 @@ Then:
     'How a connection becomes an eligible operational source in KAORI.',
     steps,
     icon='waypoints',
-    note='Registration alone does not establish readiness or scope eligibility.',
-    open_by_default=true
+    note='Registration alone does not establish readiness or scope eligibility.'
 ) }}
 ```
 
-Do not copy the timeline classes into page-local templates.
+Do not copy timeline classes into page-local templates.
 
-## Relationship to Context Guidance Card
+## Accessibility and responsive behavior
 
-Use Info Flow for the primary ordered workflow that users must understand to complete the page, including when that flow is placed in a right-side contextual column. Do not downgrade a primary flow to Context Guidance Card solely because the available column is narrow. Use the smaller Context Guidance Card only for secondary, normally collapsed ordered guidance. Do not duplicate the same sequence in both components.
-
-## Accessibility
-
-- Use native `details` and `summary` behavior.
-- Keep the summary keyboard-operable.
-- Do not remove visible focus behavior.
-- Sequence must remain understandable without color.
-- The DOM order must match the operational order.
-
-## Responsive behavior
-
-The component remains a single vertical timeline on all viewport sizes. Do not convert steps into horizontal columns because ordered explanations become harder to scan and wrap inconsistently.
+- The sequence remains understandable without color.
+- DOM order matches operational order.
+- The component remains a vertical timeline at all viewport sizes.
+- There is no hidden primary content or expand/collapse affordance.
 
 ## Review checklist
 
 - Three to five ordered stages.
+- Primary flow remains visible.
 - Title Case title and step names.
 - Sentence-case descriptions.
 - Shared component used.
-- Primary ordered flows use Info Flow even when placed in a sidebar.
-- Two-digit markers generated by the component.
 - One optional flow-wide boundary note.
 - No metrics, tables, or embedded actions inside steps.
 - Technical casing preserved.
-
-## Prometheus reference implementations
-
-Prometheus uses Info Flow for primary ordered workflows:
-
-- Register/Edit Prometheus Connection → `Prometheus Integration Flow`;
-- Prometheus Instance Manage → `Configuration Flow`;
-- cluster-bound Prometheus Configuration → `Configuration Flow`.
-
-These remain primary flows even when positioned in a right-side column.
-
-Prometheus Configuration Flow is a primary provider workflow and uses Info Flow, matching Alertmanager Configuration Flow.

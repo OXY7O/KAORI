@@ -12,6 +12,23 @@ kubernetes_dashboard_bp = Blueprint(
     url_prefix='/dashboards/kubernetes',
 )
 
+DASHBOARD_TABS = {'overview', 'capacity', 'signals', 'reporting'}
+CLUSTER_HEALTH_PAGE_SIZES = {5, 10, 25, 50}
+
+
+def _active_tab() -> str:
+    value = str(request.args.get('tab') or 'overview').strip().lower()
+    return value if value in DASHBOARD_TABS else 'overview'
+
+
+def _cluster_health_per_page() -> int:
+    try:
+        value = int(request.args.get('cluster_health_per_page', '5'))
+    except (TypeError, ValueError):
+        return 5
+    return value if value in CLUSTER_HEALTH_PAGE_SIZES else 5
+
+
 SECTION_TEMPLATES = {
     'kpi_cards': 'dashboards/kubernetes/partials/_kpi_cards.html',
     'cluster_health': 'dashboards/kubernetes/partials/_cluster_health.html',
@@ -43,6 +60,8 @@ def index():
     dashboard = get_dashboard_overview(
         selected_cluster_id=selected_cluster_id,
         cluster_health_page=cluster_health_page,
+        cluster_health_per_page=_cluster_health_per_page(),
+        active_tab=_active_tab(),
     )
     template_name = (
         'dashboards/kubernetes/partials/_content.html'
@@ -63,5 +82,6 @@ def section(section: str):
         section,
         selected_cluster_id=request.args.get('cluster_id') or None,
         cluster_health_page=request.args.get('cluster_health_page', '1'),
+        cluster_health_per_page=_cluster_health_per_page(),
     )
     return render_template(template_name, dashboard=dashboard)

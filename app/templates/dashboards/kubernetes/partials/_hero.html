@@ -24,13 +24,7 @@
                     </div>
                     {{ page_hero.context_info('triangle-alert', 'Add a Kubernetes cluster to activate operational signals.') }}
                 {% else %}
-                    <div class="flex items-start justify-between gap-4">
-                        {{ page_hero.context_header('Dashboard Context', 'Operational Signal Scope', 'scan-search') }}
-                        <span class="inline-flex shrink-0 items-center gap-1.5 rounded-md border border-brand-outline bg-brand-surface px-2.5 py-1 text-[10px] font-semibold text-brand-foreground-muted">
-                            <i data-lucide="clock-3" class="h-3.5 w-3.5 text-brand-foreground"></i>
-                            {{ dashboard.last_updated }}
-                        </span>
-                    </div>
+                    {{ page_hero.context_header('Dashboard Context', 'Operational Signal Scope', 'scan-search') }}
                     <div class="{{ page_hero.context_panel_metrics_classes() }}">
                         {{ page_hero.context_metric('scan-search', 'Active Scope', 'Selected Cluster' if dashboard.selected_cluster_id else 'All Clusters', 'Applied across dashboard signals', 'text-sm font-semibold leading-5') }}
                         {{ page_hero.context_metric('radio-tower', 'Signal Sources', '3 Sources', 'Inventory, metrics, and alerts', 'text-sm font-semibold leading-5') }}
