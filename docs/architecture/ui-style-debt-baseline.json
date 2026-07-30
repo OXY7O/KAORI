@@ -556,10 +556,6 @@
       "copied_standard_surface_shells": 1,
       "raw_palette_utilities": 73
     },
-    "app/templates/inventory/components/_data_freshness.html": {
-      "arbitrary_text_sizes": 4,
-      "arbitrary_tracking": 1
-    },
     "app/templates/inventory/components/_detail_macros.html": {
       "arbitrary_radii": 1,
       "page_local_compact_pill_labels": 3,
@@ -609,19 +605,6 @@
       "arbitrary_tracking": 5,
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 2
-    },
-    "app/templates/inventory/overview/partials/_hero.html": {
-      "arbitrary_text_sizes": 5,
-      "page_local_compact_status_labels": 1,
-      "semantic_border_utilities": 3
-    },
-    "app/templates/inventory/overview/partials/_kpi_cards.html": {
-      "arbitrary_text_sizes": 7,
-      "arbitrary_tracking": 7,
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/inventory/overview/partials/_resources_by_cluster.html": {
-      "copied_standard_surface_shells": 1
     },
     "app/templates/inventory/pods/partials/_hero.html": {
       "arbitrary_text_sizes": 4

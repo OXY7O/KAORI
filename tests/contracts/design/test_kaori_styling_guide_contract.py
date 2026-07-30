@@ -205,3 +205,25 @@ def test_operational_callout_owns_semantic_border_variants() -> None:
     assert "variant == 'semantic'" in component
     assert "'app/templates/components/operational_callout.html'" in verifier
     assert 'not a compact status label' in contract
+
+
+def test_inventory_overview_components_and_pattern_are_documented() -> None:
+    guide = _read('docs/design/KAORI_STYLING_GUIDE.md')
+    design_readme = _read('docs/design/README.md')
+    snapshot = _read('app/templates/components/snapshot_context_bar.html')
+    asset_card = _read('app/templates/components/inventory_asset_card.html')
+    drawer = _read('app/templates/components/side_drawer.html')
+    pattern = _read('docs/design/patterns/KUBERNETES_INVENTORY_OVERVIEW.md')
+
+    assert 'Snapshot context bar' in guide
+    assert 'Inventory asset card' in guide
+    assert 'Right-side detail drawer' in guide
+    assert 'Compact cluster inventory table' in guide
+    assert 'components/SNAPSHOT_CONTEXT_BAR.md' in design_readme
+    assert 'components/INVENTORY_ASSET_CARD.md' in design_readme
+    assert 'components/SIDE_DRAWER.md' in design_readme
+    assert 'patterns/KUBERNETES_INVENTORY_OVERVIEW.md' in design_readme
+    assert 'table_label.status_label' in snapshot
+    assert 'Open Inventory' in asset_card
+    assert 'role="dialog"' in drawer
+    assert 'Cluster | Connection | Total Objects | Last Snapshot | Inventory Signals | Details' in pattern

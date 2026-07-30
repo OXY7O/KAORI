@@ -116,3 +116,22 @@ All resource inventory pages use the shared KAORI table block, loading bar, filt
 - Every namespaced resource table uses the shared `table_ui.namespace_identity(...)` macro. The macro owns the compact Namespace icon, semibold typography, truncation, and empty fallback for Namespace cells across Namespace, Workload, Pod, Service, Ingress, Storage, and Configuration Inventory.
 - Human-facing table headers, detail-card titles, field labels, empty-state titles, status descriptions, and topology detail labels use Title Case. Kubernetes identifiers, annotation keys, label keys, resource names, API values, and controller-specific values remain unchanged.
 - Ingress annotation entries render the annotation key above its value so long controller annotations such as `kubectl.kubernetes.io/last-applied-configuration` remain readable without compressing either field into a side-by-side grid.
+
+## Inventory Overview Reference Pattern
+
+The Inventory Overview is the canonical reference for fleet-level inventory composition:
+
+```text
+Canonical Hero
+Snapshot Context Bar
+Inventory Asset Catalog
+Compact Cluster Inventory Table
+View Details → Side Drawer
+```
+
+- Asset catalog cards use `components/inventory_asset_card.html` and link to Nodes, Namespaces, Workloads, Pods, Services, Ingresses, Storage, and Configuration.
+- Cluster is a collection scope/provider, not an asset card.
+- Snapshot source, exact time, active scope, and committed coverage use `components/snapshot_context_bar.html`.
+- The cluster comparison table remains compact. Asset counts belong in the `components/side_drawer.html` detail view.
+- Cluster posture is Healthy only when the target is connected and its committed snapshot is inside the freshness window.
+- Per-cluster overview counts must use grouped aggregates across the selected clusters. Do not reintroduce one count query per cluster and asset type.

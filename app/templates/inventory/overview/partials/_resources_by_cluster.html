@@ -1,30 +1,17 @@
-{% import "components/loading_bar.html" as loading_bar %}
-{% import "components/table.html" as table_ui %}
-<section id="resources-by-cluster"
-         class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
-         aria-labelledby="resources-by-cluster-title">
-    <header class="border-b border-outline-subtle px-5 py-4">
-        <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-            <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"
-                      aria-hidden="true">
-                    <i data-lucide="table-properties" class="h-5 w-5"></i>
-                </span>
-                <div>
-                    <h2 id="resources-by-cluster-title"
-                        class="text-sm font-semibold text-content-primary">Resources By Cluster</h2>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Compare collected Kubernetes resources and verify the latest inventory sync state for each cluster.</p>
-                </div>
-            </div>
-            <a href="{{ url_for('integrations.kubernetes') }}"
-               class="{{ table_ui.action_classes() }}">
-                <i data-lucide="external-link" class="h-4 w-4"></i>
-                Open Cluster List
-            </a>
-        </div>
-        {{ loading_bar.render('resources-by-cluster-loading', label='Refreshing Resources By Cluster') }}
-    </header>
+{% import "components/operational_section_card.html" as operational_section_card %}
+{% call operational_section_card.render(
+    'Cluster Inventory Summary',
+    'Compare cluster-level object totals, committed snapshot state, and inventory signals.',
+    'table-properties',
+    id='resources-by-cluster',
+    action_href=url_for('integrations.kubernetes'),
+    action_label='Open Cluster List',
+    action_icon='external-link',
+    loading_bar_id='resources-by-cluster-loading',
+    loading_bar_label='Refreshing Cluster Inventory',
+    body_classes='p-0'
+) %}
     <div id="resources-by-cluster-content">
         {% include "inventory/overview/partials/_resources_by_cluster_content.html" %}
     </div>
-</section>
+{% endcall %}

@@ -7,41 +7,36 @@ def _read(relative_path: str) -> str:
     return (ROOT / relative_path).read_text(encoding='utf-8')
 
 
-def test_inventory_overview_supporting_copy_uses_title_case() -> None:
+def test_inventory_overview_uses_sentence_case_for_supporting_copy() -> None:
     content = _read('app/templates/inventory/overview/partials/_kpi_cards.html')
+    backend = _read('app/inventory/overview.py')
 
-    expected = (
-        'Committed Inventory Coverage',
-        'Objects Per Cluster',
-        'Maximum Collection Age.',
-        'Connected Inventory Targets',
-        'Within The Freshness Window',
+    assert 'Open one Kubernetes asset inventory to review the objects collected' in content
+    expected_descriptions = (
+        'Worker and control-plane capacity.',
+        'Tenant and application scopes.',
+        'Deployments and workload controllers.',
+        'Current runtime workload instances.',
+        'Cluster networking endpoints.',
+        'Published application entry points.',
+        'Storage classes, volumes, and claims.',
+        'ConfigMaps and Secret metadata.',
     )
-    for label in expected:
-        assert label in content
-
-    rejected = (
-        'Committed Inventory Coverage',
-        'Objects Per Cluster',
-        'Maximum Collection Age',
-        'Connected Inventory Targets',
-        'Within the Freshness Window',
-    )
-    for label in rejected:
-        assert label not in content
+    for description in expected_descriptions:
+        assert description in backend
 
 
-def test_node_inventory_supporting_copy_and_footer_use_title_case() -> None:
+def test_node_inventory_supporting_copy_uses_sentence_case_and_footer_resource_case() -> None:
     summary = _read('app/templates/inventory/nodes/partials/_summary_cards.html')
     table = _read('app/templates/inventory/nodes/partials/_table_content.html')
 
     expected = (
-        'Nodes In The Current Scope.',
-        'Reported CPU Cores.',
-        'Reported Memory Capacity In GiB.',
-        'Local Ephemeral Capacity In GiB.',
-        'Available For Workload Scheduling.',
-        '% Of Nodes Require Attention.',
+        'Nodes in the Current Scope',
+        'Reported CPU Cores',
+        'Reported Memory Capacity in GiB',
+        'Local Ephemeral Capacity in GiB',
+        'Available for Workload Scheduling',
+        '% of Nodes Require Attention',
     )
     for label in expected:
         assert label in summary

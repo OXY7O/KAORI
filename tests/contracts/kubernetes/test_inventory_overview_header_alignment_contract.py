@@ -1,39 +1,34 @@
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-KPI_CARDS = ROOT / "app/templates/inventory/overview/partials/_kpi_cards.html"
+KPI_CARDS = ROOT / 'app/templates/inventory/overview/partials/_kpi_cards.html'
+ASSET_CARD = ROOT / 'app/templates/components/inventory_asset_card.html'
+SECTION_CARD = ROOT / 'app/templates/components/operational_section_card.html'
 
 
 def read(path: Path) -> str:
-    return path.read_text(encoding="utf-8")
+    return path.read_text(encoding='utf-8')
 
 
-def test_inventory_overview_header_metrics_are_centered_and_right_aligned() -> None:
+def test_inventory_overview_asset_catalog_uses_shared_section_and_destination_cards() -> None:
     template = read(KPI_CARDS)
 
-    assert "lg:flex-row lg:items-center lg:justify-between" in template
-    assert "flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto lg:ml-auto" in template
-    assert template.count("items-center justify-center gap-2 rounded-md") >= 2
-    assert template.count("text-center text-xs font-semibold") >= 2
+    assert 'components/operational_section_card.html' in template
+    assert 'components/inventory_asset_card.html' in template
+    assert "'Inventory Asset Catalog'" in template
+    assert 'overview.asset_catalog' in template
+    assert "url_for(asset.endpoint)" in template
+    assert 'progress_bar.html' not in template
+    assert 'Collection Coverage' not in template
+    assert 'Healthy Targets' not in template
 
 
-def test_inventory_overview_supporting_copy_matches_requested_case_and_punctuation() -> None:
-    template = read(KPI_CARDS)
+def test_inventory_asset_card_owns_catalog_geometry_and_typography() -> None:
+    asset_card = read(ASSET_CARD)
+    section_card = read(SECTION_CARD)
 
-    expected = [
-        "Objects per Cluster",
-        "Maximum Collection Age",
-        "Connected Inventory Targets",
-        "Within the Freshness Window",
-    ]
-    for copy in expected:
-        assert copy in template
-
-    removed = [
-        "Objects per cluster.",
-        "Maximum collection age.",
-        "Connected inventory targets.",
-        "Within the freshness window.",
-    ]
-    for copy in removed:
-        assert copy not in template
+    assert 'rounded-xl border border-outline-default bg-surface-card' in asset_card
+    assert 'text-base font-semibold text-content-primary' in asset_card
+    assert 'text-xs leading-5 text-content-muted' in asset_card
+    assert 'Open Inventory' in asset_card
+    assert 'text-base font-semibold text-content-primary' in section_card

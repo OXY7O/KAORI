@@ -10,6 +10,7 @@ from app.extensions.db import db
 from app.models import (
     Cluster,
     ClusterInventory,
+    ConfigurationInventory,
     IngressInventory,
     NamespaceInventory,
     NodeInventory,
@@ -38,7 +39,7 @@ def _is_stale_inventory(value: datetime | None) -> bool:
     return age.total_seconds() > INVENTORY_FRESHNESS_HOURS * 3600
 
 
-def _build_inventory_risk_hints(
+def _build_inventory_signals(
     *,
     connected: bool,
     synced_at: datetime | None,
@@ -47,55 +48,23 @@ def _build_inventory_risk_hints(
     pod_count: int,
     storage_count: int,
 ) -> list[dict[str, str]]:
-    hints: list[dict[str, str]] = []
+    signals: list[dict[str, str]] = []
 
     if not connected:
-        hints.append(
-            {
-                'label': 'Connection Risk',
-                'tone': 'red',
-            }
-        )
+        signals.append({'label': 'Connection Risk', 'tone': 'critical'})
 
     if synced_at is None:
-        hints.append(
-            {
-                'label': 'Never Synced',
-                'tone': 'amber',
-            }
-        )
+        signals.append({'label': 'Never Collected', 'tone': 'warning'})
     elif _is_stale_inventory(synced_at):
-        hints.append(
-            {
-                'label': 'Stale Sync',
-                'tone': 'amber',
-            }
-        )
-    else:
-        hints.append(
-            {
-                'label': 'Fresh Sync',
-                'tone': 'green',
-            }
-        )
+        signals.append({'label': 'Stale Snapshot', 'tone': 'warning'})
 
     if pod_count >= 100 or workload_count >= 50:
-        hints.append(
-            {
-                'label': 'High Density',
-                'tone': 'blue',
-            }
-        )
+        signals.append({'label': 'High Density', 'tone': 'info'})
 
     if node_count > 0 and storage_count == 0:
-        hints.append(
-            {
-                'label': 'No Storage Data',
-                'tone': 'slate',
-            }
-        )
+        signals.append({'label': 'No Storage Data', 'tone': 'unknown'})
 
-    return hints[:3]
+    return signals[:3]
 
 
 def get_cluster_by_id(cluster_id: str) -> Cluster | None:
@@ -109,6 +78,22 @@ def get_inventory_clusters() -> list[Cluster]:
     ).all()
 
 
+def _grouped_current_counts(model: Any, cluster_ids: list[Any]) -> dict[Any, int]:
+    if not cluster_ids:
+        return {}
+
+    query = db.session.query(model.cluster_id, func.count(model.id))
+    query = filter_current_generation(query, model)
+    return {
+        cluster_id: int(count or 0)
+        for cluster_id, count in (
+            query.filter(model.cluster_id.in_(cluster_ids))
+            .group_by(model.cluster_id)
+            .all()
+        )
+    }
+
+
 def get_inventory_cluster_summary() -> tuple[
     list[Cluster],
     dict[str, dict[str, Any]],
@@ -117,25 +102,14 @@ def get_inventory_cluster_summary() -> tuple[
     cluster_ids = [cluster.id for cluster in clusters]
 
     inventories: dict[str, ClusterInventory] = {}
-    namespace_counts: dict[str, int] = {}
+    namespace_counts = _grouped_current_counts(NamespaceInventory, cluster_ids)
 
     if cluster_ids:
         inventories = {
             inventory.cluster_id: inventory
-            for inventory in ClusterInventory.query.filter(ClusterInventory.cluster_id.in_(cluster_ids)).all()
-        }
-        namespace_count_query = db.session.query(
-            NamespaceInventory.cluster_id,
-            func.count(NamespaceInventory.id),
-        )
-        namespace_count_query = filter_current_generation(namespace_count_query, NamespaceInventory)
-        namespace_counts = {
-            cluster_id: count
-            for cluster_id, count in (
-                namespace_count_query.filter(NamespaceInventory.cluster_id.in_(cluster_ids))
-                .group_by(NamespaceInventory.cluster_id)
-                .all()
-            )
+            for inventory in ClusterInventory.query.filter(
+                ClusterInventory.cluster_id.in_(cluster_ids)
+            ).all()
         }
 
     summary: dict[str, dict[str, Any]] = {}
@@ -150,28 +124,12 @@ def get_inventory_cluster_summary() -> tuple[
     return clusters, summary
 
 
-def _cluster_resource_counts(cluster_id: str) -> dict[str, int]:
-    def current_count(model: Any) -> int:
-        query = filter_current_generation(model.query, model)
-        return query.filter_by(cluster_id=cluster_id).count()
-
-    return {
-        'node_count': current_count(NodeInventory),
-        'workload_count': current_count(WorkloadInventory),
-        'pod_count': current_count(PodInventory),
-        'service_count': current_count(ServiceInventory),
-        'ingress_count': current_count(IngressInventory),
-        'storage_count': current_count(StorageInventory),
-    }
-
-
 def _sync_status(synced_at: datetime | None) -> tuple[str, str]:
     if synced_at is None:
-        return 'Never Synced', 'amber'
+        return 'Never Collected', 'warning'
     if _is_stale_inventory(synced_at):
-        return 'Stale', 'amber'
-    return 'Fresh', 'green'
-
+        return 'Stale', 'warning'
+    return 'Current', 'normal'
 
 
 def get_inventory_freshness_context(cluster_id: str = '') -> dict[str, Any]:
@@ -227,15 +185,105 @@ def get_inventory_freshness_context(cluster_id: str = '') -> dict[str, Any]:
     }
 
 
+def _asset_catalog(totals: dict[str, int]) -> list[dict[str, Any]]:
+    return [
+        {
+            'key': 'nodes',
+            'title': 'Nodes',
+            'count': totals['nodes'],
+            'icon': 'cpu',
+            'description': 'Worker and control-plane capacity.',
+            'endpoint': 'inventory.nodes',
+        },
+        {
+            'key': 'namespaces',
+            'title': 'Namespaces',
+            'count': totals['namespaces'],
+            'icon': 'folder-tree',
+            'description': 'Tenant and application scopes.',
+            'endpoint': 'inventory.namespaces',
+        },
+        {
+            'key': 'workloads',
+            'title': 'Workloads',
+            'count': totals['workloads'],
+            'icon': 'boxes',
+            'description': 'Deployments and workload controllers.',
+            'endpoint': 'inventory.workloads',
+        },
+        {
+            'key': 'pods',
+            'title': 'Pods',
+            'count': totals['pods'],
+            'icon': 'container',
+            'description': 'Current runtime workload instances.',
+            'endpoint': 'inventory.pods',
+        },
+        {
+            'key': 'services',
+            'title': 'Services',
+            'count': totals['services'],
+            'icon': 'network',
+            'description': 'Cluster networking endpoints.',
+            'endpoint': 'inventory.services',
+        },
+        {
+            'key': 'ingresses',
+            'title': 'Ingresses',
+            'count': totals['ingresses'],
+            'icon': 'route',
+            'description': 'Published application entry points.',
+            'endpoint': 'inventory.ingresses',
+        },
+        {
+            'key': 'storage',
+            'title': 'Storage',
+            'count': totals['storage'],
+            'icon': 'hard-drive',
+            'description': 'Storage classes, volumes, and claims.',
+            'endpoint': 'inventory.storage',
+        },
+        {
+            'key': 'configuration',
+            'title': 'Configuration',
+            'count': totals['configuration'],
+            'icon': 'file-cog',
+            'description': 'ConfigMaps and Secret metadata.',
+            'endpoint': 'inventory.configuration',
+        },
+    ]
+
+
 def get_inventory_overview() -> dict[str, Any]:
     clusters, inventory_summary = get_inventory_cluster_summary()
-    cluster_rows: list[dict[str, Any]] = []
+    cluster_ids = [cluster.id for cluster in clusters]
 
+    count_maps = {
+        'nodes': _grouped_current_counts(NodeInventory, cluster_ids),
+        'namespaces': _grouped_current_counts(NamespaceInventory, cluster_ids),
+        'workloads': _grouped_current_counts(WorkloadInventory, cluster_ids),
+        'pods': _grouped_current_counts(PodInventory, cluster_ids),
+        'services': _grouped_current_counts(ServiceInventory, cluster_ids),
+        'ingresses': _grouped_current_counts(IngressInventory, cluster_ids),
+        'storage': _grouped_current_counts(StorageInventory, cluster_ids),
+        'configuration': _grouped_current_counts(ConfigurationInventory, cluster_ids),
+    }
+
+    cluster_rows: list[dict[str, Any]] = []
     for cluster in clusters:
         summary = inventory_summary.get(cluster.id, {})
         synced_at = summary.get('synced_at')
-        counts = _cluster_resource_counts(cluster.id)
+        counts = {key: values.get(cluster.id, 0) for key, values in count_maps.items()}
+        total_objects = sum(counts.values())
         sync_label, sync_tone = _sync_status(synced_at)
+        signals = _build_inventory_signals(
+            connected=cluster.status == 'connected',
+            synced_at=synced_at,
+            node_count=counts['nodes'],
+            workload_count=counts['workloads'],
+            pod_count=counts['pods'],
+            storage_count=counts['storage'],
+        )
 
         cluster_rows.append(
             {
@@ -243,37 +291,58 @@ def get_inventory_overview() -> dict[str, Any]:
                 'name': cluster.name,
                 'environment': cluster.environment,
                 'status': cluster.status,
-                'node_count': counts['node_count'],
-                'workload_count': counts['workload_count'],
-                'pod_count': counts['pod_count'],
-                'service_count': counts['service_count'],
-                'ingress_count': counts['ingress_count'],
-                'storage_count': counts['storage_count'],
+                'kubernetes_version': summary.get('version') or '-',
+                'synced_at': synced_at,
                 'sync_status_label': sync_label,
                 'sync_status_tone': sync_tone,
-                'risk_hints': _build_inventory_risk_hints(
-                    connected=cluster.status == 'connected',
-                    synced_at=synced_at,
-                    node_count=counts['node_count'],
-                    workload_count=counts['workload_count'],
-                    pod_count=counts['pod_count'],
-                    storage_count=counts['storage_count'],
-                ),
+                'counts': counts,
+                'total_objects': total_objects,
+                'signals': signals,
             }
         )
 
+    totals = {
+        'clusters': _count_rows(Cluster),
+        'nodes': _count_rows(NodeInventory),
+        'namespaces': _count_rows(NamespaceInventory),
+        'workloads': _count_rows(WorkloadInventory),
+        'pods': _count_rows(PodInventory),
+        'services': _count_rows(ServiceInventory),
+        'ingresses': _count_rows(IngressInventory),
+        'storage': _count_rows(StorageInventory),
+        'configuration': _count_rows(ConfigurationInventory),
+    }
+    inventory_total = sum(value for key, value in totals.items() if key != 'clusters')
+    health = get_inventory_health()
+    total_clusters = totals['clusters']
+    posture_status = (
+        'Unknown'
+        if total_clusters == 0
+        else 'Healthy'
+        if health['healthy_clusters'] == total_clusters
+        else 'Attention'
+    )
+    posture_tone = 'unknown' if posture_status == 'Unknown' else 'normal' if posture_status == 'Healthy' else 'warning'
+
     return {
-        'total_clusters': _count_rows(Cluster),
-        'total_nodes': _count_rows(NodeInventory),
-        'total_namespaces': _count_rows(NamespaceInventory),
-        'total_workloads': _count_rows(WorkloadInventory),
-        'total_pods': _count_rows(PodInventory),
-        'total_services': _count_rows(ServiceInventory),
-        'total_ingresses': _count_rows(IngressInventory),
-        'total_storage': _count_rows(StorageInventory),
+        'total_clusters': totals['clusters'],
+        'total_nodes': totals['nodes'],
+        'total_namespaces': totals['namespaces'],
+        'total_workloads': totals['workloads'],
+        'total_pods': totals['pods'],
+        'total_services': totals['services'],
+        'total_ingresses': totals['ingresses'],
+        'total_storage': totals['storage'],
+        'total_configuration': totals['configuration'],
+        'inventory_total': inventory_total,
+        'asset_catalog': _asset_catalog(totals),
         'clusters': cluster_rows,
         'inventory_summary': inventory_summary,
-        'health': get_inventory_health(),
+        'health': health,
+        'posture': {
+            'status': posture_status,
+            'tone': posture_tone,
+        },
     }
 
 
@@ -306,7 +375,8 @@ def get_inventory_health() -> dict[str, Any]:
     )
 
     for cluster in clusters:
-        if cluster.status == 'connected':
+        connected = cluster.status == 'connected'
+        if connected:
             connected_clusters += 1
 
         inventory = inventory_by_cluster.get(cluster.id)
@@ -314,14 +384,13 @@ def get_inventory_health() -> dict[str, Any]:
             never_synced += 1
             continue
 
-        if cluster.status == 'connected':
-            healthy_clusters += 1
-
         collected_at = _normalize_datetime(inventory.collected_at)
         if _is_stale_inventory(collected_at):
             stale_synced += 1
         else:
             fresh_synced += 1
+            if connected:
+                healthy_clusters += 1
 
         if collected_at and (last_sync is None or collected_at > last_sync):
             last_sync = collected_at

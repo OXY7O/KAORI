@@ -18,6 +18,9 @@ The Styling Guide selects the correct reusable component. The Design System and 
 - `components/TAB_STYLES.md`
 - `components/WORKSPACE_TABS.md`
 - `components/OPERATIONAL_SECTION_CARD.md`
+- `components/SNAPSHOT_CONTEXT_BAR.md`
+- `components/INVENTORY_ASSET_CARD.md`
+- `components/SIDE_DRAWER.md`
 - `components/OPERATIONAL_CALLOUT.md`
 - `components/OPERATIONAL_FLOW_STEPS.md`
 - `components/FORECAST_PROJECTION_CHART.md`
@@ -45,6 +48,7 @@ The Styling Guide selects the correct reusable component. The Design System and 
 - `patterns/INVENTORY_AND_OPERATIONAL_PAGES.md`
 - `patterns/WELCOME_WORKSPACE_CATALOG.md`
 - `patterns/OPERATIONAL_DASHBOARD.md`
+- `patterns/KUBERNETES_INVENTORY_OVERVIEW.md`
 
 ## Domain Specifications
 
@@ -62,6 +66,7 @@ Domain-specific UI rules live under `docs/modules/` or the owning module README.
 - `audits/KAORI_STYLING_BASELINE_AUDIT_2026_07.md`
 - `audits/WELCOME_STYLING_AUDIT_2026_07.md`
 - `audits/KUBERNETES_OPERATIONS_DASHBOARD_STYLING_AUDIT_2026_07.md`
+- `audits/KUBERNETES_INVENTORY_OVERVIEW_STYLING_AUDIT_2026_07.md`
 - `audits/PROMETHEUS_STYLE_AND_LIFECYCLE_AUDIT_2026_07.md`
 - `audits/PROMETHEUS_ALERTMANAGER_ALIGNMENT_AUDIT_2026_07.md`
 - `audits/PROMETHEUS_MANAGE_ALERTMANAGER_PARITY_AUDIT_2026_07.md`

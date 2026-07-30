@@ -7,7 +7,7 @@ INVENTORY_TEMPLATES = ROOT / 'app' / 'templates' / 'inventory'
 
 
 def read(path: Path) -> str:
-    return path.read_text()
+    return path.read_text(encoding='utf-8')
 
 
 def test_every_inventory_workspace_shows_committed_snapshot_freshness() -> None:
@@ -28,11 +28,14 @@ def test_every_inventory_workspace_shows_committed_snapshot_freshness() -> None:
         assert 'inventory/components/_data_freshness.html' in source, page
 
     freshness = read(INVENTORY_TEMPLATES / 'components' / '_data_freshness.html')
+    shared = read(ROOT / 'app/templates/components/snapshot_context_bar.html')
+    assert 'components/snapshot_context_bar.html' in freshness
     assert 'Inventory Data Snapshot' in freshness
-    assert 'Latest Collected' in freshness
-    assert 'Data Scope' in freshness
-    assert 'Coverage' in freshness
     assert 'inventory_freshness.latest_collected_at|user_datetime' in freshness
+    assert 'Latest Collected' in shared
+    assert 'Active Scope' in shared
+    assert 'Committed Coverage' in shared
+    assert 'table_label.status_label' in shared
 
 
 def test_inventory_freshness_uses_committed_cluster_inventory_snapshots() -> None:

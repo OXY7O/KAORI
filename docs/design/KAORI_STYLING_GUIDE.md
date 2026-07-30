@@ -48,6 +48,9 @@ Review the baseline diff before committing. A lower count is expected; moving de
 | Tab style registry | `components/TAB_STYLES.md` | Approved semantic tab components |
 | Tab Style 1 — Integrated Workspace Tabs | `components/WORKSPACE_TABS.md` | `components/workspace_tabs.html` |
 | Operational section card | `components/OPERATIONAL_SECTION_CARD.md` | `components/operational_section_card.html` |
+| Snapshot context bar | `components/SNAPSHOT_CONTEXT_BAR.md` | `components/snapshot_context_bar.html` |
+| Inventory asset card | `components/INVENTORY_ASSET_CARD.md` | `components/inventory_asset_card.html` |
+| Right-side detail drawer | `components/SIDE_DRAWER.md` | `components/side_drawer.html` |
 | Operational callout | `components/OPERATIONAL_CALLOUT.md` | `components/operational_callout.html` |
 | Forecast projection chart | `components/FORECAST_PROJECTION_CHART.md` | `components/forecast_projection_chart.html` |
 | Compact section-header action | `components/SECTION_HEADER_ACTION.md` | `components/section_link_button.html` |
@@ -334,6 +337,20 @@ Core rules:
 
 Do not wrap every value in a badge. Plain operational data remains plain text.
 
+### Compact cluster inventory table
+
+Use the compact cluster inventory pattern when the table compares fleet scope rather than every asset count inline. The canonical columns are:
+
+```text
+Cluster | Connection | Total Objects | Last Snapshot | Inventory Signals | Details
+```
+
+- The final column contains one compact `View Details` button.
+- Asset counts move into the shared right-side drawer.
+- The drawer preserves table context and contains identity, asset breakdown, snapshot context, and signals.
+- Normal freshness is not repeated as an Inventory Signal. Signals represent conditions requiring awareness.
+- Pagination uses resource-aware Title Case, for example `Showing 1–3 of 3 Clusters`, plus a visible `Rows` label.
+
 ## 14. Forms and Actions
 
 Use:
@@ -367,6 +384,18 @@ A standard content card contains:
 Readiness and status blocks use semantic state, not Violet decoration. A blocking requirement remains visible and is never hidden inside expandable content.
 
 Avoid stacking multiple dark or tinted backgrounds. Use whitespace, divider, border, and hierarchy before adding another nested surface.
+
+### Snapshot context bar
+
+Use `snapshot_context_bar.html` for committed, archived, or worker-generated datasets. It owns source, semantic snapshot status, latest collected time, active scope, and committed coverage. Do not rebuild this information as a page-local metric strip.
+
+### Inventory asset card
+
+Use `inventory_asset_card.html` for one navigable Kubernetes asset type. Asset cards show count, title, concise purpose, and `Open Inventory`. They are destination cards, not operational status cards.
+
+### Right-side detail drawer
+
+Use `side_drawer.html` when row details are too large for an expanded row but the comparison table must remain visible. The shared drawer owns overlay, panel geometry, close behavior, scrolling, accessibility, and optional footer action.
 
 ### Operational section card
 
