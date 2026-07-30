@@ -28,7 +28,18 @@ def test_reports_pages_use_standard_heroes_and_compact_summary_strips() -> None:
     assert '{% import "components/related_page_card.html" as related_page_card %}' in generate
     assert '{{ related_page_card.render(' in generate
     assert 'Request Preview' in generate
-    assert 'Review the request scope and output before saving it.' in generate
+    assert 'id="namespace-select"' in generate
+    assert 'namespaceOptionsByCluster' in generate
+    assert 'Select a specific cluster to load namespace options.' in generate
+    assert 'id="namespace-input"' not in generate
+    assert 'Request Identity' in generate
+    assert 'Scope and Data Window' in generate
+    assert 'Output Plan' in generate
+    assert 'Included Sections' in generate
+    assert 'id="preview-report-name"' in generate
+    assert 'syncPreviewReportName' in generate
+    assert 'Ready to Create' in generate
+    assert 'Confirm the request contract, scope, sections, and output lifecycle.' in generate
     assert 'border-status-info-border bg-status-info-soft' in generate
     assert 'Create Report Request' in generate
     assert 'Select one validated cluster and at least one section to continue.' in generate
@@ -47,6 +58,10 @@ def test_reports_pages_use_standard_heroes_and_compact_summary_strips() -> None:
     assert 'Reset default' not in generate
     assert 'rounded-full' not in generate
     assert "'generation_flow': _get_generation_flow()" in generate_service
+    assert "'namespace_options_by_cluster': namespace_options_by_cluster" in generate_service
+    assert "'preview_report_name': form_state['name'].strip() or build_default_report_name(form_state)" in generate_service
+    assert 'def _get_namespace_options_by_cluster()' in generate_service
+    assert 'NamespaceInventory.namespace == namespace' in generate_service
     assert "'data_source_context'" not in generate_service
     assert "'report_output_readiness'" not in generate_service
     assert 'def _get_data_source_context' not in generate_service

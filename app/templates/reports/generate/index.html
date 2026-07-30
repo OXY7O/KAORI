@@ -81,6 +81,7 @@
                                 <span class="text-xs font-medium text-content-muted">Report Name</span>
                                 <input type="text"
                                        name="name"
+                                       id="report-name-input"
                                        value="{{ payload.form_state.name }}"
                                        placeholder="Auto-generated if left empty"
                                        class="mt-1 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
@@ -98,15 +99,39 @@
                                     {% endfor %}
                                 </select>
                             </label>
-                            <label class="block">
-                                <span class="text-xs font-medium text-content-muted">Namespace</span>
-                                <input type="text"
-                                       name="namespace"
-                                       id="namespace-input"
-                                       value="{{ payload.form_state.namespace }}"
-                                       placeholder="All Namespaces"
-                                       class="mt-1 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
-                            </label>
+                            <div class="block">
+                                <div class="flex items-center justify-between gap-2">
+                                    <label for="namespace-select" class="text-xs font-medium text-content-muted">Namespace</label>
+                                    <span id="namespace-option-count"
+                                          class="inline-flex min-h-6 items-center rounded-md border border-outline-default bg-surface-card px-2 text-[10px] font-semibold text-content-secondary">
+                                        {% if payload.form_state.cluster_id %}
+                                            {{ payload.selected_namespace_options|length }} Available
+                                        {% else %}
+                                            Select Cluster
+                                        {% endif %}
+                                    </span>
+                                </div>
+                                <select name="namespace"
+                                        id="namespace-select"
+                                        aria-describedby="namespace-select-help"
+                                        {% if not payload.form_state.cluster_id %}disabled{% endif %}
+                                        class="mt-1 w-full rounded-lg border border-outline-default bg-surface-card px-3 py-2 text-sm text-content-secondary shadow-sm disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-content-muted focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20">
+                                    <option value="">All Namespaces</option>
+                                    {% for namespace in payload.selected_namespace_options %}
+                                        <option value="{{ namespace }}"
+                                                {% if payload.form_state.namespace == namespace %}selected{% endif %}>
+                                            {{ namespace }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                <p id="namespace-select-help" class="mt-1.5 text-[11px] leading-5 text-content-muted">
+                                    {% if payload.form_state.cluster_id %}
+                                        Loaded from the latest Namespace Inventory snapshot for the selected cluster.
+                                    {% else %}
+                                        Select a specific cluster to load namespace options.
+                                    {% endif %}
+                                </p>
+                            </div>
                             <label class="block lg:col-span-2">
                                 <span class="text-xs font-medium text-content-muted">Report Type</span>
                                 <select name="report_type"
@@ -309,74 +334,157 @@
                         </div>
                     </section>
                     <!-- Preview -->
+                    {% set initial_request_ready = payload.has_clusters and payload.form_state.sections|length > 0 and (not payload.selected_report_type.requires_cluster or payload.form_state.cluster_id) %}
                     <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
                         <header class="flex flex-col gap-3 border-b border-outline-default px-5 py-4 sm:flex-row sm:items-start sm:justify-between">
                             <div class="flex items-start gap-3">
                                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                    <i data-lucide="eye" class="h-[18px] w-[18px]"></i>
+                                    <i data-lucide="clipboard-list" class="h-[18px] w-[18px]"></i>
                                 </span>
                                 <div>
                                     <h2 class="text-base font-semibold text-content-primary">Request Preview</h2>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Review the request scope and output before saving it.</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Confirm the request contract, scope, sections, and output lifecycle.</p>
                                 </div>
                             </div>
-                            <span class="inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border border-status-info-border bg-status-info-soft px-2 py-0.5 text-[10px] font-semibold leading-4 text-status-info-text">
-                                <i data-lucide="clock-3" class="h-3 w-3 shrink-0 text-status-info" aria-hidden="true"></i>
-                                Requested
+                            <span id="preview-eligibility-status"
+                                  class="inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold leading-4 {% if initial_request_ready %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% else %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% endif %}">
+                                <i id="preview-eligibility-icon"
+                                   data-lucide="{{ 'circle-check' if initial_request_ready else 'triangle-alert' }}"
+                                   class="h-3 w-3 shrink-0 {{ 'text-status-normal' if initial_request_ready else 'text-status-warning' }}"></i>
+                                <span id="preview-eligibility-label">{{ 'Ready to Create' if initial_request_ready else 'Action Required' }}</span>
                             </span>
                         </header>
-                        <div class="p-5">
-                            <div class="flex items-start gap-3 border-b border-outline-default pb-5">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary">
-                                    <i id="preview-report-icon"
-                                       data-lucide="{{ payload.selected_report_type.icon }}"
-                                       class="h-5 w-5"></i>
-                                </span>
-                                <div class="min-w-0">
-                                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Selected Report Contract</p>
-                                    <h3 id="preview-report-type" class="mt-1 text-sm font-semibold text-content-primary">{{ payload.selected_report_type.label }}</h3>
-                                    <p id="preview-report-description" class="mt-1 text-xs leading-5 text-content-muted">{{ payload.selected_report_type.description }}</p>
+                        <div class="divide-y divide-outline-default">
+                            <section class="p-5">
+                                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                    <div class="flex min-w-0 items-start gap-3">
+                                        <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-kaori-primary/20 bg-kaori-soft text-kaori-primary">
+                                            <i id="preview-report-icon"
+                                               data-lucide="{{ payload.selected_report_type.icon }}"
+                                               class="h-5 w-5"></i>
+                                        </span>
+                                        <div class="min-w-0">
+                                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Selected Report Contract</p>
+                                            <h3 id="preview-report-type" class="mt-1 text-sm font-semibold text-content-primary">{{ payload.selected_report_type.label }}</h3>
+                                            <p id="preview-report-description" class="mt-1 max-w-3xl text-xs leading-5 text-content-muted">{{ payload.selected_report_type.description }}</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex shrink-0 flex-wrap gap-2 sm:max-w-[15rem] sm:justify-end">
+                                        <span id="preview-report-scope-requirement"
+                                              class="inline-flex min-h-6 items-center rounded-md border border-kaori-primary/20 bg-kaori-soft px-2 text-[10px] font-semibold text-kaori-primary">
+                                            {{ payload.selected_report_type.cluster_scope_label }}
+                                        </span>
+                                        <span id="preview-report-section-count"
+                                              class="inline-flex min-h-6 items-center rounded-md border border-outline-default bg-surface-card px-2 text-[10px] font-semibold text-content-secondary">
+                                            {{ payload.form_state.sections|length }} Sections
+                                        </span>
+                                    </div>
                                 </div>
-                            </div>
-                            <dl class="mt-4 grid gap-3 sm:grid-cols-2">
-                                <div class="rounded-xl border border-outline-default bg-surface-card px-4 py-3">
-                                    <dt class="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">
-                                        <i data-lucide="crosshair" class="h-3 w-3 text-kaori-primary"></i>
-                                        Scope
-                                    </dt>
-                                    <dd id="preview-scope" class="mt-1.5 text-sm font-semibold text-content-primary">Cluster / Namespace</dd>
+                            </section>
+                            <section class="grid gap-6 p-5 lg:grid-cols-2">
+                                <div>
+                                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Request Identity</p>
+                                    <dl class="mt-2 divide-y divide-outline-subtle">
+                                        <div class="flex items-start justify-between gap-4 py-2.5">
+                                            <dt class="text-xs text-content-muted">Report Name</dt>
+                                            <dd id="preview-report-name" class="max-w-[65%] break-words text-right text-xs font-semibold text-content-primary">
+                                                {{ payload.preview_report_name }}
+                                            </dd>
+                                        </div>
+                                        <div class="flex items-center justify-between gap-4 py-2.5">
+                                            <dt class="text-xs text-content-muted">Created Status</dt>
+                                            <dd>
+                                                <span class="inline-flex min-h-6 items-center gap-1 rounded-md border border-status-info-border bg-status-info-soft px-2 py-0.5 text-[10px] font-semibold leading-4 text-status-info-text">
+                                                    <i data-lucide="clock-3" class="h-3 w-3 shrink-0 text-status-info"></i>
+                                                    Requested
+                                                </span>
+                                            </dd>
+                                        </div>
+                                        <div class="flex items-start justify-between gap-4 py-2.5">
+                                            <dt class="text-xs text-content-muted">Generation Mode</dt>
+                                            <dd class="max-w-[65%] text-right text-xs font-semibold text-content-primary">Manual from Generated Reports</dd>
+                                        </div>
+                                    </dl>
                                 </div>
-                                <div class="rounded-xl border border-outline-default bg-surface-card px-4 py-3">
-                                    <dt class="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">
-                                        <i data-lucide="calendar-range" class="h-3 w-3 text-kaori-primary"></i>
-                                        Period
-                                    </dt>
-                                    <dd id="preview-period" class="mt-1.5 text-sm font-semibold text-content-primary">{{ payload.form_state.period }}</dd>
+                                <div>
+                                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Scope and Data Window</p>
+                                    <dl class="mt-2 divide-y divide-outline-subtle">
+                                        <div class="flex items-start justify-between gap-4 py-2.5">
+                                            <dt class="text-xs text-content-muted">Cluster</dt>
+                                            <dd id="preview-cluster" class="max-w-[65%] break-words text-right text-xs font-semibold text-content-primary">All Clusters</dd>
+                                        </div>
+                                        <div class="flex items-start justify-between gap-4 py-2.5">
+                                            <dt class="text-xs text-content-muted">Namespace</dt>
+                                            <dd id="preview-namespace" class="max-w-[65%] break-words text-right text-xs font-semibold text-content-primary">All Namespaces</dd>
+                                        </div>
+                                        <div class="flex items-start justify-between gap-4 py-2.5">
+                                            <dt class="text-xs text-content-muted">Reporting Period</dt>
+                                            <dd id="preview-period" class="max-w-[65%] text-right text-xs font-semibold text-content-primary">{{ payload.form_state.period }}</dd>
+                                        </div>
+                                    </dl>
                                 </div>
-                                <div class="rounded-xl border border-outline-default bg-surface-card px-4 py-3">
-                                    <dt class="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">
-                                        <i data-lucide="list-checks" class="h-3 w-3 text-kaori-primary"></i>
-                                        Sections
-                                    </dt>
-                                    <dd id="preview-sections" class="mt-1.5 text-sm font-semibold text-content-primary">{{ payload.form_state.sections|length }} Selected</dd>
+                            </section>
+                            <section class="p-5">
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Output Plan</p>
+                                <dl class="mt-3 grid gap-x-6 gap-y-3 sm:grid-cols-3">
+                                    <div class="flex items-start gap-2.5">
+                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                            <i data-lucide="file-type-2" class="h-4 w-4"></i>
+                                        </span>
+                                        <div>
+                                            <dt class="text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">Format</dt>
+                                            <dd id="preview-output-format" class="mt-1 text-xs font-semibold text-content-primary">{{ payload.form_state.output_format|upper }}</dd>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start gap-2.5">
+                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                            <i data-lucide="list-checks" class="h-4 w-4"></i>
+                                        </span>
+                                        <div>
+                                            <dt class="text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">Sections</dt>
+                                            <dd id="preview-sections" class="mt-1 text-xs font-semibold text-content-primary">{{ payload.form_state.sections|length }} Selected</dd>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start gap-2.5">
+                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                            <i data-lucide="hard-drive" class="h-4 w-4"></i>
+                                        </span>
+                                        <div>
+                                            <dt class="text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">Storage</dt>
+                                            <dd id="preview-storage" class="mt-1 text-xs font-semibold text-content-primary">{{ payload.storage_context.label }}</dd>
+                                        </div>
+                                    </div>
+                                </dl>
+                                <div class="mt-4 border-t border-outline-subtle pt-4">
+                                    <p class="text-xs font-semibold text-content-primary">Included Sections</p>
+                                    <p id="preview-included-sections" class="mt-1 text-xs leading-5 text-content-muted">
+                                        {% if payload.selected_section_options %}
+                                            {{ payload.selected_section_options|map(attribute='label')|join(', ') }}
+                                        {% else %}
+                                            No sections selected.
+                                        {% endif %}
+                                    </p>
                                 </div>
-                                <div class="rounded-xl border border-outline-default bg-surface-card px-4 py-3">
-                                    <dt class="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">
-                                        <i data-lucide="file-type-2" class="h-3 w-3 text-kaori-primary"></i>
-                                        Output Format
-                                    </dt>
-                                    <dd id="preview-output-format" class="mt-1.5 text-sm font-semibold text-content-primary">{{ payload.form_state.output_format|upper }}</dd>
-                                </div>
-                            </dl>
-                            <div class="mt-4 flex items-start gap-3 border-t border-outline-default pt-4">
-                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                    <i data-lucide="arrow-right" class="h-4 w-4"></i>
+                            </section>
+                            <footer id="preview-next-step"
+                                    class="flex items-start gap-3 bg-kaori-soft/60 px-5 py-4">
+                                <span id="preview-next-step-icon"
+                                      class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary">
+                                    <i data-lucide="{{ 'arrow-right' if initial_request_ready else 'list-checks' }}" class="h-4 w-4"></i>
                                 </span>
                                 <div>
-                                    <p class="text-xs font-semibold text-content-primary">Next Step: Generate the PDF</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Create the request, then start PDF generation from Generated Reports.</p>
+                                    <p id="preview-next-step-title" class="text-xs font-semibold text-content-primary">
+                                        {{ 'Next Step: Create the Request' if initial_request_ready else 'Complete the Required Inputs' }}
+                                    </p>
+                                    <p id="preview-next-step-description" class="mt-1 text-xs leading-5 text-content-muted">
+                                        {% if initial_request_ready %}
+                                            The request will be saved as Requested, then the PDF can be rendered from Generated Reports.
+                                        {% else %}
+                                            Resolve the cluster scope or section selection before creating the request.
+                                        {% endif %}
+                                    </p>
                                 </div>
-                            </div>
+                            </footer>
                         </div>
                     </section>
                     <!-- Actions -->
@@ -506,14 +614,19 @@
                 const sectionOptionsByReportType = {{ payload.section_options_by_report_type|tojson }};
                 const reportTypeOptions = {{ payload.report_type_options|tojson }};
                 const singleClusterRequiredTypes = {{ payload.single_cluster_required_report_types|tojson }};
+                const namespaceOptionsByCluster = {{ payload.namespace_options_by_cluster|tojson }};
                 const hasRegisteredClusters = {{ payload.has_clusters|tojson }};
                 const initialSelectedSections = {{ payload.form_state.sections|tojson }};
+                const initialNamespace = {{ payload.form_state.namespace|tojson }};
 
                 const reportTypeSelect = document.getElementById('report-type-select');
                 const periodSelect = document.getElementById('period-select');
                 const outputFormatSelect = document.getElementById('output-format-select');
                 const clusterSelect = document.getElementById('cluster-select');
-                const namespaceInput = document.getElementById('namespace-input');
+                const namespaceSelect = document.getElementById('namespace-select');
+                const namespaceOptionCount = document.getElementById('namespace-option-count');
+                const namespaceSelectHelp = document.getElementById('namespace-select-help');
+                const reportNameInput = document.getElementById('report-name-input');
                 const clusterGuard = document.getElementById('cluster-guard');
                 const generateButton = document.getElementById('generate-report-button');
                 const selectedSectionList = document.getElementById('selected-section-list');
@@ -529,10 +642,21 @@
                 const previewReportType = document.getElementById('preview-report-type');
                 const previewReportDescription = document.getElementById('preview-report-description');
                 const previewReportIcon = document.getElementById('preview-report-icon');
-                const previewScope = document.getElementById('preview-scope');
+                const previewReportName = document.getElementById('preview-report-name');
+                const previewCluster = document.getElementById('preview-cluster');
+                const previewNamespace = document.getElementById('preview-namespace');
                 const previewPeriod = document.getElementById('preview-period');
                 const previewSections = document.getElementById('preview-sections');
+                const previewIncludedSections = document.getElementById('preview-included-sections');
                 const previewOutputFormat = document.getElementById('preview-output-format');
+                const previewReportScopeRequirement = document.getElementById('preview-report-scope-requirement');
+                const previewReportSectionCount = document.getElementById('preview-report-section-count');
+                const previewEligibilityStatus = document.getElementById('preview-eligibility-status');
+                const previewEligibilityIcon = document.getElementById('preview-eligibility-icon');
+                const previewEligibilityLabel = document.getElementById('preview-eligibility-label');
+                const previewNextStepIcon = document.getElementById('preview-next-step-icon');
+                const previewNextStepTitle = document.getElementById('preview-next-step-title');
+                const previewNextStepDescription = document.getElementById('preview-next-step-description');
                 const readinessScopeIcon = document.getElementById('readiness-scope-icon');
                 const readinessScopeStatus = document.getElementById('readiness-scope-status');
                 const readinessScopeDescription = document.getElementById('readiness-scope-description');
@@ -556,7 +680,7 @@
                     selectedSectionsByReportType[reportTypeSelect.value] = initialSelectedSections.slice();
                 }
 
-                if (!reportTypeSelect || !clusterSelect || !selectedSectionList) {
+                if (!reportTypeSelect || !clusterSelect || !namespaceSelect || !selectedSectionList) {
                     return;
                 }
 
@@ -596,10 +720,11 @@
                 }
 
                 function syncOverallReadiness(isReady) {
+                    const readyStatusClasses = 'inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border border-status-normal-border bg-status-normal-soft px-2 py-0.5 text-[10px] font-semibold leading-4 text-status-normal-text';
+                    const warningStatusClasses = 'inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border border-status-warning-border bg-status-warning-soft px-2 py-0.5 text-[10px] font-semibold leading-4 text-status-warning-text';
+
                     if (readinessOverallStatus) {
-                        readinessOverallStatus.className = isReady
-                            ? 'inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border border-status-normal-border bg-status-normal-soft px-2 py-0.5 text-[10px] font-semibold leading-4 text-status-normal-text'
-                            : 'inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border border-status-warning-border bg-status-warning-soft px-2 py-0.5 text-[10px] font-semibold leading-4 text-status-warning-text';
+                        readinessOverallStatus.className = isReady ? readyStatusClasses : warningStatusClasses;
                     }
 
                     if (readinessOverallIcon) {
@@ -630,6 +755,40 @@
                         readinessSummaryText.textContent = isReady
                             ? 'Scope and section requirements are valid. The request can be created.'
                             : 'Resolve the required scope or section checks before creating the request.';
+                    }
+
+                    if (previewEligibilityStatus) {
+                        previewEligibilityStatus.className = isReady ? readyStatusClasses : warningStatusClasses;
+                    }
+
+                    if (previewEligibilityIcon) {
+                        previewEligibilityIcon.setAttribute('data-lucide', isReady ? 'circle-check' : 'triangle-alert');
+                        previewEligibilityIcon.className = isReady
+                            ? 'h-3 w-3 shrink-0 text-status-normal'
+                            : 'h-3 w-3 shrink-0 text-status-warning';
+                    }
+
+                    if (previewEligibilityLabel) {
+                        previewEligibilityLabel.textContent = isReady ? 'Ready to Create' : 'Action Required';
+                    }
+
+                    if (previewNextStepIcon) {
+                        const icon = previewNextStepIcon.querySelector('[data-lucide]');
+                        if (icon) {
+                            icon.setAttribute('data-lucide', isReady ? 'arrow-right' : 'list-checks');
+                        }
+                    }
+
+                    if (previewNextStepTitle) {
+                        previewNextStepTitle.textContent = isReady
+                            ? 'Next Step: Create the Request'
+                            : 'Complete the Required Inputs';
+                    }
+
+                    if (previewNextStepDescription) {
+                        previewNextStepDescription.textContent = isReady
+                            ? 'The request will be saved as Requested, then the PDF can be rendered from Generated Reports.'
+                            : 'Resolve the cluster scope or section selection before creating the request.';
                     }
                 }
 
@@ -664,6 +823,14 @@
                     const selectedSections = getSelectedSections();
                     const selectedCount = selectedSections.length;
                     const sectionLabel = selectedCount === 1 ? 'Section' : 'Sections';
+                    const sectionOptions = sectionOptionsByReportType[reportTypeSelect.value] || [];
+                    const selectedLabels = sectionOptions
+                        .filter(function (section) {
+                            return selectedSections.includes(section.value);
+                        })
+                        .map(function (section) {
+                            return section.label;
+                        });
 
                     if (selectedSectionCountBadge) {
                         selectedSectionCountBadge.textContent = selectedCount + ' Selected';
@@ -673,8 +840,18 @@
                         selectedReportCount.textContent = selectedCount + ' ' + sectionLabel;
                     }
 
+                    if (previewReportSectionCount) {
+                        previewReportSectionCount.textContent = selectedCount + ' ' + sectionLabel;
+                    }
+
                     if (previewSections) {
                         previewSections.textContent = selectedCount + ' Selected';
+                    }
+
+                    if (previewIncludedSections) {
+                        previewIncludedSections.textContent = selectedLabels.length
+                            ? selectedLabels.join(', ')
+                            : 'No sections selected.';
                     }
 
                     if (selectedSectionValidation) {
@@ -742,11 +919,30 @@
                     element.classList.toggle('hidden', !isVisible);
                 }
 
+                function getDefaultReportName() {
+                    const reportType = getReportTypeOption();
+                    const periodLabel = periodSelect && periodSelect.options[periodSelect.selectedIndex]
+                        ? periodSelect.options[periodSelect.selectedIndex].text.trim()
+                        : 'Report Period';
+                    return reportType.label + ' - ' + periodLabel;
+                }
+
+                function syncPreviewReportName() {
+                    if (!previewReportName) {
+                        return;
+                    }
+
+                    previewReportName.textContent = reportNameInput && reportNameInput.value.trim()
+                        ? reportNameInput.value.trim()
+                        : getDefaultReportName();
+                }
+
                 function syncReportTypeSummary() {
                     const reportType = getReportTypeOption();
                     const selectedSections = getSelectedSections();
                     const requiresSpecificCluster = singleClusterRequiredTypes.includes(reportTypeSelect.value);
                     const sectionLabel = selectedSections.length === 1 ? 'Section' : 'Sections';
+                    const scopeLabel = requiresSpecificCluster ? 'Specific Cluster Required' : 'All Clusters Supported';
 
                     if (selectedReportLabel) {
                         selectedReportLabel.textContent = reportType.label;
@@ -757,7 +953,7 @@
                     }
 
                     if (selectedReportScope) {
-                        selectedReportScope.textContent = requiresSpecificCluster ? 'Specific Cluster Required' : 'All Clusters Supported';
+                        selectedReportScope.textContent = scopeLabel;
                     }
 
                     if (selectedReportCount) {
@@ -776,8 +972,64 @@
                         previewReportDescription.textContent = reportType.description;
                     }
 
+                    if (previewReportScopeRequirement) {
+                        previewReportScopeRequirement.textContent = scopeLabel;
+                    }
+
                     if (previewReportIcon) {
                         previewReportIcon.setAttribute('data-lucide', reportType.icon || 'file-text');
+                    }
+
+                    syncPreviewReportName();
+                }
+
+                function updateNamespaceOptions(selectedValue) {
+                    const clusterId = clusterSelect.value;
+                    const namespaces = namespaceOptionsByCluster[clusterId] || [];
+                    const normalizedSelectedValue = selectedValue || '';
+
+                    namespaceSelect.innerHTML = '';
+
+                    const allNamespacesOption = document.createElement('option');
+                    allNamespacesOption.value = '';
+                    allNamespacesOption.textContent = 'All Namespaces';
+                    namespaceSelect.appendChild(allNamespacesOption);
+
+                    namespaces.forEach(function (namespace) {
+                        const option = document.createElement('option');
+                        option.value = namespace;
+                        option.textContent = namespace;
+                        namespaceSelect.appendChild(option);
+                    });
+
+                    if (!clusterId) {
+                        namespaceSelect.disabled = true;
+                        namespaceSelect.value = '';
+
+                        if (namespaceOptionCount) {
+                            namespaceOptionCount.textContent = 'Select Cluster';
+                        }
+
+                        if (namespaceSelectHelp) {
+                            namespaceSelectHelp.textContent = 'Select a specific cluster to load namespace options.';
+                        }
+
+                        return;
+                    }
+
+                    namespaceSelect.disabled = false;
+                    namespaceSelect.value = namespaces.includes(normalizedSelectedValue)
+                        ? normalizedSelectedValue
+                        : '';
+
+                    if (namespaceOptionCount) {
+                        namespaceOptionCount.textContent = namespaces.length + ' Available';
+                    }
+
+                    if (namespaceSelectHelp) {
+                        namespaceSelectHelp.textContent = namespaces.length
+                            ? 'Loaded from the latest Namespace Inventory snapshot for the selected cluster.'
+                            : 'No namespace snapshot is available. The request will use all namespaces.';
                     }
                 }
 
@@ -790,8 +1042,8 @@
                     const clusterLabel = clusterSelect.options[clusterSelect.selectedIndex]
                         ? clusterSelect.options[clusterSelect.selectedIndex].text.trim()
                         : 'All Clusters';
-                    const namespaceValue = namespaceInput && namespaceInput.value.trim()
-                        ? namespaceInput.value.trim()
+                    const namespaceValue = namespaceSelect && namespaceSelect.value
+                        ? namespaceSelect.options[namespaceSelect.selectedIndex].text.trim()
                         : 'All Namespaces';
 
                     setElementVisibility(clusterGuard, shouldBlockCluster);
@@ -816,8 +1068,12 @@
                                 : 'The selected report type supports the current cluster scope.');
                     }
 
-                    if (previewScope) {
-                        previewScope.textContent = clusterLabel + ' / ' + namespaceValue;
+                    if (previewCluster) {
+                        previewCluster.textContent = clusterLabel;
+                    }
+
+                    if (previewNamespace) {
+                        previewNamespace.textContent = namespaceValue;
                     }
 
                     syncOverallReadiness(!shouldBlock);
@@ -843,13 +1099,17 @@
                 }
 
                 reportTypeSelect.addEventListener('change', syncForm);
-                clusterSelect.addEventListener('change', syncClusterGuard);
+                clusterSelect.addEventListener('change', function () {
+                    updateNamespaceOptions('');
+                    syncClusterGuard();
+                });
 
                 if (periodSelect) {
                     periodSelect.addEventListener('change', function () {
                         if (previewPeriod) {
                             previewPeriod.textContent = periodSelect.options[periodSelect.selectedIndex].text.trim();
                         }
+                        syncPreviewReportName();
                     });
                 }
 
@@ -861,8 +1121,10 @@
                     });
                 }
 
-                if (namespaceInput) {
-                    namespaceInput.addEventListener('input', syncClusterGuard);
+                namespaceSelect.addEventListener('change', syncClusterGuard);
+
+                if (reportNameInput) {
+                    reportNameInput.addEventListener('input', syncPreviewReportName);
                 }
 
                 if (selectAllSectionsButton) {
@@ -884,6 +1146,7 @@
                     });
                 }
 
+                updateNamespaceOptions(initialNamespace);
                 syncForm();
 
                 if (periodSelect && previewPeriod) {

@@ -5,8 +5,10 @@ from typing import Any
 from sqlalchemy import func, select
 from werkzeug.datastructures import ImmutableMultiDict, MultiDict
 
+from app.common.inventory_generation import filter_current_generation
 from app.extensions.db import db
 from app.models.cluster import Cluster
+from app.models.inventory import NamespaceInventory
 from app.models.report import Report
 from app.models.user import User
 from app.reports.export.constants import (
@@ -502,6 +504,7 @@ def get_generate_report_payload(
         form_state['report_type'],
     )
     cluster_options = _get_cluster_options()
+    namespace_options_by_cluster = _get_namespace_options_by_cluster()
 
     return {
         'page_title': 'Generate Report',
@@ -510,6 +513,11 @@ def get_generate_report_payload(
         ),
         'clusters': cluster_options,
         'has_clusters': len(cluster_options) > 1,
+        'namespace_options_by_cluster': namespace_options_by_cluster,
+        'selected_namespace_options': namespace_options_by_cluster.get(
+            str(form_state.get('cluster_id') or ''),
+            [],
+        ),
         'report_type_options': REPORT_TYPE_OPTIONS,
         'period_options': PERIOD_OPTIONS,
         'output_format_options': OUTPUT_FORMAT_OPTIONS,
@@ -525,6 +533,7 @@ def get_generate_report_payload(
             SINGLE_CLUSTER_REQUIRED_REPORT_TYPES,
         ),
         'form_state': form_state,
+        'preview_report_name': form_state['name'].strip() or build_default_report_name(form_state),
         'errors': errors or [],
         'readiness': _get_generation_readiness(
             storage_context=storage_context,
@@ -868,6 +877,7 @@ def validate_form_state(
             'One or more selected sections are not available for this report type.',
         )
 
+    cluster_exists = None
     if form_state['cluster_id']:
         cluster_exists = db.session.scalar(
             select(
@@ -880,6 +890,25 @@ def validate_form_state(
         if cluster_exists is None:
             errors.append(
                 'Please select a valid cluster.',
+            )
+
+    namespace = (form_state.get('namespace') or '').strip()
+    if namespace and not form_state['cluster_id']:
+        errors.append(
+            'Select a specific cluster before choosing a namespace.',
+        )
+    elif namespace and cluster_exists is not None:
+        namespace_query = filter_current_generation(
+            NamespaceInventory.query,
+            NamespaceInventory,
+        ).filter(
+            NamespaceInventory.cluster_id == form_state['cluster_id'],
+            NamespaceInventory.namespace == namespace,
+        )
+
+        if namespace_query.with_entities(NamespaceInventory.id).first() is None:
+            errors.append(
+                'Please select a namespace available in the current inventory snapshot for this cluster.',
             )
 
     return errors
@@ -930,6 +959,31 @@ def _get_cluster_options() -> list[dict[str, str]]:
                 'label': cluster.name,
             }
         )
+
+    return options
+
+
+def _get_namespace_options_by_cluster() -> dict[str, list[str]]:
+    query = db.session.query(
+        NamespaceInventory.cluster_id,
+        NamespaceInventory.namespace,
+    )
+    query = filter_current_generation(
+        query,
+        NamespaceInventory,
+    )
+    rows = (
+        query.order_by(
+            NamespaceInventory.cluster_id.asc(),
+            NamespaceInventory.namespace.asc(),
+        )
+        .all()
+    )
+
+    options: dict[str, list[str]] = {}
+    for cluster_id, namespace in rows:
+        cluster_key = str(cluster_id)
+        options.setdefault(cluster_key, []).append(namespace)
 
     return options
 
