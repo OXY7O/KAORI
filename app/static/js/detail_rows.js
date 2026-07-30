@@ -12,13 +12,19 @@
 
     function setButtonState(button, open) {
         const label = button.querySelector('[data-detail-toggle-label]')
-        const icon = button.querySelector('[data-lucide]')
+        const leadingIcon = button.querySelector('[data-detail-leading-icon] [data-lucide]')
+        const chevron = button.querySelector('[data-detail-chevron]')
 
         button.setAttribute('aria-expanded', open ? 'true' : 'false')
+        button.dataset.detailState = open ? 'open' : 'closed'
+        button.classList.toggle('border-brand-outline', open)
+        button.classList.toggle('bg-kaori-soft', open)
+        button.classList.toggle('text-kaori-primary-dark', open)
         if (label) label.textContent = open
-            ? (button.dataset.detailCloseLabel || 'Hide Details')
-            : (button.dataset.detailOpenLabel || 'View More')
-        if (icon) icon.setAttribute('data-lucide', open ? 'chevron-up' : 'chevron-down')
+            ? (button.dataset.detailCloseLabel || 'Close Details')
+            : (button.dataset.detailOpenLabel || 'View Details')
+        if (leadingIcon) leadingIcon.setAttribute('data-lucide', open ? 'x' : 'eye')
+        if (chevron) chevron.classList.toggle('rotate-180', open)
     }
 
     function resolveElements(button) {
@@ -60,9 +66,14 @@
     function renderLoading(target) {
         target.setAttribute('aria-busy', 'true')
         target.innerHTML = `
-            <div class="flex min-h-24 items-center justify-center gap-2 border-t border-outline-subtle bg-surface-hover px-5 py-5 text-sm font-medium text-content-muted">
-                <span class="h-4 w-4 animate-spin rounded-full border-2 border-outline-default border-t-kaori-primary" aria-hidden="true"></span>
-                Loading Details
+            <div class="bg-kaori-mist/50 px-3 py-3 sm:px-4 sm:py-4">
+                <div class="flex min-h-28 items-center justify-center gap-3 rounded-2xl border border-brand-outline bg-surface-card px-5 py-6 shadow-sm">
+                    <span class="h-5 w-5 animate-spin rounded-full border-2 border-outline-default border-t-kaori-primary" aria-hidden="true"></span>
+                    <div>
+                        <p class="text-sm font-semibold text-content-primary">Loading Inventory Details</p>
+                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Reading the latest committed inventory evidence.</p>
+                    </div>
+                </div>
             </div>
         `
     }
@@ -70,9 +81,11 @@
     function renderError(target) {
         target.removeAttribute('aria-busy')
         target.innerHTML = `
-            <div class="border-t border-critical/30 bg-critical/5 px-5 py-5">
-                <p class="text-sm font-semibold text-critical">Unable To Load Details</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Refresh the inventory data or try opening the detail again.</p>
+            <div class="bg-kaori-mist/50 px-3 py-3 sm:px-4 sm:py-4">
+                <div class="rounded-2xl border border-status-critical-border bg-status-critical-soft px-5 py-5">
+                    <p class="text-sm font-semibold text-status-critical-text">Unable to Load Inventory Details</p>
+                    <p class="mt-1 text-xs leading-5 text-status-critical-text">Refresh the inventory snapshot or close and open this detail again.</p>
+                </div>
             </div>
         `
     }

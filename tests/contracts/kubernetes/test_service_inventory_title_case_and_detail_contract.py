@@ -27,7 +27,7 @@ def test_service_detail_uses_adaptive_stacks_and_factual_network_configuration()
     service = read('app/inventory/resources/services.py')
 
     assert 'data-kaori-detail-density="adaptive-stacks"' in detail
-    assert "detail.inline_detail_shell_classes()" in detail
+    assert "detail.expanded_workspace_shell_classes()" in detail
     assert "Technical Metadata Collection" not in detail
     assert 'metadata_collection.render(' in detail
     assert 'related_collection.render(' in detail

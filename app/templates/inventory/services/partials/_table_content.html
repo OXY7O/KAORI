@@ -33,7 +33,7 @@
                         <p class="mt-1 text-xs leading-5 text-content-muted">{{ service.backend.supporting }}</p>
                     </td>
                     <td class="{{ table_ui.cell_classes(action=true) }}">
-                        {{ expandable.toggle_button('inventory-services', service.id, url_for('inventory.service_details', service_id=service.id), 'service-detail-content-' ~ service.id, 'service-detail-row-' ~ service.id, open_label='View Details', close_label='Hide Details') }}
+                        {{ expandable.toggle_button('inventory-services', service.id, url_for('inventory.service_details', service_id=service.id), 'service-detail-content-' ~ service.id, 'service-detail-row-' ~ service.id, open_label='View Details', close_label='Close Details') }}
                     </td>
                 </tr>
                 {{ expandable.detail_row('service-detail-row-' ~ service.id, 'service-detail-content-' ~ service.id, 6) }}

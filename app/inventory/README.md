@@ -188,3 +188,11 @@ Pod Inventory is the fourth Inventory Resource Page reference. It uses Pod Runti
 Service and Ingress Inventory use the canonical Inventory Resource Page pattern. Service backend evidence is EndpointSlice-first with Endpoints fallback. Ingress backend references are resolved from committed Service Inventory. Network publication, TLS references, traffic policy, and controller class remain factual evidence until an explicit governance policy evaluates them.
 
 Expanded details use natural-height Adaptive Detail Stacks. Evidence tiles must not create empty gray cells, metadata collections avoid nested vertical scrolling, and ordinary table technical values use the same body typography as adjacent values.
+
+## Storage and Configuration reference implementations
+
+Storage Inventory uses type-adaptive provisioning, capacity/access, and binding/lifecycle evidence. StorageClass configuration is factual; PV/PVC lifecycle carries semantic state.
+
+Configuration Inventory uses protected key-index metadata. Values are not decoded, logged, persisted, or displayed. ConfigMap and Secret collection capability is stored on `ClusterInventory.collection_evidence` for the committed generation.
+
+All Inventory row details use the shared `View Details` interaction and expanded workspace classes from `components/details/_expandable_row.html` and `components/details/_detail_content.html`.

@@ -41,3 +41,16 @@ Contract:
 - keep metadata and Operational Context full-width below the primary stacks.
 
 Do not solve uneven detail content by adding fixed or minimum heights. Do not create page-local card geometry for the same pattern.
+
+## Inventory View Details Workspace
+
+All Inventory implementations use the same row-owned disclosure action and expanded workspace shell.
+
+- action labels: `View Details` / `Close Details`;
+- action state: eye or close icon plus disclosure chevron;
+- one open row per resource group;
+- expanded row uses a subtle Violet boundary;
+- loading and error content remain inside the same boundary;
+- detail roots use `expanded_workspace_*_classes()` macros rather than page-local shell bundles.
+
+This interaction supersedes legacy `View More`, `Hide Details`, and page-local expanded-row presentation.

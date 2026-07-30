@@ -1,5 +1,17 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/technical_value.html" as technical_value %}
+{% macro expanded_workspace_outer_classes() -%}
+    bg-kaori-mist/50 px-3 py-3 sm:px-4 sm:py-4
+{%- endmacro %}
+{% macro expanded_workspace_shell_classes() -%}
+    overflow-hidden rounded-2xl border border-brand-outline bg-surface-card shadow-sm
+{%- endmacro %}
+{% macro expanded_workspace_header_classes() -%}
+    flex flex-col gap-3 border-b border-outline-subtle bg-surface-card px-5 py-4 sm:flex-row sm:items-center sm:justify-between
+{%- endmacro %}
+{% macro expanded_workspace_icon_classes() -%}
+    flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary
+{%- endmacro %}
 {% macro inline_detail_shell_classes() -%}
     overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm
 {%- endmacro %}

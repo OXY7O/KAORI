@@ -236,6 +236,7 @@ def get_inventory_cluster_summary() -> tuple[
             'version': inventory.kubernetes_version if inventory else '-',
             'namespaces': namespace_counts.get(cluster.id, 0),
             'synced_at': inventory.collected_at if inventory else None,
+            'collection_evidence': dict(inventory.collection_evidence or {}) if inventory else {},
         }
 
     return clusters, summary
@@ -262,6 +263,13 @@ def get_inventory_freshness_context(cluster_id: str = '') -> dict[str, Any]:
     oldest = min(committed) if committed else None
     missing_count = max(len(selected) - len(committed), 0)
     stale_count = sum(1 for value in committed if _is_stale_inventory(value))
+    collection_exceptions: list[tuple[str, str, str]] = []
+    for cluster in selected:
+        evidence = summary.get(cluster.id, {}).get('collection_evidence') or {}
+        for family, state in evidence.items():
+            if state != 'Collected':
+                collection_exceptions.append((cluster.name, family, state))
+    collection_exception_count = len(collection_exceptions)
 
     if not selected:
         status = 'No Scope'
@@ -271,12 +279,12 @@ def get_inventory_freshness_context(cluster_id: str = '') -> dict[str, Any]:
         status = 'Not Collected'
         tone = 'warning'
         description = 'Run Inventory Sync before relying on this inventory view.'
-    elif stale_count or missing_count:
+    elif stale_count or missing_count or collection_exception_count:
         status = 'Review Freshness'
         tone = 'warning'
         description = (
             f'{len(committed)} of {len(selected)} cluster snapshots are committed; '
-            f'{stale_count} are older than the {INVENTORY_FRESHNESS_HOURS}-hour freshness window.'
+            f'{stale_count} are stale and {collection_exception_count} collection capabilities require review.'
         )
     else:
         status = 'Current'
@@ -286,11 +294,14 @@ def get_inventory_freshness_context(cluster_id: str = '') -> dict[str, Any]:
             f'{INVENTORY_FRESHNESS_HOURS}-hour freshness window.'
         )
 
-    exception_label = (
-        f'{stale_count} Stale · {missing_count} Missing'
-        if stale_count or missing_count
-        else 'No Exceptions'
-    )
+    exception_parts = []
+    if stale_count:
+        exception_parts.append(f'{stale_count} Stale')
+    if missing_count:
+        exception_parts.append(f'{missing_count} Missing')
+    if collection_exception_count:
+        exception_parts.append(f'{collection_exception_count} Collection')
+    exception_label = ' · '.join(exception_parts) if exception_parts else 'No Exceptions'
 
     return {
         'latest_collected_at': latest,
@@ -299,6 +310,8 @@ def get_inventory_freshness_context(cluster_id: str = '') -> dict[str, Any]:
         'committed_count': len(committed),
         'missing_count': missing_count,
         'stale_count': stale_count,
+        'collection_exception_count': collection_exception_count,
+        'collection_exceptions': collection_exceptions,
         'freshness_window_hours': INVENTORY_FRESHNESS_HOURS,
         'scope_label': selected[0].name if len(selected) == 1 else f'{len(selected)} Clusters',
         'status': status,

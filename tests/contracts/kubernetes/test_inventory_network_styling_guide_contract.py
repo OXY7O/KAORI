@@ -14,7 +14,7 @@ def test_service_and_ingress_use_shared_network_inventory_contracts() -> None:
 
     for source in (service_detail, ingress_detail):
         assert 'data-kaori-detail-density="adaptive-stacks"' in source
-        assert 'detail.inline_detail_shell_classes()' in source
+        assert 'detail.expanded_workspace_shell_classes()' in source
         assert 'technical_metadata_collection.html' in source
         assert 'related_resource_collection.html' in source
         assert 'Operational Context' in source

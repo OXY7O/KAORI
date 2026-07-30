@@ -35,7 +35,7 @@ def test_namespaced_inventory_tables_use_shared_namespace_identity() -> None:
 
     for resource in NAMESPACED_RESOURCE_TABLES:
         content = _table(resource)
-        if resource in {'workloads', 'pods', 'services', 'ingresses'}:
+        if resource in {'workloads', 'pods', 'services', 'ingresses', 'storage', 'configuration'}:
             assert 'table_ui.namespaced_scope_identity(' in content
         else:
             assert 'table_ui.namespace_identity(' in content, resource

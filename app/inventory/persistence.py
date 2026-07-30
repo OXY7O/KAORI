@@ -163,6 +163,7 @@ def save_cluster_info(
     cluster_inventory.collected_at = collected_at
 
     cluster_inventory.cluster_id = cluster.id
+    cluster_inventory.collection_evidence = {}
     cluster_inventory.kubernetes_version = get_cluster_version(
         api,
     )
@@ -706,11 +707,19 @@ def save_configuration_inventory(
             object_type='Secret',
         ).delete(synchronize_session=False)
 
-    for item in get_configuration_inventory(
+    configuration_items, collection_evidence = get_configuration_inventory(
         api,
         include_configmaps=include_configmaps,
         include_secrets=include_secrets,
-    ):
+        with_evidence=True,
+    )
+
+    cluster_inventory = ClusterInventory.query.filter_by(cluster_id=cluster.id).one()
+    committed_evidence = dict(cluster_inventory.collection_evidence or {})
+    committed_evidence.update(collection_evidence)
+    cluster_inventory.collection_evidence = committed_evidence
+
+    for item in configuration_items:
         inventory = ConfigurationInventory()
         inventory.collected_at = collected_at
         inventory.cluster_id = cluster.id

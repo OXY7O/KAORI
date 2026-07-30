@@ -3,51 +3,49 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/details/_expandable_row.html" as expandable %}
 <div class="overflow-x-auto overscroll-x-contain">
-    <table class="{{ table_ui.table_classes('min-w-[1080px]') }}">
+    <table class="{{ table_ui.table_classes('min-w-[76rem]') }}">
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
-                <th class="min-w-[12rem] px-4 py-3">Cluster</th>
-                <th class="px-4 py-3">Namespace</th>
-                <th class="px-4 py-3">Storage Object</th>
-                <th class="px-4 py-3">Type</th>
-                <th class="px-4 py-3">Status</th>
-                <th class="px-4 py-3">Storage Class</th>
-                <th class="px-4 py-3">Capacity</th>
-                <th class="px-4 py-3 text-right">Details</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[18rem]">Storage Object</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Scope</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Provisioning</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Capacity & Access</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Binding & Lifecycle</th>
+                <th class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
             </tr>
         </thead>
         <tbody class="{{ table_ui.body_classes() }}">
             {% for item in inventory.storage_items %}
-                {% if item.status in ['Bound', 'Available', 'Active'] %}
-                    {% set status_tone = "normal" %}
-                {% elif item.status in ['Pending', 'Released'] %}
-                    {% set status_tone = "warning" %}
-                {% elif item.status in ['Failed', 'Lost'] %}
-                    {% set status_tone = "critical" %}
-                {% else %}
-                    {% set status_tone = "unknown" %}
-                {% endif %}
-                <tr id="storage-row-{{ item.id }}"
-                    class="{{ table_ui.row_classes() }}">
-                    <td class="px-4 py-3.5 align-middle">
-                        {{ table_ui.cluster_identity(item.cluster_name, item.cluster_environment) }}
+                <tr id="storage-row-{{ item.id }}" class="{{ table_ui.row_classes() }}">
+                    <td class="{{ table_ui.cell_classes() }}">
+                        {{ table_ui.title_cell(item.name, item.identity_supporting, 'database') }}
+                        {% if item.is_default %}<div class="mt-1.5 pl-10">{{ table_label.metadata_label('Default StorageClass') }}</div>{% endif %}
                     </td>
-                    <td class="px-4 py-3.5 align-middle">
-                        {{ table_ui.namespace_identity(item.namespace) }}
+                    <td class="{{ table_ui.cell_classes() }}">
+                        {% if item.namespace == 'Cluster-Wide' %}
+                            {{ table_ui.cluster_identity(item.cluster_name, item.cluster_environment) }}
+                            <p class="mt-1.5 pl-10 text-xs leading-5 text-content-muted">Cluster-Wide</p>
+                        {% else %}
+                            {{ table_ui.namespaced_scope_identity(item.cluster_name, item.cluster_environment, item.namespace) }}
+                        {% endif %}
                     </td>
-                    <td class="max-w-[300px] px-4 py-3.5 align-middle">
-                        <div class="flex min-w-0 items-center gap-2">
-                            <span class="truncate text-sm font-semibold leading-5 text-content-primary"
-                                  title="{{ item.name }}">{{ item.name }}</span>
-                            {% if item.is_default %}{{ table_label.metadata_label('Default') }}{% endif %}
-                        </div>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <p class="text-sm font-semibold text-content-primary">{{ item.provisioning_primary }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.provisioning_secondary }}</p>
                     </td>
-                    <td class="px-4 py-3.5 align-middle text-sm font-semibold leading-5 text-content-primary">{{ 'PV' if item.type == 'PersistentVolume' else 'PVC' if item.type == 'PersistentVolumeClaim' else item.type }}</td>
-                    <td class="px-4 py-3.5 align-middle">{{ table_label.status_label(item.status, status_tone) }}</td>
-                    <td class="max-w-[220px] px-4 py-3.5 align-middle"><span class="block truncate font-semibold text-content-primary"
-      title="{{ item.storage_class }}">{{ item.storage_class }}</span></td>
-                    <td class="px-4 py-3.5 align-middle"><span class="text-sm font-semibold leading-5 text-content-primary">{{ item.capacity or '-' }}</span></td>
-                    <td class="px-4 py-3.5 text-right align-middle">
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <p class="text-sm font-semibold text-content-primary">{{ item.capacity_primary }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.capacity_secondary }}</p>
+                    </td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        {% if item.type == 'StorageClass' %}
+                            {{ table_label.metadata_label(item.lifecycle_label) }}
+                        {% else %}
+                            {{ table_label.status_indicator_label(item.lifecycle_label, item.lifecycle_tone) }}
+                        {% endif %}
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.binding_secondary }}</p>
+                    </td>
+                    <td class="{{ table_ui.cell_classes(action=true) }}">
                         {{ expandable.toggle_button(
                             'inventory-storage',
                             item.id,
@@ -57,18 +55,9 @@
                         ) }}
                     </td>
                 </tr>
-                {{ expandable.detail_row(
-                    'storage-detail-row-' ~ item.id,
-                    'storage-detail-content-' ~ item.id,
-                    8
-                ) }}
+                {{ expandable.detail_row('storage-detail-row-' ~ item.id, 'storage-detail-content-' ~ item.id, 6) }}
             {% else %}
-                <tr>
-                    <td colspan="8" class="p-0">
-                        {% set empty_state_icon = "hard-drive" %}{% set empty_state_title = "No Storage Inventory Found" %}{% set empty_state_description = "Adjust filters or sync cluster inventory to collect Kubernetes storage data." %}{% set empty_state_min_height = "min-h-[190px]" %}
-                        {% include 'components/states/_empty_state.html' %}
-                    </td>
-                </tr>
+                <tr><td colspan="6" class="p-0">{% set empty_state_icon = "hard-drive" %}{% set empty_state_title = "No Storage Inventory Found" %}{% set empty_state_description = "Adjust the active filters or sync cluster inventory to collect Kubernetes storage evidence." %}{% set empty_state_min_height = "min-h-[190px]" %}{% include "components/states/_empty_state.html" %}</td></tr>
             {% endfor %}
         </tbody>
     </table>
@@ -76,49 +65,24 @@
 <footer class="flex flex-col gap-4 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs text-content-muted lg:flex-row lg:items-center lg:justify-between">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ 'Storage Object' if pagination.total_items == 1 else 'Storage Objects' }}</p>
-        <form hx-get="{{ url_for('inventory.storage') }}"
-              hx-target="#storage-inventory-card"
-              hx-swap="outerHTML"
-              hx-indicator="#storage-table-loading"
-              class="flex items-center">
+        <form hx-get="{{ url_for('inventory.storage') }}" hx-target="#storage-inventory-scope" hx-swap="outerHTML" hx-indicator="#storage-table-loading" class="flex items-center gap-2">
+            <label for="storage-per-page" class="text-xs font-semibold text-content-secondary">Rows</label>
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}">
             <input type="hidden" name="namespace" value="{{ selected_namespace }}">
             <input type="hidden" name="type" value="{{ selected_type }}">
             <input type="hidden" name="status" value="{{ selected_status }}">
             <input type="hidden" name="search" value="{{ search }}">
-            <select name="per_page"
-                    aria-label="Rows Per Page"
-                    data-kaori-auto-submit
-                    class="{{ pagination_ui.page_size_classes() }}">
-                {% for size in pagination.allowed_per_page %}
-                    <option value="{{ size }}"
-                            {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>
-                {% endfor %}
+            <input type="hidden" name="partial_mode" value="inventory_scope">
+            <select id="storage-per-page" name="per_page" aria-label="Rows Per Page" data-kaori-auto-submit class="{{ pagination_ui.page_size_classes() }}">
+                {% for size in pagination.allowed_per_page %}<option value="{{ size }}" {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}
             </select>
         </form>
     </div>
     <div class="flex flex-wrap items-center gap-2">
-        {% if pagination.has_prev %}
-            {% set prev_url = url_for('inventory.storage', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, status=selected_status, search=search, page=pagination.prev_page, per_page=pagination.per_page, partial_mode='table_content') %}<a href="{{ prev_url }}"
-   hx-get="{{ prev_url }}"
-   hx-target="#storage-table-content"
-   hx-swap="innerHTML"
-   hx-indicator="#storage-table-loading"
-   class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
-        {% else %}
-            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
-        {% endif %}
-        {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages) }}
-        {% if pagination.has_next %}
-            {% set next_url = url_for('inventory.storage', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, status=selected_status, search=search, page=pagination.next_page, per_page=pagination.per_page, partial_mode='table_content') %}<a href="{{ next_url }}"
-   hx-get="{{ next_url }}"
-   hx-target="#storage-table-content"
-   hx-swap="innerHTML"
-   hx-indicator="#storage-table-loading"
-   class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
-        {% else %}
-            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
-        {% endif %}
+        {% set pagination_params = {'cluster_id': selected_cluster_id, 'namespace': selected_namespace, 'type': selected_type, 'status': selected_status, 'search': search, 'per_page': pagination.per_page, 'partial_mode': 'table_content'} %}
+        {% if pagination.has_prev %}{% set prev_url = url_for('inventory.storage', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, status=selected_status, search=search, per_page=pagination.per_page, partial_mode='table_content', page=pagination.prev_page) %}<a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#storage-table-content" hx-swap="innerHTML" hx-indicator="#storage-table-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>{% else %}<span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>{% endif %}
+        {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, endpoint='inventory.storage', query_params=pagination_params, hx_target='#storage-table-content', hx_indicator='#storage-table-loading') }}
+        {% if pagination.has_next %}{% set next_url = url_for('inventory.storage', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, status=selected_status, search=search, per_page=pagination.per_page, partial_mode='table_content', page=pagination.next_page) %}<a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#storage-table-content" hx-swap="innerHTML" hx-indicator="#storage-table-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>{% else %}<span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>{% endif %}
     </div>
 </footer>

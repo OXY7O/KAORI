@@ -2,11 +2,11 @@
 {% import "components/details/_detail_content.html" as detail %}
 {% import "components/technical_metadata_collection.html" as metadata_collection %}
 {% import "components/operational_callout.html" as operational_callout %}
-<div data-kaori-detail-variant="inline-expanded" data-kaori-detail-density="adaptive-stacks" class="bg-surface-hover px-4 py-4">
-    <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-        <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-elevated px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+<div data-kaori-detail-variant="inline-expanded" data-kaori-detail-density="adaptive-stacks" class="{{ detail.expanded_workspace_outer_classes() }}">
+    <div class="{{ detail.expanded_workspace_shell_classes() }}">
+        <header class="{{ detail.expanded_workspace_header_classes() }}">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="folder-tree" class="h-5 w-5"></i></span>
+                <span class="{{ detail.expanded_workspace_icon_classes() }}" aria-hidden="true"><i data-lucide="folder-tree" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h3 class="truncate text-base font-semibold text-content-primary">{{ namespace.namespace }}</h3>

@@ -1,74 +1,39 @@
 {% import "components/table.html" as table_ui %}
-{% import "components/loading_bar.html" as loading_bar %}
 <section id="configuration-inventory-card" class="{{ table_ui.block_classes() }}">
-    <header class="border-b border-outline-subtle px-5 py-4">
-        <div class="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-            <div class="flex items-center gap-3">
-                <span class="flex h-10 w-10 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary"><i data-lucide="file-key-2" class="h-5 w-5"></i></span>
-                <div>
-                    <h2 class="text-lg font-semibold text-content-primary">Configuration Inventory</h2>
-                    <p class="mt-1 text-sm leading-6 text-content-muted">ConfigMap and Secret identity, immutable state, key metadata, and Pod references.</p>
-                </div>
-            </div>
-            <a href="{{ url_for('integrations.kubernetes') }}"
-               class="{{ table_ui.action_classes() }}"><i data-lucide="external-link" class="h-4 w-4"></i>Open Cluster List</a>
-        </div>
-        {{ loading_bar.render('configuration-table-loading', label='Refreshing Configuration Inventory') }}
-    </header>
-    <div class="border-b border-outline-subtle bg-surface-hover px-5 py-4">
-        <form id="configuration-filter-form"
-              hx-get="{{ url_for('inventory.configuration') }}"
+    {{ table_ui.inventory_block_header(
+        'file-key-2',
+        'Configuration Inventory',
+        'ConfigMap and Secret identity, protected key-index metadata, mutation configuration, and current Pod reference evidence.',
+        'configuration-table-loading',
+        'Refreshing Configuration Inventory',
+        url_for('integrations.kubernetes'),
+        'Open Cluster List'
+    ) }}
+    <div class="{{ table_ui.inventory_filter_bar_classes() }}">
+        <form hx-get="{{ url_for('inventory.configuration') }}"
               hx-target="#configuration-inventory-scope"
               hx-swap="outerHTML"
-              hx-trigger="change, keyup changed delay:500ms"
               hx-indicator="#configuration-table-loading"
-              class="grid gap-4 xl:grid-cols-12 xl:items-end">
+              hx-trigger="change, keyup changed delay:500ms from:find input[name='search']"
+              class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
             <input type="hidden" name="partial_mode" value="inventory_scope">
-            <div class="xl:col-span-3">
-                <label class="mb-2 block text-sm font-semibold text-content-primary">Cluster</label>
-                <select name="cluster_id"
-                        class="{{ table_ui.filter_select_classes() }}">
-                    <option value="">All Clusters</option>
-                    {% for cluster in clusters %}
-                        <option value="{{ cluster.id }}"
-                                {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>
-                    {% endfor %}
-                </select>
+            <div>
+                <label class="{{ table_ui.filter_label_classes() }}">Cluster</label>
+                <select name="cluster_id" class="{{ table_ui.filter_select_classes() }}"><option value="">All Clusters</option>{% for cluster in clusters %}<option value="{{ cluster.id }}" {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>{% endfor %}</select>
             </div>
-            <div class="xl:col-span-3">
-                <label class="mb-2 block text-sm font-semibold text-content-primary">Namespace</label>
-                <select name="namespace"
-                        class="{{ table_ui.filter_select_classes() }}">
-                    <option value="">All Namespaces</option>
-                    {% for ns in inventory.namespaces %}
-                        <option value="{{ ns }}" {% if selected_namespace == ns %}selected{% endif %}>{{ ns }}</option>
-                    {% endfor %}
-                </select>
+            <div>
+                <label class="{{ table_ui.filter_label_classes() }}">Namespace</label>
+                <select name="namespace" class="{{ table_ui.filter_select_classes() }}"><option value="">All Namespaces</option>{% for ns in inventory.namespaces %}<option value="{{ ns }}" {% if selected_namespace == ns %}selected{% endif %}>{{ ns }}</option>{% endfor %}</select>
             </div>
-            <div class="xl:col-span-2">
-                <label class="mb-2 block text-sm font-semibold text-content-primary">Type</label>
-                <select name="type"
-                        class="{{ table_ui.filter_select_classes() }}">
-                    <option value="">All Types</option>
-                    {% for type_name in inventory.types %}
-                        <option value="{{ type_name }}"
-                                {% if selected_type == type_name %}selected{% endif %}>{{ type_name }}</option>
-                    {% endfor %}
-                </select>
+            <div>
+                <label class="{{ table_ui.filter_label_classes() }}">Object Type</label>
+                <select name="type" class="{{ table_ui.filter_select_classes() }}"><option value="">All Types</option>{% for type_name in inventory.types %}<option value="{{ type_name }}" {% if selected_type == type_name %}selected{% endif %}>{{ type_name }}</option>{% endfor %}</select>
             </div>
-            <div class="xl:col-span-4">
-                <label class="mb-2 block text-sm font-semibold text-content-primary">Search Configuration</label>
-                <div class="relative">
-                    <i data-lucide="search"
-                       class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-content-muted"></i>
-                    <input type="search"
-                           name="search"
-                           value="{{ search }}"
-                           placeholder="Object Or Namespace"
-                           class="{{ table_ui.filter_input_classes() }} pl-10">
-                </div>
+            <div>
+                <label class="{{ table_ui.filter_label_classes() }}">Search Configuration Objects</label>
+                {{ table_ui.search_field('search', search, 'Search object name or namespace') }}
             </div>
         </form>
     </div>

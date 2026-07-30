@@ -27,6 +27,7 @@ The Styling Guide selects the correct reusable component. The Design System and 
 - `components/INVENTORY_ASSET_CARD.md`
 - `components/SIDE_DRAWER.md`
 - `components/DETAIL_STYLES.md`
+- `components/EXPANDED_INVENTORY_DETAIL.md`
 - `components/OPERATIONAL_CALLOUT.md`
 - `components/OPERATIONAL_FLOW_STEPS.md`
 - `components/FORECAST_PROJECTION_CHART.md`
@@ -57,6 +58,7 @@ The Styling Guide selects the correct reusable component. The Design System and 
 - `patterns/KUBERNETES_INVENTORY_OVERVIEW.md`
 - `patterns/INVENTORY_RESOURCE_PAGE.md`
 - `patterns/KUBERNETES_TOPOLOGY.md`
+- `patterns/KUBERNETES_STORAGE_CONFIGURATION_INVENTORY.md`
 
 ## Domain Specifications
 
@@ -100,3 +102,9 @@ Domain-specific UI rules live under `docs/modules/` or the owning module README.
 
 - [Kubernetes Network Inventory Pattern](patterns/KUBERNETES_NETWORK_INVENTORY.md)
 - [Service and Ingress Inventory Audit](audits/KUBERNETES_SERVICE_INGRESS_INVENTORY_STYLING_AUDIT_2026_07.md)
+
+## Storage and Configuration Inventory
+
+- [Expanded Inventory Detail](components/EXPANDED_INVENTORY_DETAIL.md)
+- [Storage and Configuration Inventory Pattern](patterns/KUBERNETES_STORAGE_CONFIGURATION_INVENTORY.md)
+- [Storage and Configuration Inventory Audit](audits/KUBERNETES_STORAGE_CONFIGURATION_INVENTORY_STYLING_AUDIT_2026_07.md)

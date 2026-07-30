@@ -1,126 +1,85 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/details/_detail_content.html" as detail %}
-{% import "components/detail_object.html" as detail_object %}
-{% import "components/detail_tip.html" as inventory_tip %}
-{% macro info_box(title, message, icon='info', tone='brand', equal_height=false) -%}
-    {{ inventory_tip.info_box(title, message, icon, tone, equal_height) }}
-{%- endmacro %}
-
-{% set object_type_value = item.type if item.type not in [None, ''] else 'Unknown' %}
-{% set normalized_object_type = object_type_value|lower|trim %}
-{% set object_type_tone = 'normal' if normalized_object_type == 'configmap' else ('warning' if normalized_object_type == 'secret' else 'unknown') %}
-{% set mutability_value = 'Immutable' if item.immutable else 'Mutable' %}
-{% set mutability_tone = 'warning' if item.immutable else 'normal' %}
-{% set visibility_value = 'Values Protected' if normalized_object_type == 'secret' else 'Metadata Only' %}
-{% set visibility_tone = 'normal' if normalized_object_type == 'secret' else 'info' %}
-
-<div class="bg-surface-hover px-4 py-4">
-    <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-sm">
-        <header class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+{% import "components/technical_metadata_collection.html" as metadata_collection %}
+{% import "components/related_resource_collection.html" as related_collection %}
+{% import "components/operational_callout.html" as operational_callout %}
+<div data-kaori-detail-variant="inline-expanded" data-kaori-detail-density="adaptive-stacks" class="{{ detail.expanded_workspace_outer_classes() }}">
+    <div class="{{ detail.expanded_workspace_shell_classes() }}">
+        <header class="{{ detail.expanded_workspace_header_classes() }}">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="{{ 'key-round' if normalized_object_type == 'secret' else 'file-json-2' }}"
-                       class="h-4 w-4"></i>
-                </span>
+                <span class="{{ detail.expanded_workspace_icon_classes() }}" aria-hidden="true"><i data-lucide="{{ 'key-round' if item.type == 'Secret' else 'file-json-2' }}" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                        <h3 class="truncate text-sm font-semibold text-content-primary">{{ item.name }}</h3>
-                        {{ table_label.metadata_label(item.cluster_name, 'server', false, 'detail') }}
-                        {{ table_label.metadata_label(item.namespace, 'folder-tree', false, 'detail') }}
+                        <h3 class="truncate text-base font-semibold text-content-primary">{{ item.name }}</h3>
+                        {{ table_label.metadata_label(item.type) }}
+                        {{ table_label.metadata_label(item.namespace, 'folder-tree') }}
+                        {{ table_label.metadata_label(item.mutation_label) }}
                     </div>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Safe object metadata, key names, protection state, and current Pod references.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Protected key-index metadata, collection capability, mutation configuration, and current Pod references.</p>
                 </div>
             </div>
-            <div class="flex flex-wrap items-center gap-2 self-start sm:self-auto">
-                {{ table_label.status_label(object_type_value, object_type_tone, none, 'detail') }}
-                {{ table_label.status_label(mutability_value, mutability_tone, none, 'detail') }}
-            </div>
+            <div class="self-start sm:self-auto">{{ table_label.metadata_label(item.collection_state, 'database') }}</div>
         </header>
 
-        <div class="grid items-stretch gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
-            {% call detail.detail_card('Object Identity', 'badge-info', item.age, 'metadata', 'unknown', badge_size='detail') %}
-                {{ detail.detail_row('Cluster', item.cluster_name) }}
-                {{ detail.detail_row('Namespace', item.namespace) }}
-                {{ detail.status_row('Type', object_type_value, object_type_tone, none, 'detail') }}
-                {% if normalized_object_type == 'secret' %}
-                    {{ detail.metadata_row('Secret Type', item.secret_type) }}
-                {% endif %}
-                {{ detail.detail_row('Age', item.age) }}
-                <div class="mt-auto pt-3">
-                    {{ info_box('Inventory Identity', 'Identity and lifecycle data come from the latest committed inventory snapshot.', 'badge-info') }}
-                </div>
-            {% endcall %}
+        {{ detail.summary_strip([
+            ('Object Type', item.type, item.secret_type if item.type == 'Secret' else 'ConfigMap metadata'),
+            ('Key Count', item.key_count, 'Key names indexed'),
+            ('Mutation Model', item.mutation_label, 'Factual object configuration'),
+            ('Current Pod References', item.used_by_count, 'Committed Pod snapshot evidence')
+        ], compact=true) }}
 
-            {% call detail.detail_card('Key Metadata', 'key-round', table_label.count_text(item.key_count, 'Key'), 'metadata', 'unknown', badge_size='detail') %}
-                {{ detail.detail_row('Recorded Keys', item.key_count) }}
-                {{ detail.detail_row('Payload Size', item.payload_size) }}
-                {% call detail_object.stack() %}
-                    {% if item.key_names %}
-                        {% call detail_object.card('Key Names', table_label.count_text(item.key_count, 'Key'), 'key-round') %}
-                            <div class="flex max-h-48 flex-wrap gap-1.5 overflow-y-auto pr-1">
-                                {% for key_name in item.key_names %}
-                                    {{ table_label.metadata_label(key_name, none, true, 'detail') }}
-                                {% endfor %}
-                            </div>
-                        {% endcall %}
-                    {% else %}
-                        {{ detail_object.empty('No Keys Recorded', 'No key name is available in the latest metadata snapshot.', 'key-round') }}
-                    {% endif %}
+        <div class="grid items-start gap-4 p-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+            <div class="space-y-4">
+                {% call detail.detail_card('Object Identity', 'badge-info', item.age, badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.detail_row('Cluster', item.cluster_name) }}
+                    {{ detail.detail_row('Namespace', item.namespace) }}
+                    {{ detail.metadata_row('Object Type', item.type) }}
+                    {% if item.type == 'Secret' %}{{ detail.metadata_row('Secret Type', item.secret_type) }}{% endif %}
+                    {{ detail.detail_row('Age', item.age) }}
+                    {{ detail.detail_row('Created', item.created_at|user_datetime if item.created_at else '-') }}
+                    {{ detail.detail_row('Collected', item.collected_at|user_datetime) }}
                 {% endcall %}
-            {% endcall %}
 
-            {% call detail.detail_card('Protection State', 'shield-check', mutability_value, 'status', mutability_tone, badge_size='detail') %}
-                {{ detail.status_row('Mutation State', mutability_value, mutability_tone, none, 'detail') }}
-                {{ detail.status_row('Value Visibility', visibility_value, visibility_tone, none, 'detail') }}
-                {{ detail.detail_row('Payload Size', item.payload_size) }}
-                {{ detail.detail_row('Recorded Keys', item.key_count) }}
-                <div class="mt-auto pt-3">
-                    {% if normalized_object_type == 'secret' %}
-                        {{ info_box('Secret Safety', 'Secret values are never collected or displayed; only metadata and key names are available.', 'shield-check', 'normal') }}
-                    {% else %}
-                        {{ info_box('Configuration Safety', 'Configuration values remain outside this inventory view; review changes through Kubernetes Operations.', 'shield-check') }}
-                    {% endif %}
-                </div>
-            {% endcall %}
+                {% call detail.detail_card('Protected Data Boundary', 'shield-check', 'Values Not Persisted', badge_size='detail', stretch=false, density='compact') %}
+                    {{ detail.evidence_grid([
+                        {'label': 'Collection State', 'value': item.collection_state},
+                        {'label': 'Key Names', 'value': item.key_count ~ ' Indexed'},
+                        {'label': 'Value Persistence', 'value': 'None'},
+                        {'label': 'Value Display', 'value': 'Never Displayed'},
+                        {'label': 'Mutation Model', 'value': item.mutation_label},
+                        {'label': 'Inventory Mode', 'value': 'Key-Index Metadata'}
+                    ], columns=2) }}
+                    <p class="mt-3 text-xs leading-5 text-content-muted">Kubernetes list responses arrive transiently in the collector process. KAORI indexes key names only and does not decode, log, persist, or display value content.</p>
+                {% endcall %}
+            </div>
 
-            {% call detail.detail_card('Used By Pods', 'package-check', table_label.count_text(item.used_by_count, 'Pod'), 'metadata', 'unknown', badge_size='detail') %}
-                {{ detail.detail_row('Pod References', item.used_by_count) }}
-                {% call detail_object.stack() %}
-                    {% if item.used_by %}
-                        {% call detail_object.card('Current Consumers', table_label.count_text(item.used_by_count, 'Pod'), 'package-check') %}
-                            {% for pod in item.used_by %}
-                                {% if pod.status in ['Running', 'Succeeded'] %}
-                                    {% set pod_tone = 'normal' %}
-                                {% elif pod.status == 'Pending' %}
-                                    {% set pod_tone = 'pending' %}
-                                {% elif pod.status == 'Failed' %}
-                                    {% set pod_tone = 'critical' %}
-                                {% else %}
-                                    {% set pod_tone = 'unknown' %}
-                                {% endif %}
-                                <div class="flex items-start justify-between gap-3 text-xs leading-5">
-                                    <div class="min-w-0">
-                                        <p class="truncate font-medium text-content-primary"
-                                           title="{{ pod.name }}">{{ pod.name }}</p>
-                                        <p class="truncate text-xs text-content-muted"
-                                           title="{{ pod.workload_type }} {{ pod.workload_name }}">{{ pod.workload_type }} {{ pod.workload_name }}</p>
-                                    </div>
-                                    {{ table_label.status_label(pod.status, pod_tone, none, 'detail') }}
-                                </div>
-                            {% endfor %}
-                        {% endcall %}
-                        {% if item.used_by_truncated %}
-                            <p class="text-xs text-content-muted">Showing the First 8 Pods</p>
+            <div class="space-y-4">
+                {{ metadata_collection.render('Key Inventory', item.key_entries, 'key-round', 'No Key Names Indexed', 'No key name is represented in the committed inventory snapshot.', 'Key names are indexed without persisting or displaying their values.', compact=true, mode='keys') }}
+                {{ related_collection.render('Current Pod References', 'Pods whose committed configuration references include this object.', item.used_by, item.used_by_count, 'package-check', 'No Current Pod References', 'No Pod reference is represented in the current committed snapshot. Other consumers may still exist.', item.used_by_truncated, url_for('inventory.pods', cluster_id=item.cluster_id, namespace=item.namespace), 'Open Pod Inventory') }}
+            </div>
+
+            <section class="grid gap-3 xl:col-span-2 xl:grid-cols-2">
+                {{ operational_callout.render('Committed Snapshot Boundary', 'This detail reports protected key-index metadata and current Pod reference evidence. It does not query the Kubernetes API live or expose configuration values.', 'database', 'info') }}
+                {{ operational_callout.render(item.operational_context.title, item.operational_context.description, item.operational_context.icon, item.operational_context.tone, 'semantic') }}
+            </section>
+
+            <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4 xl:col-span-2">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h4 class="text-sm font-semibold text-content-primary">Related Operations</h4>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Open the matching Kubernetes Operations workspace when your role includes the required permission.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        {% if item.type == 'ConfigMap' and current_user.has_permission('kubernetes_configmaps.view') %}
+                            <a href="{{ url_for('kubernetes_operations.configmap_management', cluster_id=item.cluster_id, namespace=item.namespace) }}" class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark"><i data-lucide="external-link" class="h-4 w-4"></i>Open ConfigMap Management</a>
+                        {% elif item.type == 'Secret' and current_user.has_permission('kubernetes_secrets.view') %}
+                            <a href="{{ url_for('kubernetes_operations.secret_management', cluster_id=item.cluster_id, namespace=item.namespace) }}" class="inline-flex min-h-9 items-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark"><i data-lucide="external-link" class="h-4 w-4"></i>Open Secret Management</a>
+                        {% else %}
+                            {{ table_label.metadata_label('Operation Access Not Granted') }}
                         {% endif %}
-                    {% else %}
-                        {{ detail_object.empty('No Pod References', 'No Pod reference is recorded in the latest inventory snapshot.', 'package-check') }}
-                    {% endif %}
-                {% endcall %}
-            {% endcall %}
-        </div>
-
-        <div class="border-t border-outline-subtle p-5">
-            {{ inventory_tip.tip('Configuration Inventory is read-only snapshot context. Create, update, and delete workflows remain in Kubernetes Operations.', 'shield-check') }}
+                    </div>
+                </div>
+            </section>
         </div>
     </div>
 </div>

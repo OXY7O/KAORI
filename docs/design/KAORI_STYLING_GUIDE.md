@@ -618,3 +618,34 @@ Service and Ingress Inventory follow `patterns/KUBERNETES_NETWORK_INVENTORY.md`.
 `detail.evidence_grid(...)` owns compact factual evidence tiles. It must not expose empty grid-background cells when the final row is incomplete. Technical Metadata Collection avoids nested vertical scrolling inside expanded details; large collections may use later progressive-disclosure patterns, but not a fixed internal scrollbar by default.
 
 Use body-size proportional Technical Value presentation for technical values inside ordinary table cells. Compact Technical Value remains appropriate in detail rows and supporting metadata.
+
+## 25. Storage and Configuration Inventory
+
+Storage and Configuration Inventory follow the canonical Inventory Resource Page pattern.
+
+Storage uses `Storage Object | Scope | Provisioning | Capacity & Access | Binding & Lifecycle | Details`. StorageClass is factual provisioning configuration and uses `Configured`, not a synthetic Kubernetes health state. Reclaim policy, access modes, provisioner name, binding mode, expansion, and topology configuration remain factual until an explicit governance policy evaluates them. PV/PVC lifecycle may use semantic status because Bound, Pending, Released, Failed, and Lost are operational lifecycle evidence.
+
+Configuration uses `Configuration Object | Scope | Object Type | Metadata & Mutation | Current References | Details`. ConfigMap and Secret are metadata labels, not status. Immutable and Mutable are factual mutation models. Configuration Inventory uses key-index collection: key names may be indexed, but value content is not decoded, logged, persisted, or displayed. Collection capability states are stored on the committed cluster generation and may be `Collected`, `Permission Unavailable`, `API Unavailable`, or `Adapter Not Selected`.
+
+Use `technical_metadata_collection.html` with `mode='keys'` for key-name inventories and `mode='records'` for condition evidence. Related claims, mounted Pods, and current Pod references use `related_resource_collection.html`.
+
+## 26. Inventory Detail Workspace and View Details
+
+All Inventory tables use one canonical expanded-detail interaction owned by:
+
+- `components/details/_expandable_row.html`
+- `components/details/_detail_content.html`
+- `app/static/js/detail_rows.js`
+
+The row action label is `View Details`; the open state is `Close Details`. The action uses an eye icon, explicit active state, and a rotating disclosure chevron. Only one row per detail group may remain open.
+
+Expanded content uses the shared workspace geometry:
+
+- `detail.expanded_workspace_outer_classes()`
+- `detail.expanded_workspace_shell_classes()`
+- `detail.expanded_workspace_header_classes()`
+- `detail.expanded_workspace_icon_classes()`
+
+The expanded workspace uses a subtle Violet boundary, `rounded-2xl` shell, natural-height content, a visible resource header, summary strip, domain evidence, metadata, committed-snapshot boundary, and state-aware guidance. Loading and error states remain inside the expanded workspace boundary and never replace the table or page hero.
+
+Do not create page-local `View More`, `Show More`, or alternate expanded-row geometry for Inventory pages. Use progressive disclosure only for secondary collections inside the detail when a future shared component explicitly owns that behavior.

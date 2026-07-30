@@ -3,115 +3,63 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/details/_expandable_row.html" as expandable %}
 <div class="overflow-x-auto overscroll-x-contain">
-    <table class="{{ table_ui.table_classes('min-w-[960px]') }}">
+    <table class="{{ table_ui.table_classes('min-w-[72rem]') }}">
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
-                <th class="min-w-[12rem] px-4 py-3">Cluster</th>
-                <th class="px-4 py-3">Namespace</th>
-                <th class="px-4 py-3">Object</th>
-                <th class="px-4 py-3">Type</th>
-                <th class="px-4 py-3">Keys</th>
-                <th class="px-4 py-3">Immutable</th>
-                <th class="px-4 py-3 text-right">Details</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[18rem]">Configuration Object</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Scope</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Object Type</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Metadata & Mutation</th>
+                <th class="{{ table_ui.header_cell_classes() }} min-w-[13rem]">Current References</th>
+                <th class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
             </tr>
         </thead>
         <tbody class="{{ table_ui.body_classes() }}">
             {% for item in inventory['items'] %}
-                <tr id="configuration-row-{{ item.id }}"
-                    class="{{ table_ui.row_classes() }}">
-                    <td class="px-4 py-3.5 align-middle">
-                        {{ table_ui.cluster_identity(item.cluster_name, item.cluster_environment) }}
+                <tr id="configuration-row-{{ item.id }}" class="{{ table_ui.row_classes() }}">
+                    <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(item.name, item.identity_supporting, 'key-round' if item.type == 'Secret' else 'file-json-2') }}</td>
+                    <td class="{{ table_ui.cell_classes() }}">{{ table_ui.namespaced_scope_identity(item.cluster_name, item.cluster_environment, item.namespace) }}</td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        {{ table_label.metadata_label(item.type) }}
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.type_supporting }}</p>
                     </td>
-                    <td class="px-4 py-3.5 align-middle">
-                        {{ table_ui.namespace_identity(item.namespace) }}
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <p class="text-sm font-semibold text-content-primary">{{ item.key_count }} {{ 'Key' if item.key_count == 1 else 'Keys' }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.mutation_label }}</p>
                     </td>
-                    <td class="max-w-[320px] px-4 py-3.5 align-middle">
-                        <span class="block truncate text-sm font-semibold leading-5 text-content-primary"
-                              title="{{ item.name }}">{{ item.name }}</span>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <p class="text-sm font-semibold text-content-primary">{{ item.reference_label }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Current Pod snapshot evidence</p>
                     </td>
-                    <td class="px-4 py-3.5 align-middle">
-                        {% set item_type_tone = 'normal' if item.type|lower == 'configmap' else ('warning' if item.type|lower == 'secret' else 'unknown') %}
-                        {{ table_label.status_label(item.type, item_type_tone) }}
-                    </td>
-                    <td class="px-4 py-3.5 align-middle text-sm font-semibold leading-5 text-content-primary">{{ item.key_count }} Keys</td>
-                    <td class="px-4 py-3.5 align-middle">
-                        {% if item.immutable %}
-                            {{ table_label.status_label('Immutable', 'warning') }}
-                        {% else %}
-                            {{ table_label.status_label('Mutable', 'normal') }}
-                        {% endif %}
-                    </td>
-                    <td class="px-4 py-3.5 text-right align-middle">
-                        {{ expandable.toggle_button(
-                            'inventory-configuration',
-                            item.id,
-                            url_for('inventory.configuration_details', configuration_id=item.id),
-                            'configuration-detail-content-' ~ item.id,
-                            'configuration-detail-row-' ~ item.id
-                        ) }}
+                    <td class="{{ table_ui.cell_classes(action=true) }}">
+                        {{ expandable.toggle_button('inventory-configuration', item.id, url_for('inventory.configuration_details', configuration_id=item.id), 'configuration-detail-content-' ~ item.id, 'configuration-detail-row-' ~ item.id) }}
                     </td>
                 </tr>
-                {{ expandable.detail_row(
-                    'configuration-detail-row-' ~ item.id,
-                    'configuration-detail-content-' ~ item.id,
-                    7
-                ) }}
+                {{ expandable.detail_row('configuration-detail-row-' ~ item.id, 'configuration-detail-content-' ~ item.id, 6) }}
             {% else %}
-                <tr>
-                    <td colspan="7" class="p-0">
-                        {% set empty_state_icon = "file-key-2" %}{% set empty_state_title = "No Configuration Objects Found" %}{% set empty_state_description = "Adjust filters or sync inventory to collect ConfigMap and Secret metadata." %}{% set empty_state_min_height = "min-h-[190px]" %}
-                        {% include 'components/states/_empty_state.html' %}
-                    </td>
-                </tr>
+                <tr><td colspan="6" class="p-0">{% set empty_state_icon = "file-key-2" %}{% set empty_state_title = "No Configuration Objects Found" %}{% set empty_state_description = "Adjust the active filters or sync inventory to collect ConfigMap and Secret key-index metadata." %}{% set empty_state_min_height = "min-h-[190px]" %}{% include "components/states/_empty_state.html" %}</td></tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
 <footer class="flex flex-col gap-4 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs text-content-muted lg:flex-row lg:items-center lg:justify-between">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-        <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ 'Object' if pagination.total_items == 1 else 'Objects' }}</p>
-        <form hx-get="{{ url_for('inventory.configuration') }}"
-              hx-target="#configuration-inventory-card"
-              hx-swap="outerHTML"
-              hx-indicator="#configuration-table-loading"
-              class="flex items-center">
+        <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ 'Configuration Object' if pagination.total_items == 1 else 'Configuration Objects' }}</p>
+        <form hx-get="{{ url_for('inventory.configuration') }}" hx-target="#configuration-inventory-scope" hx-swap="outerHTML" hx-indicator="#configuration-table-loading" class="flex items-center gap-2">
+            <label for="configuration-per-page" class="text-xs font-semibold text-content-secondary">Rows</label>
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}">
             <input type="hidden" name="namespace" value="{{ selected_namespace }}">
             <input type="hidden" name="type" value="{{ selected_type }}">
             <input type="hidden" name="search" value="{{ search }}">
-            <select name="per_page"
-                    aria-label="Rows Per Page"
-                    data-kaori-auto-submit
-                    class="{{ pagination_ui.page_size_classes() }}">
-                {% for option in pagination.allowed_per_page %}
-                    <option value="{{ option }}"
-                            {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>
-                {% endfor %}
-            </select>
+            <input type="hidden" name="partial_mode" value="inventory_scope">
+            <select id="configuration-per-page" name="per_page" aria-label="Rows Per Page" data-kaori-auto-submit class="{{ pagination_ui.page_size_classes() }}">{% for option in pagination.allowed_per_page %}<option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}</select>
         </form>
     </div>
     <div class="flex flex-wrap items-center gap-2">
-        {% if pagination.has_prev %}
-            {% set prev_url = url_for('inventory.configuration', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, search=search, page=pagination.prev_page, per_page=pagination.per_page, partial_mode='table_content') %}<a href="{{ prev_url }}"
-   hx-get="{{ prev_url }}"
-   hx-target="#configuration-table-content"
-   hx-swap="innerHTML"
-   hx-indicator="#configuration-table-loading"
-   class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
-        {% else %}
-            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
-        {% endif %}
-        {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages) }}
-        {% if pagination.has_next %}
-            {% set next_url = url_for('inventory.configuration', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, search=search, page=pagination.next_page, per_page=pagination.per_page, partial_mode='table_content') %}<a href="{{ next_url }}"
-   hx-get="{{ next_url }}"
-   hx-target="#configuration-table-content"
-   hx-swap="innerHTML"
-   hx-indicator="#configuration-table-loading"
-   class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
-        {% else %}
-            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
-        {% endif %}
+        {% set pagination_params = {'cluster_id': selected_cluster_id, 'namespace': selected_namespace, 'type': selected_type, 'search': search, 'per_page': pagination.per_page, 'partial_mode': 'table_content'} %}
+        {% if pagination.has_prev %}{% set prev_url = url_for('inventory.configuration', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, search=search, per_page=pagination.per_page, partial_mode='table_content', page=pagination.prev_page) %}<a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#configuration-table-content" hx-swap="innerHTML" hx-indicator="#configuration-table-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>{% else %}<span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>{% endif %}
+        {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, endpoint='inventory.configuration', query_params=pagination_params, hx_target='#configuration-table-content', hx_indicator='#configuration-table-loading') }}
+        {% if pagination.has_next %}{% set next_url = url_for('inventory.configuration', cluster_id=selected_cluster_id, namespace=selected_namespace, type=selected_type, search=search, per_page=pagination.per_page, partial_mode='table_content', page=pagination.next_page) %}<a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#configuration-table-content" hx-swap="innerHTML" hx-indicator="#configuration-table-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>{% else %}<span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>{% endif %}
     </div>
 </footer>

@@ -26,7 +26,7 @@ def test_ingress_detail_uses_adaptive_stacks_and_factual_tls_evidence() -> None:
     service = read('app/inventory/resources/ingresses.py')
 
     assert 'data-kaori-detail-density="adaptive-stacks"' in detail
-    assert 'detail.inline_detail_shell_classes()' in detail
+    assert 'detail.expanded_workspace_shell_classes()' in detail
     assert 'TLS Secret References' in detail
     assert 'does not validate certificate existence, validity, expiry, or hostname coverage' in detail
     assert 'Open Declared Host' in detail

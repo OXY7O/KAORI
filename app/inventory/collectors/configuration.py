@@ -1,10 +1,19 @@
 from __future__ import annotations
 
-import base64
-from typing import cast
+from typing import Any, cast
 
 from kubernetes.client import CoreV1Api, V1ConfigMapList, V1ResourceQuotaList, V1SecretList
 from kubernetes.client.exceptions import ApiException
+
+
+COLLECTED = 'Collected'
+PERMISSION_UNAVAILABLE = 'Permission Unavailable'
+API_UNAVAILABLE = 'API Unavailable'
+ADAPTER_NOT_SELECTED = 'Adapter Not Selected'
+
+
+def _collection_error_state(exc: ApiException) -> str:
+    return PERMISSION_UNAVAILABLE if getattr(exc, 'status', None) == 403 else API_UNAVAILABLE
 
 
 def get_configuration_inventory(
@@ -12,41 +21,36 @@ def get_configuration_inventory(
     *,
     include_configmaps: bool = True,
     include_secrets: bool = True,
-) -> list[dict]:
-    items: list[dict] = []
+    with_evidence: bool = False,
+) -> list[dict] | tuple[list[dict], dict[str, str]]:
+    """Collect key-index metadata without inspecting or sizing object values.
 
-    try:
-        if not include_configmaps:
-            raise PermissionError
-        config_maps = cast(
-            V1ConfigMapList,
-            api.list_config_map_for_all_namespaces(),
-        )
-        config_map_items = config_maps.items or []
-    except PermissionError:
-        config_map_items = []
-    except ApiException as exc:
-        if getattr(exc, 'status', None) in {403, 404}:
-            config_map_items = []
-        else:
-            raise
+    Kubernetes list responses necessarily arrive in the collector process, but KAORI only
+    indexes key names and object metadata. Value content is not decoded, logged, persisted,
+    or displayed.
+    """
+    items: list[dict] = []
+    evidence: dict[str, str] = {
+        'inventory.configmaps': ADAPTER_NOT_SELECTED if not include_configmaps else COLLECTED,
+        'inventory.secrets': ADAPTER_NOT_SELECTED if not include_secrets else COLLECTED,
+    }
+
+    config_map_items = []
+    if include_configmaps:
+        try:
+            config_maps = cast(V1ConfigMapList, api.list_config_map_for_all_namespaces())
+            config_map_items = config_maps.items or []
+        except ApiException as exc:
+            if getattr(exc, 'status', None) in {403, 404}:
+                evidence['inventory.configmaps'] = _collection_error_state(exc)
+            else:
+                raise
 
     for config_map in config_map_items:
         metadata = config_map.metadata
         if metadata is None or not metadata.namespace or not metadata.name:
             continue
-
-        data = config_map.data or {}
-        binary_data = config_map.binary_data or {}
-        key_names = sorted({*data.keys(), *binary_data.keys()})
-        payload_size = sum(len(value.encode('utf-8')) for value in data.values())
-
-        for value in binary_data.values():
-            try:
-                payload_size += len(base64.b64decode(value))
-            except (ValueError, TypeError):
-                payload_size += len(str(value).encode('utf-8'))
-
+        key_names = sorted({*(config_map.data or {}).keys(), *(config_map.binary_data or {}).keys()})
         items.append(
             {
                 'namespace': metadata.namespace,
@@ -56,45 +60,27 @@ def get_configuration_inventory(
                 'key_names': key_names,
                 'key_count': len(key_names),
                 'immutable': bool(config_map.immutable),
-                'payload_size_bytes': payload_size,
+                'payload_size_bytes': 0,
                 'created_at': metadata.creation_timestamp,
             }
         )
 
-    try:
-        if not include_secrets:
-            raise PermissionError
-        secrets = cast(
-            V1SecretList,
-            api.list_secret_for_all_namespaces(),
-        )
-        secret_items = secrets.items or []
-    except PermissionError:
-        secret_items = []
-    except ApiException as exc:
-        if getattr(exc, 'status', None) in {403, 404}:
-            secret_items = []
-        else:
-            raise
+    secret_items = []
+    if include_secrets:
+        try:
+            secrets = cast(V1SecretList, api.list_secret_for_all_namespaces())
+            secret_items = secrets.items or []
+        except ApiException as exc:
+            if getattr(exc, 'status', None) in {403, 404}:
+                evidence['inventory.secrets'] = _collection_error_state(exc)
+            else:
+                raise
 
     for secret in secret_items:
         metadata = secret.metadata
         if metadata is None or not metadata.namespace or not metadata.name:
             continue
-
-        data = secret.data or {}
-        string_data = secret.string_data or {}
-        key_names = sorted({*data.keys(), *string_data.keys()})
-        payload_size = 0
-
-        for value in data.values():
-            try:
-                payload_size += len(base64.b64decode(value))
-            except (ValueError, TypeError):
-                payload_size += len(str(value).encode('utf-8'))
-
-        payload_size += sum(len(value.encode('utf-8')) for value in string_data.values())
-
+        key_names = sorted({*(secret.data or {}).keys(), *(secret.string_data or {}).keys()})
         items.append(
             {
                 'namespace': metadata.namespace,
@@ -104,34 +90,24 @@ def get_configuration_inventory(
                 'key_names': key_names,
                 'key_count': len(key_names),
                 'immutable': bool(secret.immutable),
-                'payload_size_bytes': payload_size,
+                'payload_size_bytes': 0,
                 'created_at': metadata.creation_timestamp,
             }
         )
 
-    return items
+    return (items, evidence) if with_evidence else items
 
 
-def get_resource_quotas(
-    api: CoreV1Api,
-) -> list[dict]:
-    result = cast(
-        V1ResourceQuotaList,
-        api.list_resource_quota_for_all_namespaces(),
-    )
-
-    items: list[dict] = []
-
+def get_resource_quotas(api: CoreV1Api) -> list[dict]:
+    result = cast(V1ResourceQuotaList, api.list_resource_quota_for_all_namespaces())
+    items: list[dict[str, Any]] = []
     for quota in result.items or []:
         metadata = quota.metadata
         status = quota.status
-
         if metadata is None or not metadata.namespace or not metadata.name:
             continue
-
         hard = {str(key): str(value) for key, value in ((status.hard or {}) if status else {}).items()}
         used = {str(key): str(value) for key, value in ((status.used or {}) if status else {}).items()}
-
         items.append(
             {
                 'namespace': metadata.namespace,
@@ -141,5 +117,4 @@ def get_resource_quotas(
                 'created_at': metadata.creation_timestamp,
             }
         )
-
     return items
