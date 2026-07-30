@@ -408,7 +408,7 @@ Use `inventory_asset_card.html` for one navigable Kubernetes asset type. Asset c
 
 ### Right-side detail drawer
 
-Use `side_drawer.html` when row details are too large for an expanded row but the comparison table must remain visible. The shared drawer owns overlay, panel geometry, close behavior, scrolling, accessibility, optional footer action, and reusable `section(...)` and `metric(...)` content primitives. Rich operational drawers follow Summary → Identity/Snapshot → Domain Breakdown → Signals → Operational Context. The final Operational Context remains visible, states the data boundary, and gives one state-aware next action.
+Use `side_drawer.html` when row details are too large for an expanded row but the comparison table must remain visible. The shared drawer owns overlay, panel geometry, close behavior, scrolling, accessibility, optional footer action, and reusable `section(...)` and `metric(...)` content primitives. Rich operational drawers follow Summary → Identity/Snapshot → Domain Breakdown → Signals → Operational Context. Drawer and section descriptions stay concise; self-explanatory identity/context sections may omit descriptions. Summary values use a divided plain-metric row instead of nested metric cards when card-inside-card density would dominate. The final Operational Context remains visible, states the data boundary, and gives one state-aware next action.
 
 ### Operational section card
 
@@ -547,4 +547,4 @@ Use semantic key `inline-expanded` for dense row-owned details. The shared expan
 
 ### Technical values
 
-Use `components/technical_value.html` for IP addresses, UUIDs, versions, runtime identifiers, kernel versions, architecture, and similar machine-oriented values. Do not represent ordinary technical values as labels.
+Use `components/technical_value.html` for IP addresses, UUIDs, versions, runtime identifiers, kernel versions, architecture, and similar machine-oriented values. These values use normal proportional detail typography by default. Reserve `monospace=true` for raw-copy identifiers, hashes, commands, and code-like values where exact character alignment is useful. Do not represent ordinary technical values as labels.

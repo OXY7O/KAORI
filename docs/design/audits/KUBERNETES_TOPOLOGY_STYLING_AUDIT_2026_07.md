@@ -48,3 +48,7 @@ Topology payload cache key includes the committed generation signature and norma
 - no page-local `role="tablist"` outside shared tab components;
 - no inline style in Topology templates;
 - Jinja parse, JavaScript syntax, Python compile, style guardrails, and Topology contract tests pass.
+
+## Readable Graph Node Refinement
+
+The canonical graph uses uniform rounded node cards, soft domain surfaces, two-line name/type labels, bounded wrapping, and a small semantic status dot. Containment lines are quiet dashed orthogonal connectors without arrowheads; dependency labels remain progressive-disclosure content.

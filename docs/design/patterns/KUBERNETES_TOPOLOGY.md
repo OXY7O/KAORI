@@ -50,3 +50,7 @@ Graph payloads are cached by committed generation and filter combination. Query 
 The visualization workspace owns one local loading bar for filter and Refresh Graph requests. Display-only changes do not show loading.
 
 A truncated graph uses a warning callout with omitted counts. Renderer errors preserve Resource List access.
+
+## Readable Graph Node Refinement
+
+The canonical graph uses uniform rounded node cards, soft domain surfaces, two-line name/type labels, bounded wrapping, and a small semantic status dot. Containment lines are quiet dashed orthogonal connectors without arrowheads; dependency labels remain progressive-disclosure content.

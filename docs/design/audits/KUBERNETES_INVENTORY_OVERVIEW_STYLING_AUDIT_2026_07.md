@@ -63,3 +63,7 @@ Healthy cluster posture requires both:
 - a committed snapshot within the configured freshness window.
 
 Grouped aggregate queries collect counts per asset model for all clusters. The previous count-query loop per cluster remains prohibited.
+
+## Drawer Readability Refinement
+
+Cluster detail uses concise section headers, compact identity/snapshot cards without redundant descriptions, and a divided plain-metric summary row. Technical values follow normal detail typography unless an explicit raw-copy monospace exception is requested.

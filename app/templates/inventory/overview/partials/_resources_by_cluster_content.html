@@ -149,7 +149,7 @@
         {% call side_drawer.render(
             drawer_id,
             cluster.name,
-            'Review the committed snapshot, inventory composition, and operational context for this cluster.',
+            'Committed inventory and operational context.',
             x_show="openDrawer === '" ~ (cluster.id|string) ~ "'",
             close_expression='openDrawer = null',
             action_href=url_for('integrations.kubernetes_detail', cluster_id=cluster.id) ~ '#inventory',
@@ -167,23 +167,25 @@
                 {% endset %}
                 {% call side_drawer.section(
                     'Cluster Snapshot Summary',
-                    'A concise view of the current committed inventory composition.',
+                    'Committed inventory overview.',
                     'layout-dashboard',
                     badge=connection_badge,
-                    variant='highlight'
+                    variant='highlight',
+                    density='compact'
                 ) %}
-                    <dl class="grid gap-3 sm:grid-cols-3">
-                        {{ side_drawer.metric('Total Objects', cluster.total_objects, 'database') }}
-                        {{ side_drawer.metric('Asset Categories', cluster.populated_asset_types ~ '/8', 'layers-3', 'categories with collected objects') }}
-                        {{ side_drawer.metric('Largest Segment', cluster.dominant_asset.label, 'chart-no-axes-column', cluster.dominant_asset.count ~ ' objects') }}
+                    <dl class="grid gap-4 border-t border-outline-subtle pt-3 sm:grid-cols-3 sm:divide-x sm:divide-outline-subtle">
+                        <div class="sm:pr-4">{{ side_drawer.metric('Total Objects', cluster.total_objects, 'database', variant='plain') }}</div>
+                        <div class="sm:px-4">{{ side_drawer.metric('Asset Categories', cluster.populated_asset_types ~ '/8', 'layers-3', 'Collected Categories', variant='plain') }}</div>
+                        <div class="sm:pl-4">{{ side_drawer.metric('Largest Segment', cluster.dominant_asset.label, 'chart-no-axes-column', cluster.dominant_asset.count ~ ' Objects', variant='plain') }}</div>
                     </dl>
                 {% endcall %}
 
                 <div class="grid gap-4 sm:grid-cols-2">
                     {% call side_drawer.section(
                         'Cluster Identity',
-                        'Platform and registration context for the selected inventory source.',
-                        'server'
+                        '',
+                        'server',
+                        density='compact'
                     ) %}
                         <div class="space-y-3">
                             {{ detail_ui.detail_row('Environment', cluster.environment|environment_name(empty='Not Specified')) }}
@@ -195,9 +197,10 @@
                     {% set snapshot_badge %}{{ table_label.status_label(cluster.sync_status_label, cluster.sync_status_tone, none, 'detail') }}{% endset %}
                     {% call side_drawer.section(
                         'Snapshot Context',
-                        'Collection boundary and freshness for the committed generation.',
+                        '',
                         'clock-3',
-                        badge=snapshot_badge
+                        badge=snapshot_badge,
+                        density='compact'
                     ) %}
                         <div class="space-y-3">
                             {{ detail_ui.detail_row('Last Collected', cluster.synced_at|user_datetime if cluster.synced_at else 'Not Collected') }}
@@ -209,7 +212,7 @@
 
                 {% call side_drawer.section(
                     'Inventory Breakdown',
-                    'Object totals from the latest committed inventory generation.',
+                    'Committed object totals by asset type.',
                     'boxes'
                 ) %}
                     <dl class="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -230,7 +233,7 @@
 
                 {% call side_drawer.section(
                     'Inventory Signals',
-                    'Conditions that may affect how this cluster snapshot should be interpreted.',
+                    'Exceptions that require operational awareness.',
                     'scan-search'
                 ) %}
                     <div class="grid gap-3 sm:grid-cols-2">
@@ -257,7 +260,7 @@
 
                 {% call side_drawer.section(
                     'Operational Context',
-                    'Use these boundaries and next steps before acting on the inventory data.',
+                    'Data boundary and recommended next action.',
                     'compass'
                 ) %}
                     <div class="grid gap-3">

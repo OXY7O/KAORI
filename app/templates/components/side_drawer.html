@@ -74,9 +74,11 @@
 {%- endmacro %}
 
 {# Shared content section for detail drawers. #}
-{% macro section(title, description='', icon='info', badge=None, variant='default') -%}
-    {% set shell_classes = 'border-kaori-primary/20 bg-kaori-soft' if variant == 'highlight' else 'border-outline-subtle bg-surface-card' %}
-    <section class="rounded-xl border {{ shell_classes }} p-4">
+{% macro section(title, description='', icon='info', badge=None, variant='default', density='default') -%}
+    {% set shell_classes = 'border-kaori-primary/20 bg-surface-card' if variant == 'highlight' else 'border-outline-subtle bg-surface-card' %}
+    {% set padding_classes = 'p-3.5' if density == 'compact' else 'p-4' %}
+    {% set body_spacing = 'mt-3' if density == 'compact' else 'mt-4' %}
+    <section class="rounded-xl border {{ shell_classes }} {{ padding_classes }}">
         <div class="flex items-start justify-between gap-4">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
@@ -92,18 +94,29 @@
             </div>
             {% if badge %}<div class="shrink-0">{{ badge }}</div>{% endif %}
         </div>
-        <div class="mt-4">{{ caller() }}</div>
+        <div class="{{ body_spacing }}">{{ caller() }}</div>
     </section>
 {%- endmacro %}
 
 {# Shared compact metric for drawer summaries. #}
-{% macro metric(label, value, icon='circle-dot', helper='') -%}
-    <div class="rounded-lg bg-surface-card px-3 py-3 shadow-sm border border-outline-subtle">
-        <div class="flex items-center gap-2 text-content-muted">
-            <i data-lucide="{{ icon }}" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
-            <dt class="text-xs font-semibold">{{ label }}</dt>
+{% macro metric(label, value, icon='circle-dot', helper='', variant='card') -%}
+    {% if variant == 'plain' %}
+        <div class="min-w-0">
+            <div class="flex items-center gap-2 text-content-muted">
+                <i data-lucide="{{ icon }}" class="h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                <dt class="truncate text-xs font-semibold">{{ label }}</dt>
+            </div>
+            <dd class="mt-1.5 break-words text-lg font-semibold leading-6 text-content-primary">{{ value }}</dd>
+            {% if helper %}<p class="mt-0.5 text-xs leading-5 text-content-muted">{{ helper }}</p>{% endif %}
         </div>
-        <dd class="mt-2 text-lg font-semibold text-content-primary">{{ value }}</dd>
-        {% if helper %}<p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>{% endif %}
-    </div>
+    {% else %}
+        <div class="rounded-lg border border-outline-subtle bg-surface-card px-3 py-3 shadow-sm">
+            <div class="flex items-center gap-2 text-content-muted">
+                <i data-lucide="{{ icon }}" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
+                <dt class="text-xs font-semibold">{{ label }}</dt>
+            </div>
+            <dd class="mt-2 text-lg font-semibold text-content-primary">{{ value }}</dd>
+            {% if helper %}<p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>{% endif %}
+        </div>
+    {% endif %}
 {%- endmacro %}

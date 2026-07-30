@@ -38,7 +38,7 @@
 
     if (!canvas || !clusterSelect || !namespaceSelect || !scopeSelect || !depthSelect) return
 
-    const STATE_KEY = 'kaori.topology.workspace.v4'
+    const STATE_KEY = 'kaori.topology.workspace.v5'
     const resourceTypes = ['cluster', 'namespace', 'node', 'workload', 'pod', 'service', 'ingress', 'configmap', 'secret', 'pvc', 'pv']
     const relationshipTypes = ['contains', 'owns', 'scheduled_on', 'selects', 'routes_to', 'uses', 'mounts', 'binds']
 
@@ -70,19 +70,13 @@
         pvc: 'storage', pv: 'storage',
     }[type] || 'compute')
 
-    const shapeForType = (type) => ({
-        cluster: 'round-rectangle', namespace: 'round-rectangle', node: 'rectangle',
-        workload: 'round-rectangle', pod: 'ellipse', service: 'diamond', ingress: 'hexagon',
-        configmap: 'round-tag', secret: 'tag', pvc: 'round-rectangle', pv: 'rectangle',
-    }[type] || 'round-rectangle')
-
     const getTypeVisual = (type) => {
         const domain = domainForType(type)
         return {
             fill: cssToken(`--kaori-topology-domain-${domain}-fill`, 'CanvasText'),
             border: cssToken(`--kaori-topology-domain-${domain}-border`, 'CanvasText'),
             text: cssToken(`--kaori-topology-domain-${domain}-text`, 'Canvas'),
-            shape: shapeForType(type),
+            shape: 'round-rectangle',
         }
     }
 
@@ -152,9 +146,10 @@
     const statusDotSvg = (tone) => {
         const normalized = ['healthy', 'warning', 'critical', 'info'].includes(tone) ? tone : 'unknown'
         const color = statusDotColor(normalized)
-        const cacheKey = `${normalized}:${color}`
+        const outline = cssToken('--kaori-surface-card', 'Canvas')
+        const cacheKey = `${normalized}:${color}:${outline}`
         if (statusDotCache.has(cacheKey)) return statusDotCache.get(cacheKey)
-        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="${color}" stroke="white" stroke-width="2"/></svg>`
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="${color}" stroke="${outline}" stroke-width="2"/></svg>`
         const uri = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
         statusDotCache.set(cacheKey, uri)
         return uri
@@ -336,6 +331,7 @@
 
     const graphStyle = () => {
         const labelBackground = cssToken('--kaori-surface-card', 'Canvas')
+        const labelText = cssToken('--kaori-content-primary', 'CanvasText')
         const brandPrimary = cssToken('--kaori-brand-primary', 'CanvasText')
         const brandAccent = cssToken('--kaori-brand-accent', 'CanvasText')
         return [
@@ -344,67 +340,83 @@
                 style: {
                     'background-color': (node) => getTypeVisual(node.data('type')).fill,
                     'border-color': (node) => getTypeVisual(node.data('type')).border,
-                    'border-width': 1.5,
+                    'border-width': 2,
                     'color': (node) => getTypeVisual(node.data('type')).text,
                     'font-family': 'Inter, sans-serif',
-                    'font-size': 9,
+                    'font-size': 10,
                     'font-weight': 600,
-                    'height': 36,
+                    'height': 56,
                     'label': workspaceState.nodeLabels ? 'data(display_label)' : '',
-                    'min-zoomed-font-size': 7,
+                    'line-height': 1.35,
+                    'min-zoomed-font-size': 8,
                     'overlay-opacity': 0,
-                    'padding': 10,
-                    'shape': (node) => getTypeVisual(node.data('type')).shape,
-                    'shadow-blur': 8,
+                    'padding': 0,
+                    'shape': 'round-rectangle',
+                    'shadow-blur': 10,
                     'shadow-color': cssToken('--kaori-content-primary', 'CanvasText'),
                     'shadow-offset-x': 0,
-                    'shadow-offset-y': 2,
-                    'shadow-opacity': 0.12,
+                    'shadow-offset-y': 3,
+                    'shadow-opacity': 0.10,
                     'text-halign': 'center',
+                    'text-justification': 'center',
                     'text-margin-y': 0,
-                    'text-max-width': 2000,
+                    'text-max-width': 124,
+                    'text-overflow-wrap': 'anywhere',
                     'text-valign': 'center',
-                    'text-wrap': 'none',
-                    'width': 'label',
+                    'text-wrap': 'wrap',
+                    'width': 152,
                     'background-image': (node) => statusDotSvg(node.data('status_tone')),
-                    'background-width': 14,
-                    'background-height': 14,
-                    'background-position-x': '96%',
-                    'background-position-y': '10%',
+                    'background-width': 12,
+                    'background-height': 12,
+                    'background-position-x': '94%',
+                    'background-position-y': '13%',
                     'background-repeat': 'no-repeat',
                     'background-fit': 'none',
                     'background-image-containment': 'inside',
                 },
             },
-            { selector: 'node[type = "cluster"]', style: { 'font-size': 10, 'font-weight': 700, 'height': 42, 'padding': 14 } },
-            { selector: 'node[type = "namespace"], node[type = "node"], node[type = "workload"]', style: { 'height': 38, 'padding': 12 } },
-            { selector: 'node[type = "pod"], node[type = "configmap"], node[type = "secret"], node[type = "pvc"], node[type = "pv"]', style: { 'height': 34, 'padding': 10 } },
+            { selector: 'node[type = "cluster"]', style: { 'font-size': 11, 'font-weight': 700, 'height': 62, 'text-max-width': 144, 'width': 176 } },
+            { selector: 'node[type = "namespace"]', style: { 'height': 58, 'text-max-width': 132, 'width': 164 } },
             {
                 selector: 'edge',
                 style: {
                     'curve-style': 'bezier',
                     'font-family': 'Inter, sans-serif',
-                    'font-size': 8,
+                    'font-size': 9,
+                    'font-weight': 600,
                     'label': '',
                     'line-color': (edge) => edgeColor(edge.data('relationship')),
-                    'line-opacity': 0.55,
-                    'min-zoomed-font-size': 7,
+                    'line-opacity': 0.68,
+                    'min-zoomed-font-size': 8,
                     'overlay-opacity': 0,
                     'target-arrow-color': (edge) => edgeColor(edge.data('relationship')),
                     'target-arrow-shape': 'triangle',
-                    'arrow-scale': 0.72,
+                    'arrow-scale': 0.78,
+                    'color': labelText,
                     'text-background-color': labelBackground,
-                    'text-background-opacity': 0.92,
-                    'text-background-padding': 2,
+                    'text-background-opacity': 0.96,
+                    'text-background-padding': 4,
                     'text-rotation': 'autorotate',
-                    'width': 1.35,
+                    'width': 1.5,
+                },
+            },
+            {
+                selector: 'edge[relationship = "contains"]',
+                style: {
+                    'curve-style': 'taxi',
+                    'line-style': 'dashed',
+                    'line-opacity': 0.28,
+                    'target-arrow-shape': 'none',
+                    'taxi-direction': 'downward',
+                    'taxi-turn': 24,
+                    'width': 1,
                 },
             },
             { selector: 'edge.edge-label-visible', style: { 'label': 'data(label)' } },
             { selector: '.dimmed', style: { 'opacity': 0.10, 'text-opacity': 0.06 } },
             { selector: '.focused', style: { 'opacity': 1, 'text-opacity': 1, 'z-index': 999 } },
             { selector: '.path-active', style: { 'opacity': 1, 'text-opacity': 1, 'z-index': 1100, 'line-opacity': 1, 'width': 3, 'label': 'data(label)' } },
-            { selector: 'node.path-active', style: { 'border-width': 3, 'shadow-opacity': 0.24 } },
+            { selector: 'node.path-active', style: { 'border-width': 3, 'shadow-opacity': 0.22 } },
             { selector: '.search-match', style: { 'border-color': brandAccent, 'border-width': 3, 'opacity': 1, 'z-index': 1150 } },
             { selector: ':selected', style: { 'border-color': brandPrimary, 'border-width': 3, 'line-color': brandPrimary, 'target-arrow-color': brandPrimary, 'z-index': 1200 } },
         ]
@@ -416,14 +428,14 @@
         if (getLayoutMode() === 'dependency') {
             return {
                 name: 'cose', animate: 'end', animationDuration: 420, animationEasing: 'ease-out-cubic', fit: true,
-                nodeDimensionsIncludeLabels: true, padding: 72, idealEdgeLength: 175, edgeElasticity: 100,
-                nodeRepulsion: 620000, gravity: 0.30, numIter: 1600, componentSpacing: 135,
+                nodeDimensionsIncludeLabels: true, padding: 80, idealEdgeLength: 210, edgeElasticity: 100,
+                nodeRepulsion: 620000, gravity: 0.30, numIter: 1600, componentSpacing: 165,
                 nestingFactor: 0.8, initialTemp: 200, coolingFactor: 0.96, minTemp: 1, randomize: true,
             }
         }
         return {
             name: 'breadthfirst', animate: false, circle: false, directed: true, fit: true, grid: true,
-            maximal: false, nodeDimensionsIncludeLabels: true, padding: 52, spacingFactor: 1.62,
+            maximal: false, nodeDimensionsIncludeLabels: true, padding: 64, spacingFactor: 1.88,
         }
     }
 
@@ -435,7 +447,8 @@
         const nodes = rawNodes.map((node) => {
             const data = { ...(node.data || {}) }
             data.base_label = String(data.label || data.id || '').trim()
-            data.display_label = data.base_label
+            data.type_label = humanizeType(data.type)
+            data.display_label = `${data.base_label}\n${data.type_label}`
             const parent = data.parent
             delete data.parent
             if (parent && nodeIds.has(parent) && data.id) {
@@ -629,9 +642,9 @@
             const base = node.data('base_label') || node.data('label') || node.id()
             if (collapsedNodeIds.has(node.id())) {
                 const count = descendantsOf(node.id()).size
-                node.data('display_label', `${base}  +${count}`)
+                node.data('display_label', `${base}  +${count}\n${node.data('type_label') || humanizeType(node.data('type'))}`)
             } else {
-                node.data('display_label', base)
+                node.data('display_label', `${base}\n${node.data('type_label') || humanizeType(node.data('type'))}`)
             }
         })
     }

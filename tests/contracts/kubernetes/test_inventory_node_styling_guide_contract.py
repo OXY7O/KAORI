@@ -81,7 +81,11 @@ def test_node_inventory_registers_detail_and_technical_value_standards() -> None
     pattern = read("docs/design/patterns/INVENTORY_RESOURCE_PAGE.md")
     audit = read("docs/design/audits/KUBERNETES_NODE_INVENTORY_STYLING_AUDIT_2026_07.md")
 
-    assert "font-mono text-xs" in technical
+    assert "normal proportional KAORI typography" in technical
+    assert "monospace=true" in technical
+    component = read("app/templates/components/technical_value.html")
+    assert "monospace=false" in component
+    assert "{% if monospace %}" in component
     assert "Detail Style 1 — Inline Expanded Detail" in detail_styles
     assert "`inline-expanded`" in detail_styles
     assert "Kubernetes Node Inventory is the first canonical implementation" in pattern

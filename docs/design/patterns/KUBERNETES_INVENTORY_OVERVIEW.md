@@ -89,3 +89,7 @@ The summary includes total objects, populated asset categories, and largest inve
 - resource-aware copy such as `Showing 1–3 of 3 Clusters`;
 - section-owned loading bar;
 - pagination replaces only table content.
+
+## Drawer Readability Refinement
+
+Cluster detail uses concise section headers, compact identity/snapshot cards without redundant descriptions, and a divided plain-metric summary row. Technical values follow normal detail typography unless an explicit raw-copy monospace exception is requested.

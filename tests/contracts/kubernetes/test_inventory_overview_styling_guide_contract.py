@@ -68,6 +68,12 @@ def test_compact_cluster_table_has_details_button_and_shared_right_drawer() -> N
     assert 'aria-modal="true"' in drawer
     assert '{% macro section(' in drawer
     assert '{% macro metric(' in drawer
+    assert "density='default'" in drawer
+    assert "variant='card'" in drawer
+    assert "variant='plain'" in content
+    assert "'Committed inventory overview.'" in content
+    assert "'Platform and registration context for the selected inventory source.'" not in content
+    assert "'Collection boundary and freshness for the committed generation.'" not in content
 
 
 def test_cluster_table_pagination_uses_resource_case_and_visible_rows_label() -> None:

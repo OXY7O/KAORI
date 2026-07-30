@@ -16,7 +16,22 @@ All palette values live in `frontend/styles.css`. Templates and JavaScript consu
 | Configuration | ConfigMap, Secret |
 | Storage | PersistentVolumeClaim, PersistentVolume |
 
-Resources inside one domain remain distinguishable through icon, label, node shape, and size. Operational health remains a separate status dot using Normal, Warning, Critical, Info, or Unknown.
+Resources inside one domain remain distinguishable through icon, two-line name/type text, domain border, and size. Operational health remains a separate status dot using Normal, Warning, Critical, Info, or Unknown.
+
+## Readable Node Card
+
+Topology nodes use one consistent `round-rectangle` card shape. Avoid diamonds, tags, hexagons, and arrow-like bodies because they reduce the usable label area and make alignment unstable.
+
+The canonical node card uses:
+
+- a soft domain fill with a stronger domain border;
+- high-contrast domain text;
+- resource name on the first line and resource type on the second line;
+- a small semantic status dot in the upper-right corner;
+- fixed minimum geometry so labels do not determine unpredictable polygon shapes;
+- wrapped text with a bounded label width.
+
+Containment relationships use quiet dashed orthogonal lines without arrowheads. Operational/dependency relationships retain colored arrows and only reveal text labels on hover, selection, explicit label mode, or highlighted paths.
 
 ## Relationship Tokens
 

@@ -69,3 +69,11 @@ The final Operational Context section explains the data boundary and gives one s
 ## Usage Boundary
 
 Use a drawer when the row detail is too large for an expanded table row but the user benefits from retaining the comparison table context. Use a dedicated page when the detail becomes a full workflow or requires multiple primary actions.
+
+## Header and Summary Density
+
+- Drawer descriptions are one concise sentence and should normally fit on one or two lines.
+- Self-explanatory section titles such as `Cluster Identity` and `Snapshot Context` may omit descriptions.
+- Use `density='compact'` for short identity/context sections.
+- Use `metric(..., variant='plain')` inside a divided summary row when nested metric cards would create card-inside-card density.
+- The summary surface prioritizes values; helper text is short and optional.
