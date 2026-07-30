@@ -27,11 +27,20 @@ def test_dashboard_uses_shared_workspace_tabs_and_persists_url_state() -> None:
     assert "active_tab: str = 'overview'" in schema
 
 
-def test_dashboard_uses_context_rail_without_outer_tab_card() -> None:
+def test_dashboard_uses_peer_content_grid_without_outer_tab_card() -> None:
     source = read('app/templates/dashboards/kubernetes/partials/_content.html')
+    grid = read('app/templates/components/peer_content_grid.html')
 
-    assert '{% import "components/context_rail.html" as context_rail %}' in source
-    assert source.count('context_rail.layout_classes()') == 3
+    assert '{% import "components/peer_content_grid.html" as peer_content_grid %}' in source
+    assert source.count('peer_content_grid.layout_classes()') == 4
+    assert "column_classes('primary', 'seven-five')" in source
+    assert "column_classes('secondary', 'seven-five')" in source
+    assert 'components/context_rail.html' not in source
+    assert 'components/related_page_card.html' not in source
+    assert 'xl:grid-cols-12' in grid
+    assert 'xl:col-span-6' in grid
+    assert "xl:col-span-7" in grid
+    assert "xl:col-span-5" in grid
     assert 'rounded-xl border border-outline-default bg-surface-card shadow-sm' not in source
     assert 'id="kubernetes-dashboard-panel-capacity"' in source
     assert 'id="kubernetes-dashboard-panel-signals"' in source
@@ -110,6 +119,9 @@ def test_cluster_health_uses_canonical_table_and_pagination_contract() -> None:
     assert 'pagination_ui.navigation_classes(disabled=true)' in source
     assert 'aria-disabled="true"' in source
     assert 'hx-include="#cluster-health-scope, #cluster-health-page-reset"' in source
+    assert source.count('hx-disabled-elt="this"') == 3
+    assert "url_for('integrations.kubernetes')" in source
+    assert "url_for('cluster.list_clusters')" not in source
     assert 'CLUSTER_HEALTH_PAGE_SIZES = {5, 10, 25, 50}' in routes
     assert "request.args.get('cluster_health_per_page', '5')" in routes
 
@@ -146,3 +158,17 @@ def test_dashboard_copy_uses_canonical_casing() -> None:
     assert 'How To Read' not in all_source
     assert 'What To Do' not in all_source
     assert 'Select a Cluster for Live Signals' in all_source
+
+
+def test_dashboard_uses_local_skeletons_without_a_global_loading_bar() -> None:
+    content = read('app/templates/dashboards/kubernetes/partials/_content.html')
+    selector = read('app/templates/dashboards/kubernetes/partials/_signal_overview.html')
+    loading = read('app/templates/dashboards/kubernetes/partials/_section_loading.html')
+    contract = read('docs/design/components/LOADING.md')
+
+    assert 'dashboard-loading-bar' not in content
+    assert 'dashboard-loading-bar' not in selector
+    assert 'hx-indicator=' not in content
+    assert 'hx-indicator=' not in selector
+    assert 'animate-pulse' in loading
+    assert 'global loading bar' in contract

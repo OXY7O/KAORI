@@ -33,6 +33,8 @@ def test_canonical_styling_guide_and_component_contracts_exist() -> None:
     assert 'components/OPERATIONAL_SECTION_CARD.md' in design_readme
     assert 'components/FORECAST_PROJECTION_CHART.md' in design_readme
     assert 'components/SECTION_HEADER_ACTION.md' in design_readme
+    assert 'components/PEER_CONTENT_GRID.md' in design_readme
+    assert 'components/LOADING.md' in design_readme
     assert 'patterns/OPERATIONAL_DASHBOARD.md' in design_readme
 
 
@@ -143,6 +145,7 @@ def test_operational_dashboard_components_and_contracts_are_documented() -> None
     assert 'Compact section-header action' in guide
     assert 'Forecast projection chart' in guide
     assert 'Primary and secondary flows' in guide
+    assert 'components/peer_content_grid.html' in guide
     assert 'text-base font-semibold' in section_card
     assert 'role="tablist"' in tabs
     assert '<svg' in chart
@@ -155,3 +158,16 @@ def test_style_verifier_tracks_page_local_workspace_tablists() -> None:
     assert "'page_local_workspace_tablists'" in source
     assert '_TABLIST = re.compile' in source
     assert "'app/templates/components/forecast_projection_chart.html'" in source
+
+
+def test_peer_content_grid_is_distinct_from_the_context_rail() -> None:
+    grid = _read('app/templates/components/peer_content_grid.html')
+    grid_contract = _read('docs/design/components/PEER_CONTENT_GRID.md')
+    rail_contract = _read('docs/design/components/RIGHT_CONTEXT_RAIL.md')
+
+    assert 'xl:grid-cols-12' in grid
+    assert 'xl:col-span-6' in grid
+    assert 'seven-five' in grid
+    assert 'both columns are primary page content' in grid_contract
+    assert 'supporting context' in grid_contract
+    assert 'supporting information' in rail_contract

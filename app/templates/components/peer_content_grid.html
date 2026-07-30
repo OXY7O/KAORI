@@ -1,0 +1,17 @@
+{#
+  Canonical KAORI peer-content grid.
+
+  Use this when both columns are primary page content. Do not substitute the
+  fixed right context rail, which is reserved for secondary supporting boxes.
+#}
+{% macro layout_classes(extra_classes='') -%}
+    grid items-stretch gap-5 xl:grid-cols-12 {{ extra_classes }}
+{%- endmacro %}
+
+{% macro column_classes(position='primary', split='equal', extra_classes='') -%}
+    {%- if split == 'seven-five' -%}
+        {{ 'xl:col-span-7' if position == 'primary' else 'xl:col-span-5' }} {{ extra_classes }}
+    {%- else -%}
+        xl:col-span-6 {{ extra_classes }}
+    {%- endif -%}
+{%- endmacro %}

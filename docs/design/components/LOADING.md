@@ -4,6 +4,15 @@ KAORI uses the **Activity Audit Table** as the reference loading pattern for ope
 
 The loading bar belongs **inside the owning header**, directly below the title/action row and before filters, summaries, forms, or data. It must not float over content or sit at the bottom of a card.
 
+## Dashboard section loading
+
+Read-only dashboards use a different loading treatment from mutable operational tables:
+
+- Initial asynchronous dashboard sections render the shared skeleton placeholder inside the exact section that will be replaced.
+- The current dashboard content remains visible during in-place pagination or scope refresh until the replacement response arrives.
+- Do not place one global loading bar in a summary card and use it as the indicator for unrelated sections.
+- A table-specific loading bar remains valid only when it is owned by that table block and sits inside its header.
+
 Canonical structure:
 
 ```html

@@ -9,8 +9,8 @@
     result_summary,
     'heart-pulse',
     id='dashboard-cluster-health-section',
-    action_href=url_for('cluster.list_clusters'),
-    action_label='View Clusters',
+    action_href=url_for('integrations.kubernetes'),
+    action_label='Open Cluster List',
     body_classes='p-0'
 ) %}
     <div class="overflow-x-auto">
@@ -118,9 +118,9 @@
                             hx-get="{{ url_for('kubernetes_dashboard.section', section='cluster_health') }}"
                             hx-target="#dashboard-cluster-health-section"
                             hx-swap="outerHTML"
-                            hx-indicator="#dashboard-loading-bar"
                             hx-include="#cluster-health-scope, #cluster-health-page-reset"
-                            hx-trigger="change">
+                            hx-trigger="change"
+                            hx-disabled-elt="this">
                         {% for size in [5, 10, 25, 50] %}
                             <option value="{{ size }}" {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>
                         {% endfor %}
@@ -136,7 +136,7 @@
                             hx-get="{{ prev_url }}"
                             hx-target="#dashboard-cluster-health-section"
                             hx-swap="outerHTML"
-                            hx-indicator="#dashboard-loading-bar"
+                            hx-disabled-elt="this"
                             class="{{ pagination_ui.navigation_classes() }}">
                         <i data-lucide="chevron-left" class="h-4 w-4" aria-hidden="true"></i>
                         Previous
@@ -153,7 +153,7 @@
                             hx-get="{{ next_url }}"
                             hx-target="#dashboard-cluster-health-section"
                             hx-swap="outerHTML"
-                            hx-indicator="#dashboard-loading-bar"
+                            hx-disabled-elt="this"
                             class="{{ pagination_ui.navigation_classes() }}">
                         Next
                         <i data-lucide="chevron-right" class="h-4 w-4" aria-hidden="true"></i>

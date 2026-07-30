@@ -19,7 +19,9 @@ The Styling Guide selects the correct reusable component. The Design System and 
 - `components/OPERATIONAL_SECTION_CARD.md`
 - `components/FORECAST_PROJECTION_CHART.md`
 - `components/SECTION_HEADER_ACTION.md`
+- `components/PEER_CONTENT_GRID.md`
 - `components/RIGHT_CONTEXT_RAIL.md`
+- `components/LOADING.md`
 - `components/INFO_FLOW.md`
 - `components/RELATED_PAGE_CARD.md`
 - `components/VIEW_MORE_CONTENT.md`

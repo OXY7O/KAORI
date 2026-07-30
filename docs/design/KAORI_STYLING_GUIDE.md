@@ -370,6 +370,8 @@ Repeated dashboard blocks use `components/operational_section_card.html`. The sh
 
 Do not copy the standard `rounded-xl border bg-surface-card shadow-sm` section shell into every dashboard partial. Do not wrap a tab workspace in another card when each section already has its own surface.
 
+When two dashboard blocks are both primary content, use `components/peer_content_grid.html`. Use an equal 6/6 split or the documented 7/5 split. Do not force a peer chart, readiness summary, or operational guidance block into the fixed 20rem context rail.
+
 ### Dashboard metric typography
 
 | Metric role | Standard |
@@ -417,6 +419,7 @@ Welcome may use `welcome_capability_group.html` as a documented dark Violet cate
 ## 17. Loading, Empty, Error, and Permission States
 
 - Loading appears in the affected region, never by replacing the hero.
+- Dashboard initial loads use section-owned skeleton placeholders. A global loading bar must not represent several unrelated asynchronous dashboard sections.
 - Empty states explain what is absent and the next valid action when one exists.
 - Error copy is concise; technical evidence belongs in detail views, toast, or Activity Audit Log.
 - Unknown, unavailable, permission denied, and not configured are separate states.

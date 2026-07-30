@@ -5,7 +5,10 @@
     'Active Alertmanager and Prometheus alert signals.',
     'bell-ring',
     id='dashboard-alerts-summary',
-    body_classes='p-5'
+    action_href=url_for('analytics.alerts'),
+    action_label='Open Alerts Workspace',
+    body_classes='p-5',
+    extra_classes='h-full'
 ) %}
     {% if not dashboard.selected_cluster_id %}
         {% set blocked_state_icon = 'server-off' %}

@@ -6,11 +6,14 @@
     'Reporting Summary',
     'Report output, reusable definitions, schedules, and recent generation activity.',
     'file-chart-column',
+    action_href=url_for('reports.overview'),
+    action_label='Open Reports Workspace',
     header_badge=table_label.status_label(
         reporting.source_status|default('Unavailable', true),
         tone='normal' if source_available else 'unknown'
     ),
-    body_classes='space-y-5 p-5'
+    body_classes='space-y-5 p-5',
+    extra_classes='h-full'
 ) %}
     <div class="grid gap-3 sm:grid-cols-3">
         {% set reporting_metrics = [

@@ -1,6 +1,5 @@
 {% import "components/workspace_tabs.html" as workspace_tabs %}
-{% import "components/context_rail.html" as context_rail %}
-{% import "components/related_page_card.html" as related_page_card %}
+{% import "components/peer_content_grid.html" as peer_content_grid %}
 {% set dashboard_cluster_query = 'cluster_id=' ~ (dashboard.selected_cluster_id or '') ~ '&cluster_health_page=' ~ dashboard.cluster_health_pagination.page ~ '&cluster_health_per_page=' ~ dashboard.cluster_health_pagination.per_page %}
 {% set dashboard_tabs = [
     ('overview', 'Operations Overview', 'activity'),
@@ -46,29 +45,27 @@
                          hx-get="{{ url_for('kubernetes_dashboard.section', section='cluster_health') }}?{{ dashboard_cluster_query }}"
                          hx-trigger="revealed"
                          hx-target="this"
-                         hx-swap="outerHTML"
-                         hx-indicator="#dashboard-loading-bar">
+                         hx-swap="outerHTML">
                         {% with title="Cluster Health Summary", description="Preparing per-cluster health, metric, and alert source signals.", icon="heart-pulse" %}
                             {% include "dashboards/kubernetes/partials/_section_loading.html" %}
                         {% endwith %}
                     </div>
 
-                    <div class="{{ context_rail.layout_classes() }}">
-                        <main class="{{ context_rail.main_classes() }}">
+                    <div class="{{ peer_content_grid.layout_classes() }}">
+                        <div class="{{ peer_content_grid.column_classes('primary') }}">
                             {% include "dashboards/kubernetes/partials/_inventory_summary.html" %}
-                        </main>
-                        <aside class="{{ context_rail.rail_classes() }}">
+                        </div>
+                        <div class="{{ peer_content_grid.column_classes('secondary') }}">
                             <div id="dashboard-data-freshness"
                                  hx-get="{{ url_for('kubernetes_dashboard.section', section='data_freshness') }}?{{ dashboard_cluster_query }}"
                                  hx-trigger="revealed"
                                  hx-target="this"
-                                 hx-swap="outerHTML"
-                                 hx-indicator="#dashboard-loading-bar">
+                                 hx-swap="outerHTML">
                                 {% with title="Data Freshness", description="Preparing source readiness and snapshot freshness signals.", icon="refresh-cw" %}
                                     {% include "dashboards/kubernetes/partials/_section_loading.html" %}
                                 {% endwith %}
                             </div>
-                        </aside>
+                        </div>
                     </div>
                 </div>
 
@@ -80,34 +77,36 @@
                      x-bind:hidden="activeTab !== 'capacity'"
                      hidden
                      class="space-y-5">
-                    <div id="dashboard-capacity-snapshot"
-                         hx-get="{{ url_for('kubernetes_dashboard.section', section='capacity_snapshot') }}?{{ dashboard_cluster_query }}"
-                         hx-trigger="revealed"
-                         hx-target="this"
-                         hx-swap="outerHTML"
-                         hx-indicator="#dashboard-loading-bar">
-                        {% with title="Capacity Snapshot", description="Preparing worker-node capacity and headroom summary.", icon="gauge" %}
-                            {% include "dashboards/kubernetes/partials/_section_loading.html" %}
-                        {% endwith %}
-                    </div>
-
-                    <div id="dashboard-forecast-risk"
-                         hx-get="{{ url_for('kubernetes_dashboard.section', section='forecast_risk') }}?{{ dashboard_cluster_query }}"
-                         hx-trigger="revealed"
-                         hx-target="this"
-                         hx-swap="outerHTML"
-                         hx-indicator="#dashboard-loading-bar">
-                        {% with title="Forecast & Growth Risk", description="Preparing capacity growth risk and projected utilization.", icon="trending-up" %}
-                            {% include "dashboards/kubernetes/partials/_section_loading.html" %}
-                        {% endwith %}
+                    <div class="{{ peer_content_grid.layout_classes() }}">
+                        <div class="{{ peer_content_grid.column_classes('primary') }}">
+                            <div id="dashboard-capacity-snapshot"
+                                 hx-get="{{ url_for('kubernetes_dashboard.section', section='capacity_snapshot') }}?{{ dashboard_cluster_query }}"
+                                 hx-trigger="revealed"
+                                 hx-target="this"
+                                 hx-swap="outerHTML">
+                                {% with title="Capacity Snapshot", description="Preparing worker-node capacity and headroom summary.", icon="gauge" %}
+                                    {% include "dashboards/kubernetes/partials/_section_loading.html" %}
+                                {% endwith %}
+                            </div>
+                        </div>
+                        <div class="{{ peer_content_grid.column_classes('secondary') }}">
+                            <div id="dashboard-forecast-risk"
+                                 hx-get="{{ url_for('kubernetes_dashboard.section', section='forecast_risk') }}?{{ dashboard_cluster_query }}"
+                                 hx-trigger="revealed"
+                                 hx-target="this"
+                                 hx-swap="outerHTML">
+                                {% with title="Forecast & Growth Risk", description="Preparing capacity growth risk and projected utilization.", icon="trending-up" %}
+                                    {% include "dashboards/kubernetes/partials/_section_loading.html" %}
+                                {% endwith %}
+                            </div>
+                        </div>
                     </div>
 
                     <div id="dashboard-top-consumers"
                          hx-get="{{ url_for('kubernetes_dashboard.section', section='top_consumers') }}?{{ dashboard_cluster_query }}"
                          hx-trigger="revealed"
                          hx-target="this"
-                         hx-swap="outerHTML"
-                         hx-indicator="#dashboard-loading-bar">
+                         hx-swap="outerHTML">
                         {% with title="Top Consumers", description="Preparing top CPU and memory consumer snapshot.", icon="bar-chart-3" %}
                             {% include "dashboards/kubernetes/partials/_section_loading.html" %}
                         {% endwith %}
@@ -122,39 +121,28 @@
                      x-bind:hidden="activeTab !== 'signals'"
                      hidden
                      class="space-y-5">
-                    <div class="{{ context_rail.layout_classes() }}">
-                        <main class="{{ context_rail.main_classes() }}">
+                    <div class="{{ peer_content_grid.layout_classes() }}">
+                        <div class="{{ peer_content_grid.column_classes('primary') }}">
                             <div id="dashboard-alerts-summary"
                                  hx-get="{{ url_for('kubernetes_dashboard.section', section='alerts_summary') }}?{{ dashboard_cluster_query }}"
                                  hx-trigger="revealed"
                                  hx-target="this"
-                                 hx-swap="outerHTML"
-                                 hx-indicator="#dashboard-loading-bar">
+                                 hx-swap="outerHTML">
                                 {% with title="Alerts Summary", description="Preparing active Alertmanager and Prometheus alert signals.", icon="bell-ring" %}
                                     {% include "dashboards/kubernetes/partials/_section_loading.html" %}
                                 {% endwith %}
                             </div>
-                        </main>
-                        <aside class="{{ context_rail.rail_classes() }}">
+                        </div>
+                        <div class="{{ peer_content_grid.column_classes('secondary') }}">
                             {% include "dashboards/kubernetes/partials/_alert_response_guidance.html" %}
-                            {{ related_page_card.render(
-                                'Alerts & Anomalies',
-                                'Review complete signal context, ownership, and anomaly evidence before remediation.',
-                                url_for('analytics.alerts'),
-                                'Open Alerts Workspace',
-                                icon='bell-ring',
-                                eyebrow='Related Analytics Workspace',
-                                boundary='Use the dashboard for posture. Use Alerts & Anomalies for detailed investigation.'
-                            ) }}
-                        </aside>
+                        </div>
                     </div>
 
                     <div id="dashboard-recommended-actions"
                          hx-get="{{ url_for('kubernetes_dashboard.section', section='recommended_actions') }}?{{ dashboard_cluster_query }}"
                          hx-trigger="revealed"
                          hx-target="this"
-                         hx-swap="outerHTML"
-                         hx-indicator="#dashboard-loading-bar">
+                         hx-swap="outerHTML">
                         {% with title="Recommended Actions", description="Preparing active catalog-backed findings from Intelligence recommendations.", icon="list-checks" %}
                             {% include "dashboards/kubernetes/partials/_section_loading.html" %}
                         {% endwith %}
@@ -168,22 +156,13 @@
                      x-show="activeTab === 'reporting'"
                      x-bind:hidden="activeTab !== 'reporting'"
                      hidden>
-                    <div class="{{ context_rail.layout_classes() }}">
-                        <main class="{{ context_rail.main_classes() }}">
+                    <div class="{{ peer_content_grid.layout_classes() }}">
+                        <div class="{{ peer_content_grid.column_classes('primary', 'seven-five') }}">
                             {% include "dashboards/kubernetes/partials/_reporting_summary.html" %}
-                        </main>
-                        <aside class="{{ context_rail.rail_classes() }}">
+                        </div>
+                        <div class="{{ peer_content_grid.column_classes('secondary', 'seven-five') }}">
                             {% include "dashboards/kubernetes/partials/_reporting_guidance.html" %}
-                            {{ related_page_card.render(
-                                'Reports Workspace',
-                                'Generate, review, schedule, and retain governed Kubernetes report artifacts.',
-                                url_for('reports.overview'),
-                                'Open Reports Workspace',
-                                icon='file-text',
-                                eyebrow='Related Reporting Workspace',
-                                boundary='Dashboard reporting summarizes activity. Reports owns generation and artifact lifecycle.'
-                            ) }}
-                        </aside>
+                        </div>
                     </div>
                 </div>
             </div>

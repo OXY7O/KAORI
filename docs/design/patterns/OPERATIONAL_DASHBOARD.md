@@ -13,7 +13,7 @@ Operational KPI Grid
 Standalone Workspace Tabs
 ├── Primary Operational Sections
 ├── Full-Width Complex Charts or Tables
-└── Main Content + 20rem Context Rail where guidance is secondary
+└── Peer Content Grid for primary content pairs
 ```
 
 ## Rules
@@ -23,10 +23,12 @@ Standalone Workspace Tabs
 - Use `operational_metric_card.html` for KPI cards.
 - Use `workspace_tabs.html` and persist the active tab in the URL.
 - Use `operational_section_card.html` for repeated block shells.
-- Use `context_rail.html` when a primary block needs secondary readiness, guidance, or a related workspace.
+- Use `peer_content_grid.html` when both dashboard blocks are primary tab content.
+- Use `context_rail.html` only when the right side is genuinely secondary supporting context.
 - Use `forecast_projection_chart.html` for historical/projected resource visuals.
 - Use canonical tables, labels, states, and pagination.
 - Avoid card-inside-card composition and duplicate actions.
+- Initial asynchronous dashboard sections use skeleton placeholders. Do not attach one global loading bar to unrelated dashboard regions.
 
 ## Reference implementation
 

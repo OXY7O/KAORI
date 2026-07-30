@@ -1,4 +1,3 @@
-{% import "components/loading_bar.html" as loading_bar %}
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/table.html" as table_ui %}
@@ -18,7 +17,6 @@
     header_badge=table_label.metadata_label('8 Indicators', icon='scan-line'),
     body_classes='p-0'
 ) %}
-    {{ loading_bar.render('dashboard-loading-bar', label='Refreshing Kubernetes Operational Signals') }}
     <div class="flex flex-col gap-3 border-b border-outline-subtle bg-surface-subtle px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
         <div class="flex min-w-0 flex-wrap items-center gap-2">
             <span class="text-xs font-semibold text-content-muted">Active Scope</span>
@@ -49,8 +47,8 @@
                         hx-target="#dashboard-content"
                         hx-swap="innerHTML"
                         hx-push-url="true"
-                        hx-indicator="#dashboard-loading-bar"
                         hx-trigger="change"
+                        hx-disabled-elt="this"
                         hx-include="#dashboard-active-tab"
                         class="{{ table_ui.filter_select_classes() }} pl-10">
                     <option value="">All Clusters</option>
@@ -68,7 +66,7 @@
              hx-trigger="load"
              hx-target="this"
              hx-swap="outerHTML"
-             hx-indicator="#dashboard-loading-bar">
+>
             {% with title="Operational Indicators", description="Preparing inventory, utilization, and alert signals.", icon="scan-line", embedded=true %}
                 {% include "dashboards/kubernetes/partials/_section_loading.html" %}
             {% endwith %}

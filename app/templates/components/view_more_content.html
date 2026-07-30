@@ -9,9 +9,10 @@
     open_by_default=false,
     aria_label=None,
     closed_label='View Details',
-    open_label='Collapse'
+    open_label='Collapse',
+    extra_classes=''
     ) -%}
-    <details class="group overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+    <details class="group overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ extra_classes }}"
              aria-label="{{ aria_label or title }}"
              {% if open_by_default %}open{% endif %}>
         <summary class="flex cursor-pointer list-none select-none items-start justify-between gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3.5 transition hover:bg-kaori-soft/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-outline-focus [&::-webkit-details-marker]:hidden">
