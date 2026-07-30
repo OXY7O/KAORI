@@ -1,5 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/info_flow.html" as info_flow %}
+{% import "components/related_page_card.html" as related_page_card %}
 {% block title %}Generate Report{% endblock title %}
 {% block dashboard_content %}
     <div class="space-y-6">
@@ -252,8 +254,9 @@
                                     <p class="mt-1 text-xs leading-5 text-content-muted">Review available system report types and reserved infrastructure families before creating a request.</p>
                                 </div>
                             </div>
-                            <span class="inline-flex min-h-6 shrink-0 items-center rounded-md border border-kaori-primary/20 bg-kaori-soft px-2.5 text-[11px] font-semibold text-kaori-primary">
-                                {{ payload.report_type_options|length }} Available Types
+                            <span class="inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border border-brand-outline bg-kaori-soft px-2 py-0.5 text-[10px] font-semibold leading-4 text-kaori-primary-dark">
+                                <i data-lucide="files" class="h-3 w-3 shrink-0 text-kaori-primary" aria-hidden="true"></i>
+                                {{ payload.report_type_options|length }} Report Types
                             </span>
                         </header>
                         <div class="p-5">
@@ -275,7 +278,8 @@
                                             <h3 class="text-sm font-semibold text-content-primary">{{ family.label }}</h3>
                                             <p class="mt-1 text-xs leading-5 text-content-muted">{{ family.description }}</p>
                                         </div>
-                                        <span class="inline-flex min-h-6 shrink-0 items-center self-start rounded-md border border-outline-default bg-surface-hover px-2.5 text-[11px] font-semibold text-content-secondary">
+                                        <span class="inline-flex min-h-6 shrink-0 items-center gap-1 self-start rounded-md border border-outline-default bg-surface-card px-2 py-0.5 text-[10px] font-semibold leading-4 text-content-secondary">
+                                            <i data-lucide="files" class="h-3 w-3 shrink-0 text-content-muted" aria-hidden="true"></i>
                                             {{ family['items']|length }} Report Types
                                         </span>
                                     </div>
@@ -313,53 +317,64 @@
                                 </span>
                                 <div>
                                     <h2 class="text-base font-semibold text-content-primary">Request Preview</h2>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Confirm the request contract before KAORI saves it with Requested status.</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Review the request scope and output before saving it.</p>
                                 </div>
                             </div>
-                            <span class="inline-flex min-h-6 shrink-0 items-center self-start rounded-md border border-kaori-primary/20 bg-kaori-soft px-2.5 text-[11px] font-semibold text-kaori-primary">
+                            <span class="inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border border-status-info-border bg-status-info-soft px-2 py-0.5 text-[10px] font-semibold leading-4 text-status-info-text">
+                                <i data-lucide="clock-3" class="h-3 w-3 shrink-0 text-status-info" aria-hidden="true"></i>
                                 Requested
                             </span>
                         </header>
                         <div class="p-5">
-                            <div class="rounded-xl border border-kaori-primary/20 bg-kaori-soft p-4">
-                                <div class="flex items-start gap-3">
-                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary">
-                                        <i id="preview-report-icon"
-                                           data-lucide="{{ payload.selected_report_type.icon }}"
-                                           class="h-5 w-5"></i>
-                                    </span>
-                                    <div class="min-w-0">
-                                        <p class="text-[11px] font-semibold uppercase tracking-wide text-kaori-primary">Selected Report Contract</p>
-                                        <h3 id="preview-report-type" class="mt-1 text-sm font-semibold text-content-primary">{{ payload.selected_report_type.label }}</h3>
-                                        <p id="preview-report-description" class="mt-1 text-xs leading-5 text-content-secondary">{{ payload.selected_report_type.description }}</p>
-                                    </div>
+                            <div class="flex items-start gap-3 border-b border-outline-default pb-5">
+                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-outline bg-kaori-soft text-kaori-primary">
+                                    <i id="preview-report-icon"
+                                       data-lucide="{{ payload.selected_report_type.icon }}"
+                                       class="h-5 w-5"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Selected Report Contract</p>
+                                    <h3 id="preview-report-type" class="mt-1 text-sm font-semibold text-content-primary">{{ payload.selected_report_type.label }}</h3>
+                                    <p id="preview-report-description" class="mt-1 text-xs leading-5 text-content-muted">{{ payload.selected_report_type.description }}</p>
                                 </div>
                             </div>
-                            <dl class="mt-4 grid gap-px overflow-hidden rounded-xl border border-outline-subtle bg-outline-subtle sm:grid-cols-2">
-                                <div class="bg-surface-hover px-4 py-3">
-                                    <dt class="text-[11px] font-semibold uppercase tracking-wide text-content-muted">Scope</dt>
-                                    <dd id="preview-scope" class="mt-1 text-sm font-semibold text-content-primary">Cluster / Namespace</dd>
+                            <dl class="mt-4 grid gap-3 sm:grid-cols-2">
+                                <div class="rounded-xl border border-outline-default bg-surface-card px-4 py-3">
+                                    <dt class="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">
+                                        <i data-lucide="crosshair" class="h-3 w-3 text-kaori-primary"></i>
+                                        Scope
+                                    </dt>
+                                    <dd id="preview-scope" class="mt-1.5 text-sm font-semibold text-content-primary">Cluster / Namespace</dd>
                                 </div>
-                                <div class="bg-surface-hover px-4 py-3">
-                                    <dt class="text-[11px] font-semibold uppercase tracking-wide text-content-muted">Period</dt>
-                                    <dd id="preview-period" class="mt-1 text-sm font-semibold text-content-primary">{{ payload.form_state.period }}</dd>
+                                <div class="rounded-xl border border-outline-default bg-surface-card px-4 py-3">
+                                    <dt class="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">
+                                        <i data-lucide="calendar-range" class="h-3 w-3 text-kaori-primary"></i>
+                                        Period
+                                    </dt>
+                                    <dd id="preview-period" class="mt-1.5 text-sm font-semibold text-content-primary">{{ payload.form_state.period }}</dd>
                                 </div>
-                                <div class="bg-surface-hover px-4 py-3">
-                                    <dt class="text-[11px] font-semibold uppercase tracking-wide text-content-muted">Sections</dt>
-                                    <dd id="preview-sections" class="mt-1 text-sm font-semibold text-content-primary">{{ payload.form_state.sections|length }} Selected</dd>
+                                <div class="rounded-xl border border-outline-default bg-surface-card px-4 py-3">
+                                    <dt class="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">
+                                        <i data-lucide="list-checks" class="h-3 w-3 text-kaori-primary"></i>
+                                        Sections
+                                    </dt>
+                                    <dd id="preview-sections" class="mt-1.5 text-sm font-semibold text-content-primary">{{ payload.form_state.sections|length }} Selected</dd>
                                 </div>
-                                <div class="bg-surface-hover px-4 py-3">
-                                    <dt class="text-[11px] font-semibold uppercase tracking-wide text-content-muted">Output Format</dt>
-                                    <dd id="preview-output-format" class="mt-1 text-sm font-semibold text-content-primary">{{ payload.form_state.output_format|upper }}</dd>
+                                <div class="rounded-xl border border-outline-default bg-surface-card px-4 py-3">
+                                    <dt class="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-content-muted">
+                                        <i data-lucide="file-type-2" class="h-3 w-3 text-kaori-primary"></i>
+                                        Output Format
+                                    </dt>
+                                    <dd id="preview-output-format" class="mt-1.5 text-sm font-semibold text-content-primary">{{ payload.form_state.output_format|upper }}</dd>
                                 </div>
                             </dl>
-                            <div class="mt-4 flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
+                            <div class="mt-4 flex items-start gap-3 border-t border-outline-default pt-4">
                                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                                     <i data-lucide="arrow-right" class="h-4 w-4"></i>
                                 </span>
                                 <div>
                                     <p class="text-xs font-semibold text-content-primary">Next Step: Generate the PDF</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">After this request is created, open Generated Reports and run PDF generation.</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">Create the request, then start PDF generation from Generated Reports.</p>
                                 </div>
                             </div>
                         </div>
@@ -374,7 +389,10 @@
                                 <div>
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h2 class="text-base font-semibold text-content-primary">Create Report Request</h2>
-                                        <span class="inline-flex min-h-6 items-center rounded-md border border-kaori-primary/20 bg-kaori-soft px-2 text-[10px] font-semibold text-kaori-primary">Requested</span>
+                                        <span class="inline-flex min-h-6 items-center gap-1 rounded-md border border-status-info-border bg-status-info-soft px-2 py-0.5 text-[10px] font-semibold leading-4 text-status-info-text">
+                                            <i data-lucide="clock-3" class="h-3 w-3 shrink-0 text-status-info" aria-hidden="true"></i>
+                                            Requested
+                                        </span>
                                     </div>
                                     <p class="mt-1 text-xs leading-5 text-content-muted">KAORI records the selected contract first. PDF rendering starts separately from Generated Reports.</p>
                                 </div>
@@ -382,7 +400,7 @@
                         </div>
                         <div class="flex flex-col gap-3 border-t border-outline-default bg-surface-hover px-5 py-4 md:flex-row md:items-center md:justify-between">
                             <p class="max-w-2xl text-xs leading-5 text-content-secondary">
-                                Metrics-backed report types require one validated cluster. The action remains unavailable until the scope and section selection are valid.
+                                Select one validated cluster and at least one section to continue.
                             </p>
                             <div class="flex shrink-0 flex-wrap items-center gap-3">
                                 <a href="{{ url_for('reports.generated_reports') }}"
@@ -402,102 +420,82 @@
             </div>
             <!-- Right Panel -->
             <aside class="space-y-5 xl:sticky xl:top-5 xl:self-start">
-                <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-                    <header class="border-b border-outline-default px-5 py-4">
-                        <div class="flex items-start gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                <i data-lucide="route" class="h-[18px] w-[18px]"></i>
-                            </span>
-                            <div>
-                                <h2 class="text-base font-semibold text-content-primary">Generation Guide</h2>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Follow the governed request-to-artifact flow.</p>
-                            </div>
-                        </div>
-                    </header>
-                    <ol class="p-5">
-                        {% for item in payload.generation_flow %}
-                            <li class="relative flex gap-3 pb-5 last:pb-0">
-                                {% if not loop.last %}
-                                    <span class="absolute left-[17px] top-9 h-[calc(100%-1.25rem)] w-px bg-kaori-primary/20" aria-hidden="true"></span>
-                                {% endif %}
-                                <span class="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {% if loop.first %}bg-kaori-primary text-white{% else %}border border-kaori-primary/20 bg-kaori-soft text-kaori-primary{% endif %}">
-                                    <span class="text-[10px] font-bold">{{ item.step }}</span>
-                                </span>
-                                <div class="min-w-0 pt-0.5">
-                                    <div class="flex items-center gap-2">
-                                        <i data-lucide="{{ item.icon }}" class="h-3.5 w-3.5 text-kaori-primary"></i>
-                                        <h3 class="text-sm font-semibold text-content-primary">{{ item.label }}</h3>
-                                    </div>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.description }}</p>
-                                </div>
-                            </li>
-                        {% endfor %}
-                    </ol>
-                </section>
+                {{ info_flow.render(
+                    'Generation Guide',
+                    'Follow the governed request-to-artifact flow.',
+                    payload.generation_flow,
+                    icon='route',
+                    note='Creating a request records the contract first. PDF rendering starts from Generated Reports.',
+                    note_icon='file-clock',
+                    open_by_default=true
+                ) }}
 
+                {{ related_page_card.render(
+                    payload.storage_context.label,
+                    payload.storage_context.description,
+                    url_for('reports.storage'),
+                    'Open Reports Storage',
+                    icon='hard-drive',
+                    eyebrow='Storage Context',
+                    boundary='Current status: ' ~ payload.storage_context.status ~ '. Generated artifacts use this backend after PDF rendering.'
+                ) }}
+
+                {% set request_ready = payload.readiness[0].tone == 'blue' and payload.readiness[1].tone == 'blue' %}
                 <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
                     <header class="flex items-start justify-between gap-3 border-b border-outline-default px-5 py-4">
-                        <div class="flex items-start gap-3">
-                            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg {% if payload.storage_context.ready %}bg-kaori-soft text-kaori-primary{% else %}bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300{% endif %}">
-                                <i data-lucide="hard-drive" class="h-[18px] w-[18px]"></i>
-                            </span>
-                            <div>
-                                <h2 class="text-base font-semibold text-content-primary">Storage Context</h2>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Active destination for generated report artifacts.</p>
-                            </div>
-                        </div>
-                        <span class="inline-flex min-h-6 shrink-0 items-center rounded-md px-2.5 text-[11px] font-semibold {% if payload.storage_context.ready %}border border-kaori-primary/20 bg-kaori-soft text-kaori-primary{% else %}border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300{% endif %}">
-                            {{ payload.storage_context.status }}
-                        </span>
-                    </header>
-                    <div class="p-5">
-                        <div class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
-                            <p class="text-[11px] font-semibold uppercase tracking-wide text-content-muted">Configured Backend</p>
-                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ payload.storage_context.label }}</p>
-                            <p class="mt-2 text-xs leading-5 text-content-muted">{{ payload.storage_context.description }}</p>
-                        </div>
-                        <a href="{{ url_for('reports.storage') }}"
-                           class="mt-4 inline-flex min-h-9 w-full items-center justify-center gap-2 rounded-lg border border-kaori-primary/30 bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-primary hover:text-white">
-                            Open Reports Storage
-                            <i data-lucide="arrow-right" class="h-4 w-4"></i>
-                        </a>
-                    </div>
-                </section>
-
-                <section class="overflow-hidden rounded-2xl border border-outline-default bg-surface-card shadow-sm">
-                    <header class="border-b border-outline-default px-5 py-4">
                         <div class="flex items-start gap-3">
                             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                                 <i data-lucide="shield-check" class="h-[18px] w-[18px]"></i>
                             </span>
                             <div>
                                 <h2 class="text-base font-semibold text-content-primary">Generation Readiness</h2>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">Validate scope, sections, PDF execution, and storage before creating the request.</p>
+                                <p class="mt-1 text-xs leading-5 text-content-muted">Required request checks and downstream generation status.</p>
                             </div>
                         </div>
+                        <span id="readiness-overall-status"
+                              class="inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold leading-4 {% if request_ready %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% else %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% endif %}">
+                            <i id="readiness-overall-icon"
+                               data-lucide="{{ 'circle-check' if request_ready else 'triangle-alert' }}"
+                               class="h-3 w-3 shrink-0 {% if request_ready %}text-status-normal{% else %}text-status-warning{% endif %}"
+                               aria-hidden="true"></i>
+                            <span id="readiness-overall-label">{{ 'Ready to Request' if request_ready else 'Action Required' }}</span>
+                        </span>
                     </header>
-                    <div class="space-y-3 p-5">
+                    <div class="divide-y divide-outline-default">
                         {% for item in payload.readiness %}
                             {% set ready = item.tone == 'blue' %}
-                            <article id="readiness-{{ item.key }}-card" class="rounded-xl border {% if ready %}border-kaori-primary/20 bg-kaori-soft/60{% else %}border-amber-200 bg-amber-50 dark:border-amber-900/60 dark:bg-amber-950/30{% endif %} p-3">
-                                <div class="flex items-start gap-3">
-                                    <span id="readiness-{{ item.key }}-icon" class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {% if ready %}bg-surface-card text-kaori-primary{% else %}bg-surface-card text-amber-700 dark:text-amber-300{% endif %}">
-                                        <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
-                                    </span>
-                                    <div class="min-w-0 flex-1">
-                                        <div class="flex flex-wrap items-start justify-between gap-2">
-                                            <h3 class="text-sm font-semibold text-content-primary">{{ item.label }}</h3>
-                                            <span id="readiness-{{ item.key }}-status"
-                                                  class="inline-flex min-h-6 shrink-0 items-center rounded-md px-2 text-[10px] font-semibold {% if ready %}border border-kaori-primary/20 bg-surface-card text-kaori-primary{% else %}border border-amber-200 bg-surface-card text-amber-700 dark:border-amber-900/60 dark:text-amber-300{% endif %}">
-                                                {{ item.status }}
-                                            </span>
-                                        </div>
-                                        <p id="readiness-{{ item.key }}-description" class="mt-1 text-xs leading-5 text-content-muted">{{ item.description }}</p>
+                            <article id="readiness-{{ item.key }}-card" class="flex items-start gap-3 px-5 py-4">
+                                <span id="readiness-{{ item.key }}-icon"
+                                      class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {% if ready %}bg-status-normal-soft text-status-normal{% else %}bg-status-warning-soft text-status-warning{% endif %}">
+                                    <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex flex-wrap items-start justify-between gap-2">
+                                        <h3 class="text-sm font-semibold text-content-primary">{{ item.label }}</h3>
+                                        <span id="readiness-{{ item.key }}-status"
+                                              class="inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold leading-4 {% if ready %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% else %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% endif %}">
+                                            <i data-readiness-status-icon
+                                               data-lucide="{{ 'check' if ready else 'triangle-alert' }}"
+                                               class="h-3 w-3 shrink-0 {% if ready %}text-status-normal{% else %}text-status-warning{% endif %}"
+                                               aria-hidden="true"></i>
+                                            <span data-readiness-status-label>{{ item.status }}</span>
+                                        </span>
                                     </div>
+                                    <p id="readiness-{{ item.key }}-description" class="mt-1 text-xs leading-5 text-content-muted">{{ item.description }}</p>
                                 </div>
                             </article>
                         {% endfor %}
                     </div>
+                    <footer id="readiness-summary"
+                            class="flex items-start gap-2.5 border-t px-5 py-3 text-xs leading-5 {% if request_ready %}border-status-normal-border bg-status-normal-soft text-status-normal-text{% else %}border-status-warning-border bg-status-warning-soft text-status-warning-text{% endif %}">
+                        <i id="readiness-summary-icon"
+                           data-lucide="{{ 'circle-check' if request_ready else 'circle-alert' }}"
+                           class="mt-0.5 h-4 w-4 shrink-0 {% if request_ready %}text-status-normal{% else %}text-status-warning{% endif %}"
+                           aria-hidden="true"></i>
+                        <p id="readiness-summary-text">
+                            {{ 'Scope and section requirements are valid. The request can be created.' if request_ready else 'Resolve the required scope or section checks before creating the request.' }}
+                        </p>
+                    </footer>
                 </section>
             </aside>
         </section>
@@ -535,14 +533,18 @@
                 const previewPeriod = document.getElementById('preview-period');
                 const previewSections = document.getElementById('preview-sections');
                 const previewOutputFormat = document.getElementById('preview-output-format');
-                const readinessScopeCard = document.getElementById('readiness-scope-card');
                 const readinessScopeIcon = document.getElementById('readiness-scope-icon');
                 const readinessScopeStatus = document.getElementById('readiness-scope-status');
                 const readinessScopeDescription = document.getElementById('readiness-scope-description');
-                const readinessSectionsCard = document.getElementById('readiness-sections-card');
                 const readinessSectionsIcon = document.getElementById('readiness-sections-icon');
                 const readinessSectionsStatus = document.getElementById('readiness-sections-status');
                 const readinessSectionsDescription = document.getElementById('readiness-sections-description');
+                const readinessOverallStatus = document.getElementById('readiness-overall-status');
+                const readinessOverallIcon = document.getElementById('readiness-overall-icon');
+                const readinessOverallLabel = document.getElementById('readiness-overall-label');
+                const readinessSummary = document.getElementById('readiness-summary');
+                const readinessSummaryIcon = document.getElementById('readiness-summary-icon');
+                const readinessSummaryText = document.getElementById('readiness-summary-text');
 
                 let selectedSectionsByReportType = {};
 
@@ -558,17 +560,76 @@
                     return;
                 }
 
-                function setReadinessCardTone(card, icon, isReady) {
-                    if (card) {
-                        card.className = isReady
-                            ? 'rounded-xl border border-kaori-primary/20 bg-kaori-soft/60 p-3'
-                            : 'rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900/60 dark:bg-amber-950/30';
-                    }
-
+                function setReadinessItemTone(icon, status, isReady) {
                     if (icon) {
                         icon.className = isReady
-                            ? 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary'
-                            : 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-amber-700 dark:text-amber-300';
+                            ? 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-normal-soft text-status-normal'
+                            : 'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning';
+                    }
+
+                    if (!status) {
+                        return;
+                    }
+
+                    status.className = isReady
+                        ? 'inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border border-status-normal-border bg-status-normal-soft px-2 py-0.5 text-[10px] font-semibold leading-4 text-status-normal-text'
+                        : 'inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border border-status-warning-border bg-status-warning-soft px-2 py-0.5 text-[10px] font-semibold leading-4 text-status-warning-text';
+
+                    const statusIcon = status.querySelector('[data-readiness-status-icon]');
+                    if (statusIcon) {
+                        statusIcon.setAttribute('data-lucide', isReady ? 'check' : 'triangle-alert');
+                        statusIcon.className = isReady
+                            ? 'h-3 w-3 shrink-0 text-status-normal'
+                            : 'h-3 w-3 shrink-0 text-status-warning';
+                    }
+                }
+
+                function setReadinessStatusLabel(status, label) {
+                    if (!status) {
+                        return;
+                    }
+
+                    const statusLabel = status.querySelector('[data-readiness-status-label]');
+                    if (statusLabel) {
+                        statusLabel.textContent = label;
+                    }
+                }
+
+                function syncOverallReadiness(isReady) {
+                    if (readinessOverallStatus) {
+                        readinessOverallStatus.className = isReady
+                            ? 'inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border border-status-normal-border bg-status-normal-soft px-2 py-0.5 text-[10px] font-semibold leading-4 text-status-normal-text'
+                            : 'inline-flex min-h-6 shrink-0 items-center gap-1 rounded-md border border-status-warning-border bg-status-warning-soft px-2 py-0.5 text-[10px] font-semibold leading-4 text-status-warning-text';
+                    }
+
+                    if (readinessOverallIcon) {
+                        readinessOverallIcon.setAttribute('data-lucide', isReady ? 'circle-check' : 'triangle-alert');
+                        readinessOverallIcon.className = isReady
+                            ? 'h-3 w-3 shrink-0 text-status-normal'
+                            : 'h-3 w-3 shrink-0 text-status-warning';
+                    }
+
+                    if (readinessOverallLabel) {
+                        readinessOverallLabel.textContent = isReady ? 'Ready to Request' : 'Action Required';
+                    }
+
+                    if (readinessSummary) {
+                        readinessSummary.className = isReady
+                            ? 'flex items-start gap-2.5 border-t border-status-normal-border bg-status-normal-soft px-5 py-3 text-xs leading-5 text-status-normal-text'
+                            : 'flex items-start gap-2.5 border-t border-status-warning-border bg-status-warning-soft px-5 py-3 text-xs leading-5 text-status-warning-text';
+                    }
+
+                    if (readinessSummaryIcon) {
+                        readinessSummaryIcon.setAttribute('data-lucide', isReady ? 'circle-check' : 'circle-alert');
+                        readinessSummaryIcon.className = isReady
+                            ? 'mt-0.5 h-4 w-4 shrink-0 text-status-normal'
+                            : 'mt-0.5 h-4 w-4 shrink-0 text-status-warning';
+                    }
+
+                    if (readinessSummaryText) {
+                        readinessSummaryText.textContent = isReady
+                            ? 'Scope and section requirements are valid. The request can be created.'
+                            : 'Resolve the required scope or section checks before creating the request.';
                     }
                 }
 
@@ -620,14 +681,11 @@
                         selectedSectionValidation.classList.toggle('hidden', selectedCount > 0);
                     }
 
-                    setReadinessCardTone(readinessSectionsCard, readinessSectionsIcon, selectedCount > 0);
-
-                    if (readinessSectionsStatus) {
-                        readinessSectionsStatus.textContent = selectedCount > 0 ? selectedCount + ' Selected' : 'Selection Required';
-                        readinessSectionsStatus.className = selectedCount > 0
-                            ? 'inline-flex min-h-6 shrink-0 items-center rounded-md border border-kaori-primary/20 bg-surface-card px-2 text-[10px] font-semibold text-kaori-primary'
-                            : 'inline-flex min-h-6 shrink-0 items-center rounded-md border border-amber-200 bg-surface-card px-2 text-[10px] font-semibold text-amber-700 dark:border-amber-900/60 dark:text-amber-300';
-                    }
+                    setReadinessItemTone(readinessSectionsIcon, readinessSectionsStatus, selectedCount > 0);
+                    setReadinessStatusLabel(
+                        readinessSectionsStatus,
+                        selectedCount > 0 ? selectedCount + ' Selected' : 'Selection Required',
+                    );
 
                     if (readinessSectionsDescription) {
                         readinessSectionsDescription.textContent = selectedCount > 0
@@ -738,20 +796,17 @@
 
                     setElementVisibility(clusterGuard, shouldBlockCluster);
 
-                    setReadinessCardTone(
-                        readinessScopeCard,
+                    setReadinessItemTone(
                         readinessScopeIcon,
+                        readinessScopeStatus,
                         hasRegisteredClusters && !shouldBlockCluster,
                     );
-
-                    if (readinessScopeStatus) {
-                        readinessScopeStatus.textContent = !hasRegisteredClusters
+                    setReadinessStatusLabel(
+                        readinessScopeStatus,
+                        !hasRegisteredClusters
                             ? 'Setup Required'
-                            : (shouldBlockCluster ? 'Select Cluster' : 'Ready');
-                        readinessScopeStatus.className = (!hasRegisteredClusters || shouldBlockCluster)
-                            ? 'inline-flex min-h-6 shrink-0 items-center rounded-md border border-amber-200 bg-surface-card px-2 text-[10px] font-semibold text-amber-700 dark:border-amber-900/60 dark:text-amber-300'
-                            : 'inline-flex min-h-6 shrink-0 items-center rounded-md border border-kaori-primary/20 bg-surface-card px-2 text-[10px] font-semibold text-kaori-primary';
-                    }
+                            : (shouldBlockCluster ? 'Select Cluster' : 'Ready'),
+                    );
 
                     if (readinessScopeDescription) {
                         readinessScopeDescription.textContent = !hasRegisteredClusters
@@ -763,6 +818,12 @@
 
                     if (previewScope) {
                         previewScope.textContent = clusterLabel + ' / ' + namespaceValue;
+                    }
+
+                    syncOverallReadiness(!shouldBlock);
+
+                    if (window.lucide) {
+                        window.lucide.createIcons();
                     }
 
                     if (!generateButton) {

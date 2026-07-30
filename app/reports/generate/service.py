@@ -1082,32 +1082,24 @@ def _get_generation_readiness(
     ]
 
 
-def _get_generation_flow() -> list[dict[str, str]]:
+def _get_generation_flow() -> list[tuple[str, str]]:
     return [
-        {
-            'step': '01',
-            'label': 'Configure Request',
-            'description': 'Choose the report type, scope, period, output format, and sections.',
-            'icon': 'settings-2',
-        },
-        {
-            'step': '02',
-            'label': 'Create Request',
-            'description': 'KAORI saves a governed report record with Requested status.',
-            'icon': 'file-plus-2',
-        },
-        {
-            'step': '03',
-            'label': 'Generate PDF',
-            'description': 'Open Generated Reports and start PDF rendering for the request.',
-            'icon': 'file-cog',
-        },
-        {
-            'step': '04',
-            'label': 'Store and Download',
-            'description': 'KAORI stores the artifact in the active backend and makes it available for download.',
-            'icon': 'download',
-        },
+        (
+            'Configure Request',
+            'Choose the report type, scope, period, output format, and sections.',
+        ),
+        (
+            'Create Request',
+            'KAORI saves a governed report record with Requested status.',
+        ),
+        (
+            'Generate PDF',
+            'Open Generated Reports and start PDF rendering for the request.',
+        ),
+        (
+            'Store and Download',
+            'KAORI stores the artifact in the active backend and makes it available for download.',
+        ),
     ]
 
 

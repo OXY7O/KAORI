@@ -22,10 +22,21 @@ def test_reports_pages_use_standard_heroes_and_compact_summary_strips() -> None:
     assert 'Generation Readiness' in generate
     assert 'Generation Guide' in generate
     assert 'Follow the governed request-to-artifact flow.' in generate
+    assert '{% import "components/info_flow.html" as info_flow %}' in generate
+    assert '{{ info_flow.render(' in generate
     assert 'Storage Context' in generate
+    assert '{% import "components/related_page_card.html" as related_page_card %}' in generate
+    assert '{{ related_page_card.render(' in generate
     assert 'Request Preview' in generate
+    assert 'Review the request scope and output before saving it.' in generate
+    assert 'border-status-info-border bg-status-info-soft' in generate
     assert 'Create Report Request' in generate
+    assert 'Select one validated cluster and at least one section to continue.' in generate
     assert 'Report Type Guide' in generate
+    assert 'Available Types' not in generate
+    assert 'Metrics-backed report types require one validated cluster.' not in generate
+    assert 'Ready to Request' in generate
+    assert 'Action Required' in generate
     assert 'xl:sticky xl:top-5 xl:self-start' in generate
     assert 'x-collapse' not in generate
     assert 'Data Source Context' not in generate
