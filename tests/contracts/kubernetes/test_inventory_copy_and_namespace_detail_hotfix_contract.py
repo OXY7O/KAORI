@@ -48,9 +48,11 @@ def test_namespace_detail_card_calls_match_shared_macro_signature() -> None:
     detail = read("app/templates/inventory/namespaces/partials/_namespace_detail_content.html")
     macro = read("app/templates/components/details/_detail_content.html")
 
-    assert "macro detail_card(title, icon, badge=None, badge_type='metadata', badge_tone='unknown', class_name='', badge_size='compact')" in macro
+    assert "macro detail_card(title, icon, badge=None, badge_type='metadata', badge_tone='unknown', class_name='', badge_size='compact', stretch=true, density='default')" in macro
     assert 'data-kaori-detail-variant="inline-expanded"' in detail
-    assert "grid items-stretch gap-4 p-5 md:grid-cols-2 2xl:grid-cols-3" in detail
-    assert "xl:grid-cols-4" not in detail
-    assert detail.count("detail.detail_card(") == 3
+    assert 'data-kaori-detail-density="adaptive-stacks"' in detail
+    assert "xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]" in detail
+    assert "items-stretch" not in detail
+    assert detail.count("detail.detail_card(") == 4
+    assert detail.count("stretch=false") >= 4
     assert "technical_metadata_collection.html" in detail

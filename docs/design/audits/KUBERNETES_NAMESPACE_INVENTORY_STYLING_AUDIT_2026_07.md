@@ -23,3 +23,7 @@ Approved package: A1, B1, C1, D1, and E1.
 - Resource Posture: factual control and lifecycle evidence.
 - Table: compact cross-namespace comparison.
 - Inline Detail: composition, controls, metadata, and operational context.
+
+## Density refinement
+
+The initial three-column detail grid created large empty regions because shorter cards stretched to the height of Object Composition. Namespace detail now uses the shared Adaptive Detail Stacks treatment: Identity and Access & Security form the compact left stack, while Object Composition and Resource Controls form the evidence-heavy right stack. Summary descriptions were removed, factual counts use `detail.evidence_grid(...)`, and cards use natural height.

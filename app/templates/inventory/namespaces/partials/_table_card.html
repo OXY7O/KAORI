@@ -13,7 +13,7 @@
         <form hx-get="{{ url_for('inventory.namespaces') }}"
               hx-target="#namespaces-inventory-scope"
               hx-swap="outerHTML"
-              hx-trigger="change from:select, keyup changed delay:500ms from:input[name='search']"
+              hx-trigger="change, keyup changed delay:500ms from:find input[name='search']"
               hx-indicator="#namespaces-table-loading"
               class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)_minmax(18rem,1.4fr)] lg:items-end">
             <input type="hidden" name="page" value="1" />

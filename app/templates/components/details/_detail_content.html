@@ -31,8 +31,8 @@
         </span>
     </div>
 {%- endmacro %}
-{% macro detail_card(title, icon, badge=None, badge_type='metadata', badge_tone='unknown', class_name='', badge_size='compact') -%}
-    <section class="flex h-full flex-col rounded-xl border border-outline-subtle bg-surface-card p-4 {{ class_name }}">
+{% macro detail_card(title, icon, badge=None, badge_type='metadata', badge_tone='unknown', class_name='', badge_size='compact', stretch=true, density='default') -%}
+    <section class="flex {{ 'h-full' if stretch else '' }} flex-col rounded-xl border border-outline-subtle bg-surface-card {{ 'p-3.5' if density == 'compact' else 'p-4' }} {{ class_name }}">
         <div class="mb-4 flex items-center justify-between gap-3">
             <div class="flex items-center gap-2 text-sm font-semibold text-content-primary">
                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
@@ -75,14 +75,37 @@
     </div>
 {%- endmacro %}
 
-{% macro summary_strip(metrics, columns=4) -%}
+{% macro summary_strip(metrics, columns=4, compact=false) -%}
     <div class="grid gap-px border-b border-outline-subtle bg-outline-subtle {{ 'sm:grid-cols-2 xl:grid-cols-4' if columns == 4 else 'sm:grid-cols-2 xl:grid-cols-3' }}">
         {% for label, value, description in metrics %}
-            <article class="bg-surface-card p-4">
+            <article class="bg-surface-card {{ 'px-4 py-3' if compact else 'p-4' }}">
                 <p class="text-xs font-semibold leading-4 text-content-secondary">{{ label }}</p>
-                <p class="mt-1.5 text-base font-semibold leading-6 text-content-primary">{{ value }}</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+                <p class="{{ 'mt-1' if compact else 'mt-1.5' }} text-base font-semibold leading-6 text-content-primary">{{ value }}</p>
+                {% if description %}<p class="mt-0.5 text-xs leading-5 text-content-muted">{{ description }}</p>{% endif %}
             </article>
         {% endfor %}
+    </div>
+{%- endmacro %}
+
+{% macro evidence_grid(rows, columns=2, compact=true) -%}
+    {% set grid_classes = 'sm:grid-cols-2 xl:grid-cols-4' if columns == 4 else ('sm:grid-cols-2 xl:grid-cols-3' if columns == 3 else 'sm:grid-cols-2') %}
+    <div class="grid overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle gap-px {{ grid_classes }}">
+        {% for row in rows %}
+            {% set label = row.label if row.label is defined else row[0] %}
+            {% set value = row.value if row.value is defined else row[1] %}
+            {% set supporting = row.supporting if row.supporting is defined else (row[2] if row|length > 2 else none) %}
+            <article class="bg-surface-elevated {{ 'px-3 py-2.5' if compact else 'p-3' }}">
+                <p class="text-xs leading-4 text-content-muted">{{ label }}</p>
+                <p class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary">{{ value if value not in [None, ''] else '-' }}</p>
+                {% if supporting %}<p class="mt-0.5 text-xs leading-5 text-content-muted">{{ supporting }}</p>{% endif %}
+            </article>
+        {% endfor %}
+    </div>
+{%- endmacro %}
+
+{% macro subsection(title, description=None) -%}
+    <div class="mb-3">
+        <p class="text-xs font-semibold text-content-secondary">{{ title }}</p>
+        {% if description %}<p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>{% endif %}
     </div>
 {%- endmacro %}

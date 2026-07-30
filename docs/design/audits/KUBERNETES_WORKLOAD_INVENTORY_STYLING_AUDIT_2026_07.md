@@ -23,3 +23,7 @@ Workload Inventory now follows the canonical Inventory Resource Page Pattern.
 - detail counts related Pods separately and loads only eight preview rows;
 - dead associated-Pod template fallback was removed;
 - presentation semantics moved from Jinja to the resource service.
+
+## Density refinement
+
+The initial equal-height three-card row left large unused regions in Workload Identity and Runtime State. Workload detail now uses Adaptive Detail Stacks: Identity and Runtime State are stacked independently, while Pod Template and Associated Pods occupy the wider evidence column. Runtime, Pod-template, delivery, and placement facts use the shared evidence grid to improve scanning and reduce repetitive text rows.

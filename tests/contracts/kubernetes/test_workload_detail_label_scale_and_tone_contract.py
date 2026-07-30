@@ -14,7 +14,10 @@ def test_workload_detail_uses_inline_expanded_reference_structure() -> None:
     assert "detail.detail_card('Workload Identity'" in template
     assert "detail.detail_card('Runtime State'" in template
     assert "detail.detail_card('Pod Template'" in template
-    assert 'md:grid-cols-2 2xl:grid-cols-3' in template
+    assert 'data-kaori-detail-density="adaptive-stacks"' in template
+    assert "xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]" in template
+    assert "items-stretch" not in template
+    assert template.count("stretch=false") >= 3
     assert 'min-h-80' not in template
     assert 'min-h-96' not in template
     assert 'min-h-[28rem]' not in template

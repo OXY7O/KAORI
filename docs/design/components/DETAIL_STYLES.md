@@ -25,3 +25,19 @@ Do not use Inline Expanded Detail for a short identity summary that fits better 
 
 
 Namespace Inventory is the second reference and demonstrates full-width resource controls plus Technical Metadata Collections inside the same `inline-expanded` detail style.
+
+## Adaptive Detail Stacks
+
+Use adaptive detail stacks when cards within one expanded detail have materially different content lengths. This is the canonical density treatment for Namespace and Workload details.
+
+Contract:
+
+- set `data-kaori-detail-density="adaptive-stacks"` on the detail root;
+- use two independent vertical stacks rather than one equal-height grid row;
+- use an asymmetric `0.82fr / 1.18fr` split when the evidence-heavy column needs more width;
+- pass `stretch=false` to `detail.detail_card(...)` so each card follows its natural content height;
+- reserve equal-height behavior for true peer boxes whose visual comparison benefits from matching height;
+- use `detail.evidence_grid(...)` for compact numeric or factual evidence instead of long repeated label/value rows;
+- keep metadata and Operational Context full-width below the primary stacks.
+
+Do not solve uneven detail content by adding fixed or minimum heights. Do not create page-local card geometry for the same pattern.

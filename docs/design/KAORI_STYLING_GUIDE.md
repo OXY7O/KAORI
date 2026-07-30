@@ -567,3 +567,18 @@ Workload resources have heterogeneous factual states. Templates must separate se
 Update strategy, restart policy, DNS policy, pull policy, selectors, tolerations, and other workload configuration remain factual evidence until an explicit KAORI governance policy evaluates them. Do not assign warning or success colors based only on a configuration choice.
 
 Use `components/related_resource_collection.html` for peer related resources such as Workload Pods. Do not represent peer resources as a timeline. The component owns identity, supporting evidence, semantic status, truncation context, empty evidence, and the optional destination action.
+
+## 23. Adaptive Detail Density and Page-Size Ownership
+
+Dense Inline Expanded Detail pages may use **Adaptive Detail Stacks** when evidence cards have different natural lengths. Namespace and Workload Inventory are the canonical references.
+
+Required rules:
+
+- use two independent vertical stacks with natural-height cards;
+- use `detail.detail_card(..., stretch=false, density='compact')` for compact evidence cards;
+- use `detail.evidence_grid(...)` for factual metrics and controller evidence;
+- do not force unrelated cards to the height of the longest card;
+- equal-height remains required only for true peer main-content boxes where side-by-side comparison is the purpose;
+- do not add fixed `min-height` values to hide content imbalance.
+
+Inventory page-size controls must refresh the owning `*-inventory-scope` with `outerHTML`, not only the table body. This keeps the filter form's hidden `per_page` value synchronized. Filter forms listen to their own bubbled `change` events and scoped search input events; do not use a global `change from:select` trigger that can capture the separate Rows selector.

@@ -279,3 +279,17 @@ def test_namespace_inventory_and_technical_metadata_are_documented() -> None:
     assert "Technical Metadata Collection" in component
     assert "No Implicit Compliance" not in pattern
     assert "explicit governance policy" in pattern
+
+
+def test_adaptive_detail_density_and_page_size_ownership_are_documented() -> None:
+    guide = _read('docs/design/KAORI_STYLING_GUIDE.md')
+    detail_contract = _read('docs/design/components/DETAIL_STYLES.md')
+    shared_detail = _read('app/templates/components/details/_detail_content.html')
+
+    assert 'Adaptive Detail Stacks' in guide
+    assert 'Page-Size Ownership' in guide
+    assert 'data-kaori-detail-density="adaptive-stacks"' in detail_contract
+    assert 'stretch=false' in detail_contract
+    assert 'detail.evidence_grid(...)' in detail_contract
+    assert 'macro evidence_grid' in shared_detail
+    assert "{{ 'h-full' if stretch else '' }}" in shared_detail

@@ -12,8 +12,12 @@ def test_namespace_detail_uses_inline_expanded_detail_grid():
     shared_detail = _read("app/templates/components/details/_detail_content.html")
 
     assert 'data-kaori-detail-variant="inline-expanded"' in detail
-    assert "grid items-stretch gap-4 p-5 md:grid-cols-2 2xl:grid-cols-3" in detail
-    assert 'class="flex h-full flex-col rounded-xl' in shared_detail
+    assert 'data-kaori-detail-density="adaptive-stacks"' in detail
+    assert "xl:grid-cols-[minmax(0,0.82fr)_minmax(0,1.18fr)]" in detail
+    assert "items-stretch" not in detail
+    assert detail.count("stretch=false") >= 4
+    assert "stretch=true" in shared_detail
+    assert "{{ 'h-full' if stretch else '' }}" in shared_detail
     assert "xl:grid-cols-4" not in detail
     assert "min-h-96" not in detail
     assert "min-h-[28rem]" not in detail

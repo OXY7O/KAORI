@@ -174,3 +174,7 @@ Lifecycle transition, resource controls, and security configuration are factual 
 ## Workload Inventory presentation
 
 Workload Inventory follows the canonical Inventory Resource Page Pattern. The hero owns delivery and runtime posture, the posture grid owns workload composition and exceptions, and the compact table separates semantic operational state from controller-specific evidence. Associated Pods use the shared Related Resource Collection. Workload configuration is factual evidence until an explicit governance policy evaluates it.
+
+### Inventory detail density and Rows behavior
+
+Namespace and Workload details use the shared Adaptive Detail Stacks contract from `components/details/_detail_content.html`. Natural-height cards replace equal-height rows when evidence volumes differ. The Node, Namespace, and Workload Rows selectors refresh their owning inventory scope so the selected page size remains synchronized with subsequent filter requests. Resource filter forms must use local bubbled `change` handling rather than a global `from:select` listener.

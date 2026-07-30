@@ -13,7 +13,7 @@
         <form hx-get="{{ url_for('inventory.nodes') }}"
               hx-target="#nodes-inventory-scope"
               hx-swap="outerHTML"
-              hx-trigger="change from:select, keyup changed delay:500ms from:input[name='search']"
+              hx-trigger="change, keyup changed delay:500ms from:find input[name='search']"
               hx-indicator="#nodes-table-loading"
               class="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_minmax(16rem,1.35fr)] lg:items-end">
             <input type="hidden" name="page" value="1" />

@@ -13,7 +13,8 @@ def test_node_detail_cards_follow_tallest_card_without_fixed_min_height() -> Non
 
     assert 'data-kaori-detail-variant="inline-expanded"' in detail
     assert "grid items-stretch gap-4 p-5 md:grid-cols-2 2xl:grid-cols-3" in detail
-    assert "flex h-full flex-col rounded-xl" in shared
+    assert "stretch=true" in shared
+    assert "{{ 'h-full' if stretch else '' }}" in shared
 
     # Equal height comes from the grid row, not an arbitrary fixed minimum.
     assert "min-h-80" not in detail
