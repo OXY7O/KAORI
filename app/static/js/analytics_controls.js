@@ -41,6 +41,21 @@
         return Array.from(tabset.querySelectorAll('[data-analytics-tab-panel]'));
     }
 
+    function notifyAnalyticsTabVisible(panel, tabId, tabsetId) {
+        if (!panel) return;
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                if (!panel.isConnected || panel.hidden) return;
+                panel.dispatchEvent(new CustomEvent('kaori:analytics-tab-visible', {
+                    bubbles: true,
+                    detail: { tabId, tabsetId },
+                }));
+                window.dispatchEvent(new Event('resize'));
+            });
+        });
+    }
+
     function setAnalyticsTab(tabset, tabId, { persist = true, focus = false } = {}) {
         if (!tabset?.isConnected || !tabId) return false;
 
@@ -88,8 +103,8 @@
                     target.dispatchEvent(new CustomEvent('kaori:analytics-tab-activated', { bubbles: true }));
                 }
             });
+            notifyAnalyticsTabVisible(activePanel, tabId, tabsetId);
         }
-        window.dispatchEvent(new Event('resize'));
         if (window.renderKaoriIcons) window.renderKaoriIcons();
         return true;
     }

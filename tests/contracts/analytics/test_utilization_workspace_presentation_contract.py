@@ -47,6 +47,8 @@ def test_heavy_utilization_tabs_load_only_after_activation() -> None:
     assert "url_for('analytics.utilization_node_detail'" in index
     assert 'activationTargets' in controls
     assert "window.htmx.trigger(target, 'kaori:analytics-tab-activated')" in controls
+    assert 'notifyAnalyticsTabVisible' in controls
+    assert "new CustomEvent('kaori:analytics-tab-visible'" in controls
     assert 'clearLegacyAnalyticsHash' not in controls
     assert 'window.location.hash' not in controls
     assert "searchParams.get('tab')" in controls
@@ -81,6 +83,11 @@ def test_utilization_trend_is_bright_has_visible_legend_and_external_js() -> Non
     assert '<script>' not in trend
     assert 'new Chart' in script
     assert 'htmx:afterSwap' in script
+    assert 'htmx:afterSettle' in script
+    assert 'kaori:analytics-tab-visible' in script
+    assert 'isTrendRenderable' in script
+    assert 'ResizeObserver' in script
+    assert 'MAX_VISIBILITY_RETRIES' in script
     assert 'swatch_class' in legend
     assert "[('CPU', 'bg-kaori-primary'), ('Memory', 'bg-status-normal'), ('Pods', 'bg-status-pending')]" in trend
 

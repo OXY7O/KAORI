@@ -1,12 +1,14 @@
 (() => {
     const CHART_KEY = 'kaoriUtilizationTrendChart';
+    const MAX_VISIBILITY_RETRIES = 12;
+    let observedContainer = null;
 
     const cssVariable = (name, fallback) => (
         getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback
     );
 
     function trendPanel(root = document) {
-        if (root?.id === 'utilization-trend-panel') return root;
+        if (root?.id === 'utilization-trend-panel' && root.isConnected) return root;
         return root?.querySelector?.('#utilization-trend-panel') || document.getElementById('utilization-trend-panel');
     }
 
@@ -28,37 +30,58 @@
         }
     }
 
+    function chartContainer(panel) {
+        return panel?.querySelector('#utilizationTrendChartContainer') || null;
+    }
+
+    function isTrendRenderable(panel, container) {
+        if (!panel?.isConnected || !container?.isConnected || panel.hidden) return false;
+        const panelStyle = window.getComputedStyle(panel);
+        const containerStyle = window.getComputedStyle(container);
+        if (panelStyle.display === 'none' || panelStyle.visibility === 'hidden') return false;
+        if (containerStyle.display === 'none' || containerStyle.visibility === 'hidden') return false;
+        const bounds = container.getBoundingClientRect();
+        return bounds.width > 0 && bounds.height > 0;
+    }
+
+    function observeContainer(container) {
+        if (typeof ResizeObserver === 'undefined' || !container || observedContainer === container) return;
+
+        if (observedContainer) resizeObserver.unobserve(observedContainer);
+        observedContainer = container;
+        resizeObserver.observe(container);
+    }
+
     function renderTrendChart(root = document) {
         const panel = trendPanel(root);
         const canvas = panel?.querySelector('#utilizationTrendChart');
+        const container = chartContainer(panel);
         const data = parseTrendData(panel);
-        if (!panel || !canvas || !data || typeof Chart === 'undefined') return;
+        if (!panel || !canvas || !container || !data || typeof Chart === 'undefined') return false;
+
+        observeContainer(container);
+        if (!isTrendRenderable(panel, container)) return false;
 
         const cpuTrend = Array.isArray(data.cpu) ? data.cpu : [];
         const memoryTrend = Array.isArray(data.memory) ? data.memory : [];
         const podTrend = Array.isArray(data.pods) ? data.pods : [];
         const emptyState = panel.querySelector('#trendEmptyState');
-        const chartContainer = panel.querySelector('#utilizationTrendChartContainer');
 
         if (!cpuTrend.length && !memoryTrend.length && !podTrend.length) {
             destroyChart();
-            chartContainer?.classList.add('hidden');
+            container.classList.add('hidden');
             emptyState?.classList.remove('hidden');
-            return;
+            return true;
         }
 
-        chartContainer?.classList.remove('hidden');
+        container.classList.remove('hidden');
         emptyState?.classList.add('hidden');
         destroyChart();
 
-        const parentWidth = Math.max(canvas.parentElement?.clientWidth || 1200, 600);
-        const parentHeight = Math.max(canvas.parentElement?.clientHeight || 320, 260);
-        const ratio = Math.min(window.devicePixelRatio || 1, 2);
         canvas.style.width = '100%';
-        canvas.style.height = `${parentHeight}px`;
-        canvas.width = Math.floor(parentWidth * ratio);
-        canvas.height = Math.floor(parentHeight * ratio);
+        canvas.style.height = '100%';
 
+        const ratio = Math.min(window.devicePixelRatio || 1, 2);
         const cardColor = cssVariable('--kaori-surface-card', 'Canvas');
         const textColor = cssVariable('--kaori-content-secondary', 'CanvasText');
         const primaryColor = cssVariable('--kaori-content-primary', 'CanvasText');
@@ -69,7 +92,10 @@
             ['Pods', podTrend, cssVariable('--kaori-status-pending', 'CanvasText')],
         ];
         const baseTrend = series.find(([, values]) => values.length)?.[1] || [];
-        const labels = baseTrend.map((item) => new Date(item.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        const labels = baseTrend.map((item) => new Date(item.timestamp * 1000).toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit',
+        }));
 
         window[CHART_KEY] = new Chart(canvas.getContext('2d'), {
             type: 'line',
@@ -107,23 +133,59 @@
                         borderWidth: 1,
                         padding: 12,
                         displayColors: true,
-                        callbacks: { label: (context) => `${context.dataset.label}: ${context.parsed.y.toFixed(2)}%` },
+                        callbacks: {
+                            label: (context) => `${context.dataset.label}: ${context.parsed.y.toFixed(2)}%`,
+                        },
                     },
                 },
                 scales: {
-                    y: { min: 0, max: 100, ticks: { color: textColor, callback: (value) => `${value}%` }, grid: { color: gridColor, drawBorder: false } },
-                    x: { ticks: { color: textColor, maxTicksLimit: 12 }, grid: { color: gridColor, drawBorder: false } },
+                    y: {
+                        min: 0,
+                        max: 100,
+                        ticks: { color: textColor, callback: (value) => `${value}%` },
+                        grid: { color: gridColor, drawBorder: false },
+                    },
+                    x: {
+                        ticks: { color: textColor, maxTicksLimit: 12 },
+                        grid: { color: gridColor, drawBorder: false },
+                    },
                 },
             },
         });
-        window.setTimeout(() => window[CHART_KEY]?.resize(), 80);
+        window[CHART_KEY].resize();
+        return true;
     }
 
-    function schedule(root = document) {
-        requestAnimationFrame(() => requestAnimationFrame(() => renderTrendChart(root)));
+    function schedule(root = document, retry = 0) {
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                if (renderTrendChart(root)) return;
+                if (retry >= MAX_VISIBILITY_RETRIES) return;
+                window.setTimeout(() => schedule(root, retry + 1), 50);
+            });
+        });
     }
+
+    const resizeObserver = typeof ResizeObserver === 'undefined'
+        ? { observe() {}, unobserve() {} }
+        : new ResizeObserver((entries) => {
+            const visibleEntry = entries.find((entry) => entry.contentRect.width > 0 && entry.contentRect.height > 0);
+            if (!visibleEntry) return;
+            if (window[CHART_KEY]) {
+                window[CHART_KEY].resize();
+            } else {
+                schedule(visibleEntry.target.closest('#utilization-trend-panel') || document);
+            }
+        });
 
     document.addEventListener('DOMContentLoaded', () => schedule(document));
-    document.body.addEventListener('htmx:afterSwap', (event) => schedule(event.detail?.target || document));
-    window.addEventListener('resize', () => window[CHART_KEY]?.resize());
+    document.addEventListener('kaori:analytics-tab-visible', (event) => {
+        if (event.detail?.tabId === 'trend') schedule(event.target);
+    });
+    document.body?.addEventListener('htmx:load', (event) => schedule(event.detail?.elt || document));
+    document.body?.addEventListener('htmx:afterSwap', (event) => schedule(event.detail?.target || document));
+    document.body?.addEventListener('htmx:afterSettle', (event) => schedule(event.detail?.elt || document));
+    window.addEventListener('resize', () => {
+        if (window[CHART_KEY]) window[CHART_KEY].resize();
+    });
 })();
