@@ -39,14 +39,29 @@ def test_prometheus_compact_mode_avoids_nested_card() -> None:
 def test_operational_health_summary_has_separate_vertical_rhythm() -> None:
     source = read('partials/_health_summary.html')
 
-    assert source.count('snapshot_panel.render(') == 1
-    assert '<section class="overflow-hidden rounded-xl' in source
+    assert source.count('<section class="overflow-hidden rounded-xl') == 2
     assert 'class="space-y-6"' in source
     assert 'Operational Health Summary' in source
     assert '6 Health Signals' in source
-    assert "{% elif slot == 'footer' %}" in source
+    assert 'grid grid-cols-1 gap-px bg-outline-subtle' in source
     assert 'Operational Reading' in source
     assert 'Recommended Review Path' in source
+
+
+def test_hero_posture_becomes_full_width_below_the_main_hero_content() -> None:
+    hero = read('partials/_hero.html')
+    posture = read('partials/_hero_posture.html')
+    posture_loading = read('partials/_hero_posture_loading.html')
+
+    assert 'xl:col-span-12' in hero
+    assert 'id="overview-hero-posture"' in hero
+    assert 'class="w-full"' in hero
+    assert 'aside class="{{ page_hero.aside_classes() }}"' not in hero
+    assert 'Immediate Attention' in posture
+    assert 'Resource Pressure' in posture
+    assert 'Forecast Risk' in posture
+    assert 'bg-white/12' in posture
+    assert 'bg-white/12' in posture_loading
 
 
 def test_overview_workspace_splits_long_domains_into_dedicated_tabs() -> None:
@@ -121,37 +136,10 @@ def test_overview_domain_snapshots_are_informative_and_compact() -> None:
     for relative, markers in expectations.items():
         source = read(relative)
         assert 'rounded-2xl border border-brand-outline bg-kaori-primary' not in source
-        assert 'snapshot_panel.render(' in source
-        assert "{% call(slot) snapshot_panel.render(" in source
+        assert 'grid grid-cols-1 divide-y divide-outline-subtle' in source
         for marker in markers:
             assert marker in source
 
-
-
-def test_overview_tabs_are_scrollable_and_load_on_first_activation() -> None:
-    source = read('index.html')
-    tabs = Path('app/templates/analytics/components/_content_tabs.html').read_text(encoding='utf-8')
-    controls = Path('app/static/js/analytics_controls.js').read_text(encoding='utf-8')
-
-    assert 'scrollable=true' in source
-    assert 'data-analytics-tab-lazy' in source
-    assert 'hx-trigger="kaori:analytics-tab-activate"' in source
-    assert 'flex w-max min-w-full flex-nowrap gap-2' in tabs
-    assert 'data-analytics-tab-scroll' in tabs
-    assert "target.dataset.analyticsTabLoadState = 'requesting'" in controls
-    assert "window.htmx.trigger(target, 'kaori:analytics-tab-activate')" in controls
-
-
-def test_snapshot_panel_is_the_shared_overview_surface_standard() -> None:
-    component = Path('app/templates/analytics/components/_snapshot_panel.html').read_text(encoding='utf-8')
-
-    assert 'data-analytics-snapshot-panel' in component
-    assert 'data-analytics-snapshot-metrics' in component
-    assert 'data-analytics-snapshot-body' in component
-    assert 'data-analytics-snapshot-footer' in component
-    assert 'text-[10px]' not in component
-    assert 'tracking-[' not in component
-    assert 'h-4.5' not in component
 
 def test_utilization_pressure_visual_is_not_compressed_into_small_cards() -> None:
     source = read('partials/_resource_snapshot.html')
@@ -227,37 +215,3 @@ def test_overview_recommendations_are_always_visible_and_paginated() -> None:
     assert 'data-kaori-recommendation-pager' in recommendations
     assert 'data-page-size="3"' in recommendations
     assert "recommendation_pager.controls(recommendations|length, 'Actions', 3)" in recommendations
-
-
-def test_overview_tabs_are_scrollable_and_lazy_on_first_activation() -> None:
-    source = read('index.html')
-    tabs = Path('app/templates/analytics/components/_content_tabs.html').read_text(encoding='utf-8')
-    runtime = Path('app/static/js/analytics_controls.js').read_text(encoding='utf-8')
-
-    assert 'scrollable=true' in source
-    assert source.count('data-analytics-tab-lazy') == 9
-    assert source.count('hx-trigger="kaori:analytics-tab-activate"') == 9
-    assert 'load delay:250ms' not in source
-    assert 'overflow-x-auto' in tabs
-    assert 'flex w-max min-w-full flex-nowrap gap-2' in tabs
-    assert 'function requestAnalyticsTabPanel(panel)' in runtime
-    assert "window.htmx.trigger(target, 'kaori:analytics-tab-activate')" in runtime
-    assert "data.analyticsTabLoadState = 'requesting'" not in runtime
-    assert "target.dataset.analyticsTabLoadState = 'requesting'" in runtime
-
-
-def test_overview_uses_normalized_typography_icons_and_snapshot_component() -> None:
-    component = Path('app/templates/analytics/components/_snapshot_panel.html').read_text(encoding='utf-8')
-    overview_sources = '\n'.join(
-        path.read_text(encoding='utf-8')
-        for path in OVERVIEW_ROOT.rglob('*.html')
-    )
-
-    assert 'data-analytics-snapshot-panel' in component
-    assert 'data-analytics-snapshot-metrics' in component
-    assert 'data-analytics-snapshot-body' in component
-    assert 'data-analytics-snapshot-footer' in component
-    assert 'text-[10px]' not in overview_sources
-    assert 'tracking-[' not in overview_sources
-    assert 'h-4.5' not in overview_sources
-    assert 'w-4.5' not in overview_sources

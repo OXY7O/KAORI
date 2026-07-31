@@ -1,27 +1,28 @@
-{% import "components/page_hero.html" as page_hero %}
-{% import "components/table_label.html" as table_label %}
-<div class="{{ page_hero.context_panel_classes() }}">
-    <div class="flex items-start justify-between gap-4">
-        <div class="min-w-0">
-            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Operational Posture</p>
-            <div class="mt-3 h-8 w-32 animate-pulse rounded-lg bg-brand-surface"></div>
-            <div class="mt-3 flex min-h-11 items-center gap-2.5 rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
-                <div class="h-7 w-7 animate-pulse rounded-md bg-brand-surface-strong"></div>
-                <div class="h-3 w-40 animate-pulse rounded-md bg-brand-surface-strong"></div>
+<div class="overflow-hidden rounded-xl border border-white/20 bg-white/12 p-4 shadow-sm backdrop-blur-md lg:p-5">
+    <div class="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:items-start">
+        <div class="min-w-0 rounded-xl border border-white/15 bg-white/10 p-4">
+            <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Operational Posture</p>
+            <div class="mt-3 h-8 w-48 animate-pulse rounded-lg bg-white/20"></div>
+            <div class="mt-4 h-5 w-full max-w-2xl animate-pulse rounded-md bg-white/15"></div>
+            <div class="mt-1 h-5 w-3/4 animate-pulse rounded-md bg-white/15"></div>
+            <div class="mt-4 grid gap-3 xl:grid-cols-3">
+                {% for _ in range(3) %}
+                    <div class="rounded-lg border border-white/15 bg-white/10 px-3 py-3">
+                        <div class="h-3 w-24 animate-pulse rounded bg-white/20"></div>
+                        <div class="mt-3 h-4 w-28 animate-pulse rounded bg-white/15"></div>
+                        <div class="mt-2 h-4 w-full animate-pulse rounded bg-white/15"></div>
+                    </div>
+                {% endfor %}
             </div>
         </div>
-        {{ table_label.status_label('Checking', 'pending', 'loader-circle') }}
-    </div>
-    <div class="mt-auto grid grid-cols-2 gap-2 pt-4">
-        <div class="{{ page_hero.context_metric_card_classes() }}">
-            <p class="text-xs font-semibold uppercase tracking-wide text-brand-foreground-muted">Actionable</p>
-            <div class="mt-2 h-6 w-10 animate-pulse rounded-md bg-brand-surface-strong"></div>
-            <div class="mt-1 h-4 w-28 animate-pulse rounded bg-brand-surface-strong"></div>
-        </div>
-        <div class="{{ page_hero.context_metric_card_classes() }}">
-            <p class="text-xs font-semibold uppercase tracking-wide text-brand-foreground-muted">Active Alerts</p>
-            <div class="mt-2 h-6 w-10 animate-pulse rounded-md bg-brand-surface-strong"></div>
-            <div class="mt-1 h-4 w-28 animate-pulse rounded bg-brand-surface-strong"></div>
+        <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+            {% for _ in range(3) %}
+                <div class="rounded-lg border border-white/15 bg-white/10 px-3 py-3">
+                    <div class="h-3 w-20 animate-pulse rounded bg-white/20"></div>
+                    <div class="mt-3 h-5 w-20 animate-pulse rounded bg-white/15"></div>
+                    <div class="mt-2 h-4 w-full animate-pulse rounded bg-white/15"></div>
+                </div>
+            {% endfor %}
         </div>
     </div>
 </div>

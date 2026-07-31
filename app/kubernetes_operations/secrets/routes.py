@@ -849,7 +849,7 @@ def _reveal_status_context() -> dict[str, Any]:
             my_page=request.args.get('my_page', 1, type=int) or 1,
             my_per_page=request.args.get('my_per_page', 5, type=int) or 5,
             pending_page=request.args.get('pending_page', 1, type=int) or 1,
-            pending_per_page=request.args.get('pending_per_page', 5, type=int) or 5,
+            pending_per_page=request.args.get('pending_per_page', 3, type=int) or 3,
         ),
         'step_up_active': _secret_reveal_step_up_active(),
         'can_reveal': current_user.has_permission('kubernetes_secrets.reveal'),
@@ -1425,12 +1425,6 @@ def tls_secret_bulk_rotation_page():
     payload = get_tls_certificate_page(request.args)
     partial_mode = request.args.get('partial_mode')
 
-    if not payload['schema_readiness']['ready'] and partial_mode:
-        return render_template(
-            'governance/tls_certificates/partials/_schema_blocker.html',
-            payload=payload,
-        ), 409
-
     if partial_mode == 'bulk_workspace':
         return render_template(
             'kubernetes_operations/secrets/_bulk_target_workspace.html',
@@ -1457,20 +1451,6 @@ def tls_secret_bulk_rotation_page():
 @permission_required('kubernetes_secrets.bulk_rotate_tls')
 def tls_secret_bulk_rotation_preview():
     payload = get_tls_certificate_page(request.form)
-    if not payload['schema_readiness']['ready']:
-        template = (
-            'governance/tls_certificates/partials/_schema_blocker.html'
-            if request.headers.get('HX-Request')
-            else 'kubernetes_operations/secrets/tls_rotation.html'
-        )
-        return render_template(
-            template,
-            payload=payload,
-            preview=None,
-            apply_result=None,
-            selected_ids=[],
-        ), 409
-
     selected_ids = request.form.getlist('certificate_ids')
     parsed_ids = _parse_certificate_ids(selected_ids)
     preview = preview_uploaded_pair(request.files, parsed_ids)
@@ -1503,20 +1483,6 @@ def tls_secret_bulk_rotation_preview():
 @permission_required('kubernetes_secrets.bulk_rotate_tls')
 def tls_secret_bulk_rotation_apply():
     payload = get_tls_certificate_page(request.form)
-    if not payload['schema_readiness']['ready']:
-        template = (
-            'governance/tls_certificates/partials/_schema_blocker.html'
-            if request.headers.get('HX-Request')
-            else 'kubernetes_operations/secrets/tls_rotation.html'
-        )
-        return render_template(
-            template,
-            payload=payload,
-            preview=None,
-            apply_result=None,
-            selected_ids=[],
-        ), 409
-
     selected_ids = request.form.getlist('certificate_ids')
     parsed_ids = _parse_certificate_ids(selected_ids)
     apply_result = apply_bulk_update(request.files, parsed_ids)

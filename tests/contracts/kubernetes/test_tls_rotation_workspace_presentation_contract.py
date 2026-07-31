@@ -2,10 +2,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 TEMPLATE = ROOT / 'app/templates/kubernetes_operations/secrets/tls_rotation.html'
+ROTATE_TEMPLATE = ROOT / 'app/templates/kubernetes_operations/secrets/tls_rotate.html'
 
 
 def _template() -> str:
     return TEMPLATE.read_text()
+
+
+def _rotate_template() -> str:
+    return ROTATE_TEMPLATE.read_text()
 
 
 def test_tls_rotation_uses_one_primary_workspace_with_expandable_point_flow() -> None:
@@ -46,3 +51,15 @@ def test_tls_rotation_file_names_can_wrap_without_truncation() -> None:
     assert 'x-text="keyFileName"' in template
     assert 'break-words text-xs font-medium text-content-secondary [overflow-wrap:anywhere]' in template
     assert 'truncate text-sm font-medium text-content-secondary' not in template
+
+
+def test_single_tls_rotation_page_surfaces_current_tls_posture() -> None:
+    template = _rotate_template()
+
+    assert 'Current TLS Posture' in template
+    assert 'Relevant certificate validity and coverage for this live target' in template
+    assert 'Expires At' in template
+    assert 'Days Remaining' in template
+    assert 'Host Coverage' in template
+    assert 'Fingerprint' in template
+    assert "table_label.status_label(record.presentation.status_label or 'Unknown'" in template

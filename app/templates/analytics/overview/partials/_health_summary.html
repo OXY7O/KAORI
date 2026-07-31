@@ -1,4 +1,3 @@
-{% import "analytics/components/_snapshot_panel.html" as snapshot_panel %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "analytics/components/_prometheus_status.html" as prometheus_status_panel %}
@@ -15,9 +14,9 @@
 ] %}
 {% set posture = namespace(critical=0, warning=0) %}
 {% for signal in health_signals %}
-    {% if signal.tone == 'critical' %}
+    {% if signal.tone == 'red' %}
         {% set posture.critical = posture.critical + 1 %}
-    {% elif signal.tone == 'warning' %}
+    {% elif signal.tone == 'amber' %}
         {% set posture.warning = posture.warning + 1 %}
     {% endif %}
 {% endfor %}
@@ -35,13 +34,13 @@
           hx-sync="#analytics-overview-filter:replace">
         <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
                  data-analytics-controls-readiness>
-            <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+            <header class="border-b border-outline-subtle bg-kaori-mist/35 px-5 py-4 sm:px-6">
                 <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary shadow-sm">
                         <i data-lucide="sliders-horizontal" class="h-5 w-5"></i>
                     </span>
                     <div class="min-w-0">
-                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Analytics Overview</p>
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-content-muted">Analytics Overview</p>
                         <h2 class="mt-1 text-lg font-semibold text-content-primary">Analytics Controls &amp; Data Readiness</h2>
                         <p class="mt-1 text-sm leading-6 text-content-muted">Set the cluster and analysis window, then confirm the Prometheus source and committed overview datasets.</p>
                     </div>
@@ -75,7 +74,7 @@
                     </label>
                 </div>
 
-                <div class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
+                <div class="overflow-hidden rounded-xl border border-outline-subtle bg-kaori-mist/25">
                     <div class="grid lg:grid-cols-2">
                         <div class="px-4 py-4">
                             {{ prometheus_status_panel.render(payload.prometheus, payload.last_analyzed_at, flat=true, compact=true) }}
@@ -96,20 +95,20 @@
                             </div>
 
                             <dl class="mt-4 grid gap-3 sm:grid-cols-2">
-                                <div class="min-w-0">
-                                    <dt class="text-xs font-semibold uppercase tracking-wide text-content-muted">Updated</dt>
+                                <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
+                                    <dt class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Updated</dt>
                                     <dd class="mt-1 break-words text-xs font-semibold text-content-primary">{{ snapshot.latest_generated_at|default('Not Available') }}</dd>
                                 </div>
-                                <div class="min-w-0 sm:border-l sm:border-outline-subtle sm:pl-3">
-                                    <dt class="text-xs font-semibold uppercase tracking-wide text-content-muted">Dataset</dt>
+                                <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
+                                    <dt class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Dataset</dt>
                                     <dd class="mt-1 break-words text-xs font-semibold text-content-primary">{{ snapshot.latest_dataset|default('No Snapshot') }}</dd>
                                 </div>
-                                <div class="min-w-0">
-                                    <dt class="text-xs font-semibold uppercase tracking-wide text-content-muted">Coverage</dt>
+                                <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
+                                    <dt class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Coverage</dt>
                                     <dd class="mt-1 text-xs font-semibold text-content-primary">{{ snapshot.current_dataset_count|default(0) }}/{{ snapshot.expected_dataset_count|default(7) }} Current</dd>
                                 </div>
-                                <div class="min-w-0 sm:border-l sm:border-outline-subtle sm:pl-3">
-                                    <dt class="text-xs font-semibold uppercase tracking-wide text-content-muted">Worker Attempt</dt>
+                                <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card px-3 py-2.5">
+                                    <dt class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Worker Attempt</dt>
                                     <dd class="mt-1 break-words text-xs font-semibold text-content-primary">{{ snapshot.latest_attempt_at|default('Not Available') }}</dd>
                                 </div>
                             </dl>
@@ -117,7 +116,7 @@
                     </div>
 
                     {% if issue_count %}
-                        <div class="flex items-start gap-3 border-t border-outline-subtle px-4 py-3">
+                        <div class="flex items-start gap-3 border-t border-outline-subtle bg-surface-card/70 px-4 py-3">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-status-warning-soft text-status-warning">
                                 <i data-lucide="triangle-alert" class="h-4 w-4"></i>
                             </span>
@@ -132,75 +131,80 @@
         </section>
     </form>
 
-    {% set health_header_action %}
-        {{ table_label.metadata_label('6 Health Signals', 'activity') }}
-        {% if posture.critical > 0 %}
-            {{ table_label.status_label(posture.critical ~ ' Critical', 'critical') }}
-        {% elif posture.warning > 0 %}
-            {{ table_label.status_label(posture.warning ~ ' Warning', 'warning') }}
-        {% else %}
-            {{ table_label.status_label('Normal Posture', 'normal') }}
-        {% endif %}
-    {% endset %}
-    {% call(slot) snapshot_panel.render(
-        'Operational Health Summary',
-        'Current cluster, resource, capacity, alert, forecast, and namespace risk posture.',
-        'heart-pulse',
-        header_action=health_header_action,
-        metrics_classes='grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6'
-    ) %}
-        {% if slot == 'metrics' %}
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+        <header class="flex flex-col gap-3 border-b border-outline-subtle bg-kaori-mist/25 px-4 py-4 sm:px-5 sm:flex-row sm:items-center sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary shadow-sm">
+                    <i data-lucide="heart-pulse" class="h-4.5 w-4.5"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-base font-semibold text-content-primary">Operational Health Summary</h2>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Current cluster, resource, capacity, alert, forecast, and namespace risk posture.</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                {{ table_label.metadata_label('6 Health Signals', 'activity') }}
+                {% if posture.critical > 0 %}
+                    {{ table_label.status_label(posture.critical ~ ' Critical', 'critical') }}
+                {% elif posture.warning > 0 %}
+                    {{ table_label.status_label(posture.warning ~ ' Warning', 'warning') }}
+                {% else %}
+                    {{ table_label.status_label('Normal Posture', 'normal') }}
+                {% endif %}
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
             {% for item in health_signals %}
-                <article class="min-w-0 px-4 py-4 xl:px-5
-                               {{ 'border-b border-outline-subtle' if not loop.last else '' }}
-                               sm:border-b-0 sm:border-r-0
-                               {{ 'sm:border-b sm:border-outline-subtle' if loop.index <= 4 else '' }}
-                               {{ 'sm:border-r sm:border-outline-subtle' if loop.index in [1, 3, 5] else '' }}
-                               xl:border-b-0 xl:border-r-0
-                               {{ 'xl:border-b xl:border-outline-subtle' if loop.index <= 3 else '' }}
-                               {{ 'xl:border-r xl:border-outline-subtle' if loop.index not in [3, 6] else '' }}
-                               2xl:border-b-0 2xl:border-r-0
-                               {{ '2xl:border-r 2xl:border-outline-subtle' if not loop.last else '' }}">
+                {% set semantic_tone = {
+                    'green': 'normal',
+                    'amber': 'warning',
+                    'red': 'critical',
+                    'purple': 'maintenance',
+                    'blue': 'info',
+                    'gray': 'unknown'
+                }.get(item.tone, 'unknown') %}
+                {% set icon_class = {
+                    'green': 'bg-status-normal-soft text-status-normal',
+                    'amber': 'bg-status-warning-soft text-status-warning',
+                    'red': 'bg-status-critical-soft text-status-critical',
+                    'purple': 'bg-status-maintenance-soft text-status-maintenance',
+                    'blue': 'bg-status-info-soft text-status-info',
+                    'gray': 'bg-status-unknown-soft text-status-unknown'
+                }.get(item.tone, 'bg-status-unknown-soft text-status-unknown') %}
+                <article class="min-w-0 bg-surface-card px-4 py-4 xl:px-5">
                     <div class="flex items-center justify-between gap-3">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ snapshot_panel.tone_icon_classes(item.tone) }}">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ icon_class }}">
                             <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
                         </span>
-                        {{ table_label.status_label(item.status, item.tone, size='compact') }}
+                        {{ table_label.status_label(item.status, semantic_tone, size='compact') }}
                     </div>
-                    <p class="mt-3 text-xs font-semibold uppercase tracking-wide text-content-muted">{{ item.label }}</p>
+                    <p class="mt-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ item.label }}</p>
                     <p class="mt-1.5 break-words text-lg font-semibold text-content-primary">{{ item.value }}</p>
                     <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.description }}</p>
                 </article>
             {% endfor %}
-        {% elif slot == 'footer' %}
-            {% if posture.critical > 0 %}
-                {{ snapshot_panel.insight(
-                    'Operational Reading',
-                    'Critical Signals Are Present And Require Immediate Triage',
-                    'Open the relevant domain tab, validate the source snapshot, and resolve active service risk before optimization work.',
-                    title_tone='critical'
-                ) }}
-            {% elif posture.warning > 0 %}
-                {{ snapshot_panel.insight(
-                    'Operational Reading',
-                    'Warning Signals Require Planned Operational Review',
-                    'Compare the affected domain with current headroom, forecast direction, and alert context before scheduling remediation.',
-                    title_tone='warning'
-                ) }}
-            {% else %}
-                {{ snapshot_panel.insight(
-                    'Operational Reading',
-                    'No Immediate Operational Escalation Is Indicated',
-                    'Continue monitoring committed snapshots and review recommendations for preventive improvements.',
-                    title_tone='normal'
-                ) }}
-            {% endif %}
-            {{ snapshot_panel.insight(
-                'Recommended Review Path',
-                'Start With Risk, Then Validate Capacity And Ownership',
-                'Review Alerts, Capacity, Forecast, Workloads, and Storage tabs in that order when multiple domains require attention.',
-                extra_classes='border-t border-outline-subtle lg:border-t-0'
-            ) }}
-        {% endif %}
-    {% endcall %}
+        </div>
+
+        <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle lg:grid-cols-2">
+            <article class="bg-surface-card px-4 py-3 sm:px-5">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Operational Reading</p>
+                {% if posture.critical > 0 %}
+                    <p class="mt-1 text-sm font-semibold text-status-critical">Critical Signals Are Present And Require Immediate Triage</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Open the relevant domain tab, validate the source snapshot, and resolve active service risk before optimization work.</p>
+                {% elif posture.warning > 0 %}
+                    <p class="mt-1 text-sm font-semibold text-status-warning">Warning Signals Require Planned Operational Review</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Compare the affected domain with current headroom, forecast direction, and alert context before scheduling remediation.</p>
+                {% else %}
+                    <p class="mt-1 text-sm font-semibold text-status-normal">No Immediate Operational Escalation Is Indicated</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Continue monitoring committed snapshots and review recommendations for preventive improvements.</p>
+                {% endif %}
+            </article>
+            <article class="bg-surface-card px-4 py-3 sm:px-5">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Recommended Review Path</p>
+                <p class="mt-1 text-sm font-semibold text-content-primary">Start With Risk, Then Validate Capacity And Ownership</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Review Alerts, Capacity, Forecast, Workloads, and Storage tabs in that order when multiple domains require attention.</p>
+            </article>
+        </div>
+    </section>
 </div>

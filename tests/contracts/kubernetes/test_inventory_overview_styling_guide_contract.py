@@ -74,8 +74,6 @@ def test_compact_cluster_table_has_details_button_and_shared_right_drawer() -> N
     assert "'Committed inventory overview.'" in content
     assert "'Platform and registration context for the selected inventory source.'" not in content
     assert "'Collection boundary and freshness for the committed generation.'" not in content
-    assert "cluster.snapshot_source|replace('Database', 'DB')" in content
-    assert 'nowrap=true' in content
 
 
 def test_cluster_table_pagination_uses_resource_case_and_visible_rows_label() -> None:
@@ -101,3 +99,12 @@ def test_inventory_overview_uses_grouped_counts_and_fresh_health_semantics() -> 
     assert 'def _inventory_guidance(' in backend
     assert "'active_signal_count': active_signal_count" in backend
     assert "'dominant_asset': dominant_asset" in backend
+
+
+def test_snapshot_source_uses_non_wrapping_detail_value() -> None:
+    content = read('app/templates/inventory/overview/partials/_resources_by_cluster_content.html')
+    details_macro = read('app/templates/components/details/_detail_content.html')
+
+    assert "detail_row('Snapshot Source', cluster.snapshot_source, wrap=False)" in content
+    assert "{% macro detail_row(label, value='-', break_all=False, wrap=True) -%}" in details_macro
+    assert "'break-words [overflow-wrap:anywhere]' if wrap else 'whitespace-nowrap'" in details_macro

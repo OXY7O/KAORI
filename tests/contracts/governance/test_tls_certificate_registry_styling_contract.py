@@ -22,6 +22,8 @@ def test_tls_registry_uses_governance_resource_registry_pattern() -> None:
     assert 'Certificate</th>' in table
     assert 'Host Coverage</th>' in table
     assert 'Ingress Usage</th>' in table
+    assert 'Current State' in table
+    assert 'Coverage State' in table
     assert 'resource_detail_modal.detail_button' in table
     assert 'static_detail_row' not in table
     assert 'resource_detail_modal.host(' in index
@@ -49,6 +51,7 @@ def test_tls_governance_uses_canonical_permissions_and_evidence() -> None:
     collector = _read('app/governance/tls_certificates/collector.py')
     model = _read('app/models/governance.py')
     migration = _read('migrations/versions/20260731_tls_governance_evidence.py')
+    detail_template = _read('app/templates/governance/tls_certificates/partials/_detail_content.html')
 
     assert "current_user.has_permission('tls_certificates.sync')" in panel
     assert "current_user.has_permission('kubernetes_secrets.bulk_rotate_tls')" in panel
@@ -57,3 +60,6 @@ def test_tls_governance_uses_canonical_permissions_and_evidence() -> None:
     assert 'TLSCertificateCollectionState' in model
     assert 'coverage_state' in model
     assert 'tls_certificate_collection_states' in migration
+    assert 'Collection Evidence' in detail_template
+    assert 'Inventory Updated' in detail_template
+    assert 'whitespace-nowrap text-sm font-semibold leading-5 text-content-primary' in detail_template

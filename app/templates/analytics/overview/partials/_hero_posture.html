@@ -3,6 +3,8 @@
 {% set actionable = payload.actionable_recommendations|default({}) %}
 {% set active_alerts = payload.health_summary.active_alerts.value|default(0) %}
 {% set posture = payload.health_summary.cluster_health %}
+{% set pressure = payload.health_summary.resource_pressure %}
+{% set forecast = payload.health_summary.forecast_risk %}
 {% set posture_status = posture.status|default('unknown')|lower %}
 {% set posture_tone = {
     'normal': 'normal',
@@ -25,25 +27,53 @@
     'critical': 'Immediate attention required.',
     'unknown': 'Signal status unavailable.'
 }.get(posture_status, posture.description) %}
-<div class="{{ page_hero.context_panel_classes() }}">
-    <div class="flex items-start justify-between gap-4">
-        <div class="min-w-0">
-            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Operational Posture</p>
-            <p class="mt-1 text-3xl font-semibold leading-none text-brand-foreground">{{ posture.value }}</p>
-            {{ page_hero.context_posture_note(posture_short_description, posture_tone) }}
+<div class="overflow-hidden rounded-xl border border-white/20 bg-white/12 p-4 shadow-sm backdrop-blur-md lg:p-5">
+    <div class="grid gap-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)] lg:items-start">
+        <div class="min-w-0 rounded-xl border border-white/15 bg-white/10 p-4">
+            <div class="flex flex-wrap items-start justify-between gap-3">
+                <div class="min-w-0">
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-brand-foreground-muted">Operational Posture</p>
+                    <div class="mt-2 flex flex-wrap items-center gap-3">
+                        <p class="text-2xl font-semibold leading-none text-brand-foreground sm:text-3xl">{{ posture.value }}</p>
+                        {{ table_label.status_label(posture.status, posture_tone, posture_icon) }}
+                    </div>
+                    <p class="mt-3 max-w-2xl text-sm leading-6 text-brand-foreground-muted">{{ posture.description or posture_short_description }}</p>
+                </div>
+                <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                    <div class="rounded-lg border border-white/15 bg-white/10 px-3 py-2.5">
+                        <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Actionable</p>
+                        <p class="mt-1 text-xl font-semibold text-brand-foreground">{{ actionable.total_count|default(0) }}</p>
+                        <p class="{{ page_hero.context_metric_helper_classes() }}">Signals with recommended action</p>
+                    </div>
+                    <div class="rounded-lg border border-white/15 bg-white/10 px-3 py-2.5">
+                        <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Active Alerts</p>
+                        <p class="mt-1 text-xl font-semibold text-brand-foreground">{{ active_alerts }}</p>
+                        <p class="{{ page_hero.context_metric_helper_classes() }}">Firing alerts in current scope</p>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-4 grid gap-3 xl:grid-cols-3">
+                <article class="rounded-lg border border-white/15 bg-white/10 px-3 py-3">
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Immediate Attention</p>
+                    <p class="mt-1 text-sm font-semibold text-brand-foreground">{{ posture_short_description }}</p>
+                    <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">Primary operating read for the current cluster snapshot.</p>
+                </article>
+                <article class="rounded-lg border border-white/15 bg-white/10 px-3 py-3">
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Resource Pressure</p>
+                    <p class="mt-1 text-sm font-semibold text-brand-foreground">{{ pressure.value }}</p>
+                    <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">{{ pressure.description }}</p>
+                </article>
+                <article class="rounded-lg border border-white/15 bg-white/10 px-3 py-3">
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Forecast Risk</p>
+                    <p class="mt-1 text-sm font-semibold text-brand-foreground">{{ forecast.value }}</p>
+                    <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">{{ forecast.description }}</p>
+                </article>
+            </div>
         </div>
-        {{ table_label.status_label(posture.status, posture_tone, posture_icon) }}
-    </div>
-    <div class="mt-auto grid grid-cols-2 gap-2 pt-4">
-        <div class="{{ page_hero.context_metric_card_classes() }}">
-            <p class="text-xs font-semibold uppercase tracking-wide text-brand-foreground-muted">Actionable</p>
-            <p class="mt-1 text-2xl font-semibold text-brand-foreground">{{ actionable.total_count|default(0) }}</p>
-            <p class="{{ page_hero.context_metric_helper_classes() }}">Signals with recommended action</p>
-        </div>
-        <div class="{{ page_hero.context_metric_card_classes() }}">
-            <p class="text-xs font-semibold uppercase tracking-wide text-brand-foreground-muted">Active Alerts</p>
-            <p class="mt-1 text-2xl font-semibold text-brand-foreground">{{ active_alerts }}</p>
-            <p class="{{ page_hero.context_metric_helper_classes() }}">Firing alerts in current scope</p>
+        <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+            {{ page_hero.context_metric('shield-check', 'Cluster Health', posture.value, posture_short_description) }}
+            {{ page_hero.context_metric('activity', 'Resource Pressure', pressure.value, pressure.description) }}
+            {{ page_hero.context_metric('chart-spline', 'Forecast Risk', forecast.value, forecast.description) }}
         </div>
     </div>
 </div>
