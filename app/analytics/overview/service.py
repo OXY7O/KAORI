@@ -46,6 +46,23 @@ ANALYTICS_TIME_RANGE_LABELS: dict[str, str] = {
 }
 
 
+SEMANTIC_TONE_ALIASES: dict[str, str] = {
+    'green': 'normal',
+    'amber': 'warning',
+    'red': 'critical',
+    'blue': 'info',
+    'purple': 'maintenance',
+    'gray': 'unknown',
+}
+
+
+def _semantic_tone(value: Any, default: str = 'unknown') -> str:
+    normalized = str(value or '').strip().lower()
+    if normalized in {'normal', 'warning', 'critical', 'info', 'maintenance', 'pending', 'unknown'}:
+        return normalized
+    return SEMANTIC_TONE_ALIASES.get(normalized, default)
+
+
 def get_analytics_overview(
     *,
     selected_cluster_id: str | None,
@@ -128,7 +145,13 @@ def _hydrate_overview_snapshot_sections(
     payload['health_summary'] = _build_health_summary(payload)
     payload['actionable_recommendations'] = _build_actionable_recommendation_overview(payload)
     payload['actionable_recommendation_count'] = payload['actionable_recommendations']['total_count']
-    payload['recommendations'] = build_operational_recommendations(payload)
+    payload['recommendations'] = [
+        {
+            **recommendation,
+            'severity_tone': _semantic_tone(recommendation.get('severity_tone')),
+        }
+        for recommendation in build_operational_recommendations(payload)
+    ]
     payload['snapshot_summary'] = _get_snapshot_summary(
         cluster_id=cluster_id,
         time_range=time_range,
@@ -507,7 +530,7 @@ def _get_prometheus_status(*, cluster_id: str) -> dict[str, Any]:
         'connected': False,
         'status': 'not_configured',
         'status_label': 'Not configured',
-        'status_tone': 'gray',
+        'status_tone': 'unknown',
         'endpoint': '',
         'response_time_ms': None,
         'message': 'Prometheus is not configured for the selected cluster.',
@@ -556,7 +579,7 @@ def _get_prometheus_status(*, cluster_id: str) -> dict[str, Any]:
         'status_tone': str(
             prometheus_result.get(
                 'status_tone',
-                'green' if connected else 'red',
+                'normal' if connected else 'critical',
             )
         ),
         'endpoint': str(
@@ -704,27 +727,27 @@ def _get_capacity_snapshot(*, cluster_id: str, time_range: str) -> dict[str, Any
             'value': raw.get('cpu_headroom') or raw.get('cpu_available') or '-',
             'unit': raw.get('cpu_unit', 'Cores'),
             'status': 'Available',
-            'tone': 'blue',
+            'tone': 'info',
         },
         'memory_headroom': {
             **default['memory_headroom'],
             'value': raw.get('memory_headroom') or raw.get('memory_available') or '-',
             'unit': raw.get('memory_unit', 'GiB'),
             'status': 'Available',
-            'tone': 'blue',
+            'tone': 'info',
         },
         'pod_capacity_remaining': {
             **default['pod_capacity_remaining'],
             'value': raw.get('pod_capacity_remaining') or raw.get('pods_available') or '-',
             'unit': raw.get('pod_unit', 'Pods'),
             'status': 'Available',
-            'tone': 'blue',
+            'tone': 'info',
         },
         'recommendations': {
             **default['recommendations'],
             'value': recommendation_count,
             'status': 'Review' if recommendation_count > 0 else 'Normal',
-            'tone': 'amber' if recommendation_count > 0 else 'green',
+            'tone': 'warning' if recommendation_count > 0 else 'normal',
         },
     }
 
@@ -1206,15 +1229,15 @@ def _build_actionable_recommendation_overview(
 
     if critical_count > 0:
         status = 'Critical'
-        tone = 'red'
+        tone = 'critical'
         description = 'Critical actionable recommendation detected across analytics domains.'
     elif total_count > 0:
         status = 'Review'
-        tone = 'amber'
+        tone = 'warning'
         description = 'Actionable recommendation detected across analytics domains.'
     else:
         status = 'Normal'
-        tone = 'green'
+        tone = 'normal'
         description = 'No actionable recommendation detected across analytics domains.'
 
     sources = [
@@ -1337,12 +1360,12 @@ def _get_count_tone(
     count: int,
 ) -> str:
     if count >= 5:
-        return 'red'
+        return 'critical'
 
     if count > 0:
-        return 'amber'
+        return 'warning'
 
-    return 'green'
+    return 'normal'
 
 
 def _get_snapshot_recommendation_count(
@@ -1795,7 +1818,7 @@ def _build_health_summary(payload: dict[str, Any]) -> dict[str, Any]:
 
     if critical_alerts > 0 or max_pressure >= 90 or forecast_is_high:
         cluster_value = 'Critical'
-        cluster_tone = 'red'
+        cluster_tone = 'critical'
         cluster_status = 'critical'
         cluster_desc = 'Critical signal detected from alerts, resource pressure, or forecast risk.'
     elif (
@@ -1809,12 +1832,12 @@ def _build_health_summary(payload: dict[str, Any]) -> dict[str, Any]:
         or forecast_is_medium
     ):
         cluster_value = 'Warning'
-        cluster_tone = 'amber'
+        cluster_tone = 'warning'
         cluster_status = 'warning'
         cluster_desc = 'Operational warning detected. Review the prioritized recommendations.'
     else:
         cluster_value = 'Healthy'
-        cluster_tone = 'green'
+        cluster_tone = 'normal'
         cluster_status = 'normal'
         cluster_desc = 'No critical operational signal detected.'
 
@@ -1843,17 +1866,17 @@ def _build_health_summary(payload: dict[str, Any]) -> dict[str, Any]:
 
     if capacity_risk_score >= 4:
         capacity_value = 'High'
-        capacity_tone = 'red'
+        capacity_tone = 'critical'
         capacity_status = 'critical'
         capacity_desc = 'Multiple capacity indicators require immediate review.'
     elif capacity_risk_score > 0:
         capacity_value = 'Medium'
-        capacity_tone = 'amber'
+        capacity_tone = 'warning'
         capacity_status = 'warning'
         capacity_desc = 'Capacity risk is present across one or more signals.'
     else:
         capacity_value = 'Low'
-        capacity_tone = 'green'
+        capacity_tone = 'normal'
         capacity_status = 'normal'
         capacity_desc = 'Capacity risk is currently low.'
 
@@ -1870,7 +1893,7 @@ def _build_health_summary(payload: dict[str, Any]) -> dict[str, Any]:
     if forecast_risk_count > 0 or forecast_is_medium or forecast_is_high:
         forecast_value = forecast_risk_value
         forecast_status = 'critical' if forecast_is_high else 'warning'
-        forecast_tone = 'red' if forecast_is_high else 'purple'
+        forecast_tone = 'critical' if forecast_is_high else 'purple'
         forecast_description = (
             f'{highest_projected_resource} projected at {highest_projected_percent}% '
             f'within {forecast_snapshot.get("forecast_horizon", "forecast window")}.'
@@ -1878,22 +1901,22 @@ def _build_health_summary(payload: dict[str, Any]) -> dict[str, Any]:
     else:
         forecast_value = 'Low'
         forecast_status = 'normal'
-        forecast_tone = 'green'
+        forecast_tone = 'normal'
         forecast_description = 'No forecast risk detected.'
 
     top_namespace = str(storage_snapshot.get('top_namespace') or '-')
 
     if top_namespace != '-' and pvc_risk_count > 0:
         top_namespace_status = 'warning'
-        top_namespace_tone = 'blue'
+        top_namespace_tone = 'info'
         top_namespace_description = f'{pvc_risk_count} PVC risk item(s) detected. Highest storage namespace signal.'
     elif top_namespace != '-':
         top_namespace_status = 'normal'
-        top_namespace_tone = 'blue'
+        top_namespace_tone = 'info'
         top_namespace_description = 'Highest storage usage namespace.'
     else:
         top_namespace_status = 'unknown'
-        top_namespace_tone = 'gray'
+        top_namespace_tone = 'unknown'
         top_namespace_description = 'Namespace risk data is not available.'
 
     return {
@@ -1923,7 +1946,7 @@ def _build_health_summary(payload: dict[str, Any]) -> dict[str, Any]:
             **default['active_alerts'],
             'value': active_alerts,
             'status': 'warning' if active_alerts else 'normal',
-            'tone': 'red' if critical_alerts else 'amber' if active_alerts else 'green',
+            'tone': 'critical' if critical_alerts else 'warning' if active_alerts else 'normal',
             'description': active_alert_description,
         },
         'forecast_risk': {

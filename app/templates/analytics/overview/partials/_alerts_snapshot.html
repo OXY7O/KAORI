@@ -1,55 +1,44 @@
+{% import "analytics/components/_snapshot_panel.html" as snapshot_panel %}
 {% import "components/section_link_button.html" as section_link_button %}
 {% import "components/table_label.html" as table_label %}
 {% set alerts = payload.alerts_snapshot %}
 {% set immediate_count = alerts.critical_alerts + alerts.firing_alerts %}
 {% set follow_up_count = alerts.warning_alerts + alerts.pending_alerts %}
 {% set alert_tone = 'critical' if alerts.critical_alerts > 0 else ('warning' if alerts.firing_alerts > 0 or alerts.warning_alerts > 0 or alerts.pending_alerts > 0 else 'normal') %}
-<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
-        <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {% if alert_tone == 'critical' %}bg-status-critical-soft text-status-critical{% elif alert_tone == 'warning' %}bg-status-warning-soft text-status-warning{% else %}bg-status-normal-soft text-status-normal{% endif %}">
-                <i data-lucide="bell-ring" class="h-4.5 w-4.5"></i>
-            </span>
-            <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
-                    <h2 class="text-base font-semibold text-content-primary">Alerts &amp; Anomalies Snapshot</h2>
-                    {{ table_label.status_label('Critical Review' if alert_tone == 'critical' else ('Review Required' if alert_tone == 'warning' else 'Stable'), alert_tone) }}
-                </div>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Active alert pressure, severity distribution, and recent anomaly candidates.</p>
-            </div>
-        </div>
-        {{ section_link_button.render(
-            alerts.href ~ '?cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range,
-            'View Alerts & Anomalies'
-        ) }}
-    </header>
-
-    {% set metrics = [
-        {'label': 'Firing Alerts', 'value': alerts.firing_alerts, 'icon': 'bell-ring', 'tone': 'critical'},
-        {'label': 'Pending Alerts', 'value': alerts.pending_alerts, 'icon': 'clock-3', 'tone': 'pending'},
-        {'label': 'Critical Alerts', 'value': alerts.critical_alerts, 'icon': 'shield-alert', 'tone': 'critical'},
-        {'label': 'Warning Alerts', 'value': alerts.warning_alerts, 'icon': 'triangle-alert', 'tone': 'warning'},
-        {'label': 'Recent Anomalies', 'value': alerts.recent_anomalies, 'icon': 'radar', 'tone': 'maintenance'}
-    ] %}
-    <div class="grid grid-cols-1 divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-5">
+{% set metrics = [
+    {'label': 'Firing Alerts', 'value': alerts.firing_alerts, 'icon': 'bell-ring', 'tone': 'critical'},
+    {'label': 'Pending Alerts', 'value': alerts.pending_alerts, 'icon': 'clock-3', 'tone': 'pending'},
+    {'label': 'Critical Alerts', 'value': alerts.critical_alerts, 'icon': 'shield-alert', 'tone': 'critical'},
+    {'label': 'Warning Alerts', 'value': alerts.warning_alerts, 'icon': 'triangle-alert', 'tone': 'warning'},
+    {'label': 'Recent Anomalies', 'value': alerts.recent_anomalies, 'icon': 'radar', 'tone': 'maintenance'}
+] %}
+{% set header_action = section_link_button.render(
+    alerts.href ~ '?cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range,
+    'View Alerts & Anomalies'
+) %}
+{% call(slot) snapshot_panel.render(
+    'Alerts & Anomalies Snapshot',
+    'Active alert pressure, severity distribution, and recent anomaly candidates.',
+    'bell-ring',
+    'Critical Review' if alert_tone == 'critical' else ('Review Required' if alert_tone == 'warning' else 'Stable'),
+    alert_tone,
+    header_action=header_action,
+    metrics_classes='grid-cols-1 sm:grid-cols-2 xl:grid-cols-5',
+    body_classes='grid xl:grid-cols-3 xl:divide-x xl:divide-outline-subtle',
+    icon_tone=alert_tone
+) %}
+    {% if slot == 'metrics' %}
         {% for metric in metrics %}
-            {% set icon_class = {
-                'critical': 'bg-status-critical-soft text-status-critical',
-                'warning': 'bg-status-warning-soft text-status-warning',
-                'pending': 'bg-status-pending-soft text-status-pending',
-                'maintenance': 'bg-status-maintenance-soft text-status-maintenance'
-            }.get(metric.tone, 'bg-kaori-soft text-kaori-primary') %}
-            <article class="min-w-0 px-4 py-4 sm:border-r sm:border-outline-subtle xl:px-5">
-                <div class="flex items-center justify-between gap-3">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ icon_class }}"><i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i></span>
-                    <span class="text-xl font-semibold text-content-primary">{{ metric.value }}</span>
-                </div>
-                <p class="mt-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ metric.label }}</p>
-            </article>
+            {{ snapshot_panel.metric(
+                metric.label,
+                metric.value,
+                metric.icon,
+                metric.tone,
+                index=loop.index,
+                total=metrics|length
+            ) }}
         {% endfor %}
-    </div>
-
-    <div class="grid border-t border-outline-subtle xl:grid-cols-3 xl:divide-x xl:divide-outline-subtle">
+    {% elif slot == 'body' %}
         <article class="px-4 py-4 sm:px-5 xl:col-span-2">
             <div class="flex items-center justify-between gap-3">
                 <div>
@@ -61,14 +50,14 @@
             <div class="mt-4 divide-y divide-outline-subtle border-y border-outline-subtle">
                 <div class="flex items-start justify-between gap-4 py-3">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-critical-soft text-status-critical"><i data-lucide="siren" class="h-4 w-4"></i></span>
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ snapshot_panel.tone_icon_classes('critical') }}"><i data-lucide="siren" class="h-4 w-4"></i></span>
                         <div><p class="text-sm font-semibold text-content-primary">Immediate Review</p><p class="mt-1 text-xs leading-5 text-content-muted">Investigate critical and firing alerts before optimization or planned change work.</p></div>
                     </div>
                     <span class="shrink-0 text-lg font-semibold text-status-critical">{{ immediate_count }}</span>
                 </div>
                 <div class="flex items-start justify-between gap-4 py-3">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning"><i data-lucide="calendar-clock" class="h-4 w-4"></i></span>
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ snapshot_panel.tone_icon_classes('warning') }}"><i data-lucide="calendar-clock" class="h-4 w-4"></i></span>
                         <div><p class="text-sm font-semibold text-content-primary">Planned Follow-Up</p><p class="mt-1 text-xs leading-5 text-content-muted">Group warning and pending alerts into the next operational review.</p></div>
                     </div>
                     <span class="shrink-0 text-lg font-semibold text-status-warning">{{ follow_up_count }}</span>
@@ -79,14 +68,14 @@
         <aside class="border-t border-outline-subtle px-4 py-4 sm:px-5 xl:border-t-0">
             <div class="flex items-start justify-between gap-3">
                 <div>
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Anomaly Context</p>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Anomaly Context</p>
                     <p class="mt-1 text-sm font-semibold text-content-primary">Highest Severity: {{ alerts.highest_severity|replace('_', ' ')|title }}</p>
                 </div>
                 {{ table_label.status_label(alerts.recent_anomalies ~ ' Candidates', 'maintenance', size='compact') }}
             </div>
             <p class="mt-2 text-xs leading-5 text-content-muted">{{ alerts.highest_severity_description }}</p>
             <div class="mt-4 border-t border-outline-subtle pt-3">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Recommended Action</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Recommended Action</p>
                 {% if immediate_count > 0 %}
                     <p class="mt-1 text-xs leading-5 text-content-muted">Validate routing, ownership, runbook coverage, and recent deployment changes for the highest-severity active signal.</p>
                 {% elif alerts.recent_anomalies > 0 %}
@@ -96,5 +85,5 @@
                 {% endif %}
             </div>
         </aside>
-    </div>
-</section>
+    {% endif %}
+{% endcall %}

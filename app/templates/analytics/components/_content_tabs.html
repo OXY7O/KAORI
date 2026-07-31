@@ -1,6 +1,7 @@
-{% macro render(tabset_id, tabs, aria_label, embedded=false) %}
-    <div class="{{ 'border-b border-outline-subtle bg-surface-hover px-5 py-2 sm:px-6' if embedded else 'rounded-xl border border-outline-default bg-surface-card p-2 shadow-sm' }}">
-        <div class="flex flex-wrap gap-2"
+{% macro render(tabset_id, tabs, aria_label, embedded=false, scrollable=false) %}
+    <div class="{{ 'border-b border-outline-subtle bg-surface-hover px-5 py-2 sm:px-6' if embedded else 'rounded-xl border border-outline-default bg-surface-card p-2 shadow-sm' }}{% if scrollable %} overflow-x-auto{% endif %}"
+         {% if scrollable %}data-analytics-tab-scroll{% endif %}>
+        <div class="{{ 'flex w-max min-w-full flex-nowrap gap-2' if scrollable else 'flex flex-wrap gap-2' }}"
              role="tablist"
              aria-label="{{ aria_label }}">
             {% for tab_id, tab_label, tab_icon in tabs %}
@@ -14,8 +15,7 @@
                         :class="activeTab === '{{ tab_id }}'
                             ? 'border-kaori-primary bg-kaori-soft text-kaori-primary'
                             : 'border-transparent bg-surface-card text-content-secondary hover:border-outline-default hover:bg-surface-card hover:text-content-primary'"
-                        class="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg border px-3.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card"
->
+                        class="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg border px-3.5 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-2 focus-visible:ring-offset-surface-card">
                     <i data-lucide="{{ tab_icon }}" class="h-4 w-4"></i>
                     <span>{{ tab_label }}</span>
                 </button>

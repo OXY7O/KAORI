@@ -1,3 +1,4 @@
+{% import "analytics/components/_snapshot_panel.html" as snapshot_panel %}
 {% import "components/section_link_button.html" as section_link_button %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
@@ -6,54 +7,34 @@
 {% set highest = ranked_resources[0] %}
 {% set highest_percent = highest.percent|default(0)|float %}
 {% set overall_tone = 'critical' if highest_percent > 90 else ('warning' if highest_percent >= 75 else 'normal') %}
-<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
-        <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                <i data-lucide="gauge" class="h-4.5 w-4.5"></i>
-            </span>
-            <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
-                    <h2 class="text-base font-semibold text-content-primary">Resource Utilization Snapshot</h2>
-                    {{ table_label.status_label('Critical' if overall_tone == 'critical' else ('Review Required' if overall_tone == 'warning' else 'Normal'), overall_tone) }}
-                </div>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Current CPU, memory, storage, and pod utilization from the committed snapshot.</p>
-            </div>
-        </div>
-        {{ section_link_button.render(
-            '/analytics/utilization?cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range,
-            'View Resource Utilization'
-        ) }}
-    </header>
-
-    <div class="grid grid-cols-1 divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-4">
+{% set header_action = section_link_button.render(
+    '/analytics/utilization?cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range,
+    'View Resource Utilization'
+) %}
+{% call(slot) snapshot_panel.render(
+    'Resource Utilization Snapshot',
+    'Current CPU, memory, storage, and pod utilization from the committed snapshot.',
+    'gauge',
+    'Critical' if overall_tone == 'critical' else ('Review Required' if overall_tone == 'warning' else 'Normal'),
+    overall_tone,
+    header_action=header_action
+) %}
+    {% if slot == 'metrics' %}
         {% for item in resources %}
-            {% set semantic_tone = {'green': 'normal', 'amber': 'warning', 'red': 'critical', 'blue': 'info', 'gray': 'unknown'}.get(item.tone, 'unknown') %}
-            {% set icon_class = {
-                'green': 'bg-status-normal-soft text-status-normal',
-                'amber': 'bg-status-warning-soft text-status-warning',
-                'red': 'bg-status-critical-soft text-status-critical',
-                'blue': 'bg-status-info-soft text-status-info',
-                'gray': 'bg-status-unknown-soft text-status-unknown'
-            }.get(item.tone, 'bg-status-unknown-soft text-status-unknown') %}
-            <article class="min-w-0 px-4 py-4 sm:border-r sm:border-outline-subtle xl:px-5">
-                <div class="flex items-center justify-between gap-3">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ icon_class }}">
-                        <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
-                    </span>
-                    {{ table_label.status_label(item.status, semantic_tone, size='compact') }}
-                </div>
-                <p class="mt-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ item.label }}</p>
-                <div class="mt-1.5 flex items-baseline gap-1">
-                    <p class="text-xl font-semibold text-content-primary">{{ item.value }}</p>
-                    <span class="text-xs font-semibold text-content-muted">{{ item.unit }}</span>
-                </div>
-                <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.description }}</p>
-            </article>
+            {{ snapshot_panel.metric(
+                item.label,
+                item.value,
+                item.icon,
+                item.tone,
+                item.status,
+                item.tone,
+                item.unit,
+                item.description,
+                loop.index,
+                resources|length
+            ) }}
         {% endfor %}
-    </div>
-
-    <div class="border-t border-outline-subtle">
+    {% elif slot == 'body' %}
         <div class="flex flex-col gap-3 px-4 py-3 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
                 <h3 class="text-sm font-semibold text-content-primary">Current Resource Pressure</h3>
@@ -68,17 +49,16 @@
                     {% for item in resources %}
                         {% set percent = item.percent|default(0)|float %}
                         {% set headroom = 100 - percent if percent < 100 else 0 %}
-                        {% set semantic_tone = {'green': 'normal', 'amber': 'warning', 'red': 'critical', 'blue': 'info', 'gray': 'unknown'}.get(item.tone, 'unknown') %}
                         {% set bar_class = 'bg-status-critical' if percent > 90 else ('bg-status-warning' if percent >= 75 else 'bg-kaori-primary') %}
                         <article class="py-3">
                             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
                                 <div class="flex min-w-0 items-center gap-3 sm:w-40 sm:shrink-0">
-                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ snapshot_panel.tone_icon_classes(item.tone) }}">
                                         <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
                                     </span>
                                     <div class="min-w-0">
                                         <p class="text-xs font-semibold text-content-primary">{{ item.label }}</p>
-                                        <p class="mt-0.5 text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ headroom|round(1) }}% Headroom</p>
+                                        <p class="mt-0.5 text-xs font-semibold uppercase tracking-wide text-content-muted">{{ headroom|round(1) }}% Headroom</p>
                                     </div>
                                 </div>
                                 <div class="min-w-0 flex-1">
@@ -89,7 +69,7 @@
                                     {{ progress_bar.bar(percent, track_classes='h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full transition-all duration-500 ' ~ bar_class, label=item.label ~ ' Utilization') }}
                                 </div>
                                 <div class="shrink-0 sm:w-28 sm:text-right">
-                                    {{ table_label.status_label(item.status, semantic_tone, size='compact') }}
+                                    {{ table_label.status_label(item.status, item.tone, size='compact') }}
                                 </div>
                             </div>
                         </article>
@@ -98,7 +78,7 @@
             </div>
 
             <aside class="border-t border-outline-subtle bg-surface-hover px-4 py-4 sm:px-5 xl:col-span-4 xl:border-l xl:border-t-0">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Pressure Posture</p>
+                <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Pressure Posture</p>
                 <div class="mt-2 flex items-start justify-between gap-3">
                     <div class="min-w-0">
                         <p class="break-words text-base font-semibold text-content-primary">{{ highest.label }}</p>
@@ -110,44 +90,35 @@
                 <div class="mt-4 space-y-2.5">
                     <div class="flex items-center gap-3">
                         <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-status-normal"></span>
-                        <div class="min-w-0 flex-1">
-                            <p class="text-xs font-semibold text-content-primary">Normal · Below 75%</p>
-                            <p class="mt-0.5 text-xs text-content-muted">Observe trend and workload distribution.</p>
-                        </div>
+                        <div class="min-w-0 flex-1"><p class="text-xs font-semibold text-content-primary">Normal · Below 75%</p><p class="mt-0.5 text-xs text-content-muted">Observe trend and workload distribution.</p></div>
                     </div>
                     <div class="flex items-center gap-3">
                         <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-status-warning"></span>
-                        <div class="min-w-0 flex-1">
-                            <p class="text-xs font-semibold text-content-primary">Warning · 75% To 90%</p>
-                            <p class="mt-0.5 text-xs text-content-muted">Review growth drivers and available headroom.</p>
-                        </div>
+                        <div class="min-w-0 flex-1"><p class="text-xs font-semibold text-content-primary">Warning · 75% To 90%</p><p class="mt-0.5 text-xs text-content-muted">Review growth drivers and available headroom.</p></div>
                     </div>
                     <div class="flex items-center gap-3">
                         <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-status-critical"></span>
-                        <div class="min-w-0 flex-1">
-                            <p class="text-xs font-semibold text-content-primary">Critical · Above 90%</p>
-                            <p class="mt-0.5 text-xs text-content-muted">Prioritize remediation or capacity action.</p>
-                        </div>
+                        <div class="min-w-0 flex-1"><p class="text-xs font-semibold text-content-primary">Critical · Above 90%</p><p class="mt-0.5 text-xs text-content-muted">Prioritize remediation or capacity action.</p></div>
                     </div>
                 </div>
             </aside>
         </div>
-
-        <div class="grid border-t border-outline-subtle bg-surface-hover lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle">
-            <article class="px-4 py-3 sm:px-5">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">How To Read</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">The filled lane shows current utilization; headroom is the remaining percentage before full allocatable capacity. Confirm sustained pressure in the Utilization Trend tab.</p>
-            </article>
-            <article class="border-t border-outline-subtle px-4 py-3 sm:px-5 lg:border-t-0">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">What To Do</p>
-                {% if overall_tone == 'critical' %}
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Review active alerts and top consumers immediately, then reduce load or add capacity before service impact expands.</p>
-                {% elif overall_tone == 'warning' %}
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Validate growth direction, workload ownership, and capacity commitments before scheduling remediation.</p>
-                {% else %}
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Continue monitoring trends and investigate sudden changes even while current utilization remains below warning thresholds.</p>
-                {% endif %}
-            </article>
-        </div>
-    </div>
-</section>
+    {% elif slot == 'footer' %}
+        {{ snapshot_panel.insight(
+            'How To Read',
+            description='The filled lane shows current utilization; headroom is the remaining percentage before full allocatable capacity. Confirm sustained pressure in the Utilization Trend tab.'
+        ) }}
+        {% if overall_tone == 'critical' %}
+            {% set action_description = 'Review active alerts and top consumers immediately, then reduce load or add capacity before service impact expands.' %}
+        {% elif overall_tone == 'warning' %}
+            {% set action_description = 'Validate growth direction, workload ownership, and capacity commitments before scheduling remediation.' %}
+        {% else %}
+            {% set action_description = 'Continue monitoring trends and investigate sudden changes even while current utilization remains below warning thresholds.' %}
+        {% endif %}
+        {{ snapshot_panel.insight(
+            'What To Do',
+            description=action_description,
+            extra_classes='border-t border-outline-subtle lg:border-t-0'
+        ) }}
+    {% endif %}
+{% endcall %}

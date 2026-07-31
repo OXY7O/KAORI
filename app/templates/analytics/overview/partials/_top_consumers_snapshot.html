@@ -1,3 +1,4 @@
+{% import "analytics/components/_snapshot_panel.html" as snapshot_panel %}
 {% import "components/section_link_button.html" as section_link_button %}
 {% import "components/table_label.html" as table_label %}
 {% set groups = [
@@ -7,38 +8,26 @@
     {'title': 'Pods', 'description': 'Highest running pod count contributors.', 'consumers': payload.top_consumers.pods, 'tone': 'pending', 'icon': 'boxes'}
 ] %}
 {% set total_items = payload.top_consumers.cpu|length + payload.top_consumers.memory|length + payload.top_consumers.storage|length + payload.top_consumers.pods|length %}
-<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
-        <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                <i data-lucide="chart-no-axes-column-increasing" class="h-4.5 w-4.5"></i>
-            </span>
-            <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
-                    <h2 class="text-base font-semibold text-content-primary">Top Consumer Snapshot</h2>
-                    {{ table_label.metadata_label(total_items ~ ' Ranked Records', 'list-ordered', size='compact') }}
-                </div>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Highest CPU, memory, storage, and pod consumers in the selected analysis window.</p>
-            </div>
-        </div>
-        {{ section_link_button.render(
-            payload.top_consumers.href ~ '?cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range,
-            'View Top Consumers'
-        ) }}
-    </header>
-
-    <div class="grid gap-5 p-4 sm:p-5 xl:grid-cols-2 2xl:grid-cols-4">
+{% set header_action %}
+    {{ table_label.metadata_label(total_items ~ ' Ranked Records', 'list-ordered', size='compact') }}
+    {{ section_link_button.render(
+        payload.top_consumers.href ~ '?cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range,
+        'View Top Consumers'
+    ) }}
+{% endset %}
+{% call(slot) snapshot_panel.render(
+    'Top Consumer Snapshot',
+    'Highest CPU, memory, storage, and pod consumers in the selected analysis window.',
+    'chart-no-axes-column-increasing',
+    header_action=header_action,
+    body_classes='grid gap-5 p-4 sm:p-5 xl:grid-cols-2 2xl:grid-cols-4'
+) %}
+    {% if slot == 'body' %}
         {% for group in groups %}
-            {% set icon_class = {
-                'info': 'bg-status-info-soft text-status-info',
-                'maintenance': 'bg-status-maintenance-soft text-status-maintenance',
-                'normal': 'bg-status-normal-soft text-status-normal',
-                'pending': 'bg-status-pending-soft text-status-pending'
-            }.get(group.tone, 'bg-kaori-soft text-kaori-primary') %}
             <article class="min-w-0">
                 <div class="flex items-start justify-between gap-3">
                     <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ icon_class }}">
+                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {{ snapshot_panel.tone_icon_classes(group.tone) }}">
                             <i data-lucide="{{ group.icon }}" class="h-4 w-4"></i>
                         </span>
                         <div class="min-w-0">
@@ -77,16 +66,15 @@
                 {% endif %}
             </article>
         {% endfor %}
-    </div>
-
-    <div class="grid border-t border-outline-subtle bg-surface-hover lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle">
-        <article class="px-4 py-3 sm:px-5">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">How To Read</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Each resource group is ranked from highest to lowest. Compare the displayed value with workload ownership, expected demand, and the selected time window.</p>
-        </article>
-        <article class="border-t border-outline-subtle px-4 py-3 sm:px-5 lg:border-t-0">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Recommended Action</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Investigate sustained outliers first. Confirm whether requests, limits, replicas, or storage allocation match the workload purpose before changing capacity.</p>
-        </article>
-    </div>
-</section>
+    {% elif slot == 'footer' %}
+        {{ snapshot_panel.insight(
+            'How To Read',
+            description='Each resource group is ranked from highest to lowest. Compare the displayed value with workload ownership, expected demand, and the selected time window.'
+        ) }}
+        {{ snapshot_panel.insight(
+            'Recommended Action',
+            description='Investigate sustained outliers first. Confirm whether requests, limits, replicas, or storage allocation match the workload purpose before changing capacity.',
+            extra_classes='border-t border-outline-subtle lg:border-t-0'
+        ) }}
+    {% endif %}
+{% endcall %}

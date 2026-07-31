@@ -14,7 +14,7 @@ def build_metric_card(
     value: str | int | float,
     unit: str = '',
     status: str = 'normal',
-    tone: str = 'blue',
+    tone: str = 'info',
     icon: str = 'activity',
     description: str = '',
     href: str = '',
@@ -45,7 +45,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
             'connected': False,
             'status': 'not_configured',
             'status_label': 'Not configured',
-            'status_tone': 'gray',
+            'status_tone': 'unknown',
             'endpoint': '',
             'response_time_ms': None,
             'message': 'Prometheus configuration is not available for this cluster.',
@@ -71,7 +71,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
                 label='Cluster Health',
                 value='Unknown',
                 status='unknown',
-                tone='gray',
+                tone='unknown',
                 icon='shield-question',
                 description='Cluster health data is not available yet.',
             ),
@@ -79,7 +79,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
                 label='Resource Pressure',
                 value='Unknown',
                 status='unknown',
-                tone='gray',
+                tone='unknown',
                 icon='gauge',
                 description='Resource pressure data is not available yet.',
             ),
@@ -87,7 +87,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
                 label='Capacity Risk',
                 value='Unknown',
                 status='unknown',
-                tone='gray',
+                tone='unknown',
                 icon='triangle-alert',
                 description='Capacity risk data is not available yet.',
             ),
@@ -95,7 +95,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
                 label='Active Alerts',
                 value=0,
                 status='normal',
-                tone='green',
+                tone='normal',
                 icon='bell',
                 description='No active alert data available.',
             ),
@@ -103,7 +103,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
                 label='Forecast Risk',
                 value='Unknown',
                 status='unknown',
-                tone='gray',
+                tone='unknown',
                 icon='trending-up',
                 description='Forecast data is not available yet.',
             ),
@@ -111,7 +111,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
                 label='Top Risk Namespace',
                 value='-',
                 status='unknown',
-                tone='gray',
+                tone='unknown',
                 icon='folder',
                 description='Namespace risk data is not available yet.',
             ),
@@ -122,7 +122,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
                 value=0,
                 unit='%',
                 status='unknown',
-                tone='gray',
+                tone='unknown',
                 icon='cpu',
                 description='CPU utilization data is not available.',
                 percent=0,
@@ -133,7 +133,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
                 value=0,
                 unit='%',
                 status='unknown',
-                tone='gray',
+                tone='unknown',
                 icon='memory-stick',
                 description='Memory utilization data is not available.',
                 percent=0,
@@ -144,7 +144,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
                 value=0,
                 unit='%',
                 status='unknown',
-                tone='gray',
+                tone='unknown',
                 icon='database',
                 description='Storage utilization data is not available.',
                 percent=0,
@@ -155,7 +155,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
                 value=0,
                 unit='%',
                 status='unknown',
-                tone='gray',
+                tone='unknown',
                 icon='boxes',
                 description='Pod utilization data is not available.',
                 percent=0,
@@ -168,7 +168,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
                 value='-',
                 unit='Cores',
                 status='unknown',
-                tone='gray',
+                tone='unknown',
                 icon='cpu',
                 description='Remaining worker CPU allocatable capacity.',
                 href='/analytics/capacity',
@@ -178,7 +178,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
                 value='-',
                 unit='GiB',
                 status='unknown',
-                tone='gray',
+                tone='unknown',
                 icon='memory-stick',
                 description='Remaining worker memory allocatable capacity.',
                 href='/analytics/capacity',
@@ -188,7 +188,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
                 value='-',
                 unit='Pods',
                 status='unknown',
-                tone='gray',
+                tone='unknown',
                 icon='box',
                 description='Available pod slots across worker nodes.',
                 href='/analytics/capacity',
@@ -198,7 +198,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
                 value=0,
                 unit='Items',
                 status='normal',
-                tone='blue',
+                tone='info',
                 icon='lightbulb',
                 description='Capacity findings that need review.',
                 href='/analytics/capacity',
@@ -213,7 +213,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
             'free_percent': 0,
             'top_namespace': '-',
             'status': 'unknown',
-            'tone': 'gray',
+            'tone': 'unknown',
             'href': '/analytics/storage',
             'recommendation_count': 0,
         },
@@ -225,7 +225,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
             'over_provisioned': 0,
             'under_provisioned': 0,
             'status': 'unknown',
-            'tone': 'gray',
+            'tone': 'unknown',
             'href': '/analytics/workload',
             'recommendation_count': 0,
         },
@@ -257,7 +257,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
             'highest_severity': '-',
             'highest_severity_description': 'No alert data available.',
             'status': 'unknown',
-            'tone': 'gray',
+            'tone': 'unknown',
             'href': '/analytics/alerts-anomalies',
             'source_connected': False,
             'recommendation_count': 0,
@@ -265,7 +265,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
         'actionable_recommendations': {
             'total_count': 0,
             'status': 'Normal',
-            'tone': 'green',
+            'tone': 'normal',
             'description': 'No actionable recommendation detected across analytics domains.',
             'sources': [],
             'priority_summary': {
@@ -285,7 +285,7 @@ def classify_percent(value: float | int | None) -> dict[str, str]:
     if value is None:
         return {
             'status': 'unknown',
-            'tone': 'gray',
+            'tone': 'unknown',
             'label': 'Unknown',
         }
 
@@ -294,20 +294,20 @@ def classify_percent(value: float | int | None) -> dict[str, str]:
     if percent >= 90:
         return {
             'status': 'critical',
-            'tone': 'red',
+            'tone': 'critical',
             'label': 'Critical',
         }
 
     if percent >= 75:
         return {
             'status': 'warning',
-            'tone': 'amber',
+            'tone': 'warning',
             'label': 'Warning',
         }
 
     return {
         'status': 'normal',
-        'tone': 'green',
+        'tone': 'normal',
         'label': 'Normal',
     }
 
@@ -316,26 +316,26 @@ def classify_count_risk(value: int | None) -> dict[str, str]:
     if value is None:
         return {
             'status': 'unknown',
-            'tone': 'gray',
+            'tone': 'unknown',
             'label': 'Unknown',
         }
 
     if value >= 5:
         return {
             'status': 'critical',
-            'tone': 'red',
+            'tone': 'critical',
             'label': 'Critical',
         }
 
     if value > 0:
         return {
             'status': 'warning',
-            'tone': 'amber',
+            'tone': 'warning',
             'label': 'Warning',
         }
 
     return {
         'status': 'normal',
-        'tone': 'green',
+        'tone': 'normal',
         'label': 'Normal',
     }

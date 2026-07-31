@@ -51,7 +51,7 @@
                     </div>
                 </header>
 
-                {{ analytics_content_tabs.render('overview-content', overview_tabs, 'Analytics Overview Workspace', embedded=true) }}
+                {{ analytics_content_tabs.render('overview-content', overview_tabs, 'Analytics Overview Workspace', embedded=true, scrollable=true) }}
 
                 <div class="p-4 sm:p-5">
                     <div id="overview-content-panel-utilization"
@@ -62,9 +62,11 @@
                          x-bind:hidden="activeTab !== 'utilization'"
                          class="space-y-4">
                         <div id="overview-resource-snapshot"
+                             data-analytics-tab-lazy
+                             data-analytics-tab-load-state="idle"
                              hx-target="this"
                              hx-get="{{ url_for('analytics.overview_section', section='resource-snapshot') }}?{{ overview_query }}"
-                             hx-trigger="load delay:250ms"
+                             hx-trigger="kaori:analytics-tab-activate"
                              hx-swap="innerHTML"
                              hx-sync="this:replace">{% include "analytics/overview/partials/_section_loading.html" %}</div>
                     </div>
@@ -79,9 +81,11 @@
                          x-cloak
                          class="space-y-4">
                         <div id="overview-capacity-snapshot"
+                             data-analytics-tab-lazy
+                             data-analytics-tab-load-state="idle"
                              hx-target="this"
                              hx-get="{{ url_for('analytics.overview_section', section='capacity-snapshot') }}?{{ overview_query }}"
-                             hx-trigger="load delay:300ms"
+                             hx-trigger="kaori:analytics-tab-activate"
                              hx-swap="innerHTML"
                              hx-sync="this:replace">{% include "analytics/overview/partials/_section_loading.html" %}</div>
                     </div>
@@ -96,9 +100,11 @@
                          x-cloak
                          class="space-y-4">
                         <div id="overview-workload-snapshot"
+                             data-analytics-tab-lazy
+                             data-analytics-tab-load-state="idle"
                              hx-target="this"
                              hx-get="{{ url_for('analytics.overview_section', section='workload-snapshot') }}?{{ overview_query }}"
-                             hx-trigger="load delay:350ms"
+                             hx-trigger="kaori:analytics-tab-activate"
                              hx-swap="innerHTML"
                              hx-sync="this:replace">{% include "analytics/overview/partials/_section_loading.html" %}</div>
                     </div>
@@ -113,9 +119,11 @@
                          x-cloak
                          class="space-y-4">
                         <div id="overview-storage-snapshot"
+                             data-analytics-tab-lazy
+                             data-analytics-tab-load-state="idle"
                              hx-target="this"
                              hx-get="{{ url_for('analytics.overview_section', section='storage-snapshot') }}?{{ overview_query }}"
-                             hx-trigger="load delay:400ms"
+                             hx-trigger="kaori:analytics-tab-activate"
                              hx-swap="innerHTML"
                              hx-sync="this:replace">{% include "analytics/overview/partials/_section_loading.html" %}</div>
                     </div>
@@ -130,9 +138,11 @@
                          x-cloak
                          class="space-y-4">
                         <div id="overview-top-consumers"
+                             data-analytics-tab-lazy
+                             data-analytics-tab-load-state="idle"
                              hx-target="this"
                              hx-get="{{ url_for('analytics.overview_section', section='top-consumers') }}?{{ overview_query }}"
-                             hx-trigger="load delay:450ms"
+                             hx-trigger="kaori:analytics-tab-activate"
                              hx-swap="innerHTML"
                              hx-sync="this:replace">{% include "analytics/overview/partials/_section_loading.html" %}</div>
                     </div>
@@ -147,9 +157,11 @@
                          x-cloak
                          class="space-y-4">
                         <div id="overview-forecast-snapshot"
+                             data-analytics-tab-lazy
+                             data-analytics-tab-load-state="idle"
                              hx-target="this"
                              hx-get="{{ url_for('analytics.overview_section', section='forecast-snapshot') }}?{{ overview_query }}"
-                             hx-trigger="load delay:500ms"
+                             hx-trigger="kaori:analytics-tab-activate"
                              hx-swap="innerHTML"
                              hx-sync="this:replace">{% include "analytics/overview/partials/_section_loading.html" %}</div>
                     </div>
@@ -164,9 +176,11 @@
                          x-cloak
                          class="space-y-4">
                         <div id="overview-alerts-snapshot"
+                             data-analytics-tab-lazy
+                             data-analytics-tab-load-state="idle"
                              hx-target="this"
                              hx-get="{{ url_for('analytics.overview_section', section='alerts-snapshot') }}?{{ overview_query }}"
-                             hx-trigger="load delay:550ms"
+                             hx-trigger="kaori:analytics-tab-activate"
                              hx-swap="innerHTML"
                              hx-sync="this:replace">{% include "analytics/overview/partials/_section_loading.html" %}</div>
                     </div>
@@ -181,9 +195,11 @@
                          x-cloak
                          class="space-y-4">
                         <div id="overview-actionable-recommendations"
+                             data-analytics-tab-lazy
+                             data-analytics-tab-load-state="idle"
                              hx-target="this"
                              hx-get="{{ url_for('analytics.overview_section', section='actionable-recommendations') }}?{{ overview_query }}"
-                             hx-trigger="load delay:600ms"
+                             hx-trigger="kaori:analytics-tab-activate"
                              hx-swap="innerHTML"
                              hx-sync="this:replace">{% include "analytics/overview/partials/_section_loading.html" %}</div>
                     </div>
@@ -198,9 +214,11 @@
                          x-cloak
                          class="space-y-4">
                         <div id="overview-recommendations"
+                             data-analytics-tab-lazy
+                             data-analytics-tab-load-state="idle"
                              hx-target="this"
                              hx-get="{{ url_for('analytics.overview_section', section='recommendations') }}?{{ overview_query }}"
-                             hx-trigger="load delay:650ms"
+                             hx-trigger="kaori:analytics-tab-activate"
                              hx-swap="innerHTML"
                              hx-sync="this:replace">{% include "analytics/overview/partials/_section_loading.html" %}</div>
                     </div>

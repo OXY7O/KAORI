@@ -54,6 +54,37 @@
         return Array.from(tabset.querySelectorAll('[data-analytics-tab-panel]'));
     }
 
+    function ensureAnalyticsTabVisible(button) {
+        const scrollContainer = button?.closest?.('[data-analytics-tab-scroll]');
+        if (!scrollContainer) return;
+
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const buttonRect = button.getBoundingClientRect();
+        const edgePadding = 12;
+
+        if (buttonRect.left < containerRect.left + edgePadding) {
+            scrollContainer.scrollLeft -= (containerRect.left + edgePadding) - buttonRect.left;
+        } else if (buttonRect.right > containerRect.right - edgePadding) {
+            scrollContainer.scrollLeft += buttonRect.right - (containerRect.right - edgePadding);
+        }
+    }
+
+    function requestAnalyticsTabPanel(panel) {
+        if (!panel?.isConnected || !window.htmx) return;
+
+        const lazyTargets = [];
+        if (panel.matches?.('[data-analytics-tab-lazy]')) lazyTargets.push(panel);
+        panel.querySelectorAll?.('[data-analytics-tab-lazy]').forEach((target) => lazyTargets.push(target));
+
+        lazyTargets.forEach((target) => {
+            const state = target.dataset.analyticsTabLoadState || 'idle';
+            if (state === 'requesting' || state === 'loaded') return;
+
+            target.dataset.analyticsTabLoadState = 'requesting';
+            window.htmx.trigger(target, 'kaori:analytics-tab-activate');
+        });
+    }
+
     function setAnalyticsTab(tabset, tabId, { persist = true, focus = false } = {}) {
         if (!tabset?.isConnected || !tabId) return false;
 
@@ -76,8 +107,13 @@
         });
 
         analyticsTabPanels(tabset).forEach((panel) => {
-            panel.hidden = panel.dataset.analyticsTabPanel !== tabId;
+            const selected = panel.dataset.analyticsTabPanel === tabId;
+            panel.hidden = !selected;
+            if (selected) requestAnalyticsTabPanel(panel);
         });
+
+        const selectedButton = buttons.find((button) => button.dataset.analyticsTabButton === tabId);
+        ensureAnalyticsTabVisible(selectedButton);
 
         const tabsetId = tabset.dataset.analyticsTabsetId || tabset.id || 'default';
         if (persist) {
@@ -235,6 +271,19 @@
 
     document.addEventListener('DOMContentLoaded', () => { hydrateAnalyticsUi(); stabilizeAnalyticsTabsets(document); });
     document.body.addEventListener('htmx:load', (event) => hydrateAnalyticsUi(event.detail.elt || document));
+    document.body.addEventListener('htmx:afterRequest', (event) => {
+        const target = event.detail.elt;
+        if (!target?.matches?.('[data-analytics-tab-lazy]')) return;
+        target.dataset.analyticsTabLoadState = event.detail.successful ? 'loaded' : 'idle';
+    });
+    document.body.addEventListener('htmx:responseError', (event) => {
+        const target = event.detail.elt;
+        if (target?.matches?.('[data-analytics-tab-lazy]')) target.dataset.analyticsTabLoadState = 'idle';
+    });
+    document.body.addEventListener('htmx:sendError', (event) => {
+        const target = event.detail.elt;
+        if (target?.matches?.('[data-analytics-tab-lazy]')) target.dataset.analyticsTabLoadState = 'idle';
+    });
     document.body.addEventListener('htmx:afterSwap', (event) => { const root = event.detail.target || document; hydrateAnalyticsUi(root); stabilizeAlertsAfterSwap(root); stabilizeAnalyticsTabsets(root); });
     document.body.addEventListener('htmx:afterSettle', (event) => { const root = event.detail.elt || document; hydrateAnalyticsUi(root); stabilizeAnalyticsTabsets(root); });
 })();

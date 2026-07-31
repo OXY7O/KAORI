@@ -98,6 +98,9 @@
       "arbitrary_tracking": 1,
       "copied_standard_surface_shells": 1
     },
+    "app/templates/analytics/components/_snapshot_panel.html": {
+      "copied_standard_surface_shells": 1
+    },
     "app/templates/analytics/components/_status_notice.html": {
       "semantic_border_utilities": 3
     },
@@ -130,61 +133,7 @@
     "app/templates/analytics/overview/index.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/analytics/overview/partials/_actionable_recommendation_summary.html": {
-      "arbitrary_text_sizes": 2,
-      "arbitrary_tracking": 2,
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/analytics/overview/partials/_alerts_snapshot.html": {
-      "arbitrary_text_sizes": 3,
-      "arbitrary_tracking": 3,
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/analytics/overview/partials/_capacity_snapshot.html": {
-      "arbitrary_text_sizes": 3,
-      "arbitrary_tracking": 3,
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/analytics/overview/partials/_forecast_snapshot.html": {
-      "arbitrary_text_sizes": 3,
-      "arbitrary_tracking": 3,
-      "copied_standard_surface_shells": 1
-    },
     "app/templates/analytics/overview/partials/_health_summary.html": {
-      "arbitrary_text_sizes": 8,
-      "arbitrary_tracking": 4,
-      "copied_standard_surface_shells": 2
-    },
-    "app/templates/analytics/overview/partials/_hero_posture.html": {
-      "arbitrary_text_sizes": 2
-    },
-    "app/templates/analytics/overview/partials/_hero_posture_loading.html": {
-      "arbitrary_text_sizes": 2
-    },
-    "app/templates/analytics/overview/partials/_load_tracker.html": {
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/analytics/overview/partials/_recommendations.html": {
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/analytics/overview/partials/_resource_snapshot.html": {
-      "arbitrary_text_sizes": 5,
-      "arbitrary_tracking": 4,
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/analytics/overview/partials/_storage_snapshot.html": {
-      "arbitrary_text_sizes": 4,
-      "arbitrary_tracking": 4,
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/analytics/overview/partials/_top_consumers_snapshot.html": {
-      "arbitrary_text_sizes": 2,
-      "arbitrary_tracking": 2,
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/analytics/overview/partials/_workload_snapshot.html": {
-      "arbitrary_text_sizes": 4,
-      "arbitrary_tracking": 4,
       "copied_standard_surface_shells": 1
     },
     "app/templates/analytics/partials/_load_tracker.html": {
