@@ -23,16 +23,19 @@ def test_tls_registry_uses_governance_resource_registry_pattern() -> None:
     assert 'Host Coverage</th>' in table
     assert 'Ingress Usage</th>' in table
     assert 'w-full table-fixed' in table
+    assert 'w-[31%]' in table
+    assert 'w-[9%]' in table
     assert 'overflow-x-auto' not in table
     assert 'min-w-[78rem]' not in table
     assert 'Current State' not in table
     assert 'Coverage State' not in table
     assert 'CN ·' in table
-    assert 'Issuer ·' in table
-    assert 'hidden w-[15%]' in table
-    assert 'hidden w-[11%]' in table
-    assert 'data-resource-detail-toggle' in table
-    assert 'aria-label="View {{ record.secret_name }} TLS Certificate Details"' in table
+    assert 'Issuer ·' not in table
+    assert 'hidden w-[14%]' in table
+    assert 'hidden w-[10%]' in table
+    assert 'resource_detail_modal.detail_button' in table
+    assert "'whitespace-nowrap'" in table
+    assert 'inline-flex h-9 w-9' not in table
     assert 'data-lucide="server"' in table
     assert 'Namespace · {{ record.namespace }}' in table
     assert "size='body'" not in table

@@ -1,6 +1,7 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
+{% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <section id="tls-certificates-table-card" class="{{ table_ui.block_classes() }}">
     {{ table_ui.inventory_block_header(
         'lock-keyhole',
@@ -17,12 +18,12 @@
         <table class="w-full table-fixed text-left text-sm text-content-secondary">
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th class="w-[34%] px-4 py-3 text-left">Certificate</th>
-                    <th class="w-[22%] px-4 py-3 text-left">Scope</th>
-                    <th class="w-[18%] px-4 py-3 text-left">Validity</th>
-                    <th class="hidden w-[15%] px-4 py-3 text-left lg:table-cell">Host Coverage</th>
-                    <th class="hidden w-[11%] px-4 py-3 text-left xl:table-cell">Ingress Usage</th>
-                    <th class="w-14 px-3 py-3 text-right"><span class="sr-only">Details</span></th>
+                    <th class="w-[31%] px-4 py-3 text-left">Certificate</th>
+                    <th class="w-[20%] px-4 py-3 text-left">Scope</th>
+                    <th class="w-[16%] px-4 py-3 text-left">Validity</th>
+                    <th class="hidden w-[14%] px-4 py-3 text-left lg:table-cell">Host Coverage</th>
+                    <th class="hidden w-[10%] px-4 py-3 text-left xl:table-cell">Ingress Usage</th>
+                    <th class="w-[9%] px-4 py-3 text-right">Details</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -39,7 +40,6 @@
                                 <div class="min-w-0">
                                     <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]" title="{{ record.secret_name }}">{{ record.secret_name }}</p>
                                     <p class="mt-1 truncate text-xs leading-5 text-content-muted" title="Common Name · {{ record.common_name or 'Not Reported' }}">CN · {{ record.common_name or 'Not Reported' }}</p>
-                                    <p class="truncate text-xs leading-5 text-content-muted" title="Issuer · {{ record.issuer or 'Not Reported' }}">Issuer · {{ record.issuer or 'Not Reported' }}</p>
                                 </div>
                             </div>
                         </td>
@@ -87,20 +87,14 @@
                             <p class="truncate text-sm font-semibold text-content-primary">{{ (record.used_by or [])|length }} {{ 'Ingress' if (record.used_by or [])|length == 1 else 'Ingresses' }}</p>
                             <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ record.declared_host_count or 0 }} Declared Hosts</p>
                         </td>
-                        <td class="px-3 py-3 text-right align-middle">
-                            <button type="button"
-                                    data-resource-detail-toggle
-                                    data-detail-id="{{ record.id }}"
-                                    data-detail-url="{{ url_for('governance.tls_certificates_detail', certificate_id=record.id) }}"
-                                    data-detail-name="{{ record.secret_name }}"
-                                    data-detail-type="TLS Certificate"
-                                    aria-haspopup="dialog"
-                                    aria-controls="resource-detail-modal"
-                                    aria-label="View {{ record.secret_name }} TLS Certificate Details"
-                                    title="View Details"
-                                    class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted shadow-sm transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-1">
-                                <i data-lucide="panel-top-open" class="h-4 w-4" aria-hidden="true"></i>
-                            </button>
+                        <td class="px-4 py-3 text-right align-middle">
+                            {{ resource_detail_modal.detail_button(
+                                record.id,
+                                url_for('governance.tls_certificates_detail', certificate_id=record.id),
+                                record.secret_name,
+                                'TLS Certificate',
+                                'whitespace-nowrap'
+                            ) }}
                         </td>
                     </tr>
                 {% else %}
