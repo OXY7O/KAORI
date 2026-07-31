@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import and_, func, or_
+from sqlalchemy import and_, cast, func, or_
+from sqlalchemy.dialects.postgresql import JSONB
 
 from app.common.inventory_generation import filter_current_generation
 from app.common.pagination import paginate_query
@@ -92,19 +93,41 @@ def _related_storage_resources(item: StorageInventory) -> tuple[list[dict[str, A
     if not claims:
         return claim_resources, 0, False, [], 0, False
 
-    clauses = [
-        and_(
-            PodInventory.namespace == namespace,
-            PodInventory.persistent_volume_claims.contains([name]),
-        )
-        for namespace, name in claims[:200]
-    ]
-    pod_query = filter_current_generation(PodInventory.query, PodInventory).filter(
+    pod_base_query = filter_current_generation(PodInventory.query, PodInventory).filter(
         PodInventory.cluster_id == item.cluster_id,
-        or_(*clauses),
     )
-    pod_count = pod_query.count()
-    pod_rows = pod_query.order_by(PodInventory.namespace, PodInventory.pod_name).limit(8).all()
+    try:
+        dialect = db.session.get_bind().dialect.name
+    except Exception:
+        dialect = ''
+
+    if dialect == 'postgresql':
+        clauses = [
+            and_(
+                PodInventory.namespace == namespace,
+                cast(PodInventory.persistent_volume_claims, JSONB).contains([name]),
+            )
+            for namespace, name in claims[:200]
+        ]
+        pod_query = pod_base_query.filter(or_(*clauses))
+        pod_count = pod_query.count()
+        pod_rows = pod_query.order_by(PodInventory.namespace, PodInventory.pod_name).limit(8).all()
+    else:
+        claim_names_by_namespace: dict[str, set[str]] = {}
+        for namespace, name in claims[:200]:
+            claim_names_by_namespace.setdefault(namespace, set()).add(name)
+        candidate_rows = pod_base_query.filter(
+            PodInventory.namespace.in_(sorted(claim_names_by_namespace))
+        ).order_by(PodInventory.namespace, PodInventory.pod_name).all()
+        matched_rows = [
+            pod
+            for pod in candidate_rows
+            if claim_names_by_namespace.get(pod.namespace, set()).intersection(
+                set(pod.persistent_volume_claims or [])
+            )
+        ]
+        pod_count = len(matched_rows)
+        pod_rows = matched_rows[:8]
     pod_resources = []
     for pod in pod_rows:
         state, tone, evidence = _pod_state(pod)

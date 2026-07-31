@@ -1,5 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/operation_evidence_boundary.html" as evidence_boundary %}
+{% import "components/context_rail.html" as context_rail %}
 {% import "kubernetes_operations/_components.html" as configmap_ui %}
 {% import "components/info_flow.html" as info_flow %}
 {% block title %}View & Update ConfigMap{% endblock title %}
@@ -10,7 +12,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('file-cog', 'ConfigMap Management', 'file-pen-line') %}
                         <h1 class="{{ page_hero.title_classes() }}">View &amp; Update ConfigMap</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Load current Kubernetes values, review consumers, preview the effective diff, and apply a validated merge or replacement.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review and safely apply changes to a live ConfigMap.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('radio-tower', 'Live Kubernetes Values') }}
                             {{ page_hero.meta_label('git-compare-arrows', 'Effective Diff Preview') }}
@@ -34,6 +36,7 @@
                 ) }}
             </div>
         </section>
+        {{ evidence_boundary.render() }}
         <div id="configmap-operation-feedback" class="hidden" aria-hidden="true"></div>
         <form id="configmap-update-form"
               data-validation-gated
@@ -44,8 +47,8 @@
               hx-swap="innerHTML"
               class="space-y-6">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-                <div class="min-w-0 space-y-6">
+            <div class="{{ context_rail.layout_classes() }}">
+                <div class="{{ context_rail.main_classes() }}">
                     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                         {{ configmap_ui.section_header('search', 'Select ConfigMap', 'Choose the cluster, namespace, and live ConfigMap to load current state.') }}
                         <div class="p-5 sm:p-6">
@@ -65,12 +68,12 @@
                             {% endif %}
                         </div>
                     </section>
-                    {% call configmap_ui.action_bar('git-compare-arrows', 'Validate Before Update', 'Preview the effective diff first, then apply the update after Kubernetes accepts the proposed change.') %}
+                    {% call configmap_ui.action_bar('git-compare-arrows', 'Validate Before Update', 'Preview and validate the latest changes before applying the update.') %}
                         <button name="operation" value="validate" class="{{ configmap_ui.validate_button_classes() }}"><i data-lucide="scan-search" class="h-4 w-4"></i>Preview and Validate</button>
                         <button name="operation" value="update" data-validation-apply disabled aria-disabled="true" title="Run validation after the latest input change before applying this operation" class="{{ configmap_ui.primary_button_classes() }}"><i data-lucide="save" class="h-4 w-4"></i>Apply Update</button>
                     {% endcall %}
                 </div>
-                <aside class="space-y-6 self-start xl:sticky xl:top-6">
+                <aside class="{{ context_rail.rail_classes() }} xl:sticky xl:top-6">
                     {% set configmap_update_flow = [
                         ('Select Object', 'Choose the registered cluster, live namespace, and existing ConfigMap target.'),
                         ('Review Current State', 'Load current values, immutable state, resource version, and best-effort workload context.'),

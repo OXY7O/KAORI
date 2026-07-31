@@ -246,7 +246,7 @@
                 </span>
                 <div class="min-w-0">
                     <p class="text-xs font-semibold text-kaori-primary">${escapeHtml(type || 'Inventory Resource')} Details</p>
-                    <h2 id="resource-detail-modal-title" class="mt-0.5 truncate text-lg font-semibold text-content-primary">${escapeHtml(name || 'Inventory Resource Details')}</h2>
+                    <h2 id="resource-detail-modal-title" class="mt-0.5 break-words text-lg font-semibold text-content-primary [overflow-wrap:anywhere]">${escapeHtml(name || 'Inventory Resource Details')}</h2>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Loading committed inventory evidence.</p>
                 </div>
             </div>

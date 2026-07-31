@@ -28,7 +28,7 @@ def test_all_inventory_tables_use_full_workspace_modal_action() -> None:
     assert 'macro host(resource_type, detail_url_template)' in component
     assert 'role="dialog"' in component
     assert 'aria-modal="true"' in component
-    assert 'max-w-[90rem]' in component
+    assert 'max-w-[100rem]' in component
     assert 'data-resource-detail-summary-host' in component
     assert "const DETAIL_PARAM = 'detail'" in script
     assert "history.pushState" in script

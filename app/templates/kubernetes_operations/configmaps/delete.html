@@ -1,5 +1,8 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/operation_evidence_boundary.html" as evidence_boundary %}
+{% import "components/context_rail.html" as context_rail %}
+{% import "components/destructive_confirmation_modal.html" as destructive_modal %}
 {% import "kubernetes_operations/_components.html" as configmap_ui %}
 {% import "components/info_flow.html" as info_flow %}
 {% block title %}Delete ConfigMap{% endblock title %}
@@ -10,7 +13,7 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('file-cog', 'ConfigMap Management', 'trash-2') %}
                         <h1 class="{{ page_hero.title_classes() }}">Delete ConfigMap</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Load the live target, review known workload impact, validate the request, and execute an explicitly confirmed deletion.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Validate impact before removing a live ConfigMap.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('radio-tower', 'Live Kubernetes Target') }}
                             {{ page_hero.meta_label('shield-check', 'Non-Destructive Preflight') }}
@@ -34,6 +37,7 @@
                 ) }}
             </div>
         </section>
+        {{ evidence_boundary.render() }}
         <div id="configmap-operation-feedback" class="hidden" aria-hidden="true"></div>
         <form id="configmap-delete-form"
               method="post"
@@ -44,8 +48,8 @@
               hx-disabled-elt="find button"
               class="space-y-6">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-                <div class="min-w-0 space-y-6">
+            <div class="{{ context_rail.layout_classes() }}">
+                <div class="{{ context_rail.main_classes() }}">
                     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                         {{ configmap_ui.section_header('search', 'Select ConfigMap', 'Choose the cluster, namespace, and live ConfigMap to load current state.') }}
                         <div class="p-5 sm:p-6">
@@ -68,12 +72,12 @@
                             {% endif %}
                         </div>
                     </section>
-                    {% call configmap_ui.action_bar('shield-alert', 'Validate Before Deletion', 'Validation is non-destructive. The final delete action is irreversible from this workflow.', 'Delete ConfigMap Actions') %}
+                    {% call configmap_ui.action_bar('shield-alert', 'Validate Before Deletion', 'Validate the current target before final deletion.', 'Delete ConfigMap Actions') %}
                         {% set oob = false %}
                         {% include 'kubernetes_operations/configmaps/_delete_actions.html' %}
                     {% endcall %}
                 </div>
-                <aside class="space-y-6 self-start xl:sticky xl:top-6">
+                <aside class="{{ context_rail.rail_classes() }} xl:sticky xl:top-6">
                     {% set configmap_delete_flow = [
                         ('Select Object', 'Choose the registered cluster, live namespace, and existing ConfigMap target.'),
                         ('Review Impact', 'Inspect live identity, key count, and best-effort workload consumers before continuing.'),
@@ -101,4 +105,6 @@
             </div>
         </form>
     </div>
+        {{ destructive_modal.render('configmap-delete-confirmation', 'Delete ConfigMap', none, 'The selected live ConfigMap and its data will be removed from Kubernetes. Known consumer evidence is best effort.', 'configmap-delete-submit', 'Delete ConfigMap') }}
+<script src="{{ url_for('static', filename='js/destructive_confirmation_modal.js') }}"></script>
 {% endblock dashboard_content %}

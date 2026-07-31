@@ -12,7 +12,7 @@
                 <span class="{{ detail.expanded_workspace_icon_classes() }}" aria-hidden="true"><i data-lucide="route" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                        <h3 class="truncate text-base font-semibold text-content-primary">{{ ingress.name }}</h3>
+                        <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ ingress.name }}</h3>
                         {{ table_label.metadata_label(ingress.cluster_name, 'building-2') }}
                         {{ table_label.metadata_label(ingress.namespace, 'folder-tree') }}
                         {{ table_label.metadata_label(ingress.class) }}

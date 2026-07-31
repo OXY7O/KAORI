@@ -2,7 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import func, or_
+from sqlalchemy import cast, func, or_
+from sqlalchemy.dialects.postgresql import JSONB
 
 from app.common.inventory_generation import filter_current_generation
 from app.common.pagination import paginate_query
@@ -314,7 +315,7 @@ def _matched_pod_preview(service: ServiceInventory, selector: dict[str, str]) ->
     except Exception:
         dialect = ''
     if dialect == 'postgresql':
-        matched_query = pod_query.filter(PodInventory.labels.contains(selector))
+        matched_query = pod_query.filter(cast(PodInventory.labels, JSONB).contains(selector))
         return matched_query.count(), matched_query.order_by(PodInventory.pod_name).limit(8).all()
     candidate_pods = pod_query.order_by(PodInventory.pod_name).all()
     matched = [pod for pod in candidate_pods if _selector_matches(selector, pod.labels or {})]

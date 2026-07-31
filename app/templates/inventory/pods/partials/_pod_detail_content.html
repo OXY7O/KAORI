@@ -13,7 +13,7 @@
                 <span class="{{ detail.expanded_workspace_icon_classes() }}" aria-hidden="true"><i data-lucide="package" class="h-5 w-5"></i></span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
-                        <h3 class="truncate text-base font-semibold text-content-primary">{{ pod.name }}</h3>
+                        <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ pod.name }}</h3>
                         {{ table_label.metadata_label(pod.owner_type or 'Standalone') }}
                         {{ table_label.metadata_label(pod.namespace, 'folder-tree') }}
                     </div>

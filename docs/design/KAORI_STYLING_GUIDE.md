@@ -670,3 +670,47 @@ Required behavior:
 Inventory Overview keeps the right-side drawer because it is a compact cluster summary. Topology keeps the Adaptive Explorer Inspector because selection is graph-owned.
 
 Do not create page-local Inventory modals, dense expanded rows, or alternate `View More` geometry.
+
+## 27. Kubernetes Live Mutation Workspaces
+
+ConfigMap and Secret operations follow `patterns/KUBERNETES_CONFIGMAP_SECRET_OPERATIONS.md`.
+
+### Operational workflow catalog
+
+Use `components/operational_workflow_card.html` for operation destinations. Cards use natural height. Permission is always represented as `Available` or `Restricted`; `Standard`, `Controlled`, `Protected`, and `Destructive` are separate operation classifications.
+
+### Live Mutation Evidence Contract
+
+Place `components/operation_evidence_boundary.html` directly below the Hero to distinguish:
+
+```text
+Live Target     → Kubernetes API
+Impact Context  → Committed Inventory
+Outcome Record  → Activity Audit
+```
+
+Do not describe Inventory-backed references as complete or live impact analysis.
+
+### Mutation workspace
+
+Use a compact Hero, Evidence Boundary, primary form with `context_rail.html`, server validation evidence, and `form_action_bar.html`. Form labels use 12 px semibold typography; normal controls use a 40 px minimum height and 14 px values.
+
+Use `components/structured_entry_editor.html` for repeatable ConfigMap and Secret entries. Use `components/choice_card_group.html` for form choices that change the input schema.
+
+### Sensitive values
+
+Use the phrase `No KAORI Value Persistence`. Values may be processed transiently, but they must not be persisted in KAORI data models, job payloads, notifications, or Activity Audit metadata.
+
+Protected one-time values use `components/protected_value_panel.html`. They clear on expiry, visibility loss, navigation, or HTMX replacement and do not expose a default Copy action.
+
+### Destructive confirmation
+
+ConfigMap and Secret Delete require the canonical final destructive confirmation modal after validation. The modal does not replace exact-name confirmation, signed validation receipts, RBAC preflight, final target reread, or resourceVersion preconditions.
+
+### Protected Reveal
+
+Use Tab Style 2 for `New Request`, `My Requests`, and `Approvals`. Only the active registry panel may poll. Numeric pagination owns its endpoint, filters, HTMX target, and loading boundary.
+
+### Inventory modal technical text
+
+Full Workspace Modal uses a maximum width of `100rem`, hides horizontal page overflow, and wraps resource titles, relation identities, labels, annotations, hosts, selector keys, and multi-line technical values. Technical Metadata Collection reserves a readable key column and uses `overflow-wrap:anywhere`; it must not truncate evidence or create nested vertical scrolling.

@@ -625,10 +625,7 @@
       "page_local_workspace_tablists": 1
     },
     "app/templates/kubernetes_operations/_components.html": {
-      "arbitrary_text_sizes": 6,
-      "arbitrary_tracking": 3,
-      "page_local_compact_status_labels": 2,
-      "semantic_border_utilities": 11
+      "semantic_border_utilities": 2
     },
     "app/templates/kubernetes_operations/configmaps/_delete_target.html": {
       "semantic_border_utilities": 3
@@ -636,17 +633,11 @@
     "app/templates/kubernetes_operations/configmaps/_editor.html": {
       "semantic_border_utilities": 3
     },
-    "app/templates/kubernetes_operations/configmaps/_entries_editor.html": {
-      "semantic_border_utilities": 2
-    },
     "app/templates/kubernetes_operations/configmaps/create.html": {
       "copied_standard_surface_shells": 3
     },
     "app/templates/kubernetes_operations/configmaps/delete.html": {
       "copied_standard_surface_shells": 3
-    },
-    "app/templates/kubernetes_operations/configmaps/index.html": {
-      "semantic_border_utilities": 1
     },
     "app/templates/kubernetes_operations/configmaps/update.html": {
       "copied_standard_surface_shells": 3
@@ -655,7 +646,6 @@
       "semantic_border_utilities": 3
     },
     "app/templates/kubernetes_operations/secrets/_replace_content_form.html": {
-      "arbitrary_text_sizes": 1,
       "semantic_border_utilities": 7
     },
     "app/templates/kubernetes_operations/secrets/_reveal_pending_approvals.html": {
@@ -675,31 +665,23 @@
       "semantic_border_utilities": 4
     },
     "app/templates/kubernetes_operations/secrets/create.html": {
-      "arbitrary_text_sizes": 2,
       "copied_standard_surface_shells": 5,
-      "semantic_border_utilities": 4
+      "semantic_border_utilities": 3
     },
     "app/templates/kubernetes_operations/secrets/delete.html": {
       "copied_standard_surface_shells": 3
-    },
-    "app/templates/kubernetes_operations/secrets/index.html": {
-      "semantic_border_utilities": 1
     },
     "app/templates/kubernetes_operations/secrets/replace.html": {
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 1
     },
     "app/templates/kubernetes_operations/secrets/reveal.html": {
-      "arbitrary_tracking": 4,
-      "copied_standard_surface_shells": 2,
-      "semantic_border_utilities": 1
+      "copied_standard_surface_shells": 2
     },
     "app/templates/kubernetes_operations/secrets/tls_rotate.html": {
       "copied_standard_surface_shells": 2
     },
     "app/templates/kubernetes_operations/secrets/tls_rotation.html": {
-      "arbitrary_text_sizes": 3,
-      "arbitrary_tracking": 2,
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 2
     },

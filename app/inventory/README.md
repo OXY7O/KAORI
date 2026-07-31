@@ -196,3 +196,20 @@ Storage Inventory uses type-adaptive provisioning, capacity/access, and binding/
 Configuration Inventory uses protected key-index metadata. Values are not decoded, logged, persisted, or displayed. ConfigMap and Secret collection capability is stored on `ClusterInventory.collection_evidence` for the committed generation.
 
 Node through Configuration Inventory use `Detail Style 2 — Full Workspace Modal`, owned by `components/resource_detail_modal.html`, `components/details/_detail_content.html`, and `app/static/js/detail_rows.js`. Inventory Overview retains the shared Side Drawer, and Topology retains the Adaptive Explorer Inspector.
+
+## PostgreSQL JSON relationship queries
+
+Pod labels, configuration references, and PersistentVolumeClaim references are stored through SQLAlchemy JSON columns. PostgreSQL relationship filters must cast these columns to `JSONB` before calling `.contains(...)` so SQL compiles to JSON containment (`@>`) rather than text `LIKE`.
+
+Canonical examples:
+
+```python
+cast(PodInventory.labels, JSONB).contains(selector)
+cast(PodInventory.persistent_volume_claims, JSONB).contains([claim_name])
+```
+
+Non-PostgreSQL development environments use bounded Python matching fallbacks. Do not call `.contains()` directly on the generic JSON columns for PostgreSQL-backed Inventory detail queries.
+
+## Full Workspace Modal text wrapping
+
+Inventory detail evidence must remain readable without intentional truncation. The shared modal supports a 100 rem maximum width, hides horizontal page overflow, and lets technical metadata, relation identities, hostnames, labels, annotations, selectors, and multi-line values wrap with `overflow-wrap:anywhere`. Metadata collections do not use nested vertical scrolling.

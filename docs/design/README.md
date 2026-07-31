@@ -49,6 +49,9 @@ The Styling Guide selects the correct reusable component. The Design System and 
 - `components/HEALTH_INTERPRETATION.md`
 - `components/INTEGRATION_MANAGE_WORKSPACE.md`
 - `components/OPERATIONAL_ACTION_FEEDBACK.md`
+- `components/OPERATIONAL_WORKFLOW_CARD.md`
+- `components/STRUCTURED_ENTRY_EDITOR.md`
+- `components/PROTECTED_VALUE_PANEL.md`
 
 ## Reusable Page Patterns
 
@@ -59,6 +62,7 @@ The Styling Guide selects the correct reusable component. The Design System and 
 - `patterns/INVENTORY_RESOURCE_PAGE.md`
 - `patterns/KUBERNETES_TOPOLOGY.md`
 - `patterns/KUBERNETES_STORAGE_CONFIGURATION_INVENTORY.md`
+- `patterns/KUBERNETES_CONFIGMAP_SECRET_OPERATIONS.md`
 
 ## Domain Specifications
 
@@ -115,3 +119,8 @@ Domain-specific UI rules live under `docs/modules/` or the owning module README.
 - `components/DETAIL_STYLES.md` — canonical Detail Style registry.
 
 - `audits/KUBERNETES_INVENTORY_HERO_COPY_AUDIT_2026_07.md` — Inventory hero copy-density audit and guardrail.
+
+## Kubernetes ConfigMap and Secret Operations
+
+- `patterns/KUBERNETES_CONFIGMAP_SECRET_OPERATIONS.md` — live mutation, protected reveal, and delete-confirmation pattern.
+- `audits/KUBERNETES_CONFIGMAP_SECRET_OPERATIONS_STYLING_AUDIT_2026_07.md` — operation workspace and Inventory modal remediation record.

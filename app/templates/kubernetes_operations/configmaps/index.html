@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
-{% import "kubernetes_operations/_components.html" as configmap_ui %}
+{% import "components/operational_workflow_card.html" as workflow_card %}
+{% import "components/operation_evidence_boundary.html" as evidence_boundary %}
 {% block title %}ConfigMap Management{% endblock title %}
 {% block dashboard_content %}
     {% set can_create = current_user.has_permission('kubernetes_configmaps.create') %}
@@ -12,9 +13,9 @@
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('workflow', 'Kubernetes Operations', 'file-cog') %}
                         <h1 class="{{ page_hero.title_classes() }}">ConfigMap Management</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Create, update, and delete Kubernetes ConfigMaps through live, validated, permission-aware operational workflows.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Create, update, and remove live ConfigMaps through validated workflows.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('database', total_configmaps ~ ' ConfigMaps Tracked') }}
+                            {{ page_hero.meta_label('database', total_configmaps ~ ' Tracked') }}
                             {{ page_hero.meta_label('boxes', namespace_count ~ ' Namespaces') }}
                             {{ page_hero.meta_label('lock-keyhole', immutable_count ~ ' Immutable') }}
                         </div>
@@ -22,13 +23,13 @@
                 </div>
                 {{ page_hero.context_card(
                     'ConfigMap Management context',
-                    'ConfigMap Posture',
-                    'Validated Configuration Operations',
-                    'Controlled',
+                    'Operation Boundary',
+                    'Live ConfigMap Workflows',
+                    'Validate First',
                     'info',
                     [
-                        ('database', 'Tracked Objects', total_configmaps, namespace_count ~ ' namespaces'),
-                        ('lock-keyhole', 'Immutable', immutable_count, 'Protected from update')
+                        ('radio-tower', 'Target', 'Live API', none),
+                        ('scroll-text', 'Outcome', 'Audited', none)
                     ],
                     'Manage Clusters',
                     url_for('integrations.kubernetes'),
@@ -36,72 +37,56 @@
                 ) }}
             </div>
         </section>
+
+        {{ evidence_boundary.render() }}
+
         <section id="configmap-workflows" class="rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm sm:p-6">
-            {{ configmap_ui.workflow_header('mouse-pointer-click', 'Operational Workflows', 'Choose the Required ConfigMap Workflow', 'Each workflow keeps its own permission, validation, impact-review, and destructive-action boundaries.', 'Dry-Run First · Impact Aware') }}
-            <div class="mt-6 grid gap-4 lg:grid-cols-3">
-                <article class="flex min-h-[23rem] flex-col rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                    <div class="flex items-start justify-between gap-4">
-                        <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="file-plus-2" class="h-5 w-5"></i></span>
-                        {{ configmap_ui.permission_label(can_create) }}
-                    </div>
-                    <h3 class="mt-5 text-base font-semibold text-content-primary">Create ConfigMap</h3>
-                    <p class="mt-2 text-xs leading-5 text-content-muted">Create a new text or binary configuration object without overwriting an existing resource.</p>
-                    <div class="mt-5 grid gap-3">
-                        {{ configmap_ui.guardrail('braces', 'Supported Content', 'Plain-text keys and binary entries containing valid base64 data.') }}
-                        {{ configmap_ui.guardrail('shield-check', 'Create-Only Policy', 'Kubernetes dry-run must pass and existing ConfigMaps are never overwritten.') }}
-                    </div>
-                    <div class="mt-auto pt-5">
-                        {% if can_create %}
-                            <a href="{{ url_for('kubernetes_operations.create_configmap') }}" class="{{ configmap_ui.primary_button_classes(true) }}"><i data-lucide="plus" class="h-4 w-4"></i>Create ConfigMap</a>
-                        {% else %}
-                            <button type="button" disabled class="{{ configmap_ui.disabled_button_classes(true) }}"><i data-lucide="lock" class="h-4 w-4"></i>Permission Required</button>
-                        {% endif %}
-                    </div>
-                </article>
-                <article class="flex min-h-[23rem] flex-col rounded-xl border border-outline-default bg-surface-card p-5 shadow-sm">
-                    <div class="flex items-start justify-between gap-4">
-                        <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="file-pen-line" class="h-5 w-5"></i></span>
-                        {{ configmap_ui.permission_label(can_update) }}
-                    </div>
-                    <h3 class="mt-5 text-base font-semibold text-content-primary">View and Update ConfigMap</h3>
-                    <p class="mt-2 text-xs leading-5 text-content-muted">Load current values, review workload usage, preview the diff, and apply a merge or replacement.</p>
-                    <div class="mt-5 grid gap-3">
-                        {{ configmap_ui.guardrail('git-compare-arrows', 'Change Modes', 'Merge submitted keys or replace the complete data payload.') }}
-                        {{ configmap_ui.guardrail('lock-keyhole', 'Immutable Guardrail', 'Immutable ConfigMaps remain protected from modification.') }}
-                    </div>
-                    <div class="mt-auto pt-5">
-                        {% if can_update %}
-                            <a href="{{ url_for('kubernetes_operations.update_configmap') }}" class="{{ configmap_ui.primary_button_classes(true) }}"><i data-lucide="pencil-line" class="h-4 w-4"></i>Open Update Workflow</a>
-                        {% else %}
-                            <button type="button" disabled class="{{ configmap_ui.disabled_button_classes(true) }}"><i data-lucide="lock" class="h-4 w-4"></i>Permission Required</button>
-                        {% endif %}
-                    </div>
-                </article>
-                <article class="flex min-h-[23rem] flex-col rounded-xl border border-status-critical-border bg-surface-card p-5 shadow-sm">
-                    <div class="flex items-start justify-between gap-4">
-                        <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-status-critical-soft text-status-critical-text" aria-hidden="true"><i data-lucide="trash-2" class="h-5 w-5"></i></span>
-                        {{ configmap_ui.permission_label(can_delete, True) }}
-                    </div>
-                    <h3 class="mt-5 text-base font-semibold text-content-primary">Delete ConfigMap</h3>
-                    <p class="mt-2 text-xs leading-5 text-content-muted">Remove a live ConfigMap through explicit impact review and exact-name confirmation.</p>
-                    <div class="mt-5 grid gap-3">
-                        {{ configmap_ui.guardrail('scan-search', 'Impact Review', 'Known workload references are shown before deletion.', 'warning') }}
-                        {{ configmap_ui.guardrail('keyboard', 'Exact Confirmation', 'Live identity, delete RBAC, and exact-name confirmation are required.', 'critical') }}
-                    </div>
-                    <div class="mt-auto pt-5">
-                        {% if can_delete %}
-                            <a href="{{ url_for('kubernetes_operations.delete_configmap') }}" class="{{ configmap_ui.destructive_button_classes(true) }}"><i data-lucide="trash-2" class="h-4 w-4"></i>Open Delete Workflow</a>
-                        {% else %}
-                            <button type="button" disabled class="{{ configmap_ui.disabled_button_classes(true) }}"><i data-lucide="lock" class="h-4 w-4"></i>Permission Required</button>
-                        {% endif %}
-                    </div>
-                </article>
+            <div class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold text-kaori-primary">Operational Workflow Catalog</p>
+                    <h2 class="mt-1 text-xl font-semibold text-content-primary">Choose a ConfigMap Operation</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Each workflow owns its live target, validation, impact, and audit boundary.</p>
+                </div>
             </div>
-        </section>
-        <section class="grid gap-4 md:grid-cols-3">
-            <div class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">{{ configmap_ui.guardrail('scan-search', 'Validate Before Mutation', 'Kubernetes dry-run checks RBAC, admission policy, and proposed payload structure.') }}</div>
-            <div class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">{{ configmap_ui.guardrail('git-compare-arrows', 'Impact-Aware Changes', 'Live values and known consumers are reviewed before update or deletion.') }}</div>
-            <div class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm">{{ configmap_ui.guardrail('scroll-text', 'Audited Outcome', 'Actor, target, operation mode, validation result, and final outcome are recorded.', 'normal') }}</div>
+            <div class="mt-5 grid items-start gap-4 lg:grid-cols-3">
+                {{ workflow_card.render(
+                    'Create ConfigMap',
+                    'Create text or binary configuration without overwriting an existing object.',
+                    'file-plus-2',
+                    can_create,
+                    'Standard Operation',
+                    'Server-Side Dry-Run',
+                    'Create Only',
+                    url_for('kubernetes_operations.create_configmap'),
+                    'Create ConfigMap',
+                    'plus'
+                ) }}
+                {{ workflow_card.render(
+                    'Update ConfigMap',
+                    'Review live values and apply a validated merge or complete replacement.',
+                    'file-pen-line',
+                    can_update,
+                    'Controlled Mutation',
+                    'Diff and Dry-Run',
+                    'Live Object',
+                    url_for('kubernetes_operations.update_configmap'),
+                    'Open Update Workflow',
+                    'pencil-line'
+                ) }}
+                {{ workflow_card.render(
+                    'Delete ConfigMap',
+                    'Review known consumers before a validated and explicitly confirmed deletion.',
+                    'trash-2',
+                    can_delete,
+                    'Destructive Operation',
+                    'Impact and Dry-Run',
+                    'Exact Target',
+                    url_for('kubernetes_operations.delete_configmap'),
+                    'Open Delete Workflow',
+                    'trash-2',
+                    'critical'
+                ) }}
+            </div>
         </section>
     </div>
 {% endblock dashboard_content %}

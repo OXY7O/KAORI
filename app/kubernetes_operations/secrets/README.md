@@ -81,7 +81,7 @@ Protected Reveal is the only plaintext-read workflow. It decodes one approved ke
 
 - Namespace and Secret selectors are live.
 - The selected Secret is read live for type, immutability, key names, UID, and resource version.
-- Existing values are never rendered or persisted.
+- Existing values are not rendered or persisted by KAORI.
 - Blank existing-key fields preserve the server value because omitted keys are not included in the patch.
 - Opaque replacement can update observed keys and add new keys but does not implicitly delete keys.
 - Basic Auth can replace username and password independently.
@@ -164,11 +164,12 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 
 ## Design contract
 
-- All Secret Management heroes use the Inventory Overview geometry: solid `kaori-primary`, `p-5 lg:p-6`, 7/5 desktop split, `gap-5`, and a right panel with `min-h-[13rem]`.
-- Form controls use 44 px height where applicable, 8 px radius, sentence-case labels, shared surface/outline tokens, and violet focus states.
-- Descriptive metadata uses compact rectangular violet labels.
-- Validation, approval, expiry, readiness, and destructive states use semantic colors.
-- Secret material never appears in hero context, operation summaries, notifications, or audit metadata.
+- Landing uses Compact Hero, Live Mutation Evidence Boundary, and Operational Workflow Catalog.
+- Create, Replace, Delete, Reveal, and single TLS Rotation use canonical primary work plus shared Right Context Rail where secondary context is required.
+- Form labels use 12 px semibold typography; normal controls use a 40 px minimum height and proportional 14 px values.
+- Secret Type uses the responsive Operational Choice Card Group; generic sensitive entries use Structured Entry Editor.
+- Validation, approval, expiry, readiness, and destructive states use semantic colors. Operation classification remains separate from permission state.
+- Secret material never appears in Hero context, operation summaries, notifications, or Activity Audit metadata.
 
 ## Operation feedback and refresh contract
 
@@ -199,13 +200,13 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 
 - Secret Management landing cards, create/replace/delete forms, Protected Reveal surfaces, and TLS rotation use the shared macros in `app/templates/kubernetes_operations/_components.html`.
 - Every Secret Management and protected-reveal hero uses the canonical `page_hero.context_card()` posture panel: one eyebrow/title header, one compact semantic status, two operational metrics, and one full-width contextual CTA. Secret payload material is never rendered in the panel.
-- Secret Type selection uses an explicit `is-selected`/`data-selected` contract. The active card has a violet border, selected surface, persistent violet icon, and a visible `Selected` badge in both light and dark appearance.
+- Secret Type selection uses `components/choice_card_group.html` with a violet selected boundary, visible check indicator, native radio state, and responsive 1/2/3-column reflow.
 - Validation, primary, secondary, destructive, and disabled actions use shared button macros so state changes do not alter geometry or produce thick borders.
 - Workflow section headers use one icon container, title hierarchy, description scale, outline, and surface treatment across Create, Replace, Delete, Reveal, and TLS rotation.
 - Legacy inline page-size submission handlers are replaced by the global `data-kaori-auto-submit` behavior.
-- Secret Type choices render as one five-card row at desktop widths, with native-radio selected styling and a visible Selected indicator.
+- Secret Type choices do not force a five-card row; desktop uses at most three columns so descriptions remain readable.
 - Creation Summary uses reusable operation summary items, while Sensitive Data Policy and Replacement Semantics use the canonical information-guide component.
-- Delete, Protected Reveal, and TLS Rotation use the canonical `components/info_flow.html` timeline instead of custom dark workflow cards.
+- Delete and TLS Rotation may use `components/info_flow.html` for secondary procedure context. Protected Reveal uses Tab Style 2 for New Request, My Requests, and Approvals.
 
 ### Shared action-bar contract
 
@@ -238,3 +239,13 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 - Specialized TLS validation renders certificate evidence inline because operators must review Common Name, new expiry, SAN coverage, and fingerprint before applying the rotation.
 - The right column contains both the controlled flow and the reusable Related Governance Workspace card linking back to the canonical TLS certificate posture.
 - Bulk TLS rotation documents a fifth `Validate Outcome` step: review per-target update results and synchronize TLS inventory to confirm the resulting certificate posture.
+
+
+## Current KAORI operations pattern
+
+The canonical presentation is documented in `docs/design/patterns/KUBERNETES_CONFIGMAP_SECRET_OPERATIONS.md`.
+
+- Use the wording **No KAORI Value Persistence**: values are processed transiently and excluded from KAORI persistence, notifications, and Activity Audit metadata.
+- Protected Reveal polls only the active segmented workspace and renders one-time material through `components/protected_value_panel.html`.
+- Delete requires a final destructive confirmation modal after exact-name entry and non-destructive validation. The modal does not replace the signed receipt, RBAC preflight, target reread, or resourceVersion precondition.
+- Reveal registries and bulk TLS tables use scoped endpoint-aware HTMX pagination.

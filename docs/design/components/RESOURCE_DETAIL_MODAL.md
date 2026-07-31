@@ -27,12 +27,12 @@ Inventory Overview continues to use the Side Drawer. Kubernetes Topology continu
 ## Geometry
 
 - near-fullscreen viewport usage;
-- maximum desktop width: `90rem`;
+- maximum desktop width: `100rem`;
 - viewport-aware height with compact outer margins;
 - `rounded-2xl` desktop shell;
 - full available workspace on small screens;
 - fixed header and footer;
-- independently scrollable detail body.
+- independently scrollable detail body with hidden horizontal page overflow;
 
 ## Header and summary ownership
 
@@ -73,3 +73,8 @@ Opening a detail pushes browser history. Back closes it. Forward reopens it. A d
 - losing filter, pagination, Rows, or scroll state;
 - body-level scrolling behind an open modal;
 - raw HTML detail presentation built in JavaScript.
+
+
+## Technical text wrapping
+
+Resource names, related-resource identities, host declarations, labels, annotations, selectors, and multi-line technical values must remain visible. Do not use `truncate` in modal evidence. Shared detail rows and metadata collections use responsive key/value grids, `min-w-0`, `break-words`, and `overflow-wrap:anywhere`. Large metadata collections use the modal body scrollbar rather than nested vertical scrolling.

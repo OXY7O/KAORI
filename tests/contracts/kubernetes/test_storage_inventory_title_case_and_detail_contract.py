@@ -49,6 +49,6 @@ def test_storage_relationships_are_bounded_and_use_current_generation() -> None:
     service = read(SERVICE)
     assert 'filter_current_generation' in service
     assert '.limit(8)' in service
-    assert 'PodInventory.persistent_volume_claims.contains([name])' in service
+    assert 'cast(PodInventory.persistent_volume_claims, JSONB).contains([name])' in service
     assert "'pods_truncated': pods_truncated" in service
     assert "'claims_truncated': claims_truncated" in service

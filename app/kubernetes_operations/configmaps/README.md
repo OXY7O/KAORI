@@ -61,12 +61,12 @@ Impact context can lag behind the live object. The UI must label it as inventory
 
 ## UI contract
 
-- Landing, Create, Update, and Delete use solid KAORI violet heroes with the Inventory Overview geometry.
-- Create keeps Target location and Create guardrails side by side.
-- Update and Delete mirror the same layout: selector and guardrails first, live editor/impact review below, then final actions.
-- Form controls use 44 px height, 8 px radius, sentence-case labels, shared surface/outline tokens, and violet focus states.
-- Descriptive values use compact rectangular labels. Immutable, validation, and destructive conditions use semantic treatments.
-- ConfigMap payload fields retain monospace typography.
+- The landing page uses Compact Hero, Live Mutation Evidence Boundary, and Operational Workflow Catalog.
+- Create, Update, and Delete use the canonical primary workspace plus shared Right Context Rail.
+- Form labels use 12 px semibold typography; normal controls use a 40 px minimum height and proportional 14 px values.
+- ConfigMap text and binary rows use `components/structured_entry_editor.html`.
+- Raw payload fields may retain monospace typography; ordinary identity and configuration values remain proportional.
+- Delete keeps best-effort Inventory impact evidence, exact-name confirmation, non-destructive validation, and a final destructive confirmation modal.
 
 ## Required permissions
 
@@ -92,8 +92,8 @@ Impact context can lag behind the live object. The UI must label it as inventory
 
 ## Unified KAORI presentation contract
 
-- ConfigMap Management uses the shared Kubernetes operation macros in `app/templates/kubernetes_operations/_components.html` for workflow headers, guardrails, action bars, permission labels, and button states.
-- Landing workflow cards mirror Secret Management geometry and hierarchy; destructive actions use semantic critical treatment without changing card dimensions.
+- ConfigMap Management uses `components/operational_workflow_card.html` for natural-height workflow destinations and `components/operation_evidence_boundary.html` for authority context.
+- Permission state (`Available` or `Restricted`) is separate from operation classification (`Standard`, `Controlled`, or `Destructive`).
 - Create and Update use the reusable validation action bar. Final mutation actions stay neutral and disabled until the latest payload passes validation.
 - Dynamic entry handling and cluster/namespace dependency behavior live in `app/static/js/configmap_editor.js`; templates no longer embed imperative `onchange` handlers or per-partial scripts.
 - Every ConfigMap hero uses the canonical `page_hero.context_card()` posture panel: one eyebrow/title header, one compact semantic status, two operational metrics, and one full-width contextual CTA. The panel contains no descriptive paragraph and does not own mutation submission.
@@ -110,3 +110,8 @@ Impact context can lag behind the live object. The UI must label it as inventory
 - The ConfigMap Management hero links to Kubernetes cluster management.
 - Create, update, and delete workflow heroes return to ConfigMap Management.
 - Delete flow and guardrails are grouped inside one sticky right-column wrapper. They must never be separate grid rows, because a sticky flow card would overlap guardrails while the page scrolls.
+
+
+## Current KAORI operations pattern
+
+The canonical presentation is documented in `docs/design/patterns/KUBERNETES_CONFIGMAP_SECRET_OPERATIONS.md`. Live Kubernetes owns mutation targets, committed Inventory owns best-effort impact context, and Activity Audit owns actor/outcome evidence. Final deletion uses a KAORI destructive confirmation modal without weakening the signed receipt or resourceVersion precondition.

@@ -104,7 +104,14 @@ def get_secret_impact_context(target: LiveSecretSnapshot) -> list[dict[str, str]
             continue
         kind = pod.workload_type or 'Pod'
         name = pod.workload_name or pod.pod_name
-        impacts[(kind, name)] = {'kind': kind, 'name': name}
+        impacts[(kind, name)] = {
+            'kind': kind,
+            'name': name,
+            'supporting_primary': f'{kind} workload',
+            'supporting_secondary': 'Committed inventory reference',
+            'status': None,
+            'status_tone': None,
+        }
     return sorted(impacts.values(), key=lambda item: (item['kind'], item['name']))
 
 

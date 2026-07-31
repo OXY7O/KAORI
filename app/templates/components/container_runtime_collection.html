@@ -34,7 +34,7 @@
                             <tr class="{{ table_ui.row_classes() }}">
                                 <td class="{{ table_ui.cell_classes() }}">
                                     <p class="text-sm font-semibold text-content-primary">{{ container.name }}</p>
-                                    {% if container.reason %}<p class="mt-0.5 max-w-[16rem] break-words text-xs leading-5 text-content-muted">{{ container.reason }}</p>{% endif %}
+                                    {% if container.reason %}<p class="mt-0.5 break-words [overflow-wrap:anywhere] text-xs leading-5 text-content-muted">{{ container.reason }}</p>{% endif %}
                                     {% if container.exit_code is not none %}<p class="text-xs leading-5 text-content-muted">Exit Code {{ container.exit_code }}</p>{% endif %}
                                 </td>
                                 <td class="{{ table_ui.cell_classes() }}">{{ table_label.metadata_label(container.kind) }}</td>
