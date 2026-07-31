@@ -91,7 +91,13 @@ def _feedback(
     message: str,
     metadata: dict[str, Any],
     action_url: str,
+    queue_feedback: bool | None = None,
 ) -> dict[str, Any]:
+    should_queue_feedback = (
+        request.headers.get('HX-Request') != 'true'
+        if queue_feedback is None
+        else queue_feedback
+    )
     return record_operational_activity(
         user_id=current_user.id,
         event_type=event_type,
@@ -102,7 +108,7 @@ def _feedback(
         action_label='Open ConfigMap Management',
         action_icon='file-cog',
         metadata=metadata,
-        queue_feedback=request.headers.get('HX-Request') != 'true',
+        queue_feedback=should_queue_feedback,
     )
 
 
@@ -247,6 +253,10 @@ def create_configmap_page():
                 message=message,
                 metadata=metadata,
                 action_url=url_for('kubernetes_operations.configmap_management'),
+                # Validation feedback is rendered immediately through the HTMX
+                # OOB response. Successful creation redirects to a fresh form,
+                # so queue the mutation feedback for that next navigation.
+                queue_feedback=(request.headers.get('HX-Request') != 'true' or not dry_run),
             )
         except ValueError as exc:
             title = 'ConfigMap validation failed' if dry_run else 'ConfigMap creation failed'
