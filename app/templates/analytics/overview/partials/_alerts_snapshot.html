@@ -1,6 +1,6 @@
 {% import "components/section_link_button.html" as section_link_button %}
 {% import "components/table_label.html" as table_label %}
-{% import "analytics/components/_overview_surfaces.html" as overview_surface %}
+{% import "analytics/components/_analysis_surfaces.html" as overview_surface %}
 {% set alerts = payload.alerts_snapshot %}
 {% set immediate_count = alerts.critical_alerts + alerts.firing_alerts %}
 {% set follow_up_count = alerts.warning_alerts + alerts.pending_alerts %}

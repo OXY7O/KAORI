@@ -2,6 +2,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "analytics/components/_prometheus_status.html" as prometheus_status_panel %}
 {% import "analytics/components/_content_tabs.html" as analytics_content_tabs %}
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 
 {% macro controls_readiness(title, description, icon, indicator_id, status, materialization=none, checked_at='', eyebrow='Analysis Controls') -%}
     {% set snapshot = materialization if materialization else none %}
@@ -22,7 +23,7 @@
         {% set status_lower = snapshot_status|string|lower %}
         {% set snapshot_tone = 'normal' if status_lower in ['current', 'ready', 'available', 'healthy'] else ('info' if 'progress' in status_lower or 'pending' in status_lower or 'refresh' in status_lower else ('warning' if 'stale' in status_lower or 'partial' in status_lower else 'unknown')) %}
     {% endif %}
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm" data-analytics-controls-readiness>
+    <section class="{{ analysis_surface.snapshot_shell_classes() }}" data-analytics-controls-readiness>
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
@@ -40,7 +41,7 @@
         <div class="space-y-5 p-5 sm:p-6">
             {{ caller() }}
 
-            <div class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
+            <div class="{{ analysis_surface.readiness_shell_classes() }}">
                 <div class="grid lg:grid-cols-2">
                     <div class="px-4 py-4">
                         {{ prometheus_status_panel.render(status, checked_at, flat=true, compact=true) }}
@@ -123,7 +124,7 @@
 {%- endmacro %}
 
 {% macro overview(title, description, icon, badge_text='Overview') -%}
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm" data-analytics-overview>
+    <section class="{{ analysis_surface.snapshot_shell_classes() }}" data-analytics-overview>
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div class="flex min-w-0 items-start gap-3">
@@ -147,7 +148,7 @@
              data-analytics-tabset-id="{{ tabset_id }}"
              data-default-tab="{{ initial_tab }}"
              x-data='kaoriAnalyticsTabs({{ initial_tab|tojson }}, {{ allowed_tabs|tojson }}, {{ tabset_id|tojson }})'
-             class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+             class="{{ analysis_surface.snapshot_shell_classes() }}">
         <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
             <div class="flex min-w-0 items-start gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">

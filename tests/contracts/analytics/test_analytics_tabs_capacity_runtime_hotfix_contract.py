@@ -80,8 +80,12 @@ def test_non_default_panels_have_native_hidden_fallback() -> None:
 
 def test_utilization_tabset_uses_shared_runtime_boundary() -> None:
     template = read("app/templates/analytics/utilization/index.html")
+    shared = read("app/templates/analytics/components/_analysis_workspace.html")
 
-    assert "data-analytics-tabset" in template
-    assert 'data-analytics-tabset-id="utilization-content"' in template
-    assert 'data-default-tab="summary"' in template
-    assert 'kaoriAnalyticsTabs("summary"' in template
+    assert "analytics_workspace.tabbed(" in template
+    assert "'utilization-content'" in template
+    assert "'summary'" in template
+    assert "data-analytics-tabset" in shared
+    assert 'data-analytics-tabset-id="{{ tabset_id }}"' in shared
+    assert 'data-default-tab="{{ initial_tab }}"' in shared
+    assert 'kaoriAnalyticsTabs({{ initial_tab|tojson }}' in shared

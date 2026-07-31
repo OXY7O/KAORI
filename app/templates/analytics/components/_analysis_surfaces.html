@@ -1,0 +1,86 @@
+{#
+  KAORI Analytics analysis presentation primitives.
+
+  Capacity is the reference composition for analytics snapshot and detail pages:
+  - one calm shell,
+  - one compact header,
+  - one peer metric strip when applicable,
+  - bright evidence/context regions,
+  - darker interpretation, decision, or recommended-action regions.
+#}
+{% macro snapshot_shell_classes() -%}
+    overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm
+{%- endmacro %}
+
+{% macro snapshot_header_classes() -%}
+    flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between
+{%- endmacro %}
+
+{% macro snapshot_header_icon_classes() -%}
+    flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary
+{%- endmacro %}
+
+{% macro metric_grid_classes(columns=4) -%}
+    {% set desktop_columns = 'xl:grid-cols-5' if columns == 5 else ('xl:grid-cols-3' if columns == 3 else 'xl:grid-cols-4') %}
+    grid grid-cols-1 divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-y-0 {{ desktop_columns }}
+{%- endmacro %}
+
+{% macro metric_cell_classes(extra='') -%}
+    min-w-0 px-4 py-4 sm:border-r sm:border-outline-subtle xl:px-5 {{ extra }}
+{%- endmacro %}
+
+{% macro metric_label_classes() -%}
+    text-xs font-semibold uppercase tracking-wide text-content-muted
+{%- endmacro %}
+
+{% macro section_title_classes() -%}
+    text-sm font-semibold text-content-primary
+{%- endmacro %}
+
+{% macro section_description_classes() -%}
+    mt-1 text-xs leading-5 text-content-muted
+{%- endmacro %}
+
+{% macro readiness_shell_classes() -%}
+    overflow-hidden rounded-lg border border-outline-subtle bg-surface-card
+{%- endmacro %}
+
+{% macro evidence_shell_classes(extra='') -%}
+    overflow-hidden rounded-lg border border-outline-subtle bg-surface-card {{ extra }}
+{%- endmacro %}
+
+{% macro attention_strip_classes() -%}
+    flex items-start gap-3 border-t border-outline-subtle bg-surface-hover px-4 py-3
+{%- endmacro %}
+
+{% macro interpretation_grid_classes(extra='') -%}
+    grid border-t border-outline-subtle bg-surface-hover lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle {{ extra }}
+{%- endmacro %}
+
+{% macro interpretation_panel_classes(extra='') -%}
+    bg-surface-hover {{ extra }}
+{%- endmacro %}
+
+{% macro context_panel_classes(extra='') -%}
+    bg-surface-card {{ extra }}
+{%- endmacro %}
+
+{% macro ranked_item_classes(extra='') -%}
+    rounded-lg border border-outline-subtle bg-surface-card {{ extra }}
+{%- endmacro %}
+
+{% macro empty_evidence_classes(extra='') -%}
+    rounded-lg border border-dashed border-outline-strong bg-kaori-mist/25 {{ extra }}
+{%- endmacro %}
+
+{% macro guidance_card_classes(extra='') -%}
+    rounded-lg border border-outline-subtle bg-surface-hover {{ extra }}
+{%- endmacro %}
+
+{% macro nested_evidence_card_classes(extra='') -%}
+    rounded-lg border border-outline-subtle bg-surface-card {{ extra }}
+{%- endmacro %}
+
+{% macro compact_scope_grid_classes(columns=3) -%}
+    grid divide-y divide-outline-subtle {{ 'sm:grid-cols-4' if columns == 4 else 'sm:grid-cols-3' }} sm:divide-x sm:divide-y-0
+{%- endmacro %}

@@ -224,7 +224,7 @@ def test_overview_readiness_and_interpretation_surface_hierarchy_is_canonical() 
     capacity = read('partials/_capacity_snapshot.html')
     workload = read('partials/_workload_snapshot.html')
     top_consumers = read('partials/_top_consumers_snapshot.html')
-    surfaces = Path('app/templates/analytics/components/_overview_surfaces.html').read_text(encoding='utf-8')
+    surfaces = Path('app/templates/analytics/components/_analysis_surfaces.html').read_text(encoding='utf-8')
 
     assert 'overview_surface.readiness_shell_classes()' in health
     assert 'overview_surface.attention_strip_classes()' in health
@@ -284,7 +284,7 @@ def test_overview_loading_tracker_reports_real_lazy_section_progress() -> None:
 
 
 def test_capacity_is_the_shared_overview_snapshot_style_baseline() -> None:
-    surfaces = Path('app/templates/analytics/components/_overview_surfaces.html').read_text(encoding='utf-8')
+    surfaces = Path('app/templates/analytics/components/_analysis_surfaces.html').read_text(encoding='utf-8')
     panel_files = (
         'partials/_resource_snapshot.html',
         'partials/_capacity_snapshot.html',

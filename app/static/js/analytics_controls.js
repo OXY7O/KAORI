@@ -20,6 +20,9 @@
     }
 
     function requestedAnalyticsTab(allowedTabs, defaultTab, tabsetId = 'default') {
+        const requestedTab = new URL(window.location.href).searchParams.get('tab');
+        if (allowedTabs.includes(requestedTab)) return requestedTab;
+
         try {
             const storedTab = window.sessionStorage.getItem(analyticsTabStorageKey(tabsetId));
             if (allowedTabs.includes(storedTab)) return storedTab;
@@ -27,23 +30,7 @@
             // Storage can be unavailable in hardened browser modes.
         }
 
-        // Preserve compatibility with bookmarked legacy hashes without using
-        // hash navigation for normal tab interaction.
-        const hashTab = window.location.hash.replace(/^#/, '');
-        if (allowedTabs.includes(hashTab)) return hashTab;
-
         return defaultTab;
-    }
-
-    function clearLegacyAnalyticsHash(allowedTabs) {
-        // Hash updates can move the viewport. Only remove a legacy analytics hash;
-        // normal tab interaction stays in session storage and local DOM state.
-        const url = new URL(window.location.href);
-        const currentHash = url.hash.replace(/^#/, '');
-        if (!allowedTabs.includes(currentHash)) return;
-
-        url.hash = '';
-        window.history.replaceState(window.history.state, '', url);
     }
 
     function analyticsTabButtons(tabset) {
@@ -52,37 +39,6 @@
 
     function analyticsTabPanels(tabset) {
         return Array.from(tabset.querySelectorAll('[data-analytics-tab-panel]'));
-    }
-
-    function ensureAnalyticsTabVisible(button) {
-        const scrollContainer = button?.closest?.('[data-analytics-tab-scroll]');
-        if (!scrollContainer) return;
-
-        const containerRect = scrollContainer.getBoundingClientRect();
-        const buttonRect = button.getBoundingClientRect();
-        const edgePadding = 12;
-
-        if (buttonRect.left < containerRect.left + edgePadding) {
-            scrollContainer.scrollLeft -= (containerRect.left + edgePadding) - buttonRect.left;
-        } else if (buttonRect.right > containerRect.right - edgePadding) {
-            scrollContainer.scrollLeft += buttonRect.right - (containerRect.right - edgePadding);
-        }
-    }
-
-    function requestAnalyticsTabPanel(panel) {
-        if (!panel?.isConnected || !window.htmx) return;
-
-        const lazyTargets = [];
-        if (panel.matches?.('[data-analytics-tab-lazy]')) lazyTargets.push(panel);
-        panel.querySelectorAll?.('[data-analytics-tab-lazy]').forEach((target) => lazyTargets.push(target));
-
-        lazyTargets.forEach((target) => {
-            const state = target.dataset.analyticsTabLoadState || 'idle';
-            if (state === 'requesting' || state === 'loaded') return;
-
-            target.dataset.analyticsTabLoadState = 'requesting';
-            window.htmx.trigger(target, 'kaori:analytics-tab-activate');
-        });
     }
 
     function setAnalyticsTab(tabset, tabId, { persist = true, focus = false } = {}) {
@@ -107,13 +63,8 @@
         });
 
         analyticsTabPanels(tabset).forEach((panel) => {
-            const selected = panel.dataset.analyticsTabPanel === tabId;
-            panel.hidden = !selected;
-            if (selected) requestAnalyticsTabPanel(panel);
+            panel.hidden = panel.dataset.analyticsTabPanel !== tabId;
         });
-
-        const selectedButton = buttons.find((button) => button.dataset.analyticsTabButton === tabId);
-        ensureAnalyticsTabVisible(selectedButton);
 
         const tabsetId = tabset.dataset.analyticsTabsetId || tabset.id || 'default';
         if (persist) {
@@ -124,7 +75,20 @@
             }
         }
 
-        clearLegacyAnalyticsHash(allowedTabs);
+        const activePanel = analyticsTabPanels(tabset).find((panel) => panel.dataset.analyticsTabPanel === tabId);
+        if (activePanel) {
+            const activationTargets = [
+                ...(activePanel.matches?.('[hx-trigger*="kaori:analytics-tab-activated"]') ? [activePanel] : []),
+                ...activePanel.querySelectorAll('[hx-trigger*="kaori:analytics-tab-activated"]'),
+            ];
+            activationTargets.forEach((target) => {
+                if (window.htmx?.trigger) {
+                    window.htmx.trigger(target, 'kaori:analytics-tab-activated');
+                } else {
+                    target.dispatchEvent(new CustomEvent('kaori:analytics-tab-activated', { bubbles: true }));
+                }
+            });
+        }
         window.dispatchEvent(new Event('resize'));
         if (window.renderKaoriIcons) window.renderKaoriIcons();
         return true;
@@ -271,19 +235,6 @@
 
     document.addEventListener('DOMContentLoaded', () => { hydrateAnalyticsUi(); stabilizeAnalyticsTabsets(document); });
     document.body.addEventListener('htmx:load', (event) => hydrateAnalyticsUi(event.detail.elt || document));
-    document.body.addEventListener('htmx:afterRequest', (event) => {
-        const target = event.detail.elt;
-        if (!target?.matches?.('[data-analytics-tab-lazy]')) return;
-        target.dataset.analyticsTabLoadState = event.detail.successful ? 'loaded' : 'idle';
-    });
-    document.body.addEventListener('htmx:responseError', (event) => {
-        const target = event.detail.elt;
-        if (target?.matches?.('[data-analytics-tab-lazy]')) target.dataset.analyticsTabLoadState = 'idle';
-    });
-    document.body.addEventListener('htmx:sendError', (event) => {
-        const target = event.detail.elt;
-        if (target?.matches?.('[data-analytics-tab-lazy]')) target.dataset.analyticsTabLoadState = 'idle';
-    });
     document.body.addEventListener('htmx:afterSwap', (event) => { const root = event.detail.target || document; hydrateAnalyticsUi(root); stabilizeAlertsAfterSwap(root); stabilizeAnalyticsTabsets(root); });
     document.body.addEventListener('htmx:afterSettle', (event) => { const root = event.detail.elt || document; hydrateAnalyticsUi(root); stabilizeAnalyticsTabsets(root); });
 })();

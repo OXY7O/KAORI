@@ -56,7 +56,7 @@ Review the baseline diff before committing. A lower count is expected; moving de
 | Right-side detail drawer | `components/SIDE_DRAWER.md` | `components/side_drawer.html` |
 | Operational callout | `components/OPERATIONAL_CALLOUT.md` | `components/operational_callout.html` |
 | Forecast projection chart | `components/FORECAST_PROJECTION_CHART.md` | `components/forecast_projection_chart.html` |
-| Analytics Overview surface hierarchy | `components/ANALYTICS_OVERVIEW_SURFACES.md` | `analytics/components/_overview_surfaces.html` |
+| Analytics Overview surface hierarchy | `components/ANALYTICS_ANALYSIS_SURFACES.md` | `analytics/components/_analysis_surfaces.html` |
 | Compact section-header action | `components/SECTION_HEADER_ACTION.md` | `components/section_link_button.html` |
 | Right contextual rail | `components/RIGHT_CONTEXT_RAIL.md` | `components/context_rail.html` |
 | Primary flow box | `components/INFO_FLOW.md` | `components/info_flow.html` |
@@ -233,9 +233,9 @@ Do not use `rounded-3xl` or arbitrary radii in authenticated workspaces.
 
 Standard surfaces use semantic tokens and restrained shadows. Nested cards should rely on border, surface contrast, and whitespace before adding another shadow.
 
-### Analytics Overview Surface Hierarchy and Snapshot Standard
+### Analytics Analysis Surface Hierarchy and Snapshot Standard
 
-Capacity is the reference composition for Analytics Overview. Utilization, Capacity, Workloads, Storage, Consumers, Forecast, Alerts, Action Summary, and Recommendations use one shared visual grammar while preserving domain-appropriate evidence layouts:
+Capacity is the reference composition for Analytics pages and Analytics Overview. Utilization, Capacity, Workloads, Storage, Consumers, Forecast, Alerts, Action Summary, and Recommendations use one shared visual grammar while preserving domain-appropriate evidence layouts:
 
 1. one calm snapshot shell;
 2. one compact header with icon, semantic posture, description, and at most one drill-down action;
@@ -245,9 +245,9 @@ Capacity is the reference composition for Analytics Overview. Utilization, Capac
 
 Primary evidence and analytical context use `bg-surface-card`. Interpretation, recommended action, review path, and execution guidance use `bg-surface-hover`. Attention strips use the darker soft surface plus semantic Warning or Critical treatment.
 
-Do not darken the entire Prometheus/readiness body. Keep the source and committed snapshot panels bright, then place dataset attention below them as a distinct strip. Charts, ranked records, findings, and context side panels such as Pressure Posture remain bright and use borders for separation. Use `analytics/components/_overview_surfaces.html`; individual tabs must not reconstruct the snapshot shell, header, metric geometry, or surface hierarchy.
+Do not darken the entire Prometheus/readiness body. Keep the source and committed snapshot panels bright, then place dataset attention below them as a distinct strip. Charts, ranked records, findings, and context side panels such as Pressure Posture remain bright and use borders for separation. Use `analytics/components/_analysis_surfaces.html`; individual tabs must not reconstruct the snapshot shell, header, metric geometry, or surface hierarchy.
 
-Analytics status tones are normalized through `table_label.semantic_tone(...)`. Legacy color names may be accepted at the shared component boundary for compatibility, but new presenters and templates use semantic tone names. Critical, Warning, and Normal values must never fall back to the Unknown/slate treatment.
+Analytics status tones are normalized through `table_label.semantic_tone(...)`. Critical, Warning, and Normal values must never fall back to the Unknown/slate treatment.
 
 ## 9. Pagination Standard
 
@@ -768,3 +768,8 @@ Operational Workflow Catalog actions use naturally sized secondary buttons. Do n
 ### Operational Point Flow
 
 Use `components/operational_point_flow.html` for concise supporting sequences. For Bulk TLS Rotation, the flow is expandable and closed by default. It contains numbered points only; required upload fields, validation feedback, and mutation actions remain outside the expandable content.
+
+
+### Resource Utilization Standard
+
+Resource Utilization follows `components/ANALYTICS_RESOURCE_UTILIZATION.md`. Summary uses shared Resource Pressure Lanes; Trend and Node Detail load on first tab activation; hidden tabs do not poll; multi-series charts render a visible compact legend; chart JavaScript lives in a static module rather than inline Jinja.

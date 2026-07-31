@@ -1,0 +1,13 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "components/loading_bar.html" as loading_bar %}
+<div id="node-detail-panel"
+     hx-get="{{ url_for('analytics.utilization_node_detail', cluster_id=cluster_id, node=selected_node) }}"
+     hx-trigger="load delay:2s"
+     hx-swap="outerHTML"
+     hx-indicator="#utilization-node-pending-indicator"
+     hx-sync="this:replace">
+    <section class="{{ analysis_surface.empty_evidence_classes('p-5') }}">
+        <div class="flex items-start gap-3"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="server-cog" class="h-4 w-4"></i></span><div><h3 class="text-base font-semibold text-content-primary">Preparing Node Utilization</h3><p class="mt-1 text-sm leading-6 text-content-muted">The analytics worker is preparing node-scoped utilization evidence. Polling began only after the Node Detail tab was opened.</p></div></div>
+        {{ loading_bar.render('utilization-node-pending-indicator', active=true, label='Preparing Node Utilization') }}
+    </section>
+</div>

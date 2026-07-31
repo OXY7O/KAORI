@@ -1,7 +1,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "analytics/components/_prometheus_status.html" as prometheus_status_panel %}
-{% import "analytics/components/_overview_surfaces.html" as overview_surface %}
+{% import "analytics/components/_analysis_surfaces.html" as overview_surface %}
 {% set snapshot = payload.snapshot_summary|default({}) %}
 {% set snapshot_tone = snapshot.tone|default('unknown') %}
 {% set issue_count = snapshot.stale_dataset_count|default(0) + snapshot.pending_dataset_count|default(0) + snapshot.failed_dataset_count|default(0) %}

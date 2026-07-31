@@ -1,7 +1,7 @@
 {% import "components/section_link_button.html" as section_link_button %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
-{% import "analytics/components/_overview_surfaces.html" as overview_surface %}
+{% import "analytics/components/_analysis_surfaces.html" as overview_surface %}
 {% set resources = [payload.resource_snapshot.cpu, payload.resource_snapshot.memory, payload.resource_snapshot.storage, payload.resource_snapshot.pods] %}
 {% set ranked_resources = resources|sort(attribute='percent', reverse=true) %}
 {% set highest = ranked_resources[0] %}

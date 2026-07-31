@@ -1,224 +1,62 @@
-{% import "components/progress_bar.html" as progress_bar %}
 {% extends "layouts/app.html" %}
-{% import "analytics/components/_content_tabs.html" as analytics_content_tabs %}
+{% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "analytics/components/_status_notice.html" as status_notice %}
 {% block title %}Resource Utilization{% endblock title %}
 {% block dashboard_content %}
-    {% import "components/table_label.html" as table_label %}
-    {% import "components/loading_bar.html" as loading_bar %}
-    {% macro utilization_status(value) %}
-        {% if value > 90 %}
-            {{ table_label.status_label('Critical', 'critical', 'shield-alert') }}
-        {% elif value >= 75 %}
-            {{ table_label.status_label('Warning', 'warning', 'triangle-alert') }}
-        {% else %}
-            {{ table_label.status_label('Normal', 'normal', 'circle-check') }}
-        {% endif %}
-    {% endmacro %}
-    {% macro utilization_fill_bar(value, tone='info') %}
-        {% set percentage = value|default(0)|float %}
-        {% if percentage < 0 %}
-            {% set percentage = 0 %}
-        {% elif percentage > 100 %}
-            {% set percentage = 100 %}
-        {% endif %}
-        {% set bar_class = {
-            'normal': 'bg-status-normal',
-            'warning': 'bg-status-warning',
-            'critical': 'bg-status-critical',
-            'maintenance': 'bg-status-maintenance',
-            'info': 'bg-status-info'
-        }.get(tone, 'bg-kaori-primary') %}
-        {{ progress_bar.bar(
-            percentage,
-            track_classes="mt-4 h-2 overflow-hidden rounded-full bg-surface-hover",
-            fill_classes="h-full rounded-full " ~ bar_class,
-            label="Utilization progress"
-        ) }}
-    {% endmacro %}
-
-    <div id="utilization-page"
-         class="kaori-analytics-page space-y-6"
-         data-analytics-page-tracker="utilization-load-tracker"
-         data-analytics-page-request-tracking="false">
+    <div id="utilization-page" class="kaori-analytics-page space-y-6" data-analytics-page-request-tracking="false">
         {% include "analytics/utilization/partials/_hero.html" %}
-
         {% if dependency_blocker %}
             {% include "components/dependencies/_blocker.html" %}
-        {% endif %}
-
-        {% if not dependency_blocker %}
-            {% set analytics_tracker_id = "utilization-load-tracker" %}
-            {% set analytics_page_id = "utilization-page" %}
-            {% set analytics_load_title = "Loading resource utilization" %}
-            {% set analytics_load_description = "Loading committed utilization snapshots and local projections." %}
-            {% set analytics_load_complete_title = "Resource utilization fully loaded" %}
-            {% set analytics_load_complete_description = "All utilization sections have finished loading." %}
-            {% include "analytics/partials/_load_tracker.html" %}
-
-            {% if error %}
-                <div class="rounded-xl border border-status-warning-border bg-status-warning-soft p-4 shadow-sm">
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning">
-                            <i data-lucide="triangle-alert" class="h-4.5 w-4.5"></i>
-                        </span>
-                        <div>
-                            <h3 class="font-semibold text-content-primary">Utilization Data Unavailable</h3>
-                            <p class="mt-1 text-sm leading-6 text-content-muted">{{ error }}</p>
-                        </div>
-                    </div>
-                </div>
-            {% endif %}
-
-            <script src="{{ url_for('static', filename='vendor/chartjs/chart.umd.min.js') }}"></script>
-
+        {% else %}
+            {% if error %}{{ status_notice.render('Utilization Data Unavailable', error, tone='warning') }}{% endif %}
             {% include "analytics/utilization/partials/_readiness_scope.html" %}
             {% include "analytics/utilization/partials/_overview.html" %}
 
             {% if analytics_materialization.source_warning %}
-                <section class="rounded-xl border border-status-warning-border bg-status-warning-soft px-4 py-3">
-                    <div class="flex items-start gap-3">
-                        <i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 text-status-warning"></i>
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-content-primary">Snapshot Available · Readiness Evidence Incomplete</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ analytics_materialization.source_warning.description }}</p>
-                            {% if analytics_materialization.source_warning.diagnostic_detail %}
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ analytics_materialization.source_warning.diagnostic_detail }}</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                </section>
+                <section class="rounded-xl border border-status-warning-border bg-status-warning-soft px-4 py-3"><div class="flex items-start gap-3"><i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 text-status-warning"></i><div class="min-w-0"><p class="text-sm font-semibold text-content-primary">Snapshot Available · Readiness Evidence Incomplete</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ analytics_materialization.source_warning.description }}</p>{% if analytics_materialization.source_warning.diagnostic_detail %}<p class="mt-1 text-xs leading-5 text-content-muted">{{ analytics_materialization.source_warning.diagnostic_detail }}</p>{% endif %}</div></div></section>
             {% endif %}
 
-            <section data-analytics-tabset
-                     data-analytics-tabset-id="utilization-content"
-                     data-default-tab="summary"
-                     x-data='kaoriAnalyticsTabs("summary", ["summary", "trend", "nodes", "recommendations"], "utilization-content")'
-                     class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                <header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                            <i data-lucide="chart-no-axes-combined" class="h-5 w-5"></i>
-                        </span>
-                        <div>
-                            <h2 class="text-lg font-semibold text-content-primary">Resource Utilization Workspace</h2>
-                            <p class="mt-1 text-sm leading-6 text-content-muted">Review current utilization, historical trends, node pressure, and recommendations in one workspace.</p>
-                        </div>
-                    </div>
-                </header>
-                {% set utilization_tabs = [
-                    ('summary', 'Utilization Summary', 'gauge'),
-                    ('trend', 'Trend Analysis', 'line-chart'),
-                    ('nodes', 'Node Detail', 'server-crash'),
-                    ('recommendations', 'Recommendations', 'list-checks')
-                ] %}
-                {{ analytics_content_tabs.render(
-                    'utilization-content',
-                    utilization_tabs,
-                    'Resource Utilization Content',
-                    embedded=true
-                ) }}
-
-                <div class="p-5 sm:p-6">
-                    <div id="utilization-content-panel-summary"
-                         role="tabpanel"
-                         aria-labelledby="utilization-content-tab-summary"
-                         data-analytics-tab-panel="summary"
-                         x-show="activeTab === 'summary'"
-                         x-bind:hidden="activeTab !== 'summary'">
-                        {% include "analytics/utilization/partials/_current_summary.html" %}
-                    </div>
-
-                    <div id="utilization-content-panel-trend"
-                         role="tabpanel"
-                         aria-labelledby="utilization-content-tab-trend"
-                         data-analytics-tab-panel="trend"
-                         x-show="activeTab === 'trend'"
-                         x-bind:hidden="activeTab !== 'trend'"
-                         hidden
-                         x-cloak>
-                        {% if trend_materialization_pending %}
-                            <div hx-get="{{ url_for('analytics.utilization_trend', cluster_id=cluster.id, trend_hours=trend_hours, trend_node=selected_trend_node) }}"
-                                 hx-trigger="load, every 2s"
-                                 hx-swap="outerHTML"
-                                 hx-indicator="this">
-                                <section class="rounded-lg border border-outline-subtle bg-surface-hover p-5">
-                                    <div class="flex items-start gap-3">
-                                        <span class="flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                            <i data-lucide="database-zap" class="h-5 w-5"></i>
-                                        </span>
-                                        <div>
-                                            <h3 class="text-base font-semibold text-content-primary">Preparing Utilization Trend</h3>
-                                            <p class="mt-1 text-sm leading-6 text-content-muted">The analytics worker is generating the shared long-range series.</p>
-                                        </div>
-                                    </div>
-                                    {{ loading_bar.render('utilization-trend-pending', active=true, label='Preparing utilization trend') }}
-                                </section>
-                            </div>
-                        {% else %}
-                            {% include "analytics/utilization/partials/_trend.html" %}
-                        {% endif %}
-                    </div>
-
-                    <div id="utilization-content-panel-nodes"
-                         role="tabpanel"
-                         aria-labelledby="utilization-content-tab-nodes"
-                         data-analytics-tab-panel="nodes"
-                         x-show="activeTab === 'nodes'"
-                         x-bind:hidden="activeTab !== 'nodes'"
-                         hidden
-                         x-cloak>
-                        <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
-                            <div class="border-b border-outline-subtle p-5">
-                                <div class="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-                                    <div class="flex items-start gap-3">
-                                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                            <i data-lucide="server-crash" class="h-5 w-5"></i>
-                                        </span>
-                                        <div>
-                                            <h3 class="text-lg font-semibold text-content-primary">Node Resource &amp; Pressure Detail</h3>
-                                            <p class="mt-1 text-sm leading-6 text-content-muted">Drill down CPU, memory, pods, and filesystem pressure without reloading the full page.</p>
-                                        </div>
-                                    </div>
-                                    <form method="get"
-                                          action="{{ url_for('analytics.utilization_node_detail') }}"
-                                          hx-get="{{ url_for('analytics.utilization_node_detail') }}"
-                                          hx-target="#node-detail-panel"
-                                          hx-swap="innerHTML"
-                                          hx-trigger="change delay:120ms"
-                                          hx-indicator="#node-detail-refresh-indicator"
-                                          hx-sync="#node-detail-panel:replace"
-                                          class="grid gap-3 xl:w-[320px]">
-                                        <input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}" />
-                                        <label class="block">
-                                            <span class="text-xs font-semibold text-content-secondary">Compute Instance</span>
-                                            <select name="node"
-                                                    class="mt-1.5 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary outline-none transition hover:border-outline-strong focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10">
-                                                <option value="">All Nodes</option>
-                                                {% for node in available_nodes %}
-                                                    <option value="{{ node }}" {% if selected_node == node %}selected{% endif %}>{{ node }}</option>
-                                                {% endfor %}
-                                            </select>
-                                        </label>
-                                    </form>
-                                </div>
-                                {{ loading_bar.render('node-detail-refresh-indicator', label='Refreshing node utilization') }}
-                            </div>
-                            <div id="node-detail-panel">{% include "analytics/utilization/partials/_node_detail.html" %}</div>
-                        </section>
-                    </div>
-
-                    <div id="utilization-content-panel-recommendations"
-                         role="tabpanel"
-                         aria-labelledby="utilization-content-tab-recommendations"
-                         data-analytics-tab-panel="recommendations"
-                         x-show="activeTab === 'recommendations'"
-                         x-bind:hidden="activeTab !== 'recommendations'"
-                         hidden
-                         x-cloak>
-                        {% include "analytics/utilization/partials/_recommendations.html" %}
+            {% set utilization_tabs = [
+                ('summary', 'Utilization Summary', 'gauge'),
+                ('trend', 'Trend Analysis', 'line-chart'),
+                ('nodes', 'Node Detail', 'server-crash'),
+                ('recommendations', 'Recommendations', 'list-checks')
+            ] %}
+            {% call analytics_workspace.tabbed(
+                'utilization-content',
+                utilization_tabs,
+                'Resource Utilization Content',
+                'Resource Utilization Workspace',
+                'Review current pressure, historical trends, node concentration, and prioritized actions in one workspace.',
+                'chart-no-axes-combined',
+                'summary',
+                ['summary', 'trend', 'nodes', 'recommendations']
+            ) %}
+                <div id="utilization-content-panel-summary" role="tabpanel" aria-labelledby="utilization-content-tab-summary" data-analytics-tab-panel="summary" x-show="activeTab === 'summary'" x-bind:hidden="activeTab !== 'summary'">{% include "analytics/utilization/partials/_current_summary.html" %}</div>
+                <div id="utilization-content-panel-trend" role="tabpanel" aria-labelledby="utilization-content-tab-trend" data-analytics-tab-panel="trend" x-show="activeTab === 'trend'" x-bind:hidden="activeTab !== 'trend'" hidden x-cloak>
+                    <div id="utilization-trend-panel"
+                         hx-get="{{ url_for('analytics.utilization_trend', cluster_id=cluster.id, trend_hours=trend_hours, trend_node=selected_trend_node) }}"
+                         hx-trigger="kaori:analytics-tab-activated once"
+                         hx-swap="outerHTML"
+                         hx-indicator="#utilization-trend-lazy-indicator"
+                         hx-sync="this:replace">
+                        <section class="{{ analysis_surface.empty_evidence_classes('p-5') }}"><div class="flex items-start gap-3"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="line-chart" class="h-4 w-4"></i></span><div><h3 class="text-base font-semibold text-content-primary">Trend Analysis Loads On Demand</h3><p class="mt-1 text-sm leading-6 text-content-muted">Open this tab to request the committed historical series. No background polling runs while the tab is hidden.</p></div></div><div id="utilization-trend-lazy-indicator" class="htmx-indicator mt-4 h-1.5 overflow-hidden rounded-full bg-surface-hover"><span class="block h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></span></div></section>
                     </div>
                 </div>
-            </section>
+                <div id="utilization-content-panel-nodes" role="tabpanel" aria-labelledby="utilization-content-tab-nodes" data-analytics-tab-panel="nodes" x-show="activeTab === 'nodes'" x-bind:hidden="activeTab !== 'nodes'" hidden x-cloak>
+                    <div id="node-detail-panel"
+                         hx-get="{{ url_for('analytics.utilization_node_detail', cluster_id=cluster.id, node=selected_node) }}"
+                         hx-trigger="kaori:analytics-tab-activated once"
+                         hx-swap="outerHTML"
+                         hx-indicator="#utilization-node-lazy-indicator"
+                         hx-sync="this:replace">
+                        <section class="{{ analysis_surface.empty_evidence_classes('p-5') }}"><div class="flex items-start gap-3"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="server-crash" class="h-4 w-4"></i></span><div><h3 class="text-base font-semibold text-content-primary">Node Detail Loads On Demand</h3><p class="mt-1 text-sm leading-6 text-content-muted">Open this tab to request node-scoped utilization evidence. The result is retained until the page scope changes.</p></div></div><div id="utilization-node-lazy-indicator" class="htmx-indicator mt-4 h-1.5 overflow-hidden rounded-full bg-surface-hover"><span class="block h-full w-1/3 animate-pulse rounded-full bg-kaori-primary"></span></div></section>
+                    </div>
+                </div>
+                <div id="utilization-content-panel-recommendations" role="tabpanel" aria-labelledby="utilization-content-tab-recommendations" data-analytics-tab-panel="recommendations" x-show="activeTab === 'recommendations'" x-bind:hidden="activeTab !== 'recommendations'" hidden x-cloak>{% include "analytics/utilization/partials/_recommendations.html" %}</div>
+            {% endcall %}
         {% endif %}
     </div>
 {% endblock dashboard_content %}
+{% block scripts %}<script src="{{ url_for('static', filename='vendor/chartjs/chart.umd.min.js') }}"></script><script src="{{ url_for('static', filename='js/analytics_utilization.js') }}"></script>{% endblock scripts %}

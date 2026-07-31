@@ -182,17 +182,17 @@ refresh. A pending or blocked response must retain the page wrapper selected by
 `hx-select` so the workspace never becomes a blank replacement. Capacity
 Analysis must retain the agreed Cluster → Node selector hierarchy.
 
-## Analytics Overview presentation contract
+## Analytics presentation contract
 
 - Use the shared Analytics content-tab component and `kaoriAnalyticsTabs`; do not maintain a separate Overview-only tab implementation.
-- Capacity is the Overview snapshot-style baseline. Every Overview tab uses the shared snapshot shell, header, header icon, metric strip when applicable, bright evidence/context body, and darker interpretation/action region from `analytics/components/_overview_surfaces.html`. Domain layouts may differ, but they must not fork the geometry or surface contract.
+- Capacity is the analytics snapshot-style baseline. Analytics Overview tabs and domain workspaces uses the shared snapshot shell, header, header icon, metric strip when applicable, bright evidence/context body, and darker interpretation/action region from `analytics/components/_analysis_surfaces.html`. Domain layouts may differ, but they must not fork the geometry or surface contract.
 - Every lazy Overview section declares its tracked load state. The compact Overview progress strip reports completed or failed section requests and coexists with local skeletons and the filter-owned HTMX loading bar.
 - Snapshot section headers, actions, metric labels, status text, and empty-state titles use Title Case. Descriptive sentences and technical identifiers retain their natural casing.
 - Resource utilization progress bars must receive resolved class strings, clamp width to 0–100%, and update from the committed snapshot percentage. Do not pass nested Jinja expressions inside a quoted macro argument.
 - Top Consumers and Alerts & Anomalies Snapshot are always visible on the Overview page. They must not use `details`, chevrons, or expand/collapse state.
 - Storage Snapshot and Trend Summary end with concise operational tips using the shared `components/detail_tip.html` treatment.
 - Overview redesigns must preserve lazy-section HTMX endpoints, selected cluster/time-range state, and worker-first committed-snapshot boundaries.
-- Overview primary data, readiness, charts, metric grids, and side context panels use the bright `bg-surface-card` surface. `bg-surface-hover` is reserved for attention, interpretation, recommended-action, review-path, and execution-guidance strips through `analytics/components/_overview_surfaces.html`.
+- Overview primary data, readiness, charts, metric grids, and side context panels use the bright `bg-surface-card` surface. `bg-surface-hover` is reserved for attention, interpretation, recommended-action, review-path, and execution-guidance strips through `analytics/components/_analysis_surfaces.html`.
 - Prometheus status and committed dataset metadata remain bright; dataset freshness exceptions appear as a distinct darker attention strip below them.
 - Pressure Posture and equivalent analytical context panels remain bright and use borders for separation.
 - Normalize all status tones through `table_label.semantic_tone(...)`. New presentation payloads use semantic tones; legacy color aliases are accepted only at the shared label boundary.
@@ -563,3 +563,12 @@ Forecast, Top Consumers, and other provider failures propagate to the
 materialization boundary. Alerts & Anomalies may remain partially available
 when Alertmanager succeeds but optional Prometheus anomaly collection fails;
 the partial-source warning is rendered explicitly.
+
+
+## Resource Utilization presentation contract
+
+- Use `analytics/components/_analysis_surfaces.html`; no Overview-only compatibility surface path may remain.
+- Summary uses `analytics/components/_resource_pressure_lane.html` instead of duplicating four KPI cards.
+- Trend and Node Detail are first-activation HTMX tabs. Pending polling begins only after activation and stops when the committed partial replaces the pending fragment.
+- Multi-series trend charts expose a visible shared legend and render through `app/static/js/analytics_utilization.js`.
+- Resource Utilization uses local filter/Trend/Node indicators and does not use the Analytics Overview composite tracker.

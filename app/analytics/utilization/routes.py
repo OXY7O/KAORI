@@ -150,14 +150,12 @@ def utilization_trend() -> str:
     if materialized.dependency_blocker:
         return render_dependency_blocker(materialized.dependency_blocker)
     if not materialized.result.available:
-        pending = pending_page_context(
-            materialized=materialized,
-            dataset_key='analytics.utilization.trend',
-            title='Utilization Trend',
-            description='Utilization range queries run on the analytics worker.',
-            icon='chart-no-axes-combined',
+        return render_template(
+            'analytics/utilization/partials/_trend_pending.html',
+            cluster_id=request.args.get('cluster_id', ''),
+            trend_hours=trend_hours,
+            selected_trend_node=request.args.get('trend_node', ''),
         )
-        return render_template('analytics/materialization/_pending.html', **pending)
     context = dict(materialized.result.context or {})
     context.setdefault('trends', {'cpu': [], 'memory': [], 'pods': []})
     context.setdefault('trend_summary', build_utilization_trend_summary(context['trends']))
@@ -179,14 +177,11 @@ def utilization_node_detail() -> str:
     if materialized.dependency_blocker:
         return render_dependency_blocker(materialized.dependency_blocker)
     if not materialized.result.available:
-        pending = pending_page_context(
-            materialized=materialized,
-            dataset_key='analytics.utilization.node',
-            title='Node Utilization',
-            description='Node-specific utilization is prepared once and reused while fresh.',
-            icon='server',
+        return render_template(
+            'analytics/utilization/partials/_node_pending.html',
+            cluster_id=request.args.get('cluster_id', ''),
+            selected_node=selected_node,
         )
-        return render_template('analytics/materialization/_pending.html', **pending)
     context = dict(materialized.result.context or {})
     context['analytics_materialization'] = snapshot_meta(materialized)
     return render_template('analytics/utilization/partials/_node_detail.html', **context)

@@ -1,5 +1,5 @@
 {% import "components/table_label.html" as table_label %}
-{% import "analytics/components/_overview_surfaces.html" as overview_surface %}
+{% import "analytics/components/_analysis_surfaces.html" as overview_surface %}
 {% set summary = payload.actionable_recommendations %}
 {% set summary_tone = table_label.semantic_tone(summary.tone or summary.status)|trim %}
 {% set top_sources = summary.sources|sort(attribute='count', reverse=true) %}
