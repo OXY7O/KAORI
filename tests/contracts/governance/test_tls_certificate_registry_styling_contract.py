@@ -25,6 +25,8 @@ def test_tls_registry_uses_governance_resource_registry_pattern() -> None:
     assert 'Current State' in table
     assert 'Coverage State' in table
     assert 'resource_detail_modal.detail_button' in table
+    assert "table_ui.cluster_identity(secret_cluster, secret_environment)" in table
+    assert "size='body'" not in table
     assert 'static_detail_row' not in table
     assert 'resource_detail_modal.host(' in index
 

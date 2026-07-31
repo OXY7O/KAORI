@@ -57,11 +57,15 @@ def test_hero_posture_becomes_full_width_below_the_main_hero_content() -> None:
     assert 'id="overview-hero-posture"' in hero
     assert 'class="w-full"' in hero
     assert 'aside class="{{ page_hero.aside_classes() }}"' not in hero
-    assert 'Immediate Attention' in posture
+    assert 'Operational Posture' in posture
+    assert 'Review Required' in posture
     assert 'Resource Pressure' in posture
     assert 'Forecast Risk' in posture
-    assert 'bg-white/12' in posture
-    assert 'bg-white/12' in posture_loading
+    assert 'grid gap-px bg-brand-outline md:grid-cols-2 xl:grid-cols-6' in posture
+    assert 'md:col-span-2 xl:col-span-2' in posture
+    assert 'bg-white/12' not in posture
+    assert 'bg-white/12' not in posture_loading
+    assert 'lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]' not in posture
 
 
 def test_overview_workspace_splits_long_domains_into_dedicated_tabs() -> None:

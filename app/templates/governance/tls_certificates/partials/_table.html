@@ -61,7 +61,7 @@
                         </td>
                         <td class="{{ table_ui.cell_classes() }}">
                             <div class="space-y-2.5">
-                                {{ table_ui.cluster_identity(secret_cluster, secret_environment, size='body') }}
+                                {{ table_ui.cluster_identity(secret_cluster, secret_environment) }}
                                 <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5">
                                     <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Namespace</p>
                                     <p class="mt-1 break-words text-xs font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ record.namespace }}</p>
