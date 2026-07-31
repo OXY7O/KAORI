@@ -22,10 +22,19 @@ def test_tls_registry_uses_governance_resource_registry_pattern() -> None:
     assert 'Certificate</th>' in table
     assert 'Host Coverage</th>' in table
     assert 'Ingress Usage</th>' in table
-    assert 'Current State' in table
-    assert 'Coverage State' in table
-    assert 'resource_detail_modal.detail_button' in table
-    assert "table_ui.cluster_identity(secret_cluster, secret_environment)" in table
+    assert 'w-full table-fixed' in table
+    assert 'overflow-x-auto' not in table
+    assert 'min-w-[78rem]' not in table
+    assert 'Current State' not in table
+    assert 'Coverage State' not in table
+    assert 'CN ·' in table
+    assert 'Issuer ·' in table
+    assert 'hidden w-[15%]' in table
+    assert 'hidden w-[11%]' in table
+    assert 'data-resource-detail-toggle' in table
+    assert 'aria-label="View {{ record.secret_name }} TLS Certificate Details"' in table
+    assert 'data-lucide="server"' in table
+    assert 'Namespace · {{ record.namespace }}' in table
     assert "size='body'" not in table
     assert 'static_detail_row' not in table
     assert 'resource_detail_modal.host(' in index

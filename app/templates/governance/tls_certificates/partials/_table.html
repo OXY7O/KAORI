@@ -1,8 +1,6 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
-{% import "components/technical_value.html" as technical_value %}
-{% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <section id="tls-certificates-table-card" class="{{ table_ui.block_classes() }}">
     {{ table_ui.inventory_block_header(
         'lock-keyhole',
@@ -15,103 +13,94 @@
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         {% include "governance/tls_certificates/partials/_filters.html" %}
     </div>
-    <div class="overflow-x-auto overscroll-x-contain">
-        <table class="{{ table_ui.table_classes('min-w-[74rem]') }}">
+    <div class="w-full overflow-hidden">
+        <table class="w-full table-fixed text-left text-sm text-content-secondary">
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th class="{{ table_ui.header_cell_classes() }} min-w-[19rem]">Certificate</th>
-                    <th class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Scope</th>
-                    <th class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Validity</th>
-                    <th class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Host Coverage</th>
-                    <th class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Ingress Usage</th>
-                    <th class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
+                    <th class="w-[34%] px-4 py-3 text-left">Certificate</th>
+                    <th class="w-[22%] px-4 py-3 text-left">Scope</th>
+                    <th class="w-[18%] px-4 py-3 text-left">Validity</th>
+                    <th class="hidden w-[15%] px-4 py-3 text-left lg:table-cell">Host Coverage</th>
+                    <th class="hidden w-[11%] px-4 py-3 text-left xl:table-cell">Ingress Usage</th>
+                    <th class="w-14 px-3 py-3 text-right"><span class="sr-only">Details</span></th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
                 {% for record in payload.records %}
                     {% set presentation = record.presentation or {} %}
-                    {% set secret_cluster = record.cluster.name if record.cluster else record.cluster_id %}
-                    {% set secret_environment = record.cluster.environment if record.cluster else '' %}
-                    <tr id="tls-certificate-row-{{ record.id }}" class="{{ table_ui.row_classes() }} align-top">
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <div class="min-w-0 space-y-3">
-                                <div class="flex min-w-0 items-start gap-3">
-                                    <span class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
-                                        <i data-lucide="shield-check" class="h-4.5 w-4.5"></i>
-                                    </span>
-                                    <div class="min-w-0">
-                                        <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ record.secret_name }}</p>
-                                        <div class="mt-1.5 flex flex-wrap items-center gap-2">
-                                            {{ table_label.metadata_label(record.secret_type or 'kubernetes.io/tls', 'key-round', true, 'compact') }}
-                                            {{ table_label.status_label(presentation.status_label or 'Unknown', presentation.status_tone or 'unknown', presentation.status_icon or 'circle-help', 'compact') }}
-                                        </div>
-                                    </div>
-                                </div>
-                                <dl class="grid gap-2 rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                                    <div class="min-w-0">
-                                        <dt class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Common Name</dt>
-                                        <dd class="mt-1 break-words text-xs font-medium leading-5 text-content-primary [overflow-wrap:anywhere]">{{ record.common_name or 'Not Reported' }}</dd>
-                                    </div>
-                                    <div class="min-w-0 border-t border-outline-subtle pt-2">
-                                        <dt class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Issuer</dt>
-                                        <dd class="mt-1 break-words text-xs font-medium leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ record.issuer or 'Not Reported' }}</dd>
-                                    </div>
-                                </dl>
-                            </div>
-                        </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <div class="space-y-2.5">
-                                {{ table_ui.cluster_identity(secret_cluster, secret_environment) }}
-                                <div class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5">
-                                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Namespace</p>
-                                    <p class="mt-1 break-words text-xs font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ record.namespace }}</p>
+                    {% set cluster_name = record.cluster.name if record.cluster else record.cluster_id %}
+                    {% set cluster_environment = record.cluster.environment if record.cluster else '' %}
+                    <tr id="tls-certificate-row-{{ record.id }}" class="{{ table_ui.row_classes() }}">
+                        <td class="min-w-0 px-4 py-3 align-middle">
+                            <div class="flex min-w-0 items-start gap-2.5">
+                                <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                    <i data-lucide="shield-check" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]" title="{{ record.secret_name }}">{{ record.secret_name }}</p>
+                                    <p class="mt-1 truncate text-xs leading-5 text-content-muted" title="Common Name · {{ record.common_name or 'Not Reported' }}">CN · {{ record.common_name or 'Not Reported' }}</p>
+                                    <p class="truncate text-xs leading-5 text-content-muted" title="Issuer · {{ record.issuer or 'Not Reported' }}">Issuer · {{ record.issuer or 'Not Reported' }}</p>
                                 </div>
                             </div>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                                <div class="flex flex-wrap items-start justify-between gap-2">
-                                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Current State</p>
-                                    {{ table_label.status_indicator_label(presentation.status_label or 'Unknown', presentation.status_tone or 'unknown') }}
+                        <td class="min-w-0 px-4 py-3 align-middle">
+                            <div class="flex min-w-0 items-start gap-2.5">
+                                <span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                                    <i data-lucide="server" class="h-4 w-4"></i>
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-semibold leading-5 text-content-primary" title="{{ cluster_name }}">{{ cluster_name }}</p>
+                                    <p class="mt-0.5 truncate text-xs leading-5 text-content-muted" title="{{ cluster_environment|environment_name(empty='Environment not specified') }}">{{ cluster_environment|environment_name(empty='Environment not specified') }}</p>
+                                    <p class="truncate text-xs leading-5 text-content-muted" title="Namespace · {{ record.namespace }}">Namespace · {{ record.namespace }}</p>
                                 </div>
+                            </div>
+                        </td>
+                        <td class="min-w-0 px-4 py-3 align-middle">
+                            <div class="min-w-0 space-y-1">
+                                {{ table_label.status_indicator_label(presentation.status_label or 'Unknown', presentation.status_tone or 'unknown') }}
                                 {% if record.not_after %}
-                                    <p class="mt-2 text-sm font-semibold text-content-primary">{{ record.not_after|user_date('N/A') }}</p>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">
+                                    <p class="truncate text-xs font-medium leading-5 text-content-primary" title="{{ record.not_after|user_date('N/A') }}">{{ record.not_after|user_date('N/A') }}</p>
+                                    <p class="truncate text-xs leading-5 text-content-muted">
                                         {% if record.status == 'expired' %}
-                                            Expired {{ (record.days_remaining or 0)|abs }} Days Ago
+                                            {{ (record.days_remaining or 0)|abs }} Days Expired
                                         {% else %}
                                             {{ record.days_remaining }} Days Remaining
                                         {% endif %}
                                     </p>
                                 {% else %}
-                                    <p class="mt-2 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ record.parse_error or 'Validity not reported' }}</p>
+                                    <p class="line-clamp-2 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]" title="{{ record.parse_error or 'Validity not reported' }}">{{ record.parse_error or 'Validity not reported' }}</p>
                                 {% endif %}
                             </div>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                                <div class="flex flex-wrap items-start justify-between gap-2">
-                                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Coverage State</p>
-                                    {{ table_label.status_indicator_label(presentation.coverage_label or 'Not Reported', presentation.coverage_tone or 'unknown') }}
-                                </div>
-                                <p class="mt-2 text-sm font-semibold text-content-primary">{{ record.covered_host_count or 0 }}/{{ record.declared_host_count or 0 }} Hosts Covered</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ (record.uncovered_hosts or [])|length }} Uncovered Host{{ '' if (record.uncovered_hosts or [])|length == 1 else 's' }}</p>
+                        <td class="hidden min-w-0 px-4 py-3 align-middle lg:table-cell">
+                            <div class="min-w-0 space-y-1">
+                                {{ table_label.status_indicator_label(presentation.coverage_label or 'Not Reported', presentation.coverage_tone or 'unknown') }}
+                                <p class="truncate text-xs font-medium leading-5 text-content-primary">{{ record.covered_host_count or 0 }}/{{ record.declared_host_count or 0 }} Hosts Covered</p>
+                                {% if record.uncovered_hosts %}
+                                    <p class="truncate text-xs leading-5 text-content-muted" title="{{ record.uncovered_hosts|join(', ') }}">{{ record.uncovered_hosts|length }} Uncovered</p>
+                                {% else %}
+                                    <p class="text-xs leading-5 text-content-muted">No Uncovered Hosts</p>
+                                {% endif %}
                             </div>
                         </td>
-                        <td class="{{ table_ui.cell_classes() }}">
-                            <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-3">
-                                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Ingress Consumers</p>
-                                <p class="mt-2 text-sm font-semibold text-content-primary">{{ (record.used_by or [])|length }} {{ 'Ingress' if (record.used_by or [])|length == 1 else 'Ingresses' }}</p>
-                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ record.declared_host_count or 0 }} Declared Host{{ '' if (record.declared_host_count or 0) == 1 else 's' }}</p>
-                            </div>
+                        <td class="hidden min-w-0 px-4 py-3 align-middle xl:table-cell">
+                            <p class="truncate text-sm font-semibold text-content-primary">{{ (record.used_by or [])|length }} {{ 'Ingress' if (record.used_by or [])|length == 1 else 'Ingresses' }}</p>
+                            <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ record.declared_host_count or 0 }} Declared Hosts</p>
                         </td>
-                        <td class="{{ table_ui.cell_classes(action=true) }}">
-                            {{ resource_detail_modal.detail_button(
-                                record.id,
-                                url_for('governance.tls_certificates_detail', certificate_id=record.id),
-                                record.secret_name,
-                                'TLS Certificate'
-                            ) }}
+                        <td class="px-3 py-3 text-right align-middle">
+                            <button type="button"
+                                    data-resource-detail-toggle
+                                    data-detail-id="{{ record.id }}"
+                                    data-detail-url="{{ url_for('governance.tls_certificates_detail', certificate_id=record.id) }}"
+                                    data-detail-name="{{ record.secret_name }}"
+                                    data-detail-type="TLS Certificate"
+                                    aria-haspopup="dialog"
+                                    aria-controls="resource-detail-modal"
+                                    aria-label="View {{ record.secret_name }} TLS Certificate Details"
+                                    title="View Details"
+                                    class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted shadow-sm transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus focus-visible:ring-offset-1">
+                                <i data-lucide="panel-top-open" class="h-4 w-4" aria-hidden="true"></i>
+                            </button>
                         </td>
                     </tr>
                 {% else %}
