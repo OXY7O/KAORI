@@ -34,11 +34,11 @@ def test_analytics_table_headers_follow_kaori_title_case_contract() -> None:
         'alerts/partials/_anomalies_table.html': [
             'Anomaly', 'Severity', 'Namespace &amp; Pod', 'Signal', 'Action'
         ],
-        'top_consumers/partials/_top_consumers_section.html': [
-            'Rank', 'Consumer', 'Contribution', 'Usage'
+        'components/_ranked_evidence_panel.html': [
+            'Rank', 'Consumer Identity', 'Contribution to Scope', 'Consumption'
         ],
         'top_consumers/partials/_consumer_detail_results.html': [
-            'Rank', 'Namespace &amp; Pod', 'Resource &amp; Usage', 'Risk', 'Action'
+            'Rank', 'Consumer Identity', 'Resource Evidence', 'Operational Priority', 'Action'
         ],
         'storage/partials/_filesystem_panel.html': [
             'Node &amp; Mount Point', 'Capacity', 'Utilization', 'Risk'
@@ -67,7 +67,7 @@ def test_table_headers_do_not_use_ambiguous_rank_symbol_or_slash_identity() -> N
     files = [
         'alerts/partials/_anomalies_table.html',
         'alerts/partials/_anomalies_table_row.html',
-        'top_consumers/partials/_top_consumers_section.html',
+        'components/_ranked_evidence_panel.html',
         'top_consumers/partials/_consumer_detail_results.html',
     ]
     combined = '\n'.join(_read(path) for path in files)

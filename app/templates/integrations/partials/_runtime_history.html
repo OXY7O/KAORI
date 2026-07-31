@@ -280,7 +280,21 @@
                 <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"
                       aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
             {% endif %}
-            {{ pagination_ui.numeric_pages(runtime_history.pagination.page, runtime_history.pagination.total_pages) }}
+            {% set runtime_pagination_args = {
+                'cluster_id': cluster.id,
+                'per_page': runtime_history.pagination.per_page
+            } %}
+            {{ pagination_ui.numeric_pages(
+                runtime_history.pagination.page,
+                runtime_history.pagination.total_pages,
+                'page',
+                hx_target='#' ~ runtime_history_id,
+                hx_indicator='#' ~ runtime_history_loading_id,
+                endpoint='integrations.kubernetes_runtime_history',
+                query_params=runtime_pagination_args,
+                hx_swap='outerHTML',
+                href_endpoint='integrations.kubernetes_detail'
+            ) }}
             {% if runtime_history.pagination.has_next %}
                 <button type="button"
                         hx-get="{{ runtime_history_url }}?page={{ runtime_history.pagination.next_page }}&per_page={{ runtime_history.pagination.per_page }}"

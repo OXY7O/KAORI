@@ -716,6 +716,20 @@ QUERIES: dict[str, QueryDefinition] = {
         required_metrics=('container_memory_working_set_bytes',),
         required_labels=(('container_memory_working_set_bytes', ('container', 'image', 'namespace')),),
     ),
+    'analytics.top_consumers.queries.POD_OWNER_QUERY': QueryDefinition(
+        key='analytics.top_consumers.queries.POD_OWNER_QUERY',
+        expression='kube_pod_owner{namespace!="", pod!=""}',
+        domain='app.analytics.top_consumers',
+        required_metrics=('kube_pod_owner',),
+        required_labels=(('kube_pod_owner', ('namespace', 'pod', 'owner_kind', 'owner_name')),),
+    ),
+    'analytics.top_consumers.queries.POD_OWNER_BY_NAMESPACE_QUERY': QueryDefinition(
+        key='analytics.top_consumers.queries.POD_OWNER_BY_NAMESPACE_QUERY',
+        expression='kube_pod_owner{namespace="$namespace", pod!=""}',
+        domain='app.analytics.top_consumers',
+        required_metrics=('kube_pod_owner',),
+        required_labels=(('kube_pod_owner', ('namespace', 'pod', 'owner_kind', 'owner_name')),),
+    ),
     'analytics.top_consumers.queries.TOP_POD_CONSUMERS_QUERY': QueryDefinition(
         key='analytics.top_consumers.queries.TOP_POD_CONSUMERS_QUERY',
         expression='topk(50, sum by (namespace) (kube_pod_status_phase{phase="Running"} == 1))',

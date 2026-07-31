@@ -1,177 +1,81 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "analytics/components/_content_tabs.html" as analytics_content_tabs %}
-{% import "components/progress_bar.html" as progress_bar %}
+{% import "analytics/components/_ranked_evidence_panel.html" as ranked_evidence %}
 {% import "components/recommendation_pager.html" as recommendation_pager %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
-{% set payload = consumer_payload %}
-{% set overview = payload.overview %}
-
-{% macro consumer_ranking(title, description, icon, unit, rows, total_value, capacity_percent) -%}
-    <section class="overflow-hidden rounded-lg border border-outline-default bg-surface-card">
-        <header class="border-b border-outline-subtle px-4 py-4">
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                        <i data-lucide="{{ icon }}" class="h-4.5 w-4.5"></i>
-                    </span>
-                    <div class="min-w-0">
-                        <h3 class="font-semibold text-content-primary">{{ title }}</h3>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
-                    </div>
-                </div>
-                {{ table_label.metadata_label(unit, size='compact') }}
-            </div>
-            <dl class="mt-4 grid grid-cols-2 gap-3 border-t border-outline-subtle pt-4 sm:grid-cols-4">
-                <div>
-                    <dt class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Total Used</dt>
-                    <dd class="mt-1 text-sm font-semibold text-content-primary">{{ total_value }}</dd>
-                </div>
-                <div>
-                    <dt class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Capacity Share</dt>
-                    <dd class="mt-1 text-sm font-semibold text-content-primary">{{ capacity_percent }}%</dd>
-                </div>
-                <div>
-                    <dt class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Ranked</dt>
-                    <dd class="mt-1 text-sm font-semibold text-content-primary">{{ rows|length }} Consumers</dd>
-                </div>
-                <div>
-                    <dt class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Peak</dt>
-                    <dd class="mt-1 break-words text-sm font-semibold text-content-primary">{{ rows[0].value if rows else 'No Data' }}</dd>
-                </div>
-            </dl>
-        </header>
-
-        <div class="hidden grid-cols-12 gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted sm:grid">
-            <div class="col-span-1">Rank</div>
-            <div class="col-span-5">Consumer</div>
-            <div class="col-span-4">Contribution</div>
-            <div class="col-span-2 text-right">Usage</div>
-        </div>
-        <div class="divide-y divide-outline-subtle">
-            {% for row in rows %}
-                <article class="grid gap-3 px-4 py-3 sm:grid-cols-12 sm:items-center">
-                    <div class="sm:col-span-1">
-                        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-hover text-xs font-semibold text-content-secondary">{{ row.rank }}</span>
-                    </div>
-                    <div class="min-w-0 sm:col-span-5">
-                        <p class="break-words text-sm font-semibold text-content-primary">{{ row.primary_name }}</p>
-                        <p class="mt-0.5 break-words text-xs text-content-muted">{{ row.secondary_name }}</p>
-                    </div>
-                    <div class="min-w-0 sm:col-span-4">
-                        <div class="flex items-center justify-between gap-3 text-xs text-content-muted">
-                            <span>Contribution</span>
-                            <span class="font-semibold tabular-nums text-content-primary">{{ row.percent_of_total }}%</span>
-                        </div>
-                        {{ progress_bar.bar(
-                            row.bar_percent,
-                            track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover',
-                            fill_classes='h-full rounded-full bg-kaori-primary',
-                            label=row.primary_name ~ ' contribution'
-                        ) }}
-                    </div>
-                    <div class="flex items-center justify-between gap-3 sm:col-span-2 sm:block sm:text-right">
-                        <span class="text-xs font-semibold uppercase tracking-wide text-content-muted sm:hidden">Usage</span>
-                        <span class="text-sm font-semibold tabular-nums text-content-primary">{{ row.value }}</span>
-                    </div>
-                </article>
-            {% else %}
-                <div class="px-4 py-10 text-center text-sm text-content-muted">No {{ title|lower }} are available for this scope.</div>
-            {% endfor %}
-        </div>
-    </section>
-{%- endmacro %}
+{% set payload = consumer_payload|default({}, true) %}
+{% set active_tab = initial_tab|default('rankings') %}
 
 {% if render_dependency_blocker|default(false) and dependency_blocker %}
     {% include "components/dependencies/_blocker.html" %}
 {% elif not dependency_blocker %}
-    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
+    <section class="{{ analysis_surface.snapshot_shell_classes() }}"
              data-top-consumers-tabset
              data-analytics-tabset
              data-analytics-tabset-id="top-consumers-content"
-             data-default-tab="overview"
-             x-data='kaoriAnalyticsTabs("overview", ["overview", "detail", "recommendations"], "top-consumers-content")'>
+             data-default-tab="{{ active_tab }}"
+             x-data='kaoriAnalyticsTabs("{{ active_tab }}", ["rankings", "records", "recommendations"], "top-consumers-content")'>
         {% set consumer_tabs = [
-            ('overview', 'Consumer Overview', 'bar-chart-3'),
-            ('detail', 'Consumer Detail', 'list-filter'),
+            ('rankings', 'Consumer Rankings', 'bar-chart-3'),
+            ('records', 'Consumer Records', 'list-filter'),
             ('recommendations', 'Recommendations', 'list-checks')
         ] %}
         {{ analytics_content_tabs.render('top-consumers-content', consumer_tabs, 'Top Consumers Workspace', embedded=true) }}
 
-        <div id="top-consumers-content-panel-overview"
+        <div id="top-consumers-content-panel-rankings"
              role="tabpanel"
-             data-analytics-tab-panel="overview"
-             aria-labelledby="top-consumers-content-tab-overview"
-             x-show="activeTab === 'overview'"
-             x-bind:hidden="activeTab !== 'overview'"
+             data-analytics-tab-panel="rankings"
+             aria-labelledby="top-consumers-content-tab-rankings"
+             x-show="activeTab === 'rankings'"
+             x-bind:hidden="activeTab !== 'rankings'"
+             {% if active_tab != 'rankings' %}hidden x-cloak{% endif %}
              class="space-y-5 p-5 sm:p-6">
-            <header class="flex min-w-0 items-start gap-3">
-                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="bar-chart-3" class="h-5 w-5"></i>
-                </span>
-                <div class="min-w-0">
-                    <h2 class="text-lg font-semibold text-content-primary">Top Consumer Overview</h2>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">CPU and memory rankings are shown together with capacity context and contribution data.</p>
+            <header class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="bar-chart-3" class="h-4 w-4"></i></span>
+                    <div class="min-w-0">
+                        <h2 class="text-lg font-semibold text-content-primary">Consumer Rankings</h2>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Compare absolute consumption, selected-scope contribution, denominator context, and operational priority without treating heterogeneous resource units as directly comparable.</p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    {{ table_label.metadata_label(payload.scope.label|default('Cluster'), 'scan-search', size='compact') }}
+                    {{ table_label.status_label(payload.coverage.label|default('Evidence Unavailable'), 'normal' if payload.coverage.complete_count|default(0) == 4 else 'warning', size='compact') }}
                 </div>
             </header>
 
-            {% if payload.has_data %}
+            {% if payload.overview.rankings %}
                 <div class="grid gap-5 xl:grid-cols-2">
-                    {{ consumer_ranking(
-                        'Top 10 CPU Consumers',
-                        'Ranked by CPU usage in the latest committed snapshot.',
-                        'cpu',
-                        'Cores',
-                        overview.cpu_chart.rows,
-                        overview.summary.total_cpu_used,
-                        overview.summary.total_cpu_percent
-                    ) }}
-                    {{ consumer_ranking(
-                        'Top 10 Memory Consumers',
-                        'Ranked by memory usage in the latest committed snapshot.',
-                        'memory-stick',
-                        'GiB',
-                        overview.memory_chart.rows,
-                        overview.summary.total_memory_used,
-                        overview.summary.total_memory_percent
-                    ) }}
-                </div>
-                <div class="grid border-t border-outline-subtle pt-5 sm:grid-cols-2 xl:grid-cols-4">
-                    {% set overview_cards = [
-                        ('CPU Used', overview.summary.total_cpu_used, overview.summary.total_cpu_percent ~ '% of allocatable', 'cpu'),
-                        ('Memory Used', overview.summary.total_memory_used, overview.summary.total_memory_percent ~ '% of allocatable', 'memory-stick'),
-                        ('Total Pods', overview.summary.total_pods ~ ' Pods', overview.summary.total_pods_percent ~ '% of capacity', 'boxes'),
-                        ('PVC Usage', overview.summary.total_pvc_used, overview.summary.total_pvc_percent ~ '% of capacity', 'database')
-                    ] %}
-                    {% for label, value, subtitle, icon in overview_cards %}
-                        <article class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-3 xl:border-b-0 xl:border-r xl:last:border-r-0">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                <i data-lucide="{{ icon }}" class="h-4.5 w-4.5"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <p class="text-xs font-medium text-content-muted">{{ label }}</p>
-                                <p class="mt-1 break-words font-semibold text-content-primary">{{ value }}</p>
-                                <p class="text-xs leading-5 text-content-muted">{{ subtitle }}</p>
-                            </div>
-                        </article>
-                    {% endfor %}
+                    {% for panel in payload.overview.rankings %}{{ ranked_evidence.render(panel) }}{% endfor %}
                 </div>
             {% else %}
-                {% set empty_state_icon = "bar-chart-3" %}
-                {% set empty_state_title = "No Top Consumer Data Available" %}
-                {% set empty_state_description = payload.message|default('Top consumer data will appear after Prometheus returns resource metrics for the selected filters.', true) %}
-                {% set empty_state_min_height = "min-h-[280px]" %}
-                {% include "components/states/_empty_state.html" %}
+                <div class="{{ analysis_surface.empty_evidence_classes('flex min-h-[280px] flex-col items-center justify-center px-5 py-8 text-center') }}">
+                    <i data-lucide="database-zap" class="h-6 w-6 text-kaori-primary"></i>
+                    <h3 class="mt-3 text-sm font-semibold text-content-primary">No Ranked Consumer Evidence Available</h3>
+                    <p class="mt-1 max-w-xl text-xs leading-5 text-content-muted">{{ payload.message|default('Refresh or materialize Top Consumers after Prometheus evidence becomes available.', true) }}</p>
+                </div>
             {% endif %}
+
+            <div class="{{ analysis_surface.interpretation_grid_classes() }}">
+                <section class="p-4">
+                    <h3 class="{{ analysis_surface.section_title_classes() }}">How To Read</h3>
+                    <p class="{{ analysis_surface.section_description_classes() }}">Consumption answers who uses the most. Contribution answers how much of the selected scope each consumer represents. Pressure compares usage against the relevant request, limit, cluster-capacity, or claim-capacity boundary.</p>
+                </section>
+                <section class="p-4">
+                    <h3 class="{{ analysis_surface.section_title_classes() }}">Recommended Review Path</h3>
+                    <p class="{{ analysis_surface.section_description_classes() }}">Open Consumer Records to inspect configuration and denominator evidence. Prioritize Critical rows, then Warning rows with high selected-scope contribution.</p>
+                </section>
+            </div>
         </div>
 
-        <div id="top-consumers-content-panel-detail"
+        <div id="top-consumers-content-panel-records"
              role="tabpanel"
-             data-analytics-tab-panel="detail"
-             aria-labelledby="top-consumers-content-tab-detail"
-             x-show="activeTab === 'detail'"
-             x-bind:hidden="activeTab !== 'detail'"
-             hidden
-             x-cloak
+             data-analytics-tab-panel="records"
+             aria-labelledby="top-consumers-content-tab-records"
+             x-show="activeTab === 'records'"
+             x-bind:hidden="activeTab !== 'records'"
+             {% if active_tab != 'records' %}hidden x-cloak{% endif %}
              class="p-5 sm:p-6">
             {% include "analytics/top_consumers/partials/_consumer_detail_section.html" %}
         </div>
@@ -182,17 +86,14 @@
              aria-labelledby="top-consumers-content-tab-recommendations"
              x-show="activeTab === 'recommendations'"
              x-bind:hidden="activeTab !== 'recommendations'"
-             hidden
-             x-cloak
+             {% if active_tab != 'recommendations' %}hidden x-cloak{% endif %}
              class="space-y-5 p-5 sm:p-6">
             <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                        <i data-lucide="list-checks" class="h-5 w-5"></i>
-                    </span>
+                    <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-checks" class="h-4 w-4"></i></span>
                     <div class="min-w-0">
                         <h2 class="text-lg font-semibold text-content-primary">Consumer Recommendations</h2>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">Prioritized actions derived from CPU, memory, pod, PVC, and namespace pressure.</p>
+                        <p class="mt-1 text-sm leading-6 text-content-secondary">Prioritized actions derived from request coverage, memory-limit policy, resource pressure, scope contribution, PVC utilization, and evidence completeness.</p>
                     </div>
                 </div>
                 {{ table_label.status_indicator_label(payload.recommendation_count|default(0) ~ ' Actionable', tone='info', size='compact') }}
@@ -203,12 +104,10 @@
                     <div class="divide-y divide-outline-subtle">
                         {% for recommendation in payload.recommendation_cards %}
                             {% set priority = recommendation.priority|default('Info', true)|lower %}
-                            {% set priority_tone = 'critical' if priority in ['critical', 'p1'] else ('warning' if priority in ['warning', 'p2'] else ('info' if priority in ['info', 'p3'] else 'unknown')) %}
+                            {% set priority_tone = 'critical' if priority in ['critical', 'p1'] else ('warning' if priority in ['warning', 'p2'] else ('info' if priority in ['info', 'p3'] else ('normal' if priority == 'normal' else 'unknown'))) %}
                             <article class="flex flex-col gap-4 bg-surface-card px-4 py-4 lg:flex-row lg:items-center lg:justify-between" data-kaori-recommendation-item {% if loop.index > 3 %}hidden{% endif %}>
                                 <div class="flex min-w-0 items-start gap-3">
-                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                        <i data-lucide="{{ recommendation.icon|default('lightbulb') }}" class="h-5 w-5"></i>
-                                    </span>
+                                    <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="{{ recommendation.icon|default('lightbulb') }}" class="h-4 w-4"></i></span>
                                     <div class="min-w-0">
                                         <div class="flex flex-wrap items-center gap-2">
                                             {{ table_label.status_label('Priority: ' ~ recommendation.priority, tone=priority_tone, size='compact') }}
@@ -220,10 +119,7 @@
                                 </div>
                                 <div class="shrink-0">
                                     {% if recommendation.is_actionable == 'Yes' %}
-                                        <a href="{{ recommendation.href }}" class="{{ table_ui.action_classes() }}">
-                                            Review Consumers
-                                            <i data-lucide="arrow-right" class="h-4 w-4"></i>
-                                        </a>
+                                        <a href="{{ recommendation.href }}" class="{{ table_ui.action_classes() }}">Review Consumers<i data-lucide="arrow-right" class="h-4 w-4"></i></a>
                                     {% else %}
                                         {{ table_label.status_indicator_label('Context Only', tone='unknown', size='compact') }}
                                     {% endif %}
@@ -234,11 +130,10 @@
                     {{ recommendation_pager.controls(payload.recommendation_cards|length, 'Recommendations', 3) }}
                 </div>
             {% else %}
-                {% set empty_state_icon = "list-checks" %}
-                {% set empty_state_title = "No Consumer Recommendations Available" %}
-                {% set empty_state_description = "Recommendations will appear when consumer metrics cross configured operational thresholds." %}
-                {% set empty_state_min_height = "min-h-[180px]" %}
-                {% include "components/states/_empty_state.html" %}
+                <div class="{{ analysis_surface.empty_evidence_classes('flex min-h-44 flex-col items-center justify-center px-5 py-8 text-center') }}">
+                    <i data-lucide="list-checks" class="h-5 w-5 text-kaori-primary"></i>
+                    <p class="mt-3 text-sm font-semibold text-content-primary">No Consumer Recommendations Available</p>
+                </div>
             {% endif %}
         </div>
     </section>

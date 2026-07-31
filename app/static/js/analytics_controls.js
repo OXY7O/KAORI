@@ -175,6 +175,24 @@
     }
 
 
+    function stabilizeAnalyticsExpandables(root) {
+        const candidate = root || document;
+        const connectedCandidate = candidate.isConnected ? candidate : document;
+        const expandableRoots = [];
+
+        if (connectedCandidate?.matches?.('[x-data]')) expandableRoots.push(connectedCandidate);
+        connectedCandidate?.querySelectorAll?.('[x-data]').forEach((element) => expandableRoots.push(element));
+
+        if (window.Alpine) {
+            expandableRoots.forEach((element) => {
+                if (element.isConnected && !element._x_dataStack) window.Alpine.initTree(element);
+            });
+        }
+
+        window.dispatchEvent(new CustomEvent('kaori:analytics-collapse-details'));
+    }
+
+
     function stabilizeAnalyticsTabsets(root) {
         const candidate = root || document;
         const connectedCandidate = candidate.isConnected ? candidate : document;
@@ -253,8 +271,8 @@
         setAnalyticsTab(tabset, nextButton.dataset.analyticsTabButton, { focus: true });
     }, true);
 
-    document.addEventListener('DOMContentLoaded', () => { hydrateAnalyticsUi(); stabilizeAnalyticsTabsets(document); });
+    document.addEventListener('DOMContentLoaded', () => { hydrateAnalyticsUi(); stabilizeAnalyticsExpandables(document); stabilizeAnalyticsTabsets(document); });
     document.body.addEventListener('htmx:load', (event) => hydrateAnalyticsUi(event.detail.elt || document));
-    document.body.addEventListener('htmx:afterSwap', (event) => { const root = event.detail.target || document; hydrateAnalyticsUi(root); stabilizeAlertsAfterSwap(root); stabilizeAnalyticsTabsets(root); });
-    document.body.addEventListener('htmx:afterSettle', (event) => { const root = event.detail.elt || document; hydrateAnalyticsUi(root); stabilizeAnalyticsTabsets(root); });
+    document.body.addEventListener('htmx:afterSwap', (event) => { const root = event.detail.target || document; hydrateAnalyticsUi(root); stabilizeAnalyticsExpandables(root); stabilizeAlertsAfterSwap(root); stabilizeAnalyticsTabsets(root); });
+    document.body.addEventListener('htmx:afterSettle', (event) => { const root = event.detail.elt || document; hydrateAnalyticsUi(root); stabilizeAnalyticsExpandables(root); stabilizeAnalyticsTabsets(root); });
 })();

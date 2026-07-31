@@ -804,3 +804,7 @@ Resource Forecast follows the shared Analytics Analysis Surface hierarchy and th
 - Historical Signal Quality is not forecast accuracy.
 - Unknown evidence displays N/A and suppresses progress.
 - Full-page charts use the shared interactive forecast chart and canonical resource tokens.
+
+## Analytics Top Consumers Standard
+
+Use `components/ANALYTICS_TOP_CONSUMERS.md`. Top Consumers separates absolute consumption, selected-scope contribution, request utilization, limit utilization, and configuration state. All-resource sorting may use priority, contribution, namespace, or resource type, but never heterogeneous raw units. Consumer identity is structured; templates do not split display strings. Rankings use the shared ranked evidence panel, records use the shared record filter/evidence/pagination components, and contribution progress stays KAORI Violet. Namespace is a committed snapshot dimension.

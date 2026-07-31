@@ -1,6 +1,7 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "analytics/components/_evidence_record_list.html" as evidence_list %}
 {% import "analytics/components/_record_filter_bar.html" as record_filter %}
+{% import "analytics/components/_record_pagination.html" as record_pagination %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
@@ -69,7 +70,7 @@
             {% endcall %}
             <div class="divide-y divide-outline-subtle">
                 {% for row in tenant_quota_summary.rows %}
-                    <article x-data="{ expanded: false }" @keydown.escape.window="expanded = false">
+                    <article x-data="{ expanded: false }" @keydown.escape.window="expanded = false" @kaori:analytics-collapse-details.window="expanded = false">
                         {% call evidence_list.row() %}
                             {% call evidence_list.cell(3) %}
                                 {{ evidence_list.identity('folder-tree', row.namespace, row.workloads ~ ' Workloads') }}
@@ -115,6 +116,8 @@
                         {% endcall %}
                         <div id="tenant-quota-details-{{ loop.index }}"
                              x-show="expanded"
+                             x-bind:hidden="!expanded"
+                             hidden
                              x-cloak
                              class="border-t border-outline-subtle bg-surface-subtle px-4 py-4">
                             <div class="grid overflow-hidden rounded-lg border border-outline-subtle bg-surface-card lg:grid-cols-3 lg:divide-x lg:divide-outline-subtle">
@@ -168,6 +171,28 @@
             </div>
         {% endcall %}
 
-        {% set selected_workload_tab = 'quotas' %}{% set pagination = quota_pagination %}{% include "analytics/workload/partials/_record_pagination.html" %}
+        {% set quota_pagination_query = {
+            'cluster_id': cluster.id if cluster else '',
+            'namespace': selected_namespace,
+            'time_range': selected_time_range,
+            'tab': 'quotas',
+            'tenant_search': selected_tenant_search,
+            'tenant_quota_status': selected_tenant_quota_status,
+            'tenant_risk': selected_tenant_risk,
+            'quota_per_page': quota_pagination.per_page|default(5)
+        } %}
+        {{ record_pagination.render(
+            quota_pagination,
+            'quota_page',
+            'quota_per_page',
+            'tenant-quota-analysis',
+            'tenant-quota-filter-form',
+            'tenant-quota-loading-indicator',
+            'analytics.workload_tenant_quota',
+            'analytics.workload',
+            quota_pagination_query,
+            'Filtered Namespaces',
+            tenant_quota_summary.scope_total|default(0)
+        ) }}
     </div>
 </section>

@@ -16,7 +16,7 @@ from app.rbac.decorators import permission_required
 _PAGE = {
     'dataset_key': 'analytics.top_consumers',
     'title': 'Top Consumers',
-    'description': 'Consumer rankings are prepared by the worker and filtered locally for each viewer.',
+    'description': 'Consumer rankings use committed cluster or namespace snapshots; record search, resource, priority, sort, and focus controls are presentation-only.',
     'icon': 'list-ordered',
     'page_id': 'top-consumers-page',
 }

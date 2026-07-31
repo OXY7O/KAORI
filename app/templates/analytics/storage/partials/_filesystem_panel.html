@@ -1,6 +1,7 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
 {% import "analytics/components/_evidence_record_list.html" as evidence_list %}
+{% import "analytics/components/_record_pagination.html" as record_pagination %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
@@ -59,5 +60,23 @@
             {% endfor %}
         </div>
     {% endcall %}
-    {% set selected_storage_tab = 'filesystem' %}{% set pagination = filesystem.pagination %}{% include "analytics/storage/partials/_record_pagination.html" %}
+    {% set filesystem_pagination_query = {
+        'cluster_id': cluster.id if cluster else '',
+        'namespace': selected_namespace,
+        'tab': 'filesystem',
+        'storage_node': selected_storage_node,
+        'filesystem_per_page': filesystem.pagination.per_page|default(5)
+    } %}
+    {{ record_pagination.render(
+        filesystem.pagination,
+        'filesystem_page',
+        'filesystem_per_page',
+        'storage-filesystem-panel',
+        'storage-filesystem-filter-form',
+        'storage-filesystem-loading-indicator',
+        'analytics.storage_filesystem_summary',
+        'analytics.storage',
+        filesystem_pagination_query,
+        'Filesystem Records'
+    ) }}
 </div>

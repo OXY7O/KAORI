@@ -591,3 +591,8 @@ Capacity is a cluster-level Ready-worker fleet analysis. It uses the shared Anal
 ## Resource Forecast Presentation and Semantics
 
 Resource Forecast uses Holt-Winters as the default model, with Linear Trend and Conservative Trend as explicit alternatives. The page does not expose a Resource Focus selector; CPU, Memory, Storage, Pods, Trend Analysis, and Recommendations are canonical tabs. Forecast evidence is labeled Latest Daily Average, Projected Horizon Value, Weekly Trend, and Historical Signal Quality. Signal Quality describes historical completeness and stability rather than forecast accuracy. Namespace CPU, Memory, and Pods are compared with cluster worker capacity; namespace Storage is compared with namespace PVC claim capacity. Unavailable evidence renders Unknown/N/A and is excluded from projected posture counts. The full page uses the tokenized interactive chart component and tab-visible lifecycle.
+
+
+## Top Consumers presentation and snapshot contract
+
+Top Consumers follows `docs/design/components/ANALYTICS_TOP_CONSUMERS.md`. Namespace is a materialized snapshot dimension; local record controls do not create new snapshots. Structured consumer identity, resource-specific pressure, and Complete/Partial/Unavailable resource evidence replace display-string parsing and the former blended usage ratio. Rankings use the shared ranked evidence panel. Storage, Workload, and Top Consumers use the same shared Analytics record pagination component with full-page and HTMX ownership.

@@ -1,13 +1,16 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/table_label.html" as table_label %}
-{% set payload = consumer_payload %}
-{% set summary = payload.summary %}
-<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <div class="flex min-w-0 items-center gap-3">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="gauge" class="h-4.5 w-4.5"></i></span>
-            <div class="min-w-0"><h2 class="text-base font-semibold text-content-primary">Top Consumer Summary</h2><p class="mt-0.5 text-sm text-content-secondary">Highest CPU, memory, pod, and PVC consumers within the active scope.</p></div>
+{% set summary = payload.summary|default({}, true) %}
+<section class="{{ analysis_surface.snapshot_shell_classes() }}">
+    <header class="{{ analysis_surface.snapshot_header_classes() }}">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="gauge" class="h-4 w-4"></i></span>
+            <div class="min-w-0">
+                <h2 class="text-base font-semibold text-content-primary">Top Consumer Summary</h2>
+                <p class="mt-1 text-sm leading-6 text-content-secondary">Highest absolute CPU, memory, and pod consumption plus the highest PVC claim-utilization pressure in the active snapshot scope.</p>
+            </div>
         </div>
-        {{ table_label.status_indicator_label('Committed Snapshot', tone='normal', size='compact') }}
+        {{ table_label.status_indicator_label('Committed ' ~ payload.scope.snapshot_dimension|default('cluster')|title ~ ' Snapshot', tone='normal', size='compact') }}
     </header>
     <div class="grid sm:grid-cols-2 2xl:grid-cols-4">
         {% set cards = [
@@ -19,22 +22,24 @@
         {% for card, icon in cards %}
             <article class="min-w-0 border-b border-outline-subtle px-5 py-4 sm:odd:border-r 2xl:border-b-0 2xl:border-r 2xl:last:border-r-0">
                 <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                    <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
                     <div class="min-w-0 flex-1">
-                        <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">{{ card.title }}</p>
+                        <p class="{{ analysis_surface.metric_label_classes() }}">{{ card.title }}</p>
                         <p class="mt-1 text-2xl font-semibold tabular-nums text-content-primary">{{ card.value }}</p>
                     </div>
                 </div>
-                {% set identity_parts = card.label.split(' / ', 1) %}
-                <dl class="mt-3 space-y-2 border-t border-outline-subtle pt-3" title="{{ card.label }}">
-                    {% if identity_parts|length > 1 %}
-                        <div class="min-w-0"><dt class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Namespace</dt><dd class="mt-0.5 break-all text-xs font-medium leading-5 text-content-secondary">{{ identity_parts[0] }}</dd></div>
-                        <div class="min-w-0"><dt class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Pod</dt><dd class="mt-0.5 break-all text-xs font-semibold leading-5 text-content-primary">{{ identity_parts[1] }}</dd></div>
-                    {% else %}
-                        <div class="min-w-0"><dt class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Resource</dt><dd class="mt-0.5 break-all text-xs font-semibold leading-5 text-content-primary">{{ card.label }}</dd></div>
-                    {% endif %}
+                <dl class="mt-3 space-y-2 border-t border-outline-subtle pt-3">
+                    <div class="min-w-0">
+                        <dt class="{{ analysis_surface.metric_label_classes() }}">{{ card.identity.entity_label|default('Consumer') }}</dt>
+                        <dd class="mt-1 break-words text-sm font-semibold text-content-primary" title="{{ card.identity.primary|default('No Data') }}">{{ card.identity.primary|default('No Data') }}</dd>
+                    </div>
+                    {% if card.identity.secondary %}<div class="min-w-0"><dt class="{{ analysis_surface.metric_label_classes() }}">Scope</dt><dd class="mt-1 break-words text-xs leading-5 text-content-secondary">{{ card.identity.secondary }}</dd></div>{% endif %}
+                    {% if card.identity.tertiary %}<div class="min-w-0"><dt class="{{ analysis_surface.metric_label_classes() }}">Runtime Identity</dt><dd class="mt-1 break-words text-xs leading-5 text-content-secondary">{{ card.identity.tertiary }}</dd></div>{% endif %}
                 </dl>
-                <p class="mt-3 border-t border-outline-subtle pt-3 text-[11px] leading-5 text-content-muted">{{ card.subtitle }}</p>
+                <div class="mt-3 flex items-start justify-between gap-3 border-t border-outline-subtle pt-3">
+                    <p class="text-xs leading-5 text-content-muted">{{ card.subtitle }}</p>
+                    {{ table_label.status_label(card.risk.label, card.risk.tone, size='compact') }}
+                </div>
             </article>
         {% endfor %}
     </div>

@@ -1,0 +1,64 @@
+{# Canonical full-page + HTMX pagination for Analytics record collections. #}
+{% import "components/pagination.html" as pagination_ui %}
+
+{% macro render(
+    pagination,
+    page_param,
+    per_page_param,
+    panel_id,
+    form_id,
+    indicator_id,
+    partial_endpoint,
+    href_endpoint,
+    query_params,
+    resource_label='Records',
+    scope_total=None,
+    allowed_per_page=(5, 10, 25, 50)
+) -%}
+    {% set current_page = pagination.page|default(pagination.current_page|default(1)) %}
+    {% set total_pages = pagination.total_pages|default(1) %}
+    {% set total_rows = pagination.total_items|default(0) %}
+    {% set per_page = pagination.per_page|default(5) %}
+    {% set start_item = pagination.start_item|default(0) %}
+    {% set end_item = pagination.end_item|default(0) %}
+    {% set previous_args = query_params.copy() %}{% set _ = previous_args.update({page_param: current_page - 1}) %}
+    {% set next_args = query_params.copy() %}{% set _ = next_args.update({page_param: current_page + 1}) %}
+    {% set previous_href = url_for(href_endpoint, **previous_args) %}{% set previous_hx = url_for(partial_endpoint, **previous_args) %}
+    {% set next_href = url_for(href_endpoint, **next_args) %}{% set next_hx = url_for(partial_endpoint, **next_args) %}
+    <div class="flex flex-col gap-3 border-t border-outline-default pt-4 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+            <div class="text-xs text-content-muted">
+                Showing <span class="font-semibold text-content-secondary">{{ start_item }}</span>–<span class="font-semibold text-content-secondary">{{ end_item }}</span>
+                of <span class="font-semibold text-content-secondary">{{ total_rows }}</span> {{ resource_label }}
+                {% if scope_total is not none %}<span class="ml-1">· Scope Contains <span class="font-semibold text-content-secondary">{{ scope_total }}</span></span>{% endif %}
+            </div>
+            <select name="{{ per_page_param }}"
+                    aria-label="Rows Per Page"
+                    class="{{ pagination_ui.page_size_classes() }}"
+                    hx-get="{{ url_for(partial_endpoint) }}"
+                    hx-trigger="change"
+                    hx-target="#{{ panel_id }}"
+                    hx-swap="outerHTML"
+                    hx-sync="#{{ panel_id }}:replace"
+                    hx-include="#{{ form_id }}, [name='{{ per_page_param }}']"
+                    hx-indicator="#{{ indicator_id }}">
+                {% for option in allowed_per_page %}<option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
+            </select>
+        </div>
+        {% if total_pages > 1 %}
+            <nav class="flex flex-wrap items-center gap-2" aria-label="{{ resource_label }} Pagination">
+                {% if current_page > 1 %}
+                    <a href="{{ previous_href }}" hx-get="{{ previous_hx }}" hx-target="#{{ panel_id }}" hx-swap="outerHTML" hx-sync="#{{ panel_id }}:replace" hx-indicator="#{{ indicator_id }}" class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+                {% else %}
+                    <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+                {% endif %}
+                {{ pagination_ui.numeric_pages(current_page, total_pages, page_param, hx_target='#' ~ panel_id, hx_indicator='#' ~ indicator_id, endpoint=partial_endpoint, query_params=query_params, hx_swap='outerHTML', href_endpoint=href_endpoint) }}
+                {% if current_page < total_pages %}
+                    <a href="{{ next_href }}" hx-get="{{ next_hx }}" hx-target="#{{ panel_id }}" hx-swap="outerHTML" hx-sync="#{{ panel_id }}:replace" hx-indicator="#{{ indicator_id }}" class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+                {% else %}
+                    <span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+                {% endif %}
+            </nav>
+        {% endif %}
+    </div>
+{%- endmacro %}

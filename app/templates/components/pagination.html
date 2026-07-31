@@ -19,7 +19,8 @@
           data-page-param="{{ page_param }}"
           aria-label="Pagination Pages">
         {% if window_start > 1 %}
-            {% set first_args = query_params.copy() if query_params else request.args.to_dict() %}
+            {% set first_args = request.view_args.copy() if request.view_args else {} %}
+            {% set _ = first_args.update(query_params.copy() if query_params else request.args.to_dict()) %}
             {% set _ = first_args.update({page_param: 1}) %}
             {% set first_url = url_for(href_endpoint_name, **first_args) %}
             {% set first_hx_url = url_for(endpoint_name, **first_args) %}
@@ -30,7 +31,8 @@
             {% if page_number == current_page %}
                 <span class="{{ current_page_classes() }}" aria-current="page">{{ page_number }}</span>
             {% else %}
-                {% set page_args = query_params.copy() if query_params else request.args.to_dict() %}
+                {% set page_args = request.view_args.copy() if request.view_args else {} %}
+                {% set _ = page_args.update(query_params.copy() if query_params else request.args.to_dict()) %}
                 {% set _ = page_args.update({page_param: page_number}) %}
                 {% set page_url = url_for(href_endpoint_name, **page_args) %}
                 {% set page_hx_url = url_for(endpoint_name, **page_args) %}
@@ -39,7 +41,8 @@
         {% endfor %}
         {% if window_end < total_pages %}
             {% if window_end < total_pages - 1 %}<span class="px-1 text-content-muted" aria-hidden="true">…</span>{% endif %}
-            {% set last_args = query_params.copy() if query_params else request.args.to_dict() %}
+            {% set last_args = request.view_args.copy() if request.view_args else {} %}
+            {% set _ = last_args.update(query_params.copy() if query_params else request.args.to_dict()) %}
             {% set _ = last_args.update({page_param: total_pages}) %}
             {% set last_url = url_for(href_endpoint_name, **last_args) %}
             {% set last_hx_url = url_for(endpoint_name, **last_args) %}

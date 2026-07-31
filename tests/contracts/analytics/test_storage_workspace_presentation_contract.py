@@ -82,14 +82,20 @@ def test_storage_record_panels_use_shared_filter_and_record_components() -> None
 
 
 def test_storage_pagination_owns_full_href_and_partial_htmx_endpoint() -> None:
-    pagination = read('app/templates/analytics/storage/partials/_record_pagination.html')
+    pagination = read('app/templates/analytics/components/_record_pagination.html')
     shared = read('app/templates/components/pagination.html')
+    filesystem = read('app/templates/analytics/storage/partials/_filesystem_panel.html')
+    pvc = read('app/templates/analytics/storage/partials/_persistent_volume_claims_panel.html')
+    pv = read('app/templates/analytics/storage/partials/_persistent_volumes_panel.html')
 
-    assert "href_endpoint='analytics.storage'" in pagination
-    assert "endpoint=partial_endpoint" in pagination
-    assert 'filesystem_page' in pagination
-    assert 'pvc_page' in pagination
-    assert 'pv_page' in pagination
+    assert 'href_endpoint' in pagination
+    assert 'partial_endpoint' in pagination
+    assert "'filesystem_page'" in filesystem
+    assert "'pvc_page'" in pvc
+    assert "'pv_page'" in pv
+    assert "'analytics.storage'" in filesystem
+    assert "'analytics.storage'" in pvc
+    assert "'analytics.storage'" in pv
     assert 'href_endpoint=None' in shared
     assert 'page_hx_url' in shared
     assert "response.headers['HX-Push-Url']" in read('app/analytics/storage/routes.py')

@@ -1,6 +1,7 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "analytics/components/_evidence_record_list.html" as evidence_list %}
 {% import "analytics/components/_record_filter_bar.html" as record_filter %}
+{% import "analytics/components/_record_pagination.html" as record_pagination %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
@@ -70,5 +71,26 @@
             {% endfor %}
         </div>
     {% endcall %}
-    {% set selected_storage_tab = 'pvc' %}{% set pagination = storage_summary.persistent_storage.pvc_pagination %}{% include "analytics/storage/partials/_record_pagination.html" %}
+    {% set pvc_pagination = storage_summary.persistent_storage.pvc_pagination %}
+    {% set pvc_pagination_query = {
+        'cluster_id': cluster.id if cluster else '',
+        'namespace': selected_namespace,
+        'tab': 'pvc',
+        'pvc_search': selected_pvc_search,
+        'pvc_status': selected_pvc_status,
+        'pvc_storage_class': selected_pvc_storage_class,
+        'pvc_per_page': pvc_pagination.per_page|default(5)
+    } %}
+    {{ record_pagination.render(
+        pvc_pagination,
+        'pvc_page',
+        'pvc_per_page',
+        'persistent-volume-claims-panel',
+        'persistent-volume-claims-filter-form',
+        'persistent-volume-claims-loading-indicator',
+        'analytics.storage_persistent_summary',
+        'analytics.storage',
+        pvc_pagination_query,
+        'Claims'
+    ) }}
 </div>

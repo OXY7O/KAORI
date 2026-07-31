@@ -17,24 +17,23 @@ def read(relative: str) -> str:
 def test_workload_table_pagination_uses_full_page_and_partial_endpoint_ownership() -> None:
     pagination = read('app/templates/components/pagination.html')
     pagination_js = read('app/static/js/pagination.js')
-    workload_pagination = read('app/templates/analytics/workload/partials/_record_pagination.html')
+    record_pagination = read('app/templates/analytics/components/_record_pagination.html')
+    tenant = read('app/templates/analytics/workload/partials/_tenant_quota_section.html')
+    mapping = read('app/templates/analytics/workload/partials/_workload_mapping_section.html')
 
     assert "numeric_pages(current_page, total_pages, page_param='page', hx_target=None, hx_indicator=None, endpoint=None, query_params=None, hx_swap='innerHTML', href_endpoint=None)" in pagination
     assert 'href_endpoint_name = href_endpoint or endpoint_name' in pagination
     assert 'data-page-param="{{ page_param }}"' in pagination
     assert 'container.dataset.pageParam || PAGE_PARAM' in pagination_js
     assert 'replacePage(href, page, pageParam)' in pagination_js
-
-    assert "partial_endpoint = 'analytics.workload_resource_mapping'" in workload_pagination
-    assert "partial_endpoint = 'analytics.workload_tenant_quota'" in workload_pagination
-    assert "url_for('analytics.workload', **previous_args)" in workload_pagination
-    assert "url_for(partial_endpoint, **previous_args)" in workload_pagination
-    assert "href_endpoint='analytics.workload'" in workload_pagination
-    assert "hx_target='#' ~ panel_id" in workload_pagination
-    assert "hx_indicator='#' ~ indicator_id" in workload_pagination
-    assert "hx_swap='outerHTML'" in workload_pagination
-    assert 'Scope Contains' in workload_pagination
-    assert 'per_page_options = [5, 10, 25, 50]' in workload_pagination
+    assert 'partial_endpoint' in record_pagination
+    assert 'href_endpoint' in record_pagination
+    assert 'Scope Contains' in record_pagination
+    assert 'allowed_per_page=(5, 10, 25, 50)' in record_pagination
+    assert "'analytics.workload_tenant_quota'" in tenant
+    assert "'analytics.workload_resource_mapping'" in mapping
+    assert "'analytics.workload'" in tenant
+    assert "'analytics.workload'" in mapping
 
 
 def test_workload_detail_actions_are_restored_to_the_action_column() -> None:

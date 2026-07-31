@@ -1,64 +1,55 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "analytics/components/_record_filter_bar.html" as record_filter %}
 {% import "components/loading_bar.html" as loading_bar %}
-{% set payload = consumer_payload %}
-{% set pagination = payload.pagination %}
+{% set payload = consumer_payload|default({}, true) %}
+{% set pagination = payload.pagination|default({}, true) %}
+{% set advanced_active = selected_sort not in ['priority', 'absolute'] or selected_focus %}
 {% if render_dependency_blocker|default(false) and dependency_blocker %}
-    <section id="consumer-detail-section" class="space-y-5">
-        {% include "analytics/top_consumers/partials/_consumer_detail_results.html" %}
-    </section>
+    <section id="consumer-detail-section" class="space-y-5">{% include "analytics/top_consumers/partials/_consumer_detail_results.html" %}</section>
 {% elif not dependency_blocker %}
-    <section id="consumer-detail-section"
-             class="space-y-5"
-             hx-sync="#consumer-detail-results:replace">
-        <header class="border-b border-outline-subtle pb-5">
-            <div class="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-                <div class="flex min-w-0 items-start gap-3">
-                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                        <i data-lucide="list-filter" class="h-5 w-5"></i>
-                    </span>
-                    <div class="min-w-0">
-                        <h2 class="text-base font-semibold text-content-primary">Consumer Detail</h2>
-                        <p class="mt-1 text-sm leading-6 text-content-secondary">Review resource usage and risk first; workload, pod, container, and PVC identity remain in View More.</p>
-                    </div>
+    <section id="consumer-detail-section" class="space-y-5" hx-sync="#consumer-detail-results:replace">
+        <header class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-filter" class="h-4 w-4"></i></span>
+                <div class="min-w-0">
+                    <h2 class="text-lg font-semibold text-content-primary">Consumer Records</h2>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">Inspect factual consumer identity, absolute consumption, scope contribution, request and limit boundaries, resource-specific pressure, and recommended action.</p>
                 </div>
-                <form id="consumer-detail-filter"
-                      method="GET"
-                      action="{{ url_for('analytics.top_consumers') }}"
-                      hx-get="{{ url_for('analytics.top_consumers_table') }}"
-                      hx-trigger="keyup[event.target.name === 'search'] changed delay:350ms, search[event.target.name === 'search'], change[event.target.name === 'sort']"
-                      hx-target="#consumer-detail-results"
-                      hx-swap="outerHTML settle:150ms"
-                      hx-indicator="#consumer-detail-loading-indicator"
-                      hx-sync="#consumer-detail-results:replace"
-                      class="grid min-w-0 gap-3 sm:grid-cols-2">
-                    <input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}">
-                    <input type="hidden" name="namespace" value="{{ selected_namespace }}">
-                    <input type="hidden" name="resource" value="{{ selected_resource }}">
-                    <input type="hidden" name="focus" value="{{ selected_focus }}">
-                    <input type="hidden" name="page" value="1">
-                    <label class="relative block min-w-0">
-                        <span class="sr-only">Search consumers</span>
-                        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-content-muted">
-                            <i data-lucide="search" class="h-4 w-4"></i>
-                        </span>
-                        <input type="search"
-                               name="search"
-                               value="{{ selected_search }}"
-                               placeholder="Search consumers..."
-                               class="h-9 w-full rounded-md border border-outline-default bg-surface-card py-1.5 pl-9 pr-3 text-sm text-content-primary outline-none hover:border-outline-strong focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft">
-                    </label>
-                    <label class="block min-w-0">
-                        <span class="sr-only">Sort consumers</span>
-                        <select name="sort" class="h-9 w-full rounded-md border border-outline-default bg-surface-card px-3 py-1.5 text-sm text-content-primary outline-none hover:border-outline-strong focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft">
-                            {% for item in sort_options %}
-                                <option value="{{ item.value }}" {% if selected_sort == item.value %}selected{% endif %}>{{ item.label }}</option>
-                            {% endfor %}
-                        </select>
-                    </label>
-                </form>
             </div>
-            {{ loading_bar.render('consumer-detail-loading-indicator', label='Refreshing Consumer Detail') }}
         </header>
 
+        {% call record_filter.extended_form(
+            'consumer-detail-filter',
+            url_for('analytics.top_consumers'),
+            url_for('analytics.top_consumers_table'),
+            '#consumer-detail-results',
+            '#consumer-detail-loading-indicator',
+            "keyup[event.target.name === 'search'] changed delay:350ms, search[event.target.name === 'search'], change",
+            advanced_active
+        ) %}
+            <input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}">
+            <input type="hidden" name="namespace" value="{{ selected_namespace }}">
+            <input type="hidden" name="tab" value="records">
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="per_page" value="{{ pagination.per_page|default(5) }}">
+            {% call record_filter.primary_grid() %}
+                {{ record_filter.search('search', selected_search, 'Search owner, pod, container, PVC, or namespace...', 'Search Consumers') }}
+                {{ record_filter.select_items('resource', selected_resource, resource_options, '', 'Resource') }}
+                {{ record_filter.select_items('priority', selected_priority, priority_options, '', 'Operational Priority') }}
+                {{ record_filter.advanced_toggle((1 if selected_focus else 0) + (1 if selected_sort not in ['priority', 'absolute'] else 0)) }}
+            {% endcall %}
+            {% call record_filter.advanced_grid() %}
+                {{ record_filter.select_items('sort', selected_sort, sort_options, '', 'Sort Consumers') }}
+                {{ record_filter.select_items('focus', selected_focus, focus_options, '', 'Focused Record View') }}
+                {{ record_filter.reset_link(
+                    url_for('analytics.top_consumers', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, tab='records'),
+                    url_for('analytics.top_consumers_table', cluster_id=cluster.id if cluster else '', namespace=selected_namespace, tab='records', page=1, per_page=pagination.per_page|default(5)),
+                    '#consumer-detail-results',
+                    '#consumer-detail-loading-indicator'
+                ) }}
+            {% endcall %}
+        {% endcall %}
+        {{ loading_bar.render('consumer-detail-loading-indicator', label='Refreshing Consumer Records') }}
         {% include "analytics/top_consumers/partials/_consumer_detail_results.html" %}
     </section>
 {% endif %}

@@ -1,6 +1,7 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "analytics/components/_evidence_record_list.html" as evidence_list %}
 {% import "analytics/components/_record_filter_bar.html" as record_filter %}
+{% import "analytics/components/_record_pagination.html" as record_pagination %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table_label.html" as table_label %}
 {% set panel_indicator = 'persistent-volumes-loading-indicator' %}
@@ -63,7 +64,28 @@
             {% endfor %}
         </div>
     {% endcall %}
-    {% set selected_storage_tab = 'pv' %}{% set pagination = storage_summary.persistent_storage.pv_pagination %}{% include "analytics/storage/partials/_record_pagination.html" %}
+    {% set pv_pagination = storage_summary.persistent_storage.pv_pagination %}
+    {% set pv_pagination_query = {
+        'cluster_id': cluster.id if cluster else '',
+        'namespace': selected_namespace,
+        'tab': 'pv',
+        'pv_search': selected_pv_search,
+        'pv_status': selected_pv_status,
+        'pv_storage_class': selected_pv_storage_class,
+        'pv_per_page': pv_pagination.per_page|default(5)
+    } %}
+    {{ record_pagination.render(
+        pv_pagination,
+        'pv_page',
+        'pv_per_page',
+        'persistent-volumes-panel',
+        'persistent-volumes-filter-form',
+        'persistent-volumes-loading-indicator',
+        'analytics.storage_persistent_summary',
+        'analytics.storage',
+        pv_pagination_query,
+        'Volumes'
+    ) }}
 
     <section class="{{ analysis_surface.record_guidance_classes() }}"><div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="shield-check" class="h-4 w-4"></i></span><div><h4 class="{{ analysis_surface.section_title_classes() }}">Operational Guidance</h4><p class="mt-1 text-xs leading-5 text-content-secondary">Validate claim ownership and reclaim policy before deleting, reusing, or cleaning up Released and Available volumes. A reclaim policy is factual configuration, not a healthy or unhealthy state by itself.</p></div></div></section>
 </div>

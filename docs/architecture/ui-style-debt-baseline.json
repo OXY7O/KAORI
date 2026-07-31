@@ -138,20 +138,6 @@
     "app/templates/analytics/partials/_load_tracker.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/analytics/top_consumers/partials/_hero.html": {
-      "arbitrary_text_sizes": 2,
-      "arbitrary_tracking": 2
-    },
-    "app/templates/analytics/top_consumers/partials/_summary.html": {
-      "arbitrary_text_sizes": 5,
-      "arbitrary_tracking": 4,
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/analytics/top_consumers/partials/_top_consumers_section.html": {
-      "arbitrary_text_sizes": 5,
-      "arbitrary_tracking": 1,
-      "copied_standard_surface_shells": 1
-    },
     "app/templates/analytics/utilization/index.html": {
       "semantic_border_utilities": 1
     },
