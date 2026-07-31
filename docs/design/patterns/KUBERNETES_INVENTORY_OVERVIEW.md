@@ -93,3 +93,8 @@ The summary includes total objects, populated asset categories, and largest inve
 ## Drawer Readability Refinement
 
 Cluster detail uses concise section headers, compact identity/snapshot cards without redundant descriptions, and a divided plain-metric summary row. Technical values follow normal detail typography unless an explicit raw-copy monospace exception is requested.
+
+## Snapshot Source and Signal Layout
+
+- The drawer uses the concise source label `Committed Snapshot` so `Snapshot Source` remains a single horizontal detail row.
+- Inventory Signals are rendered as full-width stacked callouts. Each additional signal starts on the next row; signal cards are not placed side by side.

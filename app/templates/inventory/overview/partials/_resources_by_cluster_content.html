@@ -205,7 +205,7 @@
                         <div class="space-y-3">
                             {{ detail_ui.detail_row('Last Collected', cluster.synced_at|user_datetime if cluster.synced_at else 'Not Collected') }}
                             {{ detail_ui.detail_row('Freshness Window', cluster.freshness_window_hours ~ ' Hours') }}
-                            {{ detail_ui.stacked_detail_row('Snapshot Source', cluster.snapshot_source) }}
+                            {{ detail_ui.detail_row('Snapshot Source', cluster.snapshot_source) }}
                         </div>
                     {% endcall %}
                 </div>
@@ -236,14 +236,15 @@
                     'Exceptions that require operational awareness.',
                     'scan-search'
                 ) %}
-                    <div class="grid gap-3 sm:grid-cols-2">
+                    <div class="grid gap-3">
                         {% for signal in cluster.signals %}
                             {{ operational_callout.render(
                                 signal.label,
                                 signal.description,
                                 icon=signal.icon,
                                 tone=signal.tone,
-                                variant='semantic'
+                                variant='semantic',
+                                extra_classes='w-full'
                             ) }}
                         {% else %}
                             {{ operational_callout.render(
@@ -252,7 +253,7 @@
                                 icon='circle-check',
                                 tone='normal',
                                 variant='semantic',
-                                extra_classes='sm:col-span-2'
+                                extra_classes='w-full'
                             ) }}
                         {% endfor %}
                     </div>

@@ -55,7 +55,7 @@ def test_inventory_freshness_uses_committed_cluster_inventory_snapshots() -> Non
 
     assert 'def get_inventory_freshness_context(' in overview
     assert 'get_inventory_cluster_summary()' in overview
-    assert "'source_label': 'Committed Database Snapshot'" in overview
+    assert "'source_label': 'Committed Snapshot'" in overview
     assert "'exception_label': exception_label" in overview
     assert '@inventory_bp.context_processor' in routes
     assert 'get_inventory_freshness_context(cluster_id=cluster_id)' in routes

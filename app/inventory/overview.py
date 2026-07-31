@@ -317,7 +317,7 @@ def get_inventory_freshness_context(cluster_id: str = '') -> dict[str, Any]:
         'status': status,
         'tone': tone,
         'description': description,
-        'source_label': 'Committed Database Snapshot',
+        'source_label': 'Committed Snapshot',
         'exception_label': exception_label,
     }
 
@@ -448,7 +448,7 @@ def get_inventory_overview() -> dict[str, Any]:
                 'signals': signals,
                 'populated_asset_types': populated_asset_types,
                 'dominant_asset': dominant_asset,
-                'snapshot_source': 'Committed Database Snapshot',
+                'snapshot_source': 'Committed Snapshot',
                 'freshness_window_hours': INVENTORY_FRESHNESS_HOURS,
                 'guidance': _inventory_guidance(
                     connected=connected,

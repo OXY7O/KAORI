@@ -101,10 +101,21 @@ def test_inventory_overview_uses_grouped_counts_and_fresh_health_semantics() -> 
     assert "'dominant_asset': dominant_asset" in backend
 
 
-def test_snapshot_source_uses_non_wrapping_detail_value() -> None:
+def test_snapshot_source_uses_compact_non_wrapping_value() -> None:
     content = read('app/templates/inventory/overview/partials/_resources_by_cluster_content.html')
+    backend = read('app/inventory/overview.py')
     details_macro = read('app/templates/components/details/_detail_content.html')
 
-    assert "detail_row('Snapshot Source', cluster.snapshot_source, wrap=False)" in content
-    assert "{% macro detail_row(label, value='-', break_all=False, wrap=True) -%}" in details_macro
-    assert "'break-words [overflow-wrap:anywhere]' if wrap else 'whitespace-nowrap'" in details_macro
+    assert "'snapshot_source': 'Committed Snapshot'" in backend
+    assert "detail_row('Snapshot Source', cluster.snapshot_source)" in content
+    assert "{% macro detail_row(label, value='-', break_all=False) -%}" in details_macro
+    assert "sm:text-right" in details_macro
+
+
+def test_inventory_signals_use_full_width_stacked_callouts() -> None:
+    content = read('app/templates/inventory/overview/partials/_resources_by_cluster_content.html')
+
+    signals_section = content.split("'Inventory Signals',", 1)[1].split("{% endcall %}", 1)[0]
+    assert '<div class="grid gap-3">' in signals_section
+    assert 'sm:grid-cols-2' not in signals_section
+    assert "extra_classes='w-full'" in signals_section

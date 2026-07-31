@@ -834,3 +834,9 @@ The canonical Integrations contract is documented in `components/INTEGRATIONS_WO
 - Full-page and HTMX pagination have separate, explicit URL ownership and preserve path arguments, filters, and the active workspace tab.
 - One shared runtime-history component is rendered directly; provider-local presentation wrappers are prohibited.
 - Dense technical matrices may scroll only inside their owning component when simultaneous column comparison is operationally necessary.
+
+
+### Inventory Overview Drawer Signals
+
+- Use `Committed Snapshot` as the compact Inventory Snapshot Source value.
+- Inventory Signal callouts use one full-width row per signal; subsequent signals stack vertically.
