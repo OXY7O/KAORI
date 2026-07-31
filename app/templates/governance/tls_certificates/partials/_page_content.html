@@ -1,6 +1,8 @@
 <div id="tls-certificates-page-content" class="space-y-6">
     {% include "governance/tls_certificates/partials/_hero.html" %}
-    {% if cluster_onboarding.is_blocked %}
+    {% if not payload.schema_readiness.ready %}
+        {% include "governance/tls_certificates/partials/_schema_blocker.html" %}
+    {% elif cluster_onboarding.is_blocked %}
         {% include "components/cluster/_onboarding_banner.html" %}
     {% else %}
         {% include "governance/tls_certificates/partials/_inventory_scope.html" %}

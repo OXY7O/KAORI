@@ -1,4 +1,7 @@
 <div id="tls-certificates-inventory-scope" class="space-y-6">
+    {% if not payload.schema_readiness.ready %}
+        {% include "governance/tls_certificates/partials/_schema_blocker.html" %}
+    {% else %}
     <span id="tls-certificates-background-refresh-trigger"
           class="htmx-indicator hidden"
           aria-hidden="true"
@@ -11,6 +14,7 @@
     {% include "governance/tls_certificates/partials/_sync_panel.html" %}
     {% include "governance/tls_certificates/partials/_summary_cards.html" %}
     {% include "governance/tls_certificates/partials/_content.html" %}
+    {% endif %}
 </div>
 {% if sync_feedback %}
     {% with

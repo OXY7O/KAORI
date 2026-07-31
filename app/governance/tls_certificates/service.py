@@ -37,6 +37,10 @@ from app.governance.tls_certificates.constants import (
     TLS_SECRET_TYPE,
     TLS_STATUS_OPTIONS,
 )
+from app.governance.tls_certificates.readiness import (
+    TLSGovernanceSchemaReadiness,
+    check_tls_governance_schema_readiness,
+)
 from app.models import (
     Cluster,
     TLSCertificateCollectionState,
@@ -365,7 +369,78 @@ def _collection_snapshot(
     }
 
 
+def _schema_blocked_payload(
+    args: Any,
+    readiness: TLSGovernanceSchemaReadiness,
+) -> dict[str, Any]:
+    filters = _filters(args)
+    pagination = _build_pagination(
+        page=filters['page'],
+        per_page=filters['per_page'],
+        total_items=0,
+    )
+    summary = {
+        'total': 0,
+        'healthy': 0,
+        'warning': 0,
+        'critical': 0,
+        'expired': 0,
+        'invalid': 0,
+        'unknown': 0,
+        'coverage_full': 0,
+        'coverage_partial': 0,
+        'coverage_uncovered': 0,
+        'coverage_none': 0,
+        'coverage_not_reported': 0,
+        'issuer_count': 0,
+    }
+    validity_policy = validity_policy_from_config(current_app.config)
+    return {
+        'records': [],
+        'clusters': [],
+        'namespaces': [],
+        'filters': filters,
+        'pagination': pagination,
+        'summary': summary,
+        'status_options': TLS_STATUS_OPTIONS,
+        'sync_state': {
+            'is_active': False,
+            'active_job_public_id': None,
+            'icon': 'database-zap',
+            'label': 'Upgrade Required',
+            'tone': 'warning',
+            'progress_message': None,
+            'helper': readiness.detail,
+            'automatic_enabled': False,
+            'last_success_label': 'Unavailable',
+            'next_run_label': 'Unavailable',
+            'progress_percent': 0,
+        },
+        'snapshot': {
+            'source_label': 'TLS Governance Database',
+            'status': 'Upgrade Required',
+            'tone': 'warning',
+            'description': readiness.detail,
+            'latest_collected': 'Unavailable',
+            'scope_label': 'Schema Blocked',
+            'coverage_label': '0 TLS Secrets',
+            'exceptions_label': 'Migration Required',
+            'secret_collection_exceptions': 0,
+            'ingress_mapping_exceptions': 0,
+        },
+        'validity_policy': {
+            'renewal_window_days': validity_policy.renewal_window_days,
+            'critical_window_days': validity_policy.critical_window_days,
+        },
+        'schema_readiness': readiness.as_dict(),
+    }
+
+
 def get_tls_certificate_page(args: Any) -> dict[str, Any]:
+    schema_readiness = check_tls_governance_schema_readiness()
+    if not schema_readiness.ready:
+        return _schema_blocked_payload(args, schema_readiness)
+
     filters = _filters(args)
     clusters = Cluster.query.order_by(Cluster.name.asc()).all()
 
@@ -423,10 +498,13 @@ def get_tls_certificate_page(args: Any) -> dict[str, Any]:
             'renewal_window_days': validity_policy.renewal_window_days,
             'critical_window_days': validity_policy.critical_window_days,
         },
+        'schema_readiness': schema_readiness.as_dict(),
     }
 
 
 def get_tls_certificate_detail(certificate_id: int) -> TLSCertificateInventory | None:
+    if not check_tls_governance_schema_readiness().ready:
+        return None
     record = TLSCertificateInventory.query.get(certificate_id)
     if record is None:
         return None

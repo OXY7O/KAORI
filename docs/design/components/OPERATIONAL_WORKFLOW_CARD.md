@@ -39,8 +39,8 @@ Rows use `surface-card` by default and `surface-hover` on hover or focus-within.
 - Keep validation and authority evidence as compact text, not nested cards.
 - Use neutral surfaces. Critical color belongs to consequences and final destructive confirmation, not the catalog row.
 - Disabled workflows show `Permission Required` and do not expose an active link.
-- Destination controls use naturally sized secondary-button treatment; do not turn every row action into a wide solid-Violet block.
-- Secondary actions are only for a directly related authority workspace, such as reveal-policy administration.
+- Desktop rows reserve one stable action column. Destination and optional administration controls fill that column with secondary or quiet-button treatment; do not turn row actions into solid-Violet blocks.
+- Secondary actions are only for a directly related authority workspace, such as reveal-policy administration, and stack below the destination action so the evidence columns do not shift.
 - Hover must preserve readable contrast in light and dark appearance.
 - Landing pages must not repeat the entire validation procedure below every workflow.
 

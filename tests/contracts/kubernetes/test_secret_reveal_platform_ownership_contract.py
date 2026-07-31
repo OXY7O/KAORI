@@ -14,7 +14,8 @@ def test_secret_reveal_administration_lives_under_platform_operations() -> None:
     assert not old_template_domain.exists()
     assert (new_python_domain / 'routes.py').exists()
     assert (new_python_domain / 'service.py').exists()
-    assert (new_template_domain / 'index.html').exists()
+    assert (ROOT / 'app/templates/platform_operations/kubernetes/index.html').exists()
+    assert (new_template_domain / '_cluster_workspace.html').exists()
 
 
 def test_secret_reveal_routes_and_templates_have_no_legacy_settings_references() -> None:

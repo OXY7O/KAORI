@@ -167,7 +167,7 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 - Landing uses Compact Hero, Live Mutation Evidence Boundary, and Operational Workflow Catalog.
 - Create, Replace, Delete, Reveal, and single TLS Rotation use canonical primary work plus the shared 22rem wide Right Context Rail where secondary context is required.
 - Form labels use 12 px semibold typography; normal controls use a 40 px minimum height and proportional 14 px values.
-- Secret Type uses the responsive Operational Choice Card Group with an explicit selected border, surface, check, and `Selected` marker; generic sensitive entries use Structured Entry Editor.
+- Secret Type uses the responsive Operational Choice Card Group with one selected border, a quiet leading Violet accent, soft surface, and compact `Selected` marker; generic sensitive entries use Structured Entry Editor.
 - Validation, approval, expiry, readiness, and destructive states use semantic colors. Operation classification remains separate from permission state.
 - Secret material never appears in Hero context, operation summaries, notifications, or Activity Audit metadata.
 
@@ -200,7 +200,7 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 
 - Secret Management landing cards, create/replace/delete forms, Protected Reveal surfaces, and TLS rotation use the shared macros in `app/templates/kubernetes_operations/_components.html`.
 - Every Secret Management and protected-reveal hero uses the canonical `page_hero.context_card()` posture panel: one eyebrow/title header, one compact semantic status, two operational metrics, and one full-width contextual CTA. Secret payload material is never rendered in the panel.
-- Secret Type selection uses `components/choice_card_group.html` with a violet selected boundary, visible check indicator, native radio state, and responsive 1/2/3-column reflow.
+- Secret Type selection uses `components/choice_card_group.html` with a single Violet boundary, subtle leading accent, soft state marker, native radio state, and responsive 1/2/3-column reflow. Double rings and solid selected icons are not used.
 - Validation, primary, secondary, destructive, and disabled actions use shared button macros so state changes do not alter geometry or produce thick borders.
 - Workflow section headers use one icon container, title hierarchy, description scale, outline, and surface treatment across Create, Replace, Delete, Reveal, and TLS rotation.
 - Legacy inline page-size submission handlers are replaced by the global `data-kaori-auto-submit` behavior.

@@ -11,6 +11,9 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app.cluster.onboarding import has_registered_clusters
 from app.extensions.db import db
+from app.governance.tls_certificates.readiness import (
+    check_tls_governance_schema_readiness,
+)
 from app.governance.tls_certificates.service import (
     get_tls_certificate_detail,
     get_tls_certificate_page,
@@ -134,6 +137,14 @@ def tls_certificates_sync_status(public_id: str):
         abort(404)
 
     filter_args = _sync_filter_args(request.args)
+    schema_readiness = check_tls_governance_schema_readiness()
+    if not schema_readiness.ready:
+        page_payload = get_tls_certificate_page(filter_args)
+        return render_template(
+            'governance/tls_certificates/partials/_schema_blocker.html',
+            payload=page_payload,
+        ), 409
+
     payload = {
         'filters': filter_args,
         'sync_state': build_tls_sync_state(cluster_id=filter_args['cluster_id'] or None),
@@ -200,6 +211,15 @@ def tls_certificates_sync():
     filter_args = _sync_filter_args(request.form)
     cluster_id = filter_args['cluster_id'] or None
     is_htmx = request.headers.get('HX-Request') == 'true'
+    schema_readiness = check_tls_governance_schema_readiness()
+    if not schema_readiness.ready:
+        page_payload = get_tls_certificate_page(filter_args)
+        if is_htmx:
+            return render_template(
+                'governance/tls_certificates/partials/_inventory_scope.html',
+                payload=page_payload,
+            ), 409
+        return redirect(url_for('governance.tls_certificates', **filter_args))
 
     try:
         outcome = dispatch_registered_job(

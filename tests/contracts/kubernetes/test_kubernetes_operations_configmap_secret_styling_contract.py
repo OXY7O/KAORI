@@ -116,8 +116,10 @@ def test_secret_create_selection_and_actions_are_visually_owned_by_main_workspac
     assert 'secret-type-selected-indicator' in choice
     assert 'x-show=' not in choice
     assert '@change="{{ model }} = $event.target.value"' in choice
-    assert '0 0 0 2px var(--kaori-brand-primary)' in styles
+    assert 'box-shadow: inset 3px 0 0 var(--kaori-brand-primary)' in styles
+    assert '0 0 0 2px var(--kaori-brand-primary)' not in styles
     assert '.secret-type-input:checked + .secret-type-option .secret-type-selected-indicator' in styles
+    assert 'border border-brand-outline bg-kaori-soft' in choice
 
     action_index = create.index("secret_ui.action_bar('scan-search', 'Validate Before Creation'")
     aside_index = create.index('<aside class="{{ context_rail.rail_classes() }}')
@@ -135,3 +137,12 @@ def test_bulk_tls_rotation_uses_expandable_operational_point_flow() -> None:
     assert 'components/operational_flow_steps.html' not in source
     assert 'xl:grid-cols-3 xl:items-start' not in source
     assert "secret_ui.action_bar('shield-check', 'Validate Before Bulk Rotation'" in source
+
+
+def test_operation_catalog_owns_a_stable_action_column() -> None:
+    component = read('app/templates/components/operational_workflow_card.html')
+
+    assert 'minmax(12rem,0.56fr)' in component
+    assert 'lg:justify-self-stretch' in component
+    assert "action_button.classes('secondary', false) }} w-full justify-center" in component
+    assert 'min-h-9 w-full items-center justify-center' in component
