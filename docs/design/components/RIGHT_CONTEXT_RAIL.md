@@ -21,11 +21,12 @@ Use the shared geometry from:
 </div>
 ```
 
-Do not copy `xl:grid-cols-[minmax(0,1fr)_20rem]` or rail spacing into page templates.
+Do not copy the default 20rem or wide 22rem grid classes into page templates. Request the shared geometry through `context_rail.layout_classes()` or `context_rail.layout_classes('wide')`.
 
 ## Geometry
 
-- Desktop split: flexible primary workspace plus a fixed 20rem rail.
+- Default desktop split: flexible primary workspace plus a fixed 20rem rail.
+- Wide live-mutation split: flexible primary workspace plus a fixed 22rem rail.
 - Gap between main and rail: 24 px.
 - Gap between rail boxes: 16 px.
 - Both columns use `min-w-0` to prevent overflow.
@@ -56,7 +57,7 @@ When several boxes are required, use this order:
 2. Related workspace navigation.
 3. Supporting information or reference guidance.
 
-Keep the rail to one to three boxes. More content normally belongs below the main workspace or on a dedicated page.
+Keep the rail to one to three boxes. Primary Info Flow remains visible. Secondary summaries, guardrails, policy references, and related-workspace explanations are expandable and closed by default. More content normally belongs below the main workspace or on a dedicated page.
 
 ## Content Rules
 

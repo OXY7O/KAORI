@@ -115,3 +115,8 @@ Impact context can lag behind the live object. The UI must label it as inventory
 ## Current KAORI operations pattern
 
 The canonical presentation is documented in `docs/design/patterns/KUBERNETES_CONFIGMAP_SECRET_OPERATIONS.md`. Live Kubernetes owns mutation targets, committed Inventory owns best-effort impact context, and Activity Audit owns actor/outcome evidence. Final deletion uses a KAORI destructive confirmation modal without weakening the signed receipt or resourceVersion precondition.
+
+
+## Workspace density
+
+Create, Update, and Delete use the shared 22rem wide mutation rail. Primary Info Flow remains visible. Secondary guardrail collections are expandable and closed by default. Form Action Bar remains within the primary workspace and separates its title from helper copy.

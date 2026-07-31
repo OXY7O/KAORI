@@ -6,6 +6,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "kubernetes_operations/_components.html" as configmap_ui %}
 {% import "components/info_flow.html" as info_flow %}
+{% import "components/information_guide_card.html" as information_guide_card %}
 {% block title %}Create ConfigMap{% endblock title %}
 {% block dashboard_content %}
     <div class="grid gap-6">
@@ -30,7 +31,7 @@
                     'info',
                     [
                         ('scan-search', 'Validation', 'Required', 'Server-side dry-run', true),
-                        ('target', 'Target Scope', 'Single', 'Create-only ConfigMap')
+                        ('target', 'Target Scope', 'Single', 'One live object')
                     ],
                     'Back to ConfigMap Management',
                     url_for('kubernetes_operations.configmap_management'),
@@ -49,7 +50,7 @@
               hx-swap="innerHTML"
               class="space-y-6">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="{{ context_rail.layout_classes() }}">
+            <div class="{{ context_rail.layout_classes('wide') }}">
                 <div class="{{ context_rail.main_classes() }}">
                     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                         {{ configmap_ui.section_header('map-pin', 'Target Location', 'Select the live cluster and namespace where the new ConfigMap will be created.') }}
@@ -137,15 +138,19 @@
                         note_icon='circle-alert',
                         open_by_default=true
                     ) }}
-                    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                        {{ configmap_ui.section_header('shield-check', 'Create Guardrails', 'KAORI validates target identity and object safety before write access is allowed.') }}
-                        <div class="grid gap-4 p-5">
-                            {{ configmap_ui.guardrail('radio-tower', 'Live Target Source', 'Namespaces are loaded directly from Kubernetes.') }}
-                            {{ configmap_ui.guardrail('scan-search', 'Dry-Run Validation', 'KAORI validates the proposed object before creation.') }}
-                            {{ configmap_ui.guardrail('ban', 'No Overwrite', 'Name conflicts stop the workflow without changing live data.', 'warning') }}
-                            {{ configmap_ui.guardrail('scroll-text', 'Audited Creation', 'The creation request and result are recorded for operational review.') }}
-                        </div>
-                    </section>
+                    {% set configmap_create_guardrails = [
+                        ('radio-tower', 'Live Target Source', 'Namespaces are loaded directly from Kubernetes.'),
+                        ('scan-search', 'Dry-Run Validation', 'KAORI validates the proposed object before creation.'),
+                        ('ban', 'No Overwrite', 'Name conflicts stop the workflow without changing live data.'),
+                        ('scroll-text', 'Audited Creation', 'The request and outcome are recorded for operational review.')
+                    ] %}
+                    {{ information_guide_card.render(
+                        'Create Guardrails',
+                        'Additional controls for ConfigMap creation.',
+                        configmap_create_guardrails,
+                        icon='shield-check',
+                        open_by_default=false
+                    ) }}
                 </aside>
             </div>
         </form>

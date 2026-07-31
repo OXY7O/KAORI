@@ -165,9 +165,9 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 ## Design contract
 
 - Landing uses Compact Hero, Live Mutation Evidence Boundary, and Operational Workflow Catalog.
-- Create, Replace, Delete, Reveal, and single TLS Rotation use canonical primary work plus shared Right Context Rail where secondary context is required.
+- Create, Replace, Delete, Reveal, and single TLS Rotation use canonical primary work plus the shared 22rem wide Right Context Rail where secondary context is required.
 - Form labels use 12 px semibold typography; normal controls use a 40 px minimum height and proportional 14 px values.
-- Secret Type uses the responsive Operational Choice Card Group; generic sensitive entries use Structured Entry Editor.
+- Secret Type uses the responsive Operational Choice Card Group with an explicit selected border, surface, check, and `Selected` marker; generic sensitive entries use Structured Entry Editor.
 - Validation, approval, expiry, readiness, and destructive states use semantic colors. Operation classification remains separate from permission state.
 - Secret material never appears in Hero context, operation summaries, notifications, or Activity Audit metadata.
 
@@ -219,9 +219,9 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 
 - The Secret Management hero links to Kubernetes cluster management.
 - Create, replace, delete, reveal, and bulk TLS rotation workflow heroes return to Secret Management.
-- Secret creation uses a compact summary list rather than nested summary cards.
+- Secret creation keeps its Form Action Bar inside the primary column. Creation Summary and Sensitive Data Policy are secondary expandable boxes closed by default.
 - Delete flow and guardrails are grouped inside one sticky right-column wrapper. They must never be separate grid rows, because a sticky flow card would overlap guardrails while the page scrolls.
-- Bulk TLS rotation places validation actions below the upload panel; the combined left workflow column aligns with the right rotation-flow panel.
+- Bulk TLS rotation places two peer upload cards first, then a full-width arrow-based Controlled TLS Rotation Flow, followed by validation actions. It does not use a tall side flow panel.
 
 ### TLS rotation presentation
 

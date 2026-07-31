@@ -19,8 +19,8 @@
             inventory.overall_posture,
             inventory.overall_posture_tone,
             [
-                ('link-2', 'Bound', inventory.bound_resource_count),
-                ('triangle-alert', 'Exceptions', inventory.exception_count)
+                ('link-2', 'Bound', inventory.bound_resource_count, 'Claims and volumes'),
+                ('triangle-alert', 'Exceptions', inventory.exception_count, 'Pending or failed')
             ],
             'Manage Clusters',
             url_for('integrations.kubernetes'),

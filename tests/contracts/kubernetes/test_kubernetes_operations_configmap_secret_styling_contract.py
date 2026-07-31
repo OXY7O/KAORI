@@ -35,7 +35,7 @@ def test_live_mutation_pages_use_canonical_evidence_and_context_rail() -> None:
         source = (TEMPLATES / 'kubernetes_operations' / relative).read_text()
         assert 'operation_evidence_boundary.html' in source
         assert 'context_rail.html' in source
-        assert 'context_rail.layout_classes()' in source
+        assert "context_rail.layout_classes('wide')" in source
         assert 'context_rail.main_classes()' in source
         assert 'context_rail.rail_classes()' in source
         assert 'xl:grid-cols-[minmax(0,1fr)_' not in source
@@ -70,3 +70,46 @@ def test_operation_templates_use_canonical_control_geometry() -> None:
         assert 'text-[10px]' not in source, template
         assert 'text-[11px]' not in source, template
         assert 'tracking-[0.' not in source, template
+
+
+def test_secondary_operation_rail_guidance_is_collapsed_by_default() -> None:
+    configmap_pages = (
+        'app/templates/kubernetes_operations/configmaps/create.html',
+        'app/templates/kubernetes_operations/configmaps/update.html',
+        'app/templates/kubernetes_operations/configmaps/delete.html',
+    )
+    for relative in configmap_pages:
+        source = read(relative)
+        assert 'information_guide_card.html' in source
+        assert 'open_by_default=false' in source
+
+    create_secret = read('app/templates/kubernetes_operations/secrets/create.html')
+    replace_secret = read('app/templates/kubernetes_operations/secrets/replace.html')
+    delete_secret = read('app/templates/kubernetes_operations/secrets/delete.html')
+    assert 'view_more_content.html' in create_secret
+    assert create_secret.count('open_by_default=false') >= 2
+    assert 'open_by_default=false' in replace_secret
+    assert 'open_by_default=false' in delete_secret
+
+
+def test_secret_create_selection_and_actions_are_visually_owned_by_main_workspace() -> None:
+    choice = read('app/templates/components/choice_card_group.html')
+    create = read('app/templates/kubernetes_operations/secrets/create.html')
+
+    assert "!border-kaori-primary !bg-kaori-soft" in choice
+    assert '>Selected</span>' in choice
+    assert '@change="{{ model }} = $event.target.value"' in choice
+
+    action_index = create.index("secret_ui.action_bar('scan-search', 'Validate Before Creation'")
+    aside_index = create.index('<aside class="{{ context_rail.rail_classes() }}')
+    assert action_index < aside_index
+
+
+def test_bulk_tls_rotation_uses_full_width_operational_flow() -> None:
+    source = read('app/templates/kubernetes_operations/secrets/tls_rotation.html')
+
+    assert 'components/operational_flow_steps.html' in source
+    assert 'operational_flow_steps.render' in source
+    assert 'Controlled TLS Rotation Flow' in source
+    assert 'xl:grid-cols-3 xl:items-start' not in source
+    assert "secret_ui.action_bar('shield-check', 'Validate Before Bulk Rotation'" in source

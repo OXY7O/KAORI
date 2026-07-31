@@ -25,14 +25,14 @@
                 <dd class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ boundary_value }}</dd>
             </div>
         </dl>
-        <div class="mt-auto grid gap-2 pt-4 sm:grid-cols-2">
-            {% if secondary_href and secondary_label %}
-                <a href="{{ secondary_href }}" class="{{ action_button.classes('secondary', true) }}"><i data-lucide="{{ secondary_icon }}" class="h-4 w-4"></i>{{ secondary_label }}</a>
-            {% endif %}
+        <div class="mt-auto grid gap-2 pt-4">
             {% if allowed and action_href %}
-                <a href="{{ action_href }}" class="{{ action_button.classes('primary', true) }} {{ 'sm:col-span-1' if secondary_href and secondary_label else 'sm:col-span-2' }}"><i data-lucide="{{ action_icon }}" class="h-4 w-4"></i>{{ action_label }}</a>
+                <a href="{{ action_href }}" class="{{ action_button.classes('primary', true) }}"><i data-lucide="{{ action_icon }}" class="h-4 w-4"></i>{{ action_label }}</a>
             {% else %}
-                <button type="button" disabled class="{{ action_button.classes('secondary', true) }} {{ 'sm:col-span-1' if secondary_href and secondary_label else 'sm:col-span-2' }}"><i data-lucide="lock" class="h-4 w-4"></i>Permission Required</button>
+                <button type="button" disabled class="{{ action_button.classes('secondary', true) }}"><i data-lucide="lock" class="h-4 w-4"></i>Permission Required</button>
+            {% endif %}
+            {% if secondary_href and secondary_label %}
+                <a href="{{ secondary_href }}" class="{{ action_button.classes('secondary', true) }} whitespace-nowrap"><i data-lucide="{{ secondary_icon }}" class="h-4 w-4"></i>{{ secondary_label }}</a>
             {% endif %}
         </div>
     </article>

@@ -361,12 +361,12 @@ def create_secret():
                 raise ValueError('Unsupported Secret action.')
 
             result = (
-                execute_secret_operation(request.form, request.files, validate_only=True)
+                execute_secret_operation(request.form, request.files, dry_run=True)
                 if dry_run
                 else validate_then_apply(
-                    validate=lambda: execute_secret_operation(request.form, request.files, validate_only=True),
+                    validate=lambda: execute_secret_operation(request.form, request.files, dry_run=True),
                     prepare_apply=lambda: _rewind_uploaded_files(request.files),
-                    apply=lambda: execute_secret_operation(request.form, request.files, validate_only=False),
+                    apply=lambda: execute_secret_operation(request.form, request.files, dry_run=False),
                 )
             )
             event_type = 'kubernetes_secret_validation' if dry_run else 'kubernetes_secret_created'

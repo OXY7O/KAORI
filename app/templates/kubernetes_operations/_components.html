@@ -67,7 +67,7 @@
 
 {% macro action_bar(icon, title, description, aria_label='Operation Actions') -%}
     {% set action_content = caller() %}
-    {% call form_action_bar.render(title ~ ' — ' ~ description, aria_label) %}
+    {% call form_action_bar.render(description, aria_label, title) %}
         {{ action_content | safe }}
     {% endcall %}
 {%- endmacro %}

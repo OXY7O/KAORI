@@ -42,9 +42,11 @@ Canonical Form Action Bar
 Rules:
 
 - primary work appears before the context rail in DOM order;
-- context rail uses `components/context_rail.html`;
+- context rail uses `components/context_rail.html` with the shared 22rem `wide` variant;
 - controls use 40 px geometry and 12 px labels;
 - mutation remains validation-gated, but the server always revalidates;
+- primary Info Flow remains visible; secondary summaries, policies, guardrails, and related guidance are expandable and closed by default;
+- Form Action Bar remains inside the primary column and separates its title from concise helper copy;
 - detailed instructions belong in Info Flow or a focused guidance card, not repeated across Hero, form, rail, and footer.
 
 ## ConfigMap entry editing
@@ -53,7 +55,7 @@ ConfigMap text and binary entries use Structured Entry Editor. Update keeps Merg
 
 ## Secret creation and replacement
 
-Secret Type uses Operational Choice Card Group with responsive 1/2/3-column reflow. Existing values are never rendered in Replace. Blank replacement inputs mean unchanged; submitted values mean replace.
+Secret Type uses Operational Choice Card Group with responsive 1/2/3-column reflow. The selected option uses a strong Violet boundary, selected surface, check icon, and explicit `Selected` marker; changing only the rail summary is insufficient. Existing values are never rendered in Replace. Blank replacement inputs mean unchanged; submitted values mean replace.
 
 Use the wording `No KAORI Value Persistence`: values are processed transiently and excluded from KAORI storage, notifications, and audit metadata. Do not claim the process never receives plaintext.
 
@@ -86,3 +88,8 @@ Only the active registry panel polls. The one-time value uses Protected Value Pa
 ## Pagination
 
 Reveal registries and bulk TLS target tables use scoped HTMX pagination with explicit endpoint, query parameters, target, and owning loading state. Numeric pages must not navigate to a partial endpoint as a full page.
+
+
+## Bulk TLS Rotation layout
+
+Bulk TLS Rotation presents certificate and private-key upload as two peer main-content cards. A compact file-processing boundary follows them. The five-step Controlled TLS Rotation Flow is rendered full width beneath the upload cards through `components/operational_flow_steps.html`, using arrows rather than a tall side column. Validation actions remain in the canonical Form Action Bar beneath the flow.

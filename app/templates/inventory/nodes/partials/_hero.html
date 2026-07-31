@@ -21,8 +21,8 @@
             inventory.readiness_label,
             inventory.readiness_tone,
             [
-                ('circle-check', 'Ready', inventory.ready_nodes),
-                ('triangle-alert', 'Not Ready', inventory.not_ready_nodes)
+                ('circle-check', 'Ready', inventory.ready_nodes, 'Scheduling available'),
+                ('triangle-alert', 'Not Ready', inventory.not_ready_nodes, 'Needs investigation')
             ],
             'Manage Clusters',
             url_for('integrations.kubernetes'),

@@ -73,16 +73,24 @@ def test_inventory_hero_descriptions_follow_the_compact_copy_budget() -> None:
         assert 'from committed Kubernetes inventory snapshots' not in source, resource
 
 
-def test_inventory_hero_context_panels_use_short_titles_and_value_only_metrics() -> None:
-    four_part_metric = re.compile(
-        r"\(\s*'[^']+'\s*,\s*'[^']+'\s*,[^\n]+,\s*'[^']+'\s*\)"
+def test_inventory_hero_context_panels_use_short_titles_and_concise_helpers() -> None:
+    literal_helpers = re.compile(
+        r"\(\s*'[^']+'\s*,\s*'[^']+'\s*,[^\n]+,\s*'([^']+)'"
     )
     for resource, (_description, context_title) in HERO_EXPECTATIONS.items():
         source = _read(resource)
         assert context_title in source, resource
         assert len(context_title.replace('&', '').split()) <= 4, resource
-        assert not four_part_metric.search(source), resource
-        assert 'context_metric_helper_classes()' not in source, resource
+
+        if resource == 'topology':
+            assert source.count('context_metric_helper_classes()') == 2
+            assert 'Mapped dependencies' in source
+            assert 'Graph limit omitted' in source
+            continue
+
+        helpers = literal_helpers.findall(source)
+        assert len(helpers) >= 2, resource
+        assert all(1 <= len(helper.split()) <= 4 for helper in helpers[:2]), resource
 
 
 def test_inventory_hero_copy_budget_is_documented() -> None:

@@ -25,6 +25,8 @@ def test_inventory_technical_metadata_uses_readable_wrapping_columns() -> None:
     component = read('app/templates/components/technical_metadata_collection.html')
 
     assert 'lg:grid-cols-[minmax(15rem,0.42fr)_minmax(0,1fr)]' in component
+    assert 'sm:grid-cols-[minmax(7rem,0.34fr)_minmax(0,1fr)]' in component
+    assert 'text-xs font-medium' in component
     assert 'whitespace-pre-wrap' in component
     assert '[overflow-wrap:anywhere]' in component
     assert 'max-h-' not in component
@@ -45,3 +47,12 @@ def test_all_inventory_modal_details_avoid_truncated_resource_evidence() -> None
     for template in detail_templates:
         source = template.read_text()
         assert ' truncate ' not in source, template
+
+
+def test_pod_and_workload_tolerations_use_compact_pair_spacing() -> None:
+    for relative in (
+        'app/templates/inventory/pods/partials/_pod_detail_content.html',
+        'app/templates/inventory/workloads/partials/_workload_detail_content.html',
+    ):
+        source = read(relative)
+        assert "'Tolerations remain factual scheduling evidence until evaluated against an explicit policy.', compact_pairs=true" in source

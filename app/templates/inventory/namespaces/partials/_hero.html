@@ -21,8 +21,8 @@
             inventory.lifecycle_label,
             inventory.lifecycle_tone,
             [
-                ('circle-check', 'Active', inventory.active_namespaces),
-                ('hourglass', 'Exceptions', inventory.lifecycle_exceptions)
+                ('circle-check', 'Active', inventory.active_namespaces, 'Lifecycle active'),
+                ('hourglass', 'Exceptions', inventory.lifecycle_exceptions, 'Termination or unknown')
             ],
             'Manage Clusters',
             url_for('integrations.kubernetes'),

@@ -156,7 +156,7 @@ Hero copy budget:
 - metric label: 1–3 words;
 - metric helper: optional, maximum 4 words.
 
-Use label + value only when the metric is self-explanatory. Snapshot boundaries, diagnostic explanations, and interpretation belong below the hero.
+Inventory and operations context metrics normally include a concise helper of one to four words when it improves interpretation. Use label + value only when the metric is fully self-explanatory. Snapshot boundaries, diagnostic explanations, and longer interpretation belong below the hero.
 
 Hero limits:
 
@@ -286,7 +286,7 @@ Use the shared layout:
 {% import "components/context_rail.html" as context_rail %}
 ```
 
-The desktop rail is 20rem wide, stacks below the main workspace on smaller screens, and uses 16 px vertical spacing between boxes.
+The default desktop rail is 20rem wide. Dense live-mutation workspaces may use the shared `wide` variant at 22rem so operational flow and guidance copy remain readable. Both variants stack below the main workspace on smaller screens and use 16 px vertical spacing between boxes.
 
 Choose a box by purpose:
 
@@ -627,7 +627,7 @@ Service and Ingress Inventory follow `patterns/KUBERNETES_NETWORK_INVENTORY.md`.
 
 ### Detail evidence density
 
-`detail.evidence_grid(...)` owns compact factual evidence tiles. It must not expose empty grid-background cells when the final row is incomplete. Technical Metadata Collection avoids nested vertical scrolling inside expanded details; large collections may use later progressive-disclosure patterns, but not a fixed internal scrollbar by default.
+`detail.evidence_grid(...)` owns compact factual evidence tiles. It must not expose empty grid-background cells when the final row is incomplete. Technical Metadata Collection avoids nested vertical scrolling inside expanded details; large collections may use later progressive-disclosure patterns, but not a fixed internal scrollbar by default. Key-only inventories use the shared 12 px supporting-text token. Narrow pair collections such as Tolerations use the shared compact-pair layout so the key column does not force the value into an unreadable strip.
 
 Use body-size proportional Technical Value presentation for technical values inside ordinary table cells. Compact Technical Value remains appropriate in detail rows and supporting metadata.
 
@@ -655,7 +655,7 @@ The table action remains `View Details`, but it opens a maximized modal workspac
 
 Required behavior:
 
-- near-fullscreen viewport geometry with a `90rem` desktop maximum;
+- near-fullscreen viewport geometry with a `100rem` desktop maximum;
 - fixed resource header, summary strip, and footer;
 - independently scrollable evidence body;
 - `?detail=<id>` URL state;

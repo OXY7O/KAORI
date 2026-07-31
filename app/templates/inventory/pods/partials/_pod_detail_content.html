@@ -70,7 +70,7 @@
                     </div>
                     <div class="mt-4 grid items-start gap-4 lg:grid-cols-2">
                         {{ metadata_collection.render('Node Selectors', pod.node_selectors, 'binary', 'No Node Selectors', 'No node selector was declared in the committed Pod specification.', 'Selectors remain factual scheduling evidence until evaluated against an explicit policy.') }}
-                        {{ metadata_collection.render('Tolerations', pod.toleration_entries, 'shield', 'No Tolerations', 'No toleration was declared in the committed Pod specification.', 'Tolerations remain factual scheduling evidence until evaluated against an explicit policy.') }}
+                        {{ metadata_collection.render('Tolerations', pod.toleration_entries, 'shield', 'No Tolerations', 'No toleration was declared in the committed Pod specification.', 'Tolerations remain factual scheduling evidence until evaluated against an explicit policy.', compact_pairs=true) }}
                     </div>
                 {% endcall %}
 

@@ -6,8 +6,8 @@
   Related Page Card, Information Guide Card, Page Context Card, or a semantic
   readiness block.
 #}
-{% macro layout_classes() -%}
-    grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start
+{% macro layout_classes(width='default') -%}
+    grid gap-6 {{ 'xl:grid-cols-[minmax(0,1fr)_22rem]' if width == 'wide' else 'xl:grid-cols-[minmax(0,1fr)_20rem]' }} xl:items-start
 {%- endmacro %}
 {% macro main_classes() -%}
     min-w-0 space-y-6

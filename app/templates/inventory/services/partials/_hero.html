@@ -19,8 +19,8 @@
             inventory.overall_posture_label,
             inventory.overall_posture_tone,
             [
-                ('circle-check', 'Registered', inventory.registered_backends),
-                ('triangle-alert', 'Exceptions', inventory.backend_exceptions)
+                ('circle-check', 'Registered', inventory.registered_backends, 'Ready backends present'),
+                ('triangle-alert', 'Exceptions', inventory.backend_exceptions, 'Missing or partial')
             ],
             'Manage Clusters',
             url_for('integrations.kubernetes'),

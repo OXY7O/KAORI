@@ -124,3 +124,5 @@ Domain-specific UI rules live under `docs/modules/` or the owning module README.
 
 - `patterns/KUBERNETES_CONFIGMAP_SECRET_OPERATIONS.md` — live mutation, protected reveal, and delete-confirmation pattern.
 - `audits/KUBERNETES_CONFIGMAP_SECRET_OPERATIONS_STYLING_AUDIT_2026_07.md` — operation workspace and Inventory modal remediation record.
+
+- `audits/KUBERNETES_OPERATIONS_LAYOUT_REFINEMENT_AUDIT_2026_07.md` — ConfigMap/Secret workspace density, selection, action placement, and TLS flow refinement.

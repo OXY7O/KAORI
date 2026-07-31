@@ -237,7 +237,7 @@ Hero geometry does not compensate for verbose copy. Authenticated workspace hero
 - metric label: normally 1–3 words;
 - metric helper: optional and normally no more than 4 words.
 
-A straightforward metric uses label + value only. Explanations, evidence boundaries, and interpretation belong below the hero. Repeated phrases such as “from committed Kubernetes inventory snapshots” must not appear on every resource page when the shared Snapshot Context already owns that boundary.
+Inventory and operations context metrics normally include a one-to-four-word helper when it clarifies the value. A fully self-explanatory metric may use label + value only. Explanations, evidence boundaries, and longer interpretation belong below the hero. Repeated phrases such as “from committed Kubernetes inventory snapshots” must not appear on every resource page when the shared Snapshot Context already owns that boundary.
 
 ## Density
 

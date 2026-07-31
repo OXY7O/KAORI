@@ -20,3 +20,10 @@ The component is presentation-only and receives an ordered mapping from the page
 ## Full Workspace Modal wrapping
 
 Pair mode reserves a readable key column (`minmax(15rem, 0.42fr)`) and a flexible value column. Keys and values use `overflow-wrap:anywhere`; values preserve intentional line breaks with `whitespace-pre-wrap`. Long metadata expands the modal body instead of truncating or creating a second vertical scrollbar.
+
+
+## Density variants
+
+- `mode='keys'` uses the shared 12 px supporting-text token so large configuration key inventories remain scannable without becoming visually dominant.
+- `compact_pairs=true` uses a 7rem minimum key column and tighter gap. Use it for narrow factual collections such as Pod or Workload Tolerations.
+- Default pair mode retains the 15rem key column for full-width labels and annotations.

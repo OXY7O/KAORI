@@ -19,8 +19,8 @@
             inventory.overall_posture_label,
             inventory.overall_posture_tone,
             [
-                ('globe-2', 'Published Hosts', inventory.total_hosts),
-                ('triangle-alert', 'Exceptions', inventory.missing_addresses + inventory.routing_exceptions)
+                ('globe-2', 'Published Hosts', inventory.total_hosts, 'Declared host routes'),
+                ('triangle-alert', 'Exceptions', inventory.missing_addresses + inventory.routing_exceptions, 'Address or routing')
             ],
             'Manage Clusters',
             url_for('integrations.kubernetes'),

@@ -21,8 +21,8 @@
             overview.posture.status,
             overview.posture.tone,
             [
-                ('server-cog', 'Connected', overview.health.connected_clusters ~ '/' ~ overview.total_clusters),
-                ('scan-search', 'Active Signals', overview.active_signal_count)
+                ('server-cog', 'Connected', overview.health.connected_clusters ~ '/' ~ overview.total_clusters, 'Ready integrations'),
+                ('scan-search', 'Active Signals', overview.active_signal_count, 'Current exceptions')
             ],
             'Manage Clusters',
             url_for('integrations.kubernetes'),

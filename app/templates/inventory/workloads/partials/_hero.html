@@ -19,8 +19,8 @@
             inventory.posture_label,
             inventory.posture_tone,
             [
-                ('circle-check', 'Stable', inventory.stable_workloads),
-                ('triangle-alert', 'Exceptions', inventory.exception_workloads)
+                ('circle-check', 'Stable', inventory.stable_workloads, 'Expected controller state'),
+                ('triangle-alert', 'Exceptions', inventory.exception_workloads, 'Needs review')
             ],
             'Manage Clusters',
             url_for('integrations.kubernetes'),

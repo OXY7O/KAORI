@@ -4,6 +4,7 @@
 {% import "components/context_rail.html" as context_rail %}
 {% import "kubernetes_operations/_components.html" as configmap_ui %}
 {% import "components/info_flow.html" as info_flow %}
+{% import "components/information_guide_card.html" as information_guide_card %}
 {% block title %}View & Update ConfigMap{% endblock title %}
 {% block dashboard_content %}
     <div class="grid gap-6">
@@ -27,8 +28,8 @@
                     'Preview Required',
                     'info',
                     [
-                        ('radio-tower', 'Source', 'Live', 'Kubernetes API object'),
-                        ('git-compare-arrows', 'Mutation', 'Merge / Replace', 'Effective diff preview', true)
+                        ('radio-tower', 'Source', 'Live', 'Kubernetes API'),
+                        ('git-compare-arrows', 'Mutation', 'Merge / Replace', 'Previewed change', true)
                     ],
                     'Back to ConfigMap Management',
                     url_for('kubernetes_operations.configmap_management'),
@@ -47,7 +48,7 @@
               hx-swap="innerHTML"
               class="space-y-6">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="{{ context_rail.layout_classes() }}">
+            <div class="{{ context_rail.layout_classes('wide') }}">
                 <div class="{{ context_rail.main_classes() }}">
                     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                         {{ configmap_ui.section_header('search', 'Select ConfigMap', 'Choose the cluster, namespace, and live ConfigMap to load current state.') }}
@@ -89,15 +90,19 @@
                         note_icon='circle-alert',
                         open_by_default=true
                     ) }}
-                    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                        {{ configmap_ui.section_header('shield-check', 'Update Guardrails', 'KAORI validates the live object and proposed change before write access is allowed.') }}
-                        <div class="grid gap-4 p-5">
-                            {{ configmap_ui.guardrail('eye', 'Live Read First', 'Current values are loaded directly from Kubernetes before editing.') }}
-                            {{ configmap_ui.guardrail('git-compare-arrows', 'Effective Diff', 'Added, changed, and removed keys are reviewed before apply.') }}
-                            {{ configmap_ui.guardrail('scan-search', 'Dry-Run Validation', 'KAORI validates the proposed update before modifying the live object.') }}
-                            {{ configmap_ui.guardrail('lock-keyhole', 'Immutable Protection', 'Immutable ConfigMaps are blocked from update operations.', 'warning') }}
-                        </div>
-                    </section>
+                    {% set configmap_update_guardrails = [
+                        ('eye', 'Live Read First', 'Current values are loaded directly from Kubernetes before editing.'),
+                        ('git-compare-arrows', 'Effective Diff', 'Added, changed, and removed keys are reviewed before apply.'),
+                        ('scan-search', 'Dry-Run Validation', 'KAORI validates the proposed update before modifying the live object.'),
+                        ('lock-keyhole', 'Immutable Protection', 'Immutable ConfigMaps remain blocked from update operations.')
+                    ] %}
+                    {{ information_guide_card.render(
+                        'Update Guardrails',
+                        'Additional controls for a live ConfigMap update.',
+                        configmap_update_guardrails,
+                        icon='shield-check',
+                        open_by_default=false
+                    ) }}
                 </aside>
             </div>
         </form>

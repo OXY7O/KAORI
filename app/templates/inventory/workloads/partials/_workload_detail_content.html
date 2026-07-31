@@ -90,7 +90,7 @@
                 </div>
                 <div class="mt-4 grid gap-4 lg:grid-cols-2">
                     {{ metadata_collection.render('Node Selectors', workload.node_selectors, 'binary', 'No Node Selectors', 'No node selector was declared in the reported Pod template.', 'Selectors remain factual scheduling evidence until evaluated against an explicit policy.') }}
-                    {{ metadata_collection.render('Tolerations', workload.tolerations, 'shield', 'No Tolerations', 'No toleration was declared in the reported Pod template.', 'Tolerations remain factual scheduling evidence until evaluated against an explicit policy.') }}
+                    {{ metadata_collection.render('Tolerations', workload.tolerations, 'shield', 'No Tolerations', 'No toleration was declared in the reported Pod template.', 'Tolerations remain factual scheduling evidence until evaluated against an explicit policy.', compact_pairs=true) }}
                 </div>
             </section>
 

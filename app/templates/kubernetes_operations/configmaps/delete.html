@@ -5,6 +5,7 @@
 {% import "components/destructive_confirmation_modal.html" as destructive_modal %}
 {% import "kubernetes_operations/_components.html" as configmap_ui %}
 {% import "components/info_flow.html" as info_flow %}
+{% import "components/information_guide_card.html" as information_guide_card %}
 {% block title %}Delete ConfigMap{% endblock title %}
 {% block dashboard_content %}
     <div class="grid gap-6">
@@ -28,8 +29,8 @@
                     'Destructive',
                     'critical',
                     [
-                        ('shield-check', 'Validation', 'Required', 'Non-destructive preflight', true),
-                        ('keyboard', 'Confirmation', 'Exact Name', 'Short-lived validation receipt', true)
+                        ('shield-check', 'Validation', 'Required', 'No delete sent', true),
+                        ('keyboard', 'Confirmation', 'Exact Name', 'Same live object', true)
                     ],
                     'Back to ConfigMap Management',
                     url_for('kubernetes_operations.configmap_management'),
@@ -48,7 +49,7 @@
               hx-disabled-elt="find button"
               class="space-y-6">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="{{ context_rail.layout_classes() }}">
+            <div class="{{ context_rail.layout_classes('wide') }}">
                 <div class="{{ context_rail.main_classes() }}">
                     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
                         {{ configmap_ui.section_header('search', 'Select ConfigMap', 'Choose the cluster, namespace, and live ConfigMap to load current state.') }}
@@ -93,14 +94,18 @@
                         note_icon='shield-alert',
                         open_by_default=true
                     ) }}
-                    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                        {{ configmap_ui.section_header('shield-alert', 'Deletion Guardrails', 'Controls required before a ConfigMap can be removed.', 'critical') }}
-                        <div class="grid gap-4 p-5">
-                            {{ configmap_ui.guardrail('eye', 'Live Object Review', 'The selected target is read directly from Kubernetes.') }}
-                            {{ configmap_ui.guardrail('shield-check', 'Authorization Preflight', 'KAORI verifies live identity and delete RBAC without sending a DELETE request.') }}
-                            {{ configmap_ui.guardrail('keyboard', 'Exact Confirmation', 'The live ConfigMap name must be entered exactly.', 'critical') }}
-                        </div>
-                    </section>
+                    {% set configmap_delete_guardrails = [
+                        ('eye', 'Live Object Review', 'The selected target is read directly from Kubernetes.'),
+                        ('shield-check', 'Authorization Preflight', 'KAORI verifies live identity and delete RBAC without sending DELETE.'),
+                        ('keyboard', 'Exact Confirmation', 'The live ConfigMap name must be entered exactly.')
+                    ] %}
+                    {{ information_guide_card.render(
+                        'Deletion Guardrails',
+                        'Additional controls required before final deletion.',
+                        configmap_delete_guardrails,
+                        icon='shield-alert',
+                        open_by_default=false
+                    ) }}
                 </aside>
             </div>
         </form>

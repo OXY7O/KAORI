@@ -35,6 +35,7 @@
                             <p class="{{ page_hero.context_metric_label_classes() }}">Relationships</p>
                         </div>
                         <p id="topology-hero-relationships" class="mt-1.5 {{ page_hero.context_metric_value_classes() }}">{{ graph.summary.relationships }}</p>
+                        <p class="{{ page_hero.context_metric_helper_classes() }}">Mapped dependencies</p>
                     </div>
                     <div class="{{ page_hero.context_metric_card_classes() }}">
                         <div class="flex items-center gap-2 text-brand-foreground">
@@ -42,6 +43,7 @@
                             <p class="{{ page_hero.context_metric_label_classes() }}">Hidden Resources</p>
                         </div>
                         <p id="topology-hero-coverage" class="mt-1.5 {{ page_hero.context_metric_value_classes(true) }}">{{ graph.summary.omitted_nodes }}</p>
+                        <p class="{{ page_hero.context_metric_helper_classes() }}">Graph limit omitted</p>
                     </div>
                 </div>
                 <a href="{{ url_for('integrations.kubernetes') }}" class="{{ page_hero.context_single_action_classes() }}">
