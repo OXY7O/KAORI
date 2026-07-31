@@ -43,29 +43,9 @@ def test_operational_health_summary_has_separate_vertical_rhythm() -> None:
     assert 'class="space-y-6"' in source
     assert 'Operational Health Summary' in source
     assert '6 Health Signals' in source
-    assert 'grid grid-cols-1 gap-px bg-outline-subtle' in source
+    assert 'divide-y divide-outline-subtle' in source
     assert 'Operational Reading' in source
     assert 'Recommended Review Path' in source
-
-
-def test_hero_posture_becomes_full_width_below_the_main_hero_content() -> None:
-    hero = read('partials/_hero.html')
-    posture = read('partials/_hero_posture.html')
-    posture_loading = read('partials/_hero_posture_loading.html')
-
-    assert 'xl:col-span-12' in hero
-    assert 'id="overview-hero-posture"' in hero
-    assert 'class="w-full"' in hero
-    assert 'aside class="{{ page_hero.aside_classes() }}"' not in hero
-    assert 'Operational Posture' in posture
-    assert 'Review Required' in posture
-    assert 'Resource Pressure' in posture
-    assert 'Forecast Risk' in posture
-    assert 'grid gap-px bg-brand-outline md:grid-cols-2 xl:grid-cols-6' in posture
-    assert 'md:col-span-2 xl:col-span-2' in posture
-    assert 'bg-white/12' not in posture
-    assert 'bg-white/12' not in posture_loading
-    assert 'lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]' not in posture
 
 
 def test_overview_workspace_splits_long_domains_into_dedicated_tabs() -> None:

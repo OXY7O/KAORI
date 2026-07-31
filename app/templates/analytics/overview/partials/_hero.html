@@ -4,34 +4,33 @@
 {% set active_alerts = payload.health_summary.active_alerts.value|default(0) %}
 {% set selected_cluster_name = payload.selected_cluster.name if payload.selected_cluster else 'No Cluster Selected' %}
 <section class="{{ page_hero.shell_classes() }}">
-    <div class="space-y-5">
-        <div class="grid gap-5 xl:grid-cols-12 xl:items-stretch">
-            <div class="min-w-0 xl:col-span-12">
-                {% call page_hero.intro('chart-no-axes-combined', 'Kubernetes Analytics', 'activity') %}
-                    <h1 class="{{ page_hero.title_classes() }}">Analytics Overview</h1>
-                    <p class="mt-2 {{ page_hero.description_classes() }}">
-                        Consolidated operational posture for utilization, capacity, workloads, storage, consumers, forecasts, alerts, and prioritized actions.
-                    </p>
-                    <div class="{{ page_hero.metadata_row_classes() }}">
-                        {{ page_hero.meta_label('server', selected_cluster_name) }}
-                        {% if dependency_blocker %}
-                            {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
-                        {% else %}
-                            {{ page_hero.meta_label('clock-3', payload.selected_time_range|upper ~ ' Analysis Window') }}
-                            {{ page_hero.meta_label('bell', active_alerts ~ ' Active Alerts') }}
-                            {{ page_hero.meta_label('list-checks', actionable.total_count|default(0) ~ ' Actionable') }}
-                        {% endif %}
-                    </div>
-                {% endcall %}
-            </div>
+    <div class="{{ page_hero.layout_classes() }}">
+        <div class="{{ page_hero.content_classes() }}">
+            {% call page_hero.intro('chart-no-axes-combined', 'Kubernetes Analytics', 'activity') %}
+                <h1 class="{{ page_hero.title_classes() }}">Analytics Overview</h1>
+                <p class="mt-2 {{ page_hero.description_classes() }}">
+                    Consolidated operational posture for utilization, capacity, workloads, storage, consumers, forecasts, alerts, and prioritized actions.
+                </p>
+                <div class="{{ page_hero.metadata_row_classes() }}">
+                    {{ page_hero.meta_label('server', selected_cluster_name) }}
+                    {% if dependency_blocker %}
+                        {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
+                    {% else %}
+                        {{ page_hero.meta_label('clock-3', payload.selected_time_range|upper ~ ' Analysis Window') }}
+                        {{ page_hero.meta_label('bell', active_alerts ~ ' Active Alerts') }}
+                        {{ page_hero.meta_label('list-checks', actionable.total_count|default(0) ~ ' Actionable') }}
+                    {% endif %}
+                </div>
+            {% endcall %}
         </div>
-        <div aria-label="Analytics Operational Posture">
+        <aside class="{{ page_hero.aside_classes() }}"
+               aria-label="Analytics Operational Posture">
             {% if dependency_blocker %}
                 {% set analytics_posture_label = "Operational Posture" %}
                 {% include 'analytics/components/_blocked_posture.html' %}
             {% else %}
                 <div id="overview-hero-posture"
-                     class="w-full"
+                     class="h-full"
                      hx-target="this"
                      hx-disinherit="hx-target hx-select hx-push-url hx-indicator"
                      hx-get="{{ url_for('analytics.overview_section', section='hero-posture') }}?{{ overview_query }}"
@@ -40,6 +39,6 @@
                     {% include "analytics/overview/partials/_hero_posture_loading.html" %}
                 </div>
             {% endif %}
-        </div>
+        </aside>
     </div>
 </section>
