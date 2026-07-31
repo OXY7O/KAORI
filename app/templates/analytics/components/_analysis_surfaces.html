@@ -81,6 +81,15 @@
     rounded-lg border border-outline-subtle bg-surface-card {{ extra }}
 {%- endmacro %}
 
+
+{% macro unavailable_value_classes() -%}
+    text-content-disabled
+{%- endmacro %}
+
+{% macro review_path_grid_classes(extra='') -%}
+    grid gap-3 bg-surface-hover p-4 sm:grid-cols-2 {{ extra }}
+{%- endmacro %}
+
 {% macro compact_scope_grid_classes(columns=3) -%}
     grid divide-y divide-outline-subtle {{ 'sm:grid-cols-4' if columns == 4 else 'sm:grid-cols-3' }} sm:divide-x sm:divide-y-0
 {%- endmacro %}

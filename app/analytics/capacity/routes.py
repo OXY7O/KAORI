@@ -12,6 +12,14 @@ from app.analytics.materialization.requests import resolve_materialized_request
 from app.rbac.decorators import permission_required
 
 
+_ALLOWED_TABS = {'summary', 'allocation', 'risk', 'recommendations'}
+
+
+def _initial_tab() -> str:
+    requested = request.args.get('tab', 'summary', type=str)
+    return requested if requested in _ALLOWED_TABS else 'summary'
+
+
 _PAGE = {
     'dataset_key': 'analytics.capacity',
     'title': 'Capacity Analysis',
@@ -24,6 +32,7 @@ _PAGE = {
 @permission_required('analytics.view')
 def capacity() -> str:
     parameters = request.args.to_dict(flat=True)
+    parameters.pop('tab', None)
     parameters.setdefault('time_range', '24h')
     materialized = resolve_materialized_request(
         dataset_key=_PAGE['dataset_key'],
@@ -35,6 +44,7 @@ def capacity() -> str:
             context = present_capacity_context(materialized.result.context or {})
             context['dependency_blocker'] = materialized.dependency_blocker
             context['analytics_materialization'] = snapshot_meta(materialized)
+            context['initial_tab'] = _initial_tab()
             return render_template('analytics/capacity/index.html', **context)
         return render_template(
             'analytics/materialization/blocked.html',
@@ -50,4 +60,5 @@ def capacity() -> str:
         )
     context = present_capacity_context(materialized.result.context or {})
     context['analytics_materialization'] = snapshot_meta(materialized)
+    context['initial_tab'] = _initial_tab()
     return render_template('analytics/capacity/index.html', **context)

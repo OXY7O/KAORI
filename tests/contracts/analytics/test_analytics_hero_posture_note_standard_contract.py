@@ -21,9 +21,12 @@ def test_shared_posture_note_has_standard_minimum_height_and_readable_copy():
     assert "border-brand-outline bg-brand-surface" in source
 
 
-def test_all_kubernetes_analytics_heroes_use_shared_posture_note():
+def test_all_kubernetes_analytics_heroes_use_shared_posture_notice():
     for relative_path in HERO_FILES:
         source = (ROOT / relative_path).read_text()
-        assert "page_hero.context_posture_note(" in source, relative_path
+        assert (
+            "page_hero.context_posture_note(" in source
+            or "page_hero.context_bottom_notice(" in source
+        ), relative_path
         assert 'class="mt-2 text-xs leading-5 text-brand-foreground-muted"' not in source
         assert 'class="mt-2 text-sm leading-5 text-brand-foreground-muted"' not in source

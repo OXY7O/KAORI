@@ -1,36 +1,64 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
 <div class="space-y-5">
     <div class="flex items-start gap-3">
-        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="shield-alert" class="h-5 w-5"></i></span>
-        <div><h3 class="text-lg font-semibold text-content-primary">Capacity Risk Summary</h3><p class="mt-1 text-sm leading-6 text-content-muted">Rank constrained resource domains and connect each posture to a clear operational response.</p></div>
+        <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="shield-alert" class="h-5 w-5"></i></span>
+        <div><h3 class="text-lg font-semibold text-content-primary">Capacity Risk Summary</h3><p class="mt-1 text-sm leading-6 text-content-muted">Rank constrained resource domains, separate actual governance findings, and connect each posture to a clear review path.</p></div>
     </div>
 
     <div class="grid gap-4 xl:grid-cols-[minmax(0,1.3fr)_minmax(320px,0.7fr)]">
-        <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
-            <header class="flex items-center justify-between gap-3 border-b border-outline-subtle bg-surface-card px-4 py-3">
-                <div><h4 class="font-semibold text-content-primary">Resource Risk Queue</h4><p class="mt-1 text-xs text-content-muted">Lower headroom receives higher operational priority.</p></div>
+        <section class="{{ analysis_surface.evidence_shell_classes() }}">
+            <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3">
+                <div><h4 class="{{ analysis_surface.section_title_classes() }}">Resource Risk Queue</h4><p class="{{ analysis_surface.section_description_classes() }}">Lower headroom receives higher operational priority. Unavailable evidence remains Unknown instead of being treated as zero utilization.</p></div>
                 {{ table_label.metadata_label(risk_summary|length ~ ' Resources', 'list-ordered') }}
             </header>
             <div class="divide-y divide-outline-subtle">
                 {% for item in risk_summary %}
-                    {% set tone = 'critical' if 'critical' in item.status.class else ('warning' if 'warning' in item.status.class else ('normal' if 'normal' in item.status.class else 'unknown')) %}
-                    <article class="grid gap-3 px-4 py-4 sm:grid-cols-3 sm:items-center">
-                        <div class="flex items-center gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ item.icon }}" class="h-4 w-4"></i></span><div><p class="text-sm font-semibold text-content-primary">{{ item.label }}</p><div class="mt-1">{{ table_label.status_label(item.status.label, tone=tone, size='compact') }}</div></div></div>
-                        <div><div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">Remaining Headroom</span><span class="font-semibold tabular-nums text-content-primary">{{ item.headroom_display }}</span></div>{{ progress_bar.bar(item.headroom, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-card', fill_classes='h-full rounded-full bg-kaori-primary', label=item.label ~ ' headroom') }}</div>
-                        <div><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Recommended Response</p><p class="mt-1 text-xs leading-5 text-content-secondary">{% if tone == 'critical' %}Start remediation now and protect the remaining scheduling margin.{% elif tone == 'warning' %}Plan capacity or workload right-sizing before the next growth event.{% elif tone == 'normal' %}Continue monitoring and validate changes against the Ready-worker baseline.{% else %}Restore capacity evidence before making a placement decision.{% endif %}</p></div>
+                    {% set tone = item.status.tone|default('unknown') %}
+                    <article class="grid gap-3 bg-surface-card px-4 py-4 sm:grid-cols-3 sm:items-center">
+                        <div class="flex items-center gap-3">
+                            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="{{ item.icon }}" class="h-4 w-4"></i></span>
+                            <div><p class="text-sm font-semibold text-content-primary">{{ item.label }}</p><div class="mt-1">{{ table_label.status_label(item.status.label, tone=tone, size='compact') }}</div></div>
+                        </div>
+                        <div>
+                            <div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">Remaining Headroom</span><span class="font-semibold tabular-nums {{ 'text-content-primary' if item.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ item.headroom_display }}</span></div>
+                            {% if item.evidence_available %}
+                                {{ progress_bar.bar(item.headroom, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=item.label ~ ' headroom') }}
+                            {% else %}
+                                <div class="mt-2 flex h-8 items-center rounded-md border border-dashed border-outline-strong bg-surface-hover px-3 text-xs font-medium text-content-muted">Evidence unavailable</div>
+                            {% endif %}
+                        </div>
+                        <div><p class="{{ analysis_surface.metric_label_classes() }}">Recommended Response</p><p class="mt-1 text-xs leading-5 text-content-secondary">{% if tone == 'critical' %}Start remediation now and protect the remaining scheduling margin.{% elif tone == 'warning' %}Plan capacity or workload right-sizing before the next growth event.{% elif tone == 'normal' %}Continue monitoring and validate changes against the Ready-worker baseline.{% else %}Restore committed capacity evidence before making a placement decision.{% endif %}</p></div>
                     </article>
                 {% endfor %}
             </div>
         </section>
 
-        <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
-            <header class="flex items-center justify-between gap-3 border-b border-outline-subtle bg-surface-card px-4 py-3"><div><h4 class="font-semibold text-content-primary">Governance Findings</h4><p class="mt-1 text-xs text-content-muted">Allocation and policy signals that can amplify capacity risk.</p></div>{{ table_label.metadata_label(governance_findings|length ~ ' Findings') }}</header>
-            <div class="divide-y divide-outline-subtle">
-                {% for finding in governance_findings %}
-                    <div class="flex items-start gap-3 px-4 py-3"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ finding.icon }}" class="h-4 w-4"></i></span><p class="pt-1 text-sm leading-5 text-content-secondary">{{ finding.label }}</p></div>
-                {% endfor %}
-            </div>
-        </section>
+        <div class="space-y-4">
+            <section class="{{ analysis_surface.evidence_shell_classes() }}">
+                <header class="flex items-center justify-between gap-3 border-b border-outline-subtle px-4 py-3"><div><h4 class="{{ analysis_surface.section_title_classes() }}">Governance Findings</h4><p class="{{ analysis_surface.section_description_classes() }}">Allocation and policy signals that can amplify capacity risk.</p></div>{{ table_label.metadata_label(governance_findings|length ~ ' Findings') }}</header>
+                <div class="divide-y divide-outline-subtle">
+                    {% for finding in governance_findings %}
+                        <div class="flex items-start gap-3 bg-surface-card px-4 py-3">
+                            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="{{ finding.icon }}" class="h-4 w-4"></i></span>
+                            <div class="min-w-0"><div>{{ table_label.status_label(finding.severity|title, tone=finding.tone|default(finding.severity), size='compact') }}</div><p class="mt-2 text-sm leading-5 text-content-secondary">{{ finding.label }}</p></div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <section class="{{ analysis_surface.guidance_card_classes() }}">
+                <header class="border-b border-outline-subtle px-4 py-3"><h4 class="{{ analysis_surface.section_title_classes() }}">Recommended Review Path</h4><p class="{{ analysis_surface.section_description_classes() }}">Continue into the domain that owns the supporting evidence.</p></header>
+                <div class="{{ analysis_surface.review_path_grid_classes() }}">
+                    {% for review in review_paths|default([]) %}
+                        <a href="{{ review.href }}?cluster_id={{ cluster.id }}&time_range={{ selected_time_range }}" class="rounded-lg border border-outline-subtle bg-surface-card px-4 py-3 transition hover:border-kaori-primary/40 hover:bg-kaori-mist/25">
+                            <span class="flex items-center gap-2 text-sm font-semibold text-content-primary"><i data-lucide="{{ review.icon }}" class="h-4 w-4 text-kaori-primary"></i>{{ review.label }}</span>
+                            <span class="mt-1 block text-xs leading-5 text-content-muted">{{ review.description }}</span>
+                        </a>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
     </div>
 </div>

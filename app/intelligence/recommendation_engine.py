@@ -411,6 +411,7 @@ def format_recommendation_card(
     default_description: str = 'Review the related analytics page for operational context.',
     default_source: str = 'recommendation_engine',
     default_action_type: str = 'review',
+    include_presentation_classes: bool = True,
 ) -> dict[str, Any]:
     if not isinstance(recommendation, dict):
         recommendation = {}
@@ -423,9 +424,8 @@ def format_recommendation_card(
     source_label = str(recommendation.get('source_label') or format_source_label(source))
     resource = str(recommendation.get('resource') or '')
     action_type = str(recommendation.get('action_type') or default_action_type)
-    style = get_priority_style(priority)
 
-    return {
+    card = {
         'title': str(recommendation.get('title') or recommendation.get('label') or default_title),
         'description': str(recommendation.get('description') or recommendation.get('label') or default_description),
         'priority': priority,
@@ -442,10 +442,17 @@ def format_recommendation_card(
                 action_type=action_type,
             )
         ),
-        'icon_class': str(recommendation.get('icon_class') or style['icon_class']),
-        'priority_class': str(recommendation.get('priority_class') or style['priority_class']),
         'is_actionable': 'Yes' if is_actionable_value(recommendation.get('is_actionable'), priority) else 'No',
     }
+    if include_presentation_classes:
+        style = get_priority_style(priority)
+        card.update(
+            {
+                'icon_class': str(recommendation.get('icon_class') or style['icon_class']),
+                'priority_class': str(recommendation.get('priority_class') or style['priority_class']),
+            }
+        )
+    return card
 
 
 def format_recommendation_cards(
@@ -455,6 +462,7 @@ def format_recommendation_cards(
     default_description: str = 'Review the related analytics page for operational context.',
     default_source: str = 'recommendation_engine',
     default_action_type: str = 'review',
+    include_presentation_classes: bool = True,
 ) -> list[dict[str, Any]]:
     cards = [
         format_recommendation_card(
@@ -463,6 +471,7 @@ def format_recommendation_cards(
             default_description=default_description,
             default_source=default_source,
             default_action_type=default_action_type,
+            include_presentation_classes=include_presentation_classes,
         )
         for recommendation in recommendations
         if isinstance(recommendation, dict)
@@ -485,6 +494,7 @@ def format_recommendation_cards(
             default_description=default_description,
             default_source=default_source,
             default_action_type=default_action_type,
+            include_presentation_classes=include_presentation_classes,
         )
     ]
 
@@ -497,6 +507,9 @@ def build_capacity_actionable_recommendations(payload: dict[str, Any]) -> list[d
     if isinstance(risk_summary, list):
         for item in risk_summary:
             if not isinstance(item, dict):
+                continue
+
+            if item.get('evidence_available') is False:
                 continue
 
             resource_key = str(item.get('resource') or '').lower()
@@ -530,6 +543,8 @@ def build_capacity_actionable_recommendations(payload: dict[str, Any]) -> list[d
     if isinstance(capacity_summary, dict):
         for resource_key, item in capacity_summary.items():
             if not isinstance(item, dict):
+                continue
+            if item.get('evidence_available') is False or get_numeric_value(item.get('capacity', 0)) <= 0:
                 continue
 
             headroom = get_numeric_value(item.get('headroom', 0))

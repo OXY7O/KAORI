@@ -572,3 +572,8 @@ the partial-source warning is rendered explicitly.
 - Trend and Node Detail are first-activation HTMX tabs. Pending polling begins only after activation and stops when the committed partial replaces the pending fragment.
 - Multi-series trend charts expose a visible shared legend and render through `app/static/js/analytics_utilization.js`.
 - Resource Utilization uses local filter/Trend/Node indicators and does not use the Analytics Overview composite tracker.
+
+
+## Capacity Analysis Presentation
+
+Capacity is a cluster-level Ready-worker fleet analysis. It uses the shared Analytics Analysis Surface and Resource Pressure Lane contracts, renders missing denominators as Unknown/N/A without progress, keeps progress fills KAORI Violet, separates governance findings from review navigation, and does not load a composite tracker or Chart.js runtime. See `docs/design/components/ANALYTICS_CAPACITY_ANALYSIS.md`.

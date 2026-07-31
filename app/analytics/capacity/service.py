@@ -11,7 +11,7 @@ from app.analytics.common.base_service import AnalyticsBaseService, bytes_to_gib
 from app.analytics.common.clusters import get_selected_cluster
 from app.analytics.common.coercion import as_dict as _as_dict
 from app.analytics.common.params import get_allowed_time_ranges, get_query_value, get_selected_time_range
-from app.analytics.common.payloads import get_empty_capacity_payload
+from app.analytics.common.payloads import get_capacity_review_paths, get_empty_capacity_payload
 from app.analytics.utilization.service import UtilizationService
 from app.common.dependencies import (
     cluster_required_blocker,
@@ -309,7 +309,19 @@ class CapacityService(AnalyticsBaseService):
             ),
             default_source='capacity',
             default_action_type='capacity_review',
+            include_presentation_classes=False,
         )
+
+        review_paths = get_capacity_review_paths()
+
+        for card in recommendation_cards:
+            source = str(card.get('source', ''))
+            if source in {'capacity_risk', 'capacity_headroom'}:
+                card['target_tab'] = 'risk'
+            elif source == 'capacity_governance':
+                card['target_tab'] = 'allocation'
+            else:
+                card['target_tab'] = 'summary'
 
         kpi_cards = self.get_kpi_cards(
             cluster_info=cluster_info,
@@ -323,6 +335,7 @@ class CapacityService(AnalyticsBaseService):
             'allocation_summary': allocation_summary,
             'risk_summary': risk_summary,
             'governance_findings': governance_findings,
+            'review_paths': review_paths,
             'actionable_recommendations': actionable_recommendations,
             'recommendation_cards': recommendation_cards,
             'recommendation_count': count_actionable_recommendations(
@@ -393,6 +406,7 @@ class CapacityService(AnalyticsBaseService):
 
         return {
             'cpu': {
+                'evidence_available': cpu_capacity > 0,
                 'capacity': safe_round(
                     cpu_capacity,
                 ),
@@ -408,6 +422,7 @@ class CapacityService(AnalyticsBaseService):
                 ),
             },
             'memory': {
+                'evidence_available': memory_capacity > 0,
                 'capacity': bytes_to_gib(
                     memory_capacity,
                 ),
@@ -423,6 +438,7 @@ class CapacityService(AnalyticsBaseService):
                 ),
             },
             'pods': {
+                'evidence_available': pod_capacity > 0,
                 'capacity': safe_round(
                     pod_capacity,
                     0,
@@ -441,6 +457,7 @@ class CapacityService(AnalyticsBaseService):
                 ),
             },
             'storage': {
+                'evidence_available': float(summary.get('storage_capacity', 0) or 0) > 0,
                 'capacity': bytes_to_gib(summary.get('storage_capacity', 0)),
                 'used': bytes_to_gib(summary.get('storage_usage', 0)),
                 'available': bytes_to_gib(summary.get('storage_available', 0)),
@@ -455,58 +472,25 @@ class CapacityService(AnalyticsBaseService):
         self,
         allocation_summary: dict[str, dict[str, Any]],
     ) -> list[dict[str, Any]]:
-        resource_labels = {
-            'cpu': 'CPU',
-            'memory': 'Memory',
-            'pods': 'Pods',
-        }
-
-        resource_icons = {
-            'cpu': 'cpu',
-            'memory': 'memory-stick',
-            'pods': 'box',
-        }
-
+        resource_labels = {'cpu': 'CPU', 'memory': 'Memory', 'pods': 'Pods'}
+        resource_icons = {'cpu': 'cpu', 'memory': 'memory-stick', 'pods': 'box'}
         findings: list[dict[str, Any]] = []
 
-        for resource in [
-            'cpu',
-            'memory',
-            'pods',
-        ]:
-            section = allocation_summary.get(
-                resource,
-                {},
-            )
-
-            status = section.get(
-                'status',
-                {},
-            )
-
-            if not isinstance(
-                status,
-                dict,
-            ):
+        for resource in ('cpu', 'memory', 'pods'):
+            section = allocation_summary.get(resource, {})
+            status = section.get('status', {})
+            if not isinstance(status, dict):
                 continue
-
-            status_label = str(
-                status.get(
-                    'label',
-                    'Unknown',
-                )
-            )
-
+            tone = str(status.get('tone', 'unknown'))
+            if tone not in {'critical', 'warning'}:
+                continue
+            status_label = str(status.get('label', 'Unknown'))
             findings.append(
                 {
-                    'label': (f'{resource_labels.get(resource, resource.title())} allocation status: {status_label}'),
-                    'severity': self.get_allocation_finding_severity(
-                        status_label,
-                    ),
-                    'icon': resource_icons.get(
-                        resource,
-                        'activity',
-                    ),
+                    'label': f'{resource_labels.get(resource, resource.title())} allocation status: {status_label}',
+                    'severity': tone,
+                    'tone': tone,
+                    'icon': resource_icons.get(resource, 'activity'),
                     'filter': 'capacity-allocation',
                 }
             )
@@ -550,31 +534,39 @@ class CapacityService(AnalyticsBaseService):
                     f'Control-plane {cluster_info.get("master_nodes", 0)}'
                 ),
                 'icon': 'users',
-                'icon_class': 'bg-blue-100 text-blue-600',
             },
             {
                 'label': 'Allocatable CPU',
-                'value': f'{float(capacity_summary["cpu"]["capacity"] or 0):.2f} Cores',
+                'value': (
+                    f'{float(capacity_summary["cpu"]["capacity"] or 0):.2f} Cores'
+                    if capacity_summary['cpu'].get('evidence_available')
+                    else 'N/A'
+                ),
                 'caption': 'Ready worker nodes only',
                 'footer': '',
                 'icon': 'cpu',
-                'icon_class': 'bg-emerald-100 text-emerald-600',
             },
             {
                 'label': 'Allocatable Memory',
-                'value': f'{float(capacity_summary["memory"]["capacity"] or 0):.2f} GiB',
+                'value': (
+                    f'{float(capacity_summary["memory"]["capacity"] or 0):.2f} GiB'
+                    if capacity_summary['memory'].get('evidence_available')
+                    else 'N/A'
+                ),
                 'caption': 'Ready worker nodes only',
                 'footer': '',
                 'icon': 'memory-stick',
-                'icon_class': 'bg-violet-100 text-violet-600',
             },
             {
                 'label': 'Pod Capacity',
-                'value': f'{int(float(capacity_summary["pods"]["capacity"] or 0))} Pods',
+                'value': (
+                    f'{int(float(capacity_summary["pods"]["capacity"] or 0))} Pods'
+                    if capacity_summary['pods'].get('evidence_available')
+                    else 'N/A'
+                ),
                 'caption': 'Ready worker nodes only',
                 'footer': '',
                 'icon': 'box',
-                'icon_class': 'bg-cyan-100 text-cyan-600',
             },
         ]
 
@@ -651,6 +643,7 @@ class CapacityService(AnalyticsBaseService):
         return {
             'cpu': {
                 'title': 'CPU',
+                'available': cpu_allocatable > 0,
                 'unit': 'cores',
                 'status': self.get_allocation_status(
                     requested=cpu_limits,
@@ -669,6 +662,7 @@ class CapacityService(AnalyticsBaseService):
             },
             'memory': {
                 'title': 'Memory',
+                'available': memory_allocatable_bytes > 0,
                 'unit': 'GiB',
                 'status': self.get_allocation_status(
                     requested=memory_limits_bytes,
@@ -687,6 +681,7 @@ class CapacityService(AnalyticsBaseService):
             },
             'pods': {
                 'title': 'Pods',
+                'available': pod_capacity > 0,
                 'unit': 'pods',
                 'status': self.get_allocation_status(
                     requested=current_pods,
@@ -716,7 +711,6 @@ class CapacityService(AnalyticsBaseService):
                 'label': 'Allocatable',
                 'display': f'{safe_round(allocatable)} cores (100%)',
                 'percent': 100,
-                'bar_class': 'bg-slate-300',
             },
             {
                 'label': 'Configured Requests',
@@ -725,7 +719,6 @@ class CapacityService(AnalyticsBaseService):
                     requests,
                     allocatable,
                 ),
-                'bar_class': 'bg-blue-500',
             },
             {
                 'label': 'Configured Limits',
@@ -734,7 +727,6 @@ class CapacityService(AnalyticsBaseService):
                     limits,
                     allocatable,
                 ),
-                'bar_class': 'bg-blue-300',
             },
             {
                 'label': 'Actual Avg Usage',
@@ -743,7 +735,6 @@ class CapacityService(AnalyticsBaseService):
                     actual,
                     allocatable,
                 ),
-                'bar_class': 'bg-indigo-500',
             },
             {
                 'label': 'Peak Usage',
@@ -752,7 +743,6 @@ class CapacityService(AnalyticsBaseService):
                     peak,
                     allocatable,
                 ),
-                'bar_class': 'bg-slate-800',
             },
         ]
 
@@ -769,7 +759,6 @@ class CapacityService(AnalyticsBaseService):
                 'label': 'Allocatable',
                 'display': f'{bytes_to_gib(allocatable_bytes)} GiB (100%)',
                 'percent': 100,
-                'bar_class': 'bg-slate-300',
             },
             {
                 'label': 'Configured Requests',
@@ -781,7 +770,6 @@ class CapacityService(AnalyticsBaseService):
                     requests_bytes,
                     allocatable_bytes,
                 ),
-                'bar_class': 'bg-blue-500',
             },
             {
                 'label': 'Configured Limits',
@@ -792,7 +780,6 @@ class CapacityService(AnalyticsBaseService):
                     limits_bytes,
                     allocatable_bytes,
                 ),
-                'bar_class': 'bg-blue-300',
             },
             {
                 'label': 'Actual Avg Usage',
@@ -803,7 +790,6 @@ class CapacityService(AnalyticsBaseService):
                     actual_bytes,
                     allocatable_bytes,
                 ),
-                'bar_class': 'bg-indigo-500',
             },
             {
                 'label': 'Peak Usage',
@@ -814,7 +800,6 @@ class CapacityService(AnalyticsBaseService):
                     peak_bytes,
                     allocatable_bytes,
                 ),
-                'bar_class': 'bg-slate-800',
             },
         ]
 
@@ -829,7 +814,6 @@ class CapacityService(AnalyticsBaseService):
                 'label': 'Pod Capacity',
                 'display': f'{safe_round(capacity, 0):.0f} pods (100%)',
                 'percent': 100,
-                'bar_class': 'bg-slate-300',
             },
             {
                 'label': 'Current Pods',
@@ -838,7 +822,6 @@ class CapacityService(AnalyticsBaseService):
                     current,
                     capacity,
                 ),
-                'bar_class': 'bg-blue-500',
             },
             {
                 'label': 'Remaining Pod Slots',
@@ -849,7 +832,6 @@ class CapacityService(AnalyticsBaseService):
                     remaining,
                     capacity,
                 ),
-                'bar_class': 'bg-cyan-500',
             },
             {
                 'label': 'Pod Usage',
@@ -858,7 +840,6 @@ class CapacityService(AnalyticsBaseService):
                     current,
                     capacity,
                 ),
-                'bar_class': 'bg-indigo-500',
             },
         ]
 
@@ -873,150 +854,65 @@ class CapacityService(AnalyticsBaseService):
             'storage': 'hard-drive',
         }
 
-        icon_class_map = {
-            'cpu': 'bg-emerald-100 text-emerald-600',
-            'memory': 'bg-violet-100 text-violet-600',
-            'pods': 'bg-cyan-100 text-cyan-600',
-            'storage': 'bg-amber-100 text-amber-600',
-        }
-
         risks: list[dict[str, Any]] = []
 
-        for resource in [
-            'cpu',
-            'memory',
-            'pods',
-            'storage',
-        ]:
-            item = capacity_summary.get(
-                resource,
-                {},
-            )
-
-            headroom = self.to_float(
-                item.get(
-                    'headroom',
-                    0,
-                )
-            )
-
+        for resource in ('cpu', 'memory', 'pods', 'storage'):
+            item = capacity_summary.get(resource, {})
             capacity = self.to_float(item.get('capacity', 0))
+            available = capacity > 0
+            headroom = self.to_float(item.get('headroom', 0)) if available else None
             status = (
-                self.get_headroom_status(headroom)
-                if capacity > 0
-                else {
-                    'label': 'Unknown',
-                    'class': 'bg-slate-100 text-slate-700',
-                }
+                self.get_headroom_status(headroom or 0)
+                if available
+                else {'label': 'Unknown', 'tone': 'unknown'}
             )
 
             risks.append(
                 {
                     'resource': resource,
-                    'label': 'Pod' if resource == 'pods' else resource.title(),
+                    'label': 'Pods' if resource == 'pods' else resource.title(),
                     'headroom': headroom,
+                    'evidence_available': available,
                     'status': status,
-                    'icon': icon_map.get(
-                        resource,
-                        'activity',
-                    ),
-                    'icon_class': icon_class_map.get(
-                        resource,
-                        'bg-slate-100 text-slate-600',
-                    ),
+                    'icon': icon_map.get(resource, 'activity'),
                 }
             )
 
         return risks
 
-    def get_allocation_finding_severity(
-        self,
-        status_label: str,
-    ) -> str:
-        normalized_label = status_label.lower()
-
-        if (
-            'overcommit' in normalized_label
-            or 'over capacity' in normalized_label
-            or 'critical' in normalized_label
-            or 'saturated' in normalized_label
-        ):
-            return 'critical'
-
-        if 'near capacity' in normalized_label or 'high usage' in normalized_label or 'watch' in normalized_label:
-            return 'warning'
-
-        if 'healthy' in normalized_label:
-            return 'healthy'
-
-        return 'info'
 
     def get_capacity_governance_findings(
         self,
         capacity_summary: dict[str, dict[str, float]],
         allocation_summary: dict[str, dict[str, Any]],
     ) -> list[dict[str, Any]]:
-        findings: list[dict[str, Any]] = []
-
-        findings.extend(
-            self.get_allocation_status_findings(
-                allocation_summary,
-            )
-        )
+        findings = self.get_allocation_status_findings(allocation_summary)
 
         low_headroom = [
             resource
             for resource, item in capacity_summary.items()
-            if resource
-            in [
-                'cpu',
-                'memory',
-                'pods',
-                'storage',
-            ]
+            if resource in {'cpu', 'memory', 'pods', 'storage'}
             and self.to_float(item.get('capacity', 0)) > 0
-            and self.to_float(
-                item.get(
-                    'headroom',
-                    0,
-                )
-            )
-            < 30
+            and self.to_float(item.get('headroom', 0)) < 30
         ]
 
         if low_headroom:
             findings.append(
                 {
-                    'label': (f'Low capacity headroom detected on {", ".join(low_headroom)}'),
+                    'label': f'Low capacity headroom detected on {", ".join(low_headroom)}',
                     'severity': 'critical',
+                    'tone': 'critical',
                     'icon': 'circle-alert',
                     'filter': 'capacity-headroom',
                 }
             )
 
-        findings.append(
-            {
-                'label': 'Open Workload Analysis for quota and request/limit findings',
-                'severity': 'info',
-                'icon': 'boxes',
-                'filter': 'workload-analysis',
-            }
-        )
-
-        findings.append(
-            {
-                'label': 'Open Storage Analysis for PV, PVC, and filesystem findings',
-                'severity': 'info',
-                'icon': 'hard-drive',
-                'filter': 'storage-analysis',
-            }
-        )
-
         if not findings:
             findings.append(
                 {
-                    'label': 'No capacity findings detected',
-                    'severity': 'healthy',
+                    'label': 'No actionable capacity governance finding detected',
+                    'severity': 'normal',
+                    'tone': 'normal',
                     'icon': 'check-circle',
                     'filter': '',
                 }
@@ -1029,21 +925,10 @@ class CapacityService(AnalyticsBaseService):
         headroom: float,
     ) -> dict[str, str]:
         if headroom < 15:
-            return {
-                'label': 'Critical',
-                'class': 'bg-red-100 text-red-700',
-            }
-
+            return {'label': 'Critical', 'tone': 'critical'}
         if headroom < 40:
-            return {
-                'label': 'Watch',
-                'class': 'bg-amber-100 text-amber-700',
-            }
-
-        return {
-            'label': 'Healthy',
-            'class': 'bg-emerald-100 text-emerald-700',
-        }
+            return {'label': 'Watch', 'tone': 'warning'}
+        return {'label': 'Healthy', 'tone': 'normal'}
 
     def get_allocation_status(
         self,
@@ -1053,67 +938,27 @@ class CapacityService(AnalyticsBaseService):
         actual: float | None = None,
         peak: float | None = None,
     ) -> dict[str, str]:
-        requested_percent = raw_percent(
-            requested,
-            allocatable,
-        )
+        if allocatable <= 0:
+            return {'label': 'Unknown', 'tone': 'unknown'}
 
-        actual_percent = raw_percent(
-            actual if actual is not None else 0,
-            allocatable,
-        )
-
-        peak_percent = raw_percent(
-            peak if peak is not None else 0,
-            allocatable,
-        )
-
-        pressure_percent = max(
-            requested_percent,
-            actual_percent,
-            peak_percent,
-        )
+        requested_percent = raw_percent(requested, allocatable)
+        actual_percent = raw_percent(actual if actual is not None else 0, allocatable)
+        peak_percent = raw_percent(peak if peak is not None else 0, allocatable)
+        pressure_percent = max(requested_percent, actual_percent, peak_percent)
 
         if requested_percent >= 100 and resource == 'cpu':
-            return {
-                'label': 'CPU limit overcommit',
-                'class': 'bg-red-100 text-red-700',
-            }
-
+            return {'label': 'CPU Limit Overcommit', 'tone': 'critical'}
         if requested_percent >= 100 and resource == 'memory':
-            return {
-                'label': 'Memory limit overcommit',
-                'class': 'bg-red-100 text-red-700',
-            }
-
+            return {'label': 'Memory Limit Overcommit', 'tone': 'critical'}
         if peak_percent >= 100:
-            return {
-                'label': f'{resource.title()} peak over capacity',
-                'class': 'bg-red-100 text-red-700',
-            }
-
+            return {'label': f'{resource.title()} Peak Over Capacity', 'tone': 'critical'}
         if actual_percent >= 95:
-            return {
-                'label': f'{resource.title()} usage critical',
-                'class': 'bg-red-100 text-red-700',
-            }
-
+            return {'label': f'{resource.title()} Usage Critical', 'tone': 'critical'}
         if pressure_percent >= 90:
-            return {
-                'label': 'Near capacity',
-                'class': 'bg-orange-100 text-orange-700',
-            }
-
+            return {'label': 'Near Capacity', 'tone': 'warning'}
         if pressure_percent >= 75:
-            return {
-                'label': 'Watch',
-                'class': 'bg-amber-100 text-amber-700',
-            }
-
-        return {
-            'label': 'Healthy',
-            'class': 'bg-emerald-100 text-emerald-700',
-        }
+            return {'label': 'Watch', 'tone': 'warning'}
+        return {'label': 'Healthy', 'tone': 'normal'}
 
 
 def get_capacity_snapshot(

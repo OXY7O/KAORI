@@ -135,3 +135,5 @@ Domain-specific UI rules live under `docs/modules/` or the owning module README.
 - `patterns/KUBERNETES_TLS_CERTIFICATE_GOVERNANCE.md` — Governance Resource Registry, certificate validity policy, host coverage, collection evidence, and Secret Operations handoff.
 - `components/OPERATIONAL_POINT_FLOW.md` — compact ordered supporting flow without nested step cards.
 - `audits/KUBERNETES_TLS_CERTIFICATE_GOVERNANCE_STYLING_AUDIT_2026_07.md` — TLS Governance correctness, styling, permission, and collection-boundary decisions.
+
+- `components/ANALYTICS_CAPACITY_ANALYSIS.md` — cluster-level Ready-worker capacity, unavailable metric, risk, and review-path contract.

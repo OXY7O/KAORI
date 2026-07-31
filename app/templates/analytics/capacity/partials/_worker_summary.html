@@ -1,23 +1,24 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/table_label.html" as table_label %}
 <div class="space-y-5">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div class="flex items-start gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="server-cog" class="h-5 w-5"></i></span>
+            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="server-cog" class="h-5 w-5"></i></span>
             <div>
-                <h3 class="text-lg font-semibold text-content-primary">Worker Capacity Summary</h3>
-                <p class="mt-1 text-sm leading-6 text-content-muted">Read the Ready-worker fleet and its schedulable CPU, memory, and pod envelope without mixing control-plane capacity.</p>
+                <h3 class="text-lg font-semibold text-content-primary">Worker Fleet Baseline</h3>
+                <p class="mt-1 text-sm leading-6 text-content-muted">Read the Ready-worker fleet and its schedulable CPU, memory, and pod denominator without mixing control-plane capacity.</p>
             </div>
         </div>
         {{ table_label.metadata_label('Lowest Headroom ' ~ lowest_headroom_display, 'gauge') }}
     </div>
 
-    <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
-        <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+    <section class="{{ analysis_surface.evidence_shell_classes() }}">
+        <div class="{{ analysis_surface.metric_grid_classes(4) }}">
             {% for card in kpi_cards %}
-                <article class="min-w-0 p-4">
+                <article class="{{ analysis_surface.metric_cell_classes() }}">
                     <div class="flex items-center gap-2.5">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm"><i data-lucide="{{ card.icon }}" class="h-4 w-4"></i></span>
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ card.label }}</p>
+                        <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="{{ card.icon }}" class="h-4 w-4"></i></span>
+                        <p class="{{ analysis_surface.metric_label_classes() }}">{{ card.label }}</p>
                     </div>
                     <p class="mt-3 break-words text-2xl font-semibold tabular-nums text-content-primary">{{ card.value }}</p>
                     <p class="mt-1 text-xs leading-5 text-content-muted">{{ card.caption }}</p>
@@ -25,14 +26,14 @@
                 </article>
             {% endfor %}
         </div>
-        <div class="grid gap-0 border-t border-outline-subtle bg-surface-card sm:grid-cols-3 sm:divide-x sm:divide-outline-subtle">
-            <div class="px-4 py-3"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Observation Window</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ selected_time_range }}</p></div>
-            <div class="border-t border-outline-subtle px-4 py-3 sm:border-t-0"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Capacity Baseline</p><p class="mt-1 text-sm font-semibold text-content-primary">Ready Worker Nodes</p></div>
-            <div class="border-t border-outline-subtle px-4 py-3 sm:border-t-0"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Scheduling Boundary</p><p class="mt-1 text-sm font-semibold text-content-primary">Allocatable Resources</p></div>
+        <div class="{{ analysis_surface.compact_scope_grid_classes(3) }} border-t border-outline-subtle">
+            <div class="px-4 py-3"><p class="{{ analysis_surface.metric_label_classes() }}">Observation Window</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ selected_time_range }}</p></div>
+            <div class="px-4 py-3"><p class="{{ analysis_surface.metric_label_classes() }}">Capacity Baseline</p><p class="mt-1 text-sm font-semibold text-content-primary">Ready Worker Nodes</p></div>
+            <div class="px-4 py-3"><p class="{{ analysis_surface.metric_label_classes() }}">Scheduling Boundary</p><p class="mt-1 text-sm font-semibold text-content-primary">Allocatable Resources</p></div>
         </div>
     </section>
 
-    <div class="flex items-start gap-3 rounded-lg border border-kaori-primary/20 bg-kaori-soft px-4 py-3">
+    <div class="{{ analysis_surface.guidance_card_classes('flex items-start gap-3 px-4 py-3') }}">
         <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
         <p class="text-xs leading-5 text-content-secondary"><span class="font-semibold text-content-primary">Operational Reading:</span> Use this fleet baseline before evaluating quota changes or workload placement. A healthy node count does not guarantee capacity when one resource domain has low headroom.</p>
     </div>

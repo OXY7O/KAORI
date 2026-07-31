@@ -26,10 +26,40 @@ def get_empty_pagination() -> dict[str, Any]:
     }
 
 
+def get_capacity_review_paths() -> list[dict[str, str]]:
+    return [
+        {
+            'label': 'Review Workload Analysis',
+            'description': 'Inspect quota, request, limit, and workload right-sizing evidence.',
+            'icon': 'boxes',
+            'href': '/analytics/workload',
+        },
+        {
+            'label': 'Review Storage Analysis',
+            'description': 'Inspect persistent volume, claim, and filesystem capacity evidence.',
+            'icon': 'hard-drive',
+            'href': '/analytics/storage',
+        },
+    ]
+
+
 def get_empty_capacity_payload(
     selected_time_range: str,
 ) -> dict[str, Any]:
     empty_pagination = get_empty_pagination()
+
+    empty_resource = {
+        'evidence_available': False,
+        'capacity': 0,
+        'used': 0,
+        'available': 0,
+        'headroom': 0,
+    }
+    unknown_allocation = {
+        'available': False,
+        'status': {'label': 'Unknown', 'tone': 'unknown'},
+        'items': [],
+    }
 
     return {
         'cluster_info': {
@@ -44,30 +74,10 @@ def get_empty_capacity_payload(
             'pod_capacity': 0,
         },
         'capacity_summary': {
-            'cpu': {
-                'capacity': 0,
-                'used': 0,
-                'available': 0,
-                'headroom': 0,
-            },
-            'memory': {
-                'capacity': 0,
-                'used': 0,
-                'available': 0,
-                'headroom': 0,
-            },
-            'storage': {
-                'capacity': 0,
-                'used': 0,
-                'available': 0,
-                'headroom': 0,
-            },
-            'pods': {
-                'capacity': 0,
-                'used': 0,
-                'available': 0,
-                'headroom': 0,
-            },
+            'cpu': dict(empty_resource),
+            'memory': dict(empty_resource),
+            'storage': dict(empty_resource),
+            'pods': dict(empty_resource),
         },
         'worker_capacity_summary': {
             'title': 'Worker Capacity Summary',
@@ -78,30 +88,9 @@ def get_empty_capacity_payload(
             'cards': [],
         },
         'allocation_summary': {
-            'cpu': {
-                'title': 'CPU',
-                'status': {
-                    'label': 'Unknown',
-                    'class': 'bg-slate-100 text-slate-700',
-                },
-                'items': [],
-            },
-            'memory': {
-                'title': 'Memory',
-                'status': {
-                    'label': 'Unknown',
-                    'class': 'bg-slate-100 text-slate-700',
-                },
-                'items': [],
-            },
-            'pods': {
-                'title': 'Pods',
-                'status': {
-                    'label': 'Unknown',
-                    'class': 'bg-slate-100 text-slate-700',
-                },
-                'items': [],
-            },
+            'cpu': {'title': 'CPU', **unknown_allocation},
+            'memory': {'title': 'Memory', **unknown_allocation},
+            'pods': {'title': 'Pods', **unknown_allocation},
         },
         'storage_summary': {},
         'tenant_quota_summary': {
@@ -127,15 +116,32 @@ def get_empty_capacity_payload(
             'quota_namespaces': 0,
             'coverage_percent': 0,
         },
-        'risk_summary': [],
+        'risk_summary': [
+            {
+                'resource': resource,
+                'label': 'Pods' if resource == 'pods' else resource.title(),
+                'headroom': None,
+                'evidence_available': False,
+                'status': {'label': 'Unknown', 'tone': 'unknown'},
+                'icon': icon,
+            }
+            for resource, icon in (
+                ('cpu', 'cpu'),
+                ('memory', 'memory-stick'),
+                ('pods', 'boxes'),
+                ('storage', 'hard-drive'),
+            )
+        ],
         'governance_findings': [
             {
                 'label': 'No capacity data available',
                 'severity': 'warning',
+                'tone': 'warning',
                 'icon': 'triangle-alert',
                 'filter': '',
             },
         ],
+        'review_paths': get_capacity_review_paths(),
         'recommendation_cards': [
             {
                 'title': 'Connect Prometheus Metrics',
@@ -143,8 +149,11 @@ def get_empty_capacity_payload(
                     'Capacity analysis requires Prometheus metrics to calculate '
                     'worker headroom, allocation, and capacity risk.'
                 ),
+                'priority': 'Info',
+                'source': 'capacity',
+                'source_label': 'Capacity Analysis',
                 'icon': 'plug-zap',
-                'icon_class': 'bg-amber-100 text-amber-600',
+                'target_tab': 'summary',
             },
         ],
         'kpi_cards': [],

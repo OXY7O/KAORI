@@ -2,38 +2,51 @@
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
 
-{% macro render(label, icon, value, used_capacity, description, tone='normal', reason='', headroom=none, status_label=none) -%}
-    {% set percent = value|default(0)|float %}
-    {% if percent < 0 %}{% set percent = 0 %}{% elif percent > 100 %}{% set percent = 100 %}{% endif %}
-    {% set resolved_status = status_label or ('Critical' if tone == 'critical' else ('Warning' if tone == 'warning' else ('Normal' if tone == 'normal' else 'Unknown'))) %}
-    {% set resolved_icon = 'shield-alert' if tone == 'critical' else ('triangle-alert' if tone == 'warning' else ('circle-check' if tone == 'normal' else 'circle-help')) %}
-    {% set resolved_headroom = headroom if headroom is not none else (100 - percent) %}
+{% macro render(label, icon, value, used_capacity, description, tone='normal', reason='', headroom=none, status_label=none, available=true) -%}
+    {% set resolved_available = available|default(true) %}
+    {% if resolved_available %}
+        {% set percent = value|default(0)|float %}
+        {% if percent < 0 %}{% set percent = 0 %}{% elif percent > 100 %}{% set percent = 100 %}{% endif %}
+        {% set resolved_tone = tone %}
+        {% set resolved_status = status_label or ('Critical' if tone == 'critical' else ('Watch' if tone == 'warning' else ('Healthy' if tone == 'normal' else 'Unknown'))) %}
+        {% set resolved_headroom = headroom if headroom is not none else (100 - percent) %}
+    {% else %}
+        {% set percent = none %}
+        {% set resolved_tone = 'unknown' %}
+        {% set resolved_status = 'Unknown' %}
+        {% set resolved_headroom = none %}
+    {% endif %}
+    {% set resolved_icon = 'shield-alert' if resolved_tone == 'critical' else ('triangle-alert' if resolved_tone == 'warning' else ('circle-check' if resolved_tone == 'normal' else 'circle-help')) %}
     <article class="grid min-w-0 gap-4 bg-surface-card px-4 py-4 lg:grid-cols-12 lg:items-center">
         <div class="flex min-w-0 items-start gap-3 lg:col-span-3">
             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
             <div class="min-w-0">
                 <p class="text-sm font-semibold text-content-primary">{{ label }}</p>
-                <div class="mt-1">{{ table_label.status_label(resolved_status, tone, resolved_icon, 'compact') }}</div>
+                <div class="mt-1">{{ table_label.status_label(resolved_status, resolved_tone, resolved_icon, 'compact') }}</div>
             </div>
         </div>
         <div class="min-w-0 lg:col-span-5">
             <div class="flex flex-wrap items-end justify-between gap-3">
                 <div>
                     <p class="{{ analysis_surface.metric_label_classes() }}">Current Utilization</p>
-                    <p class="mt-1 text-2xl font-semibold tabular-nums text-content-primary">{{ '%.1f'|format(percent) }}%</p>
+                    <p class="mt-1 text-2xl font-semibold tabular-nums {{ 'text-content-primary' if resolved_available else analysis_surface.unavailable_value_classes() }}">{{ '%.1f%%'|format(percent) if resolved_available else 'N/A' }}</p>
                 </div>
-                <p class="max-w-full text-right text-xs font-semibold leading-5 text-content-secondary">{{ used_capacity }}</p>
+                <p class="max-w-full text-right text-xs font-semibold leading-5 {{ 'text-content-secondary' if resolved_available else analysis_surface.unavailable_value_classes() }}">{{ used_capacity if resolved_available else 'N/A' }}</p>
             </div>
-            {{ progress_bar.bar(percent, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=label ~ ' utilization') }}
+            {% if resolved_available %}
+                {{ progress_bar.bar(percent, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=label ~ ' utilization') }}
+            {% else %}
+                <div class="mt-3 flex h-8 items-center rounded-md border border-dashed border-outline-strong bg-surface-hover px-3 text-xs font-medium text-content-muted">Capacity evidence unavailable</div>
+            {% endif %}
             <div class="mt-2 flex items-center justify-between gap-3 text-xs">
                 <span class="text-content-muted">Remaining Headroom</span>
-                <span class="font-semibold tabular-nums text-content-primary">{{ '%.1f'|format(resolved_headroom|float) }}%</span>
+                <span class="font-semibold tabular-nums {{ 'text-content-primary' if resolved_available else analysis_surface.unavailable_value_classes() }}">{{ '%.1f%%'|format(resolved_headroom|float) if resolved_available else 'N/A' }}</span>
             </div>
         </div>
         <div class="min-w-0 lg:col-span-4">
             <p class="{{ analysis_surface.metric_label_classes() }}">Operational Reading</p>
-            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ reason or description }}</p>
-            {% if reason and description %}<p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>{% endif %}
+            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ (reason or description) if resolved_available else 'Restore committed capacity evidence before making scheduling or growth decisions for this resource.' }}</p>
+            {% if resolved_available and reason and description %}<p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>{% endif %}
         </div>
     </article>
 {%- endmacro %}

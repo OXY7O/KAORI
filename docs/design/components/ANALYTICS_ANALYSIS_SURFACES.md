@@ -59,6 +59,14 @@ Implementation: `app/templates/analytics/components/_chart_legend.html`
 
 Every multi-series chart with the native Chart.js legend disabled must render a compact visible legend using the same semantic/CSS tokens as the plotted series.
 
+## Unavailable Metric State
+
+Missing analytical evidence is not a zero value. Use semantic `Unknown`, display `N/A` for measured values, suppress progress visualization, and provide a short evidence-restoration message. Do not render `0.0%` for an unavailable denominator.
+
+## Semantic Progress Ownership
+
+Progress fills remain KAORI Violet unless a domain-specific visualization contract explicitly says otherwise. Healthy, Warning, and Critical meaning belongs to semantic labels, icons, and operational copy rather than recoloring the entire evidence lane.
+
 ## Prohibited Patterns
 
 - No Overview-only compatibility wrapper.
