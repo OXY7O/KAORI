@@ -25,3 +25,13 @@ def test_operation_action_bar_separates_title_from_helper_copy() -> None:
     assert "title=None" in component
     assert "form_action_bar.render(description, aria_label, title)" in wrapper
     assert "title ~ ' — ' ~ description" not in wrapper
+
+
+def test_secret_creation_summary_is_open_and_delete_actions_do_not_leak_on_full_page() -> None:
+    create = read('app/templates/kubernetes_operations/secrets/create.html')
+    delete_result = read('app/templates/kubernetes_operations/secrets/_delete_operation_result.html')
+
+    creation_index = create.index("'Creation Summary'")
+    summary_window = create[creation_index:creation_index + 240]
+    assert 'open_by_default=true' in summary_window
+    assert "request.headers.get('HX-Request') == 'true'" in delete_result

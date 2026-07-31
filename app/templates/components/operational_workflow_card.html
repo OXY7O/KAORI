@@ -1,31 +1,29 @@
 {% import "components/action_button.html" as action_button %}
 {% import "components/table_label.html" as table_label %}
 {% macro render(title, description, icon, allowed, classification, boundary_title, boundary_value, action_href=None, action_label='Open Workflow', action_icon='arrow-up-right', classification_tone='info', secondary_href=None, secondary_label=None, secondary_icon='settings') -%}
-    <article class="flex min-w-0 flex-col rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm sm:p-5">
-        <div class="flex items-start justify-between gap-3">
-            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
-                <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
-            </span>
-            {{ table_label.status_label('Available' if allowed else 'Restricted', 'normal' if allowed else 'disabled', 'check' if allowed else 'lock') }}
-        </div>
-        <div class="mt-4 min-w-0">
+    <article class="group grid min-w-0 gap-4 border-t border-outline-subtle bg-surface-card px-4 py-4 transition-colors first:border-t-0 hover:bg-surface-hover focus-within:bg-surface-hover sm:px-5 lg:grid-cols-[auto_minmax(0,1.35fr)_minmax(13rem,0.8fr)_minmax(11rem,auto)] lg:items-center">
+        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary transition-colors group-hover:bg-surface-card group-hover:text-kaori-primary-dark dark:group-hover:text-kaori-accent" aria-hidden="true">
+            <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+        </span>
+        <div class="min-w-0">
             <div class="flex min-w-0 flex-wrap items-center gap-2">
                 <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ title }}</h3>
+                {{ table_label.status_label('Available' if allowed else 'Restricted', 'normal' if allowed else 'disabled', 'check' if allowed else 'lock') }}
                 {{ table_label.metadata_label(classification, none, true) }}
             </div>
-            <p class="mt-1.5 break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ description }}</p>
+            <p class="mt-1 break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ description }}</p>
         </div>
-        <dl class="mt-4 grid min-w-0 gap-2 sm:grid-cols-2">
-            <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5">
-                <dt class="text-xs leading-4 text-content-muted">Validation Boundary</dt>
-                <dd class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ boundary_title }}</dd>
+        <dl class="grid min-w-0 gap-2 text-xs sm:grid-cols-2 lg:grid-cols-1">
+            <div class="min-w-0">
+                <dt class="font-medium text-content-muted">Validation</dt>
+                <dd class="mt-0.5 break-words font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ boundary_title }}</dd>
             </div>
-            <div class="min-w-0 rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5">
-                <dt class="text-xs leading-4 text-content-muted">Authority Boundary</dt>
-                <dd class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ boundary_value }}</dd>
+            <div class="min-w-0">
+                <dt class="font-medium text-content-muted">Authority</dt>
+                <dd class="mt-0.5 break-words font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ boundary_value }}</dd>
             </div>
         </dl>
-        <div class="mt-auto grid gap-2 pt-4">
+        <div class="grid min-w-0 gap-2 lg:w-48">
             {% if allowed and action_href %}
                 <a href="{{ action_href }}" class="{{ action_button.classes('primary', true) }}"><i data-lucide="{{ action_icon }}" class="h-4 w-4"></i>{{ action_label }}</a>
             {% else %}

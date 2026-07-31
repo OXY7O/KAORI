@@ -164,3 +164,15 @@ Exceptions may not be used for a page's primary mutation action.
 - Enabled action controls show a pointer cursor.
 - No legacy blue primary button remains.
 - HTMX loading does not resize or move the action group.
+
+## Dark-mode hover contrast
+
+Secondary and validation actions must not become low-contrast Violet text on a translucent Violet surface in dark appearance. Canonical shared actions use:
+
+```text
+Default  Neutral surface and readable content text
+Hover    Solid KAORI Violet with white text
+Active   Deep Violet with white text
+```
+
+This rule is owned by `components/action_button.html` and the operation-specific validation wrapper. Page-local hover color bundles are not permitted.

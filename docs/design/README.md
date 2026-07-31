@@ -126,3 +126,6 @@ Domain-specific UI rules live under `docs/modules/` or the owning module README.
 - `audits/KUBERNETES_CONFIGMAP_SECRET_OPERATIONS_STYLING_AUDIT_2026_07.md` — operation workspace and Inventory modal remediation record.
 
 - `audits/KUBERNETES_OPERATIONS_LAYOUT_REFINEMENT_AUDIT_2026_07.md` — ConfigMap/Secret workspace density, selection, action placement, and TLS flow refinement.
+
+- `audits/KUBERNETES_OPERATIONS_DARK_MODE_CATALOG_REFINEMENT_AUDIT_2026_07.md` — dark-mode interaction, flat workflow catalog, Secret Type selection, and delete OOB ownership.
+- `components/OPERATIONAL_WORKFLOW_CARD.md` — shared flat workflow catalog shell and destination-row contract.

@@ -677,7 +677,7 @@ ConfigMap and Secret operations follow `patterns/KUBERNETES_CONFIGMAP_SECRET_OPE
 
 ### Operational workflow catalog
 
-Use `components/operational_workflow_card.html` for operation destinations. Cards use natural height. Permission is always represented as `Available` or `Restricted`; `Standard`, `Controlled`, `Protected`, and `Destructive` are separate operation classifications.
+Use `components/operational_workflow_catalog.html` for the shared catalog shell and `components/operational_workflow_card.html` for operation destination rows. The canonical presentation is one bordered catalog surface containing natural-height rows separated by subtle dividers; do not render a grid of floating cards or nested boundary boxes. Permission is always represented as `Available` or `Restricted`; `Standard`, `Controlled`, `Protected`, and `Destructive` are separate operation classifications.
 
 ### Live Mutation Evidence Contract
 
@@ -714,3 +714,10 @@ Use Tab Style 2 for `New Request`, `My Requests`, and `Approvals`. Only the acti
 ### Inventory modal technical text
 
 Full Workspace Modal uses a maximum width of `100rem`, hides horizontal page overflow, and wraps resource titles, relation identities, labels, annotations, hosts, selector keys, and multi-line technical values. Technical Metadata Collection reserves a readable key column and uses `overflow-wrap:anywhere`; it must not truncate evidence or create nested vertical scrolling.
+
+
+### Dark appearance interaction guardrail
+
+Shared secondary and validation actions use a neutral default surface, then solid KAORI Violet with white text on hover and Deep Violet on active. Hero context badges use an opaque white surface because ordinary dark-page semantic soft colors do not provide reliable contrast on the Violet Hero panel. Secret Type selection uses the native checked radio as the only visual authority; exactly one card receives the selected border, surface, icon, and `Selected` indicator.
+
+Delete action fragments marked for HTMX out-of-band replacement must only render in HTMX responses. Full-page GET rendering must never place an action fragment above the operation workspace.

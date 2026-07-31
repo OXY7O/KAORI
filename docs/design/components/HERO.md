@@ -343,3 +343,12 @@ The following local copies are prohibited:
 - Hero CTA geometry.
 
 The contract is enforced by `tests/contracts/ui/test_global_hero_reusability_contract.py`.
+
+## Violet-surface contrast guardrail
+
+The Hero right-side panel sits on a Violet surface and does not inherit ordinary dark-page semantic label treatments.
+
+- Context status labels use an opaque white surface with a dark semantic or Violet foreground.
+- Context status text must not be truncated.
+- Context actions keep a white surface and Strong Violet text in both light and dark appearance.
+- Hover may strengthen border and shadow, but must not replace the white action surface with a translucent dark-mode Violet surface.

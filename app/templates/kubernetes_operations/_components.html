@@ -73,7 +73,7 @@
 {%- endmacro %}
 
 {% macro validate_button_classes() -%}
-    inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-kaori-primary/25 bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:border-kaori-primary/40 hover:bg-surface-selected focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-60
+    inline-flex h-10 cursor-pointer items-center justify-center gap-2 rounded-lg border border-kaori-primary/40 bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary-dark transition-colors hover:border-kaori-primary hover:bg-kaori-primary hover:text-white active:bg-kaori-primary-dark active:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-not-allowed disabled:opacity-60 dark:text-kaori-accent
 {%- endmacro %}
 {% macro primary_button_classes(full=false) -%}{{ action_button.classes('primary', full) }}{%- endmacro %}
 {% macro secondary_button_classes(full=false) -%}{{ action_button.classes('secondary', full) }}{%- endmacro %}

@@ -9,7 +9,16 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text()
 
 
-def test_management_landings_use_operational_workflow_catalog() -> None:
+def test_management_landings_use_flat_operational_workflow_catalog() -> None:
+    component = read('app/templates/components/operational_workflow_card.html')
+    catalog = read('app/templates/components/operational_workflow_catalog.html')
+    assert 'border-t border-outline-subtle' in component
+    assert 'first:border-t-0' in component
+    assert 'hover:bg-surface-hover' in component
+    assert 'rounded-xl border border-outline-default' in catalog
+    assert 'Validation Boundary' not in component
+    assert 'Authority Boundary' not in component
+
     for relative in (
         'app/templates/kubernetes_operations/configmaps/index.html',
         'app/templates/kubernetes_operations/secrets/index.html',
@@ -17,7 +26,9 @@ def test_management_landings_use_operational_workflow_catalog() -> None:
         source = read(relative)
         assert 'operation_evidence_boundary.html' in source
         assert 'operational_workflow_card.html' in source
-        assert 'Operational Workflow Catalog' in source
+        assert 'operational_workflow_catalog.html' in source
+        assert 'workflow_catalog.render' in source
+        assert 'grid items-start gap-4' not in source
         assert 'min-h-[23rem]' not in source
 
 
@@ -56,6 +67,7 @@ def test_secret_create_uses_reusable_choice_and_entry_components() -> None:
 
 def test_operation_permission_and_classification_are_separate() -> None:
     component = read('app/templates/components/operational_workflow_card.html')
+    catalog = read('app/templates/components/operational_workflow_catalog.html')
 
     assert "'Available' if allowed else 'Restricted'" in component
     assert 'metadata_label(classification' in component
@@ -87,7 +99,9 @@ def test_secondary_operation_rail_guidance_is_collapsed_by_default() -> None:
     replace_secret = read('app/templates/kubernetes_operations/secrets/replace.html')
     delete_secret = read('app/templates/kubernetes_operations/secrets/delete.html')
     assert 'view_more_content.html' in create_secret
-    assert create_secret.count('open_by_default=false') >= 2
+    assert "'Creation Summary'" in create_secret
+    assert 'open_by_default=true' in create_secret
+    assert 'open_by_default=false' in create_secret
     assert 'open_by_default=false' in replace_secret
     assert 'open_by_default=false' in delete_secret
 
@@ -96,9 +110,14 @@ def test_secret_create_selection_and_actions_are_visually_owned_by_main_workspac
     choice = read('app/templates/components/choice_card_group.html')
     create = read('app/templates/kubernetes_operations/secrets/create.html')
 
-    assert "!border-kaori-primary !bg-kaori-soft" in choice
-    assert '>Selected</span>' in choice
+    styles = read('frontend/styles.css')
+    assert 'secret-type-choice' in choice
+    assert 'secret-type-input sr-only' in choice
+    assert 'secret-type-selected-indicator' in choice
+    assert 'x-show=' not in choice
     assert '@change="{{ model }} = $event.target.value"' in choice
+    assert '0 0 0 2px var(--kaori-brand-primary)' in styles
+    assert '.secret-type-input:checked + .secret-type-option .secret-type-selected-indicator' in styles
 
     action_index = create.index("secret_ui.action_bar('scan-search', 'Validate Before Creation'")
     aside_index = create.index('<aside class="{{ context_rail.rail_classes() }}')
