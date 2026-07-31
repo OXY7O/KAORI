@@ -1,6 +1,8 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/table_label.html" as table_label %}
 {% set summary = payload.summary|default({}, true) %}
+{% set scope = payload.scope|default({}, true) %}
+{% set snapshot_schema_outdated = payload.snapshot_schema_outdated|default(false) %}
 <section class="{{ analysis_surface.snapshot_shell_classes() }}">
     <header class="{{ analysis_surface.snapshot_header_classes() }}">
         <div class="flex min-w-0 items-start gap-3">
@@ -10,35 +12,37 @@
                 <p class="mt-1 text-sm leading-6 text-content-secondary">Highest absolute CPU, memory, and pod consumption plus the highest PVC claim-utilization pressure in the active snapshot scope.</p>
             </div>
         </div>
-        {{ table_label.status_indicator_label('Committed ' ~ payload.scope.snapshot_dimension|default('cluster')|title ~ ' Snapshot', tone='normal', size='compact') }}
+        {{ table_label.status_indicator_label('Snapshot Refresh Required' if snapshot_schema_outdated else 'Committed ' ~ scope.snapshot_dimension|default('cluster')|title ~ ' Snapshot', tone='warning' if snapshot_schema_outdated else 'normal', size='compact') }}
     </header>
     <div class="grid sm:grid-cols-2 2xl:grid-cols-4">
         {% set cards = [
-            (summary.highest_cpu, 'cpu'),
-            (summary.highest_memory, 'memory-stick'),
-            (summary.highest_pods, 'boxes'),
-            (summary.highest_pvc, 'database')
+            (summary.highest_cpu|default({}, true), 'cpu'),
+            (summary.highest_memory|default({}, true), 'memory-stick'),
+            (summary.highest_pods|default({}, true), 'boxes'),
+            (summary.highest_pvc|default({}, true), 'database')
         ] %}
         {% for card, icon in cards %}
+            {% set identity = card.identity|default({}, true) %}
+            {% set risk = card.risk|default({}, true) %}
             <article class="min-w-0 border-b border-outline-subtle px-5 py-4 sm:odd:border-r 2xl:border-b-0 2xl:border-r 2xl:last:border-r-0">
                 <div class="flex min-w-0 items-start gap-3">
                     <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
                     <div class="min-w-0 flex-1">
-                        <p class="{{ analysis_surface.metric_label_classes() }}">{{ card.title }}</p>
-                        <p class="mt-1 text-2xl font-semibold tabular-nums text-content-primary">{{ card.value }}</p>
+                        <p class="{{ analysis_surface.metric_label_classes() }}">{{ card.title|default('Consumer Evidence') }}</p>
+                        <p class="mt-1 text-2xl font-semibold tabular-nums text-content-primary">{{ card.value|default('N/A') }}</p>
                     </div>
                 </div>
                 <dl class="mt-3 space-y-2 border-t border-outline-subtle pt-3">
                     <div class="min-w-0">
-                        <dt class="{{ analysis_surface.metric_label_classes() }}">{{ card.identity.entity_label|default('Consumer') }}</dt>
-                        <dd class="mt-1 break-words text-sm font-semibold text-content-primary" title="{{ card.identity.primary|default('No Data') }}">{{ card.identity.primary|default('No Data') }}</dd>
+                        <dt class="{{ analysis_surface.metric_label_classes() }}">{{ identity.entity_label|default('Consumer') }}</dt>
+                        <dd class="mt-1 break-words text-sm font-semibold text-content-primary" title="{{ identity.primary|default('No Data') }}">{{ identity.primary|default('No Data') }}</dd>
                     </div>
-                    {% if card.identity.secondary %}<div class="min-w-0"><dt class="{{ analysis_surface.metric_label_classes() }}">Scope</dt><dd class="mt-1 break-words text-xs leading-5 text-content-secondary">{{ card.identity.secondary }}</dd></div>{% endif %}
-                    {% if card.identity.tertiary %}<div class="min-w-0"><dt class="{{ analysis_surface.metric_label_classes() }}">Runtime Identity</dt><dd class="mt-1 break-words text-xs leading-5 text-content-secondary">{{ card.identity.tertiary }}</dd></div>{% endif %}
+                    {% if identity.secondary|default('') %}<div class="min-w-0"><dt class="{{ analysis_surface.metric_label_classes() }}">Scope</dt><dd class="mt-1 break-words text-xs leading-5 text-content-secondary">{{ identity.secondary }}</dd></div>{% endif %}
+                    {% if identity.tertiary|default('') %}<div class="min-w-0"><dt class="{{ analysis_surface.metric_label_classes() }}">Runtime Identity</dt><dd class="mt-1 break-words text-xs leading-5 text-content-secondary">{{ identity.tertiary }}</dd></div>{% endif %}
                 </dl>
                 <div class="mt-3 flex items-start justify-between gap-3 border-t border-outline-subtle pt-3">
-                    <p class="text-xs leading-5 text-content-muted">{{ card.subtitle }}</p>
-                    {{ table_label.status_label(card.risk.label, card.risk.tone, size='compact') }}
+                    <p class="text-xs leading-5 text-content-muted">{{ card.subtitle|default('Evidence unavailable') }}</p>
+                    {{ table_label.status_label(risk.label|default('Unknown'), risk.tone|default('unknown'), size='compact') }}
                 </div>
             </article>
         {% endfor %}

@@ -93,6 +93,8 @@ TOTAL_RUNNING_PODS_BY_NAMESPACE_QUERY = get_query_expression(
 )
 TOTAL_RUNNING_PODS_QUERY = get_query_expression('analytics.top_consumers.queries.TOTAL_RUNNING_PODS_QUERY')
 
+TOP_CONSUMERS_PAYLOAD_SCHEMA_VERSION = 2
+
 RESOURCE_OPTIONS: list[dict[str, str]] = [
     {'value': 'all', 'label': 'All Resources'},
     {'value': 'cpu', 'label': 'CPU'},
@@ -310,6 +312,7 @@ class TopConsumersService(AnalyticsBaseService):
         page_payload = self.paginate_consumer_rows(rows=ranked_rows, page=page, per_page=per_page)
 
         payload = {
+            'schema_version': TOP_CONSUMERS_PAYLOAD_SCHEMA_VERSION,
             'has_data': bool(all_rows),
             'message': None,
             'scope': {
@@ -1342,6 +1345,17 @@ def format_scope_total(resource_type: str, value: float) -> str:
     return f'{int(value)} Pods'
 
 
+
+def is_current_top_consumers_payload(payload: Any) -> bool:
+    if not isinstance(payload, dict):
+        return False
+    if payload.get('schema_version') != TOP_CONSUMERS_PAYLOAD_SCHEMA_VERSION:
+        return False
+    required_mapping_fields = ('scope', 'coverage', 'posture', 'summary', 'overview', 'pagination')
+    if any(not isinstance(payload.get(field), dict) for field in required_mapping_fields):
+        return False
+    return isinstance(payload.get('all_rows'), list)
+
 def get_empty_top_consumers_payload(
     *,
     message: str,
@@ -1368,6 +1382,7 @@ def get_empty_top_consumers_payload(
         for key in ('cpu', 'memory', 'pods', 'pvc')
     }
     return {
+        'schema_version': TOP_CONSUMERS_PAYLOAD_SCHEMA_VERSION,
         'has_data': False,
         'message': message,
         'scope': {'label': 'Cluster', 'namespace': '', 'snapshot_dimension': 'cluster'},
@@ -1488,7 +1503,7 @@ def get_top_consumers_snapshot(
         parameters={'cluster_id': str(cluster_id)},
     )
     payload = (result.context or {}).get('consumer_payload') if result.available else None
-    if not isinstance(payload, dict):
+    if not is_current_top_consumers_payload(payload):
         return _empty_top_consumers_snapshot()
     rows = list(payload.get('all_rows') or [])
     cpu_rows = [row for row in rows if row.get('resource_type') == 'cpu']
@@ -1622,6 +1637,22 @@ def present_top_consumers_materialized_context(
         selected_namespace = ''
 
     payload = deepcopy(presented.get('consumer_payload') or {})
+    if not is_current_top_consumers_payload(payload):
+        payload = get_empty_top_consumers_payload(
+            message=(
+                'The committed Top Consumers snapshot uses an earlier payload schema. '
+                'Run Refresh/Materialize Top Consumers to rebuild the snapshot before reviewing consumer evidence.'
+            ),
+            page=page,
+            per_page=per_page,
+        )
+        payload['snapshot_schema_outdated'] = True
+        payload['scope'] = {
+            'label': f'Namespace · {selected_namespace}' if selected_namespace else 'Cluster',
+            'namespace': selected_namespace,
+            'snapshot_dimension': 'namespace' if selected_namespace else 'cluster',
+        }
+
     all_rows = list(payload.get('all_rows') or [])
     service = TopConsumersService.__new__(TopConsumersService)
     filtered_rows = service.filter_rows(

@@ -6,6 +6,11 @@
 {% import "components/table_label.html" as table_label %}
 {% set payload = consumer_payload|default({}, true) %}
 {% set active_tab = initial_tab|default('rankings') %}
+{% set scope = payload.scope|default({}, true) %}
+{% set coverage = payload.coverage|default({}, true) %}
+{% set overview = payload.overview|default({}, true) %}
+{% set recommendation_cards = payload.recommendation_cards|default([], true) %}
+{% set rankings = overview.rankings|default([], true) %}
 
 {% if render_dependency_blocker|default(false) and dependency_blocker %}
     {% include "components/dependencies/_blocker.html" %}
@@ -40,14 +45,14 @@
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-2">
-                    {{ table_label.metadata_label(payload.scope.label|default('Cluster'), 'scan-search', size='compact') }}
-                    {{ table_label.status_label(payload.coverage.label|default('Evidence Unavailable'), 'normal' if payload.coverage.complete_count|default(0) == 4 else 'warning', size='compact') }}
+                    {{ table_label.metadata_label(scope.label|default('Cluster'), 'scan-search', size='compact') }}
+                    {{ table_label.status_label(coverage.label|default('Evidence Unavailable'), 'normal' if coverage.complete_count|default(0) == 4 else 'warning', size='compact') }}
                 </div>
             </header>
 
-            {% if payload.overview.rankings %}
+            {% if rankings %}
                 <div class="grid gap-5 xl:grid-cols-2">
-                    {% for panel in payload.overview.rankings %}{{ ranked_evidence.render(panel) }}{% endfor %}
+                    {% for panel in rankings %}{{ ranked_evidence.render(panel) }}{% endfor %}
                 </div>
             {% else %}
                 <div class="{{ analysis_surface.empty_evidence_classes('flex min-h-[280px] flex-col items-center justify-center px-5 py-8 text-center') }}">
@@ -99,10 +104,10 @@
                 {{ table_label.status_indicator_label(payload.recommendation_count|default(0) ~ ' Actionable', tone='info', size='compact') }}
             </header>
 
-            {% if payload.recommendation_cards %}
+            {% if recommendation_cards %}
                 <div class="overflow-hidden rounded-lg border border-outline-default" data-kaori-recommendation-pager data-page-size="3">
                     <div class="divide-y divide-outline-subtle">
-                        {% for recommendation in payload.recommendation_cards %}
+                        {% for recommendation in recommendation_cards %}
                             {% set priority = recommendation.priority|default('Info', true)|lower %}
                             {% set priority_tone = 'critical' if priority in ['critical', 'p1'] else ('warning' if priority in ['warning', 'p2'] else ('info' if priority in ['info', 'p3'] else ('normal' if priority == 'normal' else 'unknown'))) %}
                             <article class="flex flex-col gap-4 bg-surface-card px-4 py-4 lg:flex-row lg:items-center lg:justify-between" data-kaori-recommendation-item {% if loop.index > 3 %}hidden{% endif %}>
@@ -127,7 +132,7 @@
                             </article>
                         {% endfor %}
                     </div>
-                    {{ recommendation_pager.controls(payload.recommendation_cards|length, 'Recommendations', 3) }}
+                    {{ recommendation_pager.controls(recommendation_cards|length, 'Recommendations', 3) }}
                 </div>
             {% else %}
                 <div class="{{ analysis_surface.empty_evidence_classes('flex min-h-44 flex-col items-center justify-center px-5 py-8 text-center') }}">

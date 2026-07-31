@@ -1,3 +1,5 @@
+{% set payload = consumer_payload|default({}, true) %}
+{% set pagination = payload.pagination|default({}, true) %}
 {% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
 <form id="top-consumers-filter-form"
       method="get"
@@ -41,6 +43,6 @@
         <input type="hidden" name="sort" value="{{ selected_sort }}">
         <input type="hidden" name="focus" value="{{ selected_focus }}">
         <input type="hidden" name="page" value="1">
-        <input type="hidden" name="per_page" value="{{ consumer_payload.pagination.per_page|default(5) }}">
+        <input type="hidden" name="per_page" value="{{ pagination.per_page|default(5) }}">
     {% endcall %}
 </form>

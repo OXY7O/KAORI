@@ -1,6 +1,8 @@
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
 {% set posture = payload.posture|default({}, true) %}
+{% set scope = payload.scope|default({}, true) %}
+{% set coverage = payload.coverage|default({}, true) %}
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
@@ -14,8 +16,8 @@
                     {% if dependency_blocker %}
                         {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
                     {% else %}
-                        {{ page_hero.meta_label('scan-search', payload.scope.label|default('Cluster')) }}
-                        {{ page_hero.meta_label('database', payload.coverage.label|default('0 of 4 Resources Complete')) }}
+                        {{ page_hero.meta_label('scan-search', scope.label|default('Cluster')) }}
+                        {{ page_hero.meta_label('database', coverage.label|default('0 of 4 Resources Complete')) }}
                         {{ page_hero.meta_label('list-filter', total_rows ~ ' Consumers') }}
                     {% endif %}
                 </div>
