@@ -7,11 +7,11 @@
 {% set risk_tone = 'warning' if risk_count > 0 else 'normal' %}
 {% set highest_resource = forecast.highest_projected_resource|default('Not Available') %}
 {% set highest_percent = forecast.highest_projected_percent|default(0) %}
-<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
+<section data-analytics-overview-panel="forecast" class="{{ overview_surface.snapshot_shell_classes() }}">
+    <header class="{{ overview_surface.snapshot_header_classes() }}">
         <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                <i data-lucide="chart-spline" class="h-4.5 w-4.5"></i>
+            <span class="{{ overview_surface.snapshot_header_icon_classes() }}">
+                <i data-lucide="chart-spline" class="h-4 w-4"></i>
             </span>
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
@@ -33,9 +33,9 @@
         {'label': 'Highest Projection', 'value': highest_resource ~ ' · ' ~ highest_percent ~ '%', 'icon': 'arrow-up-right'},
         {'label': 'Forecast Horizon', 'value': forecast.forecast_horizon|default('30 Days')|title, 'icon': 'calendar-range'}
     ] %}
-    <div class="grid grid-cols-1 divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-4">
+    <div class="{{ overview_surface.metric_grid_classes(4) }}">
         {% for metric in metrics %}
-            <article class="min-w-0 px-4 py-4 sm:border-r sm:border-outline-subtle xl:px-5">
+            <article class="{{ overview_surface.metric_cell_classes() }}">
                 <span class="flex h-8 w-8 items-center justify-center rounded-lg {% if metric.label == 'Risk Resources' and risk_count > 0 %}bg-status-warning-soft text-status-warning{% else %}bg-kaori-soft text-kaori-primary{% endif %}">
                     <i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i>
                 </span>
@@ -59,12 +59,12 @@
                         forecast.forecast_horizon|default('30 Days')|replace(' Days', '')|int,
                         has_historical_series=true,
                         height_classes='h-64',
-                        surface_classes='bg-surface-hover',
+                        surface_classes='bg-surface-card',
                         aria_label='Historical and projected resource utilization'
                     ) }}
                 </div>
             {% else %}
-                <div class="mt-4 flex h-64 items-center justify-center rounded-lg border border-dashed border-outline-strong bg-surface-hover">
+                <div class="{{ overview_surface.empty_evidence_classes('mt-4 flex h-64 items-center justify-center') }}">
                     <div class="text-center">
                         <i data-lucide="line-chart" class="mx-auto h-8 w-8 text-kaori-primary"></i>
                         <p class="mt-2 text-sm font-semibold text-content-secondary">Forecast Chart Not Available</p>
@@ -73,7 +73,7 @@
                 </div>
             {% endif %}
 
-            <div class="mt-4 grid rounded-lg border border-outline-subtle bg-surface-hover px-4 lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle">
+            <div class="{{ overview_surface.guidance_card_classes('mt-4 grid px-4 lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle') }}">
                 <div class="py-3 lg:pr-4">
                     <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">How to Read</p>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Compare the dashed projection with warning and critical thresholds. A rising line is actionable when current utilization or headroom is already constrained.</p>
@@ -113,7 +113,7 @@
             {% else %}
                 <p class="mt-4 text-xs leading-5 text-content-muted">No resource outlook is available for the current snapshot.</p>
             {% endif %}
-            <div class="mt-4 flex items-start gap-3 rounded-lg bg-surface-hover p-3">
+            <div class="{{ overview_surface.guidance_card_classes('mt-4 flex items-start gap-3 p-3') }}">
                 <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {% if risk_count > 0 %}bg-status-warning-soft text-status-warning{% else %}bg-status-normal-soft text-status-normal{% endif %}"><i data-lucide="{{ 'triangle-alert' if risk_count > 0 else 'circle-check' }}" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
                     <p class="text-xs font-semibold text-content-primary">Forecast Decision</p>

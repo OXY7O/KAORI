@@ -31,6 +31,9 @@
             {% else %}
                 <div id="overview-hero-posture"
                      class="h-full"
+                     data-overview-lazy-section="true"
+                     data-overview-section-label="Operational Posture"
+                     data-overview-load-state="pending"
                      hx-target="this"
                      hx-disinherit="hx-target hx-select hx-push-url hx-indicator"
                      hx-get="{{ url_for('analytics.overview_section', section='hero-posture') }}?{{ overview_query }}"

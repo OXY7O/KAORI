@@ -6,11 +6,11 @@
 {% set storage_tone = table_label.semantic_tone(storage.tone or storage.status)|trim %}
 {% set used_percent = storage.used_percent|default(0)|float %}
 {% set bar_class = 'bg-status-critical' if used_percent > 90 else ('bg-status-warning' if used_percent >= 75 else 'bg-kaori-primary') %}
-<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
+<section data-analytics-overview-panel="storage" class="{{ overview_surface.snapshot_shell_classes() }}">
+    <header class="{{ overview_surface.snapshot_header_classes() }}">
         <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                <i data-lucide="database" class="h-4.5 w-4.5"></i>
+            <span class="{{ overview_surface.snapshot_header_icon_classes() }}">
+                <i data-lucide="database" class="h-4 w-4"></i>
             </span>
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
@@ -32,9 +32,9 @@
         {'label': 'PVC Free', 'value': storage.pvc_free, 'icon': 'database-backup'},
         {'label': 'PVC Risk Count', 'value': storage.pvc_risk_count, 'icon': 'shield-alert'}
     ] %}
-    <div class="grid grid-cols-1 divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-4">
+    <div class="{{ overview_surface.metric_grid_classes(4) }}">
         {% for metric in storage_metrics %}
-            <article class="min-w-0 px-4 py-4 sm:border-r sm:border-outline-subtle xl:px-5">
+            <article class="{{ overview_surface.metric_cell_classes() }}">
                 <div class="flex items-center justify-between gap-3">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {% if metric.label == 'PVC Risk Count' and storage.pvc_risk_count > 0 %}bg-status-critical-soft text-status-critical{% else %}bg-kaori-soft text-kaori-primary{% endif %}">
                         <i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i>
@@ -76,13 +76,13 @@
             <p class="mt-1 text-sm font-semibold text-content-primary">Top Namespace: {{ storage.top_namespace }}</p>
             {% if storage.pvc_risk_count > 0 %}
                 <p class="mt-1 text-xs leading-5 text-content-muted">Review at-risk PVCs, namespace growth, storage class expansion support, and remaining free capacity before exhaustion.</p>
-                <div class="mt-4 flex items-start gap-3 rounded-lg bg-surface-hover p-3">
+                <div class="{{ overview_surface.guidance_card_classes('mt-4 flex items-start gap-3 p-3') }}">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>
                     <div><p class="text-xs font-semibold text-content-primary">Recommended Action</p><p class="mt-1 text-xs leading-5 text-content-muted">Validate growth and schedule PVC expansion or cleanup for the highest-risk namespace.</p></div>
                 </div>
             {% else %}
                 <p class="mt-1 text-xs leading-5 text-content-muted">Current persistent storage posture is healthy. Continue monitoring namespace growth and forecasted demand.</p>
-                <div class="mt-4 flex items-start gap-3 rounded-lg bg-surface-hover p-3">
+                <div class="{{ overview_surface.guidance_card_classes('mt-4 flex items-start gap-3 p-3') }}">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-normal-soft text-status-normal"><i data-lucide="circle-check" class="h-4 w-4"></i></span>
                     <div><p class="text-xs font-semibold text-content-primary">Recommended Action</p><p class="mt-1 text-xs leading-5 text-content-muted">No immediate storage remediation is required.</p></div>
                 </div>

@@ -7,11 +7,11 @@
 {% set highest = ranked_resources[0] %}
 {% set highest_percent = highest.percent|default(0)|float %}
 {% set overall_tone = 'critical' if highest_percent > 90 else ('warning' if highest_percent >= 75 else 'normal') %}
-<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
+<section data-analytics-overview-panel="utilization" class="{{ overview_surface.snapshot_shell_classes() }}">
+    <header class="{{ overview_surface.snapshot_header_classes() }}">
         <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                <i data-lucide="gauge" class="h-4.5 w-4.5"></i>
+            <span class="{{ overview_surface.snapshot_header_icon_classes() }}">
+                <i data-lucide="gauge" class="h-4 w-4"></i>
             </span>
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
@@ -27,11 +27,11 @@
         ) }}
     </header>
 
-    <div class="grid grid-cols-1 divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-4">
+    <div class="{{ overview_surface.metric_grid_classes(4) }}">
         {% for item in resources %}
             {% set semantic_tone = table_label.semantic_tone(item.tone or item.status)|trim %}
             {% set icon_class = table_label.tone_surface_classes(semantic_tone)|trim %}
-            <article class="min-w-0 px-4 py-4 sm:border-r sm:border-outline-subtle xl:px-5">
+            <article class="{{ overview_surface.metric_cell_classes() }}">
                 <div class="flex items-center justify-between gap-3">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ icon_class }}">
                         <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>

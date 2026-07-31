@@ -1,14 +1,15 @@
 {% import "components/recommendation_pager.html" as recommendation_pager %}
 {% import "components/table_label.html" as table_label %}
+{% import "analytics/components/_overview_surfaces.html" as overview_surface %}
 {% set actionable_summary = payload.actionable_recommendations|default({}) %}
 {% set recommendations = payload.recommendations|default([]) %}
 {% set critical_count = actionable_summary.priority_summary.critical|default(0) %}
 {% set warning_count = actionable_summary.priority_summary.warning|default(0) %}
-<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
+<section data-analytics-overview-panel="recommendations" class="{{ overview_surface.snapshot_shell_classes() }}">
+    <header class="{{ overview_surface.snapshot_header_classes() }}">
         <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                <i data-lucide="clipboard-check" class="h-4.5 w-4.5"></i>
+            <span class="{{ overview_surface.snapshot_header_icon_classes() }}">
+                <i data-lucide="clipboard-check" class="h-4 w-4"></i>
             </span>
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
@@ -37,7 +38,7 @@
                        {% if loop.index > 3 %}hidden{% endif %}>
                         <div class="flex min-w-0 items-start gap-3">
                             <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                <i data-lucide="{{ recommendation.icon }}" class="h-4.5 w-4.5"></i>
+                                <i data-lucide="{{ recommendation.icon }}" class="h-4 w-4"></i>
                             </span>
                             <div class="min-w-0">
                                 <div class="flex flex-wrap items-center gap-2">

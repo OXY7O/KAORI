@@ -233,15 +233,19 @@ Do not use `rounded-3xl` or arbitrary radii in authenticated workspaces.
 
 Standard surfaces use semantic tokens and restrained shadows. Nested cards should rely on border, surface contrast, and whitespace before adding another shadow.
 
-### Analytics Overview Surface Hierarchy
+### Analytics Overview Surface Hierarchy and Snapshot Standard
 
-Analytics Overview uses a fixed three-level surface hierarchy:
+Capacity is the reference composition for Analytics Overview. Utilization, Capacity, Workloads, Storage, Consumers, Forecast, Alerts, Action Summary, and Recommendations use one shared visual grammar while preserving domain-appropriate evidence layouts:
 
-1. Primary evidence and analytical context use the bright `bg-surface-card` surface.
-2. Interpretation, recommended action, review path, and execution guidance use the darker soft `bg-surface-hover` surface.
-3. Attention strips use the same darker soft surface plus semantic Warning or Critical treatment.
+1. one calm snapshot shell;
+2. one compact header with icon, semantic posture, description, and at most one drill-down action;
+3. one peer metric strip when the domain has summary metrics;
+4. one bright evidence or context body;
+5. one darker soft interpretation, decision, or recommended-action region.
 
-Do not darken the entire Prometheus/readiness body. Keep the source and committed snapshot panels bright, then place dataset attention below them as a distinct strip. Context side panels such as Pressure Posture remain bright and use borders for separation. Use `analytics/components/_overview_surfaces.html`; do not reconstruct the hierarchy independently in every tab.
+Primary evidence and analytical context use `bg-surface-card`. Interpretation, recommended action, review path, and execution guidance use `bg-surface-hover`. Attention strips use the darker soft surface plus semantic Warning or Critical treatment.
+
+Do not darken the entire Prometheus/readiness body. Keep the source and committed snapshot panels bright, then place dataset attention below them as a distinct strip. Charts, ranked records, findings, and context side panels such as Pressure Posture remain bright and use borders for separation. Use `analytics/components/_overview_surfaces.html`; individual tabs must not reconstruct the snapshot shell, header, metric geometry, or surface hierarchy.
 
 Analytics status tones are normalized through `table_label.semantic_tone(...)`. Legacy color names may be accepted at the shared component boundary for compatibility, but new presenters and templates use semantic tone names. Critical, Warning, and Normal values must never fall back to the Unknown/slate treatment.
 
@@ -495,8 +499,9 @@ Welcome may use `welcome_capability_group.html` as a documented dark Violet cate
 
 - Loading appears in the affected region, never by replacing the hero.
 - Initial dashboard sections use local skeletons; paginated or filterable dashboard tables also own a loading bar inside their section header.
-- `hx-indicator` always points to the bar owned by the same partial region; a global dashboard loading bar is prohibited.
-- Dashboard initial loads use section-owned skeleton placeholders. A global loading bar must not represent several unrelated asynchronous dashboard sections.
+- `hx-indicator` points to the bar owned by the same partial region.
+- Dashboard initial loads use section-owned skeleton placeholders. A page-level bar must not represent unrelated asynchronous dashboard sections.
+- Analytics Overview may add one compact composite progress strip because all tracked lazy requests belong to the same Overview workspace and progress is calculated from explicit section states. Local skeletons and the filter-owned loading bar remain required.
 - Empty states explain what is absent and the next valid action when one exists.
 - Error copy is concise; technical evidence belongs in detail views, toast, or Activity Audit Log.
 - Unknown, unavailable, permission denied, and not configured are separate states.

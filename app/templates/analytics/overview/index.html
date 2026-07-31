@@ -17,10 +17,16 @@
     ] %}
     <div id="analytics-overview-page" class="kaori-analytics-page space-y-6" data-analytics-page-request-tracking="false">
         {% include "analytics/overview/partials/_hero.html" %}
+        {% if not dependency_blocker %}
+            {% include "analytics/overview/partials/_load_tracker.html" %}
+        {% endif %}
         {% if dependency_blocker %}
             {% include "components/dependencies/_blocker.html" %}
         {% else %}
             <div id="overview-health-summary"
+                 data-overview-lazy-section="true"
+                 data-overview-section-label="Health Summary"
+                 data-overview-load-state="pending"
                  hx-target="this"
                  hx-get="{{ url_for('analytics.overview_section', section='health-summary') }}?{{ overview_query }}"
                  hx-trigger="load delay:150ms"
@@ -62,6 +68,9 @@
                          x-bind:hidden="activeTab !== 'utilization'"
                          class="space-y-4">
                         <div id="overview-resource-snapshot"
+                             data-overview-lazy-section="true"
+                             data-overview-section-label="Utilization"
+                             data-overview-load-state="pending"
                              hx-target="this"
                              hx-get="{{ url_for('analytics.overview_section', section='resource-snapshot') }}?{{ overview_query }}"
                              hx-trigger="load delay:250ms"
@@ -79,6 +88,9 @@
                          x-cloak
                          class="space-y-4">
                         <div id="overview-capacity-snapshot"
+                             data-overview-lazy-section="true"
+                             data-overview-section-label="Capacity"
+                             data-overview-load-state="pending"
                              hx-target="this"
                              hx-get="{{ url_for('analytics.overview_section', section='capacity-snapshot') }}?{{ overview_query }}"
                              hx-trigger="load delay:300ms"
@@ -96,6 +108,9 @@
                          x-cloak
                          class="space-y-4">
                         <div id="overview-workload-snapshot"
+                             data-overview-lazy-section="true"
+                             data-overview-section-label="Workloads"
+                             data-overview-load-state="pending"
                              hx-target="this"
                              hx-get="{{ url_for('analytics.overview_section', section='workload-snapshot') }}?{{ overview_query }}"
                              hx-trigger="load delay:350ms"
@@ -113,6 +128,9 @@
                          x-cloak
                          class="space-y-4">
                         <div id="overview-storage-snapshot"
+                             data-overview-lazy-section="true"
+                             data-overview-section-label="Storage"
+                             data-overview-load-state="pending"
                              hx-target="this"
                              hx-get="{{ url_for('analytics.overview_section', section='storage-snapshot') }}?{{ overview_query }}"
                              hx-trigger="load delay:400ms"
@@ -130,6 +148,9 @@
                          x-cloak
                          class="space-y-4">
                         <div id="overview-top-consumers"
+                             data-overview-lazy-section="true"
+                             data-overview-section-label="Consumers"
+                             data-overview-load-state="pending"
                              hx-target="this"
                              hx-get="{{ url_for('analytics.overview_section', section='top-consumers') }}?{{ overview_query }}"
                              hx-trigger="load delay:450ms"
@@ -147,6 +168,9 @@
                          x-cloak
                          class="space-y-4">
                         <div id="overview-forecast-snapshot"
+                             data-overview-lazy-section="true"
+                             data-overview-section-label="Forecast"
+                             data-overview-load-state="pending"
                              hx-target="this"
                              hx-get="{{ url_for('analytics.overview_section', section='forecast-snapshot') }}?{{ overview_query }}"
                              hx-trigger="load delay:500ms"
@@ -164,6 +188,9 @@
                          x-cloak
                          class="space-y-4">
                         <div id="overview-alerts-snapshot"
+                             data-overview-lazy-section="true"
+                             data-overview-section-label="Alerts"
+                             data-overview-load-state="pending"
                              hx-target="this"
                              hx-get="{{ url_for('analytics.overview_section', section='alerts-snapshot') }}?{{ overview_query }}"
                              hx-trigger="load delay:550ms"
@@ -181,6 +208,9 @@
                          x-cloak
                          class="space-y-4">
                         <div id="overview-actionable-recommendations"
+                             data-overview-lazy-section="true"
+                             data-overview-section-label="Action Summary"
+                             data-overview-load-state="pending"
                              hx-target="this"
                              hx-get="{{ url_for('analytics.overview_section', section='actionable-recommendations') }}?{{ overview_query }}"
                              hx-trigger="load delay:600ms"
@@ -198,6 +228,9 @@
                          x-cloak
                          class="space-y-4">
                         <div id="overview-recommendations"
+                             data-overview-lazy-section="true"
+                             data-overview-section-label="Recommendations"
+                             data-overview-load-state="pending"
                              hx-target="this"
                              hx-get="{{ url_for('analytics.overview_section', section='recommendations') }}?{{ overview_query }}"
                              hx-trigger="load delay:650ms"

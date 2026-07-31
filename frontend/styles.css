@@ -475,6 +475,23 @@ span.inline-flex[class*='bg-kaori-soft'] {
     opacity: 1;
 }
 
+@keyframes kaori-loading-bar-indeterminate {
+    0% {
+        transform: translateX(-120%);
+    }
+    55% {
+        transform: translateX(160%);
+    }
+    100% {
+        transform: translateX(340%);
+    }
+}
+
+.kaori-loading-bar-segment {
+    animation: kaori-loading-bar-indeterminate 1.15s ease-in-out infinite;
+    will-change: transform;
+}
+
 #operational-action-feedback:empty,
 #quick-sync-feedback:empty {
     display: none;
@@ -508,8 +525,8 @@ span.inline-flex[class*='bg-kaori-soft'] {
 }
 
 /* Kubernetes operation option cards use the native checked state as the
- * visual authority. The selected card stays quiet: one border, one leading
- * accent, and a compact state label rather than a high-contrast double ring. */
+ * visual authority. This avoids Alpine timing flashes and keeps exactly one
+ * selected card obvious in both light and dark appearance. */
 .secret-type-choice:focus-within .secret-type-option {
     outline: 2px solid var(--kaori-outline-focus);
     outline-offset: 2px;
@@ -518,17 +535,19 @@ span.inline-flex[class*='bg-kaori-soft'] {
 .secret-type-input:checked + .secret-type-option {
     border-color: var(--kaori-brand-primary);
     background-color: var(--kaori-surface-selected);
-    box-shadow: inset 3px 0 0 var(--kaori-brand-primary);
+    box-shadow:
+        0 0 0 2px var(--kaori-brand-primary),
+        inset 0 0 0 1px var(--kaori-brand-border);
 }
 
 .secret-type-input:checked + .secret-type-option .secret-type-icon {
-    border-color: var(--kaori-brand-border);
-    background-color: var(--kaori-surface-card);
-    color: var(--kaori-brand-primary);
+    border-color: var(--kaori-brand-primary);
+    background-color: var(--kaori-brand-primary);
+    color: #ffffff;
 }
 
 .secret-type-input:checked + .secret-type-option .secret-type-title {
-    color: var(--kaori-content-primary);
+    color: var(--kaori-brand-primary);
 }
 
 .secret-type-selected-indicator {

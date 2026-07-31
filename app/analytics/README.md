@@ -185,6 +185,8 @@ Analysis must retain the agreed Cluster → Node selector hierarchy.
 ## Analytics Overview presentation contract
 
 - Use the shared Analytics content-tab component and `kaoriAnalyticsTabs`; do not maintain a separate Overview-only tab implementation.
+- Capacity is the Overview snapshot-style baseline. Every Overview tab uses the shared snapshot shell, header, header icon, metric strip when applicable, bright evidence/context body, and darker interpretation/action region from `analytics/components/_overview_surfaces.html`. Domain layouts may differ, but they must not fork the geometry or surface contract.
+- Every lazy Overview section declares its tracked load state. The compact Overview progress strip reports completed or failed section requests and coexists with local skeletons and the filter-owned HTMX loading bar.
 - Snapshot section headers, actions, metric labels, status text, and empty-state titles use Title Case. Descriptive sentences and technical identifiers retain their natural casing.
 - Resource utilization progress bars must receive resolved class strings, clamp width to 0–100%, and update from the committed snapshot percentage. Do not pass nested Jinja expressions inside a quoted macro argument.
 - Top Consumers and Alerts & Anomalies Snapshot are always visible on the Overview page. They must not use `details`, chevrons, or expand/collapse state.

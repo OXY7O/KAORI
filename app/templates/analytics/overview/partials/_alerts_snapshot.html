@@ -5,11 +5,11 @@
 {% set immediate_count = alerts.critical_alerts + alerts.firing_alerts %}
 {% set follow_up_count = alerts.warning_alerts + alerts.pending_alerts %}
 {% set alert_tone = 'critical' if alerts.critical_alerts > 0 else ('warning' if alerts.firing_alerts > 0 or alerts.warning_alerts > 0 or alerts.pending_alerts > 0 else 'normal') %}
-<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
+<section data-analytics-overview-panel="alerts" class="{{ overview_surface.snapshot_shell_classes() }}">
+    <header class="{{ overview_surface.snapshot_header_classes() }}">
         <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg {% if alert_tone == 'critical' %}bg-status-critical-soft text-status-critical{% elif alert_tone == 'warning' %}bg-status-warning-soft text-status-warning{% else %}bg-status-normal-soft text-status-normal{% endif %}">
-                <i data-lucide="bell-ring" class="h-4.5 w-4.5"></i>
+            <span class="{{ overview_surface.snapshot_header_icon_classes() }}">
+                <i data-lucide="bell-ring" class="h-4 w-4"></i>
             </span>
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
@@ -32,7 +32,7 @@
         {'label': 'Warning Alerts', 'value': alerts.warning_alerts, 'icon': 'triangle-alert', 'tone': 'warning'},
         {'label': 'Recent Anomalies', 'value': alerts.recent_anomalies, 'icon': 'radar', 'tone': 'maintenance'}
     ] %}
-    <div class="grid grid-cols-1 divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-5">
+    <div class="{{ overview_surface.metric_grid_classes(5) }}">
         {% for metric in metrics %}
             {% set icon_class = {
                 'critical': 'bg-status-critical-soft text-status-critical',
@@ -40,7 +40,7 @@
                 'pending': 'bg-status-pending-soft text-status-pending',
                 'maintenance': 'bg-status-maintenance-soft text-status-maintenance'
             }.get(metric.tone, 'bg-kaori-soft text-kaori-primary') %}
-            <article class="min-w-0 px-4 py-4 sm:border-r sm:border-outline-subtle xl:px-5">
+            <article class="{{ overview_surface.metric_cell_classes() }}">
                 <div class="flex items-center justify-between gap-3">
                     <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ icon_class }}"><i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i></span>
                     <span class="text-xl font-semibold text-content-primary">{{ metric.value }}</span>
@@ -86,7 +86,7 @@
                 {{ table_label.status_label(alerts.recent_anomalies ~ ' Candidates', 'maintenance', size='compact') }}
             </div>
             <p class="mt-2 text-xs leading-5 text-content-muted">{{ alerts.highest_severity_description }}</p>
-            <div class="mt-4 rounded-lg bg-surface-hover p-3">
+            <div class="{{ overview_surface.guidance_card_classes('mt-4 p-3') }}">
                 <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Recommended Action</p>
                 {% if immediate_count > 0 %}
                     <p class="mt-1 text-xs leading-5 text-content-muted">Validate routing, ownership, runbook coverage, and recent deployment changes for the highest-severity active signal.</p>

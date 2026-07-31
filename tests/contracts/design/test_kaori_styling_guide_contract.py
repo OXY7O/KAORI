@@ -345,3 +345,22 @@ def test_analytics_overview_surface_hierarchy_is_documented_and_shared() -> None
     assert "'amber'" in labels
     assert "'red'" in labels
     assert "'gray'" in labels
+
+
+
+def test_analytics_overview_snapshot_and_composite_loading_contract_are_documented() -> None:
+    guide = _read('docs/design/KAORI_STYLING_GUIDE.md')
+    contract = _read('docs/design/components/ANALYTICS_OVERVIEW_SURFACES.md')
+    surfaces = _read('app/templates/analytics/components/_overview_surfaces.html')
+    analytics_readme = _read('app/analytics/README.md')
+
+    assert 'Capacity is the reference composition for Analytics Overview' in guide
+    assert 'Analytics Overview may add one compact composite progress strip' in guide
+    assert 'Baseline Composition' in contract
+    assert 'Loading Contract' in contract
+    assert 'snapshot_shell_classes()' in contract
+    assert 'metric_grid_classes(columns)' in contract
+    assert 'This exception does not authorize a global loading bar' in contract
+    assert 'macro snapshot_shell_classes' in surfaces
+    assert 'macro metric_grid_classes' in surfaces
+    assert 'Capacity is the Overview snapshot-style baseline' in analytics_readme

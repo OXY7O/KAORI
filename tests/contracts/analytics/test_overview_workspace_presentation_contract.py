@@ -120,7 +120,9 @@ def test_overview_domain_snapshots_are_informative_and_compact() -> None:
     for relative, markers in expectations.items():
         source = read(relative)
         assert 'rounded-2xl border border-brand-outline bg-kaori-primary' not in source
-        assert 'grid grid-cols-1 divide-y divide-outline-subtle' in source
+        assert 'overview_surface.snapshot_shell_classes()' in source
+        assert 'overview_surface.snapshot_header_classes()' in source
+        assert 'overview_surface.snapshot_header_icon_classes()' in source
         for marker in markers:
             assert marker in source
 
@@ -164,7 +166,8 @@ def test_top_consumers_use_calm_ranked_surfaces_without_divider_noise() -> None:
     assert 'Ranked Records' in source
     assert 'grid gap-5 p-4 sm:p-5 xl:grid-cols-2 2xl:grid-cols-4' in source
     assert '<ol class="mt-3 space-y-2"' in source
-    assert 'rounded-lg bg-surface-hover px-3 py-2.5' in source
+    assert "overview_surface.ranked_item_classes('px-3 py-2.5')" in source
+    assert "overview_surface.empty_evidence_classes('mt-3 px-4 py-6 text-center')" in source
     assert 'break-words text-sm font-semibold' in source
     assert 'progress_bar' not in source
     assert 'divide-y divide-outline-subtle' not in source
@@ -255,3 +258,87 @@ def test_overview_status_tones_use_shared_semantic_normalization() -> None:
     assert 'table_label.semantic_tone(recommendation.severity_tone or recommendation.severity)|trim' in recommendations
     for alias in ('green', 'amber', 'red', 'gray', 'blue', 'purple'):
         assert alias in table_label
+
+
+
+def test_overview_loading_tracker_reports_real_lazy_section_progress() -> None:
+    index = read('index.html')
+    hero = read('partials/_hero.html')
+    tracker = read('partials/_load_tracker.html')
+    health = read('partials/_health_summary.html')
+    loading_bar = Path('app/templates/components/loading_bar.html').read_text(encoding='utf-8')
+    stylesheet = Path('frontend/styles.css').read_text(encoding='utf-8')
+
+    assert 'analytics/overview/partials/_load_tracker.html' in index
+    assert index.count('data-overview-lazy-section="true"') == 10
+    assert 'data-overview-lazy-section="true"' in hero
+    assert 'data-overview-load-state="pending"' in index
+    assert 'data-overview-load-state="pending"' in hero
+    assert 'data-overview-refresh-request="true"' in health
+    assert "document.body.addEventListener('htmx:beforeRequest'" in tracker
+    assert "document.body.addEventListener('htmx:afterSettle'" in tracker
+    assert "completed + '/' + total + ' Sections'" in tracker
+    assert "section.dataset.overviewLoadState = 'failed'" in tracker
+    assert 'kaori-loading-bar-segment' in loading_bar
+    assert '@keyframes kaori-loading-bar-indeterminate' in stylesheet
+
+
+def test_capacity_is_the_shared_overview_snapshot_style_baseline() -> None:
+    surfaces = Path('app/templates/analytics/components/_overview_surfaces.html').read_text(encoding='utf-8')
+    panel_files = (
+        'partials/_resource_snapshot.html',
+        'partials/_capacity_snapshot.html',
+        'partials/_workload_snapshot.html',
+        'partials/_storage_snapshot.html',
+        'partials/_top_consumers_snapshot.html',
+        'partials/_forecast_snapshot.html',
+        'partials/_alerts_snapshot.html',
+        'partials/_actionable_recommendation_summary.html',
+        'partials/_recommendations.html',
+    )
+
+    for marker in (
+        'macro snapshot_shell_classes',
+        'macro snapshot_header_classes',
+        'macro snapshot_header_icon_classes',
+        'macro metric_grid_classes',
+        'macro metric_cell_classes',
+        'macro ranked_item_classes',
+        'macro guidance_card_classes',
+    ):
+        assert marker in surfaces
+
+    for relative in panel_files:
+        source = read(relative)
+        assert 'data-analytics-overview-panel=' in source
+        assert 'overview_surface.snapshot_shell_classes()' in source
+        assert 'overview_surface.snapshot_header_classes()' in source
+        assert 'overview_surface.snapshot_header_icon_classes()' in source
+
+    for relative in (
+        'partials/_resource_snapshot.html',
+        'partials/_capacity_snapshot.html',
+        'partials/_workload_snapshot.html',
+        'partials/_storage_snapshot.html',
+        'partials/_forecast_snapshot.html',
+        'partials/_alerts_snapshot.html',
+        'partials/_actionable_recommendation_summary.html',
+    ):
+        source = read(relative)
+        assert 'overview_surface.metric_grid_classes(' in source
+        assert 'overview_surface.metric_cell_classes()' in source
+
+
+def test_primary_overview_evidence_stays_bright_and_guidance_is_bounded() -> None:
+    consumers = read('partials/_top_consumers_snapshot.html')
+    forecast = read('partials/_forecast_snapshot.html')
+    storage = read('partials/_storage_snapshot.html')
+    alerts = read('partials/_alerts_snapshot.html')
+    action_summary = read('partials/_actionable_recommendation_summary.html')
+
+    assert "overview_surface.ranked_item_classes('px-3 py-2.5')" in consumers
+    assert "surface_classes='bg-surface-card'" in forecast
+    assert 'overview_surface.guidance_card_classes' in forecast
+    assert 'overview_surface.guidance_card_classes' in storage
+    assert 'overview_surface.guidance_card_classes' in alerts
+    assert 'overview_surface.nested_evidence_card_classes' in action_summary
