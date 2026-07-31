@@ -6,6 +6,7 @@ import re
 from collections.abc import Mapping
 from typing import Any
 
+from app.analytics.common.presentation import present_prometheus_status
 from app.analytics.common.base_service import AnalyticsBaseService, bytes_to_gib, raw_percent, safe_percent, safe_round
 from app.analytics.common.coercion import as_dict as _as_dict
 from app.analytics.common.coercion import as_list as _as_list
@@ -307,27 +308,24 @@ class WorkloadAnalysisService(AnalyticsBaseService):
     def get_prometheus_status(self) -> dict[str, Any]:
         response = self.consumer.analytics_status()
         payload = response.payload if isinstance(response.payload, dict) else {}
-        response_time = payload.get('response_time_ms')
-        observation_degraded = bool(payload.get('observation_degraded'))
-        description = (
-            'The source is eligible for workload analytics queries.'
-            if response.ok and not observation_degraded
-            else (
-                'The source is eligible, but its previous runtime observation was degraded.'
-                if response.ok
+        detail = None
+        if not response.ok:
+            detail = (
+                response.diagnostics[0].detail
+                if response.diagnostics and response.diagnostics[0].detail
                 else (response.diagnostics[0].message if response.diagnostics else 'Prometheus is unavailable.')
             )
+        return present_prometheus_status(
+            {
+                'configured': bool(payload.get('configured', True)),
+                'connected': response.ok,
+                'response_time_ms': payload.get('response_time_ms'),
+                'last_checked_at': payload.get('last_checked_at'),
+                'observation_degraded': bool(payload.get('observation_degraded')),
+                'last_error': payload.get('last_error'),
+                'error': detail,
+            }
         )
-        return {
-            'connected': response.ok,
-            'response_time_ms': response_time,
-            'response_time_display': f'{response_time} ms' if response_time is not None else 'No recent probe',
-            'label': 'Prometheus Query Ready' if response.ok else 'Prometheus Unavailable',
-            'description': description,
-            'tone': 'warning' if observation_degraded else ('normal' if response.ok else 'critical'),
-            'icon': 'triangle-alert' if observation_degraded else ('circle-check' if response.ok else 'circle-x'),
-            'observation_degraded': observation_degraded,
-        }
 
     def get_all_namespace_options(
         self,

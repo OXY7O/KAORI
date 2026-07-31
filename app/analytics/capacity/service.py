@@ -12,6 +12,7 @@ from app.analytics.common.clusters import get_selected_cluster
 from app.analytics.common.coercion import as_dict as _as_dict
 from app.analytics.common.params import get_allowed_time_ranges, get_query_value, get_selected_time_range
 from app.analytics.common.payloads import get_capacity_review_paths, get_empty_capacity_payload
+from app.analytics.common.presentation import present_prometheus_status
 from app.analytics.utilization.service import UtilizationService
 from app.common.dependencies import (
     cluster_required_blocker,
@@ -94,12 +95,12 @@ def get_capacity_page_context(
         selected_time_range=selected_time_range,
     )
 
-    prometheus_status = {
+    prometheus_status = present_prometheus_status({
+        'configured': False,
         'connected': False,
         'response_time_ms': None,
-        'label': 'Prometheus Not Available',
-        'description': 'Add a Kubernetes cluster and configure Prometheus to load capacity signals.',
-    }
+        'label': 'Prometheus Not Configured',
+    })
 
     if not cluster:
         return {
@@ -107,12 +108,12 @@ def get_capacity_page_context(
             'cluster': None,
             'error': None,
             'prometheus_connected': False,
-            'prometheus_status': {
+            'prometheus_status': present_prometheus_status({
+                'configured': False,
                 'connected': False,
                 'response_time_ms': None,
                 'label': 'Waiting for Cluster',
-                'description': 'Prometheus checks start after a Kubernetes cluster is added.',
-            },
+            }),
             'dependency_blocker': cluster_required_blocker(),
             **empty_capacity_payload,
         }
@@ -130,12 +131,12 @@ def get_capacity_page_context(
             'cluster': cluster,
             'error': None,
             'prometheus_connected': False,
-            'prometheus_status': {
+            'prometheus_status': present_prometheus_status({
+                'configured': False,
                 'connected': False,
                 'response_time_ms': None,
                 'label': 'Prometheus Not Configured',
-                'description': 'Configure Prometheus after the cluster is available.',
-            },
+            }),
             'dependency_blocker': prometheus_setup_blocker(cluster),
             **empty_capacity_payload,
         }
@@ -192,13 +193,13 @@ def get_capacity_page_context(
 
     except PrometheusError as exc:
         message = str(exc) or 'Prometheus is not configured for the selected cluster.'
-        prometheus_status = {
+        prometheus_status = present_prometheus_status({
+            'configured': True,
             'connected': False,
             'response_time_ms': None,
             'label': 'Prometheus Unavailable',
-            'description': message,
             'error': message,
-        }
+        })
         dependency_blocker = prometheus_connection_blocker(
             cluster,
             detail=message,
@@ -218,7 +219,7 @@ def get_capacity_page_context(
         'cluster': cluster,
         'error': error,
         'prometheus_connected': prometheus_connected,
-        'prometheus_status': prometheus_status,
+        'prometheus_status': present_prometheus_status(prometheus_status),
         'dependency_blocker': dependency_blocker,
         **capacity_payload,
     }

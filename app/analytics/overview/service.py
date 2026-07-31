@@ -7,6 +7,7 @@ from typing import Any, SupportsFloat, SupportsIndex
 from flask import current_app, has_app_context
 from sqlalchemy import select
 
+from app.analytics.common.presentation import present_prometheus_status
 from app.analytics.common.coercion import as_dict as _as_dict
 from app.analytics.overview.schema import (
     build_empty_overview_payload,
@@ -502,90 +503,29 @@ def _get_cluster_id(cluster: dict[str, Any] | None) -> str:
 
 
 def _get_prometheus_status(*, cluster_id: str) -> dict[str, Any]:
-    default = {
-        'configured': False,
-        'connected': False,
-        'status': 'not_configured',
-        'status_label': 'Not configured',
-        'status_tone': 'gray',
-        'endpoint': '',
-        'response_time_ms': None,
-        'message': 'Prometheus is not configured for the selected cluster.',
-        'diagnostic_detail': 'Prometheus is not configured for the selected cluster.',
-        'last_checked_at': _utc_now_display(),
-    }
-
     if not cluster_id:
-        return default
+        return present_prometheus_status(
+            {
+                'configured': False,
+                'connected': False,
+                'label': 'Waiting for Cluster',
+            }
+        )
 
     prometheus_result = _call_optional_snapshot(
         module_path='app.analytics.utilization.service',
-        function_names=[
-            'get_prometheus_status_snapshot',
-        ],
+        function_names=['get_prometheus_status_snapshot'],
         cluster_id=cluster_id,
     )
-
     if not prometheus_result:
-        return default
-
-    connected = bool(
-        prometheus_result.get('connected') or prometheus_result.get('success') or prometheus_result.get('is_connected'),
-    )
-
-    return {
-        'configured': bool(
-            prometheus_result.get(
-                'configured',
-                True,
-            )
-        ),
-        'connected': connected,
-        'status': str(
-            prometheus_result.get(
-                'status',
-                'connected' if connected else 'disconnected',
-            )
-        ),
-        'status_label': str(
-            prometheus_result.get(
-                'status_label',
-                'Connected' if connected else 'Disconnected',
-            )
-        ),
-        'status_tone': str(
-            prometheus_result.get(
-                'status_tone',
-                'green' if connected else 'red',
-            )
-        ),
-        'endpoint': str(
-            prometheus_result.get(
-                'endpoint',
-                '',
-            )
-            or ''
-        ),
-        'response_time_ms': prometheus_result.get(
-            'response_time_ms',
-        ),
-        'message': (
-            'Prometheus is reachable and responding normally.'
-            if connected
-            else 'Prometheus is unreachable. Review the toast or Activity Log for details.'
-        ),
-        'diagnostic_detail': str(
-            prometheus_result.get(
-                'message',
-                (
-                    'Prometheus responded to the latest health check.'
-                    if connected
-                    else 'The latest Prometheus health check failed.'
-                ),
-            )
-        ),
-        'last_checked_at': _utc_now_display(),
-    }
+        return present_prometheus_status(
+            {
+                'configured': False,
+                'connected': False,
+                'label': 'Prometheus Not Configured',
+            }
+        )
+    return present_prometheus_status(prometheus_result)
 
 
 def _get_resource_snapshot(*, cluster_id: str, time_range: str) -> dict[str, Any]:

@@ -26,6 +26,7 @@ from app.analytics.common.params import (
     get_selected_time_range,
 )
 from app.analytics.common.payloads import get_empty_storage_payload
+from app.analytics.common.presentation import present_prometheus_status
 from app.analytics.storage.pagination import resolve_storage_pagination
 from app.analytics.utilization.service import UtilizationService
 from app.common.dependencies import prometheus_capability_blocker, prometheus_connection_blocker
@@ -1018,15 +1019,15 @@ def get_storage_analysis_context(
     try:
         prometheus_status = storage_service.get_prometheus_status()
     except Exception as exc:
-        prometheus_status = {
+        prometheus_status = present_prometheus_status({
+            'configured': True,
             'connected': False,
             'label': 'Prometheus Unavailable',
             'response_time_ms': None,
-            'description': str(exc),
             'error': str(exc),
-        }
+        })
 
-    context['prometheus_status'] = prometheus_status
+    context['prometheus_status'] = present_prometheus_status(prometheus_status)
     context['prometheus_connected'] = bool(
         prometheus_status.get(
             'connected',

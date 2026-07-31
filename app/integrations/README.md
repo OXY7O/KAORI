@@ -42,3 +42,8 @@ Route → Domain Service → Integration Registry → Adapter → External Syste
 
 See `docs/architecture/integration-module-map.md` and the README inside each
 provider module.
+
+
+## UI audit status
+
+The full Integrations workspace audit is recorded in `docs/design/audits/INTEGRATIONS_FULL_AUDIT_20260731.md`. The proposed shared visual contract is `docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md`. Both documents are audit-only until the operator approves implementation; current provider routes and templates remain unchanged by the audit.

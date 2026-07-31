@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from app.analytics.common.presentation import present_prometheus_status
 from app.integrations.consumer.contracts import ConsumerResult
 from app.integrations.prometheus.query_profiles import get_query_expression
 from app.models import Cluster
@@ -132,29 +133,21 @@ class UtilizationService:
                 if status.diagnostics and status.diagnostics[0].detail
                 else (status.diagnostics[0].message if status.diagnostics else 'Prometheus is unavailable.')
             )
-            return {
+            return present_prometheus_status({
+                'configured': bool(payload.get('configured', True)),
                 'connected': False,
                 'response_time_ms': response_time_ms,
-                'label': 'Prometheus Unavailable',
-                'description': detail,
+                'last_checked_at': payload.get('last_checked_at'),
                 'error': detail,
-                'tone': 'critical',
-                'icon': 'circle-x',
-            }
-        return {
+            })
+        return present_prometheus_status({
+            'configured': True,
             'connected': True,
             'response_time_ms': response_time_ms,
-            'label': 'Prometheus Query Ready',
-            'description': (
-                'The source is eligible for analytics queries; the previous runtime observation was degraded.'
-                if observation_degraded
-                else 'The source is eligible for analytics queries.'
-            ),
-            'tone': 'warning' if observation_degraded else 'normal',
-            'icon': 'triangle-alert' if observation_degraded else 'circle-check',
-            'observation_degraded': observation_degraded,
             'last_checked_at': payload.get('last_checked_at'),
-        }
+            'observation_degraded': observation_degraded,
+            'last_error': payload.get('last_error'),
+        })
 
     @staticmethod
     def _extract_consumers(
@@ -1103,34 +1096,27 @@ def get_prometheus_status_snapshot(
 ) -> dict[str, Any]:
     cluster = get_selected_cluster(cluster_id)
     if not cluster:
-        return {
-            'configured': False,
-            'connected': False,
-            'status': 'not_configured',
-            'status_label': 'Not Configured',
-            'status_tone': 'unknown',
-            'endpoint': '',
-            'response_time_ms': None,
-            'message': 'Cluster is not available.',
-            'diagnostic_detail': 'Select an available Kubernetes cluster.',
-        }
+        return present_prometheus_status(
+            {
+                'configured': False,
+                'connected': False,
+                'label': 'Waiting for Cluster',
+            }
+        )
     try:
         consumer = PrometheusConsumer(cluster)
         response = consumer.analytics_status()
     except PrometheusError as exc:
-        return {
-            'configured': False,
-            'connected': False,
-            'status': 'unavailable',
-            'status_label': 'Unavailable',
-            'status_tone': 'critical',
-            'endpoint': '',
-            'response_time_ms': None,
-            'message': str(exc),
-            'diagnostic_detail': str(exc),
-        }
+        return present_prometheus_status(
+            {
+                'configured': False,
+                'connected': False,
+                'error': str(exc),
+            }
+        )
 
     payload = response.payload if isinstance(response.payload, dict) else {}
+    detail = None
     if not response.ok:
         diagnostic = response.diagnostics[0] if response.diagnostics else None
         detail = (
@@ -1138,38 +1124,18 @@ def get_prometheus_status_snapshot(
             if diagnostic is not None and diagnostic.detail
             else (diagnostic.message if diagnostic is not None else 'Prometheus is unavailable.')
         )
-        return {
-            'configured': bool(payload.get('configured')),
-            'connected': False,
-            'status': 'unavailable',
-            'status_label': 'Unavailable',
-            'status_tone': 'critical',
+    return present_prometheus_status(
+        {
+            'configured': bool(payload.get('configured', True)),
+            'connected': response.ok,
             'endpoint': getattr(consumer.config, 'endpoint', ''),
             'response_time_ms': payload.get('response_time_ms'),
-            'message': detail,
-            'diagnostic_detail': detail,
             'last_checked_at': payload.get('last_checked_at'),
+            'observation_degraded': bool(payload.get('observation_degraded')),
+            'last_error': payload.get('last_error'),
+            'error': detail,
         }
-
-    observation_degraded = bool(payload.get('observation_degraded'))
-    message = (
-        'The endpoint is eligible for analytics queries. The previous runtime observation was degraded and is treated as advisory.'
-        if observation_degraded
-        else 'The endpoint is eligible for analytics queries.'
     )
-    return {
-        'configured': True,
-        'connected': True,
-        'status': 'query_ready',
-        'status_label': 'Query Ready',
-        'status_tone': 'warning' if observation_degraded else 'normal',
-        'endpoint': getattr(consumer.config, 'endpoint', ''),
-        'response_time_ms': payload.get('response_time_ms'),
-        'message': message,
-        'diagnostic_detail': payload.get('last_error') if observation_degraded else message,
-        'last_checked_at': payload.get('last_checked_at'),
-        'observation_degraded': observation_degraded,
-    }
 
 
 def get_utilization_snapshot(

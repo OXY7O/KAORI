@@ -774,6 +774,12 @@ Operational Workflow Catalog actions use naturally sized secondary buttons. Do n
 Use `components/operational_point_flow.html` for concise supporting sequences. For Bulk TLS Rotation, the flow is expandable and closed by default. It contains numbered points only; required upload fields, validation feedback, and mutation actions remain outside the expandable content.
 
 
+
+
+### Analytics Prometheus Readiness Standard
+
+All Prometheus-backed Kubernetes Analytics pages use `components/ANALYTICS_PROMETHEUS_READINESS.md` and `analytics/components/_prometheus_status.html`. The card always displays the canonical semantic state, response latency, and provider `last_checked_at`. Dataset generation time, worker-attempt time, and page-render time must never be substituted for Prometheus Checked At. Prometheus readiness and committed snapshot readiness remain separate peer evidence cards. Alerts & Anomalies retains Alert Source Readiness because it can resolve Alertmanager or Prometheus dynamically.
+
 ### Resource Utilization Standard
 
 Resource Utilization follows `components/ANALYTICS_RESOURCE_UTILIZATION.md`. Summary uses shared Resource Pressure Lanes; Trend and Node Detail load on first tab activation; hidden tabs do not poll; multi-series charts render a visible compact legend; chart JavaScript lives in a static module rather than inline Jinja.
@@ -815,3 +821,8 @@ Alerts & Anomalies follows `components/ANALYTICS_ALERTS_ANOMALIES.md`. Connected
 ## Analytics Top Consumers Standard
 
 Use `components/ANALYTICS_TOP_CONSUMERS.md`. Top Consumers separates absolute consumption, selected-scope contribution, request utilization, limit utilization, and configuration state. All-resource sorting may use priority, contribution, namespace, or resource type, but never heterogeneous raw units. Consumer identity is structured; templates do not split display strings. Rankings use the shared ranked evidence panel, records use the shared record filter/evidence/pagination components, and contribution progress stays KAORI Violet. Namespace is a committed snapshot dimension.
+
+
+### Integrations Audited Draft Standard
+
+The audited draft is documented in `components/INTEGRATIONS_WORKSPACE_STANDARD.md`; current findings are recorded in `audits/INTEGRATIONS_FULL_AUDIT_20260731.md`. Do not migrate Integrations pages implicitly while editing Analytics. Provider registries, bindings, validation, runtime, and lifecycle workspaces require explicit review because they own mutation and connection workflows.

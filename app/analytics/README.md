@@ -601,3 +601,7 @@ Top Consumers follows `docs/design/components/ANALYTICS_TOP_CONSUMERS.md`. Names
 
 The `analytics.alerts` workspace uses `/analytics/alerts` with canonical tab state for Alerts, Anomalies, Routing & Suppression, Ownership & Runbooks, Incident Readiness, Recommendations, and Operational Resources. Source readiness and committed worker snapshot evidence are separate boundaries. Partial optional evidence produces an incomplete or limited state rather than Healthy. Alert-domain payloads carry semantic levels and factual values only; shared Jinja components own status tones, record geometry, and pagination.
 
+
+## Canonical Prometheus Readiness
+
+All Prometheus-backed Analytics workspaces normalize provider observations through `app.analytics.common.presentation.present_prometheus_status` and render `analytics/components/_prometheus_status.html`. The card owns canonical Query Ready, Query Degraded, Unavailable, Not Configured, and Waiting for Cluster states plus Response and Checked At. Checked At always comes from the provider observation `last_checked_at`; materialization timestamps remain owned by Latest Data Snapshot.

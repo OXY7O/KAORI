@@ -38,6 +38,7 @@ The Styling Guide selects the correct reusable component. The Design System and 
 - `components/ANALYTICS_RESOURCE_FORECAST.md`
 - `components/ANALYTICS_TOP_CONSUMERS.md`
 - `components/ANALYTICS_ALERTS_ANOMALIES.md`
+- `components/ANALYTICS_PROMETHEUS_READINESS.md`
 - `components/SECTION_HEADER_ACTION.md`
 - `components/PEER_CONTENT_GRID.md`
 - `components/RIGHT_CONTEXT_RAIL.md`
@@ -55,6 +56,7 @@ The Styling Guide selects the correct reusable component. The Design System and 
 - `components/WORKSPACE_LINK_CARD.md`
 - `components/HEALTH_INTERPRETATION.md`
 - `components/INTEGRATION_MANAGE_WORKSPACE.md`
+- `components/INTEGRATIONS_WORKSPACE_STANDARD.md`
 - `components/OPERATIONAL_ACTION_FEEDBACK.md`
 - `components/OPERATIONAL_WORKFLOW_CARD.md`
 - `components/STRUCTURED_ENTRY_EDITOR.md`
@@ -142,3 +144,7 @@ Domain-specific UI rules live under `docs/modules/` or the owning module README.
 - `audits/KUBERNETES_TLS_CERTIFICATE_GOVERNANCE_STYLING_AUDIT_2026_07.md` — TLS Governance correctness, styling, permission, and collection-boundary decisions.
 
 - `components/ANALYTICS_CAPACITY_ANALYSIS.md` — cluster-level Ready-worker capacity, unavailable metric, risk, and review-path contract.
+
+## Audit Reports
+
+- `audits/INTEGRATIONS_FULL_AUDIT_20260731.md`

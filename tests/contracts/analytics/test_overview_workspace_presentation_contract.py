@@ -17,23 +17,28 @@ def test_overview_controls_and_readiness_follow_shared_analytics_standard() -> N
     assert 'Analytics Overview</p>' in source
     assert 'Analytics Controls &amp; Data Readiness' in source
     assert 'id="analytics-overview-filter"' in source
-    assert 'h-10 w-full rounded-lg border border-outline-default' in source
-    assert 'prometheus_status_panel.render' in source
+    assert 'analytics_workspace.control_select_classes()' in source
+    assert 'analytics_workspace.prometheus_card(payload.prometheus)' in source
     assert 'embedded=true' not in source
-    assert 'payload.last_analyzed_at, flat=true, compact=true' in source
+    assert 'payload.last_analyzed_at' not in source
     assert 'Latest Analytics Data Snapshot' in source
     assert 'Committed worker datasets used by the overview tabs.' in source
-    assert 'Coverage' in source
+    assert 'coverage=' in source
     assert 'id="analytics-overview-filter"' not in hero
 
 
-def test_prometheus_compact_mode_avoids_nested_card() -> None:
+def test_prometheus_status_uses_one_canonical_card_contract() -> None:
     source = Path('app/templates/analytics/components/_prometheus_status.html').read_text(encoding='utf-8')
 
-    assert 'flat=false' in source
-    assert "'px-0 py-0' if flat" in source
+    assert 'macro render(status' in source
     assert 'data-analytics-prometheus-status' in source
-    assert 'rounded-xl' not in source
+    assert 'Prometheus Status' in source
+    assert 'Query Ready' in source
+    assert 'Query Degraded' in source
+    assert 'Response' in source
+    assert 'Checked At' in source
+    assert 'flat=' not in source
+    assert 'compact=' not in source
 
 
 def test_operational_health_summary_has_separate_vertical_rhythm() -> None:
@@ -226,7 +231,8 @@ def test_overview_readiness_and_interpretation_surface_hierarchy_is_canonical() 
     top_consumers = read('partials/_top_consumers_snapshot.html')
     surfaces = Path('app/templates/analytics/components/_analysis_surfaces.html').read_text(encoding='utf-8')
 
-    assert 'overview_surface.readiness_shell_classes()' in health
+    assert 'analytics_workspace.prometheus_card(payload.prometheus)' in health
+    assert 'analytics_workspace.snapshot_card(' in health
     assert 'overview_surface.attention_strip_classes()' in health
     assert 'overview_surface.interpretation_grid_classes()' in health
     assert 'bg-surface-card' in surfaces

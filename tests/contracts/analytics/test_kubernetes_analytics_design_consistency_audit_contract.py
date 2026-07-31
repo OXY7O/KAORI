@@ -21,11 +21,15 @@ def test_shared_controls_and_prometheus_contract_are_compatible() -> None:
     workspace = read("app/templates/analytics/components/_analysis_workspace.html")
     prometheus = read("app/templates/analytics/components/_prometheus_status.html")
 
-    assert "flat=false" in prometheus
-    assert "compact=false" in prometheus
-    assert "flat=true, compact=true" in workspace
+    assert "data-analytics-prometheus-status" in prometheus
+    assert "Prometheus Status" in prometheus
+    assert "Query Ready" in prometheus
+    assert "Query Degraded" in prometheus
+    assert "Response" in prometheus
+    assert "Checked At" in prometheus
+    assert "materialization" not in prometheus
+    assert "prometheus_status_panel.render(status)" in workspace
     assert "Latest Data Snapshot" in workspace
-    assert "Serving Last Successful Snapshot" in workspace
     assert "Source Evidence Incomplete" in workspace
     assert "Latest Refresh Error" in workspace
     assert "loading_bar.render(indicator_id" in workspace

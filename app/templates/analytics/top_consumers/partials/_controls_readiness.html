@@ -18,7 +18,6 @@
         'top-consumers-refresh-indicator',
         prometheus_status,
         analytics_materialization,
-        prometheus_status.last_checked_at|default(none)|user_datetime if prometheus_status and prometheus_status.last_checked_at|default(none) else '',
         eyebrow='Top Consumers'
     ) %}
         <div class="grid gap-4 sm:grid-cols-2">

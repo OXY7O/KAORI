@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.analytics.common.presentation import present_prometheus_status
 from app.integrations.prometheus.exceptions import PrometheusError
 
 
@@ -463,14 +464,12 @@ class AnalyticsBaseService:
         utilization_service = getattr(self, 'utilization_service', None)
         consumer = getattr(utilization_service, 'consumer', None)
         if consumer is None:
-            return {
+            return present_prometheus_status({
+                'configured': False,
                 'connected': False,
                 'response_time_ms': None,
-                'label': 'Prometheus Unavailable',
-                'description': 'A cluster-scoped Prometheus consumer is not available.',
-                'tone': 'critical',
-                'icon': 'circle-x',
-            }
+                'label': 'Prometheus Not Configured',
+            })
 
         response = consumer.analytics_status()
         payload = response.payload if isinstance(response.payload, dict) else {}
@@ -482,25 +481,18 @@ class AnalyticsBaseService:
                 if response.diagnostics and response.diagnostics[0].detail
                 else (response.diagnostics[0].message if response.diagnostics else 'Prometheus is unavailable.')
             )
-            return {
+            return present_prometheus_status({
+                'configured': bool(payload.get('configured', True)),
                 'connected': False,
                 'response_time_ms': response_time,
-                'label': 'Prometheus Unavailable',
-                'description': detail,
+                'last_checked_at': payload.get('last_checked_at'),
                 'error': detail,
-                'tone': 'critical',
-                'icon': 'circle-x',
-            }
-        return {
+            })
+        return present_prometheus_status({
+            'configured': True,
             'connected': True,
             'response_time_ms': response_time,
-            'label': 'Prometheus Query Ready',
-            'description': (
-                'The source is eligible; the previous runtime observation was degraded.'
-                if observation_degraded
-                else 'The source is eligible for analytics queries.'
-            ),
-            'tone': 'warning' if observation_degraded else 'normal',
-            'icon': 'triangle-alert' if observation_degraded else 'circle-check',
+            'last_checked_at': payload.get('last_checked_at'),
             'observation_degraded': observation_degraded,
-        }
+            'last_error': payload.get('last_error'),
+        })

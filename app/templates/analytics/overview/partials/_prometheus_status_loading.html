@@ -1,16 +1,17 @@
 {% import "components/table_label.html" as table_label %}
-<section class="rounded-lg border border-outline-default bg-kaori-soft px-4 py-3">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div class="flex min-w-0 items-center gap-3">
-            <span class="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-status-pending"></span>
-            <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
-                    <h2 class="text-sm font-semibold text-content-primary">Prometheus Status</h2>
-                    {{ table_label.status_label('Checking', 'pending', 'loader-circle') }}
-                </div>
-                <p class="mt-1 truncate text-xs text-content-muted">Checking selected cluster Prometheus connection...</p>
+<article class="min-w-0 rounded-lg border border-outline-subtle bg-surface-card p-4" data-analytics-prometheus-status>
+    <div class="flex min-w-0 items-start gap-3">
+        <span class="mt-1 h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-status-pending" aria-hidden="true"></span>
+        <div class="min-w-0 flex-1">
+            <div class="flex flex-wrap items-center gap-2">
+                <h3 class="text-sm font-semibold text-content-primary">Prometheus Status</h3>
+                {{ table_label.status_label('Checking', 'pending', size='compact') }}
             </div>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Checking Prometheus readiness for the selected cluster.</p>
         </div>
-        <div class="h-6 w-32 animate-pulse rounded-md bg-surface-hover"></div>
     </div>
-</section>
+    <div class="mt-4 grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2">
+        <div class="bg-surface-card px-3 py-3"><div class="h-3 w-16 animate-pulse rounded bg-surface-hover"></div><div class="mt-2 h-4 w-24 animate-pulse rounded bg-kaori-soft"></div></div>
+        <div class="bg-surface-card px-3 py-3"><div class="h-3 w-20 animate-pulse rounded bg-surface-hover"></div><div class="mt-2 h-4 w-32 animate-pulse rounded bg-kaori-soft"></div></div>
+    </div>
+</article>

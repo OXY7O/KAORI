@@ -32,17 +32,8 @@
     "app/templates/alertmanager/partials/_runtime_panel.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/analytics/components/_analysis_workspace.html": {
-      "arbitrary_text_sizes": 5,
-      "arbitrary_tracking": 1
-    },
     "app/templates/analytics/components/_content_tabs.html": {
       "page_local_workspace_tablists": 1
-    },
-    "app/templates/analytics/components/_controls.html": {
-      "arbitrary_text_sizes": 1,
-      "arbitrary_tracking": 1,
-      "copied_standard_surface_shells": 1
     },
     "app/templates/analytics/components/_status_notice.html": {
       "semantic_border_utilities": 3
@@ -73,7 +64,7 @@
       "arbitrary_tracking": 3
     },
     "app/templates/analytics/overview/partials/_health_summary.html": {
-      "arbitrary_text_sizes": 8,
+      "arbitrary_text_sizes": 4,
       "arbitrary_tracking": 4,
       "copied_standard_surface_shells": 2
     },
