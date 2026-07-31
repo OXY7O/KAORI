@@ -15,7 +15,7 @@
     </button>
 {%- endmacro %}
 
-{% macro host(resource_type, detail_url_template) -%}
+{% macro host(resource_type, detail_url_template, footer_text='Details come from the latest committed inventory snapshot.') -%}
     <div id="resource-detail-modal-host"
          data-resource-detail-modal-host
          data-resource-type="{{ resource_type }}"
@@ -94,7 +94,7 @@
             </div>
 
             <footer class="flex shrink-0 items-center justify-between gap-3 border-t border-outline-subtle bg-surface-card px-4 py-3 sm:px-5">
-                <p class="hidden text-xs leading-5 text-content-muted sm:block">Details come from the latest committed inventory snapshot.</p>
+                <p class="hidden text-xs leading-5 text-content-muted sm:block">{{ footer_text }}</p>
                 <button type="button"
                         data-resource-detail-close
                         class="ml-auto inline-flex min-h-9 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-4 text-xs font-semibold text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">

@@ -1,5 +1,5 @@
 {% macro render(helper, aria_label='Form Actions', title=None) -%}
-    <footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6"
+    <footer class="flex flex-col gap-3 rounded-xl border border-outline-default bg-surface-card px-5 py-4 shadow-sm sm:flex-row sm:items-center sm:justify-between sm:px-6"
             aria-label="{{ aria_label }}">
         <div class="min-w-0 max-w-xl">
             {% if title %}<p class="text-xs font-semibold leading-5 text-content-primary">{{ title }}</p>{% endif %}

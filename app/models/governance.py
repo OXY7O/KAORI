@@ -65,6 +65,16 @@ class TLSCertificateInventory(db.Model):
 
     parse_error: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    coverage_state: Mapped[str] = mapped_column(
+        String(50), nullable=False, default='not_reported', index=True
+    )
+
+    declared_host_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    covered_host_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    uncovered_hosts: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+
     collected_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
@@ -73,6 +83,38 @@ class TLSCertificateInventory(db.Model):
     )
 
     updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    cluster: Mapped[Cluster] = relationship('Cluster')
+
+
+class TLSCertificateCollectionState(db.Model):
+    __tablename__ = 'tls_certificate_collection_states'
+
+    cluster_id: Mapped[str] = mapped_column(
+        ForeignKey('clusters.id', ondelete='CASCADE'),
+        primary_key=True,
+    )
+
+    secret_collection_status: Mapped[str] = mapped_column(
+        String(50), nullable=False, default='not_reported', index=True
+    )
+
+    ingress_mapping_status: Mapped[str] = mapped_column(
+        String(50), nullable=False, default='not_reported', index=True
+    )
+
+    secret_collection_detail: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    ingress_mapping_detail: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    collected_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
     cluster: Mapped[Cluster] = relationship('Cluster')
 

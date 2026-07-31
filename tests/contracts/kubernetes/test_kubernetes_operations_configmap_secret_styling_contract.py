@@ -124,11 +124,14 @@ def test_secret_create_selection_and_actions_are_visually_owned_by_main_workspac
     assert action_index < aside_index
 
 
-def test_bulk_tls_rotation_uses_full_width_operational_flow() -> None:
+def test_bulk_tls_rotation_uses_expandable_operational_point_flow() -> None:
     source = read('app/templates/kubernetes_operations/secrets/tls_rotation.html')
 
-    assert 'components/operational_flow_steps.html' in source
-    assert 'operational_flow_steps.render' in source
+    assert 'components/operational_point_flow.html' in source
+    assert 'point_flow.render' in source
+    assert 'view_more.render(' in source
     assert 'Controlled TLS Rotation Flow' in source
+    assert 'open_by_default=false' in source
+    assert 'components/operational_flow_steps.html' not in source
     assert 'xl:grid-cols-3 xl:items-start' not in source
     assert "secret_ui.action_bar('shield-check', 'Validate Before Bulk Rotation'" in source

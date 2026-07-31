@@ -183,6 +183,12 @@ def tls_certificates_detail(certificate_id: int):
         )
         return redirect(url_for('governance.tls_certificates'))
 
+    if request.headers.get('HX-Request') == 'true':
+        return render_template(
+            'governance/tls_certificates/partials/_detail_content.html',
+            record=record,
+        )
+
     return render_template(
         'governance/tls_certificates/detail.html',
         record=record,

@@ -1,19 +1,53 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, Callable
 
 from kubernetes.client import V1Ingress, V1Secret
 
-from app.governance.tls_certificates.certificate import decode_secret_data, parse_certificate
-from app.governance.tls_certificates.constants import TLS_CRT_KEY, TLS_SECRET_TYPE, TLS_STATUS_INVALID
+from app.governance.tls_certificates.certificate import (
+    TLSValidityPolicy,
+    decode_secret_data,
+    matching_certificate_pattern,
+    parse_certificate,
+)
+from app.governance.tls_certificates.constants import (
+    TLS_COLLECTION_API_UNAVAILABLE,
+    TLS_COLLECTION_COLLECTED,
+    TLS_COLLECTION_FAILED,
+    TLS_COLLECTION_PERMISSION_UNAVAILABLE,
+    TLS_COVERAGE_FULL,
+    TLS_COVERAGE_NONE,
+    TLS_COVERAGE_NOT_REPORTED,
+    TLS_COVERAGE_PARTIAL,
+    TLS_COVERAGE_UNCOVERED,
+    TLS_CRT_KEY,
+    TLS_SECRET_TYPE,
+    TLS_STATUS_INVALID,
+)
 from app.integrations.kubernetes.resolver import connection_for_cluster, tls_policy_for_cluster
 from app.integrations.kubernetes.tls import weak_tls_context
 from app.integrations.registry import get_integration
 from app.models import Cluster
 
 TLSProgressCallback = Callable[[int, str], None]
+
+
+@dataclass(frozen=True)
+class TLSCollectionEvidence:
+    secret_collection_status: str
+    ingress_mapping_status: str
+    secret_collection_detail: str | None = None
+    ingress_mapping_detail: str | None = None
+
+
+@dataclass(frozen=True)
+class TLSCollectionBatch:
+    records: list[dict[str, Any]]
+    evidence: TLSCollectionEvidence
+    error: str | None = None
 
 
 def _report_progress(callback: TLSProgressCallback | None, percent: int, message: str) -> None:
@@ -30,6 +64,15 @@ def _response_items(response: Any) -> list[Any]:
     if not isinstance(raw_items, list):
         return []
     return raw_items
+
+
+def _collection_failure(exc: Exception) -> tuple[str, str]:
+    status_code = getattr(exc, 'status', None)
+    if status_code == 403:
+        return TLS_COLLECTION_PERMISSION_UNAVAILABLE, 'Kubernetes permission is unavailable for this collection source.'
+    if status_code == 404:
+        return TLS_COLLECTION_API_UNAVAILABLE, 'The required Kubernetes API is unavailable for this cluster.'
+    return TLS_COLLECTION_FAILED, str(exc) or 'Kubernetes collection failed.'
 
 
 def build_kubernetes_client(cluster: Cluster):
@@ -99,13 +142,46 @@ def collect_ingress_tls_usage(cluster: Cluster) -> dict[tuple[str, str], dict[st
     return usage_map
 
 
-def parse_tls_secret(secret: V1Secret, usage_map: dict[tuple[str, str], dict[str, Any]]) -> dict[str, Any]:
+def _coverage_evidence(
+    *,
+    ingress_hosts: list[str],
+    dns_names: list[str],
+    common_name: str | None,
+    ingress_mapping_status: str,
+) -> tuple[str, int, int, list[str]]:
+    declared_hosts = sorted({host for host in ingress_hosts if host})
+    if ingress_mapping_status != TLS_COLLECTION_COLLECTED:
+        return TLS_COVERAGE_NOT_REPORTED, len(declared_hosts), 0, []
+    if not declared_hosts:
+        return TLS_COVERAGE_NONE, 0, 0, []
+
+    uncovered = [
+        host
+        for host in declared_hosts
+        if matching_certificate_pattern(host, dns_names, common_name) is None
+    ]
+    covered_count = len(declared_hosts) - len(uncovered)
+    if not uncovered:
+        state = TLS_COVERAGE_FULL
+    elif covered_count == 0:
+        state = TLS_COVERAGE_UNCOVERED
+    else:
+        state = TLS_COVERAGE_PARTIAL
+    return state, len(declared_hosts), covered_count, uncovered
+
+
+def parse_tls_secret(
+    secret: V1Secret,
+    usage_map: dict[tuple[str, str], dict[str, Any]],
+    *,
+    ingress_mapping_status: str = TLS_COLLECTION_COLLECTED,
+    validity_policy: TLSValidityPolicy | None = None,
+) -> dict[str, Any]:
     metadata = secret.metadata
     namespace = metadata.namespace if metadata else ''
     name = metadata.name if metadata else ''
     key = (namespace, name)
     usage = usage_map.get(key, {'used_by': [], 'ingress_hosts': []})
-    data = secret.data or {}
     now = datetime.now(UTC)
 
     payload: dict[str, Any] = {
@@ -125,6 +201,10 @@ def parse_tls_secret(secret: V1Secret, usage_map: dict[tuple[str, str], dict[str
         'status': TLS_STATUS_INVALID,
         'risk_level': 'critical',
         'parse_error': None,
+        'coverage_state': TLS_COVERAGE_NOT_REPORTED,
+        'declared_host_count': len(usage['ingress_hosts']),
+        'covered_host_count': 0,
+        'uncovered_hosts': [],
         'collected_at': now,
     }
 
@@ -132,16 +212,25 @@ def parse_tls_secret(secret: V1Secret, usage_map: dict[tuple[str, str], dict[str
         payload['parse_error'] = f'Secret type is {secret.type or "unknown"}, not {TLS_SECRET_TYPE}.'
         return payload
 
-    cert_data = data.get(TLS_CRT_KEY)
+    # Data-minimization boundary: only tls.crt is accessed. tls.key and unrelated
+    # Secret values are never decoded, logged, persisted, or added to audit metadata.
+    cert_data = (secret.data or {}).get(TLS_CRT_KEY)
     if not cert_data:
         payload['parse_error'] = 'Secret is missing tls.crt.'
         return payload
 
     try:
-        parsed = parse_certificate(decode_secret_data(cert_data))
+        parsed = parse_certificate(decode_secret_data(cert_data), policy=validity_policy)
     except Exception as exc:
         payload['parse_error'] = str(exc)
         return payload
+
+    coverage_state, declared_count, covered_count, uncovered_hosts = _coverage_evidence(
+        ingress_hosts=usage['ingress_hosts'],
+        dns_names=parsed.dns_names,
+        common_name=parsed.common_name,
+        ingress_mapping_status=ingress_mapping_status,
+    )
 
     payload.update(
         {
@@ -156,35 +245,52 @@ def parse_tls_secret(secret: V1Secret, usage_map: dict[tuple[str, str], dict[str
             'status': parsed.status,
             'risk_level': parsed.risk_level,
             'parse_error': None,
+            'coverage_state': coverage_state,
+            'declared_host_count': declared_count,
+            'covered_host_count': covered_count,
+            'uncovered_hosts': uncovered_hosts,
         }
     )
 
     return payload
 
 
-def collect_tls_certificates(
+def collect_tls_certificate_batch(
     cluster: Cluster,
     *,
     progress_callback: TLSProgressCallback | None = None,
-) -> list[dict[str, Any]]:
+    validity_policy: TLSValidityPolicy | None = None,
+) -> TLSCollectionBatch:
     _report_progress(progress_callback, 5, f'Connecting to Kubernetes API for {cluster.name}.')
     _report_progress(progress_callback, 12, f'Collecting Ingress TLS references from {cluster.name}.')
     try:
         usage_map = collect_ingress_tls_usage(cluster)
-    except Exception:
+        ingress_status = TLS_COLLECTION_COLLECTED
+        ingress_detail = None
+    except Exception as exc:
         usage_map = {}
+        ingress_status, ingress_detail = _collection_failure(exc)
 
     _report_progress(progress_callback, 28, f'Reading Kubernetes Secrets from {cluster.name}.')
-    with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
-        client = build_kubernetes_client(cluster)
-        core_api = client.core_api()
-        response = core_api.list_secret_for_all_namespaces()
+    try:
+        with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
+            client = build_kubernetes_client(cluster)
+            core_api = client.core_api()
+            response = core_api.list_secret_for_all_namespaces()
+    except Exception as exc:
+        secret_status, secret_detail = _collection_failure(exc)
+        return TLSCollectionBatch(
+            records=[],
+            evidence=TLSCollectionEvidence(
+                secret_collection_status=secret_status,
+                ingress_mapping_status=ingress_status,
+                secret_collection_detail=secret_detail,
+                ingress_mapping_detail=ingress_detail,
+            ),
+            error=secret_detail,
+        )
 
-    tls_secrets = [
-        secret
-        for secret in _response_items(response)
-        if secret.type == TLS_SECRET_TYPE
-    ]
+    tls_secrets = [secret for secret in _response_items(response) if secret.type == TLS_SECRET_TYPE]
     _report_progress(
         progress_callback,
         42,
@@ -195,15 +301,46 @@ def collect_tls_certificates(
     total_secrets = len(tls_secrets)
     if total_secrets == 0:
         _report_progress(progress_callback, 72, f'No TLS Secrets require parsing in {cluster.name}.')
-        return records
+    else:
+        for index, secret in enumerate(tls_secrets, start=1):
+            records.append(
+                parse_tls_secret(
+                    secret,
+                    usage_map,
+                    ingress_mapping_status=ingress_status,
+                    validity_policy=validity_policy,
+                )
+            )
+            parse_percent = 42 + int((index / total_secrets) * 30)
+            _report_progress(
+                progress_callback,
+                parse_percent,
+                f'Parsed {index} of {total_secrets} TLS Secrets from {cluster.name}.',
+            )
 
-    for index, secret in enumerate(tls_secrets, start=1):
-        records.append(parse_tls_secret(secret, usage_map))
-        parse_percent = 42 + int((index / total_secrets) * 30)
-        _report_progress(
-            progress_callback,
-            parse_percent,
-            f'Parsed {index} of {total_secrets} TLS Secrets from {cluster.name}.',
-        )
+    return TLSCollectionBatch(
+        records=records,
+        evidence=TLSCollectionEvidence(
+            secret_collection_status=TLS_COLLECTION_COLLECTED,
+            ingress_mapping_status=ingress_status,
+            secret_collection_detail=None,
+            ingress_mapping_detail=ingress_detail,
+        ),
+    )
 
-    return records
+
+def collect_tls_certificates(
+    cluster: Cluster,
+    *,
+    progress_callback: TLSProgressCallback | None = None,
+    validity_policy: TLSValidityPolicy | None = None,
+) -> list[dict[str, Any]]:
+    """Backward-compatible record-only collector wrapper."""
+    batch = collect_tls_certificate_batch(
+        cluster,
+        progress_callback=progress_callback,
+        validity_policy=validity_policy,
+    )
+    if batch.error:
+        raise RuntimeError(batch.error)
+    return batch.records

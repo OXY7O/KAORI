@@ -55,7 +55,7 @@
                     'Server-Side Dry-Run',
                     'Create Only',
                     url_for('kubernetes_operations.create_configmap'),
-                    'Create ConfigMap',
+                    'Create',
                     'plus'
                 ) }}
                 {{ workflow_card.render(
@@ -67,7 +67,7 @@
                     'Diff and Dry-Run',
                     'Live Object',
                     url_for('kubernetes_operations.update_configmap'),
-                    'Open Update Workflow',
+                    'Update',
                     'pencil-line'
                 ) }}
                 {{ workflow_card.render(
@@ -79,7 +79,7 @@
                     'Impact and Dry-Run',
                     'Exact Target',
                     url_for('kubernetes_operations.delete_configmap'),
-                    'Open Delete Workflow',
+                    'Delete',
                     'trash-2',
                     'critical'
                 ) }}

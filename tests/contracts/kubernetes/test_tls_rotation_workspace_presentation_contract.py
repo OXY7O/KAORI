@@ -8,21 +8,22 @@ def _template() -> str:
     return TEMPLATE.read_text()
 
 
-def test_tls_rotation_uses_one_primary_workspace() -> None:
+def test_tls_rotation_uses_one_primary_workspace_with_expandable_point_flow() -> None:
     template = _template()
 
     assert 'Controlled TLS Rotation Flow' in template
     assert 'Validate Before Bulk Rotation' in template
     assert 'id="tls-secret-update-form"' in template
-    assert 'operational_flow_steps.render' in template
+    assert 'view_more.render(' in template
+    assert 'point_flow.render' in template
+    assert 'open_by_default=false' in template
+    assert "closed_label='View Flow'" in template
+    assert 'operational_flow_steps.render' not in template
     assert 'Controlled File Boundary' in template
     assert 'info_flow.render' not in template
     assert '<aside' not in template
-    assert '<details' not in template
-    assert '<summary' not in template
     assert 'lg:grid-cols-2' in template
     assert 'xl:grid-cols-3' not in template
-    assert 'xl:col-span-1' not in template
 
 
 def test_tls_rotation_actions_are_inside_the_primary_form() -> None:

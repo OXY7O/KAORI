@@ -129,3 +129,7 @@ Domain-specific UI rules live under `docs/modules/` or the owning module README.
 
 - `audits/KUBERNETES_OPERATIONS_DARK_MODE_CATALOG_REFINEMENT_AUDIT_2026_07.md` — dark-mode interaction, flat workflow catalog, Secret Type selection, and delete OOB ownership.
 - `components/OPERATIONAL_WORKFLOW_CARD.md` — shared flat workflow catalog shell and destination-row contract.
+
+- `patterns/KUBERNETES_TLS_CERTIFICATE_GOVERNANCE.md` — Governance Resource Registry, certificate validity policy, host coverage, collection evidence, and Secret Operations handoff.
+- `components/OPERATIONAL_POINT_FLOW.md` — compact ordered supporting flow without nested step cards.
+- `audits/KUBERNETES_TLS_CERTIFICATE_GOVERNANCE_STYLING_AUDIT_2026_07.md` — TLS Governance correctness, styling, permission, and collection-boundary decisions.

@@ -1,99 +1,72 @@
 # TLS Certificate Governance
 
-## Purpose
+## Ownership
 
-This module owns certificate discovery, inventory presentation, expiry and risk posture, Subject Alternative Name coverage, issuer metadata, and Ingress relationships.
+This module owns read-oriented certificate governance:
 
-## Boundary
+- Kubernetes TLS Secret certificate discovery;
+- validity classification from an explicit global policy;
+- SAN/Common Name identity extraction;
+- declared Ingress host coverage;
+- Ingress consumer relationships;
+- collection evidence and synchronization.
 
-Governance is read-oriented. It identifies certificate posture and directs users to a controlled operation when a certificate must be rotated. Kubernetes Secret mutation workflows are owned by `app/kubernetes_operations/secrets`.
+Kubernetes Secret Operations owns single and bulk certificate rotation.
 
-Governance may:
+## Validity policy
 
-- collect TLS Secret certificate metadata;
-- calculate expiry and risk status;
-- present SAN and Ingress relationships;
-- synchronize the certificate inventory snapshot;
-- link to a Secret Management operation.
+Defaults:
 
-Governance must not:
+```text
+TLS_CERTIFICATE_RENEWAL_WINDOW_DAYS=30
+TLS_CERTIFICATE_CRITICAL_WINDOW_DAYS=7
+```
 
-- persist uploaded private keys;
-- own create, update, or rotation forms;
-- patch Kubernetes Secrets directly from its presentation routes;
-- grant mutation access through a read permission.
+Expiry uses the exact `not_after` timestamp. Validity labels are Valid, Renewal Window, Critical Window, Expired, Invalid, and Unknown.
 
-## Shared validation
+## Collection evidence
 
-X.509 parsing and certificate/private-key matching live in `app/kubernetes/secrets/tls.py`. The compatibility module `validator.py` remains temporarily for existing imports.
+Each cluster records independent evidence for:
 
-## UI boundary
+```text
+Secret Collection
+Ingress Mapping
+```
 
-The Kubernetes TLS Secret governance UI follows the KAORI violet design standard across overview, detail, and bulk update pages. Structural surfaces and actions use KAORI brand tokens; certificate validity and expiry states remain semantic. Gradients and decorative blue/cyan treatments are not used. Governance remains read-oriented posture and relationship context, while certificate/private-key mutation is executed through the controlled Kubernetes Operations TLS rotation workflow.
+A missing Ingress consumer is not treated as a successfully collected zero-consumer result when the Ingress source failed or was not permitted.
 
-## KAORI presentation and workflow contract
+## Data minimization
 
-- TLS certificate inventory, detail, and rotation entry points use neutral structural surfaces with semantic status colors reserved for healthy, warning, critical, expired, and invalid states.
-- Inventory actions use the shared expandable-row behavior in `components/details/_expandable_row.html` and `app/static/js/detail_rows.js`; TLS tables do not maintain a separate inline toggle implementation.
-- Page-size selectors use the global `data-kaori-auto-submit` behavior. Manual Sync TLS uses a persistent worker-progress toast that survives page reload or navigation; the inventory summary keeps only the compact synchronization state.
-- TLS inventory and certificate-detail heroes use the canonical `page_hero.context_card()` posture panel with a semantic status, two certificate metrics, and one contextual CTA. Sync and bulk-update mutations remain in the content toolbar; the hero CTA only navigates to the relevant workspace.
-- Governance remains read-oriented. Bulk and single TLS Secret mutation actions link to Secret Management, and obsolete Governance-owned mutation templates are not retained.
-- TLS Governance does not use Flask flash messages; missing-record and cluster-setup feedback use the KAORI notification and Activity Log pipeline.
+The Kubernetes client may receive Secret objects transiently. Collector code may access and decode only `tls.crt`. It must not access, decode, log, persist, notify, or audit `tls.key` or unrelated Secret values.
 
-## Automatic TLS Certificate Inventory Synchronization
+## UI pattern
 
-TLS certificate inventory is owned by the canonical registered job `governance.tls_certificates.sync`.
-The definition runs on the existing `inventory` queue and is enabled by default with a six-hour interval.
-Celery Beat only claims due `job_policies`; the inventory worker performs Kubernetes API collection and
-commits each cluster independently.
+The page follows `docs/design/patterns/KUBERNETES_TLS_CERTIFICATE_GOVERNANCE.md`:
 
-Supported triggers:
+```text
+Compact Hero
+TLS Collection Snapshot
+Certificate Validity Posture
+Compact Certificate Registry
+Full Workspace Modal
+```
 
-- scheduled fleet collection from the database-backed job policy;
-- manual fleet or selected-cluster enqueue from Kubernetes TLS Secret;
-- manual fleet execution from Jobs → Configure Jobs;
-- selected-cluster recovery collection when a Kubernetes integration transitions back to healthy.
+The dedicated detail route remains a direct-link and no-JavaScript fallback. Table actions open the shared modal directly; no inline expanded row is used.
 
-The web route must never call Kubernetes Secret collection inline. Manual Sync TLS only dispatches or
-joins a canonical `JobExecution`. Active execution, last successful collection, next scheduled run, and
-freshness are presented from `JobExecution`, `JobPolicy`, and committed `TLSCertificateInventory` rows.
-A successful collection with zero TLS Secrets still establishes freshness through the terminal job record.
+## Permissions
 
-## Worker Registration And Recovery
+Active Governance permissions:
 
-The TLS synchronization task module must be present in `Config.CELERY['imports']`, and the canonical task name must have an explicit route to the `inventory` queue. This is required even though web routes import the dispatch adapter: worker processes build an independent task registry at startup.
+```text
+tls_certificates.view
+tls_certificates.sync
+```
 
-After deploying a task-registration change, rebuild or restart the inventory worker. A message previously rejected as an unregistered task has already been discarded by Celery and cannot resume automatically. Cancel the corresponding queued execution in Jobs & Executions, then dispatch a new TLS synchronization after the updated worker reports the task as registered.
+Mutation handoff permissions:
 
-## Inventory Filter And Toast Contract
+```text
+kubernetes_secrets.rotate_tls
+kubernetes_secrets.bulk_rotate_tls
+```
 
-The synchronization panel, summary, filters, table, and pagination share the `tls-certificates-inventory-scope` HTMX boundary. Filter changes replace that same scope. Active worker progress is polled only by the TLS synchronization toast, not by the inventory boundary. When the job reaches a terminal state, the toast emits `tlsInventorySyncFinished`; the inventory scope refreshes once with its current Cluster, Namespace, Status, Search, Page, and Rows Per Page values using a hidden HTMX indicator.
-
-The TLS Secret table uses the shared Inventory presentation macros in `components/table.html` for block geometry, loading state, filter controls, table headers and rows, Cluster identity, Namespace identity, and pagination geometry. Semantic certificate status labels remain text-only.
-
-## Inventory Summary Presentation
-
-The content before the TLS Secret table follows the canonical Kubernetes Inventory structure. The page renders one shared inventory summary surface containing the summary header, four primary metrics, healthy coverage, synchronization state, next schedule, and the TLS inventory action bar. `inventory/components/_summary.html` remains the source of truth for summary header, metric, progress, and status presentation. The TLS-specific action bar is nested inside the same summary surface so the page does not introduce a separate oversized synchronization card before the table.
-
-Healthy Coverage, Synchronization, and Next Scheduled use one fixed three-column row inside the summary surface. They must not fall into separate rows at desktop inventory widths; all three cards use an equal-width allocation so the row remains visually balanced.
-
-The order is fixed as:
-
-1. canonical page hero;
-2. certificate inventory summary and operations;
-3. canonical Inventory table block.
-
-Active synchronization progress stays in the persistent TLS worker toast. Filter, pagination, synchronization dispatch, and the one-time completion refresh continue to preserve the current `tls-certificates-inventory-scope` filter state.
-
-## Inventory Presentation Dependencies
-
-- The pre-table posture surface reuses `app/templates/inventory/components/_summary.html`. Replacement packages that change the TLS inventory summary must include this canonical component so a partially upgraded deployment cannot fail with `TemplateNotFound`.
-- TLS pagination uses the canonical `components/pagination.html` controls and the global `app/static/js/pagination.js` numeric-page renderer. Full-page `href` values remain navigable while `hx-get` requests replace the current TLS inventory scope and preserve active filters.
-- The retired page-specific script `app/static/js/tls_certificate_management.js` must not be restored. Its request toast was not lifecycle-bound to the HTMX request and could remain visible after the worker job completed.
-
-## TLS Detail And Navigation Standard
-
-- The Kubernetes TLS Secret inventory hero uses `Manage Clusters` and routes to the canonical Kubernetes integration registry. It does not use an in-page `Manage TLS Inventory` anchor.
-- The certificate-detail hero owns the single `Back to TLS Certificates` action. A duplicate action row below the hero is not rendered.
-- Certificate detail content uses the canonical Inventory summary surface, reusable detail cards, standard operation section headers, and one sticky validity/rotation column. The page preserves certificate identity, validity, SAN coverage, Ingress relationships, and the controlled Secret Management handoff without duplicating navigation controls.
-- Numeric pagination must survive HTMX `outerHTML` replacement. The global pagination renderer reinitializes against the connected swap target or the document after both `htmx:afterSwap` and `htmx:afterSettle`.
+Legacy Governance mutation keys remain compatibility registry entries only and must not be used by new UI.

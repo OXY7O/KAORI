@@ -1,17 +1,32 @@
 from __future__ import annotations
 
 import base64
-from collections.abc import Iterable
+import math
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, NamedTuple
 
 from app.governance.tls_certificates.constants import (
+    TLS_DEFAULT_CRITICAL_WINDOW_DAYS,
+    TLS_DEFAULT_RENEWAL_WINDOW_DAYS,
     TLS_STATUS_CRITICAL,
     TLS_STATUS_EXPIRED,
     TLS_STATUS_HEALTHY,
     TLS_STATUS_WARNING,
 )
+
+
+@dataclass(frozen=True)
+class TLSValidityPolicy:
+    renewal_window_days: int = TLS_DEFAULT_RENEWAL_WINDOW_DAYS
+    critical_window_days: int = TLS_DEFAULT_CRITICAL_WINDOW_DAYS
+
+    def __post_init__(self) -> None:
+        renewal = max(int(self.renewal_window_days), 1)
+        critical = max(min(int(self.critical_window_days), renewal), 1)
+        object.__setattr__(self, 'renewal_window_days', renewal)
+        object.__setattr__(self, 'critical_window_days', critical)
 
 
 @dataclass(frozen=True)
@@ -48,13 +63,20 @@ class _CryptoModules(NamedTuple):
     rsa: Any
 
 
-def _load_crypto() -> _CryptoModules:
-    """Import cryptography lazily so Flask can boot and migrations can run.
+def validity_policy_from_config(config: Mapping[str, Any] | None = None) -> TLSValidityPolicy:
+    source = config or {}
+    return TLSValidityPolicy(
+        renewal_window_days=int(
+            source.get('TLS_CERTIFICATE_RENEWAL_WINDOW_DAYS', TLS_DEFAULT_RENEWAL_WINDOW_DAYS)
+        ),
+        critical_window_days=int(
+            source.get('TLS_CERTIFICATE_CRITICAL_WINDOW_DAYS', TLS_DEFAULT_CRITICAL_WINDOW_DAYS)
+        ),
+    )
 
-    The TLS Governance feature needs cryptography for X.509 parsing and
-    certificate/key matching. Keeping the import lazy prevents the whole Flask
-    application from failing to import before dependencies are installed.
-    """
+
+def _load_crypto() -> _CryptoModules:
+    """Import cryptography lazily so Flask can boot and migrations can run."""
     try:
         from cryptography import x509
         from cryptography.exceptions import InvalidSignature
@@ -91,9 +113,36 @@ def decode_secret_data(value: str | None) -> bytes:
     return base64.b64decode(value)
 
 
-def parse_certificate(cert_bytes: bytes) -> ParsedCertificate:
+def classify_certificate_validity(
+    not_after: datetime,
+    *,
+    now: datetime | None = None,
+    policy: TLSValidityPolicy | None = None,
+) -> tuple[int, str, str]:
+    policy = policy or TLSValidityPolicy()
+    expires_at = _ensure_aware(not_after)
+    evaluated_at = _ensure_aware(now or datetime.now(UTC))
+    remaining_seconds = (expires_at - evaluated_at).total_seconds()
+    days_remaining = math.ceil(remaining_seconds / 86400)
+
+    if expires_at <= evaluated_at:
+        return days_remaining, TLS_STATUS_EXPIRED, 'critical'
+    if remaining_seconds <= policy.critical_window_days * 86400:
+        return days_remaining, TLS_STATUS_CRITICAL, 'critical'
+    if remaining_seconds <= policy.renewal_window_days * 86400:
+        return days_remaining, TLS_STATUS_WARNING, 'warning'
+    return days_remaining, TLS_STATUS_HEALTHY, 'healthy'
+
+
+def parse_certificate(
+    cert_bytes: bytes,
+    *,
+    policy: TLSValidityPolicy | None = None,
+    now: datetime | None = None,
+) -> ParsedCertificate:
     crypto = _load_crypto()
     certificate = crypto.x509.load_pem_x509_certificate(cert_bytes)
+    policy = policy or TLSValidityPolicy()
 
     common_name = None
     common_name_attributes = certificate.subject.get_attributes_for_oid(crypto.x509.NameOID.COMMON_NAME)
@@ -113,21 +162,11 @@ def parse_certificate(cert_bytes: bytes) -> ParsedCertificate:
     not_after_value = getattr(certificate, 'not_valid_after_utc', None) or certificate.not_valid_after
     not_before = _ensure_aware(not_before_value)
     not_after = _ensure_aware(not_after_value)
-    now = datetime.now(UTC)
-    days_remaining = (not_after - now).days
-
-    if days_remaining <= 0:
-        status = TLS_STATUS_EXPIRED
-        risk_level = 'critical'
-    elif days_remaining <= 7:
-        status = TLS_STATUS_CRITICAL
-        risk_level = 'critical'
-    elif days_remaining <= 30:
-        status = TLS_STATUS_WARNING
-        risk_level = 'warning'
-    else:
-        status = TLS_STATUS_HEALTHY
-        risk_level = 'healthy'
+    days_remaining, status, risk_level = classify_certificate_validity(
+        not_after,
+        now=now,
+        policy=policy,
+    )
 
     return ParsedCertificate(
         common_name=common_name,
@@ -178,7 +217,12 @@ def _public_key_matches_certificate(cert_bytes: bytes, key_bytes: bytes) -> bool
     return False
 
 
-def validate_certificate_pair(cert_bytes: bytes, key_bytes: bytes) -> CertificatePairValidation:
+def validate_certificate_pair(
+    cert_bytes: bytes,
+    key_bytes: bytes,
+    *,
+    policy: TLSValidityPolicy | None = None,
+) -> CertificatePairValidation:
     errors: list[str] = []
     warnings: list[str] = []
     parsed: ParsedCertificate | None = None
@@ -192,7 +236,7 @@ def validate_certificate_pair(cert_bytes: bytes, key_bytes: bytes) -> Certificat
         return CertificatePairValidation(False, None, errors, warnings)
 
     try:
-        parsed = parse_certificate(cert_bytes)
+        parsed = parse_certificate(cert_bytes, policy=policy)
     except Exception as exc:
         errors.append(f'Certificate cannot be parsed as a valid PEM X.509 certificate: {exc}')
 
@@ -209,7 +253,7 @@ def validate_certificate_pair(cert_bytes: bytes, key_bytes: bytes) -> Certificat
         except Exception as exc:
             errors.append(f'Certificate/key match validation failed: {exc}')
 
-    if parsed and parsed.days_remaining <= 0:
+    if parsed and parsed.status == TLS_STATUS_EXPIRED:
         errors.append('Certificate is already expired.')
 
     if parsed and not parsed.dns_names and not parsed.common_name:
@@ -235,14 +279,30 @@ def hostname_matches_pattern(hostname: str, pattern: str) -> bool:
     return False
 
 
+def certificate_identity_patterns(
+    dns_names: Iterable[str] | None,
+    common_name: str | None,
+) -> list[str]:
+    patterns = [item for item in (dns_names or []) if item]
+    if not patterns and common_name:
+        patterns.append(common_name)
+    return patterns
+
+
+def matching_certificate_pattern(
+    hostname: str,
+    dns_names: Iterable[str] | None,
+    common_name: str | None,
+) -> str | None:
+    for pattern in certificate_identity_patterns(dns_names, common_name):
+        if hostname_matches_pattern(hostname, pattern):
+            return pattern
+    return None
+
+
 def find_uncovered_hosts(hosts: Iterable[str], parsed_certificate: ParsedCertificate) -> list[str]:
-    patterns = parsed_certificate.dns_names or (
-        [parsed_certificate.common_name] if parsed_certificate.common_name else []
-    )
     uncovered: list[str] = []
-
     for host in sorted({item for item in hosts if item}):
-        if not any(hostname_matches_pattern(host, pattern) for pattern in patterns if pattern):
+        if matching_certificate_pattern(host, parsed_certificate.dns_names, parsed_certificate.common_name) is None:
             uncovered.append(host)
-
     return uncovered

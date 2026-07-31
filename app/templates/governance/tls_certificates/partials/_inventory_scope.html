@@ -7,6 +7,8 @@
           hx-target="#tls-certificates-inventory-scope"
           hx-swap="outerHTML"
           hx-indicator="this"></span>
+    {% include "governance/tls_certificates/partials/_snapshot_context.html" %}
+    {% include "governance/tls_certificates/partials/_sync_panel.html" %}
     {% include "governance/tls_certificates/partials/_summary_cards.html" %}
     {% include "governance/tls_certificates/partials/_content.html" %}
 </div>

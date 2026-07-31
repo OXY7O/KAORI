@@ -62,17 +62,18 @@ Avoid:
 
 ## Visual Contract
 
-- neutral `surface-hover` footer;
-- top border using `outline-subtle`;
+- one rounded `surface-card` action surface;
+- visible `outline-default` border and subtle shadow;
 - 16 px vertical padding;
 - 20–24 px horizontal padding;
 - responsive stacked layout on small screens;
 - helper aligned left and action group aligned right on desktop;
-- helper width limited to `max-w-lg`;
+- helper width limited to `max-w-xl`;
+- optional 12 px semibold action title above the helper;
 - helper typography: 12 px with 20 px line height;
 - action group uses 8 px internal gap.
 
-The shared component owns the footer geometry. Provider templates supply only the helper copy and action controls.
+Do not render the action region as a full-width rectangular color strip. The shared component owns the complete action-surface geometry. Provider templates supply only the title/helper copy and action controls.
 
 ## Relationship to Connection Validation Header
 

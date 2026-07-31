@@ -3,7 +3,7 @@ from app.models.analytics import AnalyticsSnapshot
 from app.models.archive import ArchiveArtifact
 from app.models.audit import AuditEvent
 from app.models.cluster import Cluster, ClusterStatus
-from app.models.governance import TLSCertificateInventory, TLSCertificateUpdateEvent
+from app.models.governance import TLSCertificateCollectionState, TLSCertificateInventory, TLSCertificateUpdateEvent
 from app.models.identity import ExternalIdentityLink, IdentityProvider
 from app.models.integration import IntegrationBinding, IntegrationInstance
 from app.models.intelligence import (
@@ -79,6 +79,7 @@ __all__ = [
     'NamespaceInventory',
     'NodeInventory',
     'Notification',
+    'TLSCertificateCollectionState',
     'TLSCertificateInventory',
     'TLSCertificateUpdateEvent',
     'PrometheusInstance',

@@ -428,23 +428,11 @@
     "app/templates/dashboards/kubernetes/partials/_alerts_summary.html": {
       "semantic_border_utilities": 1
     },
-    "app/templates/governance/tls_certificates/detail.html": {
-      "arbitrary_text_sizes": 3,
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 1
-    },
-    "app/templates/governance/tls_certificates/partials/_summary_cards.html": {
-      "copied_standard_surface_shells": 1
-    },
     "app/templates/governance/tls_certificates/partials/_sync_live_state.html": {
       "arbitrary_text_sizes": 1
     },
     "app/templates/governance/tls_certificates/partials/_sync_toast.html": {
       "arbitrary_text_sizes": 2
-    },
-    "app/templates/governance/tls_certificates/partials/_table.html": {
-      "arbitrary_text_sizes": 5,
-      "copied_standard_surface_shells": 1
     },
     "app/templates/integrations/alertmanager.html": {
       "arbitrary_text_sizes": 4,
@@ -685,7 +673,7 @@
     },
     "app/templates/kubernetes_operations/secrets/tls_rotation.html": {
       "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 2
+      "semantic_border_utilities": 1
     },
     "app/templates/notifications/activity.html": {
       "arbitrary_text_sizes": 2

@@ -1,0 +1,13 @@
+{% import "components/snapshot_context_bar.html" as snapshot_context %}
+{{ snapshot_context.render(
+    payload.snapshot.source_label,
+    payload.snapshot.status,
+    payload.snapshot.tone,
+    payload.snapshot.description,
+    payload.snapshot.latest_collected,
+    payload.snapshot.scope_label,
+    payload.snapshot.coverage_label,
+    payload.snapshot.exceptions_label,
+    'database-backup',
+    'TLS Collection Snapshot'
+) }}

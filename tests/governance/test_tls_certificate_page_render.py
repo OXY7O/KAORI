@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def _payload() -> SimpleNamespace:
     return SimpleNamespace(
-        summary=SimpleNamespace(total=4, healthy=3, warning=1, critical=0, expired=0, invalid=0),
+        summary=SimpleNamespace(total=4, healthy=3, warning=1, critical=0, expired=0, invalid=0, unknown=0, coverage_full=3, coverage_partial=1, coverage_uncovered=0, coverage_none=0, coverage_not_reported=0, issuer_count=2),
         sync_state=SimpleNamespace(
             label='Current',
             tone='normal',
@@ -42,7 +42,9 @@ def _payload() -> SimpleNamespace:
         records=(),
         clusters=(),
         namespaces=(),
-        status_options=('', 'healthy', 'warning', 'critical'),
+        status_options=('all', 'healthy', 'warning', 'critical'),
+        validity_policy=SimpleNamespace(renewal_window_days=30, critical_window_days=7),
+        snapshot=SimpleNamespace(scope_label='All Clusters'),
     )
 
 
@@ -57,9 +59,9 @@ def test_tls_summary_renders_with_canonical_inventory_component() -> None:
         'governance/tls_certificates/partials/_summary_cards.html'
     ).render(payload=_payload())
 
-    assert 'Certificate Coverage and Readiness' in rendered
-    assert 'TLS Inventory Operations' in rendered
-    assert 'Current' in rendered
+    assert 'Certificate Validity Posture' in rendered
+    assert 'Renewal Window' in rendered
+    assert 'Host Coverage Exceptions' in rendered
 
 
 def test_tls_page_does_not_load_retired_request_progress_toast_script() -> None:

@@ -86,7 +86,7 @@ def test_tls_filter_state_keeps_one_inventory_scope_boundary() -> None:
     assert 'hx-target="#tls-certificates-inventory-scope"' in sync_panel
     assert table.count('hx-target="#tls-certificates-inventory-scope"') >= 3
     assert 'name="partial_mode" value="inventory_scope"' in table
-    assert "partial_mode='inventory_scope'" in table
+    assert "'partial_mode': 'inventory_scope'" in table
 
 
 def test_tls_operation_buttons_share_the_same_kaori_component() -> None:
@@ -97,9 +97,11 @@ def test_tls_operation_buttons_share_the_same_kaori_component() -> None:
 
     assert '{% import "components/action_button.html" as action_button %}' in sync_panel
     assert sync_panel.count('action_button.classes(') == 3
+    assert "current_user.has_permission('tls_certificates.sync')" in sync_panel
+    assert "current_user.has_permission('kubernetes_secrets.bulk_rotate_tls')" in sync_panel
     assert 'Sync TLS' in sync_panel
     assert 'Configure Sync' in sync_panel
-    assert 'Bulk Update' in sync_panel
+    assert 'Bulk Rotation' in sync_panel
     assert 'Review Active Job' not in sync_panel
     assert 'inline-flex h-10' in action_button
     assert 'rounded-lg' in action_button

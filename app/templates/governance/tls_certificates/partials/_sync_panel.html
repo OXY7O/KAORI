@@ -1,41 +1,55 @@
 {% import "components/action_button.html" as action_button %}
-<div id="tls-registry-actions"
-     class="border-t border-outline-subtle bg-surface-hover">
+{% import "components/table.html" as table_ui %}
+{% set can_sync = current_user.has_permission('tls_certificates.sync') %}
+{% set can_configure = current_user.has_permission('jobs.view') %}
+{% set can_bulk_rotate = current_user.has_permission('kubernetes_secrets.bulk_rotate_tls') %}
+<section id="tls-registry-actions"
+         class="{{ table_ui.block_classes() }}"
+         aria-label="TLS Registry Operations">
     <div class="flex flex-col gap-4 px-5 py-4 sm:px-6 xl:flex-row xl:items-center xl:justify-between">
         <div class="min-w-0 flex-1">
             {% include "governance/tls_certificates/partials/_sync_live_state.html" %}
         </div>
-        <div class="grid shrink-0 grid-cols-1 gap-2 sm:grid-cols-3">
-            <form method="post"
-                  action="{{ url_for('governance.tls_certificates_sync') }}"
-                  hx-post="{{ url_for('governance.tls_certificates_sync') }}"
-                  hx-target="#tls-certificates-inventory-scope"
-                  hx-swap="outerHTML"
-                  hx-disabled-elt="find button"
-                  data-tls-sync-form>
-                <input type="hidden" name="cluster_id" value="{{ payload.filters.cluster_id }}">
-                <input type="hidden" name="namespace" value="{{ payload.filters.namespace }}">
-                <input type="hidden" name="status" value="{{ payload.filters.status }}">
-                <input type="hidden" name="search" value="{{ payload.filters.search }}">
-                <input type="hidden" name="page" value="{{ payload.pagination.page }}">
-                <input type="hidden" name="per_page" value="{{ payload.pagination.per_page }}">
-                <button type="submit"
-                        {% if payload.sync_state.is_active %}disabled{% endif %}
-                        class="{{ action_button.classes('primary', true) }}">
-                    <i data-lucide="refresh-cw" class="h-4 w-4"></i>
-                    {{ 'Syncing TLS' if payload.sync_state.is_active else 'Sync TLS' }}
-                </button>
-            </form>
-            <a href="{{ url_for('jobs.configuration', job_key='governance.tls_certificates.sync') }}"
-               class="{{ action_button.classes('secondary', true) }}">
-                <i data-lucide="calendar-clock" class="h-4 w-4"></i>
-                Configure Sync
-            </a>
-            <a href="{{ url_for('kubernetes_operations.tls_secret_bulk_rotation') }}"
-               class="{{ action_button.classes('secondary', true) }}">
-                <i data-lucide="upload-cloud" class="h-4 w-4"></i>
-                Bulk Update
-            </a>
+        <div class="flex shrink-0 flex-wrap items-center gap-2">
+            {% if can_sync %}
+                <form method="post"
+                      action="{{ url_for('governance.tls_certificates_sync') }}"
+                      hx-post="{{ url_for('governance.tls_certificates_sync') }}"
+                      hx-target="#tls-certificates-inventory-scope"
+                      hx-swap="outerHTML"
+                      hx-disabled-elt="find button"
+                      data-tls-sync-form>
+                    <input type="hidden" name="cluster_id" value="{{ payload.filters.cluster_id }}">
+                    <input type="hidden" name="namespace" value="{{ payload.filters.namespace }}">
+                    <input type="hidden" name="status" value="{{ payload.filters.status }}">
+                    <input type="hidden" name="search" value="{{ payload.filters.search }}">
+                    <input type="hidden" name="page" value="{{ payload.pagination.page }}">
+                    <input type="hidden" name="per_page" value="{{ payload.pagination.per_page }}">
+                    <button type="submit"
+                            {% if payload.sync_state.is_active %}disabled{% endif %}
+                            class="{{ action_button.classes('primary', false) }}">
+                        <i data-lucide="refresh-cw" class="h-4 w-4"></i>
+                        {{ 'Syncing TLS' if payload.sync_state.is_active else 'Sync TLS' }}
+                    </button>
+                </form>
+            {% endif %}
+            {% if can_configure %}
+                <a href="{{ url_for('jobs.configuration', job_key='governance.tls_certificates.sync') }}"
+                   class="{{ action_button.classes('secondary', false) }}">
+                    <i data-lucide="calendar-clock" class="h-4 w-4"></i>
+                    Configure Sync
+                </a>
+            {% endif %}
+            {% if can_bulk_rotate %}
+                <a href="{{ url_for('kubernetes_operations.tls_secret_bulk_rotation') }}"
+                   class="{{ action_button.classes('secondary', false) }}">
+                    <i data-lucide="rotate-cw" class="h-4 w-4"></i>
+                    Bulk Rotation
+                </a>
+            {% endif %}
+            {% if not can_sync and not can_configure and not can_bulk_rotate %}
+                <span class="text-xs font-medium text-content-muted">Operational actions are not available for your current role.</span>
+            {% endif %}
         </div>
     </div>
-</div>
+</section>

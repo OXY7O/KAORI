@@ -41,12 +41,12 @@ It must be treated as **reserved**, not as proof that a user can perform an exis
 
 `tls_certificates.update` and `tls_certificates.bulk_update` remain in the registry for compatibility with the previous Governance implementation.
 
-The current compatibility endpoints delegate to Kubernetes Operations Secret rotation flows, where effective mutation authorization is enforced by:
+TLS Governance now owns only read and synchronization capabilities. Current UI, navigation, and rotation handoffs use Kubernetes Operations Secret permissions:
 
 - `kubernetes_secrets.rotate_tls`;
 - `kubernetes_secrets.bulk_rotate_tls`.
 
-Do not use the legacy TLS keys when designing new custom roles. Removing them requires a controlled permission-deprecation migration because existing database rows, audits, or external documentation may still reference them.
+The legacy TLS keys are deprecated compatibility aliases. Do not use them in new templates, navigation rules, or custom roles. Removing the registry rows still requires a controlled permission-deprecation migration because existing database roles, audits, or external documentation may reference them.
 
 ## 3. Admin aggregation review
 

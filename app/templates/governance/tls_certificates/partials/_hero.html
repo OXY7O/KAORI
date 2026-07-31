@@ -1,24 +1,20 @@
 {% import "components/page_hero.html" as page_hero %}
-{% set total_secrets = payload.summary.total %}
-{% set risk_total = payload.summary.warning + payload.summary.critical + payload.summary.expired + payload.summary.invalid %}
-{% set healthy_total = total_secrets - risk_total if total_secrets > risk_total else 0 %}
-{% set coverage_percent = (((healthy_total / total_secrets) * 100) | round(0) | int) if total_secrets else 0 %}
+{% set total = payload.summary.total or 0 %}
+{% set action_required = (payload.summary.warning or 0) + (payload.summary.critical or 0) + (payload.summary.expired or 0) + (payload.summary.invalid or 0) %}
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('key-round', 'Kubernetes Governance', 'shield-check') %}
-                <h1 class="{{ page_hero.title_classes() }}">Kubernetes TLS Secret</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">
-                    Monitor certificate expiry, issuer identity, SAN coverage, Ingress usage, and controlled TLS Secret updates.
-                </p>
+                <h1 class="{{ page_hero.title_classes() }}">TLS Certificate Governance</h1>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review certificate validity, declared host coverage, and rotation readiness.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {% if cluster_onboarding.is_blocked %}
                         {{ page_hero.meta_label('server-cog', '0 Clusters Connected') }}
                         {{ page_hero.meta_label('lock-keyhole', 'Setup Required') }}
                     {% else %}
-                        {{ page_hero.meta_label('lock-keyhole', total_secrets ~ ' TLS Secrets Tracked') }}
-                        {{ page_hero.meta_label('timer', payload.summary.warning ~ ' Expiring Soon') }}
-                        {{ page_hero.meta_label('siren', (payload.summary.critical + payload.summary.expired) ~ ' Critical or Expired') }}
+                        {{ page_hero.meta_label('lock-keyhole', total ~ ' TLS Secrets') }}
+                        {{ page_hero.meta_label('building-2', payload.snapshot.scope_label) }}
+                        {{ page_hero.meta_label('stamp', payload.summary.issuer_count ~ ' Issuers') }}
                     {% endif %}
                 </div>
             {% endcall %}
@@ -26,13 +22,13 @@
         {% if cluster_onboarding.is_blocked %}
             {{ page_hero.context_card(
                 'TLS governance context',
-                'Inventory Posture',
-                'TLS Coverage and Readiness',
+                'Validity Posture',
+                'Certificate Lifecycle',
                 'Setup Required',
                 'warning',
                 [
-                    ('shield-check', 'Coverage', '0%', 'No connected clusters'),
-                    ('clock-3', 'Freshness', 'Unavailable', 'Register a cluster first', true)
+                    ('circle-check', 'Valid', 0, 'No cluster data'),
+                    ('triangle-alert', 'Action Required', 0, 'Connect a cluster')
                 ],
                 'Manage Clusters',
                 url_for('integrations.kubernetes'),
@@ -41,13 +37,13 @@
         {% else %}
             {{ page_hero.context_card(
                 'TLS governance context',
-                'Inventory Posture',
-                'Certificate Coverage and Risk',
-                'Needs Review' if risk_total > 0 or payload.sync_state.tone != 'normal' else 'Healthy',
-                'warning' if risk_total > 0 or payload.sync_state.tone != 'normal' else 'normal',
+                'Validity Posture',
+                'Certificate Lifecycle',
+                'Attention' if action_required > 0 else 'Stable',
+                'warning' if action_required > 0 else 'normal',
                 [
-                    ('shield-check', 'Coverage', coverage_percent ~ '%', healthy_total ~ '/' ~ total_secrets ~ ' healthy'),
-                    ('clock-3', 'Freshness', payload.sync_state.label, payload.sync_state.last_success_label, true)
+                    ('circle-check', 'Valid', payload.summary.healthy, 'Outside renewal window'),
+                    ('triangle-alert', 'Action Required', action_required, 'Renew, repair, or review')
                 ],
                 'Manage Clusters',
                 url_for('integrations.kubernetes'),

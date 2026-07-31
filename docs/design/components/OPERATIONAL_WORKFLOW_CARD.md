@@ -13,7 +13,7 @@ The component owns:
 - permission state (`Available` or `Restricted`);
 - operation classification (`Standard`, `Controlled`, `Protected`, or `Destructive`);
 - compact validation and authority evidence;
-- one primary destination action and an optional secondary administration action;
+- one compact destination action and an optional secondary administration action;
 - readable light- and dark-mode hover treatment.
 
 Permission state and operation classification are separate concepts. Access to a protected operation must not change the permission label to `Protected`.
@@ -39,6 +39,7 @@ Rows use `surface-card` by default and `surface-hover` on hover or focus-within.
 - Keep validation and authority evidence as compact text, not nested cards.
 - Use neutral surfaces. Critical color belongs to consequences and final destructive confirmation, not the catalog row.
 - Disabled workflows show `Permission Required` and do not expose an active link.
+- Destination controls use naturally sized secondary-button treatment; do not turn every row action into a wide solid-Violet block.
 - Secondary actions are only for a directly related authority workspace, such as reveal-policy administration.
 - Hover must preserve readable contrast in light and dark appearance.
 - Landing pages must not repeat the entire validation procedure below every workflow.

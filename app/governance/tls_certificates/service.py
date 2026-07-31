@@ -9,17 +9,27 @@ from typing import Any, cast
 
 from flask import current_app
 from flask_login import current_user
-from sqlalchemy import or_
+from sqlalchemy import case, func, or_
 
-from app.common.integration_errors import describe_integration_failure
 from app.extensions.db import db
-from app.governance.tls_certificates.certificate import find_uncovered_hosts, validate_certificate_pair
+from app.governance.tls_certificates.certificate import (
+    find_uncovered_hosts,
+    matching_certificate_pattern,
+    validate_certificate_pair,
+    validity_policy_from_config,
+)
 from app.governance.tls_certificates.collector import (
     TLSProgressCallback,
     build_kubernetes_client,
-    collect_tls_certificates,
+    collect_tls_certificate_batch,
 )
 from app.governance.tls_certificates.constants import (
+    TLS_COLLECTION_COLLECTED,
+    TLS_COVERAGE_FULL,
+    TLS_COVERAGE_NONE,
+    TLS_COVERAGE_NOT_REPORTED,
+    TLS_COVERAGE_PARTIAL,
+    TLS_COVERAGE_UNCOVERED,
     TLS_CRT_KEY,
     TLS_DEFAULT_PER_PAGE,
     TLS_KEY_KEY,
@@ -27,8 +37,13 @@ from app.governance.tls_certificates.constants import (
     TLS_SECRET_TYPE,
     TLS_STATUS_OPTIONS,
 )
-from app.integrations.kubernetes.resolver import server_for_cluster
-from app.models import Cluster, TLSCertificateInventory, TLSCertificateUpdateEvent, User
+from app.models import (
+    Cluster,
+    TLSCertificateCollectionState,
+    TLSCertificateInventory,
+    TLSCertificateUpdateEvent,
+    User,
+)
 
 
 def _new_tls_inventory_record(
@@ -161,14 +176,192 @@ def _base_query(filters: dict[str, Any]):
 
 
 def _summary(query) -> dict[str, int]:
-    records = query.all()
+    status_counts = {
+        status: count
+        for status, count in query.with_entities(
+            TLSCertificateInventory.status,
+            func.count(TLSCertificateInventory.id),
+        ).group_by(TLSCertificateInventory.status).all()
+    }
+    coverage_counts = {
+        state: count
+        for state, count in query.with_entities(
+            TLSCertificateInventory.coverage_state,
+            func.count(TLSCertificateInventory.id),
+        ).group_by(TLSCertificateInventory.coverage_state).all()
+    }
+    total = sum(status_counts.values())
     return {
-        'total': len(records),
-        'healthy': sum(1 for record in records if record.status == 'healthy'),
-        'warning': sum(1 for record in records if record.status == 'warning'),
-        'critical': sum(1 for record in records if record.status == 'critical'),
-        'expired': sum(1 for record in records if record.status == 'expired'),
-        'invalid': sum(1 for record in records if record.status == 'invalid'),
+        'total': total,
+        'healthy': status_counts.get('healthy', 0),
+        'warning': status_counts.get('warning', 0),
+        'critical': status_counts.get('critical', 0),
+        'expired': status_counts.get('expired', 0),
+        'invalid': status_counts.get('invalid', 0),
+        'unknown': status_counts.get('unknown', 0),
+        'coverage_full': coverage_counts.get(TLS_COVERAGE_FULL, 0),
+        'coverage_partial': coverage_counts.get(TLS_COVERAGE_PARTIAL, 0),
+        'coverage_uncovered': coverage_counts.get(TLS_COVERAGE_UNCOVERED, 0),
+        'coverage_none': coverage_counts.get(TLS_COVERAGE_NONE, 0),
+        'coverage_not_reported': coverage_counts.get(TLS_COVERAGE_NOT_REPORTED, 0),
+        'issuer_count': query.with_entities(
+            func.count(func.distinct(TLSCertificateInventory.issuer))
+        ).scalar() or 0,
+    }
+
+
+_STATUS_PRESENTATION = {
+    'healthy': ('Valid', 'normal', 'circle-check'),
+    'warning': ('Renewal Window', 'warning', 'calendar-clock'),
+    'critical': ('Critical Window', 'critical', 'triangle-alert'),
+    'expired': ('Expired', 'critical', 'circle-x'),
+    'invalid': ('Invalid', 'critical', 'badge-x'),
+    'unknown': ('Unknown', 'unknown', 'circle-help'),
+}
+
+_COVERAGE_PRESENTATION = {
+    TLS_COVERAGE_FULL: ('Fully Covered', 'normal', 'shield-check'),
+    TLS_COVERAGE_PARTIAL: ('Partial', 'warning', 'shield-alert'),
+    TLS_COVERAGE_UNCOVERED: ('Uncovered', 'critical', 'shield-x'),
+    TLS_COVERAGE_NONE: ('No Declared Hosts', 'info', 'route-off'),
+    TLS_COVERAGE_NOT_REPORTED: ('Not Reported', 'unknown', 'circle-help'),
+}
+
+_COLLECTION_PRESENTATION = {
+    'collected': ('Collected', 'normal'),
+    'permission_unavailable': ('Permission Unavailable', 'warning'),
+    'api_unavailable': ('API Unavailable', 'warning'),
+    'collection_failed': ('Collection Failed', 'critical'),
+    'not_reported': ('Not Reported', 'unknown'),
+}
+
+
+def _collection_states(cluster_ids: Iterable[str]) -> dict[str, TLSCertificateCollectionState]:
+    ids = [str(item) for item in cluster_ids if item]
+    if not ids:
+        return {}
+    return {
+        str(state.cluster_id): state
+        for state in TLSCertificateCollectionState.query.filter(
+            TLSCertificateCollectionState.cluster_id.in_(ids)
+        ).all()
+    }
+
+
+def _host_coverage_rows(record: TLSCertificateInventory) -> list[dict[str, Any]]:
+    ingress_by_host: dict[str, list[str]] = {}
+    for consumer in record.used_by or []:
+        if not isinstance(consumer, dict):
+            continue
+        ingress_name = str(consumer.get('name') or 'Ingress')
+        for host in consumer.get('hosts') or []:
+            ingress_by_host.setdefault(str(host), []).append(ingress_name)
+
+    rows: list[dict[str, Any]] = []
+    uncovered = set(record.uncovered_hosts or [])
+    for host in sorted({str(item) for item in (record.ingress_hosts or []) if item}):
+        matched = matching_certificate_pattern(host, record.dns_names or [], record.common_name)
+        rows.append(
+            {
+                'host': host,
+                'state': 'Uncovered' if host in uncovered else 'Covered',
+                'tone': 'critical' if host in uncovered else 'normal',
+                'matched_identity': matched or 'No Matching SAN',
+                'ingresses': sorted(set(ingress_by_host.get(host, []))),
+            }
+        )
+    return rows
+
+
+def _present_record(
+    record: TLSCertificateInventory,
+    collection_state: TLSCertificateCollectionState | None,
+) -> TLSCertificateInventory:
+    status_label, status_tone, status_icon = _STATUS_PRESENTATION.get(
+        record.status or 'unknown', _STATUS_PRESENTATION['unknown']
+    )
+    coverage_label, coverage_tone, coverage_icon = _COVERAGE_PRESENTATION.get(
+        record.coverage_state or TLS_COVERAGE_NOT_REPORTED,
+        _COVERAGE_PRESENTATION[TLS_COVERAGE_NOT_REPORTED],
+    )
+    secret_state = collection_state.secret_collection_status if collection_state else 'not_reported'
+    ingress_state = collection_state.ingress_mapping_status if collection_state else 'not_reported'
+    ingress_resources = []
+    for consumer in record.used_by or []:
+        if not isinstance(consumer, dict):
+            continue
+        hosts = [str(item) for item in (consumer.get('hosts') or []) if item]
+        ingress_resources.append(
+            {
+                'name': str(consumer.get('name') or 'Ingress'),
+                'supporting_primary': f"Namespace · {consumer.get('namespace') or record.namespace}",
+                'supporting_secondary': f"{len(hosts)} Declared Host{'s' if len(hosts) != 1 else ''}",
+                'status': None,
+                'status_tone': None,
+            }
+        )
+
+    record.presentation = {
+        'status_label': status_label,
+        'status_tone': status_tone,
+        'status_icon': status_icon,
+        'coverage_label': coverage_label,
+        'coverage_tone': coverage_tone,
+        'coverage_icon': coverage_icon,
+        'host_coverage_rows': _host_coverage_rows(record),
+        'ingress_resources': ingress_resources,
+        'secret_collection_label': _COLLECTION_PRESENTATION.get(secret_state, ('Not Reported', 'unknown'))[0],
+        'secret_collection_tone': _COLLECTION_PRESENTATION.get(secret_state, ('Not Reported', 'unknown'))[1],
+        'ingress_mapping_label': _COLLECTION_PRESENTATION.get(ingress_state, ('Not Reported', 'unknown'))[0],
+        'ingress_mapping_tone': _COLLECTION_PRESENTATION.get(ingress_state, ('Not Reported', 'unknown'))[1],
+        'secret_collection_detail': collection_state.secret_collection_detail if collection_state else None,
+        'ingress_mapping_detail': collection_state.ingress_mapping_detail if collection_state else None,
+    }
+    return record
+
+
+def _collection_snapshot(
+    *,
+    clusters: list[Cluster],
+    selected_cluster_id: str,
+    summary: dict[str, int],
+    sync_state: dict[str, Any],
+) -> dict[str, Any]:
+    scoped_clusters = [cluster for cluster in clusters if not selected_cluster_id or str(cluster.id) == selected_cluster_id]
+    states = _collection_states([cluster.id for cluster in scoped_clusters])
+    selected_cluster = next((cluster for cluster in scoped_clusters if str(cluster.id) == selected_cluster_id), None)
+    scope_label = selected_cluster.name if selected_cluster else 'All Clusters'
+    scoped_state_values = [states.get(str(cluster.id)) for cluster in scoped_clusters]
+    secret_exceptions = sum(
+        1
+        for item in scoped_state_values
+        if item is None or item.secret_collection_status != TLS_COLLECTION_COLLECTED
+    )
+    ingress_exceptions = sum(
+        1
+        for item in scoped_state_values
+        if item is None or item.ingress_mapping_status != TLS_COLLECTION_COLLECTED
+    )
+    exceptions = secret_exceptions + ingress_exceptions
+    if not scoped_clusters or all(item is None for item in scoped_state_values):
+        evidence_label, evidence_tone = 'Not Reported', 'unknown'
+    elif secret_exceptions:
+        evidence_label, evidence_tone = 'Collection Exceptions', 'critical'
+    elif ingress_exceptions:
+        evidence_label, evidence_tone = 'Partial Mapping', 'warning'
+    else:
+        evidence_label, evidence_tone = 'Complete', 'normal'
+    return {
+        'source_label': 'Kubernetes TLS Secrets + Ingresses',
+        'status': evidence_label,
+        'tone': evidence_tone,
+        'description': 'Worker-generated certificate metadata and declared Ingress host relationships.',
+        'latest_collected': sync_state['last_success_label'],
+        'scope_label': scope_label,
+        'coverage_label': f"{summary['total']} TLS Secrets",
+        'exceptions_label': 'No Exceptions' if exceptions == 0 else f'{exceptions} Collection Exceptions',
+        'secret_collection_exceptions': secret_exceptions,
+        'ingress_mapping_exceptions': ingress_exceptions,
     }
 
 
@@ -181,29 +374,35 @@ def get_tls_certificate_page(args: Any) -> dict[str, Any]:
         namespace_query = namespace_query.filter(TLSCertificateInventory.cluster_id == filters['cluster_id'])
 
     namespaces = [row[0] for row in namespace_query.order_by(TLSCertificateInventory.namespace.asc()).all()]
-
-    # Cluster is the parent filter for namespace. When users switch cluster,
-    # an old namespace value from the previous cluster must not keep filtering
-    # the result set or remain selected in the UI.
     if filters['namespace'] and filters['namespace'] not in namespaces:
         filters['namespace'] = ''
         filters['page'] = 1
 
+    severity_order = case(
+        (TLSCertificateInventory.status == 'expired', 0),
+        (TLSCertificateInventory.status == 'invalid', 1),
+        (TLSCertificateInventory.status == 'critical', 2),
+        (TLSCertificateInventory.status == 'warning', 3),
+        (TLSCertificateInventory.status == 'unknown', 4),
+        else_=5,
+    )
     query = _base_query(filters).order_by(
-        TLSCertificateInventory.status.asc(),
+        severity_order,
         TLSCertificateInventory.days_remaining.asc().nullslast(),
         TLSCertificateInventory.namespace.asc(),
         TLSCertificateInventory.secret_name.asc(),
     )
     total_items = query.count()
-    pagination = _build_pagination(
-        page=filters['page'],
-        per_page=filters['per_page'],
-        total_items=total_items,
-    )
+    pagination = _build_pagination(page=filters['page'], per_page=filters['per_page'], total_items=total_items)
     records = query.offset((pagination['page'] - 1) * pagination['per_page']).limit(pagination['per_page']).all()
 
+    base_query = _base_query({**filters, 'page': 1})
+    summary = _summary(base_query)
     from app.governance.tls_certificates.sync_state import build_tls_sync_state
+    sync_state = build_tls_sync_state(cluster_id=filters['cluster_id'] or None)
+    state_map = _collection_states([record.cluster_id for record in records])
+    records = [_present_record(record, state_map.get(str(record.cluster_id))) for record in records]
+    validity_policy = validity_policy_from_config(current_app.config)
 
     return {
         'records': records,
@@ -211,14 +410,51 @@ def get_tls_certificate_page(args: Any) -> dict[str, Any]:
         'namespaces': namespaces,
         'filters': filters,
         'pagination': pagination,
-        'summary': _summary(_base_query({**filters, 'page': 1})),
+        'summary': summary,
         'status_options': TLS_STATUS_OPTIONS,
-        'sync_state': build_tls_sync_state(cluster_id=filters['cluster_id'] or None),
+        'sync_state': sync_state,
+        'snapshot': _collection_snapshot(
+            clusters=clusters,
+            selected_cluster_id=filters['cluster_id'],
+            summary=summary,
+            sync_state=sync_state,
+        ),
+        'validity_policy': {
+            'renewal_window_days': validity_policy.renewal_window_days,
+            'critical_window_days': validity_policy.critical_window_days,
+        },
     }
 
 
 def get_tls_certificate_detail(certificate_id: int) -> TLSCertificateInventory | None:
-    return TLSCertificateInventory.query.get(certificate_id)
+    record = TLSCertificateInventory.query.get(certificate_id)
+    if record is None:
+        return None
+    state = TLSCertificateCollectionState.query.get(record.cluster_id)
+    return _present_record(record, state)
+
+
+def _persist_collection_state(
+    cluster_id: str,
+    *,
+    secret_status: str,
+    ingress_status: str,
+    secret_detail: str | None,
+    ingress_detail: str | None,
+    collected_at: datetime | None,
+) -> TLSCertificateCollectionState:
+    state = TLSCertificateCollectionState.query.get(cluster_id)
+    if state is None:
+        state = TLSCertificateCollectionState()
+        state.cluster_id = cluster_id
+        db.session.add(state)
+    state.secret_collection_status = secret_status
+    state.ingress_mapping_status = ingress_status
+    state.secret_collection_detail = secret_detail
+    state.ingress_mapping_detail = ingress_detail
+    state.collected_at = collected_at
+    state.updated_at = datetime.now(UTC)
+    return state
 
 
 def sync_tls_certificates_for_cluster(
@@ -226,29 +462,28 @@ def sync_tls_certificates_for_cluster(
     *,
     progress_callback: TLSProgressCallback | None = None,
 ) -> tuple[int, str | None]:
-    try:
-        records = collect_tls_certificates(
-            cluster,
-            progress_callback=progress_callback,
-        )
-    except Exception as exc:
-        current_app.logger.exception('TLS certificate sync failed for cluster %s', cluster.name)
-        failure = describe_integration_failure(
-            exc,
-            service_name='Kubernetes API',
-            endpoint=server_for_cluster(cluster),
-            request_path='/api/v1/secrets',
-        )
-        if 'ee key too small' in str(exc).lower():
-            failure['code'] = 'legacy_tls_key_rejected'
-            failure['reason'] = 'Legacy TLS key was rejected'
-            failure['detail'] = (
-                'The Kubernetes API client certificate uses a legacy key that is rejected '
-                'by the current OpenSSL security policy. '
-                'Enable Allow legacy TLS certificate for this trusted cluster, then retry the TLS Secret sync.'
-            )
-        return 0, failure['detail']
+    policy = validity_policy_from_config(current_app.config)
+    batch = collect_tls_certificate_batch(
+        cluster,
+        progress_callback=progress_callback,
+        validity_policy=policy,
+    )
+    evidence = batch.evidence
+    _persist_collection_state(
+        cluster.id,
+        secret_status=evidence.secret_collection_status,
+        ingress_status=evidence.ingress_mapping_status,
+        secret_detail=evidence.secret_collection_detail,
+        ingress_detail=evidence.ingress_mapping_detail,
+        collected_at=datetime.now(UTC),
+    )
 
+    if batch.error:
+        db.session.commit()
+        current_app.logger.error('TLS certificate sync failed for cluster %s: %s', cluster.name, batch.error)
+        return 0, batch.error
+
+    records = batch.records
     if progress_callback is not None:
         progress_callback(76, f'Reconciling TLS inventory records for {cluster.name}.')
 
@@ -295,6 +530,35 @@ def sync_tls_certificates_for_cluster(
     return len(records), None
 
 
+def _refresh_record_coverage(record: TLSCertificateInventory) -> None:
+    hosts = sorted({str(item) for item in (record.ingress_hosts or []) if item})
+    state = TLSCertificateCollectionState.query.get(record.cluster_id)
+    if state is None or state.ingress_mapping_status != TLS_COLLECTION_COLLECTED:
+        record.coverage_state = TLS_COVERAGE_NOT_REPORTED
+        record.declared_host_count = len(hosts)
+        record.covered_host_count = 0
+        record.uncovered_hosts = []
+        return
+    if not hosts:
+        record.coverage_state = TLS_COVERAGE_NONE
+        record.declared_host_count = 0
+        record.covered_host_count = 0
+        record.uncovered_hosts = []
+        return
+    uncovered = [
+        host
+        for host in hosts
+        if matching_certificate_pattern(host, record.dns_names or [], record.common_name) is None
+    ]
+    covered = len(hosts) - len(uncovered)
+    record.coverage_state = (
+        TLS_COVERAGE_FULL if not uncovered else TLS_COVERAGE_UNCOVERED if covered == 0 else TLS_COVERAGE_PARTIAL
+    )
+    record.declared_host_count = len(hosts)
+    record.covered_host_count = covered
+    record.uncovered_hosts = uncovered
+
+
 def _read_uploaded_pair(files: Any) -> tuple[bytes, bytes]:
     cert_file = files.get('tls_crt_file') or files.get('tls_crt')
     key_file = files.get('tls_key_file') or files.get('tls_key')
@@ -305,7 +569,9 @@ def _read_uploaded_pair(files: Any) -> tuple[bytes, bytes]:
 
 def preview_uploaded_pair(files: Any, target_ids: Iterable[int] | None = None) -> dict[str, Any]:
     cert_bytes, key_bytes = _read_uploaded_pair(files)
-    validation = validate_certificate_pair(cert_bytes, key_bytes)
+    validation = validate_certificate_pair(
+        cert_bytes, key_bytes, policy=validity_policy_from_config(current_app.config)
+    )
     targets: list[TLSCertificateInventory] = []
     target_previews: list[dict[str, Any]] = []
 
@@ -368,7 +634,9 @@ def apply_certificate_update(certificate_id: int, files: Any) -> dict[str, Any]:
         return {'status': 'failed', 'message': 'TLS certificate inventory record was not found.'}
 
     cert_bytes, key_bytes = _read_uploaded_pair(files)
-    validation = validate_certificate_pair(cert_bytes, key_bytes)
+    validation = validate_certificate_pair(
+        cert_bytes, key_bytes, policy=validity_policy_from_config(current_app.config)
+    )
     if not validation.is_valid or validation.parsed_certificate is None:
         return {'status': 'failed', 'message': ' '.join(validation.errors), 'errors': validation.errors}
 
@@ -390,6 +658,7 @@ def apply_certificate_update(certificate_id: int, files: Any) -> dict[str, Any]:
         record.status = parsed.status
         record.risk_level = parsed.risk_level
         record.parse_error = None
+        _refresh_record_coverage(record)
         record.updated_at = datetime.now(UTC)
 
         db.session.add(
@@ -437,7 +706,9 @@ def apply_certificate_update(certificate_id: int, files: Any) -> dict[str, Any]:
 
 def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
     cert_bytes, key_bytes = _read_uploaded_pair(files)
-    validation = validate_certificate_pair(cert_bytes, key_bytes)
+    validation = validate_certificate_pair(
+        cert_bytes, key_bytes, policy=validity_policy_from_config(current_app.config)
+    )
     if not validation.is_valid or validation.parsed_certificate is None:
         return {'status': 'failed', 'message': ' '.join(validation.errors), 'errors': validation.errors, 'results': []}
 
@@ -467,6 +738,7 @@ def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
             target.status = parsed.status
             target.risk_level = parsed.risk_level
             target.parse_error = None
+            _refresh_record_coverage(target)
             target.updated_at = datetime.now(UTC)
 
             db.session.add(

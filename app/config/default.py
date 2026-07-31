@@ -286,6 +286,20 @@ class Config:
         300,
     )
 
+    TLS_CERTIFICATE_RENEWAL_WINDOW_DAYS = _bounded_env_int(
+        'TLS_CERTIFICATE_RENEWAL_WINDOW_DAYS',
+        30,
+        1,
+        365,
+    )
+
+    TLS_CERTIFICATE_CRITICAL_WINDOW_DAYS = _bounded_env_int(
+        'TLS_CERTIFICATE_CRITICAL_WINDOW_DAYS',
+        7,
+        1,
+        365,
+    )
+
     CELERY_TIMEZONE = _env_str(
         'CELERY_TIMEZONE',
         'UTC',

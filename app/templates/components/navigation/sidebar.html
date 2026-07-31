@@ -17,8 +17,6 @@
     current_user.has_permission('governance.view')
     or current_user.has_permission('tls_certificates.view')
     or current_user.has_permission('tls_certificates.sync')
-    or current_user.has_permission('tls_certificates.update')
-    or current_user.has_permission('tls_certificates.bulk_update')
 ) %}
 {% set can_reports = current_user.is_authenticated and (
     current_user.has_permission('reports.view')

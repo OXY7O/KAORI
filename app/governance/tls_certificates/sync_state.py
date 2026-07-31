@@ -6,7 +6,7 @@ from typing import Any
 from app.common.presentation import present_user_datetime
 from app.jobs.constants import ACTIVE_JOB_STATUSES
 from app.jobs.policies.service import get_or_create_job_policy
-from app.models.governance import TLSCertificateInventory
+from app.models.governance import TLSCertificateCollectionState, TLSCertificateInventory
 from app.models.job import JobExecution
 
 from .sync_jobs import TLS_SYNC_JOB_TYPE, TLS_SYNC_OPERATION
@@ -67,11 +67,22 @@ def build_tls_sync_state(*, cluster_id: str | None = None) -> dict[str, Any]:
         .limit(1)
         .scalar()
     )
+    collection_state_query = TLSCertificateCollectionState.query
+    if cluster_id:
+        collection_state_query = collection_state_query.filter(
+            TLSCertificateCollectionState.cluster_id == cluster_id
+        )
+    latest_collection_state_at = (
+        collection_state_query.with_entities(TLSCertificateCollectionState.collected_at)
+        .order_by(TLSCertificateCollectionState.collected_at.desc())
+        .limit(1)
+        .scalar()
+    )
 
     last_success_at = _as_utc(latest_success.completed_at if latest_success else None)
     latest_collected_at = _as_utc(latest_collected_at)
     freshness_source = max(
-        (value for value in (last_success_at, latest_collected_at) if value is not None),
+        (value for value in (last_success_at, latest_collected_at, _as_utc(latest_collection_state_at)) if value is not None),
         default=None,
     )
     interval_minutes = max(int(policy.interval_minutes or 360), 1)

@@ -721,3 +721,32 @@ Full Workspace Modal uses a maximum width of `100rem`, hides horizontal page ove
 Shared secondary and validation actions use a neutral default surface, then solid KAORI Violet with white text on hover and Deep Violet on active. Hero context badges use an opaque white surface because ordinary dark-page semantic soft colors do not provide reliable contrast on the Violet Hero panel. Secret Type selection uses the native checked radio as the only visual authority; exactly one card receives the selected border, surface, icon, and `Selected` indicator.
 
 Delete action fragments marked for HTMX out-of-band replacement must only render in HTMX responses. Full-page GET rendering must never place an action fragment above the operation workspace.
+
+## 28. TLS Certificate Governance Registry
+
+TLS Certificate Governance follows `patterns/KUBERNETES_TLS_CERTIFICATE_GOVERNANCE.md` and is the canonical Governance Resource Registry reference.
+
+Canonical order:
+
+```text
+Hero → Collection Snapshot → Governance Posture → Compact Registry → Full Workspace Modal
+```
+
+- validity uses `Valid`, `Renewal Window`, `Critical Window`, `Expired`, `Invalid`, and `Unknown`;
+- expiry is based on the exact certificate timestamp, not floored integer days;
+- current default policy is a 30-day Renewal Window and 7-day Critical Window, exposed through configuration;
+- host coverage uses `Fully Covered`, `Partial`, `Uncovered`, `No Declared Hosts`, or `Not Reported`;
+- declared-host coverage is not live reachability evidence;
+- Secret collection and Ingress mapping maintain separate collection evidence;
+- Governance owns view and sync; Kubernetes Secret Operations owns rotation;
+- the collector deliberately accesses only `tls.crt`; private-key and unrelated Secret values must not be accessed or persisted;
+- table Details opens the shared Full Workspace Modal directly; no intermediate expanded row is used;
+- Rows refreshes the owning TLS inventory scope and all numeric pagination links preserve active filters.
+
+### Compact operation destinations
+
+Operational Workflow Catalog actions use naturally sized secondary buttons. Do not use large solid-Violet blocks for every destination. The catalog row itself owns destination grouping; action controls must not create an additional nested card surface.
+
+### Operational Point Flow
+
+Use `components/operational_point_flow.html` for concise supporting sequences. For Bulk TLS Rotation, the flow is expandable and closed by default. It contains numbered points only; required upload fields, validation feedback, and mutation actions remain outside the expandable content.
