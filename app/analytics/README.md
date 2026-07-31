@@ -182,6 +182,8 @@ refresh. A pending or blocked response must retain the page wrapper selected by
 `hx-select` so the workspace never becomes a blank replacement. Capacity
 Analysis must retain the agreed Cluster → Node selector hierarchy.
 
+Storage Analysis uses mixed but explicit scope ownership: Cluster and Namespace remain top controls, Node is local to the Filesystem tab, PVC evidence follows Namespace, and PV evidence remains cluster-scoped. Storage uses one canonical `tab` parameter. Filesystem, PVC, and PV panels lazy-load on first activation and own their local HTMX filter and pagination indicators. PVC usage is not presented as synthetic PV utilization.
+
 ## Analytics presentation contract
 
 - Use the shared Analytics content-tab component and `kaoriAnalyticsTabs`; do not maintain a separate Overview-only tab implementation.

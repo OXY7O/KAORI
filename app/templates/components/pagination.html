@@ -7,8 +7,9 @@
 {% macro page_size_classes() -%}
     min-h-9 cursor-pointer rounded-md border border-outline-strong bg-surface-card px-3 py-2 text-xs font-semibold text-content-secondary transition-colors outline-none focus:border-kaori-primary focus:ring-2 focus:ring-kaori-accent/40
 {%- endmacro %}
-{% macro numeric_pages(current_page, total_pages, page_param='page', hx_target=None, hx_indicator=None, endpoint=None, query_params=None, hx_swap='innerHTML') -%}
+{% macro numeric_pages(current_page, total_pages, page_param='page', hx_target=None, hx_indicator=None, endpoint=None, query_params=None, hx_swap='innerHTML', href_endpoint=None) -%}
     {% set endpoint_name = endpoint or request.endpoint %}
+    {% set href_endpoint_name = href_endpoint or endpoint_name %}
     {% set window_start = [1, current_page - 2]|max %}
     {% set window_end = [total_pages, current_page + 2]|min %}
     <span class="inline-flex items-center gap-1"
@@ -20,8 +21,9 @@
         {% if window_start > 1 %}
             {% set first_args = query_params.copy() if query_params else request.args.to_dict() %}
             {% set _ = first_args.update({page_param: 1}) %}
-            {% set first_url = url_for(endpoint_name, **first_args) %}
-            <a href="{{ first_url }}"{% if hx_target %} hx-get="{{ first_url }}" hx-target="{{ hx_target }}" hx-swap="{{ hx_swap }}"{% if hx_indicator %} hx-indicator="{{ hx_indicator }}"{% endif %}{% endif %} class="{{ navigation_classes(false) }} min-w-9 px-2">1</a>
+            {% set first_url = url_for(href_endpoint_name, **first_args) %}
+            {% set first_hx_url = url_for(endpoint_name, **first_args) %}
+            <a href="{{ first_url }}"{% if hx_target %} hx-get="{{ first_hx_url }}" hx-target="{{ hx_target }}" hx-swap="{{ hx_swap }}"{% if hx_indicator %} hx-indicator="{{ hx_indicator }}"{% endif %}{% endif %} class="{{ navigation_classes(false) }} min-w-9 px-2">1</a>
             {% if window_start > 2 %}<span class="px-1 text-content-muted" aria-hidden="true">…</span>{% endif %}
         {% endif %}
         {% for page_number in range(window_start, window_end + 1) %}
@@ -30,16 +32,18 @@
             {% else %}
                 {% set page_args = query_params.copy() if query_params else request.args.to_dict() %}
                 {% set _ = page_args.update({page_param: page_number}) %}
-                {% set page_url = url_for(endpoint_name, **page_args) %}
-                <a href="{{ page_url }}"{% if hx_target %} hx-get="{{ page_url }}" hx-target="{{ hx_target }}" hx-swap="{{ hx_swap }}"{% if hx_indicator %} hx-indicator="{{ hx_indicator }}"{% endif %}{% endif %} class="{{ navigation_classes(false) }} min-w-9 px-2">{{ page_number }}</a>
+                {% set page_url = url_for(href_endpoint_name, **page_args) %}
+                {% set page_hx_url = url_for(endpoint_name, **page_args) %}
+                <a href="{{ page_url }}"{% if hx_target %} hx-get="{{ page_hx_url }}" hx-target="{{ hx_target }}" hx-swap="{{ hx_swap }}"{% if hx_indicator %} hx-indicator="{{ hx_indicator }}"{% endif %}{% endif %} class="{{ navigation_classes(false) }} min-w-9 px-2">{{ page_number }}</a>
             {% endif %}
         {% endfor %}
         {% if window_end < total_pages %}
             {% if window_end < total_pages - 1 %}<span class="px-1 text-content-muted" aria-hidden="true">…</span>{% endif %}
             {% set last_args = query_params.copy() if query_params else request.args.to_dict() %}
             {% set _ = last_args.update({page_param: total_pages}) %}
-            {% set last_url = url_for(endpoint_name, **last_args) %}
-            <a href="{{ last_url }}"{% if hx_target %} hx-get="{{ last_url }}" hx-target="{{ hx_target }}" hx-swap="{{ hx_swap }}"{% if hx_indicator %} hx-indicator="{{ hx_indicator }}"{% endif %}{% endif %} class="{{ navigation_classes(false) }} min-w-9 px-2">{{ total_pages }}</a>
+            {% set last_url = url_for(href_endpoint_name, **last_args) %}
+            {% set last_hx_url = url_for(endpoint_name, **last_args) %}
+            <a href="{{ last_url }}"{% if hx_target %} hx-get="{{ last_hx_url }}" hx-target="{{ hx_target }}" hx-swap="{{ hx_swap }}"{% if hx_indicator %} hx-indicator="{{ hx_indicator }}"{% endif %}{% endif %} class="{{ navigation_classes(false) }} min-w-9 px-2">{{ total_pages }}</a>
         {% endif %}
     </span>
 {%- endmacro %}

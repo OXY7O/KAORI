@@ -162,25 +162,6 @@
     "app/templates/analytics/partials/_load_tracker.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/analytics/storage/partials/_capacity_utilization_panel.html": {
-      "arbitrary_text_sizes": 2
-    },
-    "app/templates/analytics/storage/partials/_filesystem_panel.html": {
-      "arbitrary_text_sizes": 2
-    },
-    "app/templates/analytics/storage/partials/_hero.html": {
-      "arbitrary_text_sizes": 2,
-      "arbitrary_tracking": 2
-    },
-    "app/templates/analytics/storage/partials/_overview.html": {
-      "arbitrary_text_sizes": 3
-    },
-    "app/templates/analytics/storage/partials/_persistent_volume_claims_panel.html": {
-      "arbitrary_text_sizes": 3
-    },
-    "app/templates/analytics/storage/partials/_persistent_volumes_panel.html": {
-      "arbitrary_text_sizes": 2
-    },
     "app/templates/analytics/top_consumers/partials/_hero.html": {
       "arbitrary_text_sizes": 2,
       "arbitrary_tracking": 2

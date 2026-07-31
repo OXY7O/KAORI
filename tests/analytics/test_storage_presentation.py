@@ -1,0 +1,59 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def read(relative: str) -> str:
+    return (ROOT / relative).read_text(encoding='utf-8')
+
+
+def test_storage_service_uses_semantic_tones_and_one_pressure_threshold() -> None:
+    service = read('app/analytics/storage/service.py')
+
+    assert "return {'label': 'Critical', 'tone': 'critical'}" in service
+    assert "return {'label': 'Watch', 'tone': 'warning'}" in service
+    assert "return {'label': 'Healthy', 'tone': 'normal'}" in service
+    assert "if percent >= 90" in service
+    assert "if percent >= 75" in service
+    assert "if percent >= 60" not in service
+    assert "'class': 'bg-" not in service
+
+
+def test_storage_payload_distinguishes_unavailable_from_zero() -> None:
+    payloads = read('app/analytics/common/payloads.py')
+    storage_payload = payloads.split('def get_empty_storage_payload', 1)[1].split('def get_empty_workload_payload', 1)[0]
+
+    assert "'evidence_available': False" in storage_payload
+    assert "'usage_percent': None" in storage_payload
+    assert "'capacity': 'N/A'" in storage_payload
+    assert "'risk': {'label': 'Unknown', 'tone': 'unknown'}" in storage_payload
+
+
+def test_storage_pv_summary_uses_factual_provisioning_semantics() -> None:
+    service = read('app/analytics/storage/service.py')
+    capacity = read('app/templates/analytics/storage/partials/_capacity_utilization_panel.html')
+    pv_panel = read('app/templates/analytics/storage/partials/_persistent_volumes_panel.html')
+
+    for term in (
+        'observed_claim_usage',
+        'requested_claim_capacity',
+        'unallocated_provisioned_difference',
+    ):
+        assert term in service
+    assert 'PV Provisioned Capacity Consumption' not in capacity
+    assert 'PV Consumed' not in capacity
+    assert 'Provisioned Capacity Consumption' not in pv_panel
+    assert 'Persistent Volume Provisioning Context' in capacity
+
+
+def test_storage_recommendations_use_owning_tab_destinations() -> None:
+    engine = read('app/intelligence/recommendation_engine.py')
+    recommendations = read('app/templates/analytics/storage/partials/_recommendations.html')
+
+    assert "'storage_filesystem': '/analytics/storage?tab=filesystem'" in engine
+    assert "'storage_pvc': '/analytics/storage?tab=pvc'" in engine
+    assert "'storage_pv': '/analytics/storage?tab=pv'" in engine
+    assert "target_tab = 'filesystem'" in recommendations
+    assert "tab=target_tab" in recommendations

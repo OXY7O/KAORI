@@ -1,0 +1,43 @@
+{% import "components/pagination.html" as pagination_ui %}
+{% set current_page = pagination.page|default(1) %}
+{% set total_pages = pagination.total_pages|default(1) %}
+{% set total_rows = pagination.total_items|default(0) %}
+{% set per_page = pagination.per_page|default(5) %}
+{% set start_item = pagination.start_item|default(0) %}
+{% set end_item = pagination.end_item|default(0) %}
+{% set per_page_options = [5, 10, 25, 50] %}
+{% if selected_storage_tab == 'filesystem' %}
+    {% set page_param = 'filesystem_page' %}{% set per_page_param = 'filesystem_per_page' %}
+    {% set panel_id = 'storage-filesystem-panel' %}{% set form_id = 'storage-filesystem-filter-form' %}{% set indicator_id = 'storage-filesystem-loading-indicator' %}
+    {% set partial_endpoint = 'analytics.storage_filesystem_summary' %}{% set resource_label = 'Filesystem Records' %}
+    {% set query_params = {'cluster_id': cluster.id if cluster else '', 'namespace': selected_namespace, 'tab': 'filesystem', 'storage_node': selected_storage_node, 'filesystem_per_page': per_page} %}
+{% elif selected_storage_tab == 'pv' %}
+    {% set page_param = 'pv_page' %}{% set per_page_param = 'pv_per_page' %}
+    {% set panel_id = 'persistent-volumes-panel' %}{% set form_id = 'persistent-volumes-filter-form' %}{% set indicator_id = 'persistent-volumes-loading-indicator' %}
+    {% set partial_endpoint = 'analytics.storage_persistent_summary' %}{% set resource_label = 'Volumes' %}
+    {% set query_params = {'cluster_id': cluster.id if cluster else '', 'namespace': selected_namespace, 'tab': 'pv', 'pv_search': selected_pv_search, 'pv_status': selected_pv_status, 'pv_storage_class': selected_pv_storage_class, 'pv_per_page': per_page} %}
+{% else %}
+    {% set page_param = 'pvc_page' %}{% set per_page_param = 'pvc_per_page' %}
+    {% set panel_id = 'persistent-volume-claims-panel' %}{% set form_id = 'persistent-volume-claims-filter-form' %}{% set indicator_id = 'persistent-volume-claims-loading-indicator' %}
+    {% set partial_endpoint = 'analytics.storage_persistent_summary' %}{% set resource_label = 'Claims' %}
+    {% set query_params = {'cluster_id': cluster.id if cluster else '', 'namespace': selected_namespace, 'tab': 'pvc', 'pvc_search': selected_pvc_search, 'pvc_status': selected_pvc_status, 'pvc_storage_class': selected_pvc_storage_class, 'pvc_per_page': per_page} %}
+{% endif %}
+{% set previous_args = query_params.copy() %}{% set _ = previous_args.update({page_param: current_page - 1}) %}
+{% set next_args = query_params.copy() %}{% set _ = next_args.update({page_param: current_page + 1}) %}
+{% set previous_href = url_for('analytics.storage', **previous_args) %}{% set previous_hx = url_for(partial_endpoint, **previous_args) %}
+{% set next_href = url_for('analytics.storage', **next_args) %}{% set next_hx = url_for(partial_endpoint, **next_args) %}
+<div class="flex flex-col gap-3 border-t border-outline-default pt-4 lg:flex-row lg:items-center lg:justify-between">
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <div class="text-xs text-content-muted">Showing <span class="font-semibold text-content-secondary">{{ start_item }}</span>–<span class="font-semibold text-content-secondary">{{ end_item }}</span> of <span class="font-semibold text-content-secondary">{{ total_rows }}</span> {{ resource_label }}</div>
+        <select name="{{ per_page_param }}" aria-label="Rows Per Page" class="{{ pagination_ui.page_size_classes() }}" hx-get="{{ url_for(partial_endpoint) }}" hx-trigger="change" hx-target="#{{ panel_id }}" hx-swap="outerHTML" hx-sync="#{{ panel_id }}:replace" hx-include="#{{ form_id }}, [name='{{ per_page_param }}']" hx-indicator="#{{ indicator_id }}">
+            {% for option in per_page_options %}<option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
+        </select>
+    </div>
+    {% if total_pages > 1 %}
+        <div class="flex flex-wrap items-center gap-2">
+            {% if current_page > 1 %}<a href="{{ previous_href }}" hx-get="{{ previous_hx }}" hx-target="#{{ panel_id }}" hx-swap="outerHTML" hx-sync="#{{ panel_id }}:replace" hx-indicator="#{{ indicator_id }}" class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>{% else %}<span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>{% endif %}
+            {{ pagination_ui.numeric_pages(current_page, total_pages, page_param, hx_target='#' ~ panel_id, hx_indicator='#' ~ indicator_id, endpoint=partial_endpoint, query_params=query_params, hx_swap='outerHTML', href_endpoint='analytics.storage') }}
+            {% if current_page < total_pages %}<a href="{{ next_href }}" hx-get="{{ next_hx }}" hx-target="#{{ panel_id }}" hx-swap="outerHTML" hx-sync="#{{ panel_id }}:replace" hx-indicator="#{{ indicator_id }}" class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>{% else %}<span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>{% endif %}
+        </div>
+    {% endif %}
+</div>

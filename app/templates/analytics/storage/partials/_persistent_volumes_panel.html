@@ -1,66 +1,69 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "analytics/components/_evidence_record_list.html" as evidence_list %}
+{% import "analytics/components/_record_filter_bar.html" as record_filter %}
 {% import "components/loading_bar.html" as loading_bar %}
-{% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
 {% set panel_indicator = 'persistent-volumes-loading-indicator' %}
-{% set input_classes = 'h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none transition hover:border-outline-strong focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft' %}
+{% set pv = storage_summary.persistent_storage.pv %}
 <div id="persistent-volumes-panel" class="space-y-5">
     <header class="border-b border-outline-subtle pb-5">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="database" class="h-5 w-5"></i></span><div><h3 class="text-lg font-semibold text-content-primary">Persistent Volumes</h3><p class="mt-1 text-sm leading-6 text-content-muted">Review provisioned capacity, claim binding, storage class, reclaim policy, and volume-level risk.</p></div></div>
-            {{ table_label.metadata_label(storage_summary.persistent_storage.pv.count ~ ' Volumes', 'database') }}
+            <div class="flex items-start gap-3"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="database" class="h-5 w-5"></i></span><div><h3 class="text-lg font-semibold text-content-primary">Persistent Volumes</h3><p class="mt-1 text-sm leading-6 text-content-muted">Review cluster provisioned capacity, claim binding, storage class, reclaim policy, lifecycle state, and volume-level risk.</p></div></div>
+            {{ table_label.metadata_label('Scope: Cluster', 'globe-2') }}
         </div>
         {{ loading_bar.render(panel_indicator, label='Refreshing Persistent Volumes') }}
     </header>
 
-    <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
-        <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+    <section class="{{ analysis_surface.evidence_shell_classes() }}">
+        <div class="{{ analysis_surface.metric_grid_classes(4) }}">
             {% set metrics = [
-                ('Volumes', storage_summary.persistent_storage.pv.count, 'Provisioned inventory', 'database'),
-                ('Provisioned', storage_summary.persistent_storage.pv.capacity, 'Total PV capacity', 'hard-drive'),
-                ('Consumed', storage_summary.persistent_storage.pv.used, storage_summary.persistent_storage.pv.used_percent ~ '% of provisioned', 'hard-drive-download'),
-                ('Available', storage_summary.persistent_storage.pv.free, 'Unconsumed provisioned capacity', 'hard-drive')
+                ('Volumes', pv.count, 'Cluster PV inventory', 'database'),
+                ('Provisioned Capacity', pv.capacity, 'Total PV capacity', 'hard-drive'),
+                ('Requested Claims', pv.requested_claim_capacity, 'Requested across all namespaces', 'hard-drive-upload'),
+                ('Observed Claim Usage', pv.observed_claim_usage, 'Observed across all namespaces', 'hard-drive-download')
             ] %}
-            {% for label, value, helper, icon in metrics %}<div class="min-w-0 p-4"><div class="flex items-center gap-2.5"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p></div><p class="mt-3 break-words text-xl font-semibold tabular-nums text-content-primary">{{ value }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p></div>{% endfor %}
+            {% for label, value, helper, icon in metrics %}<article class="{{ analysis_surface.metric_cell_classes() }}"><div class="flex items-center gap-2.5"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p></div><p class="mt-3 break-words text-xl font-semibold tabular-nums {{ 'text-content-primary' if value != 'N/A' else analysis_surface.unavailable_value_classes() }}">{{ value }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p></article>{% endfor %}
         </div>
-        <div class="border-t border-outline-subtle bg-surface-card px-4 py-3"><div class="flex items-center justify-between gap-3 text-xs"><span class="font-medium text-content-secondary">Provisioned Capacity Consumption</span><span class="font-semibold tabular-nums text-content-primary">{{ storage_summary.persistent_storage.pv.used_percent }}%</span></div>{{ progress_bar.bar(storage_summary.persistent_storage.pv.used_percent, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label='Provisioned PV consumption') }}</div>
     </section>
 
-    <form id="persistent-volumes-filter-form"
-          method="GET"
-          action="{{ url_for('analytics.storage') }}"
-          hx-get="{{ url_for('analytics.storage_persistent_summary') }}"
-          hx-trigger="change[event.target.matches('select')] delay:120ms, keyup[event.target.name === 'pv_search'] changed delay:450ms, search[event.target.name === 'pv_search']"
-          hx-target="#persistent-volumes-panel"
-          hx-swap="outerHTML"
-          hx-sync="#persistent-volumes-panel:replace"
-          hx-indicator="#{{ panel_indicator }}"
-          class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_220px]">
+    {% call record_filter.form(
+        'persistent-volumes-filter-form',
+        url_for('analytics.storage'),
+        url_for('analytics.storage_persistent_summary'),
+        '#persistent-volumes-panel',
+        '#' ~ panel_indicator,
+        "change[event.target.matches('select')] delay:120ms, keyup[event.target.name === 'pv_search'] changed delay:450ms, search[event.target.name === 'pv_search']"
+    ) %}
         <input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}">
         <input type="hidden" name="namespace" value="{{ selected_namespace }}">
-        <input type="hidden" name="storage_tab" value="pv">
+        <input type="hidden" name="tab" value="pv">
         <input type="hidden" name="pv_page" value="1">
-        <label class="block min-w-0"><span class="sr-only">Search PV</span><input type="search" name="pv_search" value="{{ selected_pv_search }}" placeholder="Search PV or claim..." class="{{ input_classes }}"></label>
-        <label class="block"><span class="sr-only">PV Status</span><select name="pv_status" class="{{ input_classes }}"><option value="">All Status</option>{% for status in storage_summary.persistent_storage.pv_status_options %}<option value="{{ status }}" {% if selected_pv_status == status %}selected{% endif %}>{{ status }}</option>{% endfor %}</select></label>
-        <label class="block"><span class="sr-only">PV Storage Class</span><select name="pv_storage_class" class="{{ input_classes }}"><option value="">All StorageClass</option>{% for storage_class in storage_summary.persistent_storage.pv_storage_class_options %}<option value="{{ storage_class }}" {% if selected_pv_storage_class == storage_class %}selected{% endif %}>{{ storage_class }}</option>{% endfor %}</select></label>
-    </form>
+        {{ record_filter.search('pv_search', selected_pv_search, 'Search PV or claim...', 'Search PV') }}
+        {{ record_filter.select('pv_status', selected_pv_status, storage_summary.persistent_storage.pv_status_options, 'All Status', 'PV Status') }}
+        {{ record_filter.select('pv_storage_class', selected_pv_storage_class, storage_summary.persistent_storage.pv_storage_class_options, 'All StorageClass', 'PV Storage Class') }}
+    {% endcall %}
 
-    <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
-        <div class="hidden grid-cols-12 gap-3 border-b border-outline-subtle bg-surface-card px-4 py-3 lg:grid">
-            <div class="col-span-4 text-xs font-semibold uppercase tracking-wide text-content-muted">PV &amp; Claim</div><div class="col-span-3 text-xs font-semibold uppercase tracking-wide text-content-muted">Binding &amp; Capacity</div><div class="col-span-3 text-xs font-semibold uppercase tracking-wide text-content-muted">Storage Policy</div><div class="col-span-2 text-right text-xs font-semibold uppercase tracking-wide text-content-muted">Risk</div>
-        </div>
+    {% call evidence_list.shell('Persistent Volume Records') %}
+        {% call evidence_list.header() %}
+            {{ evidence_list.header_cell('PV & Claim', 4) }}
+            {{ evidence_list.header_cell('Binding & Capacity', 3) }}
+            {{ evidence_list.header_cell('Storage Policy', 3) }}
+            {{ evidence_list.header_cell('Risk', 2, 'right') }}
+        {% endcall %}
         <div class="divide-y divide-outline-subtle">
             {% for row in storage_summary.persistent_storage.pv_rows %}
-                {% set risk_label = row.risk.label|default('Unknown') %}{% set risk_lower = risk_label|lower %}{% set risk_tone = 'critical' if 'critical' in risk_lower or 'high' in risk_lower else ('warning' if 'warning' in risk_lower or 'medium' in risk_lower else ('normal' if 'normal' in risk_lower or 'low' in risk_lower else 'unknown')) %}
-                <article class="grid gap-4 px-4 py-4 lg:grid-cols-12 lg:items-center">
-                    <div class="min-w-0 lg:col-span-4"><div class="flex min-w-0 items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="database" class="h-4 w-4"></i></span><div class="min-w-0"><p class="break-all text-sm font-semibold leading-5 text-content-primary">{{ row.name }}</p><p class="mt-1 break-all text-xs leading-5 text-content-muted">Claim: {{ row.claim }}</p></div></div></div>
-                    <div class="min-w-0 lg:col-span-3"><div class="flex flex-wrap gap-2">{{ table_label.status_label(row.status, tone='normal' if row.status|lower == 'bound' else 'unknown', size='compact') }}{{ table_label.metadata_label(row.storage_class, 'layers', wrap=true, size='compact') }}</div><p class="mt-2 text-sm font-semibold text-content-primary">{{ row.capacity }}</p></div>
-                    <div class="lg:col-span-3"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Reclaim Policy</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ row.reclaim_policy }}</p><p class="mt-1 text-xs leading-5 text-content-muted">Validate retention behavior before deleting the bound claim.</p></div>
-                    <div class="lg:col-span-2 lg:text-right">{{ table_label.status_label(risk_label, tone=risk_tone, size='compact') }}</div>
-                </article>
+                {% call evidence_list.row() %}
+                    {% call evidence_list.cell(4) %}{{ evidence_list.identity('database', row.name, 'Claim: ' ~ row.claim) }}{% endcall %}
+                    {% call evidence_list.cell(3) %}{{ evidence_list.mobile_label('Binding & Capacity') }}<div class="flex flex-wrap gap-2">{{ table_label.status_label(row.status, row.status_tone|default('unknown'), size='compact') }}{{ table_label.metadata_label(row.storage_class, 'layers', wrap=true, size='compact') }}</div><p class="mt-2 text-sm font-semibold {{ 'text-content-primary' if row.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ row.capacity }}</p>{% endcall %}
+                    {% call evidence_list.cell(3) %}{{ evidence_list.mobile_label('Storage Policy') }}<p class="{{ analysis_surface.metric_label_classes() }}">Reclaim Policy</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ row.reclaim_policy }}</p>{% endcall %}
+                    {% call evidence_list.cell(2, 'right') %}{{ evidence_list.mobile_label('Risk') }}{{ table_label.status_label(row.risk.label|default('Unknown'), row.risk.tone|default('unknown'), size='compact') }}{% endcall %}
+                {% endcall %}
             {% else %}
-                {% set empty_state_icon = "hard-drive" %}{% set empty_state_title = "No PV Metrics Available" %}{% set empty_state_description = "Persistent volume metrics will appear after Prometheus returns storage capacity and status data." %}{% set empty_state_min_height = "min-h-[190px]" %}{% include "components/states/_empty_state.html" %}
+                {{ evidence_list.empty('No PV Metrics Available', 'No volumes matched the current local filters, or committed PV evidence is unavailable.', 'database') }}
             {% endfor %}
         </div>
-    </section>
-    {% set selected_storage_tab = 'pv' %}{% set pagination = storage_summary.persistent_storage.pv_pagination %}{% include "analytics/storage/partials/_persistent_pagination.html" %}
+    {% endcall %}
+    {% set selected_storage_tab = 'pv' %}{% set pagination = storage_summary.persistent_storage.pv_pagination %}{% include "analytics/storage/partials/_record_pagination.html" %}
+
+    <section class="{{ analysis_surface.record_guidance_classes() }}"><div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="shield-check" class="h-4 w-4"></i></span><div><h4 class="{{ analysis_surface.section_title_classes() }}">Operational Guidance</h4><p class="mt-1 text-xs leading-5 text-content-secondary">Validate claim ownership and reclaim policy before deleting, reusing, or cleaning up Released and Available volumes. A reclaim policy is factual configuration, not a healthy or unhealthy state by itself.</p></div></div></section>
 </div>

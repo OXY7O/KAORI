@@ -123,12 +123,12 @@ SOURCE_HREFS = {
     'top_consumers_practice': '/analytics/top-consumers',
     'top_cpu_consumer': '/analytics/top-consumers',
     'top_memory_consumer': '/analytics/top-consumers',
-    'storage': '/analytics/storage',
-    'storage_filesystem': '/analytics/storage',
-    'storage_pvc': '/analytics/storage',
-    'storage_pv': '/analytics/storage',
-    'storage_baseline': '/analytics/storage',
-    'storage_practice': '/analytics/storage',
+    'storage': '/analytics/storage?tab=capacity',
+    'storage_filesystem': '/analytics/storage?tab=filesystem',
+    'storage_pvc': '/analytics/storage?tab=pvc',
+    'storage_pv': '/analytics/storage?tab=pv',
+    'storage_baseline': '/analytics/storage?tab=capacity',
+    'storage_practice': '/analytics/storage?tab=capacity',
     'workload': '/analytics/workload',
     'workload_quota': '/analytics/workload',
     'workload_resource_mapping': '/analytics/workload',
@@ -797,9 +797,9 @@ def build_storage_actionable_recommendations(
     if not isinstance(filesystem_summary, dict):
         filesystem_summary = {}
 
-    filesystem_rows = _as_list(node_filesystem.get('rows', []))
-    pvc_rows = _as_list(persistent_storage.get('pvc_rows', []))
-    pv_rows = _as_list(persistent_storage.get('pv_rows', []))
+    filesystem_rows = _as_list(node_filesystem.get('all_rows') or node_filesystem.get('rows', []))
+    pvc_rows = _as_list(persistent_storage.get('pvc_all_rows') or persistent_storage.get('pvc_rows', []))
+    pv_rows = _as_list(persistent_storage.get('pv_all_rows') or persistent_storage.get('pv_rows', []))
 
     highest_filesystem_usage = get_numeric_value(
         filesystem_summary.get('highest_usage', filesystem_summary.get('usage_percent', 0)),
@@ -826,7 +826,7 @@ def build_storage_actionable_recommendations(
                 source_label='Filesystem Storage',
                 resource='storage',
                 action_type='storage_review',
-                href='/analytics/storage',
+                href='/analytics/storage?tab=filesystem',
             )
         )
 
@@ -848,7 +848,7 @@ def build_storage_actionable_recommendations(
                 source_label='Filesystem Storage',
                 resource='storage',
                 action_type='storage_review',
-                href='/analytics/storage',
+                href='/analytics/storage?tab=filesystem',
             )
         )
 
@@ -880,7 +880,7 @@ def build_storage_actionable_recommendations(
                 source_label='Persistent Volume Claim',
                 resource='storage',
                 action_type='storage_review',
-                href='/analytics/storage',
+                href='/analytics/storage?tab=pvc',
             )
         )
 
@@ -902,7 +902,7 @@ def build_storage_actionable_recommendations(
                 source_label='Persistent Volume Claim',
                 resource='storage',
                 action_type='storage_review',
-                href='/analytics/storage',
+                href='/analytics/storage?tab=pvc',
             )
         )
 
@@ -924,7 +924,7 @@ def build_storage_actionable_recommendations(
                 source_label='Persistent Volume',
                 resource='storage',
                 action_type='storage_review',
-                href='/analytics/storage',
+                href='/analytics/storage?tab=pv',
             )
         )
 
@@ -945,7 +945,7 @@ def build_storage_actionable_recommendations(
             source_label='Storage Baseline',
             resource='storage',
             action_type='storage_review',
-            href='/analytics/storage',
+            href='/analytics/storage?tab=capacity',
             is_actionable=False,
         ),
         build_recommendation(
@@ -958,7 +958,7 @@ def build_storage_actionable_recommendations(
             source_label='Storage Operating Practice',
             resource='storage',
             action_type='storage_review',
-            href='/analytics/storage',
+            href='/analytics/storage?tab=capacity',
             is_actionable=False,
         ),
     ]

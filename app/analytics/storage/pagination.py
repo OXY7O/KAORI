@@ -23,8 +23,16 @@ def resolve_storage_pagination(
     allowed_per_page: Sequence[int] = (5, 10, 25, 50),
     default_per_page: int = 5,
 ) -> dict[str, dict[str, int]]:
-    """Resolve independent PVC and PV pagination state from one request."""
+    """Resolve independent filesystem, PVC, and PV pagination state."""
     return {
+        'filesystem': {
+            'page': _positive_int(query_args.get('filesystem_page'), 1),
+            'per_page': _per_page(
+                query_args.get('filesystem_per_page'),
+                allowed_per_page,
+                default_per_page,
+            ),
+        },
         'pvc': {
             'page': _positive_int(query_args.get('pvc_page'), 1),
             'per_page': _per_page(

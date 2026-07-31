@@ -1,66 +1,74 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "analytics/components/_evidence_record_list.html" as evidence_list %}
+{% import "analytics/components/_record_filter_bar.html" as record_filter %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
 {% set panel_indicator = 'persistent-volume-claims-loading-indicator' %}
-{% set input_classes = 'h-10 w-full rounded-md border border-outline-default bg-surface-card px-3 text-sm text-content-primary outline-none transition hover:border-outline-strong focus:border-kaori-primary focus:ring-2 focus:ring-kaori-soft' %}
+{% set pvc = storage_summary.persistent_storage.pvc %}
 <div id="persistent-volume-claims-panel" class="space-y-5">
     <header class="border-b border-outline-subtle pb-5">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="box" class="h-5 w-5"></i></span><div><h3 class="text-lg font-semibold text-content-primary">Persistent Volume Claims</h3><p class="mt-1 text-sm leading-6 text-content-muted">Review namespace demand, requested capacity, observed usage, binding state, and claim-level risk.</p></div></div>
-            {{ table_label.metadata_label(storage_summary.persistent_storage.pvc.count ~ ' Claims', 'boxes') }}
+            <div class="flex items-start gap-3"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="box" class="h-5 w-5"></i></span><div><h3 class="text-lg font-semibold text-content-primary">Persistent Volume Claims</h3><p class="mt-1 text-sm leading-6 text-content-muted">Review namespace demand, requested capacity, observed usage, binding state, and claim-level risk.</p></div></div>
+            {{ table_label.metadata_label('Scope: ' ~ pvc.scope_label, 'scan-search') }}
         </div>
         {{ loading_bar.render(panel_indicator, label='Refreshing Persistent Volume Claims') }}
     </header>
 
-    <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
-        <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+    <section class="{{ analysis_surface.evidence_shell_classes() }}">
+        <div class="{{ analysis_surface.metric_grid_classes(4) }}">
             {% set metrics = [
-                ('Claims', storage_summary.persistent_storage.pvc.count, 'Inventory in active scope', 'boxes'),
-                ('Requested', storage_summary.persistent_storage.pvc.requested, 'Capacity requested by claims', 'hard-drive-upload'),
-                ('Used', storage_summary.persistent_storage.pvc.used, storage_summary.persistent_storage.pvc.used_percent ~ '% of requested', 'hard-drive-download'),
-                ('Free', storage_summary.persistent_storage.pvc.free, 'Remaining requested capacity', 'hard-drive')
+                ('Claims', pvc.count, 'Inventory in active namespace scope', 'boxes'),
+                ('Requested', pvc.requested, 'Capacity requested by claims', 'hard-drive-upload'),
+                ('Observed Usage', pvc.used, ('%.1f%% of requested'|format(pvc.used_percent|float)) if pvc.evidence_available else 'Usage evidence unavailable', 'hard-drive-download'),
+                ('Remaining', pvc.free, ('%.1f%% remaining'|format(pvc.free_percent|float)) if pvc.evidence_available else 'Availability evidence unavailable', 'hard-drive')
             ] %}
-            {% for label, value, helper, icon in metrics %}<div class="min-w-0 p-4"><div class="flex items-center gap-2.5"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p></div><p class="mt-3 break-words text-xl font-semibold tabular-nums text-content-primary">{{ value }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p></div>{% endfor %}
-        </div>
-        <div class="border-t border-outline-subtle bg-surface-card px-4 py-3"><div class="flex items-center justify-between gap-3 text-xs"><span class="font-medium text-content-secondary">Aggregate Claim Utilization</span><span class="font-semibold tabular-nums text-content-primary">{{ storage_summary.persistent_storage.pvc.used_percent }}%</span></div>{{ progress_bar.bar(storage_summary.persistent_storage.pvc.used_percent, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label='Aggregate PVC utilization') }}</div>
-    </section>
-
-    <form id="persistent-volume-claims-filter-form"
-          method="GET"
-          action="{{ url_for('analytics.storage') }}"
-          hx-get="{{ url_for('analytics.storage_persistent_summary') }}"
-          hx-trigger="change[event.target.matches('select')] delay:120ms, keyup[event.target.name === 'pvc_search'] changed delay:450ms, search[event.target.name === 'pvc_search']"
-          hx-target="#persistent-volume-claims-panel"
-          hx-swap="outerHTML"
-          hx-sync="#persistent-volume-claims-panel:replace"
-          hx-indicator="#{{ panel_indicator }}"
-          class="grid gap-3 lg:grid-cols-[minmax(0,1fr)_180px_220px]">
-        <input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}">
-        <input type="hidden" name="namespace" value="{{ selected_namespace }}">
-        <input type="hidden" name="storage_tab" value="pvc">
-        <input type="hidden" name="pvc_page" value="1">
-        <label class="block min-w-0"><span class="sr-only">Search PVC</span><input type="search" name="pvc_search" value="{{ selected_pvc_search }}" placeholder="Search PVC or namespace..." class="{{ input_classes }}"></label>
-        <label class="block"><span class="sr-only">PVC Status</span><select name="pvc_status" class="{{ input_classes }}"><option value="">All Status</option>{% for status in storage_summary.persistent_storage.pvc_status_options %}<option value="{{ status }}" {% if selected_pvc_status == status %}selected{% endif %}>{{ status }}</option>{% endfor %}</select></label>
-        <label class="block"><span class="sr-only">PVC Storage Class</span><select name="pvc_storage_class" class="{{ input_classes }}"><option value="">All StorageClass</option>{% for storage_class in storage_summary.persistent_storage.pvc_storage_class_options %}<option value="{{ storage_class }}" {% if selected_pvc_storage_class == storage_class %}selected{% endif %}>{{ storage_class }}</option>{% endfor %}</select></label>
-    </form>
-
-    <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
-        <div class="hidden grid-cols-12 gap-3 border-b border-outline-subtle bg-surface-card px-4 py-3 lg:grid">
-            <div class="col-span-4 text-xs font-semibold uppercase tracking-wide text-content-muted">PVC &amp; Namespace</div><div class="col-span-3 text-xs font-semibold uppercase tracking-wide text-content-muted">Binding &amp; Storage Class</div><div class="col-span-3 text-xs font-semibold uppercase tracking-wide text-content-muted">Capacity Usage</div><div class="col-span-2 text-right text-xs font-semibold uppercase tracking-wide text-content-muted">Risk</div>
-        </div>
-        <div class="divide-y divide-outline-subtle">
-            {% for row in storage_summary.persistent_storage.pvc_rows %}
-                {% set risk_label = row.risk.label|default('Unknown') %}{% set risk_lower = risk_label|lower %}{% set risk_tone = 'critical' if 'critical' in risk_lower or 'high' in risk_lower else ('warning' if 'warning' in risk_lower or 'medium' in risk_lower else ('normal' if 'normal' in risk_lower or 'low' in risk_lower else 'unknown')) %}
-                <article class="grid gap-4 px-4 py-4 lg:grid-cols-12 lg:items-center">
-                    <div class="min-w-0 lg:col-span-4"><div class="flex min-w-0 items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="box" class="h-4 w-4"></i></span><div class="min-w-0"><p class="break-all text-sm font-semibold leading-5 text-content-primary">{{ row.name }}</p><p class="mt-1 break-all text-xs leading-5 text-content-muted">Namespace: {{ row.namespace }}</p></div></div></div>
-                    <div class="min-w-0 lg:col-span-3"><p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted lg:hidden">Binding &amp; Storage Class</p><div class="mt-1 flex flex-wrap gap-2">{{ table_label.status_label(row.status, tone='normal' if row.status|lower == 'bound' else 'unknown', size='compact') }}{{ table_label.metadata_label(row.storage_class, 'layers', wrap=true, size='compact') }}</div></div>
-                    <div class="lg:col-span-3"><div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">{{ row.used }} / {{ row.requested }}</span><span class="font-semibold tabular-nums text-content-primary">{{ row.usage_percent }}%</span></div>{{ progress_bar.bar(row.usage_percent, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-card', fill_classes='h-full rounded-full bg-kaori-primary', label=row.name ~ ' utilization') }}<p class="mt-1 text-[11px] text-content-muted">{{ row.free }} Free</p></div>
-                    <div class="lg:col-span-2 lg:text-right">{{ table_label.status_label(risk_label, tone=risk_tone, size='compact') }}</div>
-                </article>
-            {% else %}
-                {% set empty_state_icon = "database" %}{% set empty_state_title = "No PVC Metrics Available" %}{% set empty_state_description = "PVC metrics will appear after Prometheus returns persistent volume claim capacity and usage data." %}{% set empty_state_min_height = "min-h-[190px]" %}{% include "components/states/_empty_state.html" %}
+            {% for label, value, helper, icon in metrics %}
+                <article class="{{ analysis_surface.metric_cell_classes() }}"><div class="flex items-center gap-2.5"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p></div><p class="mt-3 break-words text-xl font-semibold tabular-nums {{ 'text-content-primary' if value != 'N/A' else analysis_surface.unavailable_value_classes() }}">{{ value }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p></article>
             {% endfor %}
         </div>
+        <div class="border-t border-outline-subtle px-4 py-3">
+            <div class="flex items-center justify-between gap-3 text-xs"><span class="font-medium text-content-secondary">Aggregate Claim Utilization · {{ pvc.scope_label }}</span><span class="font-semibold tabular-nums {{ 'text-content-primary' if pvc.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ ('%.1f%%'|format(pvc.used_percent|float)) if pvc.evidence_available else 'N/A' }}</span></div>
+            {% if pvc.evidence_available %}{{ progress_bar.bar(pvc.used_percent, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label='Aggregate PVC utilization') }}{% else %}<div class="mt-2 rounded-md border border-dashed border-outline-strong bg-surface-hover px-3 py-2 text-xs text-content-muted">Committed PVC request and usage evidence is unavailable.</div>{% endif %}
+        </div>
     </section>
-    {% set selected_storage_tab = 'pvc' %}{% set pagination = storage_summary.persistent_storage.pvc_pagination %}{% include "analytics/storage/partials/_persistent_pagination.html" %}
+
+    {% call record_filter.form(
+        'persistent-volume-claims-filter-form',
+        url_for('analytics.storage'),
+        url_for('analytics.storage_persistent_summary'),
+        '#persistent-volume-claims-panel',
+        '#' ~ panel_indicator,
+        "change[event.target.matches('select')] delay:120ms, keyup[event.target.name === 'pvc_search'] changed delay:450ms, search[event.target.name === 'pvc_search']"
+    ) %}
+        <input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}">
+        <input type="hidden" name="namespace" value="{{ selected_namespace }}">
+        <input type="hidden" name="tab" value="pvc">
+        <input type="hidden" name="pvc_page" value="1">
+        {{ record_filter.search('pvc_search', selected_pvc_search, 'Search PVC or namespace...', 'Search PVC') }}
+        {{ record_filter.select('pvc_status', selected_pvc_status, storage_summary.persistent_storage.pvc_status_options, 'All Status', 'PVC Status') }}
+        {{ record_filter.select('pvc_storage_class', selected_pvc_storage_class, storage_summary.persistent_storage.pvc_storage_class_options, 'All StorageClass', 'PVC Storage Class') }}
+    {% endcall %}
+
+    {% call evidence_list.shell('Persistent Volume Claim Records') %}
+        {% call evidence_list.header() %}
+            {{ evidence_list.header_cell('PVC & Namespace', 4) }}
+            {{ evidence_list.header_cell('Binding & Storage Class', 3) }}
+            {{ evidence_list.header_cell('Capacity Usage', 3) }}
+            {{ evidence_list.header_cell('Risk', 2, 'right') }}
+        {% endcall %}
+        <div class="divide-y divide-outline-subtle">
+            {% for row in storage_summary.persistent_storage.pvc_rows %}
+                {% call evidence_list.row() %}
+                    {% call evidence_list.cell(4) %}{{ evidence_list.identity('box', row.name, 'Namespace: ' ~ row.namespace) }}{% endcall %}
+                    {% call evidence_list.cell(3) %}{{ evidence_list.mobile_label('Binding & Storage Class') }}<div class="flex flex-wrap gap-2">{{ table_label.status_label(row.status, row.status_tone|default('unknown'), size='compact') }}{{ table_label.metadata_label(row.storage_class, 'layers', wrap=true, size='compact') }}</div>{% endcall %}
+                    {% call evidence_list.cell(3) %}{{ evidence_list.mobile_label('Capacity Usage') }}<div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">{{ row.used }} / {{ row.requested }}</span><span class="font-semibold tabular-nums {{ 'text-content-primary' if row.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ ('%.1f%%'|format(row.usage_percent|float)) if row.evidence_available else 'N/A' }}</span></div>{% if row.evidence_available %}{{ progress_bar.bar(row.usage_percent, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=row.name ~ ' utilization') }}<p class="mt-1 text-xs text-content-muted">{{ row.free }} Free</p>{% else %}<div class="mt-2 rounded-md border border-dashed border-outline-strong bg-surface-hover px-3 py-2 text-xs text-content-muted">Claim capacity evidence unavailable</div>{% endif %}{% endcall %}
+                    {% call evidence_list.cell(2, 'right') %}{{ evidence_list.mobile_label('Risk') }}{{ table_label.status_label(row.risk.label|default('Unknown'), row.risk.tone|default('unknown'), size='compact') }}{% endcall %}
+                {% endcall %}
+            {% else %}
+                {{ evidence_list.empty('No PVC Metrics Available', 'No claims matched the current namespace and local filters, or committed PVC evidence is unavailable.', 'box') }}
+            {% endfor %}
+        </div>
+    {% endcall %}
+    {% set selected_storage_tab = 'pvc' %}{% set pagination = storage_summary.persistent_storage.pvc_pagination %}{% include "analytics/storage/partials/_record_pagination.html" %}
 </div>

@@ -1,0 +1,35 @@
+{# Local filter owner for record-oriented Analytics evidence panels. #}
+{% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
+
+{% macro form(form_id, action, hx_get, target, indicator, trigger, columns=3) -%}
+    {% set column_classes = 'lg:grid-cols-[minmax(0,1fr)_180px_220px]' if columns == 3 else 'lg:grid-cols-[minmax(0,1fr)_220px]' %}
+    <form id="{{ form_id }}"
+          method="get"
+          action="{{ action }}"
+          hx-get="{{ hx_get }}"
+          hx-trigger="{{ trigger }}"
+          hx-target="{{ target }}"
+          hx-swap="outerHTML"
+          hx-sync="{{ target }}:replace"
+          hx-indicator="{{ indicator }}"
+          class="grid gap-3 rounded-lg border border-outline-subtle bg-surface-card p-4 {{ column_classes }}">
+        {{ caller() }}
+    </form>
+{%- endmacro %}
+
+{% macro search(name, value, placeholder, label) -%}
+    <label class="block min-w-0">
+        <span class="sr-only">{{ label }}</span>
+        <input type="search" name="{{ name }}" value="{{ value }}" placeholder="{{ placeholder }}" class="{{ analytics_workspace.control_select_classes() }} mt-0 font-normal">
+    </label>
+{%- endmacro %}
+
+{% macro select(name, selected, options, empty_label, label) -%}
+    <label class="block min-w-0">
+        <span class="sr-only">{{ label }}</span>
+        <select name="{{ name }}" class="{{ analytics_workspace.control_select_classes() }} mt-0 font-normal">
+            <option value="">{{ empty_label }}</option>
+            {% for option in options %}<option value="{{ option }}" {% if selected == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
+        </select>
+    </label>
+{%- endmacro %}

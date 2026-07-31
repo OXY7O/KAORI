@@ -2,12 +2,11 @@
 {% import "analytics/components/_status_notice.html" as status_notice %}
 {% block title %}Storage Analysis{% endblock title %}
 {% block dashboard_content %}
-    <div id="storage-page" class="kaori-analytics-page space-y-6" data-analytics-page-tracker="storage-load-tracker" data-analytics-page-request-tracking="false">
+    <div id="storage-page" class="kaori-analytics-page space-y-6" data-analytics-page-request-tracking="false">
         {% include "analytics/storage/partials/_hero.html" %}
         {% if dependency_blocker %}
             {% include "components/dependencies/_blocker.html" %}
         {% else %}
-            {% set analytics_tracker_id = "storage-load-tracker" %}{% set analytics_page_id = "storage-page" %}{% set analytics_load_title = "Loading Storage Analysis" %}{% set analytics_load_description = "Loading filesystem and persistent storage sections." %}{% set analytics_load_complete_title = "Storage Analysis Fully Loaded" %}{% set analytics_load_complete_description = "All storage analysis sections have finished loading." %}{% include "analytics/partials/_load_tracker.html" %}
             {% if error %}{{ status_notice.render('Storage Data Unavailable', error, tone='warning') }}{% endif %}
             {% include "analytics/storage/partials/_controls_readiness.html" %}
             {% if cluster %}

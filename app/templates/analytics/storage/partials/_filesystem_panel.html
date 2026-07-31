@@ -1,88 +1,63 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "analytics/components/_evidence_record_list.html" as evidence_list %}
+{% import "components/loading_bar.html" as loading_bar %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
+{% set filesystem = storage_summary.node_filesystem %}
+{% set summary = filesystem.summary %}
+{% set panel_indicator = 'storage-filesystem-loading-indicator' %}
 <div id="storage-filesystem-panel" class="space-y-5">
-    <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
-        <div class="grid sm:grid-cols-2 xl:grid-cols-4">
-            {% for label, value, helper, icon, tone in [
-                ('Node Filesystem', storage_summary.node_filesystem.summary.capacity, storage_summary.node_filesystem.summary.used ~ ' used', 'server', 'info'),
-                ('Free Filesystem', storage_summary.node_filesystem.summary.free, storage_summary.node_filesystem.summary.free_percent ~ '% free', 'hard-drive', 'normal'),
-                ('Persistent Volumes', storage_summary.persistent_storage.pv.count, storage_summary.persistent_storage.pv.capacity ~ ' capacity', 'database', 'info'),
-                ('Persistent Volume Claims', storage_summary.persistent_storage.pvc.count, storage_summary.persistent_storage.pvc.requested ~ ' requested', 'box', 'info')
+    <header class="border-b border-outline-subtle pb-5">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex items-start gap-3"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="server" class="h-5 w-5"></i></span><div><h3 class="text-lg font-semibold text-content-primary">Node Filesystem Usage</h3><p class="mt-1 text-sm leading-6 text-content-muted">Review node and mount-level filesystem capacity, utilization, remaining space, and semantic pressure.</p></div></div>
+            {{ table_label.metadata_label('Scope: ' ~ filesystem.scope_label, 'scan-search') }}
+        </div>
+        {{ loading_bar.render(panel_indicator, label='Refreshing Node Filesystem Evidence') }}
+    </header>
+
+    <form id="storage-filesystem-filter-form" method="get" action="{{ url_for('analytics.storage') }}" hx-get="{{ url_for('analytics.storage_filesystem_summary') }}" hx-trigger="change delay:120ms" hx-target="#storage-filesystem-panel" hx-swap="outerHTML" hx-sync="#storage-filesystem-panel:replace" hx-indicator="#{{ panel_indicator }}" class="{{ analysis_surface.scope_strip_classes() }}">
+        <input type="hidden" name="cluster_id" value="{{ cluster.id if cluster else '' }}">
+        <input type="hidden" name="namespace" value="{{ selected_namespace }}">
+        <input type="hidden" name="tab" value="filesystem">
+        <input type="hidden" name="filesystem_page" value="1">
+        <div><p class="{{ analysis_surface.metric_label_classes() }}">Filesystem Scope</p><p class="mt-1 text-xs leading-5 text-content-muted">Node selection applies only to this filesystem evidence panel.</p></div>
+        <label class="block min-w-[220px]"><span class="sr-only">Node Filesystem Scope</span><select name="storage_node" class="{{ analytics_workspace.control_select_classes() }} mt-0"><option value="">All Nodes</option>{% for node in filesystem.available_nodes %}<option value="{{ node }}" {% if selected_storage_node == node %}selected{% endif %}>{{ node }}</option>{% endfor %}</select></label>
+    </form>
+
+    <section class="{{ analysis_surface.evidence_shell_classes() }}">
+        <div class="{{ analysis_surface.metric_grid_classes(4) }}">
+            {% set metrics = [
+                ('Filesystem Capacity', summary.capacity, 'Scope: ' ~ filesystem.scope_label, 'hard-drive'),
+                ('Filesystem Used', summary.used, ('%.1f%% of capacity'|format(summary.usage_percent|float)) if summary.evidence_available else 'Evidence unavailable', 'hard-drive-download'),
+                ('Filesystem Free', summary.free, ('%.1f%% remaining'|format(summary.free_percent|float)) if summary.evidence_available else 'Evidence unavailable', 'hard-drive'),
+                ('Highest Pressure', ('%.1f%%'|format(summary.highest_usage|float)) if summary.highest_usage is not none else 'N/A', summary.highest_node if summary.highest_usage is not none else 'No node evidence', 'gauge')
             ] %}
-                <div class="flex min-w-0 items-start gap-3 border-b border-outline-subtle px-4 py-4 last:border-b-0 sm:border-r sm:last:border-r-0 xl:border-b-0">
-                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                        <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                    </span>
-                    <div class="min-w-0">
-                        <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
-                        <p class="mt-1 break-words text-lg font-semibold text-content-primary">{{ value }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
-                    </div>
-                </div>
+            {% for label, value, helper, icon in metrics %}
+                <article class="{{ analysis_surface.metric_cell_classes() }}"><div class="flex items-center gap-2.5"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p></div><p class="mt-3 break-words text-xl font-semibold tabular-nums {{ 'text-content-primary' if value != 'N/A' else analysis_surface.unavailable_value_classes() }}">{{ value }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p></article>
             {% endfor %}
         </div>
     </section>
 
-    <section class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-card">
-        <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
-            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div class="min-w-0">
-                    <h3 class="font-semibold text-content-primary">Node Filesystem Usage</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Highest usage: {{ storage_summary.node_filesystem.summary.highest_usage }}% on {{ storage_summary.node_filesystem.summary.highest_node }}</p>
-                </div>
-                {{ table_label.status_label(storage_summary.node_filesystem.summary.usage_percent ~ '% Used', tone='warning' if storage_summary.node_filesystem.summary.usage_percent >= 75 else 'normal', size='compact') }}
-            </div>
-            {{ progress_bar.bar(storage_summary.node_filesystem.summary.usage_percent, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label='Node filesystem utilization') }}
-        </header>
-
-        <div class="hidden grid-cols-12 gap-3 border-b border-outline-subtle bg-surface-hover px-4 py-3 lg:grid">
-            <div class="col-span-3 text-xs font-semibold uppercase tracking-wide text-content-muted">Node &amp; Mount Point</div>
-            <div class="col-span-3 text-xs font-semibold uppercase tracking-wide text-content-muted">Capacity</div>
-            <div class="col-span-4 text-xs font-semibold uppercase tracking-wide text-content-muted">Utilization</div>
-            <div class="col-span-2 text-right text-xs font-semibold uppercase tracking-wide text-content-muted">Risk</div>
-        </div>
-
+    {% call evidence_list.shell('Node Filesystem Records') %}
+        {% call evidence_list.header() %}
+            {{ evidence_list.header_cell('Node & Mount Point', 3) }}
+            {{ evidence_list.header_cell('Capacity', 3) }}
+            {{ evidence_list.header_cell('Utilization', 4) }}
+            {{ evidence_list.header_cell('Risk', 2, 'right') }}
+        {% endcall %}
         <div class="divide-y divide-outline-subtle">
-            {% for row in storage_summary.node_filesystem.rows %}
-                {% set risk_label = row.risk.label|default('Unknown') %}
-                {% set risk_lower = risk_label|lower %}
-                {% set risk_tone = 'critical' if 'critical' in risk_lower or 'high' in risk_lower else ('warning' if 'warning' in risk_lower or 'medium' in risk_lower else ('normal' if 'normal' in risk_lower or 'low' in risk_lower else 'unknown')) %}
-                <article class="grid gap-4 px-4 py-4 lg:grid-cols-12 lg:items-center">
-                    <div class="min-w-0 lg:col-span-3">
-                        <div class="flex min-w-0 items-start gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="server" class="h-4 w-4"></i></span>
-                            <div class="min-w-0">
-                                <p class="break-words text-sm font-semibold text-content-primary">{{ row.node }}</p>
-                                <p class="mt-1 break-all text-xs text-content-muted">{{ row.mountpoint }}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-3 gap-3 lg:col-span-3">
-                        {% for label, value in [('Total', row.capacity), ('Used', row.used), ('Free', row.free)] %}
-                            <div>
-                                <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
-                                <p class="mt-1 text-sm font-semibold text-content-primary">{{ value }}</p>
-                            </div>
-                        {% endfor %}
-                    </div>
-                    <div class="min-w-0 lg:col-span-4">
-                        <div class="flex items-center justify-between gap-3 text-xs">
-                            <span class="font-medium text-content-muted">Usage</span>
-                            <span class="font-semibold text-content-primary">{{ row.usage_percent }}%</span>
-                        </div>
-                        {{ progress_bar.bar(row.usage_percent, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=row.node ~ ' filesystem utilization') }}
-                    </div>
-                    <div class="lg:col-span-2 lg:text-right">
-                        {{ table_label.status_label(risk_label, tone=risk_tone, size='compact') }}
-                    </div>
-                </article>
+            {% for row in filesystem.rows %}
+                {% call evidence_list.row() %}
+                    {% call evidence_list.cell(3) %}{{ evidence_list.identity('server', row.node, 'Mount: ' ~ row.mountpoint) }}{% endcall %}
+                    {% call evidence_list.cell(3) %}{{ evidence_list.mobile_label('Capacity') }}<div class="grid grid-cols-3 gap-3">{% for label, value in [('Total', row.capacity), ('Used', row.used), ('Free', row.free)] %}<div><p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p><p class="mt-1 text-sm font-semibold {{ 'text-content-primary' if row.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ value }}</p></div>{% endfor %}</div>{% endcall %}
+                    {% call evidence_list.cell(4) %}{{ evidence_list.mobile_label('Utilization') }}<div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">Usage</span><span class="font-semibold tabular-nums {{ 'text-content-primary' if row.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ ('%.1f%%'|format(row.usage_percent|float)) if row.evidence_available else 'N/A' }}</span></div>{% if row.evidence_available %}{{ progress_bar.bar(row.usage_percent, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=row.node ~ ' filesystem utilization') }}{% else %}<div class="mt-2 rounded-md border border-dashed border-outline-strong bg-surface-hover px-3 py-2 text-xs text-content-muted">Capacity evidence unavailable</div>{% endif %}{% endcall %}
+                    {% call evidence_list.cell(2, 'right') %}{{ evidence_list.mobile_label('Risk') }}{{ table_label.status_label(row.risk.label|default('Unknown'), row.risk.tone|default('unknown'), size='compact') }}{% endcall %}
+                {% endcall %}
             {% else %}
-                {% set empty_state_icon = "hard-drive" %}
-                {% set empty_state_title = "No Filesystem Metrics Available" %}
-                {% set empty_state_description = "Filesystem metrics will appear after Prometheus returns node filesystem data for the selected scope." %}
-                {% set empty_state_min_height = "min-h-[190px]" %}
-                {% include "components/states/_empty_state.html" %}
+                {{ evidence_list.empty('No Filesystem Metrics Available', 'Filesystem metrics will appear after Prometheus returns node filesystem data for the selected scope.', 'hard-drive') }}
             {% endfor %}
         </div>
-    </section>
+    {% endcall %}
+    {% set selected_storage_tab = 'filesystem' %}{% set pagination = filesystem.pagination %}{% include "analytics/storage/partials/_record_pagination.html" %}
 </div>

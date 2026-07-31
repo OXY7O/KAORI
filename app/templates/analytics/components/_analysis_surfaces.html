@@ -93,3 +93,11 @@
 {% macro compact_scope_grid_classes(columns=3) -%}
     grid divide-y divide-outline-subtle {{ 'sm:grid-cols-4' if columns == 4 else 'sm:grid-cols-3' }} sm:divide-x sm:divide-y-0
 {%- endmacro %}
+
+{% macro scope_strip_classes(extra='') -%}
+    flex flex-col gap-3 rounded-lg border border-outline-subtle bg-surface-card px-4 py-3 sm:flex-row sm:items-center sm:justify-between {{ extra }}
+{%- endmacro %}
+
+{% macro record_guidance_classes(extra='') -%}
+    rounded-lg border border-outline-subtle bg-surface-hover px-4 py-4 {{ extra }}
+{%- endmacro %}

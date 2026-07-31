@@ -58,6 +58,7 @@ Review the baseline diff before committing. A lower count is expected; moving de
 | Forecast projection chart | `components/FORECAST_PROJECTION_CHART.md` | `components/forecast_projection_chart.html` |
 | Analytics Overview surface hierarchy | `components/ANALYTICS_ANALYSIS_SURFACES.md` | `analytics/components/_analysis_surfaces.html` |
 | Analytics Capacity Analysis | `components/ANALYTICS_CAPACITY_ANALYSIS.md` | Capacity templates + shared analytics surfaces |
+| Analytics Storage Analysis | `components/ANALYTICS_STORAGE_ANALYSIS.md` | Storage templates + shared evidence record components |
 | Compact section-header action | `components/SECTION_HEADER_ACTION.md` | `components/section_link_button.html` |
 | Right contextual rail | `components/RIGHT_CONTEXT_RAIL.md` | `components/context_rail.html` |
 | Primary flow box | `components/INFO_FLOW.md` | `components/info_flow.html` |
@@ -775,6 +776,11 @@ Use `components/operational_point_flow.html` for concise supporting sequences. F
 
 Resource Utilization follows `components/ANALYTICS_RESOURCE_UTILIZATION.md`. Summary uses shared Resource Pressure Lanes; Trend and Node Detail load on first tab activation; hidden tabs do not poll; multi-series charts render a visible compact legend; chart JavaScript lives in a static module rather than inline Jinja.
 
+
+
+### Analytics Storage Analysis Standard
+
+Storage Analysis follows `components/ANALYTICS_STORAGE_ANALYSIS.md`. Top controls own Cluster and Namespace; Node is local to the Filesystem tab. Every panel states its effective scope. Filesystem, PVC, and PV record panels load on first activation, use the shared evidence-record and local-filter components, and follow the global pagination contract. Observed PVC usage must never be labeled as PV utilization or PV consumed capacity.
 
 ## Analytics Unavailable Metric Contract
 

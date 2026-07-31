@@ -67,6 +67,16 @@ Missing analytical evidence is not a zero value. Use semantic `Unknown`, display
 
 Progress fills remain KAORI Violet unless a domain-specific visualization contract explicitly says otherwise. Healthy, Warning, and Critical meaning belongs to semantic labels, icons, and operational copy rather than recoloring the entire evidence lane.
 
+## Evidence Record Collection
+
+Implementation: `app/templates/analytics/components/_evidence_record_list.html` and `app/templates/analytics/components/_record_filter_bar.html`.
+
+Use this pattern for record-oriented analytical evidence with desktop columns, responsive mobile labels, semantic state, local filtering, and server pagination. The owning panel remains bright. Filters and pagination update only that panel, retain a full-page URL, and use the global 5/10/25/50 page-size contract.
+
+## Mixed-Scope Analytics
+
+When one workspace combines datasets with different Kubernetes scopes, every panel must name its effective scope. A selector must be placed at the narrowest owner that applies to all evidence it changes. Do not place a Node selector in a top filter when Namespace and PV panels do not consume that selector.
+
 ## Prohibited Patterns
 
 - No Overview-only compatibility wrapper.
