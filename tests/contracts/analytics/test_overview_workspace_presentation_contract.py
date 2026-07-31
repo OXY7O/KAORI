@@ -92,7 +92,7 @@ def test_overview_domain_snapshots_are_informative_and_compact() -> None:
             'Recommended Action',
         ),
         'partials/_workload_snapshot.html': (
-            'Resource Governance Findings',
+            'Resource Governance Signals',
             'Request Coverage',
             'Limit Coverage',
             'Recommended Action',

@@ -14,30 +14,27 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_workload_table_pagination_uses_endpoint_parameters_and_numeric_page_buttons() -> None:
+def test_workload_table_pagination_uses_full_page_and_partial_endpoint_ownership() -> None:
     pagination = read('app/templates/components/pagination.html')
     pagination_js = read('app/static/js/pagination.js')
-    tenant = read('app/templates/analytics/workload/partials/_tenant_quota_section.html')
-    mapping = read('app/templates/analytics/workload/partials/_workload_mapping_section.html')
+    workload_pagination = read('app/templates/analytics/workload/partials/_record_pagination.html')
 
-    # The shared numeric helper remains available to other workspaces.
-    assert "numeric_pages(current_page, total_pages, page_param='page', hx_target=None, hx_indicator=None, endpoint=None, query_params=None, hx_swap='innerHTML')" in pagination
-    assert 'request.args.to_dict()' in pagination
-    assert 'url_for(endpoint_name, **page_args)' in pagination
+    assert "numeric_pages(current_page, total_pages, page_param='page', hx_target=None, hx_indicator=None, endpoint=None, query_params=None, hx_swap='innerHTML', href_endpoint=None)" in pagination
+    assert 'href_endpoint_name = href_endpoint or endpoint_name' in pagination
     assert 'data-page-param="{{ page_param }}"' in pagination
     assert 'container.dataset.pageParam || PAGE_PARAM' in pagination_js
     assert 'replacePage(href, page, pageParam)' in pagination_js
-    assert 'data-kaori-generated-page' in pagination_js
 
-    # Workload tables follow the inventory pagination standard: Previous, numbered pages, and Next.
-    assert "numeric_pages(quota_pagination.page, quota_pagination.total_pages, 'quota_page')" in tenant
-    assert "numeric_pages(workload_pagination.page, workload_pagination.total_pages, 'workload_page')" in mapping
-    assert 'Page <span class="text-content-primary">{{ quota_pagination.page }}</span>' not in tenant
-    assert 'Page <span class="text-content-primary">{{ workload_pagination.page }}</span>' not in mapping
-    assert 'quota_page=quota_pagination.previous_page' in tenant
-    assert 'quota_page=quota_pagination.next_page' in tenant
-    assert 'workload_page=workload_pagination.previous_page' in mapping
-    assert 'workload_page=workload_pagination.next_page' in mapping
+    assert "partial_endpoint = 'analytics.workload_resource_mapping'" in workload_pagination
+    assert "partial_endpoint = 'analytics.workload_tenant_quota'" in workload_pagination
+    assert "url_for('analytics.workload', **previous_args)" in workload_pagination
+    assert "url_for(partial_endpoint, **previous_args)" in workload_pagination
+    assert "href_endpoint='analytics.workload'" in workload_pagination
+    assert "hx_target='#' ~ panel_id" in workload_pagination
+    assert "hx_indicator='#' ~ indicator_id" in workload_pagination
+    assert "hx_swap='outerHTML'" in workload_pagination
+    assert 'Scope Contains' in workload_pagination
+    assert 'per_page_options = [5, 10, 25, 50]' in workload_pagination
 
 
 def test_workload_detail_actions_are_restored_to_the_action_column() -> None:
@@ -45,9 +42,10 @@ def test_workload_detail_actions_are_restored_to_the_action_column() -> None:
     mapping = read('app/templates/analytics/workload/partials/_workload_mapping_section.html')
 
     for content in (tenant, mapping):
-        assert '>Action</div>' in content
+        assert "evidence_list.header_cell('Action'" in content
         assert 'components/table.html' in content
-        assert '{{ table_ui.action_classes() }} w-full whitespace-nowrap sm:w-auto' in content
+        assert 'table_ui.action_classes()' in content
+        assert 'w-full whitespace-nowrap sm:w-auto' in content
         assert "expanded ? 'Hide Details' : 'View Details'" in content
         assert 'data-lucide="scan-search"' not in content
         assert content.count('data-lucide="chevron-down"') >= 1
@@ -56,8 +54,6 @@ def test_workload_detail_actions_are_restored_to_the_action_column() -> None:
 
     assert 'aria-controls="tenant-quota-details-{{ loop.index }}"' in tenant
     assert 'aria-controls="workload-mapping-details-{{ loop.index }}"' in mapping
-    assert 'col-span-2 text-right text-xs font-semibold uppercase tracking-wide text-content-muted">Action' in tenant
-    assert 'col-span-2 text-right text-xs font-semibold uppercase tracking-wide text-content-muted">Action' in mapping
 
 
 def test_workload_overview_uses_compact_metric_strip_and_scope_context() -> None:
@@ -66,10 +62,15 @@ def test_workload_overview_uses_compact_metric_strip_and_scope_context() -> None
     assert 'Operational Workload Posture' in overview
     assert 'Analysis Context' in overview
     assert 'Active Scope' in overview
-    assert 'divide-y divide-outline-subtle overflow-hidden rounded-lg border' in overview
-    assert "finding_count_display ~ ' Findings'" in overview
-    assert "recommendation_count_display ~ ' Recommendations'" in overview
-    assert 'bg-surface-hover p-4' not in overview
+    assert 'Quota Coverage' in overview
+    assert 'Request Coverage' in overview
+    assert 'BestEffort Workloads' in overview
+    assert 'High-Risk Workloads' in overview
+    assert 'Operational Reading' in overview
+    assert 'analysis_surface.evidence_shell_classes' in overview
+    assert 'analysis_surface.guidance_card_classes' in overview
+    assert 'text-[' not in overview
+    assert 'tracking-[' not in overview
 
 
 def test_kubernetes_analytics_recommendation_lists_use_simple_previous_next_pager() -> None:

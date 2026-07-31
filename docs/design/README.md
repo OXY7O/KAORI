@@ -34,6 +34,7 @@ The Styling Guide selects the correct reusable component. The Design System and 
 - `components/ANALYTICS_ANALYSIS_SURFACES.md`
 - `components/ANALYTICS_RESOURCE_UTILIZATION.md`
 - `components/ANALYTICS_STORAGE_ANALYSIS.md`
+- `components/ANALYTICS_WORKLOAD_ANALYSIS.md`
 - `components/SECTION_HEADER_ACTION.md`
 - `components/PEER_CONTENT_GRID.md`
 - `components/RIGHT_CONTEXT_RAIL.md`

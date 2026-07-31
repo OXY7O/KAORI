@@ -1254,8 +1254,8 @@ QUERIES: dict[str, QueryDefinition] = {
         required_metrics=('kube_pod_container_resource_limits',),
         required_labels=(('kube_pod_container_resource_limits', ('namespace', 'pod', 'resource', 'unit')),),
     ),
-    'analytics.workload.queries.WORKLOAD_CPU_AVG_QUERY': QueryDefinition(
-        key='analytics.workload.queries.WORKLOAD_CPU_AVG_QUERY',
+    'analytics.workload.queries.WORKLOAD_CPU_CURRENT_QUERY': QueryDefinition(
+        key='analytics.workload.queries.WORKLOAD_CPU_CURRENT_QUERY',
         expression='sum by (namespace, pod) (\n  rate(container_cpu_usage_seconds_total{\n    namespace!="",\n    container!="",\n    image!="",\n    pod!=""\n  }[5m])\n)',
         domain='app.analytics.workload',
         required_metrics=('container_cpu_usage_seconds_total',),
@@ -1282,8 +1282,8 @@ QUERIES: dict[str, QueryDefinition] = {
         required_metrics=('kube_pod_container_resource_limits',),
         required_labels=(('kube_pod_container_resource_limits', ('namespace', 'pod', 'resource', 'unit')),),
     ),
-    'analytics.workload.queries.WORKLOAD_MEMORY_AVG_QUERY': QueryDefinition(
-        key='analytics.workload.queries.WORKLOAD_MEMORY_AVG_QUERY',
+    'analytics.workload.queries.WORKLOAD_MEMORY_CURRENT_QUERY': QueryDefinition(
+        key='analytics.workload.queries.WORKLOAD_MEMORY_CURRENT_QUERY',
         expression='sum by (namespace, pod) (\n  container_memory_working_set_bytes{\n    namespace!="",\n    container!="",\n    image!="",\n    pod!=""\n  }\n)',
         domain='app.analytics.workload',
         required_metrics=('container_memory_working_set_bytes',),

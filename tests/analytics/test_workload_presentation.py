@@ -1,0 +1,63 @@
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def read(relative: str) -> str:
+    return (ROOT / relative).read_text(encoding='utf-8')
+
+
+def test_workload_service_emits_semantic_payloads_without_css_classes() -> None:
+    source = read('app/analytics/workload/service.py')
+
+    assert "'tone': 'critical'" in source
+    assert "'tone': 'warning'" in source
+    assert "'tone': 'normal'" in source
+    assert "'class': 'bg-" not in source
+    assert 'critical in' not in source
+    assert 'warning in' not in source
+
+
+def test_configured_zero_quota_key_is_not_classified_as_missing() -> None:
+    source = read('app/analytics/workload/service.py')
+
+    assert 'missing_keys = [key for key in REQUIRED_QUOTA_KEYS if key not in hard_values]' in source
+    assert 'if not hard_values.get(key, 0)' not in source
+
+
+def test_workload_runtime_terms_are_factual_and_composite_efficiency_is_removed() -> None:
+    service = read('app/analytics/workload/service.py')
+    mapping = read('app/templates/analytics/workload/partials/_workload_mapping_section.html')
+    query_profile = read('app/integrations/prometheus/query_profiles/kubernetes_v1.py')
+
+    assert 'WORKLOAD_CPU_CURRENT_QUERY' in service
+    assert 'WORKLOAD_MEMORY_CURRENT_QUERY' in service
+    assert 'WORKLOAD_CPU_AVG_QUERY' not in service
+    assert 'WORKLOAD_MEMORY_AVG_QUERY' not in service
+    assert 'analytics.workload.queries.WORKLOAD_CPU_CURRENT_QUERY' in query_profile
+    assert 'analytics.workload.queries.WORKLOAD_MEMORY_CURRENT_QUERY' in query_profile
+    assert 'Average Usage' not in mapping
+    assert 'Current Usage' in mapping
+    assert 'Selected-Window Pod Peak Sum' in mapping
+    assert 'upper-bound signal' in mapping
+    assert 'Efficiency' not in mapping
+    assert 'cpu_request_utilization_display' in mapping
+    assert 'memory_request_utilization_display' in mapping
+
+
+def test_workload_snapshot_separates_cpu_limit_policy_from_memory_limit_gaps() -> None:
+    workload = read('app/analytics/workload/service.py')
+    overview = read('app/analytics/overview/service.py')
+    schema = read('app/analytics/overview/schema.py')
+    template = read('app/templates/analytics/overview/partials/_workload_snapshot.html')
+
+    for source in (workload, overview, schema, template):
+        assert 'missing_cpu_limits' not in source
+        assert 'missing_memory_limits' not in source
+
+    assert "'cpu_limits_unset': cpu_limits_unset" in workload
+    assert "'memory_limits_missing': memory_limits_missing" in workload
+    assert 'CPU Limits Unset' in template
+    assert 'Memory Limit Gaps' in template
+    assert 'factual configuration' in template.lower()

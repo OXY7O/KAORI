@@ -59,6 +59,7 @@ Review the baseline diff before committing. A lower count is expected; moving de
 | Analytics Overview surface hierarchy | `components/ANALYTICS_ANALYSIS_SURFACES.md` | `analytics/components/_analysis_surfaces.html` |
 | Analytics Capacity Analysis | `components/ANALYTICS_CAPACITY_ANALYSIS.md` | Capacity templates + shared analytics surfaces |
 | Analytics Storage Analysis | `components/ANALYTICS_STORAGE_ANALYSIS.md` | Storage templates + shared evidence record components |
+| Analytics Workload Analysis | `components/ANALYTICS_WORKLOAD_ANALYSIS.md` | Workload templates + shared analysis, evidence, and filter components |
 | Compact section-header action | `components/SECTION_HEADER_ACTION.md` | `components/section_link_button.html` |
 | Right contextual rail | `components/RIGHT_CONTEXT_RAIL.md` | `components/context_rail.html` |
 | Primary flow box | `components/INFO_FLOW.md` | `components/info_flow.html` |
@@ -781,6 +782,11 @@ Resource Utilization follows `components/ANALYTICS_RESOURCE_UTILIZATION.md`. Sum
 ### Analytics Storage Analysis Standard
 
 Storage Analysis follows `components/ANALYTICS_STORAGE_ANALYSIS.md`. Top controls own Cluster and Namespace; Node is local to the Filesystem tab. Every panel states its effective scope. Filesystem, PVC, and PV record panels load on first activation, use the shared evidence-record and local-filter components, and follow the global pagination contract. Observed PVC usage must never be labeled as PV utilization or PV consumed capacity.
+
+
+### Analytics Workload Analysis Standard
+
+Workload Analysis follows `components/ANALYTICS_WORKLOAD_ANALYSIS.md`. Tenant Quota and Recommendations render with the page; Workload Resource Mapping loads on first tab activation. Summary metrics follow Cluster, Namespace, and Time Range, while local filters affect only the owning record list and filtered-count footer. Request Coverage, Limit Coverage, factual QoS metadata, and Analytics Evidence Coverage remain separate signals. Current usage must not be labeled average usage, selected-window Pod peak sums must be named as upper-bound evidence, and right-sizing requires Complete evidence. CPU limits unset are informational by default; missing memory limits remain governance warnings.
 
 ## Analytics Unavailable Metric Contract
 

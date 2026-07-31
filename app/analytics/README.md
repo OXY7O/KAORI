@@ -576,6 +576,13 @@ the partial-source warning is rendered explicitly.
 - Resource Utilization uses local filter/Trend/Node indicators and does not use the Analytics Overview composite tracker.
 
 
+## Workload Analysis presentation contract
+
+Workload Analysis follows `docs/design/components/ANALYTICS_WORKLOAD_ANALYSIS.md`. Cluster, Namespace, and Time Range own the top-level scope. Tenant Quota and Recommendations render immediately; Workload Resource Mapping loads on first activation and owns its local filters, pagination, and indicator. Summary metrics follow the top-level scope rather than local search/filter results.
+
+Request Coverage, Limit Coverage, QoS, Risk, and Analytics Evidence Coverage are distinct signals. QoS is factual metadata. Current observations are labeled Current Usage. Selected-window aggregates are labeled Selected-Window Pod Peak Sum and described as upper-bound evidence. CPU and Memory request utilization remain separate; no composite Efficiency value is produced. Right-sizing is deferred unless current and selected-window CPU and memory evidence is Complete. Missing CPU limits are informational by default, while missing memory limits remain governance review evidence.
+
+
 ## Capacity Analysis Presentation
 
 Capacity is a cluster-level Ready-worker fleet analysis. It uses the shared Analytics Analysis Surface and Resource Pressure Lane contracts, renders missing denominators as Unknown/N/A without progress, keeps progress fills KAORI Violet, separates governance findings from review navigation, and does not load a composite tracker or Chart.js runtime. See `docs/design/components/ANALYTICS_CAPACITY_ANALYSIS.md`.

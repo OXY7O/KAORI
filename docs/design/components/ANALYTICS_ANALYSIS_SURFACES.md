@@ -73,6 +73,14 @@ Implementation: `app/templates/analytics/components/_evidence_record_list.html` 
 
 Use this pattern for record-oriented analytical evidence with desktop columns, responsive mobile labels, semantic state, local filtering, and server pagination. The owning panel remains bright. Filters and pagination update only that panel, retain a full-page URL, and use the global 5/10/25/50 page-size contract.
 
+## Extended Record Filter Bar
+
+Record-oriented Analytics panels may expose a calm primary filter row and a closed-by-default Advanced Filters region through `analytics/components/_record_filter_bar.html`. Keep Search and the most frequently used dimensions visible. Put secondary configuration dimensions and Reset inside Advanced Filters. The region may open initially only when an advanced filter is active.
+
+## Analytics Evidence Coverage
+
+A workload or record-level recommendation that depends on multiple observations must declare evidence coverage as `Complete`, `Partial`, or `Unavailable`. Only Complete evidence may activate automatic right-sizing. Partial evidence produces review guidance; Unavailable evidence renders `Unknown`/`N/A` and suppresses derived progress.
+
 ## Mixed-Scope Analytics
 
 When one workspace combines datasets with different Kubernetes scopes, every panel must name its effective scope. A selector must be placed at the narrowest owner that applies to all evidence it changes. Do not place a Node selector in a top filter when Namespace and PV panels do not consume that selector.

@@ -44,17 +44,23 @@ def test_analytics_table_headers_follow_kaori_title_case_contract() -> None:
             'Node &amp; Mount Point', 'Capacity', 'Utilization', 'Risk'
         ],
         'workload/partials/_tenant_quota_section.html': [
-            'Namespace', 'Quota Status', 'Quota &amp; Actual Usage', 'Missing Keys', 'Risk'
+            'Namespace', 'Quota Pressure', 'Runtime Demand', 'Risk', 'Action'
         ],
         'workload/partials/_workload_mapping_section.html': [
-            'Workload &amp; Namespace', 'Resource &amp; QoS', 'Efficiency', 'Risk'
+            'Workload &amp; Namespace', 'Configuration &amp; Risk', 'Request Fit',
+            'Evidence &amp; QoS', 'Action'
         ],
     }
 
     for relative_path, headers in expected_headers.items():
         content = _read(relative_path)
         for header in headers:
-            assert f'>{header}</div>' in content or f'>{header}</p>' in content
+            macro_header = header.replace('&amp;', '&')
+            assert (
+                f'>{header}</div>' in content
+                or f'>{header}</p>' in content
+                or f"evidence_list.header_cell('{macro_header}'" in content
+            )
 
 
 def test_table_headers_do_not_use_ambiguous_rank_symbol_or_slash_identity() -> None:
@@ -88,9 +94,10 @@ def test_workload_detail_actions_use_dedicated_action_columns() -> None:
     mapping = _read('workload/partials/_workload_mapping_section.html')
 
     for content in (quota, mapping):
-        assert '>Action</div>' in content
+        assert "evidence_list.header_cell('Action'" in content
         assert "expanded ? 'Hide Details' : 'View Details'" in content
         assert 'data-lucide="scan-search"' not in content
         assert 'data-lucide="chevron-down"' in content
-        assert '{{ table_ui.action_classes() }} w-full whitespace-nowrap sm:w-auto' in content
+        assert 'table_ui.action_classes()' in content
+        assert 'w-full whitespace-nowrap sm:w-auto' in content
         assert 'class="group flex w-full items-center gap-3 border-t' not in content

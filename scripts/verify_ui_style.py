@@ -76,6 +76,7 @@ def _count_page_local_compact_pill_labels(relative: str, source: str) -> int:
     if relative in {
         'app/templates/components/table_label.html',
         'app/templates/components/page_hero.html',
+        'app/templates/analytics/components/_record_filter_bar.html',
     }:
         return 0
     count = 0

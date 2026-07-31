@@ -155,10 +155,6 @@
       "arbitrary_text_sizes": 2,
       "arbitrary_tracking": 2
     },
-    "app/templates/analytics/overview/partials/_workload_snapshot.html": {
-      "arbitrary_text_sizes": 4,
-      "arbitrary_tracking": 4
-    },
     "app/templates/analytics/partials/_load_tracker.html": {
       "copied_standard_surface_shells": 1
     },
@@ -184,21 +180,6 @@
     },
     "app/templates/analytics/utilization/partials/_trend.html": {
       "semantic_border_utilities": 1
-    },
-    "app/templates/analytics/workload/partials/_hero.html": {
-      "arbitrary_text_sizes": 2,
-      "arbitrary_tracking": 2
-    },
-    "app/templates/analytics/workload/partials/_overview.html": {
-      "arbitrary_text_sizes": 3
-    },
-    "app/templates/analytics/workload/partials/_tenant_quota_section.html": {
-      "arbitrary_text_sizes": 6,
-      "arbitrary_tracking": 1
-    },
-    "app/templates/analytics/workload/partials/_workload_mapping_section.html": {
-      "arbitrary_text_sizes": 4,
-      "arbitrary_tracking": 1
     },
     "app/templates/auth/partials/_brand_panel.html": {
       "arbitrary_tracking": 1,

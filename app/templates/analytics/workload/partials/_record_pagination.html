@@ -1,0 +1,53 @@
+{% import "components/pagination.html" as pagination_ui %}
+{% set current_page = pagination.page|default(1) %}
+{% set total_pages = pagination.total_pages|default(1) %}
+{% set total_rows = pagination.total_items|default(0) %}
+{% set per_page = pagination.per_page|default(5) %}
+{% set start_item = pagination.start_item|default(0) %}
+{% set end_item = pagination.end_item|default(0) %}
+{% set per_page_options = [5, 10, 25, 50] %}
+{% if selected_workload_tab == 'mapping' %}
+    {% set page_param = 'workload_page' %}{% set per_page_param = 'workload_per_page' %}
+    {% set panel_id = 'workload-resource-mapping' %}{% set form_id = 'workload-mapping-filter-form' %}{% set indicator_id = 'workload-mapping-loading-indicator' %}
+    {% set partial_endpoint = 'analytics.workload_resource_mapping' %}{% set resource_label = 'Filtered Workloads' %}
+    {% set scope_total = workload_scope_summary.scope_total|default(0) %}
+    {% set query_params = {'cluster_id': cluster.id if cluster else '', 'namespace': selected_namespace, 'time_range': selected_time_range, 'tab': 'mapping', 'workload_search': selected_workload_search, 'workload_type': selected_workload_type, 'workload_configuration': selected_workload_configuration, 'workload_qos': selected_workload_qos, 'workload_risk': selected_workload_risk, 'workload_per_page': per_page} %}
+{% else %}
+    {% set page_param = 'quota_page' %}{% set per_page_param = 'quota_per_page' %}
+    {% set panel_id = 'tenant-quota-analysis' %}{% set form_id = 'tenant-quota-filter-form' %}{% set indicator_id = 'tenant-quota-loading-indicator' %}
+    {% set partial_endpoint = 'analytics.workload_tenant_quota' %}{% set resource_label = 'Filtered Namespaces' %}
+    {% set scope_total = tenant_quota_summary.scope_total|default(0) %}
+    {% set query_params = {'cluster_id': cluster.id if cluster else '', 'namespace': selected_namespace, 'time_range': selected_time_range, 'tab': 'quotas', 'tenant_search': selected_tenant_search, 'tenant_quota_status': selected_tenant_quota_status, 'tenant_risk': selected_tenant_risk, 'quota_per_page': per_page} %}
+{% endif %}
+{% set previous_args = query_params.copy() %}{% set _ = previous_args.update({page_param: current_page - 1}) %}
+{% set next_args = query_params.copy() %}{% set _ = next_args.update({page_param: current_page + 1}) %}
+{% set previous_href = url_for('analytics.workload', **previous_args) %}{% set previous_hx = url_for(partial_endpoint, **previous_args) %}
+{% set next_href = url_for('analytics.workload', **next_args) %}{% set next_hx = url_for(partial_endpoint, **next_args) %}
+<div class="flex flex-col gap-3 border-t border-outline-default pt-4 lg:flex-row lg:items-center lg:justify-between">
+    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+        <div class="text-xs text-content-muted">
+            Showing <span class="font-semibold text-content-secondary">{{ start_item }}</span>–<span class="font-semibold text-content-secondary">{{ end_item }}</span>
+            of <span class="font-semibold text-content-secondary">{{ total_rows }}</span> {{ resource_label }}
+            <span class="ml-1">· Scope Contains <span class="font-semibold text-content-secondary">{{ scope_total }}</span></span>
+        </div>
+        <select name="{{ per_page_param }}"
+                aria-label="Rows Per Page"
+                class="{{ pagination_ui.page_size_classes() }}"
+                hx-get="{{ url_for(partial_endpoint) }}"
+                hx-trigger="change"
+                hx-target="#{{ panel_id }}"
+                hx-swap="outerHTML"
+                hx-sync="#{{ panel_id }}:replace"
+                hx-include="#{{ form_id }}, [name='{{ per_page_param }}']"
+                hx-indicator="#{{ indicator_id }}">
+            {% for option in per_page_options %}<option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
+        </select>
+    </div>
+    {% if total_pages > 1 %}
+        <div class="flex flex-wrap items-center gap-2">
+            {% if current_page > 1 %}<a href="{{ previous_href }}" hx-get="{{ previous_hx }}" hx-target="#{{ panel_id }}" hx-swap="outerHTML" hx-sync="#{{ panel_id }}:replace" hx-indicator="#{{ indicator_id }}" class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>{% else %}<span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>{% endif %}
+            {{ pagination_ui.numeric_pages(current_page, total_pages, page_param, hx_target='#' ~ panel_id, hx_indicator='#' ~ indicator_id, endpoint=partial_endpoint, query_params=query_params, hx_swap='outerHTML', href_endpoint='analytics.workload') }}
+            {% if current_page < total_pages %}<a href="{{ next_href }}" hx-get="{{ next_hx }}" hx-target="#{{ panel_id }}" hx-swap="outerHTML" hx-sync="#{{ panel_id }}:replace" hx-indicator="#{{ indicator_id }}" class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>{% else %}<span class="{{ pagination_ui.navigation_classes(true) }}" aria-disabled="true">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>{% endif %}
+        </div>
+    {% endif %}
+</div>
