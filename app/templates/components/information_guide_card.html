@@ -1,12 +1,13 @@
 {% import "components/view_more_content.html" as view_more_content %}
 
-{% macro render(title, description, items, icon='book-open', open_by_default=false, aria_label=None) -%}
+{% macro render(title, description, items, icon='book-open', open_by_default=false, aria_label=None, compact_action=false) -%}
     {% call view_more_content.render(
         title,
         description,
         icon=icon,
         open_by_default=open_by_default,
-        aria_label=aria_label
+        aria_label=aria_label,
+        compact_action=compact_action
     ) %}
         <div class="divide-y divide-outline-subtle">
             {% for item in items %}

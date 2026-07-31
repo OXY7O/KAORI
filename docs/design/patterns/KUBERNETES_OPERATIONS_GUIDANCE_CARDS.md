@@ -1,13 +1,15 @@
 # Kubernetes Operations Guidance Cards
 
-## Expandable guidance header layout
+## Compact rail action
 
-Secondary guidance cards that use `components/view_more_content.html` must keep:
+Expandable guidance cards placed in narrow operation rails use `compact_action=true`.
 
-- icon at the far left;
-- title aligned on the first row;
-- description allowed to use the full content width under the title;
-- collapse affordance aligned on the far right;
-- on compact rails, the chevron remains visible while the `View Details` / `Collapse` label may hide to preserve title and description width.
+The compact variant:
 
-This prevents titles and helper descriptions from collapsing into a narrow text column inside side rails such as ConfigMap and Secret operation workspaces.
+- keeps only the chevron visible;
+- removes `View Details` and `Collapse` text from the rail header;
+- preserves the native `<summary>` interaction and accessible label;
+- gives title and description the maximum available width;
+- keeps full action text available for wider workspace usages where it adds value.
+
+This is the canonical presentation for ConfigMap and Secret operation guardrail cards when placed in a narrow context rail.
