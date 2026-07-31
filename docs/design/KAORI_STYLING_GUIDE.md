@@ -823,6 +823,14 @@ Alerts & Anomalies follows `components/ANALYTICS_ALERTS_ANOMALIES.md`. Connected
 Use `components/ANALYTICS_TOP_CONSUMERS.md`. Top Consumers separates absolute consumption, selected-scope contribution, request utilization, limit utilization, and configuration state. All-resource sorting may use priority, contribution, namespace, or resource type, but never heterogeneous raw units. Consumer identity is structured; templates do not split display strings. Rankings use the shared ranked evidence panel, records use the shared record filter/evidence/pagination components, and contribution progress stays KAORI Violet. Namespace is a committed snapshot dimension.
 
 
-### Integrations Audited Draft Standard
+### Integrations Workspace Standard
 
-The audited draft is documented in `components/INTEGRATIONS_WORKSPACE_STANDARD.md`; current findings are recorded in `audits/INTEGRATIONS_FULL_AUDIT_20260731.md`. Do not migrate Integrations pages implicitly while editing Analytics. Provider registries, bindings, validation, runtime, and lifecycle workspaces require explicit review because they own mutation and connection workflows.
+The canonical Integrations contract is documented in `components/INTEGRATIONS_WORKSPACE_STANDARD.md`; implementation history is recorded in `audits/INTEGRATIONS_FULL_AUDIT_20260731.md`.
+
+- Primary provider, runtime, compatibility, capability, binding, and coverage evidence is bright.
+- Interpretation, remediation, and destructive-boundary guidance uses the darker soft surface.
+- Integrations semantic states render through the global `table_label` contract; provider pages do not own a second palette.
+- Prometheus and Alertmanager registries reuse the shared registry controls, loading, and pagination grammar while retaining provider-specific facts.
+- Full-page and HTMX pagination have separate, explicit URL ownership and preserve path arguments, filters, and the active workspace tab.
+- One shared runtime-history component is rendered directly; provider-local presentation wrappers are prohibited.
+- Dense technical matrices may scroll only inside their owning component when simultaneous column comparison is operationally necessary.

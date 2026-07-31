@@ -1,7 +1,7 @@
 {% import "components/pagination.html" as pagination_ui %}
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
-{% from "integrations/partials/_status_badge.html" import status_badge %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
 {% block title %}Kubernetes Integrations · KAORI{% endblock %}
 {% block dashboard_content %}
     {% set posture_status = (
@@ -34,7 +34,7 @@
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Integration Posture</p>
                                 <p class="{{ page_hero.context_panel_title_classes() }}">API Readiness and Operational Coverage</p>
                             </div>
-                            {{ status_badge('healthy' if posture_status == 'Healthy'
+                            {{ integration_status('healthy' if posture_status == 'Healthy'
                                                         else ('degraded' if posture_status == 'Attention' else 'not_configured') ,
                             posture_status
                             ) }}

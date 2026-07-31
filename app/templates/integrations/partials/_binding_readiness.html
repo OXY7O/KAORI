@@ -1,18 +1,18 @@
-{% from "integrations/partials/_status_badge.html" import status_badge %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
 <div class="grid gap-3 md:grid-cols-3">
-    <section class="rounded-lg border border-outline-subtle bg-surface-hover p-3.5">
+    <section class="rounded-lg border border-outline-subtle bg-surface-card p-3.5">
         <p class="text-xs font-semibold text-content-muted">Source Readiness</p>
-        <div class="mt-2">{{ status_badge(row.source_readiness) }}</div>
+        <div class="mt-2">{{ integration_status(row.source_readiness) }}</div>
         <p class="mt-2 text-xs leading-5 text-content-secondary">Changed by Run Full Validation on this provider connection.</p>
     </section>
-    <section class="rounded-lg border border-outline-subtle bg-surface-hover p-3.5">
+    <section class="rounded-lg border border-outline-subtle bg-surface-card p-3.5">
         <p class="text-xs font-semibold text-content-muted">Binding Validation</p>
-        <div class="mt-2">{{ status_badge(row.validation_status if row.binding.enabled else 'disabled') }}</div>
+        <div class="mt-2">{{ integration_status(row.validation_status if row.binding.enabled else 'disabled') }}</div>
         <p class="mt-2 text-xs leading-5 text-content-secondary">Changed by Validate Binding for this Kubernetes scope.</p>
     </section>
-    <section class="rounded-lg border border-outline-subtle bg-surface-hover p-3.5">
+    <section class="rounded-lg border border-outline-subtle bg-surface-card p-3.5">
         <p class="text-xs font-semibold text-content-muted">Operational Status</p>
-        <div class="mt-2">{{ status_badge(row.operational_status, row.operational_label) }}</div>
+        <div class="mt-2">{{ integration_status(row.operational_status, row.operational_label) }}</div>
         <p class="mt-2 text-xs leading-5 text-content-secondary">Ready only when both the source and this binding are ready.</p>
     </section>
 </div>

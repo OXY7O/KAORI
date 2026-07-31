@@ -1,12 +1,12 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
-{% from "integrations/partials/_status_badge.html" import status_badge %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
 {% block title %}{{ cluster.name }} · Kubernetes Integration · KAORI{% endblock %}
 {% block dashboard_content %}
     {% set readiness = runtime_state.readiness or 'validation_required' %}
     {% set source_posture = 'Ready' if readiness == 'ready' else ('Attention' if readiness in ['degraded', 'blocked'] else 'Configured') %}
     <div class="kaori-integration-semantic space-y-6"
-         x-data="{ activeTab: ['configuration', 'validation', 'runtime', 'inventory'].includes(window.location.hash.replace('#', '')) ? window.location.hash.replace('#', '') : 'configuration', deleteModal: false, deleteUrl: '', deleteName: '', setTab(tab, moveToWorkspace = false) { this.activeTab = tab; window.history.replaceState(null, '', '#' + tab); if (moveToWorkspace) { this.$nextTick(() => document.getElementById('kubernetes-detail-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); } }, openDelete(url, name) { this.deleteUrl = url; this.deleteName = name; this.deleteModal = true; } }"
+         x-data="{ tabs: ['configuration', 'validation', 'runtime', 'inventory'], activeTab: (() => { const queryTab = new URLSearchParams(window.location.search).get('tab'); const hashTab = window.location.hash.replace('#', ''); return ['configuration', 'validation', 'runtime', 'inventory'].includes(queryTab) ? queryTab : (['configuration', 'validation', 'runtime', 'inventory'].includes(hashTab) ? hashTab : 'configuration'); })(), deleteModal: false, deleteUrl: '', deleteName: '', setTab(tab, moveToWorkspace = false) { this.activeTab = tab; const nextUrl = new URL(window.location.href); nextUrl.searchParams.set('tab', tab); nextUrl.hash = tab; window.history.replaceState(null, '', nextUrl); if (moveToWorkspace) { this.$nextTick(() => document.getElementById('kubernetes-detail-tabs')?.scrollIntoView({ behavior: 'smooth', block: 'start' })); } }, openDelete(url, name) { this.deleteUrl = url; this.deleteName = name; this.deleteModal = true; } }"
          x-on:hashchange.window="activeTab = ['configuration', 'validation', 'runtime', 'inventory'].includes(window.location.hash.replace('#', '')) ? window.location.hash.replace('#', '') : 'configuration'">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
@@ -29,13 +29,13 @@
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Posture</p>
                                 <h2 class="{{ page_hero.context_panel_title_classes() }}">Kubernetes API Readiness</h2>
                             </div>
-                            {{ status_badge('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else 'validation_required') , source_posture) }}
+                            {{ integration_status('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else 'validation_required') , source_posture) }}
                         </div>
                         <div class="mt-4 grid grid-cols-2 gap-2">
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <div class="flex items-center gap-2 text-brand-foreground">
                                     <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
-                                    <p class="text-[11px] font-semibold">Kubernetes API</p>
+                                    <p class="text-xs font-semibold">Kubernetes API</p>
                                 </div>
                                 <p class="mt-1.5 truncate text-sm font-semibold text-brand-foreground">{{ readiness|replace('_', ' ') |title }}</p>
                                 <p class="{{ page_hero.context_metric_helper_classes() }}">Produced by worker validation</p>
@@ -43,7 +43,7 @@
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <div class="flex items-center gap-2 text-brand-foreground">
                                     <i data-lucide="layers-3" class="h-3.5 w-3.5"></i>
-                                    <p class="text-[11px] font-semibold">Capabilities</p>
+                                    <p class="text-xs font-semibold">Capabilities</p>
                                 </div>
                                 <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ runtime_state.capability_count }}</p>
                                 <p class="{{ page_hero.context_metric_helper_classes() }}">Served APIs and access evidence</p>
@@ -88,7 +88,7 @@
                             <i data-lucide="{{ tab_icon }}" class="h-4 w-4"></i>
                             <span>{{ tab_label }}</span>
                             <span {% if tab_key in ['validation', 'runtime'] %}id="kubernetes-{{ tab_key }}-tab-badge"{% endif %}
-                                  class="kaori-semantic-label rounded-md border px-2 py-0.5 text-[10px] font-semibold"
+                                  class="kaori-semantic-label rounded-md border px-2 py-0.5 text-xs font-semibold"
                                   :class="activeTab === '{{ tab_key }}' ? 'border-brand-outline bg-kaori-soft text-kaori-primary' : 'border-outline-subtle bg-surface-card text-content-muted'">{{ tab_badge }}</span>
                         </button>
                     {% endfor %}

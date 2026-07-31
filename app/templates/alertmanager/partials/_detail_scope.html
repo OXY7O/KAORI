@@ -1,5 +1,5 @@
 {% import "components/table_label.html" as table_label %}
-{% from "integrations/partials/_status_badge.html" import status_badge %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
 <div id="alertmanager-scope-workspace"
      {% if scope_oob is defined and scope_oob %}hx-swap-oob="outerHTML"{% endif %}
      class="space-y-4"
@@ -68,7 +68,7 @@
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h4 class="break-words text-sm font-semibold text-content-primary">{{ row.scope_label }}</h4>
-                                        {{ status_badge(row.operational_status, row.operational_label) }}
+                                        {{ integration_status(row.operational_status, row.operational_label) }}
                                     </div>
                                     <p class="mt-1 break-all text-xs leading-5 text-content-muted"
                                        title="{{ row.binding.asset_key }}">{{ row.binding.asset_key }}</p>
@@ -495,7 +495,7 @@
                 <p class="text-sm font-semibold text-status-critical-text">Governed Deletion Boundary</p>
                 <p class="mt-1 text-xs leading-5 text-content-secondary">Bindings and active provider jobs block deletion. Runtime observations, JobExecution records, and Activity Audit remain available.</p>
                 {% if deletion_guard and deletion_guard.active_jobs %}
-                    <p class="mt-2 inline-flex items-center gap-1.5 rounded-md border border-status-warning-border bg-status-warning-soft px-2 py-1 text-[11px] font-semibold text-status-warning-text">
+                    <p class="mt-2 inline-flex items-center gap-1.5 rounded-md border border-status-warning-border bg-status-warning-soft px-2 py-1 text-xs font-semibold text-status-warning-text">
                         <i data-lucide="loader-circle" class="h-3.5 w-3.5"></i>{{ deletion_guard.active_jobs }} Active Job
                         {% if deletion_guard.active_jobs != 1 %}s{% endif %}
                     </p>

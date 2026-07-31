@@ -1,0 +1,23 @@
+{% import "components/table_label.html" as table_label %}
+
+{% macro status_icon(value) -%}
+    {% set key = value|default('unknown', true)|lower|replace(' ', '_') %}
+    {%- if key in ['ready', 'compatible', 'healthy', 'connected', 'enabled', 'current', 'validated', 'operational'] -%}circle-check
+    {%- elif key in ['compatible_with_warnings', 'degraded', 'warning', 'legacy', 'legacy_fallback', 'limited', 'partial', 'attention'] -%}triangle-alert
+    {%- elif key in ['unhealthy', 'blocked', 'unsupported_version', 'capability_mismatch', 'failed', 'error', 'uncovered'] -%}circle-x
+    {%- elif key in ['pending', 'queued', 'running', 'validation_required', 'in_progress'] -%}info
+    {%- elif key in ['disabled', 'inactive'] -%}circle-off
+    {%- else -%}circle-help
+    {%- endif -%}
+{%- endmacro %}
+
+{% macro integration_status(value, label=None, icon=None, size='compact') -%}
+    {% set key = value|default('unknown', true)|lower|replace(' ', '_') %}
+    {% set resolved_label = label or (key|replace('_', ' ')|title) %}
+    {{ table_label.status_label(
+        resolved_label,
+        key,
+        icon=icon or (status_icon(key)|trim),
+        size=size
+    ) }}
+{%- endmacro %}

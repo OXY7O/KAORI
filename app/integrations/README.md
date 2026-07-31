@@ -44,6 +44,8 @@ See `docs/architecture/integration-module-map.md` and the README inside each
 provider module.
 
 
-## UI audit status
+## UI workspace contract
 
-The full Integrations workspace audit is recorded in `docs/design/audits/INTEGRATIONS_FULL_AUDIT_20260731.md`. The proposed shared visual contract is `docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md`. Both documents are audit-only until the operator approves implementation; current provider routes and templates remain unchanged by the audit.
+The implemented Integrations presentation and interaction contract is `docs/design/components/INTEGRATIONS_WORKSPACE_STANDARD.md`. The original findings and implementation disposition are recorded in `docs/design/audits/INTEGRATIONS_FULL_AUDIT_20260731.md`.
+
+Shared Integrations templates own semantic status adaptation, registry controls, loading, pagination, and bright-evidence hierarchy. Provider packages retain factual compatibility, capability, binding, runtime, and lifecycle data. Provider-local runtime-history presentation wrappers and secondary semantic palettes are not allowed.

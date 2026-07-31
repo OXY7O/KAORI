@@ -1,6 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
-{% from "integrations/partials/_status_badge.html" import status_badge %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
 {% import "components/operational_toggle.html" as operational_toggle %}
 {% import "components/related_page_card.html" as related_page_card %}
 {% import "components/form_action_bar.html" as form_action_bar %}
@@ -41,7 +41,7 @@
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">{{ 'Connection Posture' if instance else 'Registration Posture' }}</p>
                                 <h2 class="{{ page_hero.context_panel_title_classes() }}">{{ 'Readiness & Scope Coverage' if instance else 'Pre-save Requirements' }}</h2>
                             </div>
-                            {{ status_badge('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else ('validation_required' if source_posture == 'Configured' else 'not_configured') ), source_posture) }}
+                            {{ integration_status('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else ('validation_required' if source_posture == 'Configured' else 'not_configured') ), source_posture) }}
                         </div>
                         {% if instance %}
                             <div class="mt-4 grid grid-cols-2 gap-2">
@@ -299,7 +299,7 @@
                 {% endif %}
                 {% if initial_cluster %}
                     <div class="rounded-lg border border-outline-subtle bg-surface-hover p-3.5">
-                        <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Initial Scope Binding</p>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Initial Scope Binding</p>
                         <p class="mt-2 text-sm font-semibold text-content-primary">{{ initial_cluster.name }}</p>
                         <p class="mt-1 text-xs leading-5 text-content-muted">The new connection will be assigned as the primary metrics source for this managed cluster.</p>
                     </div>

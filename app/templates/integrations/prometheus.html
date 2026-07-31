@@ -1,6 +1,7 @@
 {% extends "layouts/app.html" %}
+{% import "integrations/components/_workspace.html" as integration_ui %}
 {% import "components/page_hero.html" as page_hero %}
-{% from "integrations/partials/_status_badge.html" import status_badge %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
 {% import "components/integration_coverage.html" as integration_coverage %}
 {% import "components/integration_workspace_tabs.html" as integration_tabs %}
 {% block title %}Prometheus Integrations · KAORI{% endblock title %}
@@ -30,7 +31,7 @@
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Integration Posture</p>
                                 <p class="{{ page_hero.context_panel_title_classes() }}">Connection Readiness and Bindings</p>
                             </div>
-                            {{ status_badge('healthy' if posture_status == 'Healthy' else ('degraded' if posture_status == 'Attention' else 'not_configured') , posture_status) }}
+                            {{ integration_status('healthy' if posture_status == 'Healthy' else ('degraded' if posture_status == 'Attention' else 'not_configured') , posture_status) }}
                         </div>
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
                             {{ page_hero.context_metric('badge-check', 'Ready', stats.ready ~ ' / ' ~ stats.configured, 'Validated connections available') }}
@@ -57,40 +58,29 @@
                     </div>
                 </div>
             </header>
-            <div class="grid gap-4 p-5 sm:grid-cols-2 sm:p-6 xl:grid-cols-4">
+            <div class="{{ integration_ui.metric_grid_classes(4) }}">
                 {% for item in [
                     ('Registered Connections', stats.total, 'Reusable Prometheus endpoints', 'server-cog'),
                     ('Validated Connections', stats.ready, 'Ready for operational use', 'badge-check'),
                     ('Needs Attention', stats.attention, 'Validation or runtime review', 'triangle-alert'),
                     ('Uncovered Scopes', coverage_stats.uncovered, 'Scopes without an eligible source', 'unlink')
                     ] %}
-                    <article class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
-                        <div class="flex items-start justify-between gap-3">
-                            <div>
-                                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ item[0] }}</p>
-                                <p class="mt-2 text-2xl font-semibold text-content-primary">{{ item[1] }}</p>
-                            </div>
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                <i data-lucide="{{ item[3] }}" class="h-4 w-4" aria-hidden="true"></i>
-                            </span>
-                        </div>
-                        <p class="mt-2 text-xs leading-5 text-content-secondary">{{ item[2] }}</p>
-                    </article>
+                    {{ integration_ui.metric_card(item[0], item[1], item[2], item[3]) }}
                 {% endfor %}
             </div>
             <div class="grid gap-px border-t border-outline-subtle bg-outline-subtle md:grid-cols-3">
                 <div class="bg-surface-card px-5 py-4 sm:px-6">
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Integration Contract</p>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Integration Contract</p>
                     <p class="mt-1.5 text-sm font-semibold text-content-primary">Prometheus-Compatible HTTP API</p>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Endpoint identity, query APIs, metric signals, and retention evidence are validated before use.</p>
                 </div>
                 <div class="bg-surface-card px-5 py-4 sm:px-6">
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Usage Resolution</p>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Usage Resolution</p>
                     <p class="mt-1.5 text-sm font-semibold text-content-primary">Binding, Capability, and Runtime Aware</p>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI selects an eligible metrics source for each bound operational scope.</p>
                 </div>
                 <div class="bg-surface-card px-5 py-4 sm:px-6">
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Authority Boundary</p>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Authority Boundary</p>
                     <p class="mt-1.5 text-sm font-semibold text-content-primary">Prometheus Remains Authoritative</p>
                     <p class="mt-1 text-xs leading-5 text-content-secondary">Scraping, recording rules, retention, federation, and historical storage remain managed by Prometheus.</p>
                 </div>

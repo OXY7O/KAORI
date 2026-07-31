@@ -1,7 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
 {% import "components/table_label.html" as table_label %}
-{% from "integrations/partials/_status_badge.html" import status_badge %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
 {% block title %}{{ instance.name }} · Alertmanager Integration · KAORI{% endblock title %}
 {% block dashboard_content %}
     {% set readiness = instance.readiness_status or 'validation_required' %}
@@ -40,24 +40,24 @@
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Posture</p>
                                 <h2 class="{{ page_hero.context_panel_title_classes() }}">Readiness &amp; Operational Coverage</h2>
                             </div>
-                            {{ status_badge('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else ('validation_required' if source_posture == 'Configured' else 'not_configured') ), source_posture) }}
+                            {{ integration_status('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else ('validation_required' if source_posture == 'Configured' else 'not_configured') ), source_posture) }}
                         </div>
                         <div class="mt-4 grid grid-cols-2 gap-2">
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <div class="flex items-center gap-2 text-brand-foreground">
                                     <i data-lucide="shield-check" class="h-3.5 w-3.5"></i>
-                                    <p class="text-[11px] font-semibold">Readiness</p>
+                                    <p class="text-xs font-semibold">Readiness</p>
                                 </div>
                                 <p class="mt-1.5 truncate text-sm font-semibold text-brand-foreground">{{ readiness|replace('_', ' ') |title }}</p>
-                                <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Produced by Full Validation</p>
+                                <p class="mt-1 text-xs leading-4 text-brand-foreground-muted">Produced by Full Validation</p>
                             </div>
                             <div class="{{ page_hero.context_metric_card_classes() }}">
                                 <div class="flex items-center gap-2 text-brand-foreground">
                                     <i data-lucide="link-2" class="h-3.5 w-3.5"></i>
-                                    <p class="text-[11px] font-semibold">Scope Bindings</p>
+                                    <p class="text-xs font-semibold">Scope Bindings</p>
                                 </div>
                                 <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ bindings|length }}</p>
-                                <p class="mt-1 text-[10px] leading-4 text-brand-foreground-muted">Contexts evaluated by resolver</p>
+                                <p class="mt-1 text-xs leading-4 text-brand-foreground-muted">Contexts evaluated by resolver</p>
                             </div>
                         </div>
                         <div class="{{ page_hero.context_actions_classes() }}">
@@ -98,7 +98,7 @@
                                 :class="activeTab === '{{ tab_key }}' ? 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px' : 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary'">
                             <i data-lucide="{{ tab_icon }}" class="h-4 w-4"></i>
                             <span>{{ tab_label }}</span>
-                            <span class="kaori-semantic-label rounded-md border px-2 py-0.5 text-[10px] font-semibold"
+                            <span class="kaori-semantic-label rounded-md border px-2 py-0.5 text-xs font-semibold"
                                   :class="activeTab === '{{ tab_key }}' ? 'border-brand-outline bg-kaori-soft text-kaori-primary' : 'border-outline-subtle bg-surface-card text-content-muted'">{{ tab_badge }}</span>
                         </button>
                     {% endfor %}

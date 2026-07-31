@@ -1,4 +1,4 @@
-{% from "integrations/partials/_status_badge.html" import status_badge %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
 <section id="job-execution-workspace"
          class="space-y-5"
          x-data="{ activeTab: '{{ selected_job_tab }}', setTab(tab) { this.activeTab = tab; const url = new URL(window.location.href); url.searchParams.set('tab', tab); url.searchParams.set('execution_tab', tab); window.history.replaceState({}, '', url); } }">
@@ -16,7 +16,7 @@
                             <h2 id="execution-overview-title"
                                 class="text-lg font-semibold text-content-primary">Execution Overview</h2>
                             <span id="execution-overview-posture">
-                                {{ status_badge('pending' if job_stats.active else 'ready', 'Work Active' if job_stats.active else 'Queues Clear') }}
+                                {{ integration_status('pending' if job_stats.active else 'ready', 'Work Active' if job_stats.active else 'Queues Clear') }}
                             </span>
                         </div>
                         <p class="mt-1 text-sm leading-6 text-content-secondary">Current execution demand, completion posture, and worker queue activity recorded by KAORI.</p>

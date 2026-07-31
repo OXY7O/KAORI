@@ -60,7 +60,13 @@ def kubernetes() -> ResponseReturnValue:
     return render_template('integrations/kubernetes.html', **context)
 
 
-def _kubernetes_detail_context(cluster_id: str, *, include_history: bool = False) -> dict[str, object]:
+def _kubernetes_detail_context(
+    cluster_id: str,
+    *,
+    include_history: bool = False,
+    history_page: int | None = None,
+    history_per_page: int | None = None,
+) -> dict[str, object]:
     context = build_kubernetes_detail(cluster_id)
     if context is None:
         abort(404)
@@ -78,11 +84,21 @@ def _kubernetes_detail_context(cluster_id: str, *, include_history: bool = False
     context['capability_validation_job'] = build_validation_snapshot(capability_task_id) if capability_task_id else None
     context['runtime_validation_job'] = build_validation_snapshot(runtime_task_id) if runtime_task_id else None
     if include_history:
+        resolved_page = (
+            history_page
+            if history_page is not None
+            else (request.args.get('page', 1, type=int) or 1)
+        )
+        resolved_per_page = (
+            history_per_page
+            if history_per_page is not None
+            else (request.args.get('per_page', 5, type=int) or 5)
+        )
         rows, pagination = paginate_runtime_history(
             'kubernetes',
             str(connection.id),
-            page=1,
-            per_page=5,
+            page=resolved_page,
+            per_page=resolved_per_page,
         )
         context['history'] = runtime_history_view(rows, pagination=pagination)
     return context
@@ -312,8 +328,12 @@ def kubernetes_runtime_history(cluster_id: str) -> ResponseReturnValue:
         per_page=request.args.get('per_page', 5, type=int) or 5,
     )
     return render_template(
-        'integrations/kubernetes/partials/_runtime_history.html',
-        history=runtime_history_view(rows, pagination=pagination),
+        'integrations/partials/_runtime_history.html',
+        runtime_history=runtime_history_view(rows, pagination=pagination),
+        runtime_history_id='kubernetes-runtime-history',
+        runtime_history_loading_id='kubernetes-history-loading',
+        runtime_history_url=url_for('integrations.kubernetes_runtime_history', cluster_id=cluster_id),
+        provider_label='Kubernetes',
         cluster=connection.cluster,
     )
 
@@ -417,6 +437,12 @@ def _binding_response(provider_type: str, *, scope_key: str) -> ResponseReturnVa
                 queue_feedback=not is_htmx_request(),
             )
         except Exception as exc:
+            current_app.logger.exception(
+                'Unexpected %s binding persistence failure for scope %s and source %s',
+                provider_type,
+                cluster_id,
+                source_id,
+            )
             feedback = record_operational_activity(
                 user_id=current_user.id,
                 event_type=f'{provider_type}_binding_create_failed',

@@ -1,6 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
-{% from "integrations/partials/_status_badge.html" import status_badge %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/info_flow.html" as info_flow %}
 {% import "components/connection_validation_header.html" as connection_validation_header %}
@@ -59,14 +59,14 @@
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">{{ 'Connection Posture' if instance else 'Registration Posture' }}</p>
                                 <h2 class="{{ page_hero.context_panel_title_classes() }}">{{ 'Readiness & Scope Coverage' if instance else 'Pre-save Requirements' }}</h2>
                             </div>
-                            {{ status_badge('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else ('validation_required' if source_posture == 'Configured' else 'not_configured') ), source_posture) }}
+                            {{ integration_status('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else ('validation_required' if source_posture == 'Configured' else 'not_configured') ), source_posture) }}
                         </div>
                         {% if instance %}
                             <div class="mt-4 grid grid-cols-2 gap-2">
                                 <div class="{{ page_hero.context_metric_card_classes() }}">
                                     <div class="flex items-center gap-2 text-brand-foreground">
                                         <i data-lucide="shield-check" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                        <p class="text-[11px] font-semibold">Readiness</p>
+                                        <p class="text-xs font-semibold">Readiness</p>
                                     </div>
                                     <p class="mt-1.5 truncate text-sm font-semibold leading-5 text-brand-foreground">{{ hero_readiness|replace('_', ' ') |title }}</p>
                                     <p class="{{ page_hero.context_metric_helper_classes() }}">Established by Full Validation</p>
@@ -74,7 +74,7 @@
                                 <div class="{{ page_hero.context_metric_card_classes() }}">
                                     <div class="flex items-center gap-2 text-brand-foreground">
                                         <i data-lucide="link-2" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                        <p class="text-[11px] font-semibold">Scope Bindings</p>
+                                        <p class="text-xs font-semibold">Scope Bindings</p>
                                     </div>
                                     <p class="mt-1.5 text-xl font-semibold leading-none text-brand-foreground">{{ bindings|length }}</p>
                                     <p class="{{ page_hero.context_metric_helper_classes() }}">Contexts eligible to use this source</p>
@@ -105,7 +105,7 @@
                                 <div class="{{ page_hero.context_metric_card_classes() }}">
                                     <div class="flex items-center gap-2 text-brand-foreground">
                                         <i data-lucide="plug-zap" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                        <p class="text-[11px] font-semibold">Before Save</p>
+                                        <p class="text-xs font-semibold">Before Save</p>
                                     </div>
                                     <p class="mt-1.5 text-sm font-semibold leading-5 text-brand-foreground">Test Connection</p>
                                     <p class="{{ page_hero.context_metric_helper_classes() }}">Registration repeats the probe</p>
@@ -113,7 +113,7 @@
                                 <div class="{{ page_hero.context_metric_card_classes() }}">
                                     <div class="flex items-center gap-2 text-brand-foreground">
                                         <i data-lucide="scan-search" class="h-3.5 w-3.5" aria-hidden="true"></i>
-                                        <p class="text-[11px] font-semibold">After Save</p>
+                                        <p class="text-xs font-semibold">After Save</p>
                                     </div>
                                     <p class="mt-1.5 text-sm font-semibold leading-5 text-brand-foreground">Full Validation</p>
                                     <p class="{{ page_hero.context_metric_helper_classes() }}">Then assign scope bindings</p>
@@ -463,7 +463,7 @@
                                             </td>
                                             <td class="px-4 py-3 text-content-secondary">{{ row.category|title }}</td>
                                             <td class="px-4 py-3 text-content-secondary">{{ 'Yes' if row.required else 'No' }}</td>
-                                            <td class="px-4 py-3">{{ status_badge('ready' if row.available else ('blocked' if row.required else 'not_configured') ) }}</td>
+                                            <td class="px-4 py-3">{{ integration_status('ready' if row.available else ('blocked' if row.required else 'not_configured') ) }}</td>
                                         </tr>
                                     {% endfor %}
                                 </tbody>
@@ -472,7 +472,7 @@
                     </div>
                     <div class="space-y-3">
                         <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4">
-                            <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-kaori-primary">Detected Profile</p>
+                            <p class="text-xs font-bold uppercase tracking-wide text-kaori-primary">Detected Profile</p>
                             <p class="mt-2 font-bold text-content-primary">{{ instance.capability_profile or 'Validation required' }}</p>
                             <p class="mt-1 text-xs leading-5 text-content-secondary">KAORI uses detected capabilities at runtime instead of hard-coded product or version assumptions.</p>
                         </div>
@@ -480,7 +480,7 @@
                             <div class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
                                 <div class="flex items-center justify-between gap-3">
                                     <p class="font-bold text-content-primary">{{ row.label }}</p>
-                                    {{ status_badge(row.status) }}
+                                    {{ integration_status(row.status) }}
                                 </div>
                                 {% if row.missing_required %}
                                     <p class="mt-2 text-xs leading-5 text-content-secondary">Missing required: {{ row.missing_required|join(", ") }}</p>
@@ -513,7 +513,7 @@
                                         <p class="font-bold text-content-primary">{{ scope.scope_label }}</p>
                                         {{ table_label.metadata_label(scope_type_labels.get(scope.scope_type, scope.scope_type_label) , 'boxes') }}
                                     </div>
-                                    <p class="mt-1 text-[11px] text-content-tertiary">{{ scope.scope_type }}:{{ scope.scope_key }}</p>
+                                    <p class="mt-1 text-xs text-content-tertiary">{{ scope.scope_type }}:{{ scope.scope_key }}</p>
                                 </div>
                                 <p class="text-xs text-content-secondary">Resolver evaluates every enabled binding for this operational context.</p>
                             </div>
@@ -522,7 +522,7 @@
                                     <section class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
                                         <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                             <div>
-                                                <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-content-tertiary">{{ consumer_label }}</p>
+                                                <p class="text-xs font-bold uppercase tracking-wide text-content-tertiary">{{ consumer_label }}</p>
                                                 <p class="mt-2 font-bold text-content-primary">{{ resolution.selected_instance_name or 'No eligible source' }}</p>
                                                 <p class="mt-1 text-xs text-content-secondary">Requires {{ resolution.required_capabilities|join(", ") }}</p>
                                             </div>
@@ -546,7 +546,7 @@
                                                                 {% if candidate.is_current_instance %}{{ table_label.metadata_label('Current', 'server-cog') }}{% endif %}
                                                                 {% if candidate.is_selected %}{{ table_label.status_label('Selected', 'normal', 'circle-check') }}{% endif %}
                                                             </div>
-                                                            <p class="mt-1 text-[11px] text-content-secondary">{{ candidate.binding_role|title }} · Priority {{ candidate.priority }} · {{ candidate.operational_state|replace('_', ' ') |title }}</p>
+                                                            <p class="mt-1 text-xs text-content-secondary">{{ candidate.binding_role|title }} · Priority {{ candidate.priority }} · {{ candidate.operational_state|replace('_', ' ') |title }}</p>
                                                         </div>
                                                         {% if candidate.eligible %}
                                                             {{ table_label.status_label('Eligible', 'normal', 'circle-check') }}
@@ -603,11 +603,11 @@
                                         <tr>
                                             <td class="px-4 py-3">
                                                 <p class="font-bold text-content-primary">{{ row.scope_label }}</p>
-                                                <p class="mt-1 text-[11px] text-content-tertiary">{{ scope_type_labels.get(row.binding.asset_type, row.binding.asset_type|replace('_', ' ') |title) }} · {{ row.binding.asset_key }}</p>
+                                                <p class="mt-1 text-xs text-content-tertiary">{{ scope_type_labels.get(row.binding.asset_type, row.binding.asset_type|replace('_', ' ') |title) }} · {{ row.binding.asset_key }}</p>
                                             </td>
                                             <td class="px-4 py-3 text-content-secondary">{{ row.binding.binding_role|title }}</td>
                                             <td class="px-4 py-3 text-content-secondary">{{ row.binding.priority }}</td>
-                                            <td class="px-4 py-3">{{ status_badge('ready' if row.binding.enabled else 'not_configured') }}</td>
+                                            <td class="px-4 py-3">{{ integration_status('ready' if row.binding.enabled else 'not_configured') }}</td>
                                             <td class="px-4 py-3 text-right">
                                                 <button type="button"
                                                         data-alertmanager-delete-button
@@ -637,7 +637,7 @@
                           x-data="{ scopeType: 'kubernetes_cluster' }"
                           class="self-start space-y-4 rounded-xl border border-brand-outline bg-kaori-soft p-4">
                         <div>
-                            <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-kaori-primary">Add or Update Binding</p>
+                            <p class="text-xs font-bold uppercase tracking-wide text-kaori-primary">Add or Update Binding</p>
                             <p class="mt-1 text-xs leading-5 text-content-secondary">One primary source is allowed per scope; secondary and fallback sources may coexist.</p>
                         </div>
                         <label class="block text-xs font-bold text-content-primary">

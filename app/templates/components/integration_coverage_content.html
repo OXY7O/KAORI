@@ -1,6 +1,7 @@
 {% import "components/pagination.html" as pagination_ui %}
+{% import "integrations/components/_provider_registry.html" as provider_registry %}
 {% import "components/table_label.html" as table_label %}
-{% from "integrations/partials/_status_badge.html" import status_badge %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
 {% macro render(provider, rows, pagination, selected_query='', selected_readiness='', selected_compatibility='', selected_deployment_type='', registry_per_page=5, selected_coverage_query='', selected_coverage_environment='', selected_coverage_status='') -%}
     <div class="overflow-x-auto">
         <table class="min-w-[980px] w-full text-left text-sm">
@@ -46,7 +47,7 @@
                                 <span class="text-xs text-content-muted">Binding not configured</span>
                             {% endif %}
                         </td>
-                        <td class="px-4 py-4">{{ status_badge(row.coverage_status, row.coverage_label) }}</td>
+                        <td class="px-4 py-4">{{ integration_status(row.coverage_status, row.coverage_label) }}</td>
                         <td class="px-5 py-4 text-right sm:px-6">
                             {% if row.source_id %}
                                 <a href="{{ url_for(provider.detail_endpoint, instance_id=row.source_id) }}#scope"
@@ -83,86 +84,27 @@
             </tbody>
         </table>
     </div>
-    <footer class="flex flex-col gap-4 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs text-content-muted lg:flex-row lg:items-center lg:justify-between sm:px-6">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-            <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> scopes</p>
-            <form method="get"
-                  action="{{ url_for(provider.registry_endpoint) }}"
-                  hx-get="{{ url_for(provider.registry_endpoint) }}"
-                  hx-target="#{{ provider.key }}-coverage-content"
-                  hx-swap="innerHTML"
-                  hx-push-url="true"
-                  hx-indicator="#{{ provider.key }}-coverage-loading"
-                  class="inline-flex items-center">
-                <input type="hidden" name="tab" value="coverage">
-                <input type="hidden" name="q" value="{{ selected_query }}">
-                <input type="hidden" name="readiness" value="{{ selected_readiness }}">
-                <input type="hidden"
-                       name="compatibility"
-                       value="{{ selected_compatibility }}">
-                <input type="hidden"
-                       name="deployment_type"
-                       value="{{ selected_deployment_type }}">
-                <input type="hidden" name="per_page" value="{{ registry_per_page }}">
-                <input type="hidden" name="page" value="1">
-                <input type="hidden" name="coverage_page" value="1">
-                <input type="hidden" name="coverage_q" value="{{ selected_coverage_query }}">
-                <input type="hidden"
-                       name="coverage_environment"
-                       value="{{ selected_coverage_environment }}">
-                <input type="hidden"
-                       name="coverage_status"
-                       value="{{ selected_coverage_status }}">
-                <select name="coverage_per_page"
-                        aria-label="Coverage rows per page"
-                        onchange="this.form.requestSubmit()"
-                        class="{{ pagination_ui.page_size_classes() }}">
-                    {% for value in pagination.allowed_per_page %}
-                        <option value="{{ value }}"
-                                {% if pagination.per_page == value %}selected{% endif %}>{{ value }}</option>
-                    {% endfor %}
-                </select>
-            </form>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-            {% set base_args = {
-                            'tab': 'coverage',
-                            'q': selected_query,
-                            'readiness': selected_readiness,
-                            'compatibility': selected_compatibility,
-                            'deployment_type': selected_deployment_type,
-                            'page': 1,
-                            'per_page': registry_per_page,
-                            'coverage_q': selected_coverage_query,
-                            'coverage_environment': selected_coverage_environment,
-                            'coverage_status': selected_coverage_status,
-                            'coverage_per_page': pagination.per_page
-                        } %}
-            {% if pagination.has_prev %}
-                {% set prev_url = url_for(provider.registry_endpoint, coverage_page=pagination.prev_page, **base_args) %}
-                <a href="{{ prev_url }}"
-                   hx-get="{{ prev_url }}"
-                   hx-target="#{{ provider.key }}-coverage-content"
-                   hx-swap="innerHTML"
-                   hx-push-url="true"
-                   hx-indicator="#{{ provider.key }}-coverage-loading"
-                   class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
-            {% else %}
-                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
-            {% endif %}
-            {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages) }}
-            {% if pagination.has_next %}
-                {% set next_url = url_for(provider.registry_endpoint, coverage_page=pagination.next_page, **base_args) %}
-                <a href="{{ next_url }}"
-                   hx-get="{{ next_url }}"
-                   hx-target="#{{ provider.key }}-coverage-content"
-                   hx-swap="innerHTML"
-                   hx-push-url="true"
-                   hx-indicator="#{{ provider.key }}-coverage-loading"
-                   class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
-            {% else %}
-                <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
-            {% endif %}
-        </div>
-    </footer>
+    {% set coverage_query_params = {
+        'tab': 'coverage',
+        'q': selected_query,
+        'readiness': selected_readiness,
+        'compatibility': selected_compatibility,
+        'deployment_type': selected_deployment_type,
+        'page': 1,
+        'per_page': registry_per_page,
+        'coverage_q': selected_coverage_query,
+        'coverage_environment': selected_coverage_environment,
+        'coverage_status': selected_coverage_status
+    } %}
+    {{ provider_registry.pagination_footer(
+        pagination,
+        provider.registry_endpoint,
+        '#' ~ provider.key ~ '-coverage-content',
+        '#' ~ provider.key ~ '-coverage-loading',
+        coverage_query_params,
+        item_label='scopes',
+        swap='innerHTML',
+        page_param='coverage_page',
+        per_page_param='coverage_per_page'
+    ) }}
 {%- endmacro %}

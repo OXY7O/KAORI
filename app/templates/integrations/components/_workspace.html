@@ -1,0 +1,76 @@
+{% import "components/loading_bar.html" as loading_bar %}
+
+{% macro section_shell_classes() -%}
+overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm
+{%- endmacro %}
+
+{% macro section_header(icon, title, description, eyebrow=None, action_html=None) -%}
+<header class="border-b border-outline-subtle px-5 py-4 sm:px-6">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                <i data-lucide="{{ icon }}" class="h-5 w-5"></i>
+            </span>
+            <div class="min-w-0">
+                {% if eyebrow %}<p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">{{ eyebrow }}</p>{% endif %}
+                <h2 class="{{ 'mt-0.5 ' if eyebrow else '' }}text-base font-semibold text-content-primary">{{ title }}</h2>
+                {% if description %}<p class="mt-1 text-sm leading-6 text-content-secondary">{{ description }}</p>{% endif %}
+            </div>
+        </div>
+        {% if action_html %}<div class="shrink-0">{{ action_html|safe }}</div>{% endif %}
+    </div>
+</header>
+{%- endmacro %}
+
+{% macro metric_grid_classes(columns=4) -%}
+grid gap-px bg-outline-subtle {{ 'sm:grid-cols-2 xl:grid-cols-5' if columns == 5 else ('sm:grid-cols-2 xl:grid-cols-4' if columns == 4 else ('sm:grid-cols-2 xl:grid-cols-3' if columns == 3 else 'sm:grid-cols-2')) }}
+{%- endmacro %}
+
+{% macro metric_card(label, value, helper=None, icon='activity', tone='brand') -%}
+<article class="bg-surface-card p-4">
+    <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
+            <p class="mt-2 text-2xl font-semibold text-content-primary">{{ value }}</p>
+        </div>
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+            <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+        </span>
+    </div>
+    {% if helper %}<p class="mt-2 text-xs leading-5 text-content-secondary">{{ helper }}</p>{% endif %}
+</article>
+{%- endmacro %}
+
+{% macro filter_region_classes() -%}
+border-b border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6
+{%- endmacro %}
+
+{% macro filter_grid_classes(columns=4) -%}
+grid gap-4 {{ 'md:grid-cols-2 xl:grid-cols-4' if columns == 4 else ('md:grid-cols-2 xl:grid-cols-3' if columns == 3 else 'md:grid-cols-2') }} xl:items-end
+{%- endmacro %}
+
+{% macro control_label_classes() -%}
+mb-2 block text-sm font-semibold text-content-secondary
+{%- endmacro %}
+
+{% macro control_classes() -%}
+h-11 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-medium text-content-primary outline-none transition focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20
+{%- endmacro %}
+
+{% macro search_classes() -%}
+h-11 w-full rounded-lg border border-outline-default bg-surface-card pl-10 pr-3 text-sm font-medium text-content-primary outline-none transition placeholder:text-content-disabled focus:border-outline-focus focus:ring-2 focus:ring-outline-focus/20
+{%- endmacro %}
+
+{% macro interpretation_panel(title, body, icon='info') -%}
+<section class="rounded-xl border border-outline-subtle bg-surface-hover p-4">
+    <div class="flex items-start gap-3">
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-outline-subtle bg-surface-card text-kaori-primary" aria-hidden="true">
+            <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+        </span>
+        <div class="min-w-0">
+            <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ body }}</p>
+        </div>
+    </div>
+</section>
+{%- endmacro %}

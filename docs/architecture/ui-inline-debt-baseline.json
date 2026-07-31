@@ -10,6 +10,11 @@
       "inline_scripts": 1,
       "inline_styles": 0
     },
+    "app/templates/analytics/overview/partials/_load_tracker.html": {
+      "inline_event_handlers": 0,
+      "inline_scripts": 1,
+      "inline_styles": 0
+    },
     "app/templates/analytics/partials/_load_tracker.html": {
       "inline_event_handlers": 0,
       "inline_scripts": 1,
@@ -20,24 +25,9 @@
       "inline_scripts": 1,
       "inline_styles": 0
     },
-    "app/templates/components/integration_coverage_content.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
-      "inline_styles": 0
-    },
     "app/templates/components/navigation/_quick_sync_result.html": {
       "inline_event_handlers": 1,
       "inline_scripts": 1,
-      "inline_styles": 0
-    },
-    "app/templates/integrations/alertmanager/partials/_inventory_content.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
-      "inline_styles": 0
-    },
-    "app/templates/integrations/prometheus/partials/_inventory_content.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 0,
       "inline_styles": 0
     },
     "app/templates/intelligence/automation_control.html": {

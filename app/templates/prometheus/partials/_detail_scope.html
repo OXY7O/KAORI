@@ -1,5 +1,5 @@
 {% import "components/table_label.html" as table_label %}
-{% from "integrations/partials/_status_badge.html" import status_badge %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
 <div id="prometheus-scope-workspace"
      class="space-y-4"
      {% if binding_validation_job and binding_validation_job.is_active %} hx-get="{{ url_for('prometheus.binding_validation_status', instance_id=instance.id, binding_id=binding_validation_job.binding_id, task_id=binding_validation_job.task_id) }}" hx-trigger="load delay:1500ms" hx-target="this" hx-swap="outerHTML" {% endif %}>
@@ -67,7 +67,7 @@
                                 <div class="min-w-0">
                                     <div class="flex flex-wrap items-center gap-2">
                                         <h4 class="break-words text-sm font-semibold text-content-primary">{{ row.scope_label }}</h4>
-                                        {{ status_badge(row.operational_status, row.operational_label) }}
+                                        {{ integration_status(row.operational_status, row.operational_label) }}
                                     </div>
                                     <p class="mt-1 break-all text-xs leading-5 text-content-muted"
                                        title="{{ row.binding.asset_key }}">{{ row.binding.asset_key }}</p>
@@ -232,14 +232,14 @@
                                                     </div>
                                                 </div>
                                                 <div class="flex shrink-0 items-center gap-2">
-                                                    {{ status_badge(consumer_status, 'Selected' if consumer.selected_instance_id else 'Unavailable') }}
+                                                    {{ integration_status(consumer_status, 'Selected' if consumer.selected_instance_id else 'Unavailable') }}
                                                     <i data-lucide="chevron-down"
                                                        class="h-4 w-4 text-content-muted transition group-open:rotate-180"></i>
                                                 </div>
                                             </summary>
                                             <div class="border-t border-outline-subtle bg-surface-hover p-3.5">
                                                 <div class="rounded-lg border border-brand-outline bg-kaori-soft p-3">
-                                                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-kaori-primary">Required Technical Capabilities</p>
+                                                    <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">Required Technical Capabilities</p>
                                                     <p class="mt-1.5 text-xs leading-5 text-content-secondary">{{ consumer.required_capabilities|join(", ") }}</p>
                                                 </div>
                                                 <div class="mt-3 space-y-2">
@@ -248,9 +248,9 @@
                                                             <div class="flex flex-wrap items-center justify-between gap-2">
                                                                 <div>
                                                                     <p class="text-xs font-semibold text-content-primary">{{ candidate.instance_name }}</p>
-                                                                    <p class="mt-1 text-[11px] text-content-muted">{{ candidate.binding_role|title }} · Priority {{ candidate.priority }}</p>
+                                                                    <p class="mt-1 text-xs text-content-muted">{{ candidate.binding_role|title }} · Priority {{ candidate.priority }}</p>
                                                                 </div>
-                                                                {{ status_badge('ready' if candidate.is_selected else ('degraded' if candidate.eligible else 'blocked') , 'Selected' if candidate.is_selected else ('Eligible' if candidate.eligible else 'Skipped')) }}
+                                                                {{ integration_status('ready' if candidate.is_selected else ('degraded' if candidate.eligible else 'blocked') , 'Selected' if candidate.is_selected else ('Eligible' if candidate.eligible else 'Skipped')) }}
                                                             </div>
                                                             <p class="mt-2 text-xs leading-5 text-content-secondary">{{ candidate.decision_reason }}</p>
                                                             {% if candidate.missing_capability_labels %}
@@ -435,7 +435,7 @@
                 <p class="text-sm font-semibold text-status-critical-text">Governed Deletion Boundary</p>
                 <p class="mt-1 text-xs leading-5 text-content-secondary">Bindings and active provider jobs block deletion. Historical runtime observations, JobExecution records, and Activity Audit remain available.</p>
                 {% if deletion_guard and deletion_guard.active_jobs %}
-                    <p class="mt-2 inline-flex items-center gap-1.5 rounded-md border border-status-warning-border bg-status-warning-soft px-2 py-1 text-[11px] font-semibold text-status-warning-text">
+                    <p class="mt-2 inline-flex items-center gap-1.5 rounded-md border border-status-warning-border bg-status-warning-soft px-2 py-1 text-xs font-semibold text-status-warning-text">
                         <i data-lucide="loader-circle" class="h-3.5 w-3.5"></i>{{ deletion_guard.active_jobs }} Active Job
                         {% if deletion_guard.active_jobs != 1 %}s{% endif %}
                     </p>

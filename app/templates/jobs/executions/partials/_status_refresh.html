@@ -1,7 +1,7 @@
-{% from "integrations/partials/_status_badge.html" import status_badge %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
 {% include 'jobs/executions/partials/_status_poller.html' %}
 <span id="execution-overview-posture" hx-swap-oob="outerHTML">
-    {{ status_badge('pending' if job_stats.active else 'ready', 'Work Active' if job_stats.active else 'Queues Clear') }}
+    {{ integration_status('pending' if job_stats.active else 'ready', 'Work Active' if job_stats.active else 'Queues Clear') }}
 </span>
 <p id="execution-overview-updated" class="text-xs font-medium text-content-muted" hx-swap-oob="outerHTML">Updated {{ job_last_refreshed_at }}</p>
 <p id="execution-overview-metric-active" class="text-xl font-bold text-content-primary" hx-swap-oob="outerHTML">{{ job_stats.active }}</p>

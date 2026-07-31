@@ -1,6 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
-{% from "integrations/partials/_status_badge.html" import status_badge %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
 {% block title %}{{ instance.name }} · Prometheus Integration · KAORI{% endblock title %}
 {% block dashboard_content %}
     {% set readiness = instance.readiness_status or 'validation_required' %}
@@ -29,7 +29,7 @@
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Connection Posture</p>
                                 <h2 class="{{ page_hero.context_panel_title_classes() }}">Readiness &amp; Operational Coverage</h2>
                             </div>
-                            {{ status_badge('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else 'validation_required') , source_posture) }}
+                            {{ integration_status('ready' if source_posture == 'Ready' else ('degraded' if source_posture == 'Attention' else 'validation_required') , source_posture) }}
                         </div>
                         <div class="mt-4 grid grid-cols-2 gap-2">
                             {{ page_hero.context_metric('shield-check', 'Readiness', readiness|replace('_', ' ') |title, 'Produced by Full Validation', value_classes='truncate text-sm font-semibold leading-5') }}
@@ -73,7 +73,7 @@
                                 :class="activeTab === '{{ tab_key }}' ? 'border-outline-default border-b-surface-card bg-surface-card text-kaori-primary -mb-px' : 'border-transparent text-content-muted hover:bg-kaori-soft hover:text-kaori-primary'">
                             <i data-lucide="{{ tab_icon }}" class="h-4 w-4"></i>
                             <span>{{ tab_label }}</span>
-                            <span class="kaori-semantic-label rounded-md border px-2 py-0.5 text-[10px] font-semibold"
+                            <span class="kaori-semantic-label rounded-md border px-2 py-0.5 text-xs font-semibold"
                                   :class="activeTab === '{{ tab_key }}' ? 'border-brand-outline bg-kaori-soft text-kaori-primary' : 'border-outline-subtle bg-surface-card text-content-muted'">{{ tab_badge }}</span>
                         </button>
                     {% endfor %}

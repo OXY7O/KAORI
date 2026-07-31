@@ -1,6 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
-{% from "integrations/partials/_status_badge.html" import status_badge %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
 {% block title %}Bind {{ provider.label }} Source · KAORI{% endblock %}
 {% block dashboard_content %}
     <div class="kaori-integration-semantic space-y-6">
@@ -24,7 +24,7 @@
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Binding Posture</p>
                                 <p class="{{ page_hero.context_panel_title_classes() }}">Reuse Before Registration</p>
                             </div>
-                            {{ status_badge(scope_row.coverage_status if scope_row and scope_row.source else 'validation_required', scope_row.coverage_label if scope_row and scope_row.source else 'Selection Required') }}
+                            {{ integration_status(scope_row.coverage_status if scope_row and scope_row.source else 'validation_required', scope_row.coverage_label if scope_row and scope_row.source else 'Selection Required') }}
                         </div>
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
                             {{ page_hero.context_metric('database', 'Connection Records', source_options|length, 'Registered once and reusable') }}

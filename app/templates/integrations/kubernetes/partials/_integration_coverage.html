@@ -15,7 +15,7 @@
                     </p>
                 </div>
             </div>
-            {{ status_badge('ready' if stats.total > 0 and stats.fully_operational == stats.total
+            {{ integration_status('ready' if stats.total > 0 and stats.fully_operational == stats.total
                         else ('degraded' if stats.total > 0 else 'not_configured') ,
             (stats.fully_operational ~ ' of ' ~ stats.total ~ ' Operational')
             if stats.total > 0 else 'Not Configured'
@@ -28,7 +28,7 @@
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                     <i data-lucide="server-cog" class="h-5 w-5" aria-hidden="true"></i>
                 </span>
-                {{ status_badge('ready' if stats.total > 0 and stats.ready == stats.total
+                {{ integration_status('ready' if stats.total > 0 and stats.ready == stats.total
                                 else ('degraded' if stats.total > 0 else 'not_configured') ,
                 (stats.ready ~ ' / ' ~ stats.total ~ ' Ready') if stats.total > 0 else 'Not Configured'
                 ) }}
@@ -68,7 +68,7 @@
                        class="h-5 w-5"
                        aria-hidden="true"></i>
                 </span>
-                {{ status_badge('ready' if stats.total > 0 and stats.prometheus_operational == stats.total
+                {{ integration_status('ready' if stats.total > 0 and stats.prometheus_operational == stats.total
                                 else ('degraded' if stats.prometheus_configured > 0 else 'not_configured') ,
                 (stats.prometheus_operational ~ ' / ' ~ stats.total ~ ' Operational')
                 if stats.total > 0 else 'Not Configured'
@@ -107,7 +107,7 @@
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                     <i data-lucide="siren" class="h-5 w-5" aria-hidden="true"></i>
                 </span>
-                {{ status_badge('ready' if stats.total > 0 and stats.alertmanager_operational == stats.total
+                {{ integration_status('ready' if stats.total > 0 and stats.alertmanager_operational == stats.total
                                 else ('degraded' if stats.alertmanager_configured > 0 else 'not_configured') ,
                 (stats.alertmanager_operational ~ ' / ' ~ stats.total ~ ' Operational')
                 if stats.total > 0 else 'Not Configured'
@@ -155,7 +155,7 @@
                     Validate Kubernetes first. Prometheus and Alertmanager each require both a Ready source and a Ready cluster-scoped binding before their consumers become operational.
                 </p>
             </div>
-            <ol class="flex flex-wrap items-center gap-2 text-[10px] font-semibold"
+            <ol class="flex flex-wrap items-center gap-2 text-xs font-semibold"
                 aria-label="Kubernetes integration readiness dependency">
                 <li class="inline-flex min-h-6 items-center rounded-md border border-kaori-outline bg-kaori-soft px-2 text-kaori-primary-dark">
                     Kubernetes Ready

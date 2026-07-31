@@ -57,6 +57,7 @@ The Styling Guide selects the correct reusable component. The Design System and 
 - `components/HEALTH_INTERPRETATION.md`
 - `components/INTEGRATION_MANAGE_WORKSPACE.md`
 - `components/INTEGRATIONS_WORKSPACE_STANDARD.md`
+  - Canonical Integrations provider registry, semantic status, runtime evidence, binding, and pagination contract.
 - `components/OPERATIONAL_ACTION_FEEDBACK.md`
 - `components/OPERATIONAL_WORKFLOW_CARD.md`
 - `components/STRUCTURED_ENTRY_EDITOR.md`

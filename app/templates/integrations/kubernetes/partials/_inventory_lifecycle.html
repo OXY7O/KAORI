@@ -1,4 +1,4 @@
-{% from "integrations/partials/_status_badge.html" import status_badge %}
+{% from "integrations/components/_semantic_status.html" import integration_status %}
 <div class="space-y-5">
     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
              aria-labelledby="inventory-operational-use-title">
@@ -80,7 +80,7 @@
                                         {% endif %}
                                     </div>
                                 </div>
-                                {{ status_badge(source.status, source.status|replace('_', ' ') |title) }}
+                                {{ integration_status(source.status, source.status|replace('_', ' ') |title) }}
                             </div>
                         </article>
                     {% endfor %}

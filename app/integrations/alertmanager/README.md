@@ -15,7 +15,7 @@ validation, evidence, and runtime translation.
 - `alerts.py`, `silences.py`, `reader.py`: read-only provider operations.
 - `normalizers/`: provider response normalization.
 - `profiles/`: versioned v0.25/v0.33 compatibility contracts.
-- `schemas.py`: provider-owned schemas.
+- `contracts.py` and `normalizers/`: provider-owned contracts and response normalization.
 
 ## Registry contract
 
