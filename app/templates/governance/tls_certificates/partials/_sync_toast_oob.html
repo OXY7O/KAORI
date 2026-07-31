@@ -1,7 +1,0 @@
-{% if sync_progress %}
-    <div hx-swap-oob="innerHTML:#tls-sync-feedback">
-        {% with sync=sync_progress %}
-            {% include "governance/tls_certificates/partials/_sync_toast.html" %}
-        {% endwith %}
-    </div>
-{% endif %}

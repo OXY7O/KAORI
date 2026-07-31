@@ -1,6 +1,0 @@
-<div id="job-hero-context-metrics"
-     class="{{ page_hero.context_panel_metrics_classes() }}"
-     {% if oob|default(false) %}hx-swap-oob="outerHTML"{% endif %}>
-    {{ page_hero.context_metric('activity', 'Active', job_stats.active, 'Queued or running') }}
-    {{ page_hero.context_metric('triangle-alert', 'Attention', job_stats.attention, 'Retrying or failed') }}
-</div>

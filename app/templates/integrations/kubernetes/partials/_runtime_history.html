@@ -1,6 +1,0 @@
-{% set runtime_history = history %}
-{% set runtime_history_id = "kubernetes-runtime-history" %}
-{% set runtime_history_loading_id = "kubernetes-history-loading" %}
-{% set runtime_history_url = url_for('integrations.kubernetes_runtime_history', cluster_id=cluster.id) %}
-{% set provider_label = "Kubernetes" %}
-{% include 'integrations/partials/_runtime_history.html' %}
