@@ -75,7 +75,7 @@ Required structure:
 2. Title Case panel title describing the operational posture.
 3. One semantic status label aligned at the top right.
 4. Exactly two compact metric cards in a two-column grid.
-5. One full-width action at the bottom when an action is required.
+5. One full-width bottom slot containing either an action or one short non-interactive operational notice.
 
 Shared macros:
 
@@ -94,9 +94,9 @@ Geometry and density:
 - Metric title: **11 px semibold**.
 - Metric value: normally **20 px bold**.
 - Metric description: **10 px**, sentence case, maximum two short lines.
-- Bottom action: full width, compact 36 px minimum height.
+- Bottom slot: full width, 40 px target height. Use `context_single_action_classes()` for an action or `context_bottom_notice(...)` for a non-interactive notice.
 
-The panel is operational context, not a second dashboard. Do not add charts, lists, more than two metric cards, long descriptions, or multiple action rows.
+The panel is operational context, not a second dashboard. Do not add charts, lists, more than two metric cards, long descriptions, or multiple bottom rows. A bottom action and bottom notice are mutually exclusive.
 
 ## Hero metadata casing
 

@@ -1,44 +1,51 @@
-{% import "analytics/components/_snapshot_panel.html" as snapshot_panel %}
 {% import "components/section_link_button.html" as section_link_button %}
 {% import "components/forecast_projection_chart.html" as forecast_projection_chart %}
 {% import "components/table_label.html" as table_label %}
+{% import "analytics/components/_overview_surfaces.html" as overview_surface %}
 {% set forecast = payload.forecast_snapshot %}
 {% set risk_count = forecast.risk_count|default(0)|int %}
 {% set risk_tone = 'warning' if risk_count > 0 else 'normal' %}
 {% set highest_resource = forecast.highest_projected_resource|default('Not Available') %}
 {% set highest_percent = forecast.highest_projected_percent|default(0) %}
-{% set metrics = [
-    {'label': 'Forecast Risk', 'value': forecast.forecast_risk|default('Unknown'), 'icon': 'shield-alert', 'tone': risk_tone},
-    {'label': 'Risk Resources', 'value': risk_count, 'icon': 'triangle-alert', 'tone': risk_tone},
-    {'label': 'Highest Projection', 'value': highest_resource ~ ' · ' ~ highest_percent ~ '%', 'icon': 'arrow-up-right', 'tone': 'info'},
-    {'label': 'Forecast Horizon', 'value': forecast.forecast_horizon|default('30 Days')|title, 'icon': 'calendar-range', 'tone': 'maintenance'}
-] %}
-{% set header_action = section_link_button.render(
-    forecast.href ~ '?cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range,
-    'View Resource Forecast'
-) %}
-{% call(slot) snapshot_panel.render(
-    'Forecast & Trend Snapshot',
-    'Historical direction, projected utilization, and threshold risk for core resources.',
-    'chart-spline',
-    'Review Required' if risk_count > 0 else 'Normal',
-    risk_tone,
-    header_action=header_action,
-    body_classes='grid xl:grid-cols-3 xl:divide-x xl:divide-outline-subtle'
-) %}
-    {% if slot == 'metrics' %}
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <i data-lucide="chart-spline" class="h-4.5 w-4.5"></i>
+            </span>
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-base font-semibold text-content-primary">Forecast &amp; Trend Snapshot</h2>
+                    {{ table_label.status_label('Review Required' if risk_count > 0 else 'Normal', risk_tone) }}
+                </div>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Historical direction, projected utilization, and threshold risk for core resources.</p>
+            </div>
+        </div>
+        {{ section_link_button.render(
+            forecast.href ~ '?cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range,
+            'View Resource Forecast'
+        ) }}
+    </header>
+
+    {% set metrics = [
+        {'label': 'Forecast Risk', 'value': forecast.forecast_risk|default('Unknown'), 'icon': 'shield-alert'},
+        {'label': 'Risk Resources', 'value': risk_count, 'icon': 'triangle-alert'},
+        {'label': 'Highest Projection', 'value': highest_resource ~ ' · ' ~ highest_percent ~ '%', 'icon': 'arrow-up-right'},
+        {'label': 'Forecast Horizon', 'value': forecast.forecast_horizon|default('30 Days')|title, 'icon': 'calendar-range'}
+    ] %}
+    <div class="grid grid-cols-1 divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-4">
         {% for metric in metrics %}
-            {{ snapshot_panel.metric(
-                metric.label,
-                metric.value,
-                metric.icon,
-                metric.tone,
-                index=loop.index,
-                total=metrics|length,
-                value_classes='text-lg'
-            ) }}
+            <article class="min-w-0 px-4 py-4 sm:border-r sm:border-outline-subtle xl:px-5">
+                <span class="flex h-8 w-8 items-center justify-center rounded-lg {% if metric.label == 'Risk Resources' and risk_count > 0 %}bg-status-warning-soft text-status-warning{% else %}bg-kaori-soft text-kaori-primary{% endif %}">
+                    <i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i>
+                </span>
+                <p class="mt-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ metric.label }}</p>
+                <p class="mt-1.5 break-words text-lg font-semibold text-content-primary">{{ metric.value }}</p>
+            </article>
         {% endfor %}
-    {% elif slot == 'body' %}
+    </div>
+
+    <div class="grid border-t border-outline-subtle xl:grid-cols-3 xl:divide-x xl:divide-outline-subtle">
         <article class="px-4 py-4 sm:px-5 xl:col-span-2">
             <div>
                 <h3 class="text-sm font-semibold text-content-primary">Combined Forecast Projection</h3>
@@ -65,9 +72,20 @@
                     </div>
                 </div>
             {% endif %}
+
+            <div class="mt-4 grid rounded-lg border border-outline-subtle bg-surface-hover px-4 lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle">
+                <div class="py-3 lg:pr-4">
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">How to Read</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Compare the dashed projection with warning and critical thresholds. A rising line is actionable when current utilization or headroom is already constrained.</p>
+                </div>
+                <div class="border-t border-outline-subtle py-3 lg:border-t-0 lg:pl-4">
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">What to Do</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Validate model confidence, growth drivers, and the nearest threshold ETA before scheduling capacity or workload changes.</p>
+                </div>
+            </div>
         </article>
 
-        <aside class="border-t border-outline-subtle px-4 py-4 sm:px-5 xl:border-t-0">
+        <aside class="{{ overview_surface.context_panel_classes('border-t border-outline-subtle px-4 py-4 sm:px-5 xl:border-t-0') }}">
             <div class="flex items-center justify-between gap-3">
                 <div>
                     <h3 class="text-sm font-semibold text-content-primary">Resource Outlook</h3>
@@ -95,23 +113,13 @@
             {% else %}
                 <p class="mt-4 text-xs leading-5 text-content-muted">No resource outlook is available for the current snapshot.</p>
             {% endif %}
-            <div class="mt-4 flex items-start gap-3 border-t border-outline-subtle pt-3">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ snapshot_panel.tone_icon_classes(risk_tone) }}"><i data-lucide="{{ 'triangle-alert' if risk_count > 0 else 'circle-check' }}" class="h-4 w-4"></i></span>
+            <div class="mt-4 flex items-start gap-3 rounded-lg bg-surface-hover p-3">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {% if risk_count > 0 %}bg-status-warning-soft text-status-warning{% else %}bg-status-normal-soft text-status-normal{% endif %}"><i data-lucide="{{ 'triangle-alert' if risk_count > 0 else 'circle-check' }}" class="h-4 w-4"></i></span>
                 <div class="min-w-0">
                     <p class="text-xs font-semibold text-content-primary">Forecast Decision</p>
                     <p class="mt-1 text-xs leading-5 text-content-muted">{{ forecast.risk_note }}</p>
                 </div>
             </div>
         </aside>
-    {% elif slot == 'footer' %}
-        {{ snapshot_panel.insight(
-            'How to Read',
-            description='Compare the dashed projection with warning and critical thresholds. A rising line is actionable when current utilization or headroom is already constrained.'
-        ) }}
-        {{ snapshot_panel.insight(
-            'What to Do',
-            description='Validate model confidence, growth drivers, and the nearest threshold ETA before scheduling capacity or workload changes.',
-            extra_classes='border-t border-outline-subtle lg:border-t-0'
-        ) }}
-    {% endif %}
-{% endcall %}
+    </div>
+</section>

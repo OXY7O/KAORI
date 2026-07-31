@@ -1,49 +1,55 @@
-{% import "analytics/components/_snapshot_panel.html" as snapshot_panel %}
 {% import "components/section_link_button.html" as section_link_button %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
+{% import "analytics/components/_overview_surfaces.html" as overview_surface %}
 {% set storage = payload.storage_snapshot %}
+{% set storage_tone = table_label.semantic_tone(storage.tone or storage.status)|trim %}
 {% set used_percent = storage.used_percent|default(0)|float %}
 {% set bar_class = 'bg-status-critical' if used_percent > 90 else ('bg-status-warning' if used_percent >= 75 else 'bg-kaori-primary') %}
-{% set storage_metrics = [
-    {'label': 'PVC Requested', 'value': storage.pvc_requested, 'icon': 'database-zap', 'tone': 'maintenance'},
-    {'label': 'PVC Used', 'value': storage.pvc_used, 'icon': 'hard-drive-download', 'tone': 'maintenance'},
-    {'label': 'PVC Free', 'value': storage.pvc_free, 'icon': 'database-backup', 'tone': 'normal'},
-    {
-        'label': 'PVC Risk Count',
-        'value': storage.pvc_risk_count,
-        'icon': 'shield-alert',
-        'tone': 'critical' if storage.pvc_risk_count > 0 else 'normal',
-        'status': 'Review' if storage.pvc_risk_count > 0 else 'Normal'
-    }
-] %}
-{% set header_action = section_link_button.render(
-    storage.href ~ '?cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range,
-    'View Storage Analysis'
-) %}
-{% call(slot) snapshot_panel.render(
-    'Persistent Storage Snapshot',
-    'PVC requested, used, free capacity, and namespace storage risk.',
-    'database',
-    storage.status,
-    storage.tone,
-    header_action=header_action,
-    body_classes='grid xl:grid-cols-3 xl:divide-x xl:divide-outline-subtle'
-) %}
-    {% if slot == 'metrics' %}
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <i data-lucide="database" class="h-4.5 w-4.5"></i>
+            </span>
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-base font-semibold text-content-primary">Persistent Storage Snapshot</h2>
+                    {{ table_label.status_label(storage.status|replace('_', ' ')|title, storage_tone) }}
+                </div>
+                <p class="mt-1 text-xs leading-5 text-content-muted">PVC requested, used, free capacity, and namespace storage risk.</p>
+            </div>
+        </div>
+        {{ section_link_button.render(
+            storage.href ~ '?cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range,
+            'View Storage Analysis'
+        ) }}
+    </header>
+
+    {% set storage_metrics = [
+        {'label': 'PVC Requested', 'value': storage.pvc_requested, 'icon': 'database-zap'},
+        {'label': 'PVC Used', 'value': storage.pvc_used, 'icon': 'hard-drive-download'},
+        {'label': 'PVC Free', 'value': storage.pvc_free, 'icon': 'database-backup'},
+        {'label': 'PVC Risk Count', 'value': storage.pvc_risk_count, 'icon': 'shield-alert'}
+    ] %}
+    <div class="grid grid-cols-1 divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-4">
         {% for metric in storage_metrics %}
-            {{ snapshot_panel.metric(
-                metric.label,
-                metric.value,
-                metric.icon,
-                metric.tone,
-                metric.status|default(''),
-                metric.tone,
-                index=loop.index,
-                total=storage_metrics|length
-            ) }}
+            <article class="min-w-0 px-4 py-4 sm:border-r sm:border-outline-subtle xl:px-5">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {% if metric.label == 'PVC Risk Count' and storage.pvc_risk_count > 0 %}bg-status-critical-soft text-status-critical{% else %}bg-kaori-soft text-kaori-primary{% endif %}">
+                        <i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i>
+                    </span>
+                    {% if metric.label == 'PVC Risk Count' %}
+                        {{ table_label.status_label('Review' if storage.pvc_risk_count > 0 else 'Normal', 'critical' if storage.pvc_risk_count > 0 else 'normal', size='compact') }}
+                    {% endif %}
+                </div>
+                <p class="mt-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ metric.label }}</p>
+                <p class="mt-1.5 break-words text-xl font-semibold text-content-primary">{{ metric.value }}</p>
+            </article>
         {% endfor %}
-    {% elif slot == 'body' %}
+    </div>
+
+    <div class="grid border-t border-outline-subtle xl:grid-cols-3 xl:divide-x xl:divide-outline-subtle">
         <article class="px-4 py-4 sm:px-5 xl:col-span-2">
             <div class="flex items-center justify-between gap-3">
                 <div>
@@ -55,32 +61,32 @@
             {{ progress_bar.bar(used_percent, track_classes='mt-4 h-3 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full transition-all duration-500 ' ~ bar_class, label='PVC Capacity Utilization') }}
             <div class="mt-3 grid grid-cols-2 divide-x divide-outline-subtle border-y border-outline-subtle py-3">
                 <div class="pr-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Used Capacity</p>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Used Capacity</p>
                     <p class="mt-1 text-sm font-semibold text-content-primary">{{ storage.used_percent }}%</p>
                 </div>
                 <div class="pl-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Free Capacity</p>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Free Capacity</p>
                     <p class="mt-1 text-sm font-semibold text-status-normal">{{ storage.free_percent }}%</p>
                 </div>
             </div>
         </article>
 
-        <aside class="border-t border-outline-subtle px-4 py-4 sm:px-5 xl:border-t-0">
-            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Storage Risk Context</p>
+        <aside class="{{ overview_surface.context_panel_classes('border-t border-outline-subtle px-4 py-4 sm:px-5 xl:border-t-0') }}">
+            <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Storage Risk Context</p>
             <p class="mt-1 text-sm font-semibold text-content-primary">Top Namespace: {{ storage.top_namespace }}</p>
             {% if storage.pvc_risk_count > 0 %}
                 <p class="mt-1 text-xs leading-5 text-content-muted">Review at-risk PVCs, namespace growth, storage class expansion support, and remaining free capacity before exhaustion.</p>
-                <div class="mt-4 flex items-start gap-3 border-t border-outline-subtle pt-3">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ snapshot_panel.tone_icon_classes('warning') }}"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>
+                <div class="mt-4 flex items-start gap-3 rounded-lg bg-surface-hover p-3">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>
                     <div><p class="text-xs font-semibold text-content-primary">Recommended Action</p><p class="mt-1 text-xs leading-5 text-content-muted">Validate growth and schedule PVC expansion or cleanup for the highest-risk namespace.</p></div>
                 </div>
             {% else %}
                 <p class="mt-1 text-xs leading-5 text-content-muted">Current persistent storage posture is healthy. Continue monitoring namespace growth and forecasted demand.</p>
-                <div class="mt-4 flex items-start gap-3 border-t border-outline-subtle pt-3">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ snapshot_panel.tone_icon_classes('normal') }}"><i data-lucide="circle-check" class="h-4 w-4"></i></span>
+                <div class="mt-4 flex items-start gap-3 rounded-lg bg-surface-hover p-3">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-normal-soft text-status-normal"><i data-lucide="circle-check" class="h-4 w-4"></i></span>
                     <div><p class="text-xs font-semibold text-content-primary">Recommended Action</p><p class="mt-1 text-xs leading-5 text-content-muted">No immediate storage remediation is required.</p></div>
                 </div>
             {% endif %}
         </aside>
-    {% endif %}
-{% endcall %}
+    </div>
+</section>

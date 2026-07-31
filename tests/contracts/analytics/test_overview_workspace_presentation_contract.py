@@ -199,3 +199,59 @@ def test_overview_recommendations_are_always_visible_and_paginated() -> None:
     assert 'data-kaori-recommendation-pager' in recommendations
     assert 'data-page-size="3"' in recommendations
     assert "recommendation_pager.controls(recommendations|length, 'Actions', 3)" in recommendations
+
+
+
+def test_overview_hero_attention_uses_the_full_width_bottom_slot() -> None:
+    source = read('partials/_hero_posture.html')
+    loading = read('partials/_hero_posture_loading.html')
+    shared_hero = Path('app/templates/components/page_hero.html').read_text(encoding='utf-8')
+
+    assert 'page_hero.context_bottom_notice(posture_short_description, posture_tone)' in source
+    assert source.index('context_bottom_notice') > source.index('context_metric_card_classes')
+    assert 'page_hero.context_posture_note' not in source
+    assert 'macro context_bottom_notice' in shared_hero
+    assert 'min-h-10 w-full' in shared_hero
+    assert 'min-h-10 w-full' in loading
+
+
+def test_overview_readiness_and_interpretation_surface_hierarchy_is_canonical() -> None:
+    health = read('partials/_health_summary.html')
+    resource = read('partials/_resource_snapshot.html')
+    capacity = read('partials/_capacity_snapshot.html')
+    workload = read('partials/_workload_snapshot.html')
+    top_consumers = read('partials/_top_consumers_snapshot.html')
+    surfaces = Path('app/templates/analytics/components/_overview_surfaces.html').read_text(encoding='utf-8')
+
+    assert 'overview_surface.readiness_shell_classes()' in health
+    assert 'overview_surface.attention_strip_classes()' in health
+    assert 'overview_surface.interpretation_grid_classes()' in health
+    assert 'bg-surface-card' in surfaces
+    assert 'bg-surface-hover' in surfaces
+    assert "overview_surface.context_panel_classes('border-t border-outline-subtle px-4 py-4 sm:px-5 xl:col-span-4" in resource
+    assert 'overview_surface.interpretation_grid_classes()' in resource
+    assert 'overview_surface.interpretation_grid_classes()' in capacity
+    assert 'overview_surface.interpretation_panel_classes' in workload
+    assert 'overview_surface.interpretation_grid_classes()' in top_consumers
+
+
+def test_overview_status_tones_use_shared_semantic_normalization() -> None:
+    health = read('partials/_health_summary.html')
+    resource = read('partials/_resource_snapshot.html')
+    capacity = read('partials/_capacity_snapshot.html')
+    workload = read('partials/_workload_snapshot.html')
+    storage = read('partials/_storage_snapshot.html')
+    action_summary = read('partials/_actionable_recommendation_summary.html')
+    recommendations = read('partials/_recommendations.html')
+    table_label = Path('app/templates/components/table_label.html').read_text(encoding='utf-8')
+
+    assert 'table_label.semantic_tone(signal.tone or signal.status)|trim' in health
+    assert 'table_label.semantic_tone(item.tone or item.status)|trim' in health
+    assert 'table_label.semantic_tone(item.tone or item.status)|trim' in resource
+    assert 'table_label.semantic_tone(item.tone or item.status)|trim' in capacity
+    assert 'table_label.semantic_tone(workload.tone or workload.status)|trim' in workload
+    assert 'table_label.semantic_tone(storage.tone or storage.status)|trim' in storage
+    assert 'table_label.semantic_tone(summary.tone or summary.status)|trim' in action_summary
+    assert 'table_label.semantic_tone(recommendation.severity_tone or recommendation.severity)|trim' in recommendations
+    for alias in ('green', 'amber', 'red', 'gray', 'blue', 'purple'):
+        assert alias in table_label

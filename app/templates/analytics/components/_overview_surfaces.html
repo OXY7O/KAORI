@@ -1,0 +1,19 @@
+{% macro readiness_shell_classes() -%}
+    overflow-hidden rounded-lg border border-outline-subtle bg-surface-card
+{%- endmacro %}
+
+{% macro attention_strip_classes() -%}
+    flex items-start gap-3 border-t border-outline-subtle bg-surface-hover px-4 py-3
+{%- endmacro %}
+
+{% macro interpretation_grid_classes(extra='') -%}
+    grid border-t border-outline-subtle bg-surface-hover lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle {{ extra }}
+{%- endmacro %}
+
+{% macro interpretation_panel_classes(extra='') -%}
+    bg-surface-hover {{ extra }}
+{%- endmacro %}
+
+{% macro context_panel_classes(extra='') -%}
+    bg-surface-card {{ extra }}
+{%- endmacro %}

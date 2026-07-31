@@ -32,6 +32,7 @@ def test_canonical_styling_guide_and_component_contracts_exist() -> None:
     assert 'components/WORKSPACE_TABS.md' in design_readme
     assert 'components/OPERATIONAL_SECTION_CARD.md' in design_readme
     assert 'components/FORECAST_PROJECTION_CHART.md' in design_readme
+    assert 'components/ANALYTICS_OVERVIEW_SURFACES.md' in design_readme
     assert 'components/SECTION_HEADER_ACTION.md' in design_readme
     assert 'components/PEER_CONTENT_GRID.md' in design_readme
     assert 'components/OPERATIONAL_FLOW_STEPS.md' in design_readme
@@ -321,3 +322,26 @@ def test_network_inventory_pattern_is_registered() -> None:
     assert 'EndpointSlice first' in guide
     assert 'No TLS reference remains neutral inventory evidence' in guide
     assert 'Kubernetes Network Inventory Pattern' in pattern
+
+
+
+def test_analytics_overview_surface_hierarchy_is_documented_and_shared() -> None:
+    guide = _read('docs/design/KAORI_STYLING_GUIDE.md')
+    contract = _read('docs/design/components/ANALYTICS_OVERVIEW_SURFACES.md')
+    shared = _read('app/templates/analytics/components/_overview_surfaces.html')
+    hero = _read('app/templates/components/page_hero.html')
+    labels = _read('app/templates/components/table_label.html')
+
+    assert 'Analytics Overview Surface Hierarchy' in guide
+    assert 'analytics/components/_overview_surfaces.html' in guide
+    assert 'Primary Data Surface' in contract
+    assert 'Interpretation or Action Strip' in contract
+    assert 'Attention Strip' in contract
+    assert 'macro readiness_shell_classes' in shared
+    assert 'macro interpretation_grid_classes' in shared
+    assert 'macro context_panel_classes' in shared
+    assert 'macro context_bottom_notice' in hero
+    assert "'green'" in labels
+    assert "'amber'" in labels
+    assert "'red'" in labels
+    assert "'gray'" in labels

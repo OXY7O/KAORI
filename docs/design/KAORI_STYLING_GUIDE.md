@@ -56,6 +56,7 @@ Review the baseline diff before committing. A lower count is expected; moving de
 | Right-side detail drawer | `components/SIDE_DRAWER.md` | `components/side_drawer.html` |
 | Operational callout | `components/OPERATIONAL_CALLOUT.md` | `components/operational_callout.html` |
 | Forecast projection chart | `components/FORECAST_PROJECTION_CHART.md` | `components/forecast_projection_chart.html` |
+| Analytics Overview surface hierarchy | `components/ANALYTICS_OVERVIEW_SURFACES.md` | `analytics/components/_overview_surfaces.html` |
 | Compact section-header action | `components/SECTION_HEADER_ACTION.md` | `components/section_link_button.html` |
 | Right contextual rail | `components/RIGHT_CONTEXT_RAIL.md` | `components/context_rail.html` |
 | Primary flow box | `components/INFO_FLOW.md` | `components/info_flow.html` |
@@ -165,7 +166,7 @@ Hero limits:
 - one concise description, normally one or two lines;
 - two or three metadata labels;
 - no more than two normal actions;
-- one optional right context panel with exactly two compact metrics and one bottom action.
+- one optional right context panel with exactly two compact metrics and one bottom slot; the slot contains either one action or one short non-interactive notice, never both.
 
 Do not place tables, charts, workflow instructions, diagnostic evidence, or paragraph-length copy in the hero. Do not change hero font size or height per page.
 
@@ -231,6 +232,18 @@ Ordinary value? → plain text
 Do not use `rounded-3xl` or arbitrary radii in authenticated workspaces.
 
 Standard surfaces use semantic tokens and restrained shadows. Nested cards should rely on border, surface contrast, and whitespace before adding another shadow.
+
+### Analytics Overview Surface Hierarchy
+
+Analytics Overview uses a fixed three-level surface hierarchy:
+
+1. Primary evidence and analytical context use the bright `bg-surface-card` surface.
+2. Interpretation, recommended action, review path, and execution guidance use the darker soft `bg-surface-hover` surface.
+3. Attention strips use the same darker soft surface plus semantic Warning or Critical treatment.
+
+Do not darken the entire Prometheus/readiness body. Keep the source and committed snapshot panels bright, then place dataset attention below them as a distinct strip. Context side panels such as Pressure Posture remain bright and use borders for separation. Use `analytics/components/_overview_surfaces.html`; do not reconstruct the hierarchy independently in every tab.
+
+Analytics status tones are normalized through `table_label.semantic_tone(...)`. Legacy color names may be accepted at the shared component boundary for compatibility, but new presenters and templates use semantic tone names. Critical, Warning, and Normal values must never fall back to the Unknown/slate treatment.
 
 ## 9. Pagination Standard
 

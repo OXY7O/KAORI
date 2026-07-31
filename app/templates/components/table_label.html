@@ -4,17 +4,17 @@
 
 {% macro semantic_tone(tone='info') -%}
     {% set normalized_tone = tone|default('info', true)|lower|replace(' ', '_') %}
-    {%- if normalized_tone in ['ready', 'healthy', 'normal', 'success', 'succeeded', 'operational'] -%}
+    {%- if normalized_tone in ['ready', 'healthy', 'normal', 'success', 'succeeded', 'operational', 'green'] -%}
         normal
-    {%- elif normalized_tone in ['degraded', 'warning', 'attention', 'partial', 'partially_succeeded'] -%}
+    {%- elif normalized_tone in ['degraded', 'warning', 'attention', 'partial', 'partially_succeeded', 'amber'] -%}
         warning
-    {%- elif normalized_tone in ['blocked', 'critical', 'failed', 'unhealthy', 'error'] -%}
+    {%- elif normalized_tone in ['blocked', 'critical', 'failed', 'unhealthy', 'error', 'red'] -%}
         critical
-    {%- elif normalized_tone in ['not_configured', 'validation_required', 'unknown', 'draft', 'disabled', 'inactive'] -%}
+    {%- elif normalized_tone in ['not_configured', 'validation_required', 'unknown', 'draft', 'disabled', 'inactive', 'gray', 'grey', 'slate'] -%}
         unknown
-    {%- elif normalized_tone in ['pending', 'queued', 'running', 'retrying', 'in_progress', 'info'] -%}
+    {%- elif normalized_tone in ['pending', 'queued', 'running', 'retrying', 'in_progress', 'info', 'blue', 'cyan'] -%}
         info
-    {%- elif normalized_tone == 'maintenance' -%}
+    {%- elif normalized_tone in ['maintenance', 'purple', 'violet'] -%}
         maintenance
     {%- else -%}
         unknown

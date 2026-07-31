@@ -190,6 +190,11 @@ Analysis must retain the agreed Cluster → Node selector hierarchy.
 - Top Consumers and Alerts & Anomalies Snapshot are always visible on the Overview page. They must not use `details`, chevrons, or expand/collapse state.
 - Storage Snapshot and Trend Summary end with concise operational tips using the shared `components/detail_tip.html` treatment.
 - Overview redesigns must preserve lazy-section HTMX endpoints, selected cluster/time-range state, and worker-first committed-snapshot boundaries.
+- Overview primary data, readiness, charts, metric grids, and side context panels use the bright `bg-surface-card` surface. `bg-surface-hover` is reserved for attention, interpretation, recommended-action, review-path, and execution-guidance strips through `analytics/components/_overview_surfaces.html`.
+- Prometheus status and committed dataset metadata remain bright; dataset freshness exceptions appear as a distinct darker attention strip below them.
+- Pressure Posture and equivalent analytical context panels remain bright and use borders for separation.
+- Normalize all status tones through `table_label.semantic_tone(...)`. New presentation payloads use semantic tones; legacy color aliases are accepted only at the shared label boundary.
+- The Overview hero may use `page_hero.context_bottom_notice(...)` in the bottom action slot when the panel requires a short non-interactive attention message. Do not show a bottom notice and an action together.
 
 ## Analytics overview Prometheus status flow
 

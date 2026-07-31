@@ -1,6 +1,7 @@
 {% import "components/table_label.html" as table_label %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "analytics/components/_prometheus_status.html" as prometheus_status_panel %}
+{% import "analytics/components/_overview_surfaces.html" as overview_surface %}
 {% set snapshot = payload.snapshot_summary|default({}) %}
 {% set snapshot_tone = snapshot.tone|default('unknown') %}
 {% set issue_count = snapshot.stale_dataset_count|default(0) + snapshot.pending_dataset_count|default(0) + snapshot.failed_dataset_count|default(0) %}
@@ -14,9 +15,10 @@
 ] %}
 {% set posture = namespace(critical=0, warning=0) %}
 {% for signal in health_signals %}
-    {% if signal.tone == 'red' %}
+    {% set signal_tone = table_label.semantic_tone(signal.tone or signal.status)|trim %}
+    {% if signal_tone == 'critical' %}
         {% set posture.critical = posture.critical + 1 %}
-    {% elif signal.tone == 'amber' %}
+    {% elif signal_tone == 'warning' %}
         {% set posture.warning = posture.warning + 1 %}
     {% endif %}
 {% endfor %}
@@ -74,7 +76,7 @@
                     </label>
                 </div>
 
-                <div class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
+                <div class="{{ overview_surface.readiness_shell_classes() }}">
                     <div class="grid lg:grid-cols-2">
                         <div class="px-4 py-4">
                             {{ prometheus_status_panel.render(payload.prometheus, payload.last_analyzed_at, flat=true, compact=true) }}
@@ -116,7 +118,7 @@
                     </div>
 
                     {% if issue_count %}
-                        <div class="flex items-start gap-3 border-t border-outline-subtle px-4 py-3">
+                        <div class="{{ overview_surface.attention_strip_classes() }}">
                             <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-status-warning-soft text-status-warning">
                                 <i data-lucide="triangle-alert" class="h-4 w-4"></i>
                             </span>
@@ -156,28 +158,14 @@
 
         <div class="grid grid-cols-1 divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-3 2xl:grid-cols-6">
             {% for item in health_signals %}
-                {% set semantic_tone = {
-                    'green': 'normal',
-                    'amber': 'warning',
-                    'red': 'critical',
-                    'purple': 'maintenance',
-                    'blue': 'info',
-                    'gray': 'unknown'
-                }.get(item.tone, 'unknown') %}
-                {% set icon_class = {
-                    'green': 'bg-status-normal-soft text-status-normal',
-                    'amber': 'bg-status-warning-soft text-status-warning',
-                    'red': 'bg-status-critical-soft text-status-critical',
-                    'purple': 'bg-status-maintenance-soft text-status-maintenance',
-                    'blue': 'bg-status-info-soft text-status-info',
-                    'gray': 'bg-status-unknown-soft text-status-unknown'
-                }.get(item.tone, 'bg-status-unknown-soft text-status-unknown') %}
+                {% set semantic_tone = table_label.semantic_tone(item.tone or item.status)|trim %}
+                {% set icon_class = table_label.tone_surface_classes(semantic_tone)|trim %}
                 <article class="min-w-0 px-4 py-4 sm:border-b sm:border-r sm:border-outline-subtle xl:px-5 2xl:border-b-0">
                     <div class="flex items-center justify-between gap-3">
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ icon_class }}">
                             <i data-lucide="{{ item.icon }}" class="h-4 w-4"></i>
                         </span>
-                        {{ table_label.status_label(item.status, semantic_tone, size='compact') }}
+                        {{ table_label.status_label(item.status|replace('_', ' ')|title, semantic_tone, size='compact') }}
                     </div>
                     <p class="mt-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ item.label }}</p>
                     <p class="mt-1.5 break-words text-lg font-semibold text-content-primary">{{ item.value }}</p>
@@ -186,7 +174,7 @@
             {% endfor %}
         </div>
 
-        <div class="grid border-t border-outline-subtle lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle">
+        <div class="{{ overview_surface.interpretation_grid_classes() }}">
             <article class="px-4 py-3 sm:px-5">
                 <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Operational Reading</p>
                 {% if posture.critical > 0 %}

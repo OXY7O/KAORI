@@ -1,42 +1,59 @@
-{% import "analytics/components/_snapshot_panel.html" as snapshot_panel %}
 {% import "components/section_link_button.html" as section_link_button %}
 {% import "components/table_label.html" as table_label %}
+{% import "analytics/components/_overview_surfaces.html" as overview_surface %}
 {% set workload = payload.workload_snapshot %}
+{% set workload_tone = table_label.semantic_tone(workload.tone or workload.status)|trim %}
 {% set missing_requests = workload.missing_cpu_requests + workload.missing_memory_requests %}
 {% set missing_limits = workload.missing_cpu_limits + workload.missing_memory_limits %}
 {% set total_findings = missing_requests + missing_limits + workload.over_provisioned + workload.under_provisioned %}
-{% set metrics = [
-    {'label': 'Missing Requests', 'value': missing_requests, 'icon': 'badge-alert', 'tone': 'critical', 'description': 'CPU and memory requests not defined.'},
-    {'label': 'Missing Limits', 'value': missing_limits, 'icon': 'gauge-circle', 'tone': 'warning', 'description': 'CPU and memory limits not defined.'},
-    {'label': 'Over-Provisioned', 'value': workload.over_provisioned, 'icon': 'arrow-up-circle', 'tone': 'info', 'description': 'Resources allocated above observed demand.'},
-    {'label': 'Under-Provisioned', 'value': workload.under_provisioned, 'icon': 'arrow-down-circle', 'tone': 'maintenance', 'description': 'Resources below observed demand or pressure.'}
-] %}
-{% set header_action = section_link_button.render(
-    workload.href ~ '?cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range,
-    'View Workload Analysis'
-) %}
-{% call(slot) snapshot_panel.render(
-    'Workload Efficiency Snapshot',
-    'Resource request, limit, and provisioning findings from workload resource mapping.',
-    'boxes',
-    workload.status,
-    workload.tone,
-    header_action=header_action,
-    body_classes='grid xl:grid-cols-3 xl:divide-x xl:divide-outline-subtle'
-) %}
-    {% if slot == 'metrics' %}
+<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <i data-lucide="boxes" class="h-4.5 w-4.5"></i>
+            </span>
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                    <h2 class="text-base font-semibold text-content-primary">Workload Efficiency Snapshot</h2>
+                    {{ table_label.status_label(workload.status|replace('_', ' ')|title, workload_tone) }}
+                </div>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Resource request, limit, and provisioning findings from workload resource mapping.</p>
+            </div>
+        </div>
+        {{ section_link_button.render(
+            workload.href ~ '?cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range,
+            'View Workload Analysis'
+        ) }}
+    </header>
+
+    {% set metrics = [
+        {'label': 'Missing Requests', 'value': missing_requests, 'icon': 'badge-alert', 'tone': 'critical', 'description': 'CPU and memory requests not defined.'},
+        {'label': 'Missing Limits', 'value': missing_limits, 'icon': 'gauge-circle', 'tone': 'warning', 'description': 'CPU and memory limits not defined.'},
+        {'label': 'Over-Provisioned', 'value': workload.over_provisioned, 'icon': 'arrow-up-circle', 'tone': 'info', 'description': 'Resources allocated above observed demand.'},
+        {'label': 'Under-Provisioned', 'value': workload.under_provisioned, 'icon': 'arrow-down-circle', 'tone': 'maintenance', 'description': 'Resources below observed demand or pressure.'}
+    ] %}
+    <div class="grid grid-cols-1 divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-4">
         {% for metric in metrics %}
-            {{ snapshot_panel.metric(
-                metric.label,
-                metric.value,
-                metric.icon,
-                metric.tone,
-                description=metric.description,
-                index=loop.index,
-                total=metrics|length
-            ) }}
+            {% set icon_class = {
+                'critical': 'bg-status-critical-soft text-status-critical',
+                'warning': 'bg-status-warning-soft text-status-warning',
+                'info': 'bg-status-info-soft text-status-info',
+                'maintenance': 'bg-status-maintenance-soft text-status-maintenance'
+            }.get(metric.tone, 'bg-status-unknown-soft text-status-unknown') %}
+            <article class="min-w-0 px-4 py-4 sm:border-r sm:border-outline-subtle xl:px-5">
+                <div class="flex items-center justify-between gap-3">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ icon_class }}">
+                        <i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i>
+                    </span>
+                    <span class="text-xl font-semibold text-content-primary">{{ metric.value }}</span>
+                </div>
+                <p class="mt-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ metric.label }}</p>
+                <p class="mt-1 text-xs leading-5 text-content-muted">{{ metric.description }}</p>
+            </article>
         {% endfor %}
-    {% elif slot == 'body' %}
+    </div>
+
+    <div class="grid border-t border-outline-subtle xl:grid-cols-3 xl:divide-x xl:divide-outline-subtle">
         <article class="px-4 py-4 sm:px-5 xl:col-span-2">
             <div class="flex items-center justify-between gap-3">
                 <div>
@@ -47,14 +64,14 @@
             </div>
             <div class="mt-4 grid grid-cols-1 divide-y divide-outline-subtle border-y border-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 sm:divide-outline-subtle">
                 <div class="py-3 sm:pr-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Request Coverage</p>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Request Coverage</p>
                     <dl class="mt-2 space-y-2">
                         <div class="flex items-center justify-between gap-4 text-xs"><dt class="text-content-muted">Missing CPU Requests</dt><dd class="font-semibold text-content-primary">{{ workload.missing_cpu_requests }}</dd></div>
                         <div class="flex items-center justify-between gap-4 text-xs"><dt class="text-content-muted">Missing Memory Requests</dt><dd class="font-semibold text-content-primary">{{ workload.missing_memory_requests }}</dd></div>
                     </dl>
                 </div>
                 <div class="py-3 sm:pl-4">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Limit Coverage</p>
+                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Limit Coverage</p>
                     <dl class="mt-2 space-y-2">
                         <div class="flex items-center justify-between gap-4 text-xs"><dt class="text-content-muted">Missing CPU Limits</dt><dd class="font-semibold text-content-primary">{{ workload.missing_cpu_limits }}</dd></div>
                         <div class="flex items-center justify-between gap-4 text-xs"><dt class="text-content-muted">Missing Memory Limits</dt><dd class="font-semibold text-content-primary">{{ workload.missing_memory_limits }}</dd></div>
@@ -63,8 +80,8 @@
             </div>
         </article>
 
-        <aside class="border-t border-outline-subtle px-4 py-4 sm:px-5 xl:border-t-0">
-            <p class="text-xs font-semibold uppercase tracking-wide text-content-muted">Recommended Action</p>
+        <aside class="{{ overview_surface.interpretation_panel_classes('border-t border-outline-subtle px-4 py-4 sm:px-5 xl:border-t-0') }}">
+            <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Recommended Action</p>
             {% if missing_requests > 0 %}
                 <p class="mt-1 text-sm font-semibold text-status-critical">Define Missing Requests Before Tuning Limits</p>
                 <p class="mt-1 text-xs leading-5 text-content-muted">Start with CPU and memory requests so scheduling and efficiency calculations reflect realistic workload demand.</p>
@@ -79,5 +96,5 @@
                 <p class="mt-1 text-xs leading-5 text-content-muted">No immediate request, limit, or provisioning finding is present in the committed snapshot.</p>
             {% endif %}
         </aside>
-    {% endif %}
-{% endcall %}
+    </div>
+</section>
