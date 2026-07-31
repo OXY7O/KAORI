@@ -18,7 +18,7 @@ _PAGE = {
     'title': 'Capacity Forecast',
     'description': (
         'Historical range data is prepared by the forecasting worker. '
-        'Forecast horizon, method, and resource selectors are projected locally.'
+        'Forecast horizon, projection model, and active resource tab are resolved locally from the committed history snapshot.'
     ),
     'icon': 'chart-spline',
     'page_id': 'forecast-page',
@@ -29,8 +29,8 @@ def _context_or_state():
     requested = request.args.to_dict(flat=True)
     requested.setdefault('history_window', '30d')
     requested.setdefault('forecast_horizon', '90d')
-    requested.setdefault('resource', 'all')
-    requested.setdefault('method', 'linear')
+    requested.setdefault('tab', 'cpu')
+    requested.setdefault('method', 'holt_winters')
     materialized = resolve_materialized_request(
         dataset_key=_PAGE['dataset_key'],
         job_key='analytics.forecast.materialize',

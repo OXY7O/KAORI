@@ -2,45 +2,53 @@
 
 ## Purpose
 
-`forecast_projection_chart.html` is the shared historical and projected utilization visualization for Kubernetes Dashboard and Kubernetes Analytics.
+KAORI provides two forecast chart compositions with one semantic contract:
 
-## Shared ownership
+- compact SVG chart for Kubernetes Dashboard and Analytics Overview;
+- interactive Chart.js chart for the full Resource Forecast workspace.
 
-The component owns:
+## Compact Chart
 
-- SVG grid and plotting geometry;
-- warning and critical threshold lines;
-- historical solid-line and projected dashed-line semantics;
-- canonical resource stroke mapping;
-- current/historical and horizon axis labels;
-- legend geometry;
-- approved 10 px chart microcopy.
+Implementation: `components/forecast_projection_chart.html`.
 
-Pages provide normalized series points, horizon, historical availability, and an accessible label. Pages must not copy the SVG or axis classes.
+The compact chart owns SVG geometry, thresholds, historical/projected line semantics, canonical resource mapping, axis labels, and approved chart microcopy. It is intended for summary surfaces.
 
-## Resource mapping
+## Interactive Chart
 
-- CPU: Info semantic family;
-- Memory: KAORI Violet;
-- Storage: Normal semantic family;
-- Pods: Pending semantic family;
-- unknown series: muted content color.
+Implementation:
 
-## Usage
+- `analytics/components/_interactive_forecast_chart.html`
+- `static/js/analytics_forecast_chart.js`
 
-```jinja
-{% import "components/forecast_projection_chart.html" as forecast_chart %}
+The interactive chart owns tooltip behavior, long history rendering, combined resource comparison, visible textual legends, and hidden-tab lifecycle management.
 
-{{ forecast_chart.render(
-    dashboard.forecast_snapshot.series,
-    dashboard.forecast_snapshot.horizon_days,
-    has_historical_series=dashboard.forecast_snapshot.has_historical_series,
-    aria_label='Historical and projected Kubernetes resource utilization'
-) }}
-```
+## Shared Resource Mapping
+
+- CPU: Info semantic family.
+- Memory: KAORI Violet.
+- Storage: Normal semantic family.
+- Pods: Warning/Pending semantic family.
+- Warning threshold: Warning semantic family.
+- Critical threshold: Critical semantic family.
+
+JavaScript resolves CSS variables. Raw page-local hex palettes are prohibited.
+
+## Line Semantics
+
+- historical evidence: solid line;
+- projected evidence: dashed line;
+- warning threshold: semantic dashed line;
+- critical threshold: semantic dashed line.
+
+A visible text legend is required when the native chart legend is disabled. The visualization must remain interpretable without relying on color alone.
+
+## Lifecycle
+
+Interactive charts render only when the owning panel is visible and measurable. Use the shared analytics tab-visible event, double animation-frame stabilization, bounded retry, and `ResizeObserver`. Click-delay hydration is prohibited.
 
 ## Rules
 
-- Keep interpretation, risk status, and recommendations outside the chart component.
+- Keep interpretation, risk status, scope boundary, and recommendations outside the chart component.
 - Do not turn threshold legend values into status badges.
-- The chart remains readable without relying on color alone through solid/dashed line semantics and text labels.
+- Do not copy chart geometry or color maps into page templates.
+- Compact and interactive charts must use the same terminology and resource mapping.

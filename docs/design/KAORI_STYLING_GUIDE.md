@@ -791,3 +791,16 @@ Workload Analysis follows `components/ANALYTICS_WORKLOAD_ANALYSIS.md`. Tenant Qu
 ## Analytics Unavailable Metric Contract
 
 An unavailable denominator must render `Unknown` and `N/A`, not `0.0%`. Suppress the progress bar and state how evidence can be restored. Progress fills remain KAORI Violet; semantic severity belongs to status labels and operational reading. Capacity Analysis is cluster-level Ready-worker fleet analysis, while node-level pressure belongs to Resource Utilization.
+
+## Analytics Resource Forecast
+
+Resource Forecast follows the shared Analytics Analysis Surface hierarchy and the domain contract in `components/ANALYTICS_RESOURCE_FORECAST.md`.
+
+- Group Cluster/Namespace under Scope and Model/History/Horizon under Projection Configuration.
+- Resource tabs own CPU, Memory, Storage, Pods, Trend, and Recommendations navigation. Do not duplicate this with a Resource Focus selector.
+- Use bright surfaces for forecast metrics, capacity projection, charts, and resource outlook.
+- Use darker soft surfaces for interpretation and recommended action.
+- Use Latest Daily Average, Weekly Trend, and Historical Signal Quality.
+- Historical Signal Quality is not forecast accuracy.
+- Unknown evidence displays N/A and suppresses progress.
+- Full-page charts use the shared interactive forecast chart and canonical resource tokens.

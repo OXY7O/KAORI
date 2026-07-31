@@ -1,6 +1,7 @@
 {% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
 <form id="forecast-filter-form"
       method="GET"
+      data-analytics-preserve-tab
       hx-get="{{ url_for('analytics.forecast') }}"
       hx-trigger="change delay:120ms"
       hx-target="#forecast-page"
@@ -9,9 +10,10 @@
       hx-sync="#forecast-page:replace"
       hx-push-url="true"
       hx-indicator="#forecast-refresh-indicator">
+    <input type="hidden" name="tab" value="{{ selected_tab|default('cpu') }}">
     {% call analytics_workspace.controls_readiness(
         'Forecast Controls & Data Readiness',
-        'Set the forecast scope and verify the Prometheus source, committed snapshot, and worker evidence used for projection.',
+        'Set the forecast scope and projection configuration, then verify the committed Prometheus history used by the forecasting worker.',
         'sliders-horizontal',
         'forecast-refresh-indicator',
         prometheus_status,
@@ -19,28 +21,53 @@
         forecast_payload.generated_at|default(''),
         eyebrow='Resource Forecast'
     ) %}
-        {% set input_classes = 'mt-1.5 h-10 w-full rounded-lg border border-outline-default bg-surface-card px-3 text-sm font-semibold text-content-primary shadow-sm outline-none transition hover:border-outline-strong focus:border-kaori-primary focus:ring-4 focus:ring-kaori-primary/10' %}
-        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-            <label class="block min-w-0"><span class="text-xs font-semibold text-content-secondary">Cluster</span><select name="cluster_id" data-kaori-reset-fields="namespace=" class="{{ input_classes }}">{% for item in clusters %}<option value="{{ item.id }}" {% if cluster and cluster.id == item.id %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></label>
-            <label class="block min-w-0"><span class="text-xs font-semibold text-content-secondary">Namespace</span><select name="namespace" class="{{ input_classes }}"><option value="">All Namespaces</option>{% for namespace in namespace_options %}<option value="{{ namespace }}" {% if selected_namespace == namespace %}selected{% endif %}>{{ namespace }}</option>{% endfor %}</select></label>
-            <label class="block min-w-0"><span class="text-xs font-semibold text-content-secondary">Resource Focus</span><select name="resource" class="{{ input_classes }}">{% for item in resource_options %}<option value="{{ item.value }}" {% if item.value == selected_resource %}selected{% endif %}>{{ item.label }}</option>{% endfor %}</select></label>
-            <label class="block min-w-0"><span class="text-xs font-semibold text-content-secondary">Method</span><select name="method" class="{{ input_classes }}">{% for item in forecast_method_options %}<option value="{{ item.value }}" {% if item.value == selected_method %}selected{% endif %}>{{ item.label }}</option>{% endfor %}</select></label>
-            <label class="block min-w-0"><span class="text-xs font-semibold text-content-secondary">History Window</span><select name="history_window" class="{{ input_classes }}">{% for item in history_window_options %}<option value="{{ item.value }}" {% if item.value == selected_history_window %}selected{% endif %}>{{ item.label }}</option>{% endfor %}</select></label>
-            <label class="block min-w-0"><span class="text-xs font-semibold text-content-secondary">Forecast Horizon</span><select name="forecast_horizon" class="{{ input_classes }}">{% for item in forecast_horizon_options %}<option value="{{ item.value }}" {% if item.value == selected_forecast_horizon %}selected{% endif %}>{{ item.label }}</option>{% endfor %}</select></label>
-        </div>
-
-        {% if analytics_materialization.source_warning %}
-            <div class="rounded-lg border border-status-warning-border bg-status-warning-soft px-4 py-3" role="status">
-                <div class="flex items-start gap-3">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning shadow-sm">
-                        <i data-lucide="triangle-alert" class="h-4 w-4"></i>
-                    </span>
-                    <div class="min-w-0">
-                        <p class="text-sm font-semibold text-content-primary">Forecast Snapshot Available · Source Evidence Incomplete</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ analytics_materialization.source_warning.description }}</p>
-                    </div>
+        <div class="grid gap-5 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
+            <fieldset class="min-w-0">
+                <legend class="{{ analytics_workspace.control_label_classes() }} uppercase tracking-wide">Scope</legend>
+                <p class="mt-1 text-xs leading-5 text-content-muted">CPU, memory, and pod namespace demand are compared with cluster worker capacity. Storage uses namespace claim capacity when a namespace is selected.</p>
+                <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                    <label class="block min-w-0">
+                        <span class="{{ analytics_workspace.control_label_classes() }}">Cluster</span>
+                        <select name="cluster_id"
+                                data-kaori-reset-fields="namespace="
+                                class="{{ analytics_workspace.control_select_classes() }}">
+                            {% for item in clusters %}<option value="{{ item.id }}" {% if cluster and cluster.id == item.id %}selected{% endif %}>{{ item.name }}</option>{% endfor %}
+                        </select>
+                    </label>
+                    <label class="block min-w-0">
+                        <span class="{{ analytics_workspace.control_label_classes() }}">Namespace</span>
+                        <select name="namespace" class="{{ analytics_workspace.control_select_classes() }}">
+                            <option value="">All Namespaces</option>
+                            {% for namespace in namespace_options %}<option value="{{ namespace }}" {% if selected_namespace == namespace %}selected{% endif %}>{{ namespace }}</option>{% endfor %}
+                        </select>
+                    </label>
                 </div>
-            </div>
-        {% endif %}
+            </fieldset>
+
+            <fieldset class="min-w-0 border-t border-outline-subtle pt-5 xl:border-l xl:border-t-0 xl:pl-5 xl:pt-0">
+                <legend class="{{ analytics_workspace.control_label_classes() }} uppercase tracking-wide">Projection Configuration</legend>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Choose the model, committed history window, and future planning horizon. Resource navigation is owned by the tabs below.</p>
+                <div class="mt-3 grid gap-3 sm:grid-cols-3">
+                    <label class="block min-w-0">
+                        <span class="{{ analytics_workspace.control_label_classes() }}">Model</span>
+                        <select name="method" class="{{ analytics_workspace.control_select_classes() }}">
+                            {% for item in forecast_method_options %}<option value="{{ item.value }}" {% if item.value == selected_method %}selected{% endif %}>{{ item.label }}</option>{% endfor %}
+                        </select>
+                    </label>
+                    <label class="block min-w-0">
+                        <span class="{{ analytics_workspace.control_label_classes() }}">History Window</span>
+                        <select name="history_window" class="{{ analytics_workspace.control_select_classes() }}">
+                            {% for item in history_window_options %}<option value="{{ item.value }}" {% if item.value == selected_history_window %}selected{% endif %}>{{ item.label }}</option>{% endfor %}
+                        </select>
+                    </label>
+                    <label class="block min-w-0">
+                        <span class="{{ analytics_workspace.control_label_classes() }}">Forecast Horizon</span>
+                        <select name="forecast_horizon" class="{{ analytics_workspace.control_select_classes() }}">
+                            {% for item in forecast_horizon_options %}<option value="{{ item.value }}" {% if item.value == selected_forecast_horizon %}selected{% endif %}>{{ item.label }}</option>{% endfor %}
+                        </select>
+                    </label>
+                </div>
+            </fieldset>
+        </div>
     {% endcall %}
 </form>

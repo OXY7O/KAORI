@@ -95,45 +95,22 @@ FORECAST_HORIZON_OPTIONS: list[dict[str, str]] = [
 ]
 
 
-RESOURCE_OPTIONS: list[dict[str, str]] = [
-    {
-        'value': 'all',
-        'label': 'All Resources',
-    },
-    {
-        'value': 'cpu',
-        'label': 'CPU',
-    },
-    {
-        'value': 'memory',
-        'label': 'Memory',
-    },
-    {
-        'value': 'storage',
-        'label': 'Storage',
-    },
-    {
-        'value': 'pods',
-        'label': 'Pods',
-    },
-]
-
 
 FORECAST_METHOD_OPTIONS: list[dict[str, str]] = [
     {
-        'value': 'linear',
-        'label': 'Linear Trend',
-        'description': 'Projects future usage from the historical growth rate.',
+        'value': 'holt_winters',
+        'label': 'Holt-Winters',
+        'description': 'Projects the selected horizon from level, trend, and weekly seasonal signals.',
     },
     {
-        'value': 'moving_average',
-        'label': 'Moving Average',
-        'description': 'Smooths short-term noise using recent historical averages.',
+        'value': 'linear',
+        'label': 'Linear Trend',
+        'description': 'Projects future usage from a simple historical trend baseline.',
     },
     {
         'value': 'conservative',
-        'label': 'Conservative',
-        'description': 'Adds safety buffer for capacity planning and operational review.',
+        'label': 'Conservative Trend',
+        'description': 'Applies a planning buffer to positive Holt-Winters growth for capacity review.',
     },
 ]
 
@@ -145,6 +122,9 @@ class ForecastResourceDefinition:
     unit: str
     icon: str
     description: str
+    scope_label: str
+    comparison_label: str
+    capacity_label: str
     usage_query: str
     capacity_query: str
 
@@ -217,8 +197,7 @@ class ForecastAnalysisService(AnalyticsBaseService):
         namespace: str,
         history_window: str,
         forecast_horizon: str,
-        resource: str,
-        method: str = 'linear',
+        method: str = 'holt_winters',
     ) -> dict[str, Any]:
         history_days = _parse_days(
             history_window,
@@ -230,7 +209,7 @@ class ForecastAnalysisService(AnalyticsBaseService):
         )
         method = _normalize_option(
             method,
-            'linear',
+            'holt_winters',
             {item['value'] for item in FORECAST_METHOD_OPTIONS},
         )
         method_meta = _get_forecast_method_meta(method)
@@ -240,9 +219,6 @@ class ForecastAnalysisService(AnalyticsBaseService):
         step = _select_range_step(history_days)
 
         definitions = _get_resource_definitions(namespace)
-
-        if resource != 'all':
-            definitions = [definition for definition in definitions if definition.key == resource]
 
         items: list[dict[str, Any]] = []
 
@@ -261,7 +237,7 @@ class ForecastAnalysisService(AnalyticsBaseService):
         summary = _build_summary(items)
 
         actionable_payload = {
-            'namespace': namespace or 'All Namespaces',
+            'namespace': namespace,
             'history_window': history_window,
             'forecast_horizon': forecast_horizon,
             'history_days': history_days,
@@ -319,7 +295,7 @@ class ForecastAnalysisService(AnalyticsBaseService):
         end_time: datetime,
         step: str,
         horizon_days: int,
-        method: str = 'linear',
+        method: str = 'holt_winters',
     ) -> dict[str, Any]:
         raw_points = self._query_range(
             query=definition.usage_query,
@@ -328,47 +304,43 @@ class ForecastAnalysisService(AnalyticsBaseService):
             step=step,
         )
         daily_points = _daily_average(raw_points)
-
-        capacity = self._query_instant(
-            query=definition.capacity_query,
-        )
-
+        capacity = self._query_instant(query=definition.capacity_query)
         forecast_result = _calculate_forecast(
             values=daily_points,
             horizon_days=horizon_days,
             method=method,
         )
 
-        current_value = forecast_result['current_value']
-        projected_value = forecast_result['projected_value']
-        slope_per_day = forecast_result['slope_per_day']
-
-        current_percent = _percentage(
-            current_value,
-            capacity,
-        )
-        projected_percent = _percentage(
-            projected_value,
-            capacity,
-        )
-
-        warning_eta = _calculate_eta(
-            current_value=current_value,
-            slope_per_day=slope_per_day,
-            capacity=capacity,
-            threshold=WARNING_THRESHOLD,
-        )
-        critical_eta = _calculate_eta(
-            current_value=current_value,
-            slope_per_day=slope_per_day,
-            capacity=capacity,
-            threshold=CRITICAL_THRESHOLD,
-        )
-
-        status = _resolve_status(projected_percent)
-
         history_points_count = len(daily_points)
         has_data = history_points_count >= 2 and capacity > 0
+        latest_daily_average = forecast_result['latest_daily_average'] if has_data else None
+        projected_value = forecast_result['projected_value'] if has_data else None
+        slope_per_day = forecast_result['slope_per_day'] if has_data else 0.0
+        latest_daily_average_percent = (
+            _percentage(latest_daily_average, capacity) if latest_daily_average is not None else None
+        )
+        projected_percent = _percentage(projected_value, capacity) if projected_value is not None else None
+        status = _resolve_status(projected_percent) if projected_percent is not None else 'unknown'
+        warning_eta = (
+            _calculate_eta(
+                current_value=latest_daily_average,
+                slope_per_day=slope_per_day,
+                capacity=capacity,
+                threshold=WARNING_THRESHOLD,
+            )
+            if latest_daily_average is not None
+            else _unavailable_eta()
+        )
+        critical_eta = (
+            _calculate_eta(
+                current_value=latest_daily_average,
+                slope_per_day=slope_per_day,
+                capacity=capacity,
+                threshold=CRITICAL_THRESHOLD,
+            )
+            if latest_daily_average is not None
+            else _unavailable_eta()
+        )
 
         return {
             'key': definition.key,
@@ -376,6 +348,9 @@ class ForecastAnalysisService(AnalyticsBaseService):
             'unit': definition.unit,
             'icon': definition.icon,
             'description': definition.description,
+            'scope_label': definition.scope_label,
+            'comparison_label': definition.comparison_label,
+            'capacity_label': definition.capacity_label,
             'forecast_method': method,
             'method_label': forecast_result['method_label'],
             'method_description': forecast_result['method_description'],
@@ -388,50 +363,41 @@ class ForecastAnalysisService(AnalyticsBaseService):
             ),
             'status': status,
             'status_label': status.title(),
-            'capacity': capacity,
-            'capacity_display': _format_value(
-                capacity,
-                definition.unit,
-            ),
-            'current_value': current_value,
-            'current_display': _format_value(
-                current_value,
-                definition.unit,
+            'capacity': capacity if capacity > 0 else None,
+            'capacity_display': _format_value(capacity, definition.unit) if capacity > 0 else 'N/A',
+            'latest_daily_average': latest_daily_average,
+            'latest_daily_average_display': (
+                _format_value(latest_daily_average, definition.unit)
+                if latest_daily_average is not None
+                else 'N/A'
             ),
             'projected_value': projected_value,
-            'projected_display': _format_value(
-                projected_value,
-                definition.unit,
+            'projected_display': (
+                _format_value(projected_value, definition.unit) if projected_value is not None else 'N/A'
             ),
-            'growth_per_day': slope_per_day,
-            'growth_per_week': slope_per_day * 7,
-            'growth_display': _format_growth(
-                slope_per_day,
-                definition.unit,
+            'weekly_trend': slope_per_day * 7,
+            'weekly_trend_display': (
+                _format_weekly_trend(slope_per_day, definition.unit) if has_data else 'N/A'
             ),
-            'current_percent': round(
-                current_percent,
-                2,
+            'latest_daily_average_percent': (
+                round(latest_daily_average_percent, 2)
+                if latest_daily_average_percent is not None
+                else None
             ),
-            'projected_percent': round(
-                projected_percent,
-                2,
-            ),
+            'projected_percent': round(projected_percent, 2) if projected_percent is not None else None,
             'warning_eta': warning_eta,
             'critical_eta': critical_eta,
-            'confidence': forecast_result['confidence'],
-            'confidence_reason': forecast_result['confidence_reason'],
+            'signal_quality': forecast_result['signal_quality'] if has_data else 'Unavailable',
+            'signal_quality_reason': (
+                forecast_result['signal_quality_reason']
+                if has_data
+                else 'Forecast requires at least two daily samples and a non-zero capacity baseline.'
+            ),
             'historical_points': [
                 {
                     'date': point.timestamp.strftime('%Y-%m-%d'),
                     'value': point.value,
-                    'percent': round(
-                        _percentage(
-                            point.value,
-                            capacity,
-                        ),
-                        2,
-                    ),
+                    'percent': round(_percentage(point.value, capacity), 2) if capacity > 0 else None,
                 }
                 for point in daily_points
             ],
@@ -439,16 +405,10 @@ class ForecastAnalysisService(AnalyticsBaseService):
                 {
                     'date': point.timestamp.strftime('%Y-%m-%d'),
                     'value': point.value,
-                    'percent': round(
-                        _percentage(
-                            point.value,
-                            capacity,
-                        ),
-                        2,
-                    ),
+                    'percent': round(_percentage(point.value, capacity), 2) if capacity > 0 else None,
                 }
                 for point in forecast_result['forecast_points']
-            ],
+            ] if has_data else [],
         }
 
     def _query_range(
@@ -514,22 +474,19 @@ def get_forecast_analysis_context(
         '90d',
         {item['value'] for item in FORECAST_HORIZON_OPTIONS},
     )
-    selected_resource = _normalize_option(
-        get_query_value(
-            query_args=query_args,
-            name='resource',
-            default='all',
-        ),
-        'all',
-        {item['value'] for item in RESOURCE_OPTIONS},
+    selected_tab = _normalize_option(
+        get_query_value(query_args=query_args, name='tab', default='cpu'),
+        'cpu',
+        {'cpu', 'memory', 'storage', 'pods', 'trend', 'recommendations'},
     )
     selected_method = _normalize_option(
+
         get_query_value(
             query_args=query_args,
             name='method',
-            default='linear',
+            default='holt_winters',
         ),
-        'linear',
+        'holt_winters',
         {item['value'] for item in FORECAST_METHOD_OPTIONS},
     )
 
@@ -538,11 +495,10 @@ def get_forecast_analysis_context(
             'selected_namespace': selected_namespace,
             'selected_history_window': selected_history_window,
             'selected_forecast_horizon': selected_forecast_horizon,
-            'selected_resource': selected_resource,
+            'selected_tab': selected_tab,
             'selected_method': selected_method,
             'history_window_options': HISTORY_WINDOW_OPTIONS,
             'forecast_horizon_options': FORECAST_HORIZON_OPTIONS,
-            'resource_options': RESOURCE_OPTIONS,
             'forecast_method_options': FORECAST_METHOD_OPTIONS,
             'namespace_options': [],
             'forecast_payload': _empty_payload(
@@ -602,7 +558,6 @@ def get_forecast_analysis_context(
         namespace=selected_namespace,
         history_window=selected_history_window,
         forecast_horizon=selected_forecast_horizon,
-        resource=selected_resource,
         method=selected_method,
     )
 
@@ -614,13 +569,20 @@ def get_forecast_analysis_context(
 def _get_resource_definitions(
     namespace: str,
 ) -> list[ForecastResourceDefinition]:
+    namespace_scope = f'Namespace {namespace}' if namespace else 'All Namespaces'
+    cluster_capacity = 'Ready-worker cluster capacity'
     return [
         ForecastResourceDefinition(
             key='cpu',
             label='CPU',
             unit='cores',
             icon='cpu',
-            description='Projected CPU usage growth compared with worker-node allocatable CPU.',
+            description='Projected CPU demand compared with worker-node allocatable CPU.',
+            scope_label=namespace_scope,
+            comparison_label=(
+                'Namespace Demand vs Cluster Capacity' if namespace else 'Cluster Demand vs Cluster Capacity'
+            ),
+            capacity_label=cluster_capacity,
             usage_query=_render_namespace_query(
                 namespace=namespace,
                 all_query=CPU_USAGE_QUERY,
@@ -633,7 +595,12 @@ def _get_resource_definitions(
             label='Memory',
             unit='bytes',
             icon='memory-stick',
-            description='Projected memory working set growth compared with worker-node allocatable memory.',
+            description='Projected memory working-set demand compared with worker-node allocatable memory.',
+            scope_label=namespace_scope,
+            comparison_label=(
+                'Namespace Demand vs Cluster Capacity' if namespace else 'Cluster Demand vs Cluster Capacity'
+            ),
+            capacity_label=cluster_capacity,
             usage_query=_render_namespace_query(
                 namespace=namespace,
                 all_query=MEMORY_USAGE_QUERY,
@@ -646,7 +613,14 @@ def _get_resource_definitions(
             label='Storage',
             unit='bytes',
             icon='database',
-            description='Projected PVC storage growth compared with PVC capacity.',
+            description='Projected PVC usage compared with the selected PVC claim-capacity baseline.',
+            scope_label=namespace_scope,
+            comparison_label=(
+                'Namespace PVC Usage vs Namespace Claim Capacity'
+                if namespace
+                else 'PVC Usage vs Claim Capacity'
+            ),
+            capacity_label=(f'Namespace {namespace} claim capacity' if namespace else 'All PVC claim capacity'),
             usage_query=_render_namespace_query(
                 namespace=namespace,
                 all_query=STORAGE_USAGE_QUERY,
@@ -663,7 +637,12 @@ def _get_resource_definitions(
             label='Pods',
             unit='count',
             icon='boxes',
-            description='Projected running pod growth compared with worker-node pod capacity.',
+            description='Projected running-pod demand compared with worker-node pod capacity.',
+            scope_label=namespace_scope,
+            comparison_label=(
+                'Namespace Demand vs Cluster Capacity' if namespace else 'Cluster Demand vs Cluster Capacity'
+            ),
+            capacity_label=cluster_capacity,
             usage_query=_render_namespace_query(
                 namespace=namespace,
                 all_query=POD_USAGE_QUERY,
@@ -672,7 +651,6 @@ def _get_resource_definitions(
             capacity_query=POD_WORKER_CAPACITY_QUERY,
         ),
     ]
-
 
 def _render_namespace_query(
     *,
@@ -701,48 +679,37 @@ def _calculate_forecast(
     *,
     values: list[ForecastPoint],
     horizon_days: int,
-    method: str = 'linear',
+    method: str = 'holt_winters',
 ) -> dict[str, Any]:
     method = _normalize_option(
         method,
-        'linear',
+        'holt_winters',
         {item['value'] for item in FORECAST_METHOD_OPTIONS},
     )
     method_meta = _get_forecast_method_meta(method)
 
     if len(values) < 2:
-        current_value = values[-1].value if values else 0.0
-
+        latest = values[-1].value if values else 0.0
         return {
-            'current_value': current_value,
-            'projected_value': current_value,
+            'latest_daily_average': latest,
+            'projected_value': latest,
             'slope_per_day': 0.0,
             'forecast_points': [],
-            'confidence': 'Low',
-            'confidence_reason': 'Not enough historical data points.',
+            'signal_quality': 'Low' if values else 'Unavailable',
+            'signal_quality_reason': 'Not enough historical daily samples.',
             'method_label': method_meta['label'],
             'method_description': method_meta['description'],
         }
 
-    if method == 'moving_average':
-        result = _calculate_moving_average_forecast(
-            values=values,
-            horizon_days=horizon_days,
-        )
+    if method == 'linear':
+        result = _calculate_linear_forecast(values=values, horizon_days=horizon_days)
     elif method == 'conservative':
-        result = _calculate_conservative_forecast(
-            values=values,
-            horizon_days=horizon_days,
-        )
+        result = _calculate_conservative_forecast(values=values, horizon_days=horizon_days)
     else:
-        result = _calculate_linear_forecast(
-            values=values,
-            horizon_days=horizon_days,
-        )
+        result = _calculate_holt_winters_forecast(values=values, horizon_days=horizon_days)
 
     result['method_label'] = method_meta['label']
     result['method_description'] = method_meta['description']
-
     return result
 
 
@@ -752,96 +719,80 @@ def _calculate_linear_forecast(
     horizon_days: int,
 ) -> dict[str, Any]:
     start = values[0].timestamp
-
-    x_values = [
-        max(
-            (point.timestamp - start).total_seconds() / 86400,
-            0.0,
-        )
-        for point in values
-    ]
+    x_values = [max((point.timestamp - start).total_seconds() / 86400, 0.0) for point in values]
     y_values = [point.value for point in values]
-
-    slope, intercept = _linear_regression(
-        x_values=x_values,
-        y_values=y_values,
-    )
-
-    current_value = max(
-        y_values[-1],
-        0.0,
-    )
-    last_x = x_values[-1]
-
+    slope, intercept = _linear_regression(x_values=x_values, y_values=y_values)
+    latest = max(y_values[-1], 0.0)
     forecast_points = _build_forecast_points(
         last_timestamp=values[-1].timestamp,
-        current_value=current_value,
+        current_value=latest,
         slope_per_day=slope,
         horizon_days=horizon_days,
         intercept=intercept,
-        last_x=last_x,
+        last_x=x_values[-1],
     )
-    projected_value = forecast_points[-1].value if forecast_points else current_value
-
-    confidence, confidence_reason = _calculate_confidence(
-        values=y_values,
-        points_count=len(values),
-    )
-
+    quality, reason = _calculate_signal_quality(values=y_values, points=values)
     return {
-        'current_value': current_value,
-        'projected_value': projected_value,
+        'latest_daily_average': latest,
+        'projected_value': forecast_points[-1].value if forecast_points else latest,
         'slope_per_day': slope,
         'forecast_points': forecast_points,
-        'confidence': confidence,
-        'confidence_reason': confidence_reason,
+        'signal_quality': quality,
+        'signal_quality_reason': reason,
     }
 
 
-def _calculate_moving_average_forecast(
+def _calculate_holt_winters_forecast(
     *,
     values: list[ForecastPoint],
     horizon_days: int,
 ) -> dict[str, Any]:
-    start = values[0].timestamp
-    x_values = [max((point.timestamp - start).total_seconds() / 86400, 0.0) for point in values]
-    raw_values = [point.value for point in values]
-    window = min(
-        7,
-        len(raw_values),
-    )
-    smoothed_values = [mean(raw_values[max(index - window + 1, 0) : index + 1]) for index in range(len(raw_values))]
+    y_values = [max(point.value, 0.0) for point in values]
+    season_length = 7
+    alpha = 0.35
+    beta = 0.15
+    gamma = 0.20
 
-    current_value = max(
-        smoothed_values[-1],
-        0.0,
-    )
-    day_span = max(
-        x_values[-1] - x_values[0],
-        1.0,
-    )
-    slope = (smoothed_values[-1] - smoothed_values[0]) / day_span
+    if len(y_values) < season_length * 2:
+        fallback = _calculate_linear_forecast(values=values, horizon_days=horizon_days)
+        fallback['signal_quality_reason'] = (
+            f"{fallback['signal_quality_reason']} Holt-Winters used a linear fallback because fewer than "
+            f'{season_length * 2} daily samples were available.'
+        )
+        return fallback
 
-    forecast_points = _build_forecast_points(
-        last_timestamp=values[-1].timestamp,
-        current_value=current_value,
-        slope_per_day=slope,
-        horizon_days=horizon_days,
-    )
-    projected_value = forecast_points[-1].value if forecast_points else current_value
+    first_season = y_values[:season_length]
+    second_season = y_values[season_length : season_length * 2]
+    level = mean(first_season)
+    trend = (mean(second_season) - level) / season_length
+    seasonals = [value - level for value in first_season]
 
-    confidence, confidence_reason = _calculate_confidence(
-        values=smoothed_values,
-        points_count=len(values),
-    )
+    for index, value in enumerate(y_values):
+        seasonal_index = index % season_length
+        previous_level = level
+        seasonal = seasonals[seasonal_index]
+        level = alpha * (value - seasonal) + (1 - alpha) * (level + trend)
+        trend = beta * (level - previous_level) + (1 - beta) * trend
+        seasonals[seasonal_index] = gamma * (value - level) + (1 - gamma) * seasonal
 
+    forecast_points = []
+    for day in range(1, horizon_days + 1):
+        seasonal = seasonals[(len(y_values) + day - 1) % season_length]
+        forecast_points.append(
+            ForecastPoint(
+                timestamp=values[-1].timestamp + timedelta(days=day),
+                value=max(level + day * trend + seasonal, 0.0),
+            )
+        )
+
+    quality, reason = _calculate_signal_quality(values=y_values, points=values)
     return {
-        'current_value': current_value,
-        'projected_value': projected_value,
-        'slope_per_day': slope,
+        'latest_daily_average': y_values[-1],
+        'projected_value': forecast_points[-1].value if forecast_points else y_values[-1],
+        'slope_per_day': trend,
         'forecast_points': forecast_points,
-        'confidence': confidence,
-        'confidence_reason': f'{confidence_reason} Moving average uses a {window}-day smoothing window.',
+        'signal_quality': quality,
+        'signal_quality_reason': f'{reason} Weekly additive seasonality was evaluated.',
     }
 
 
@@ -850,34 +801,23 @@ def _calculate_conservative_forecast(
     values: list[ForecastPoint],
     horizon_days: int,
 ) -> dict[str, Any]:
-    result = _calculate_linear_forecast(
-        values=values,
-        horizon_days=horizon_days,
-    )
+    result = _calculate_holt_winters_forecast(values=values, horizon_days=horizon_days)
     slope = result['slope_per_day']
-
-    if slope > 0:
-        adjusted_slope = slope * 1.15
-    else:
-        adjusted_slope = slope
-
-    current_value = result['current_value']
+    adjusted_slope = slope * 1.15 if slope > 0 else slope
+    latest = result['latest_daily_average']
     forecast_points = _build_forecast_points(
         last_timestamp=values[-1].timestamp,
-        current_value=current_value,
+        current_value=latest,
         slope_per_day=adjusted_slope,
         horizon_days=horizon_days,
     )
-
     result['slope_per_day'] = adjusted_slope
     result['forecast_points'] = forecast_points
-    result['projected_value'] = forecast_points[-1].value if forecast_points else current_value
-    result['confidence_reason'] = (
-        f'{result["confidence_reason"]} Conservative projection applies a 15% growth buffer when usage is trending upward.'
+    result['projected_value'] = forecast_points[-1].value if forecast_points else latest
+    result['signal_quality_reason'] = (
+        f"{result['signal_quality_reason']} Conservative Trend applies a 15% buffer to positive daily growth."
     )
-
     return result
-
 
 def _build_forecast_points(
     *,
@@ -945,32 +885,32 @@ def _linear_regression(
     return slope, intercept
 
 
-def _calculate_confidence(
+def _calculate_signal_quality(
     *,
     values: list[float],
-    points_count: int,
+    points: list[ForecastPoint],
 ) -> tuple[str, str]:
+    points_count = len(values)
     if points_count < 7:
-        return 'Low', 'Less than 7 daily data points available.'
+        return 'Low', 'Less than 7 daily samples are available.'
 
-    avg_value = mean(values)
+    expected_days = max((points[-1].timestamp.date() - points[0].timestamp.date()).days + 1, 1)
+    completeness = min(points_count / expected_days, 1.0)
+    average_value = mean(values)
+    if average_value <= 0:
+        return 'Low', 'The historical daily average is zero or unavailable.'
 
-    if avg_value <= 0:
-        return 'Low', 'Average historical value is zero or unavailable.'
+    variance = mean([(value - average_value) ** 2 for value in values])
+    coefficient_of_variation = sqrt(variance) / average_value
 
-    variance = mean(
-        [(value - avg_value) ** 2 for value in values],
-    )
-    std_dev = sqrt(variance)
-    coefficient_of_variation = std_dev / avg_value
+    if points_count >= 30 and completeness >= 0.90 and coefficient_of_variation <= 0.25:
+        return 'High', f'{points_count} daily samples, {completeness:.0%} completeness, and stable variation.'
+    if points_count >= 14 and completeness >= 0.75 and coefficient_of_variation <= 0.60:
+        return 'Medium', f'{points_count} daily samples, {completeness:.0%} completeness, and moderate variation.'
+    return 'Low', f'{points_count} daily samples with {completeness:.0%} completeness or high variation.'
 
-    if points_count >= 30 and coefficient_of_variation <= 0.25:
-        return 'High', 'Historical data is sufficient and relatively stable.'
-
-    if points_count >= 14 and coefficient_of_variation <= 0.60:
-        return 'Medium', 'Historical data is usable with moderate variance.'
-
-    return 'Low', 'Historical data is noisy or too limited.'
+def _unavailable_eta() -> dict[str, Any]:
+    return {'label': 'N/A', 'days': None, 'date': None}
 
 
 def _calculate_eta(
@@ -1020,33 +960,26 @@ def _calculate_eta(
 def _build_summary(
     items: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    warning_items = [item for item in items if item['status'] == 'warning']
-    critical_items = [item for item in items if item['status'] == 'critical']
-
-    highest_projected = None
-
-    if items:
-        highest_projected = max(
-            items,
-            key=lambda item: item['projected_percent'],
-        )
-
+    available_items = [item for item in items if item.get('has_data') and item.get('projected_percent') is not None]
+    unavailable_items = [item for item in items if not item.get('has_data')]
+    warning_items = [item for item in available_items if item['status'] == 'warning']
+    critical_items = [item for item in available_items if item['status'] == 'critical']
+    highest_projected = (
+        max(available_items, key=lambda item: float(item['projected_percent']))
+        if available_items
+        else None
+    )
     return {
         'total_resources': len(items),
+        'forecasted_resources': len(available_items),
+        'unavailable_resources': len(unavailable_items),
         'warning_count': len(warning_items),
         'critical_count': len(critical_items),
-        'highest_projected_label': (highest_projected['label'] if highest_projected is not None else 'N/A'),
-        'highest_projected_percent': (highest_projected['projected_percent'] if highest_projected is not None else 0),
-        'nearest_warning': _find_nearest_eta(
-            items=items,
-            eta_key='warning_eta',
-        ),
-        'nearest_critical': _find_nearest_eta(
-            items=items,
-            eta_key='critical_eta',
-        ),
+        'highest_projected_label': highest_projected['label'] if highest_projected else 'N/A',
+        'highest_projected_percent': highest_projected['projected_percent'] if highest_projected else None,
+        'nearest_warning': _find_nearest_eta(items=available_items, eta_key='warning_eta'),
+        'nearest_critical': _find_nearest_eta(items=available_items, eta_key='critical_eta'),
     }
-
 
 def _find_nearest_eta(
     *,
@@ -1137,6 +1070,8 @@ def _build_chart_payload(
     datasets = []
 
     for item in items:
+        if not item.get('has_data'):
+            continue
         historical = item['historical_points']
         forecast = item['forecast_points']
 
@@ -1355,50 +1290,36 @@ def _format_value(
     return f'{value:.2f}'
 
 
-def _format_growth(
+def _format_weekly_trend(
     slope_per_day: float,
     unit: str,
 ) -> str:
-    weekly_growth = slope_per_day * 7
-
+    weekly_trend = slope_per_day * 7
+    if abs(weekly_trend) < 1e-9:
+        return 'Stable'
+    sign = '+' if weekly_trend > 0 else '-'
+    magnitude = abs(weekly_trend)
     if unit == 'bytes':
-        return f'{_format_bytes(weekly_growth)} / week'
-
+        return f'{sign}{_format_bytes(magnitude)} / Week'
     if unit == 'cores':
-        return f'{weekly_growth:.2f} cores / week'
-
+        return f'{sign}{magnitude:.2f} Cores / Week'
     if unit == 'count':
-        return f'{weekly_growth:.0f} pods / week'
-
-    return f'{weekly_growth:.2f} / week'
+        return f'{sign}{magnitude:.0f} Pods / Week'
+    return f'{sign}{magnitude:.2f} / Week'
 
 
 def _format_bytes(
     value: float,
 ) -> str:
-    if value <= 0:
+    if value == 0:
         return '0 B'
-
-    units = [
-        'B',
-        'KiB',
-        'MiB',
-        'GiB',
-        'TiB',
-        'PiB',
-    ]
-    size = float(value)
+    units = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB']
+    size = abs(float(value))
     unit_index = 0
-
     while size >= 1024 and unit_index < len(units) - 1:
         size /= 1024
         unit_index += 1
-
-    if unit_index == 0:
-        return f'{size:.0f} {units[unit_index]}'
-
-    return f'{size:.2f} {units[unit_index]}'
-
+    return f'{size:.0f} {units[unit_index]}' if unit_index == 0 else f'{size:.2f} {units[unit_index]}'
 
 def _to_prometheus_time(
     value: datetime,
@@ -1438,9 +1359,9 @@ def _empty_payload(
         'namespace': '',
         'history_window': '30d',
         'forecast_horizon': '90d',
-        'forecast_method': 'linear',
-        'method_label': 'Linear Trend',
-        'method_description': 'Projects future usage from the historical growth rate.',
+        'forecast_method': 'holt_winters',
+        'method_label': 'Holt-Winters',
+        'method_description': 'Projects the selected horizon from level, trend, and weekly seasonal signals.',
         'history_days': 30,
         'horizon_days': 90,
         'generated_at': None,
@@ -1450,7 +1371,9 @@ def _empty_payload(
             'warning_count': 0,
             'critical_count': 0,
             'highest_projected_label': 'N/A',
-            'highest_projected_percent': 0,
+            'forecasted_resources': 0,
+            'unavailable_resources': 0,
+            'highest_projected_percent': None,
             'nearest_warning': {
                 'resource': None,
                 'label': 'Not projected',
@@ -1520,7 +1443,11 @@ def get_forecast_snapshot(
         'forecast_risk': forecast_risk,
         'forecast_horizon': str(forecast_payload.get('forecast_horizon') or '90d'),
         'highest_projected_resource': summary.get('highest_projected_label', 'N/A'),
-        'highest_projected_percent': _safe_int(summary.get('highest_projected_percent', 0)),
+        'highest_projected_percent': (
+            _safe_float(summary.get('highest_projected_percent'))
+            if summary.get('highest_projected_percent') is not None
+            else None
+        ),
         'nearest_warning': summary.get('nearest_warning', {}),
         'nearest_critical': summary.get('nearest_critical', {}),
         'series': _build_forecast_snapshot_series(items),
@@ -1534,19 +1461,19 @@ def get_forecast_snapshot(
 def _empty_forecast_snapshot() -> dict[str, Any]:
     return {
         'cpu_trend': 'Stable',
-        'cpu_trend_value': 0,
+        'cpu_trend_value': None,
         'memory_trend': 'Stable',
-        'memory_trend_value': 0,
+        'memory_trend_value': None,
         'storage_trend': 'Stable',
-        'storage_trend_value': 0,
+        'storage_trend_value': None,
         'pod_trend': 'Stable',
-        'pod_trend_value': 0,
-        'forecast_risk': 'Low',
+        'pod_trend_value': None,
+        'forecast_risk': 'Unknown',
         'forecast_horizon': '30 days',
         'risk_count': 0,
-        'risk_note': 'No forecast risk detected in the selected time range.',
+        'risk_note': 'Forecast evidence is not available for the selected time range.',
         'highest_projected_resource': 'N/A',
-        'highest_projected_percent': 0,
+        'highest_projected_percent': None,
         'nearest_warning': {
             'resource': None,
             'label': 'Not projected',
@@ -1604,22 +1531,15 @@ def _build_forecast_item_map(
 
 def _get_forecast_trend_value(
     item: dict[str, Any],
-) -> int:
-    current_percent = _safe_float(
-        item.get(
-            'current_percent',
-            0,
-        )
-    )
-    projected_percent = _safe_float(
-        item.get(
-            'projected_percent',
-            0,
-        )
-    )
+) -> int | None:
+    latest_raw = item.get('latest_daily_average_percent')
+    projected_raw = item.get('projected_percent')
+
+    if latest_raw is None or projected_raw is None:
+        return None
 
     return _safe_int(
-        projected_percent - current_percent,
+        _safe_float(projected_raw) - _safe_float(latest_raw),
     )
 
 
@@ -1629,6 +1549,9 @@ def _get_forecast_trend_label(
     trend_value = _get_forecast_trend_value(
         item,
     )
+
+    if trend_value is None:
+        return 'Unknown'
 
     if trend_value >= 5:
         return 'Increasing'
@@ -1663,10 +1586,15 @@ def _resolve_forecast_risk(
     if warning_count > 0:
         return 'Medium'
 
+    has_forecast_evidence = False
+
     for item in items:
         item_dict = _as_dict(
             item,
         )
+
+        if item_dict.get('has_data') and item_dict.get('projected_percent') is not None:
+            has_forecast_evidence = True
 
         status = str(
             item_dict.get(
@@ -1681,7 +1609,7 @@ def _resolve_forecast_risk(
         if status == 'warning':
             return 'Medium'
 
-    return 'Low'
+    return 'Low' if has_forecast_evidence else 'Unknown'
 
 
 def _build_forecast_snapshot_series(
@@ -1747,7 +1675,7 @@ def _build_forecast_snapshot_series(
         if not historical_values and not forecast_values:
             current_percent = _safe_float(
                 item.get(
-                    'current_percent',
+                    'latest_daily_average_percent',
                     0,
                 )
             )
@@ -1812,7 +1740,7 @@ def _build_forecast_snapshot_series(
             if historical_values
             else _safe_float(
                 item.get(
-                    'current_percent',
+                    'latest_daily_average_percent',
                     0,
                 )
             )
@@ -1971,59 +1899,47 @@ def _present_forecast_item(
     for point in item.get('historical_points') or []:
         try:
             timestamp = datetime.strptime(str(point.get('date') or ''), '%Y-%m-%d').replace(tzinfo=UTC)
-            historical_points.append(
-                ForecastPoint(timestamp=timestamp, value=_safe_float(point.get('value')))
-            )
+            historical_points.append(ForecastPoint(timestamp=timestamp, value=_safe_float(point.get('value'))))
         except (TypeError, ValueError):
             continue
 
     result = _calculate_forecast(values=historical_points, horizon_days=horizon_days, method=method)
     capacity = _safe_float(item.get('capacity'))
-    current_value = _safe_float(result.get('current_value'))
-    projected_value = _safe_float(result.get('projected_value'))
+    latest = _safe_float(result.get('latest_daily_average'))
+    projected = _safe_float(result.get('projected_value'))
     slope = _safe_float(result.get('slope_per_day'))
-    current_percent = _percentage(current_value, capacity)
-    projected_percent = _percentage(projected_value, capacity)
     unit = str(item.get('unit') or '')
     history_count = len(historical_points)
+    has_data = history_count >= 2 and capacity > 0
+    latest_percent = _percentage(latest, capacity) if has_data else None
+    projected_percent = _percentage(projected, capacity) if has_data else None
+    status = _resolve_status(projected_percent) if projected_percent is not None else 'unknown'
 
     updated.update(
         {
             'forecast_method': method,
             'method_label': result['method_label'],
             'method_description': result['method_description'],
-            'has_data': history_count >= 2 and capacity > 0,
+            'has_data': has_data,
             'history_points_count': history_count,
             'capacity_missing': capacity <= 0,
-            'empty_reason': _resolve_forecast_empty_reason(
-                history_points_count=history_count,
-                capacity=capacity,
-            ),
-            'status': _resolve_status(projected_percent),
-            'status_label': _resolve_status(projected_percent).title(),
-            'current_value': current_value,
-            'current_display': _format_value(current_value, unit),
-            'projected_value': projected_value,
-            'projected_display': _format_value(projected_value, unit),
-            'growth_per_day': slope,
-            'growth_per_week': slope * 7,
-            'growth_display': _format_growth(slope, unit),
-            'current_percent': round(current_percent, 2),
-            'projected_percent': round(projected_percent, 2),
-            'warning_eta': _calculate_eta(
-                current_value=current_value,
-                slope_per_day=slope,
-                capacity=capacity,
-                threshold=WARNING_THRESHOLD,
-            ),
-            'critical_eta': _calculate_eta(
-                current_value=current_value,
-                slope_per_day=slope,
-                capacity=capacity,
-                threshold=CRITICAL_THRESHOLD,
-            ),
-            'confidence': result['confidence'],
-            'confidence_reason': result['confidence_reason'],
+            'empty_reason': _resolve_forecast_empty_reason(history_points_count=history_count, capacity=capacity),
+            'status': status,
+            'status_label': status.title(),
+            'capacity': capacity if capacity > 0 else None,
+            'capacity_display': _format_value(capacity, unit) if capacity > 0 else 'N/A',
+            'latest_daily_average': latest if has_data else None,
+            'latest_daily_average_display': _format_value(latest, unit) if has_data else 'N/A',
+            'projected_value': projected if has_data else None,
+            'projected_display': _format_value(projected, unit) if has_data else 'N/A',
+            'weekly_trend': slope * 7 if has_data else 0.0,
+            'weekly_trend_display': _format_weekly_trend(slope, unit) if has_data else 'N/A',
+            'latest_daily_average_percent': round(latest_percent, 2) if latest_percent is not None else None,
+            'projected_percent': round(projected_percent, 2) if projected_percent is not None else None,
+            'warning_eta': _calculate_eta(current_value=latest, slope_per_day=slope, capacity=capacity, threshold=WARNING_THRESHOLD) if has_data else _unavailable_eta(),
+            'critical_eta': _calculate_eta(current_value=latest, slope_per_day=slope, capacity=capacity, threshold=CRITICAL_THRESHOLD) if has_data else _unavailable_eta(),
+            'signal_quality': result['signal_quality'] if has_data else 'Unavailable',
+            'signal_quality_reason': result['signal_quality_reason'] if has_data else 'Forecast evidence is unavailable.',
             'forecast_points': [
                 {
                     'date': point.timestamp.strftime('%Y-%m-%d'),
@@ -2031,11 +1947,15 @@ def _present_forecast_item(
                     'percent': round(_percentage(point.value, capacity), 2),
                 }
                 for point in result['forecast_points']
-            ],
+            ] if has_data else [],
         }
     )
+    for legacy_key in (
+        'current_value', 'current_display', 'current_percent', 'growth_per_day', 'growth_per_week',
+        'growth_display', 'confidence', 'confidence_reason',
+    ):
+        updated.pop(legacy_key, None)
     return updated
-
 
 def present_forecast_materialized_context(
     context: dict[str, Any],
@@ -2056,14 +1976,15 @@ def present_forecast_materialized_context(
         '90d',
         {item['value'] for item in FORECAST_HORIZON_OPTIONS},
     )
-    selected_resource = _normalize_option(
-        get_query_value(query_args=query_args, name='resource', default='all'),
-        'all',
-        {item['value'] for item in RESOURCE_OPTIONS},
+    selected_tab = _normalize_option(
+        get_query_value(query_args=query_args, name='tab', default='cpu'),
+        'cpu',
+        {'cpu', 'memory', 'storage', 'pods', 'trend', 'recommendations'},
     )
     selected_method = _normalize_option(
-        get_query_value(query_args=query_args, name='method', default='linear'),
-        'linear',
+
+        get_query_value(query_args=query_args, name='method', default='holt_winters'),
+        'holt_winters',
         {item['value'] for item in FORECAST_METHOD_OPTIONS},
     )
     horizon_days = _parse_days(selected_horizon, default=90)
@@ -2075,15 +1996,13 @@ def present_forecast_materialized_context(
 
     payload = deepcopy(presented.get('forecast_payload') or {})
     source_items = list(payload.get('items') or [])
-    if selected_resource != 'all':
-        source_items = [item for item in source_items if str(item.get('key') or '') == selected_resource]
     items = [
         _present_forecast_item(item, horizon_days=horizon_days, method=selected_method)
         for item in source_items
     ]
     summary = _build_summary(items)
     recommendation_payload = {
-        'namespace': selected_namespace or 'All Namespaces',
+        'namespace': selected_namespace,
         'history_window': selected_history_window,
         'forecast_horizon': selected_horizon,
         'history_days': _parse_days(selected_history_window, default=30),
@@ -2130,7 +2049,7 @@ def present_forecast_materialized_context(
             'selected_namespace': selected_namespace,
             'selected_history_window': selected_history_window,
             'selected_forecast_horizon': selected_horizon,
-            'selected_resource': selected_resource,
+            'selected_tab': selected_tab,
             'selected_method': selected_method,
             'forecast_payload': payload,
         }

@@ -53,7 +53,7 @@ def test_snapshot_parameters_exclude_view_only_filters() -> None:
         {
             'cluster_id': 'cluster-1',
             'namespace': 'payments',
-            'resource': 'cpu',
+            'tab': 'cpu',
             'time_range': '30d',
             'search': 'api',
         },
@@ -235,13 +235,13 @@ def test_forecast_selectors_reproject_committed_history_locally(monkeypatch) -> 
         {
             'history_window': '30d',
             'forecast_horizon': '180d',
-            'resource': 'cpu',
+            'tab': 'cpu',
             'method': 'conservative',
         },
     )
 
     assert result['selected_forecast_horizon'] == '180d'
-    assert result['selected_resource'] == 'cpu'
+    assert result['selected_tab'] == 'cpu'
     assert result['selected_method'] == 'conservative'
     assert len(result['forecast_payload']['items']) == 1
     assert len(result['forecast_payload']['items'][0]['forecast_points']) == 180

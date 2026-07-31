@@ -90,7 +90,7 @@ _SECTION_DESCRIPTIONS: dict[str, str] = {
     'risk_overview': 'Conditions that require attention, including degraded sources, capacity pressure, and active risk signals.',
     'resource_allocation_headroom': 'Capacity allocation, current consumption, and remaining schedulable headroom.',
     'capacity_pressure_risk': 'Capacity pressure and governance conditions that may affect workload placement or availability.',
-    'forecast_summary': 'Projected resource growth, threshold exposure, and forecast confidence for the selected horizon.',
+    'forecast_summary': 'Projected resource growth, threshold exposure, and historical signal quality for the selected horizon.',
     'alert_severity_summary': 'Distribution of active alert signals by operational severity.',
     'source_health': 'Connectivity and readiness posture of the alert and analytics source integrations.',
     'inventory_summary': 'Current asset totals, selected scope, status coverage, and committed snapshot time.',

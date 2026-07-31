@@ -8,62 +8,64 @@
         {% set summary = forecast_payload.summary %}
         {% set recommendation_count = forecast_payload.recommendation_count|default(0) %}
         {% if dependency_blocker %}
-            {% set posture_value = "Blocked" %}
+            {% set posture_value = 'Blocked' %}
             {% set posture_desc = dependency_blocker.title %}
+            {% set posture_tone = 'unknown' %}
+            {% set posture_icon = 'lock-keyhole' %}
         {% elif summary.critical_count|default(0) > 0 %}
-            {% set posture_value = "Critical" %}
-            {% set posture_desc = "Critical forecast risk." %}
+            {% set posture_value = 'Critical' %}
+            {% set posture_desc = 'Critical forecast evidence requires immediate capacity review.' %}
+            {% set posture_tone = 'critical' %}
+            {% set posture_icon = 'shield-alert' %}
         {% elif summary.warning_count|default(0) > 0 %}
-            {% set posture_value = "Watch" %}
-            {% set posture_desc = "Forecast risk needs review." %}
+            {% set posture_value = 'Watch' %}
+            {% set posture_desc = 'Forecast pressure requires review before the projected threshold window.' %}
+            {% set posture_tone = 'warning' %}
+            {% set posture_icon = 'triangle-alert' %}
         {% elif forecast_payload.has_data %}
-            {% set posture_value = "Healthy" %}
-            {% set posture_desc = "Forecast signals are normal." %}
+            {% set posture_value = 'Healthy' %}
+            {% set posture_desc = 'Available projections remain below the configured warning threshold.' %}
+            {% set posture_tone = 'normal' %}
+            {% set posture_icon = 'circle-check' %}
         {% else %}
-            {% set posture_value = "No Data" %}
-            {% set posture_desc = "Waiting for metrics." %}
+            {% set posture_value = 'Unknown' %}
+            {% set posture_desc = 'Forecast evidence is unavailable for the selected scope.' %}
+            {% set posture_tone = 'unknown' %}
+            {% set posture_icon = 'database-zap' %}
         {% endif %}
+        {% set highest_projection = (summary.highest_projected_percent ~ '%') if summary.highest_projected_percent is not none else 'N/A' %}
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
                     {% call page_hero.intro('sparkles', 'Kubernetes Capacity Forecast', 'line-chart') %}
                         <h1 class="{{ page_hero.title_classes() }}">Resource Forecast</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Forecast CPU, memory, storage, and pod growth to anticipate capacity pressure and future operational risk.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Forecast CPU, memory, storage, and pod demand to anticipate capacity pressure and future operational risk.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('server', selected_cluster_name) }}
-                            {{ page_hero.meta_label('lock-keyhole' if dependency_blocker else 'calendar-range', ('Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) if dependency_blocker else (selected_history_window ~ ' History')) }}
+                            {{ page_hero.meta_label('filter', ('Namespace ' ~ selected_namespace) if selected_namespace else 'All Namespaces') }}
+                            {{ page_hero.meta_label('calendar-range', selected_history_window ~ ' History') }}
                             {{ page_hero.meta_label('list-checks', recommendation_count ~ ' Actionable') }}
                         </div>
                     {% endcall %}
                 </div>
                 <aside class="{{ page_hero.aside_classes() }}" aria-label="Forecast Posture">
                     {% if dependency_blocker %}
-                        {% set analytics_posture_label = "Forecast Posture" %}
+                        {% set analytics_posture_label = 'Forecast Posture' %}
                         {% include 'analytics/components/_blocked_posture.html' %}
                     {% else %}
-                        {% set posture_tone = 'critical' if posture_value == 'Critical' else ('warning' if posture_value == 'Watch' else ('normal' if posture_value == 'Healthy' else 'unknown')) %}
-                        {% set posture_icon = 'shield-alert' if posture_value == 'Critical' else ('triangle-alert' if posture_value == 'Watch' else ('circle-check' if posture_value == 'Healthy' else 'database-zap')) %}
                         <div class="{{ page_hero.context_panel_classes() }}">
                             <div class="flex items-start justify-between gap-4">
-                                <div>
+                                <div class="min-w-0">
                                     <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Forecast Posture</p>
                                     <p class="mt-1 text-3xl font-bold leading-none text-brand-foreground">{{ posture_value }}</p>
-                                    {{ page_hero.context_posture_note(posture_desc, posture_tone) }}
                                 </div>
                                 {{ table_label.status_label(posture_value, posture_tone, posture_icon) }}
                             </div>
-                            <div class="mt-auto grid grid-cols-2 gap-3 pt-4">
-                                <div class="{{ page_hero.context_metric_card_classes() }}">
-                                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Highest Projection</p>
-                                    <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ summary.highest_projected_percent|default(0) }}%</p>
-                                    <p class="{{ page_hero.context_metric_helper_classes() }}">{{ summary.highest_projected_label|default('No projection', true) }}</p>
-                                </div>
-                                <div class="{{ page_hero.context_metric_card_classes() }}">
-                                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Actionable</p>
-                                    <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ recommendation_count }}</p>
-                                    <p class="{{ page_hero.context_metric_helper_classes() }}">Forecast recommendations</p>
-                                </div>
+                            <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                                {{ page_hero.context_metric('gauge', 'Highest Projection', highest_projection, summary.highest_projected_label|default('No valid projection', true)) }}
+                                {{ page_hero.context_metric('list-checks', 'Actionable', recommendation_count, 'Forecast recommendations') }}
                             </div>
+                            {{ page_hero.context_bottom_notice(posture_desc, posture_tone) }}
                         </div>
                     {% endif %}
                 </aside>
@@ -80,5 +82,5 @@
 {% endblock dashboard_content %}
 {% block scripts %}
     <script src="{{ url_for('static', filename='vendor/chartjs/chart.umd.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/analytics_forecast.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/analytics_forecast_chart.js') }}"></script>
 {% endblock scripts %}

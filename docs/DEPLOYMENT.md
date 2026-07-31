@@ -90,7 +90,7 @@ The Analytics policy always retains:
 - `analytics.capacity` with `time_range=24h`;
 - `analytics.top_consumers` with the current cluster scope only.
 
-The Forecast policy always retains `analytics.forecast` with `history_window=30d`. Forecast horizon, resource, and method are projected locally from committed historical input and do not create additional provider queries or snapshot rows.
+The Forecast policy always retains `analytics.forecast` with `history_window=30d`. Forecast horizon and model are projected locally from committed historical input. Resource tabs are presentation-only navigation, so tab changes do not create additional provider queries or snapshot rows.
 
 Verify committed rows:
 

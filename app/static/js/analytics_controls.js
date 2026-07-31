@@ -81,6 +81,11 @@
             panel.hidden = panel.dataset.analyticsTabPanel !== tabId;
         });
 
+        const pageRoot = tabset.closest('[id$="-page"]') || document;
+        pageRoot.querySelectorAll('[data-analytics-preserve-tab] input[name="tab"]').forEach((field) => {
+            field.value = tabId;
+        });
+
         const tabsetId = tabset.dataset.analyticsTabsetId || tabset.id || 'default';
         if (persist) {
             try {

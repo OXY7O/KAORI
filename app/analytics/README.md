@@ -512,7 +512,7 @@ Heavy Prometheus range queries are not executed independently for every web requ
 - `analytics.materialize` uses the `analytics-batch` queue for Capacity, Storage, Workload, Top Consumers, long-range Utilization trends, and the compact `dashboard.kubernetes.alerts` dataset.
 - `analytics.forecast.materialize` uses the dedicated `forecasting` queue for all forecast range queries.
 - Kubernetes Operations always retains the `24h` Capacity snapshot, one current Top Consumers snapshot, and the `30d` Forecast history required by dashboard consumers, even when an operator narrows optional materialization ranges.
-- Forecast horizon, resource, and method are projected locally from committed history and never create additional worker queries or snapshot fingerprints.
+- Forecast horizon and model are projected locally from committed history and never create additional worker queries or snapshot fingerprints. Resource tabs do not alter the committed payload.
 - Alert-only clusters remain eligible for both `dashboard.kubernetes.alerts` and `analytics.alerts`; Prometheus-backed datasets are never scheduled for those clusters.
 - Automatic policies are configured under **Platform Operations → Jobs & Executions → Job Configuration**.
 - A stale successful snapshot remains readable during refresh or temporary Prometheus failure.
@@ -586,3 +586,8 @@ Request Coverage, Limit Coverage, QoS, Risk, and Analytics Evidence Coverage are
 ## Capacity Analysis Presentation
 
 Capacity is a cluster-level Ready-worker fleet analysis. It uses the shared Analytics Analysis Surface and Resource Pressure Lane contracts, renders missing denominators as Unknown/N/A without progress, keeps progress fills KAORI Violet, separates governance findings from review navigation, and does not load a composite tracker or Chart.js runtime. See `docs/design/components/ANALYTICS_CAPACITY_ANALYSIS.md`.
+
+
+## Resource Forecast Presentation and Semantics
+
+Resource Forecast uses Holt-Winters as the default model, with Linear Trend and Conservative Trend as explicit alternatives. The page does not expose a Resource Focus selector; CPU, Memory, Storage, Pods, Trend Analysis, and Recommendations are canonical tabs. Forecast evidence is labeled Latest Daily Average, Projected Horizon Value, Weekly Trend, and Historical Signal Quality. Signal Quality describes historical completeness and stability rather than forecast accuracy. Namespace CPU, Memory, and Pods are compared with cluster worker capacity; namespace Storage is compared with namespace PVC claim capacity. Unavailable evidence renders Unknown/N/A and is excluded from projected posture counts. The full page uses the tokenized interactive chart component and tab-visible lifecycle.

@@ -58,15 +58,15 @@ def test_tabs_are_embedded_in_workspace_boxes() -> None:
         assert "analytics_workspace.tabbed" in content or "embedded=true" in content
 
 
-def test_forecast_resource_tabs_and_custom_legends() -> None:
+def test_forecast_resource_tabs_and_shared_interactive_legends() -> None:
     content = read("forecast/partials/_forecast_section.html")
     for label in ("CPU Forecast", "Memory Forecast", "Storage Forecast", "Pod Forecast"):
         assert label in content
     assert "Historical" in content
-    assert "Forecast" in content
+    assert "Projection" in content
     assert "Warning" in content
     assert "Critical" in content
-    js = (ROOT / "app" / "static" / "js" / "analytics_forecast.js").read_text(encoding="utf-8")
+    js = (ROOT / "app" / "static" / "js" / "analytics_forecast_chart.js").read_text(encoding="utf-8")
     assert "display: false" in js
 
 

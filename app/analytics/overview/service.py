@@ -933,13 +933,10 @@ def _get_forecast_snapshot(*, cluster_id: str, time_range: str) -> dict[str, Any
             'highest_projected_resource',
             'N/A',
         ),
-        'highest_projected_percent': _safe_int(
-            _as_float_like(
-                raw.get(
-                    'highest_projected_percent',
-                    0,
-                )
-            )
+        'highest_projected_percent': (
+            _as_float_like(raw.get('highest_projected_percent'))
+            if raw.get('highest_projected_percent') is not None
+            else None
         ),
         'nearest_warning': raw.get(
             'nearest_warning',

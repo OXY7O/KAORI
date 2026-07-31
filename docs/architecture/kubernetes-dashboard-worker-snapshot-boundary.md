@@ -54,8 +54,8 @@ alert processing.
 The Analytics policy always retains the dashboard-required `24h` Capacity
 snapshot. Top Consumers uses one current cluster snapshot. Forecast
 materialization always retains `30d` historical input because that history is
-consumed by the dashboard. Forecast horizon, resource, and method are projected
-locally and do not produce separate provider queries or snapshot fingerprints.
+consumed by the dashboard. Forecast horizon and model are projected locally.
+Resource tabs are presentation-only and do not produce separate provider queries or snapshot fingerprints.
 
 Alertmanager-only clusters are eligible for both
 `dashboard.kubernetes.alerts` and `analytics.alerts`. Prometheus-backed datasets
@@ -112,7 +112,7 @@ Then verify:
 - Cluster Health performs set-based Node and Pod reads for the visible page;
 - missing snapshots render worker-snapshot states instead of starting a live
   query; and
-- Forecast horizon, resource, and method changes do not dispatch a worker job.
+- Forecast horizon, model, and active resource-tab changes do not dispatch a worker job.
 
 ## Rollback
 

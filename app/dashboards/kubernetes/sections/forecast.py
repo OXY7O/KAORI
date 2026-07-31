@@ -34,7 +34,7 @@ def build_forecast_snapshot(*, context: dict[str, Any] | None, unavailable_reaso
 
             status = str(item.get('status_label') or item.get('status') or 'Unknown').title()
             projected = _optional_float(item.get('projected_percent'))
-            current = _optional_float(item.get('current_percent'))
+            current = _optional_float(item.get('latest_daily_average_percent'))
             resource_key = _resource_key(item=item, position=position)
             historical_values = _extract_percent_values(item.get('historical_points'), item.get('capacity'))
             forecast_values = _extract_percent_values(item.get('forecast_points'), item.get('capacity'))
@@ -43,7 +43,7 @@ def build_forecast_snapshot(*, context: dict[str, Any] | None, unavailable_reaso
             historical_points, forecast_points = _build_chart_points(
                 historical_values=historical_values,
                 forecast_values=forecast_values,
-                current_percent=current,
+                latest_daily_average_percent=current,
                 projected_percent=projected,
             )
             trend = str(item.get('trend_label') or item.get('trend') or _trend_label(current, projected)).title()
@@ -54,7 +54,7 @@ def build_forecast_snapshot(*, context: dict[str, Any] | None, unavailable_reaso
                     risk=status,
                     icon=str(item.get('icon') or _resource_icon(resource_key)),
                     projected_percent=projected,
-                    current_percent=current,
+                    latest_daily_average_percent=current,
                     trend=trend,
                     historical_points=historical_points,
                     forecast_points=forecast_points,
@@ -179,7 +179,7 @@ def _build_chart_points(
     *,
     historical_values: list[float],
     forecast_values: list[float],
-    current_percent: float | None,
+    latest_daily_average_percent: float | None,
     projected_percent: float | None,
 ) -> tuple[str, str]:
     history = _sample(historical_values, limit=8)
@@ -194,7 +194,7 @@ def _build_chart_points(
             forecast_line.append(forecast_line[0])
         return historical_points, _polyline_points(forecast_line, start_x=56, end_x=98)
 
-    baseline = current_percent if current_percent is not None else projected_percent
+    baseline = latest_daily_average_percent if latest_daily_average_percent is not None else projected_percent
     forecast_line: list[float] = []
     if baseline is not None:
         forecast_line.append(baseline)

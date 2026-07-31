@@ -1,83 +1,84 @@
 {% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/table_label.html" as table_label %}
 {% set summary = forecast_payload.summary %}
-{% set projected_percent = summary.highest_projected_percent|default(0) %}
-{% set projected_label = summary.highest_projected_label|default('No projected pressure', true) %}
-{% set warning_count = summary.warning_count|default(0) %}
-{% set critical_count = summary.critical_count|default(0) %}
+{% set highest_percent = summary.highest_projected_percent %}
 {% set nearest = summary.nearest_critical|default({}, true) %}
-{% if critical_count > 0 %}
+{% if summary.critical_count|default(0) > 0 %}
     {% set posture_label = 'Critical Projection' %}
     {% set posture_tone = 'critical' %}
-{% elif warning_count > 0 %}
+{% elif summary.warning_count|default(0) > 0 %}
     {% set posture_label = 'Capacity Watch' %}
     {% set posture_tone = 'warning' %}
 {% elif forecast_payload.has_data %}
     {% set posture_label = 'Within Capacity' %}
     {% set posture_tone = 'normal' %}
 {% else %}
-    {% set posture_label = 'Awaiting Data' %}
+    {% set posture_label = 'Evidence Unavailable' %}
     {% set posture_tone = 'unknown' %}
 {% endif %}
 {% call analytics_workspace.overview(
-    'Forecast Overview & Methodology',
-    'Projected capacity posture and the calculation boundary used by every resource forecast.',
+    'Forecast Overview',
+    'Projected capacity posture, available forecast evidence, and the operating boundary used by every resource tab.',
     'chart-no-axes-combined',
-    forecast_payload.method_label|default('Forecast Method')
+    forecast_payload.method_label|default('Forecast Model')
 ) %}
-    <div class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
-        <div class="flex flex-col gap-4 bg-kaori-soft px-4 py-4 lg:flex-row lg:items-center lg:justify-between">
-            <div class="flex min-w-0 items-center gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
-                    <i data-lucide="gauge" class="h-4 w-4"></i>
-                </span>
-                <div class="min-w-0">
-                    <div class="flex flex-wrap items-center gap-2">
-                        <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-content-muted">Projected Capacity Posture</p>
-                        {{ table_label.status_label(posture_label, tone=posture_tone, size='compact') }}
-                    </div>
-                    <div class="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                        <p class="text-2xl font-bold tracking-tight text-content-primary">{{ projected_percent }}%</p>
-                        <p class="break-words text-sm font-semibold text-content-secondary">{{ projected_label }}</p>
-                    </div>
-                </div>
-            </div>
-            <div class="flex flex-wrap gap-2">
-                {{ table_label.metadata_label(selected_history_window ~ ' history', 'history') }}
-                {{ table_label.metadata_label(selected_forecast_horizon ~ ' horizon', 'calendar-range') }}
-                {% if forecast_payload.generated_at %}
-                    {{ table_label.metadata_label('Generated ' ~ (forecast_payload.generated_at|user_datetime(include_seconds=true)), 'clock') }}
-                {% endif %}
-            </div>
-        </div>
-
-        <div class="grid sm:grid-cols-2 xl:grid-cols-6">
+    <div class="{{ analysis_surface.evidence_shell_classes() }}">
+        <div class="{{ analysis_surface.metric_grid_classes(4) }}">
             {% for label, value, helper, icon in [
-                ('Warning', warning_count, 'At or above 75%', 'triangle-alert'),
-                ('Critical', critical_count, 'At or above 90%', 'shield-alert'),
-                ('Nearest Critical', nearest.label|default('Not projected', true), nearest.date|default('No projected date', true), 'calendar-clock'),
-                ('History', selected_history_window, forecast_payload.history_days ~ ' days evaluated', 'history'),
-                ('Model', forecast_payload.method_label|default('Linear Trend'), 'Applied to all resources', 'sigma'),
-                ('Horizon', selected_forecast_horizon, 'Future projection window', 'calendar-range')
+                ('Highest Projection', (highest_percent ~ '%') if highest_percent is not none else 'N/A', summary.highest_projected_label|default('No valid projection', true), 'gauge'),
+                ('Warning Resources', summary.warning_count|default(0), 'Projected at or above 75%', 'triangle-alert'),
+                ('Critical Resources', summary.critical_count|default(0), 'Projected at or above 90%', 'shield-alert'),
+                ('Nearest Critical ETA', nearest.label|default('Not projected', true), nearest.resource|default('No resource', true), 'calendar-clock')
             ] %}
-                <div class="border-t border-outline-subtle px-4 py-3">
+                <div class="{{ analysis_surface.metric_cell_classes() }}">
                     <div class="flex items-start gap-2.5">
-                        <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary shadow-sm">
-                            <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
-                        </span>
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
                         <div class="min-w-0">
-                            <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">{{ label }}</p>
-                            <p class="mt-1 break-words text-sm font-semibold text-content-primary">{{ value }}</p>
-                            <p class="mt-0.5 break-words text-[11px] leading-4 text-content-muted">{{ helper }}</p>
+                            <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                            <p class="mt-1 break-words text-lg font-semibold text-content-primary">{{ value }}</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
                         </div>
                     </div>
                 </div>
             {% endfor %}
         </div>
 
-        <div class="flex items-start gap-2 border-t border-outline-subtle px-4 py-3 text-xs leading-5 text-content-muted">
-            <i data-lucide="info" class="mt-0.5 h-3.5 w-3.5 shrink-0 text-kaori-primary"></i>
-            <p>{{ forecast_payload.method_description|default('Forecasts use committed Prometheus history, the selected projection model, and the current capacity baseline. Confidence reflects sample completeness and trend stability.') }}</p>
+        <div class="border-t border-outline-subtle px-4 py-4 sm:px-5">
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                <div class="flex min-w-0 items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="activity" class="h-4 w-4"></i></span>
+                    <div class="min-w-0">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h3 class="{{ analysis_surface.section_title_classes() }}">Projected Capacity Posture</h3>
+                            {{ table_label.status_label(posture_label, tone=posture_tone, size='compact') }}
+                        </div>
+                        <p class="{{ analysis_surface.section_description_classes() }}">
+                            {{ summary.forecasted_resources|default(0) }} of {{ summary.total_resources|default(0) }} resources have valid projections; {{ summary.unavailable_resources|default(0) }} are unavailable.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    {{ table_label.metadata_label('Scope · ' ~ (('Namespace ' ~ selected_namespace) if selected_namespace else 'All Namespaces'), 'filter') }}
+                    {{ table_label.metadata_label(selected_history_window ~ ' History', 'history') }}
+                    {{ table_label.metadata_label(selected_forecast_horizon ~ ' Horizon', 'calendar-range') }}
+                </div>
+            </div>
+        </div>
+
+        <div class="{{ analysis_surface.interpretation_grid_classes() }}">
+            <div class="px-4 py-4 sm:px-5">
+                <p class="{{ analysis_surface.metric_label_classes() }}">Forecast Operating Boundary</p>
+                <dl class="mt-3 grid gap-3 sm:grid-cols-3">
+                    <div><dt class="text-xs text-content-muted">Model</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ forecast_payload.method_label }}</dd></div>
+                    <div><dt class="text-xs text-content-muted">History</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ forecast_payload.history_days }} Days</dd></div>
+                    <div><dt class="text-xs text-content-muted">Horizon</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ forecast_payload.horizon_days }} Days</dd></div>
+                </dl>
+            </div>
+            <div class="px-4 py-4 sm:px-5">
+                <p class="{{ analysis_surface.metric_label_classes() }}">How To Read</p>
+                <p class="mt-2 text-xs leading-5 text-content-secondary">{{ forecast_payload.method_description }} Historical Signal Quality describes sample completeness and stability; it is not a claim of forecast accuracy.</p>
+            </div>
         </div>
     </div>
 {% endcall %}

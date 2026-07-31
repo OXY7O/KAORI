@@ -92,3 +92,13 @@ When one workspace combines datasets with different Kubernetes scopes, every pan
 - No inline multi-hundred-line chart scripts inside Jinja templates.
 - No polling while a heavy tab is hidden.
 - No `bg-surface-hover` around primary charts, metrics, ranked data, or pressure evidence.
+
+## Analytics Projection Configuration
+
+Forecast-like workspaces may group controls into Scope and Projection Configuration inside one shared controls/readiness shell. This is a semantic grouping with a divider, not nested cards. Resource tabs own resource navigation; a resource selector must not duplicate those tabs.
+
+## Forecast Evidence Semantics
+
+Forecast primary evidence uses Latest Daily Average, Projected Horizon Value, Weekly Trend, and Historical Signal Quality. Signal Quality describes history completeness and stability, not model accuracy. Mixed namespace/cluster denominators must be named in each resource panel.
+
+Full-page interactive forecast charts use the shared tokenized chart contract and tab-visible lifecycle. Compact dashboard charts retain the shared SVG component.

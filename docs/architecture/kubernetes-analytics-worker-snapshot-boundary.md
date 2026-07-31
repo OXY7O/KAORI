@@ -54,8 +54,8 @@ empty response. Pending and blocked pages now preserve the requested page ID.
 
 ### Snapshot fingerprints included presentation filters
 
-Search, pagination, resource selection, status filters, forecast horizon, and
-forecast method previously risked creating distinct materialization requests.
+Search, pagination, active resource tab, status filters, forecast horizon, and
+forecast model previously risked creating distinct materialization requests.
 Those controls now operate on a committed context whenever they do not alter the
 provider query.
 
@@ -72,7 +72,7 @@ Committed AnalyticsSnapshot
         ↓
 Route reads latest generation
         ↓
-Local filtering, pagination, and forecast projection
+Local filtering, pagination, tab selection, and forecast projection
         ↓
 Full page or HTMX partial
 ```
@@ -95,7 +95,7 @@ committed as ready analytics data.
 | Storage Analysis | Current cluster snapshot | Namespace, node, search, status, storage class, pagination | Prometheus |
 | Workload Analysis | `time_range` | Namespace, filters, pagination | Prometheus |
 | Top Consumers | Optional namespace snapshot | Resource, focus, sort, search, pagination | Prometheus |
-| Resource Forecast | `history_window`, optional namespace | Horizon, resource, method | Prometheus |
+| Resource Forecast | `history_window`, optional namespace | Horizon, model, active resource tab | Prometheus |
 | Alerts & Anomalies | `source` | Severity, status, namespace, search, pagination | Alertmanager or Prometheus |
 | Kubernetes Operations Dashboard | Fixed compact snapshot consumers | Section rendering | Committed analytics snapshots |
 
@@ -129,8 +129,8 @@ explosion and lets many users share the same committed generation.
 - Storage and Top Consumers use current snapshots and do not expose time-range
   controls that would create no provider-query difference.
 - Forecast policy materializes `7d`, `30d`, or `90d` historical windows. The
-  `30d` dashboard history is always retained. Horizon, resource, and method are
-  projected locally.
+  `30d` dashboard history is always retained. Horizon and model are projected
+  locally; CPU, Memory, Storage, Pods, Trend, and Recommendations tabs are presentation-only.
 - Utilization Trend schedules only configured ranges. A missing range may be
   created once by an on-demand request.
 - Freshness is range-aware and stale grace is capped by the owning dataset. A

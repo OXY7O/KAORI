@@ -4,9 +4,11 @@
 {% import "analytics/components/_analysis_surfaces.html" as overview_surface %}
 {% set forecast = payload.forecast_snapshot %}
 {% set risk_count = forecast.risk_count|default(0)|int %}
-{% set risk_tone = 'warning' if risk_count > 0 else 'normal' %}
-{% set highest_resource = forecast.highest_projected_resource|default('Not Available') %}
-{% set highest_percent = forecast.highest_projected_percent|default(0) %}
+{% set has_forecast_evidence = forecast.series|default([])|length > 0 %}
+{% set risk_tone = 'unknown' if not has_forecast_evidence else ('warning' if risk_count > 0 else 'normal') %}
+{% set highest_resource = forecast.highest_projected_resource|default('N/A', true) %}
+{% set highest_percent = forecast.highest_projected_percent %}
+{% set highest_projection = highest_resource ~ ' · ' ~ ((highest_percent|round(1)) ~ '%' if highest_percent is not none else 'N/A') %}
 <section data-analytics-overview-panel="forecast" class="{{ overview_surface.snapshot_shell_classes() }}">
     <header class="{{ overview_surface.snapshot_header_classes() }}">
         <div class="flex min-w-0 items-start gap-3">
@@ -16,7 +18,7 @@
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                     <h2 class="text-base font-semibold text-content-primary">Forecast &amp; Trend Snapshot</h2>
-                    {{ table_label.status_label('Review Required' if risk_count > 0 else 'Normal', risk_tone) }}
+                    {{ table_label.status_label('Unknown' if not has_forecast_evidence else ('Review Required' if risk_count > 0 else 'Normal'), risk_tone) }}
                 </div>
                 <p class="mt-1 text-xs leading-5 text-content-muted">Historical direction, projected utilization, and threshold risk for core resources.</p>
             </div>
@@ -30,7 +32,7 @@
     {% set metrics = [
         {'label': 'Forecast Risk', 'value': forecast.forecast_risk|default('Unknown'), 'icon': 'shield-alert'},
         {'label': 'Risk Resources', 'value': risk_count, 'icon': 'triangle-alert'},
-        {'label': 'Highest Projection', 'value': highest_resource ~ ' · ' ~ highest_percent ~ '%', 'icon': 'arrow-up-right'},
+        {'label': 'Highest Projection', 'value': highest_projection, 'icon': 'arrow-up-right'},
         {'label': 'Forecast Horizon', 'value': forecast.forecast_horizon|default('30 Days')|title, 'icon': 'calendar-range'}
     ] %}
     <div class="{{ overview_surface.metric_grid_classes(4) }}">
@@ -80,7 +82,7 @@
                 </div>
                 <div class="border-t border-outline-subtle py-3 lg:border-t-0 lg:pl-4">
                     <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">What to Do</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Validate model confidence, growth drivers, and the nearest threshold ETA before scheduling capacity or workload changes.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Validate historical signal quality, growth drivers, and the nearest threshold ETA before scheduling capacity or workload changes.</p>
                 </div>
             </div>
         </article>
@@ -89,7 +91,7 @@
             <div class="flex items-center justify-between gap-3">
                 <div>
                     <h3 class="text-sm font-semibold text-content-primary">Resource Outlook</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Current and projected utilization by resource.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Latest daily averages and projected horizon values by resource.</p>
                 </div>
                 {{ table_label.metadata_label((forecast.series|length) ~ ' Series', 'chart-no-axes-combined', size='compact') }}
             </div>
@@ -103,7 +105,7 @@
                             <div class="flex items-start justify-between gap-3">
                                 <div class="min-w-0">
                                     <p class="text-sm font-semibold text-content-primary">{{ item.label }}</p>
-                                    <p class="mt-0.5 text-xs text-content-muted">{{ item.latest_percent }}% Current → {{ item.projected_percent }}% Projected</p>
+                                    <p class="mt-0.5 text-xs text-content-muted">{{ item.latest_percent }}% Latest Daily Average → {{ item.projected_percent }}% Projected</p>
                                 </div>
                                 {{ table_label.status_label(trend_value|replace('_', ' ')|title, item_tone, size='compact') }}
                             </div>

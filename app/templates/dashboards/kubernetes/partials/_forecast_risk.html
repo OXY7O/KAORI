@@ -92,7 +92,7 @@
                         <div class="mt-3 flex items-center justify-between gap-3 text-xs">
                             <div>
                                 <p class="text-content-muted">Current</p>
-                                <p class="mt-1 text-base font-semibold text-content-primary">{% if item.current_percent is not none %}{{ item.current_percent|round(0)|int }}%{% else %}—{% endif %}</p>
+                                <p class="mt-1 text-base font-semibold text-content-primary">{% if item.latest_daily_average_percent is not none %}{{ item.latest_daily_average_percent|round(0)|int }}%{% else %}—{% endif %}</p>
                             </div>
                             <i data-lucide="arrow-right" class="h-4 w-4 text-content-disabled" aria-hidden="true"></i>
                             <div class="text-right">

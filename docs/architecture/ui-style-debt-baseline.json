@@ -84,26 +84,6 @@
     "app/templates/analytics/components/_status_notice.html": {
       "semantic_border_utilities": 3
     },
-    "app/templates/analytics/forecast/index.html": {
-      "arbitrary_text_sizes": 2,
-      "arbitrary_tracking": 2
-    },
-    "app/templates/analytics/forecast/partials/_controls_readiness.html": {
-      "semantic_border_utilities": 1
-    },
-    "app/templates/analytics/forecast/partials/_forecast_section.html": {
-      "arbitrary_text_sizes": 13,
-      "arbitrary_tracking": 4
-    },
-    "app/templates/analytics/forecast/partials/_methodology.html": {
-      "arbitrary_text_sizes": 2,
-      "arbitrary_tracking": 2,
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/analytics/forecast/partials/_overview_methodology.html": {
-      "arbitrary_text_sizes": 3,
-      "arbitrary_tracking": 1
-    },
     "app/templates/analytics/materialization/_freshness.html": {
       "semantic_border_utilities": 4
     },

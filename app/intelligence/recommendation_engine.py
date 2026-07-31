@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any, SupportsFloat, SupportsIndex
+from urllib.parse import urlencode
 
 MAX_DASHBOARD_RECOMMENDATIONS = 5
 
@@ -99,7 +100,7 @@ SOURCE_LABELS = {
     'forecast_projection': 'Forecast Projection',
     'forecast_eta': 'Forecast Threshold ETA',
     'forecast_growth': 'Forecast Growth Trend',
-    'forecast_confidence': 'Forecast Confidence',
+    'forecast_signal_quality': 'Historical Signal Quality',
     'forecast_baseline': 'Forecast Baseline',
     'forecast_practice': 'Forecast Practice',
 }
@@ -140,7 +141,7 @@ SOURCE_HREFS = {
     'forecast_projection': '/analytics/forecast',
     'forecast_eta': '/analytics/forecast',
     'forecast_growth': '/analytics/forecast',
-    'forecast_confidence': '/analytics/forecast',
+    'forecast_signal_quality': '/analytics/forecast?tab=trend',
     'forecast_baseline': '/analytics/forecast',
     'forecast_practice': '/analytics/forecast',
 }
@@ -1188,14 +1189,23 @@ FORECAST_WARNING_THRESHOLD = 75.0
 FORECAST_CRITICAL_THRESHOLD = 90.0
 
 
+def _forecast_review_href(payload: dict[str, Any], tab: str) -> str:
+    params = {
+        'tab': tab,
+        'namespace': str(payload.get('namespace') or ''),
+        'method': str(payload.get('forecast_method') or 'holt_winters'),
+        'history_window': str(payload.get('history_window') or '30d'),
+        'forecast_horizon': str(payload.get('forecast_horizon') or '90d'),
+    }
+    return '/analytics/forecast?' + urlencode(params)
+
+
 def build_forecast_actionable_recommendations(
     payload: dict[str, Any],
 ) -> list[dict[str, Any]]:
     recommendations: list[dict[str, Any]] = []
-
     items = _as_list(payload.get('items', []))
     summary = payload.get('summary', {})
-
     if not isinstance(summary, dict):
         summary = {}
 
@@ -1209,22 +1219,41 @@ def build_forecast_actionable_recommendations(
 
         resource_key = str(item.get('key') or '').strip().lower()
         resource_label = str(item.get('label') or resource_key.upper() or 'Resource')
+        href = _forecast_review_href(payload, resource_key if resource_key in {'cpu', 'memory', 'storage', 'pods'} else 'trend')
+        has_data = bool(item.get('has_data'))
         projected_percent = get_numeric_value(item.get('projected_percent', 0))
-        current_percent = get_numeric_value(item.get('current_percent', 0))
-        growth_per_week = get_numeric_value(item.get('growth_per_week', 0))
-        confidence = str(item.get('confidence') or 'Unknown')
-        confidence_reason = str(item.get('confidence_reason') or '-')
+        latest_daily_average_percent = get_numeric_value(item.get('latest_daily_average_percent', 0))
+        weekly_trend = get_numeric_value(item.get('weekly_trend', 0))
+        signal_quality = str(item.get('signal_quality') or 'Unavailable')
+        signal_quality_reason = str(item.get('signal_quality_reason') or '-')
         warning_eta = item.get('warning_eta', {})
         critical_eta = item.get('critical_eta', {})
-
         if not isinstance(warning_eta, dict):
             warning_eta = {}
-
         if not isinstance(critical_eta, dict):
             critical_eta = {}
-
         critical_eta_label = str(critical_eta.get('label') or 'Not projected')
         warning_eta_label = str(warning_eta.get('label') or 'Not projected')
+
+        if not has_data:
+            recommendations.append(
+                build_recommendation(
+                    title=f'Restore {resource_label.lower()} forecast evidence',
+                    description=(
+                        f'{resource_label} does not have enough committed history or a valid capacity baseline. '
+                        f'Reason: {item.get("empty_reason") or "Forecast evidence unavailable"}. '
+                        'Restore source evidence before making a forecast-based capacity decision.'
+                    ),
+                    priority='Warning',
+                    source='forecast_signal_quality',
+                    source_label='Historical Signal Quality',
+                    resource=resource_key,
+                    action_type='forecast_review',
+                    href=href,
+                    icon='database-zap',
+                )
+            )
+            continue
 
         if projected_percent >= FORECAST_CRITICAL_THRESHOLD:
             recommendations.append(
@@ -1232,15 +1261,15 @@ def build_forecast_actionable_recommendations(
                     title=f'Review projected {resource_label.lower()} critical threshold',
                     description=(
                         f'{resource_label} is projected to reach {projected_percent:.2f}% within {forecast_horizon}. '
-                        f'Current usage is {current_percent:.2f}%. Critical ETA: {critical_eta_label}. '
-                        'Validate planned deployments, growth assumptions, and capacity expansion options.'
+                        f'The latest daily average is {latest_daily_average_percent:.2f}% of the documented baseline. '
+                        f'Critical ETA: {critical_eta_label}. Validate growth assumptions and capacity expansion options.'
                     ),
                     priority='Critical',
                     source='forecast_projection',
                     source_label='Forecast Projection',
                     resource=resource_key,
                     action_type='forecast_review',
-                    href='/analytics/forecast',
+                    href=href,
                     icon='flame',
                 )
             )
@@ -1252,83 +1281,80 @@ def build_forecast_actionable_recommendations(
                     title=f'Review projected {resource_label.lower()} warning threshold',
                     description=(
                         f'{resource_label} is projected to reach {projected_percent:.2f}% within {forecast_horizon}. '
-                        f'Current usage is {current_percent:.2f}%. Warning ETA: {warning_eta_label}. '
-                        'Review workload growth, requests, limits, autoscaling, and capacity headroom.'
+                        f'The latest daily average is {latest_daily_average_percent:.2f}% of the documented baseline. '
+                        f'Warning ETA: {warning_eta_label}. Review demand growth and capacity headroom.'
                     ),
                     priority='Warning',
                     source='forecast_projection',
                     source_label='Forecast Projection',
                     resource=resource_key,
                     action_type='forecast_review',
-                    href='/analytics/forecast',
+                    href=href,
                     icon='triangle-alert',
                 )
             )
 
-        if growth_per_week > 0 and projected_percent >= 60:
+        if weekly_trend > 0 and projected_percent >= 60:
             recommendations.append(
                 build_recommendation(
-                    title=f'Validate {resource_label.lower()} growth trend',
+                    title=f'Validate {resource_label.lower()} weekly trend',
                     description=(
-                        f'{resource_label} has positive forecast growth and is projected to reach {projected_percent:.2f}%. '
-                        'Confirm whether the trend is caused by expected workload growth, recent deployments, or abnormal usage drift.'
+                        f'{resource_label} has a positive weekly trend and is projected to reach {projected_percent:.2f}%. '
+                        'Confirm whether the signal is caused by expected workload growth, recent deployments, or abnormal demand drift.'
                     ),
                     priority='Warning' if projected_percent >= FORECAST_WARNING_THRESHOLD else 'Info',
                     source='forecast_growth',
-                    source_label='Forecast Growth Trend',
+                    source_label='Forecast Weekly Trend',
                     resource=resource_key,
                     action_type='forecast_review',
-                    href='/analytics/forecast',
+                    href=href,
                     icon='trending-up',
                     is_actionable=projected_percent >= FORECAST_WARNING_THRESHOLD,
                 )
             )
 
-        if confidence.lower() == 'low' and projected_percent >= FORECAST_WARNING_THRESHOLD:
+        if signal_quality.lower() == 'low' and projected_percent >= FORECAST_WARNING_THRESHOLD:
             recommendations.append(
                 build_recommendation(
-                    title=f'Validate low-confidence {resource_label.lower()} forecast',
+                    title=f'Validate low-quality {resource_label.lower()} forecast evidence',
                     description=(
-                        f'{resource_label} forecast confidence is Low. Reason: {confidence_reason}. '
-                        'Validate with a longer history window and compare with recent incidents, deployments, or traffic changes before making capacity decisions.'
+                        f'{resource_label} Historical Signal Quality is Low. Reason: {signal_quality_reason}. '
+                        'Use a longer history window and compare with incidents, deployments, or traffic changes before committing capacity changes.'
                     ),
                     priority='Warning',
-                    source='forecast_confidence',
-                    source_label='Forecast Confidence',
+                    source='forecast_signal_quality',
+                    source_label='Historical Signal Quality',
                     resource=resource_key,
                     action_type='forecast_review',
-                    href='/analytics/forecast',
+                    href=href,
                     icon='sigma',
                 )
             )
 
     nearest_critical = summary.get('nearest_critical', {})
     nearest_warning = summary.get('nearest_warning', {})
-
     if not isinstance(nearest_critical, dict):
         nearest_critical = {}
-
     if not isinstance(nearest_warning, dict):
         nearest_warning = {}
-
     critical_days = nearest_critical.get('days')
     warning_days = nearest_warning.get('days')
+    trend_href = _forecast_review_href(payload, 'trend')
 
     if isinstance(critical_days, int | float) and critical_days <= 30:
         recommendations.append(
             build_recommendation(
                 title='Prioritize Nearest Critical Forecast Breach',
                 description=(
-                    f'{nearest_critical.get("resource", "A resource")} is projected to reach critical threshold in '
-                    f'{nearest_critical.get("label", f"{int(critical_days)} days")}. '
-                    'Create a capacity action plan before the projected critical date.'
+                    f'{nearest_critical.get("resource", "A resource")} is projected to reach the critical threshold in '
+                    f'{nearest_critical.get("label", f"{int(critical_days)} days")}. Create a capacity action plan before the projected date.'
                 ),
                 priority='Critical',
                 source='forecast_eta',
                 source_label='Forecast Threshold ETA',
                 resource='forecast',
                 action_type='forecast_review',
-                href='/analytics/forecast',
+                href=trend_href,
                 icon='calendar-clock',
             )
         )
@@ -1337,22 +1363,20 @@ def build_forecast_actionable_recommendations(
             build_recommendation(
                 title='Review Nearest Forecast Warning Breach',
                 description=(
-                    f'{nearest_warning.get("resource", "A resource")} is projected to reach warning threshold in '
-                    f'{nearest_warning.get("label", f"{int(warning_days)} days")}. '
-                    'Review whether this trend is expected and prepare quota, node, or workload adjustments.'
+                    f'{nearest_warning.get("resource", "A resource")} is projected to reach the warning threshold in '
+                    f'{nearest_warning.get("label", f"{int(warning_days)} days")}. Review whether the trend is expected and prepare capacity adjustments.'
                 ),
                 priority='Warning',
                 source='forecast_eta',
                 source_label='Forecast Threshold ETA',
                 resource='forecast',
                 action_type='forecast_review',
-                href='/analytics/forecast',
+                href=trend_href,
                 icon='calendar-clock',
             )
         )
 
     recommendations = deduplicate_recommendations(recommendations)
-
     if recommendations:
         return recommendations
 
@@ -1360,31 +1384,20 @@ def build_forecast_actionable_recommendations(
         build_recommendation(
             title='Continue Forecast Monitoring',
             description=(
-                'No actionable forecast risk was detected from projected resource growth. '
-                'Continue tracking forecast trend after major deployments, scaling events, and capacity changes.'
+                'No actionable risk was detected from valid resource projections. Continue tracking the forecast after major deployments, scaling events, and capacity changes.'
             ),
-            priority='Normal',
-            source='forecast_baseline',
-            source_label='Forecast Baseline',
-            resource='forecast',
-            action_type='forecast_review',
-            href='/analytics/forecast',
-            icon='check-circle-2',
-            is_actionable=False,
+            priority='Normal', source='forecast_baseline', source_label='Forecast Baseline',
+            resource='forecast', action_type='forecast_review', href=trend_href,
+            icon='check-circle-2', is_actionable=False,
         ),
         build_recommendation(
             title='Validate Forecast Assumptions Periodically',
             description=(
-                'Use forecast output as an early planning signal. Re-check with longer history windows when historical data is noisy or limited.'
+                'Use forecasts as early planning signals. Re-check the Historical Signal Quality and scope boundary when history is noisy, incomplete, or mixed across namespace and cluster capacity.'
             ),
-            priority='Info',
-            source='forecast_practice',
-            source_label='Forecast Practice',
-            resource='forecast',
-            action_type='forecast_review',
-            href='/analytics/forecast',
-            icon='sigma',
-            is_actionable=False,
+            priority='Info', source='forecast_practice', source_label='Forecast Practice',
+            resource='forecast', action_type='forecast_review', href=trend_href,
+            icon='sigma', is_actionable=False,
         ),
     ]
 

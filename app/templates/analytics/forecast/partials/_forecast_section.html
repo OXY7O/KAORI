@@ -1,11 +1,11 @@
 {% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
+{% import "analytics/components/_interactive_forecast_chart.html" as forecast_chart %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/recommendation_pager.html" as recommendation_pager %}
 {% import "components/table.html" as table_ui %}
 {% import "components/table_label.html" as table_label %}
 {% set forecast_items = forecast_payload['items'] %}
-{% set has_data = forecast_payload.has_data %}
-{% set chart_payload = forecast_payload.chart|default({}, true) %}
 {% set resource_tabs = [
     ('cpu', 'CPU Forecast', 'cpu'),
     ('memory', 'Memory Forecast', 'memory-stick'),
@@ -15,23 +15,10 @@
     ('recommendations', 'Recommendations', 'list-checks')
 ] %}
 {% set allowed_tabs = ['cpu', 'memory', 'storage', 'pods', 'trend', 'recommendations'] %}
-{% set initial_tab = selected_resource if selected_resource in allowed_tabs else 'cpu' %}
+{% set initial_tab = selected_tab if selected_tab in allowed_tabs else 'cpu' %}
 
-{% macro trend_legend_item(title, subtitle, chip, icon) -%}
-    <div class="rounded-lg border border-outline-subtle bg-surface-hover px-4 py-3">
-        <div class="flex items-start gap-3">
-            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
-                <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-            </span>
-            <div class="min-w-0">
-                <div class="flex flex-wrap items-center gap-2">
-                    <p class="text-sm font-semibold text-content-primary">{{ title }}</p>
-                    {{ table_label.metadata_label(chip) }}
-                </div>
-                <p class="mt-1 text-xs leading-5 text-content-muted">{{ subtitle }}</p>
-            </div>
-        </div>
-    </div>
+{% macro resource_item(resource_key) -%}
+    {% for candidate in forecast_items %}{% if candidate.key == resource_key %}{{ loop.index0 }}{% endif %}{% endfor %}
 {%- endmacro %}
 
 {% if not dependency_blocker %}
@@ -45,6 +32,8 @@
         initial_tab,
         allowed_tabs
     ) %}
+        <script id="forecast-chart-data" type="application/json">{{ forecast_payload.chart|default({}, true)|tojson }}</script>
+
         {% for resource_key, resource_label, resource_icon in resource_tabs[:4] %}
             {% set resource = namespace(item=none) %}
             {% for candidate in forecast_items %}{% if candidate.key == resource_key %}{% set resource.item = candidate %}{% endif %}{% endfor %}
@@ -57,131 +46,114 @@
                  {% if resource_key != initial_tab %}hidden x-cloak{% endif %}>
                 {% if resource.item %}
                     {% set item = resource.item %}
-                    {% set tone = 'critical' if item.status == 'critical' else ('warning' if item.status == 'warning' else 'normal') %}
+                    {% set tone = item.status if item.status in ['critical', 'warning', 'normal', 'unknown'] else 'unknown' %}
                     <div class="space-y-5">
-                        <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                        <header class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                             <div class="flex min-w-0 items-start gap-3">
-                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                    <i data-lucide="{{ item.icon }}" class="h-5 w-5"></i>
-                                </span>
+                                <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="{{ item.icon }}" class="h-5 w-5"></i></span>
                                 <div class="min-w-0">
                                     <h3 class="text-lg font-semibold text-content-primary">{{ item.label }} Forecast</h3>
                                     <p class="mt-1 text-sm leading-6 text-content-muted">{{ item.description }}</p>
                                 </div>
                             </div>
                             <div class="flex flex-wrap items-center gap-2">
-                                {{ table_label.status_label(item.status|title, tone=tone, size='detail') }}
-                                {% if item.forecast_method %}
-                                    {{ table_label.metadata_label(item.method_label|default(item.forecast_method|replace('_', ' ')|title), 'sigma') }}
-                                {% endif %}
+                                {{ table_label.status_label(item.status_label, tone=tone, size='detail') }}
+                                {{ table_label.metadata_label(item.method_label, 'sigma') }}
+                                {{ table_label.metadata_label(item.scope_label, 'filter') }}
                             </div>
-                        </div>
+                        </header>
 
-                        <div class="space-y-4">
-                            <div class="grid overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover sm:grid-cols-2 xl:grid-cols-4">
+                        <div class="{{ analysis_surface.evidence_shell_classes() }}">
+                            <div class="{{ analysis_surface.metric_grid_classes(4) }}">
                                 {% for label, value, helper, icon in [
-                                    ('Current Usage', item.current_display, item.current_percent ~ '% of ' ~ item.capacity_display, 'gauge'),
-                                    ('Projected Usage', item.projected_display, item.projected_percent ~ '% at horizon', 'scan-line'),
-                                    ('Growth Rate', item.growth_display, 'Estimated change from observed data', 'trending-up'),
-                                    ('Confidence', item.confidence, item.confidence_reason, 'shield-check')
+                                    ('Latest Daily Average', item.latest_daily_average_display, ((item.latest_daily_average_percent ~ '% of ' ~ item.capacity_display) if item.latest_daily_average_percent is not none else item.empty_reason), 'gauge'),
+                                    ('Projected Horizon Value', item.projected_display, ((item.projected_percent ~ '% at ' ~ selected_forecast_horizon) if item.projected_percent is not none else item.empty_reason), 'scan-line'),
+                                    ('Weekly Trend', item.weekly_trend_display, 'Direction derived from the selected model', 'trending-up'),
+                                    ('Historical Signal Quality', item.signal_quality, item.signal_quality_reason, 'shield-check')
                                 ] %}
-                                    <div class="min-w-0 px-4 py-3 {% if not loop.first %}border-t border-outline-subtle sm:border-l sm:border-t-0{% endif %}">
-                                        <div class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-content-muted">
-                                            <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>{{ label }}
+                                    <div class="{{ analysis_surface.metric_cell_classes() }}">
+                                        <div class="flex items-start gap-2.5">
+                                            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>
+                                            <div class="min-w-0">
+                                                <p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p>
+                                                <p class="mt-1 break-words text-lg font-semibold {{ 'text-content-primary' if value != 'N/A' else analysis_surface.unavailable_value_classes() }}">{{ value }}</p>
+                                                <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
+                                            </div>
                                         </div>
-                                        <p class="mt-1.5 truncate text-lg font-semibold text-content-primary" title="{{ value }}">{{ value }}</p>
-                                        <p class="mt-1 truncate text-xs text-content-muted" title="{{ helper }}">{{ helper }}</p>
                                     </div>
                                 {% endfor %}
                             </div>
+                        </div>
 
-                            <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,2.2fr)]">
-                                <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
+                        <div class="grid gap-4 xl:grid-cols-[minmax(300px,0.8fr)_minmax(0,1.8fr)]">
+                            <section class="{{ analysis_surface.evidence_shell_classes() }}">
+                                <header class="border-b border-outline-subtle px-4 py-3">
                                     <div class="flex items-start justify-between gap-3">
                                         <div>
-                                            <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-content-muted">Capacity Posture</p>
-                                            <p class="mt-1 text-base font-semibold text-content-primary">Projected Utilization</p>
+                                            <h4 class="{{ analysis_surface.section_title_classes() }}">Capacity Projection</h4>
+                                            <p class="{{ analysis_surface.section_description_classes() }}">{{ item.comparison_label }}</p>
                                         </div>
-                                        {{ table_label.status_label(item.status_label|default(item.status|title), tone=tone, size='compact') }}
+                                        {{ table_label.status_label(item.status_label, tone=tone, size='compact') }}
                                     </div>
-                                    <div class="mt-4 flex items-end justify-between gap-3">
-                                        <div>
-                                            <p class="text-3xl font-bold text-content-primary">{{ item.projected_percent }}%</p>
-                                            <p class="mt-1 text-xs text-content-muted">{{ item.projected_display }} of {{ item.capacity_display }}</p>
-                                        </div>
-                                        <p class="text-right text-xs font-semibold text-content-secondary">at {{ selected_forecast_horizon }} horizon</p>
+                                </header>
+                                <div class="space-y-4 p-4">
+                                    <div>
+                                        <p class="{{ analysis_surface.metric_label_classes() }}">Projected Utilization</p>
+                                        <p class="mt-1 text-3xl font-bold {{ 'text-content-primary' if item.projected_percent is not none else analysis_surface.unavailable_value_classes() }}">{{ (item.projected_percent ~ '%') if item.projected_percent is not none else 'N/A' }}</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.projected_display }} of {{ item.capacity_display }} · {{ item.capacity_label }}</p>
+                                        {% if item.projected_percent is not none %}
+                                            {{ progress_bar.bar(item.projected_percent, track_classes='mt-4 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=item.label ~ ' projected utilization') }}
+                                        {% endif %}
                                     </div>
-                                    {{ progress_bar.bar(item.projected_percent, track_classes='mt-4 h-2 overflow-hidden rounded-full bg-surface-card', fill_classes='h-full rounded-full bg-kaori-primary', label=item.label ~ ' projected utilization') }}
-                                    <div class="mt-4 grid grid-cols-2 divide-x divide-outline-subtle border-t border-outline-subtle pt-3">
-                                        <div class="pr-3">
-                                            <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Warning ETA</p>
-                                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ item.warning_eta.label|default('Not projected', true) }}</p>
-                                            <p class="mt-0.5 text-xs text-content-muted">{{ item.warning_eta.date|default('No forecasted date', true) }}</p>
-                                        </div>
-                                        <div class="pl-3">
-                                            <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Critical ETA</p>
-                                            <p class="mt-1 text-sm font-semibold text-content-primary">{{ item.critical_eta.label|default('Not projected', true) }}</p>
-                                            <p class="mt-0.5 text-xs text-content-muted">{{ item.critical_eta.date|default('No forecasted date', true) }}</p>
-                                        </div>
-                                    </div>
-                                    <div class="mt-3 space-y-3 border-t border-outline-subtle pt-3">
-                                        <div class="flex items-start gap-2.5">
-                                            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-card text-kaori-primary">
-                                                <i data-lucide="chart-no-axes-combined" class="h-3.5 w-3.5"></i>
-                                            </span>
-                                            <div class="min-w-0">
-                                                <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">How To Read The Graph</p>
-                                                <p class="mt-1 text-xs leading-5 text-content-secondary">Follow the solid line for observed utilization and the dashed line for projection. Compare the projected line with the {{ forecast_payload.chart.warning_threshold|default(75) }}% warning and {{ forecast_payload.chart.critical_threshold|default(90) }}% critical thresholds.</p>
-                                            </div>
-                                        </div>
-                                        <div class="flex items-start gap-2.5">
-                                            <span class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-md {% if tone == 'critical' %}bg-status-critical-soft text-status-critical{% elif tone == 'warning' %}bg-status-warning-soft text-status-warning{% else %}bg-status-normal-soft text-status-normal{% endif %}">
-                                                <i data-lucide="{% if tone == 'critical' %}shield-alert{% elif tone == 'warning' %}triangle-alert{% else %}circle-check-big{% endif %}" class="h-3.5 w-3.5"></i>
-                                            </span>
-                                            <div class="min-w-0">
-                                                <p class="text-[10px] font-semibold uppercase tracking-wide text-content-muted">Recommended Action</p>
-                                                <p class="mt-1 text-xs leading-5 text-content-secondary">{% if tone == 'critical' %}Prioritize capacity expansion or workload reduction before the critical ETA, then verify the projection after the next committed snapshot.{% elif tone == 'warning' %}Review growth drivers and schedule capacity remediation before the warning ETA. Recheck the forecast after the next committed snapshot.{% else %}Continue monitoring the projected line and model confidence. No immediate capacity change is required unless growth or threshold timing worsens.{% endif %}</p>
-                                            </div>
-                                        </div>
+                                    <dl class="grid grid-cols-2 divide-x divide-outline-subtle border-t border-outline-subtle pt-3">
+                                        <div class="pr-3"><dt class="{{ analysis_surface.metric_label_classes() }}">Warning ETA</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ item.warning_eta.label }}</dd><dd class="mt-0.5 text-xs text-content-muted">{{ item.warning_eta.date|default('No projected date', true) }}</dd></div>
+                                        <div class="pl-3"><dt class="{{ analysis_surface.metric_label_classes() }}">Critical ETA</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ item.critical_eta.label }}</dd><dd class="mt-0.5 text-xs text-content-muted">{{ item.critical_eta.date|default('No projected date', true) }}</dd></div>
+                                    </dl>
+                                    <div class="border-t border-outline-subtle pt-3">
+                                        <p class="{{ analysis_surface.metric_label_classes() }}">Scope Boundary</p>
+                                        <p class="mt-1 text-xs leading-5 text-content-secondary">{{ item.scope_label }} · {{ item.comparison_label }} · {{ item.capacity_label }}</p>
                                     </div>
                                 </div>
+                            </section>
 
-                                <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
-                                    <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                        <div>
-                                            <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-content-muted">{{ item.label }} Forecast Chart</p>
-                                            <h4 class="mt-1 text-base font-semibold text-content-primary">Observed vs projected utilization</h4>
-                                            <p class="mt-1 text-xs leading-5 text-content-muted">Historical observations continue into the selected projection horizon.</p>
-                                        </div>
-                                        <div class="flex flex-wrap gap-2">
-                                            {{ table_label.metadata_label(selected_history_window ~ ' history', 'history') }}
-                                            {{ table_label.metadata_label(selected_forecast_horizon ~ ' horizon', 'calendar-range') }}
-                                        </div>
-                                    </div>
-                                    <div class="mt-3 flex flex-wrap items-center gap-x-5 gap-y-2 border-y border-outline-subtle py-2.5 text-xs text-content-secondary">
-                                        <span class="inline-flex items-center gap-2"><span class="h-0 w-7 border-t-2 border-kaori-primary"></span>Historical</span>
-                                        <span class="inline-flex items-center gap-2"><span class="h-0 w-7 border-t-2 border-dashed border-kaori-primary"></span>Forecast</span>
-                                        <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-status-warning"></span>Warning {{ forecast_payload.chart.warning_threshold|default(75) }}%</span>
-                                        <span class="inline-flex items-center gap-2"><span class="h-2.5 w-2.5 rounded-full bg-status-critical"></span>Critical {{ forecast_payload.chart.critical_threshold|default(90) }}%</span>
-                                    </div>
-                                    {% if item.has_data %}
-                                        <div class="mt-3 h-[300px] rounded-lg bg-surface-card p-3">
-                                            <canvas id="forecast-resource-chart-{{ resource_key }}" data-forecast-resource-canvas="true" data-forecast-resource-key="{{ resource_key }}" aria-label="{{ item.label }} forecast chart"></canvas>
-                                        </div>
-                                    {% else %}
-                                        <div class="mt-3 rounded-lg border border-dashed border-outline-default bg-surface-card/60 p-5">
-                                            {% set empty_state_icon = item.icon %}{% set empty_state_title = item.label ~ ' Forecast Unavailable' %}{% set empty_state_description = item.empty_reason|default('The selected snapshot does not contain enough history or capacity evidence for this resource.', true) %}{% include "components/states/_empty_state.html" %}
-                                        </div>
-                                    {% endif %}
+                            {% if item.has_data %}
+                                {{ forecast_chart.render(
+                                    'forecast-resource-chart-' ~ resource_key,
+                                    'forecast-chart-data',
+                                    item.label ~ ' Historical and Projected Utilization',
+                                    'Daily historical averages are solid; the selected model projection is dashed. Values are shown against the documented capacity baseline.',
+                                    mode='resource',
+                                    resource_key=resource_key,
+                                    resource_label=item.label
+                                ) }}
+                            {% else %}
+                                <div class="{{ analysis_surface.empty_evidence_classes('p-5') }}">
+                                    {% set empty_state_icon = 'line-chart' %}
+                                    {% set empty_state_title = item.label ~ ' Forecast Unavailable' %}
+                                    {% set empty_state_description = item.empty_reason %}
+                                    {% include "components/states/_empty_state.html" %}
                                 </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="{{ analysis_surface.interpretation_grid_classes() }}">
+                            <div class="px-4 py-4 sm:px-5">
+                                <p class="{{ analysis_surface.metric_label_classes() }}">How To Read</p>
+                                <p class="mt-2 text-xs leading-5 text-content-secondary">The latest daily average is the final committed daily observation, not an instantaneous reading. Historical Signal Quality describes sample completeness and stability, not model accuracy.</p>
+                            </div>
+                            <div class="px-4 py-4 sm:px-5">
+                                <p class="{{ analysis_surface.metric_label_classes() }}">Recommended Action</p>
+                                <p class="mt-2 text-xs leading-5 text-content-secondary">{% if tone == 'critical' %}Prioritize capacity expansion or workload reduction before the Critical ETA and validate the projection after the next committed snapshot.{% elif tone == 'warning' %}Review growth drivers and schedule remediation before the Warning ETA.{% elif tone == 'unknown' %}Restore history or capacity evidence before making a forecast-based capacity decision.{% else %}Continue monitoring. No immediate capacity change is required unless trend or threshold timing worsens.{% endif %}</p>
                             </div>
                         </div>
                     </div>
                 {% else %}
-                    {% set empty_state_icon = resource_icon %}
-                    {% set empty_state_title = resource_label ~ ' Unavailable' %}
-                    {% set empty_state_description = 'The selected snapshot does not contain enough history or capacity evidence for this resource.' %}
-                    {% include "components/states/_empty_state.html" %}
+                    <div class="{{ analysis_surface.empty_evidence_classes('p-5') }}">
+                        {% set empty_state_icon = 'database-zap' %}
+                        {% set empty_state_title = resource_label ~ ' Forecast Missing' %}
+                        {% set empty_state_description = 'The committed snapshot does not contain this resource forecast. Refresh the forecast materialization.' %}
+                        {% include "components/states/_empty_state.html" %}
+                    </div>
                 {% endif %}
             </div>
         {% endfor %}
@@ -192,144 +164,61 @@
              data-analytics-tab-panel="trend"
              x-show="activeTab === 'trend'"
              x-bind:hidden="activeTab !== 'trend'"
-             hidden
-             x-cloak>
-            <div class="space-y-4">
-                <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                            <i data-lucide="line-chart" class="h-5 w-5"></i>
-                        </span>
-                        <div>
-                            <h3 class="text-lg font-semibold text-content-primary">Trend Analysis</h3>
-                            <p class="mt-1 text-sm leading-6 text-content-muted">Compare projected utilization and threshold timing across every forecast domain.</p>
-                        </div>
+             {% if initial_tab != 'trend' %}hidden x-cloak{% endif %}>
+            <div class="space-y-5">
+                <header class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="line-chart" class="h-5 w-5"></i></span>
+                        <div><h3 class="text-lg font-semibold text-content-primary">Trend Analysis</h3><p class="mt-1 text-sm leading-6 text-content-muted">Compare the available resource projections, threshold timing, and evidence quality across the selected scope.</p></div>
                     </div>
-                    <div class="flex flex-wrap gap-2">
-                        {{ table_label.metadata_label(selected_history_window ~ ' history', 'history') }}
-                        {{ table_label.metadata_label(selected_forecast_horizon ~ ' horizon', 'calendar-range') }}
-                        {% if forecast_payload.generated_at %}
-                            {{ table_label.metadata_label('Generated ' ~ (forecast_payload.generated_at|user_datetime(include_seconds=true)), 'clock') }}
-                        {% endif %}
+                    <div class="flex flex-wrap gap-2">{{ table_label.metadata_label(selected_history_window ~ ' History', 'history') }}{{ table_label.metadata_label(selected_forecast_horizon ~ ' Horizon', 'calendar-range') }}{{ table_label.metadata_label(forecast_payload.method_label, 'sigma') }}</div>
+                </header>
+
+                <div class="{{ analysis_surface.evidence_shell_classes() }}">
+                    <div class="{{ analysis_surface.metric_grid_classes(4) }}">
+                        {% for label, value, helper, icon in [
+                            ('Forecasted Resources', forecast_payload.summary.forecasted_resources|default(0), 'Valid history and capacity baseline', 'circle-check'),
+                            ('Unavailable Resources', forecast_payload.summary.unavailable_resources|default(0), 'Missing history or capacity evidence', 'circle-help'),
+                            ('Warning Resources', forecast_payload.summary.warning_count|default(0), 'Projected at or above warning', 'triangle-alert'),
+                            ('Critical Resources', forecast_payload.summary.critical_count|default(0), 'Projected at or above critical', 'shield-alert')
+                        ] %}
+                            <div class="{{ analysis_surface.metric_cell_classes() }}"><div class="flex items-start gap-2.5"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><div><p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p><p class="mt-1 text-lg font-semibold text-content-primary">{{ value }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p></div></div></div>
+                        {% endfor %}
                     </div>
                 </div>
 
-                <div class="grid overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover sm:grid-cols-2 xl:grid-cols-4">
-                    {% for label, value, helper, icon in [
-                        ('Tracked Resources', forecast_payload.summary.total_resources|default(0), 'Forecast domains included', 'boxes'),
-                        ('Warning Resources', forecast_payload.summary.warning_count|default(0), 'Projected above warning', 'triangle-alert'),
-                        ('Critical Resources', forecast_payload.summary.critical_count|default(0), 'Projected above critical', 'shield-alert'),
-                        ('Highest Projection', forecast_payload.summary.highest_projected_percent|default(0) ~ '%', forecast_payload.summary.highest_projected_label|default('Not projected', true), 'gauge')
-                    ] %}
-                        <div class="min-w-0 px-4 py-3 {% if not loop.first %}border-t border-outline-subtle sm:border-l sm:border-t-0{% endif %}">
-                            <div class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-wide text-content-muted">
-                                <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>{{ label }}
-                            </div>
-                            <p class="mt-1.5 truncate text-lg font-semibold text-content-primary" title="{{ value }}">{{ value }}</p>
-                            <p class="mt-1 truncate text-xs text-content-muted" title="{{ helper }}">{{ helper }}</p>
-                        </div>
-                    {% endfor %}
-                </div>
+                {% if forecast_payload.has_data %}
+                    {{ forecast_chart.render(
+                        'forecast-trend-chart',
+                        'forecast-chart-data',
+                        'Combined Historical and Projected Utilization',
+                        'Canonical resource colors identify CPU, memory, storage, and pods. Historical lines are solid and projections are dashed.',
+                        mode='combined',
+                        height_class='h-[380px]'
+                    ) }}
+                {% else %}
+                    <div class="{{ analysis_surface.empty_evidence_classes('p-5') }}">{% set empty_state_icon = 'line-chart' %}{% set empty_state_title = 'No Forecast Data Available' %}{% set empty_state_description = forecast_payload.message %}{% include "components/states/_empty_state.html" %}</div>
+                {% endif %}
 
-                <div class="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
-                    {% if has_data %}
-                        <script id="forecast-trend-chart-data" type="application/json">{{ chart_payload | tojson }}</script>
-                        <div class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
-                            <div class="flex flex-col gap-2 border-b border-outline-subtle px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                                <div>
-                                    <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-content-muted">Combined Forecast</p>
-                                    <h4 class="mt-1 text-base font-semibold text-content-primary">Historical and projected utilization</h4>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">Solid lines show observed samples; dashed lines continue from the historical boundary.</p>
-                                </div>
-                                {{ table_label.metadata_label('Utilization %', 'percent') }}
-                            </div>
-                            <div class="h-[360px] p-4">
-                                <canvas id="forecast-trend-chart" aria-label="Forecast trend analysis chart"></canvas>
-                            </div>
-                            <div class="grid border-t border-outline-subtle bg-surface-card/60 lg:grid-cols-2">
-                                <div class="flex items-start gap-3 px-4 py-3">
-                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                        <i data-lucide="scan-search" class="h-4 w-4"></i>
-                                    </span>
-                                    <div class="min-w-0">
-                                        <p class="text-xs font-semibold text-content-primary">How To Read The Combined Forecast</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">Compare each solid historical line with its dashed projection. A steeper upward projection indicates faster capacity consumption; use the Resource Outlook panel to identify the affected domain and its Warning ETA.</p>
-                                    </div>
-                                </div>
-                                <div class="flex items-start gap-3 border-t border-outline-subtle px-4 py-3 lg:border-l lg:border-t-0">
-                                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                        <i data-lucide="list-checks" class="h-4 w-4"></i>
-                                    </span>
-                                    <div class="min-w-0">
-                                        <p class="text-xs font-semibold text-content-primary">What To Do</p>
-                                        <p class="mt-1 text-xs leading-5 text-content-muted">Prioritize resources whose projected line approaches the {{ forecast_payload.chart.warning_threshold|default(75) }}% warning threshold. Validate growth drivers, review model confidence, and schedule capacity remediation before the nearest Warning ETA.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    {% else %}
-                        <div class="rounded-lg border border-outline-subtle bg-surface-hover p-4">
-                            {% set empty_state_icon = 'line-chart' %}
-                            {% set empty_state_title = 'No Forecast Data Available' %}
-                            {% set empty_state_description = forecast_payload.message|default('Forecast data will appear after the analytics worker commits enough historical samples and a valid capacity baseline.', true) %}
-                            {% include "components/states/_empty_state.html" %}
-                        </div>
-                    {% endif %}
-
-                    <div class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
-                        <div class="border-b border-outline-subtle px-4 py-3">
-                            <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-content-muted">Resource Outlook</p>
-                            <h4 class="mt-1 text-base font-semibold text-content-primary">Projection and Warning ETA</h4>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">The nearest warning timing is shown below each resource forecast.</p>
-                        </div>
-                        <div class="divide-y divide-outline-subtle">
-                            {% for resource_key, resource_label, resource_icon in resource_tabs[:4] %}
-                                {% set resource = namespace(item=none) %}
-                                {% for candidate in forecast_items %}{% if candidate.key == resource_key %}{% set resource.item = candidate %}{% endif %}{% endfor %}
-                                {% if resource.item %}
-                                    {% set item = resource.item %}
-                                    {% set item_tone = 'critical' if item.status == 'critical' else ('warning' if item.status == 'warning' else 'normal') %}
-                                    <div class="px-4 py-3">
-                                        <div class="flex items-start justify-between gap-3">
-                                            <div class="flex min-w-0 items-center gap-3">
-                                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
-                                                    <i data-lucide="{{ resource_icon }}" class="h-4 w-4"></i>
-                                                </span>
-                                                <div class="min-w-0">
-                                                    <p class="truncate text-sm font-semibold text-content-primary">{{ resource_label }}</p>
-                                                    <p class="mt-0.5 text-xs text-content-muted">{{ item.current_percent }}% current</p>
-                                                </div>
-                                            </div>
-                                            <div class="shrink-0 text-right">
-                                                <p class="text-base font-semibold text-content-primary">{{ item.projected_percent }}%</p>
-                                                {{ table_label.status_label(item.status_label|default(item.status|title), tone=item_tone, size='compact') }}
-                                            </div>
-                                        </div>
-                                        <div class="mt-3 flex items-center justify-between gap-3 border-t border-outline-subtle pt-2.5">
-                                            <div class="flex items-center gap-2 text-xs font-semibold text-content-secondary">
-                                                <i data-lucide="clock-3" class="h-3.5 w-3.5 text-kaori-primary"></i>
-                                                Warning ETA
-                                            </div>
-                                            <div class="min-w-0 text-right">
-                                                <p class="truncate text-xs font-semibold text-content-primary">{{ item.warning_eta.label|default('Not projected', true) }}</p>
-                                                <p class="mt-0.5 truncate text-[11px] text-content-muted">{{ item.warning_eta.date|default('No forecasted date', true) }}</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                {% endif %}
-                            {% endfor %}
-                        </div>
-                        <div class="grid grid-cols-2 border-t border-outline-subtle bg-surface-card/60">
-                            <div class="px-4 py-2.5">
-                                <p class="text-[10px] font-semibold uppercase tracking-wide text-status-warning">Warning</p>
-                                <p class="mt-0.5 text-sm font-semibold text-content-primary">{{ forecast_payload.chart.warning_threshold|default(75) }}%</p>
-                            </div>
-                            <div class="border-l border-outline-subtle px-4 py-2.5">
-                                <p class="text-[10px] font-semibold uppercase tracking-wide text-status-critical">Critical</p>
-                                <p class="mt-0.5 text-sm font-semibold text-content-primary">{{ forecast_payload.chart.critical_threshold|default(90) }}%</p>
-                            </div>
-                        </div>
+                <section class="{{ analysis_surface.evidence_shell_classes() }}">
+                    <header class="border-b border-outline-subtle px-4 py-3"><h4 class="{{ analysis_surface.section_title_classes() }}">Resource Outlook</h4><p class="{{ analysis_surface.section_description_classes() }}">Latest daily average, projected horizon value, threshold timing, and historical signal quality.</p></header>
+                    <div class="divide-y divide-outline-subtle">
+                        {% for item in forecast_items %}
+                            {% set item_tone = item.status if item.status in ['critical', 'warning', 'normal', 'unknown'] else 'unknown' %}
+                            <article class="grid gap-3 px-4 py-4 md:grid-cols-[minmax(0,1.2fr)_repeat(4,minmax(0,0.8fr))] md:items-center">
+                                <div class="flex min-w-0 items-center gap-3"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ item.icon }}" class="h-4 w-4"></i></span><div class="min-w-0"><p class="text-sm font-semibold text-content-primary">{{ item.label }}</p><p class="mt-0.5 text-xs text-content-muted">{{ item.comparison_label }}</p></div></div>
+                                <div><p class="{{ analysis_surface.metric_label_classes() }}">Latest Daily Average</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ item.latest_daily_average_display }}</p></div>
+                                <div><p class="{{ analysis_surface.metric_label_classes() }}">Projected</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ item.projected_display }}</p></div>
+                                <div><p class="{{ analysis_surface.metric_label_classes() }}">Warning / Critical ETA</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ item.warning_eta.label }} / {{ item.critical_eta.label }}</p></div>
+                                <div class="flex items-center justify-between gap-2 md:block"><div><p class="{{ analysis_surface.metric_label_classes() }}">Signal Quality</p><p class="mt-1 text-sm font-semibold text-content-primary">{{ item.signal_quality }}</p></div>{{ table_label.status_label(item.status_label, tone=item_tone, size='compact') }}</div>
+                            </article>
+                        {% endfor %}
                     </div>
+                </section>
+
+                <div class="{{ analysis_surface.interpretation_grid_classes() }}">
+                    <div class="px-4 py-4 sm:px-5"><p class="{{ analysis_surface.metric_label_classes() }}">How To Read</p><p class="mt-2 text-xs leading-5 text-content-secondary">Compare the slope and threshold timing across resources, but retain each panel's scope boundary. Namespace CPU, memory, and pods are demand shares against cluster capacity; namespace storage uses namespace claim capacity.</p></div>
+                    <div class="px-4 py-4 sm:px-5"><p class="{{ analysis_surface.metric_label_classes() }}">What To Do</p><p class="mt-2 text-xs leading-5 text-content-secondary">Prioritize the nearest threshold ETA, validate demand drivers, and treat Low or Unavailable Historical Signal Quality as a reason to gather evidence before committing capacity changes.</p></div>
                 </div>
             </div>
         </div>
@@ -340,41 +229,24 @@
              data-analytics-tab-panel="recommendations"
              x-show="activeTab === 'recommendations'"
              x-bind:hidden="activeTab !== 'recommendations'"
-             hidden
-             x-cloak>
+             {% if initial_tab != 'recommendations' %}hidden x-cloak{% endif %}>
             <div class="space-y-4">
-                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                    <div class="flex items-start gap-3">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="list-checks" class="h-5 w-5"></i></span>
-                        <div>
-                            <h3 class="text-lg font-semibold text-content-primary">Forecast Recommendations</h3>
-                            <p class="mt-1 text-sm leading-6 text-content-muted">Prioritized actions derived from projected utilization, threshold ETA, growth, and model confidence.</p>
-                        </div>
-                    </div>
-                    {{ table_label.metadata_label(forecast_payload.recommendation_count|default(0) ~ ' Actionable', 'sparkles') }}
-                </div>
+                <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div class="flex items-start gap-3"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="list-checks" class="h-5 w-5"></i></span><div><h3 class="text-lg font-semibold text-content-primary">Forecast Recommendations</h3><p class="mt-1 text-sm leading-6 text-content-muted">Prioritized actions derived from projected utilization, threshold ETA, weekly trend, and historical signal quality.</p></div></div>{{ table_label.metadata_label(forecast_payload.recommendation_count|default(0) ~ ' Actionable', 'sparkles') }}</header>
                 {% if forecast_payload.recommendation_cards %}
-                    <div class="overflow-hidden rounded-lg border border-outline-subtle"
-                         data-kaori-recommendation-pager
-                         data-page-size="3">
+                    <div class="overflow-hidden rounded-lg border border-outline-subtle bg-surface-card" data-kaori-recommendation-pager data-page-size="3">
                         <div class="divide-y divide-outline-subtle">
                             {% for recommendation in forecast_payload.recommendation_cards %}
                                 {% set priority_tone = 'critical' if recommendation.priority in ['P1', 'Critical'] else ('warning' if recommendation.priority in ['P2', 'Warning'] else 'info') %}
-                                <div class="flex flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between"
-                                     data-kaori-recommendation-item
-                                     {% if loop.index > 3 %}hidden{% endif %}>
+                                <article class="flex flex-col gap-4 px-4 py-4 lg:flex-row lg:items-center lg:justify-between" data-kaori-recommendation-item {% if loop.index > 3 %}hidden{% endif %}>
                                     <div class="flex min-w-0 items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ recommendation.icon }}" class="h-5 w-5"></i></span><div class="min-w-0"><div class="flex flex-wrap items-center gap-2">{{ table_label.status_label('Priority: ' ~ recommendation.priority, tone=priority_tone, size='compact') }}{{ table_label.metadata_label('Derived From: ' ~ recommendation.source_label|default('Forecast'), 'database-zap') }}</div><h4 class="mt-2 font-semibold text-content-primary">{{ recommendation.title }}</h4><p class="mt-1 text-sm leading-6 text-content-muted">{{ recommendation.description }}</p></div></div>
-                                    <a href="{{ recommendation.href|default(url_for('analytics.forecast')) }}" class="{{ table_ui.action_classes() }} shrink-0"><i data-lucide="arrow-right" class="h-4 w-4"></i>Review</a>
-                                </div>
+                                    <a href="{{ recommendation.href|default(url_for('analytics.forecast', tab='recommendations')) }}" class="{{ table_ui.action_classes() }} shrink-0"><i data-lucide="arrow-right" class="h-4 w-4"></i>Review</a>
+                                </article>
                             {% endfor %}
                         </div>
                         {{ recommendation_pager.controls(forecast_payload.recommendation_cards|length, 'Recommendations', 3) }}
                     </div>
                 {% else %}
-                    {% set empty_state_icon = 'check-circle-2' %}
-                    {% set empty_state_title = 'No Actionable Forecast Recommendation' %}
-                    {% set empty_state_description = 'Current projections do not require immediate capacity action.' %}
-                    {% include "components/states/_empty_state.html" %}
+                    {% set empty_state_icon = 'check-circle-2' %}{% set empty_state_title = 'No Actionable Forecast Recommendation' %}{% set empty_state_description = 'Current valid projections do not require immediate capacity action.' %}{% include "components/states/_empty_state.html" %}
                 {% endif %}
             </div>
         </div>
