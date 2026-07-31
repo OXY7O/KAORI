@@ -1,15 +1,15 @@
 # Kubernetes Operations Guidance Cards
 
-## Compact rail action
+## Compact side-rail headers
 
-Expandable guidance cards placed in narrow operation rails use `compact_action=true`.
+Expandable guidance cards placed in narrow Kubernetes Operations side rails use the shared `compact_action=true` contract.
 
-The compact variant:
+The compact header must:
 
-- keeps only the chevron visible;
-- removes `View Details` and `Collapse` text from the rail header;
-- preserves the native `<summary>` interaction and accessible label;
-- gives title and description the maximum available width;
-- keeps full action text available for wider workspace usages where it adds value.
+- keep the icon fixed at the far left;
+- give the title and description the full available middle column;
+- show only the chevron visually on the right;
+- retain accessible `View Details` and `Collapse` text through screen-reader-only labels;
+- keep the description below the title rather than squeezing both into a narrow horizontal flex row.
 
-This is the canonical presentation for ConfigMap and Secret operation guardrail cards when placed in a narrow context rail.
+This contract applies to ConfigMap create/update/delete and Secret create/replace/delete guidance cards. Wide workspace cards may continue to show visible action labels.
