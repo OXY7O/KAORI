@@ -23,18 +23,20 @@ def test_tls_registry_uses_governance_resource_registry_pattern() -> None:
     assert 'Host Coverage</th>' in table
     assert 'Ingress Usage</th>' in table
     assert 'w-full table-fixed' in table
-    assert 'w-[31%]' in table
-    assert 'w-[9%]' in table
+    assert 'w-[29%]' in table
+    assert 'w-[12%]' in table
     assert 'overflow-x-auto' not in table
     assert 'min-w-[78rem]' not in table
     assert 'Current State' not in table
     assert 'Coverage State' not in table
     assert 'CN ·' in table
     assert 'Issuer ·' not in table
-    assert 'hidden w-[14%]' in table
+    assert 'hidden w-[13%]' in table
     assert 'hidden w-[10%]' in table
     assert 'resource_detail_modal.detail_button' in table
     assert "'whitespace-nowrap'" in table
+    assert '<th class="w-[12%] px-3 py-3 text-right">Details</th>' in table
+    assert '<td class="px-3 py-3 text-right align-middle">' in table
     assert 'inline-flex h-9 w-9' not in table
     assert 'data-lucide="server"' in table
     assert 'Namespace · {{ record.namespace }}' in table

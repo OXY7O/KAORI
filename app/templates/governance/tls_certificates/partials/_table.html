@@ -18,12 +18,12 @@
         <table class="w-full table-fixed text-left text-sm text-content-secondary">
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th class="w-[31%] px-4 py-3 text-left">Certificate</th>
+                    <th class="w-[29%] px-4 py-3 text-left">Certificate</th>
                     <th class="w-[20%] px-4 py-3 text-left">Scope</th>
                     <th class="w-[16%] px-4 py-3 text-left">Validity</th>
-                    <th class="hidden w-[14%] px-4 py-3 text-left lg:table-cell">Host Coverage</th>
+                    <th class="hidden w-[13%] px-4 py-3 text-left lg:table-cell">Host Coverage</th>
                     <th class="hidden w-[10%] px-4 py-3 text-left xl:table-cell">Ingress Usage</th>
-                    <th class="w-[9%] px-4 py-3 text-right">Details</th>
+                    <th class="w-[12%] px-3 py-3 text-right">Details</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -87,7 +87,7 @@
                             <p class="truncate text-sm font-semibold text-content-primary">{{ (record.used_by or [])|length }} {{ 'Ingress' if (record.used_by or [])|length == 1 else 'Ingresses' }}</p>
                             <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ record.declared_host_count or 0 }} Declared Hosts</p>
                         </td>
-                        <td class="px-4 py-3 text-right align-middle">
+                        <td class="px-3 py-3 text-right align-middle">
                             {{ resource_detail_modal.detail_button(
                                 record.id,
                                 url_for('governance.tls_certificates_detail', certificate_id=record.id),
