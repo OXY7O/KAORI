@@ -205,7 +205,7 @@
                         <div class="space-y-3">
                             {{ detail_ui.detail_row('Last Collected', cluster.synced_at|user_datetime if cluster.synced_at else 'Not Collected') }}
                             {{ detail_ui.detail_row('Freshness Window', cluster.freshness_window_hours ~ ' Hours') }}
-                            {{ detail_ui.detail_row('Snapshot Source', cluster.snapshot_source) }}
+                            {{ detail_ui.detail_row('Snapshot Source', cluster.snapshot_source|replace('Database', 'DB'), nowrap=true) }}
                         </div>
                     {% endcall %}
                 </div>

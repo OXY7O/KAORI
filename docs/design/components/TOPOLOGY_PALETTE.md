@@ -16,20 +16,21 @@ All palette values live in `frontend/styles.css`. Templates and JavaScript consu
 | Configuration | ConfigMap, Secret |
 | Storage | PersistentVolumeClaim, PersistentVolume |
 
-Resources inside one domain remain distinguishable through icon, two-line name/type text, domain border, and size. Operational health remains a separate status dot using Normal, Warning, Critical, Info, or Unknown.
+Resources inside one domain remain distinguishable through a compact resource-type glyph, domain border, and size. Operational health remains a separate status dot using Normal, Warning, Critical, Info, or Unknown.
 
-## Readable Node Card
+## External Label Node
 
-Topology nodes use one consistent `round-rectangle` card shape. Avoid diamonds, tags, hexagons, and arrow-like bodies because they reduce the usable label area and make alignment unstable.
+Topology nodes use one consistent compact `round-rectangle` badge shape. Avoid diamonds, tags, hexagons, and arrow-like bodies because they make alignment unstable and compete with long Kubernetes identifiers.
 
-The canonical node card uses:
+The canonical node treatment uses:
 
 - a soft domain fill with a stronger domain border;
-- high-contrast domain text;
-- resource name on the first line and resource type on the second line;
+- a compact resource-type glyph centered inside the badge;
 - a small semantic status dot in the upper-right corner;
-- fixed minimum geometry so labels do not determine unpredictable polygon shapes;
-- wrapped text with a bounded label width.
+- the object name outside and below the badge as one readable line;
+- bounded ellipsis for exceptionally long identifiers;
+- the complete name and resource type in Resource List, search results, and Details;
+- layout calculation that includes the external label to reduce collisions.
 
 Containment relationships use quiet dashed orthogonal lines without arrowheads. Operational/dependency relationships retain colored arrows and only reveal text labels on hover, selection, explicit label mode, or highlighted paths.
 

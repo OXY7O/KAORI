@@ -508,8 +508,8 @@ span.inline-flex[class*='bg-kaori-soft'] {
 }
 
 /* Kubernetes operation option cards use the native checked state as the
- * visual authority. This avoids Alpine timing flashes and keeps exactly one
- * selected card obvious in both light and dark appearance. */
+ * visual authority. The selected card stays quiet: one border, one leading
+ * accent, and a compact state label rather than a high-contrast double ring. */
 .secret-type-choice:focus-within .secret-type-option {
     outline: 2px solid var(--kaori-outline-focus);
     outline-offset: 2px;
@@ -518,19 +518,17 @@ span.inline-flex[class*='bg-kaori-soft'] {
 .secret-type-input:checked + .secret-type-option {
     border-color: var(--kaori-brand-primary);
     background-color: var(--kaori-surface-selected);
-    box-shadow:
-        0 0 0 2px var(--kaori-brand-primary),
-        inset 0 0 0 1px var(--kaori-brand-border);
+    box-shadow: inset 3px 0 0 var(--kaori-brand-primary);
 }
 
 .secret-type-input:checked + .secret-type-option .secret-type-icon {
-    border-color: var(--kaori-brand-primary);
-    background-color: var(--kaori-brand-primary);
-    color: #ffffff;
+    border-color: var(--kaori-brand-border);
+    background-color: var(--kaori-surface-card);
+    color: var(--kaori-brand-primary);
 }
 
 .secret-type-input:checked + .secret-type-option .secret-type-title {
-    color: var(--kaori-brand-primary);
+    color: var(--kaori-content-primary);
 }
 
 .secret-type-selected-indicator {

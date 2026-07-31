@@ -51,4 +51,4 @@ Topology payload cache key includes the committed generation signature and norma
 
 ## Readable Graph Node Refinement
 
-The canonical graph uses uniform rounded node cards, soft domain surfaces, two-line name/type labels, bounded wrapping, and a small semantic status dot. Containment lines are quiet dashed orthogonal connectors without arrowheads; dependency labels remain progressive-disclosure content.
+The canonical graph uses compact rounded domain badges with one-line external object-name labels, bounded ellipsis, and a semantic status dot. Full names and resource types remain available through Resource List and Details. Containment lines are quiet dashed orthogonal connectors without arrowheads; dependency labels remain progressive-disclosure content.

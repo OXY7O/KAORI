@@ -90,11 +90,14 @@ def test_topology_palette_is_tokenized_and_contains_no_raw_js_colors() -> None:
     assert re.search(r'(?<![\w-])#[0-9a-fA-F]{3,8}\b', script) is None
     assert 'five-domain palette' in contract
     assert "shape: 'round-rectangle'" in script
-    assert "'text-wrap': 'wrap'" in script
-    assert "data.display_label = `${data.base_label}\\n${data.type_label}`" in script
+    assert "'text-wrap': 'ellipsis'" in script
+    assert "'text-valign': 'bottom'" in script
+    assert "'text-max-width': 220" in script
+    assert 'nodeBadgeSvg' in script
+    assert 'data.display_label = data.base_label' in script
     assert "selector: 'edge[relationship = \"contains\"]'" in script
     assert "'target-arrow-shape': 'none'" in script
-    assert 'Readable Node Card' in contract
+    assert 'External Label Node' in contract
 
 
 def test_topology_hero_does_not_duplicate_snapshot_context() -> None:

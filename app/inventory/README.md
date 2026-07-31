@@ -157,7 +157,7 @@ Canonical Hero → Snapshot Context → Node Resource Posture → Compact Table 
 
 The compact table groups Node identity, cluster, readiness, role, capacity, and network evidence. Role is metadata, readiness is operational status, and technical identifiers use the shared Technical Value component. Detail requests remain on demand and read the latest committed generation; they do not query the Kubernetes API live.
 
-- Readable topology node cards use uniform rounded geometry, soft domain surfaces, two-line labels, and quiet containment connectors.
+- Readable topology nodes use compact domain badges with one-line external name labels, bounded ellipsis, and quiet containment connectors. Full names and resource types remain available in Resource List and Details.
 - Inventory detail drawers use concise section descriptions and proportional technical value typography by default.
 
 

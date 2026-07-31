@@ -74,6 +74,8 @@ def test_compact_cluster_table_has_details_button_and_shared_right_drawer() -> N
     assert "'Committed inventory overview.'" in content
     assert "'Platform and registration context for the selected inventory source.'" not in content
     assert "'Collection boundary and freshness for the committed generation.'" not in content
+    assert "cluster.snapshot_source|replace('Database', 'DB')" in content
+    assert 'nowrap=true' in content
 
 
 def test_cluster_table_pagination_uses_resource_case_and_visible_rows_label() -> None:

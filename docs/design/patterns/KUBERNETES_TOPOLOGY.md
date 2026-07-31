@@ -53,4 +53,4 @@ A truncated graph uses a warning callout with omitted counts. Renderer errors pr
 
 ## Readable Graph Node Refinement
 
-The canonical graph uses uniform rounded node cards, soft domain surfaces, two-line name/type labels, bounded wrapping, and a small semantic status dot. Containment lines are quiet dashed orthogonal connectors without arrowheads; dependency labels remain progressive-disclosure content.
+The canonical graph uses compact rounded domain badges with a resource-type glyph and semantic status dot. The object name is rendered below the badge as one external line with bounded ellipsis, while the complete name and type remain available in Resource List and Details. Containment lines are quiet dashed orthogonal connectors without arrowheads; dependency labels remain progressive-disclosure content.

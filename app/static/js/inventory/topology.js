@@ -123,7 +123,6 @@
         info: cssToken('--kaori-status-info', 'CanvasText'),
         unknown: cssToken('--kaori-status-unknown', 'GrayText'),
     }[tone] || cssToken('--kaori-status-unknown', 'GrayText'))
-    const statusDotCache = new Map()
 
     const humanizeType = (value) => ({
         cluster: 'Cluster', namespace: 'Namespace', node: 'Node', workload: 'Workload', pod: 'Pod',
@@ -143,15 +142,23 @@
         .replaceAll('-', ' ')
         .replace(/\b[a-z]/g, (character) => character.toUpperCase())
 
-    const statusDotSvg = (tone) => {
-        const normalized = ['healthy', 'warning', 'critical', 'info'].includes(tone) ? tone : 'unknown'
-        const color = statusDotColor(normalized)
-        const outline = cssToken('--kaori-surface-card', 'Canvas')
-        const cacheKey = `${normalized}:${color}:${outline}`
-        if (statusDotCache.has(cacheKey)) return statusDotCache.get(cacheKey)
-        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" fill="${color}" stroke="${outline}" stroke-width="2"/></svg>`
+    const nodeBadgeCache = new Map()
+    const nodeTypeGlyph = (type) => ({
+        cluster: 'CL', namespace: 'NS', node: 'ND', workload: 'WL', pod: 'PD',
+        service: 'SV', ingress: 'IN', configmap: 'CM', secret: 'SC', pvc: 'PC', pv: 'PV',
+    }[type] || 'RS')
+
+    const nodeBadgeSvg = (type, tone) => {
+        const visual = getTypeVisual(type)
+        const normalizedTone = ['healthy', 'warning', 'critical', 'info'].includes(tone) ? tone : 'unknown'
+        const statusColor = statusDotColor(normalizedTone)
+        const statusOutline = cssToken('--kaori-surface-card', 'Canvas')
+        const glyph = nodeTypeGlyph(type)
+        const cacheKey = `${type}:${normalizedTone}:${visual.text}:${statusColor}:${statusOutline}`
+        if (nodeBadgeCache.has(cacheKey)) return nodeBadgeCache.get(cacheKey)
+        const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="52" viewBox="0 0 96 52"><text x="48" y="32" text-anchor="middle" font-family="Inter, sans-serif" font-size="16" font-weight="700" fill="${visual.text}">${glyph}</text><circle cx="84" cy="10" r="5" fill="${statusColor}" stroke="${statusOutline}" stroke-width="2"/></svg>`
         const uri = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`
-        statusDotCache.set(cacheKey, uri)
+        nodeBadgeCache.set(cacheKey, uri)
         return uri
     }
 
@@ -341,13 +348,13 @@
                     'background-color': (node) => getTypeVisual(node.data('type')).fill,
                     'border-color': (node) => getTypeVisual(node.data('type')).border,
                     'border-width': 2,
-                    'color': (node) => getTypeVisual(node.data('type')).text,
+                    'color': labelText,
                     'font-family': 'Inter, sans-serif',
                     'font-size': 10,
                     'font-weight': 600,
-                    'height': 56,
+                    'height': 44,
                     'label': workspaceState.nodeLabels ? 'data(display_label)' : '',
-                    'line-height': 1.35,
+                    'line-height': 1.2,
                     'min-zoomed-font-size': 8,
                     'overlay-opacity': 0,
                     'padding': 0,
@@ -357,26 +364,33 @@
                     'shadow-offset-x': 0,
                     'shadow-offset-y': 3,
                     'shadow-opacity': 0.10,
+                    'text-background-color': labelBackground,
+                    'text-background-opacity': 0.94,
+                    'text-background-padding': 3,
+                    'text-background-shape': 'roundrectangle',
+                    'text-border-color': cssToken('--kaori-outline-subtle', 'GrayText'),
+                    'text-border-opacity': 0.8,
+                    'text-border-width': 1,
                     'text-halign': 'center',
                     'text-justification': 'center',
-                    'text-margin-y': 0,
-                    'text-max-width': 124,
-                    'text-overflow-wrap': 'anywhere',
-                    'text-valign': 'center',
-                    'text-wrap': 'wrap',
-                    'width': 152,
-                    'background-image': (node) => statusDotSvg(node.data('status_tone')),
-                    'background-width': 12,
-                    'background-height': 12,
-                    'background-position-x': '94%',
-                    'background-position-y': '13%',
+                    'text-margin-y': 11,
+                    'text-max-width': 220,
+                    'text-overflow-wrap': 'normal',
+                    'text-valign': 'bottom',
+                    'text-wrap': 'ellipsis',
+                    'width': 76,
+                    'background-image': (node) => nodeBadgeSvg(node.data('type'), node.data('status_tone')),
+                    'background-width': '100%',
+                    'background-height': '100%',
+                    'background-position-x': '50%',
+                    'background-position-y': '50%',
                     'background-repeat': 'no-repeat',
                     'background-fit': 'none',
                     'background-image-containment': 'inside',
                 },
             },
-            { selector: 'node[type = "cluster"]', style: { 'font-size': 11, 'font-weight': 700, 'height': 62, 'text-max-width': 144, 'width': 176 } },
-            { selector: 'node[type = "namespace"]', style: { 'height': 58, 'text-max-width': 132, 'width': 164 } },
+            { selector: 'node[type = "cluster"]', style: { 'font-size': 11, 'font-weight': 700, 'height': 52, 'text-max-width': 240, 'width': 96 } },
+            { selector: 'node[type = "namespace"]', style: { 'height': 48, 'text-max-width': 230, 'width': 88 } },
             {
                 selector: 'edge',
                 style: {
@@ -448,7 +462,7 @@
             const data = { ...(node.data || {}) }
             data.base_label = String(data.label || data.id || '').trim()
             data.type_label = humanizeType(data.type)
-            data.display_label = `${data.base_label}\n${data.type_label}`
+            data.display_label = data.base_label
             const parent = data.parent
             delete data.parent
             if (parent && nodeIds.has(parent) && data.id) {
@@ -641,9 +655,9 @@
             const base = node.data('base_label') || node.data('label') || node.id()
             if (collapsedNodeIds.has(node.id())) {
                 const count = descendantsOf(node.id()).size
-                node.data('display_label', `${base}  +${count}\n${node.data('type_label') || humanizeType(node.data('type'))}`)
+                node.data('display_label', `${base} (+${count})`)
             } else {
-                node.data('display_label', `${base}\n${node.data('type_label') || humanizeType(node.data('type'))}`)
+                node.data('display_label', base)
             }
         })
     }
