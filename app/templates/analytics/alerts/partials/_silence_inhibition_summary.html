@@ -1,104 +1,32 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/table_label.html" as table_label %}
-<div>
-    <div class="grid divide-y divide-outline-subtle xl:grid-cols-2 xl:divide-x xl:divide-y-0">
-        <div class="p-5 sm:p-6">
-            <div class="flex items-start justify-between gap-3">
-                <div>
-                    <h4 class="text-sm font-semibold text-content-primary">Active Silence Scope</h4>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Matchers and namespaces currently excluded from notification delivery.</p>
-                </div>
-                {{ table_label.status_label(silence_summary.level|default('unknown')|title, tone=silence_summary.level|default('unknown'), size='compact') }}
-            </div>
-            <dl class="mt-4 grid grid-cols-3 divide-x divide-outline-subtle rounded-lg bg-surface-hover">
-                {% for label, value in [
-                    ('Active', silence_summary.active_silences),
-                    ('Matched', silence_summary.matched_alerts),
-                    ('Pending', silence_summary.pending_silences)
-                ] %}
-                    <div class="px-3 py-3 text-center">
-                        <dt class="text-xs text-content-muted">{{ label }}</dt>
-                        <dd class="mt-1 text-lg font-semibold text-content-primary">{{ value }}</dd>
-                    </div>
-                {% endfor %}
+{% set silence_tone = table_label.semantic_tone(silence_summary.level|default('unknown'))|trim %}
+{% set inhibition_tone = table_label.semantic_tone(inhibition_summary.level|default('unknown'))|trim %}
+<section class="{{ analysis_surface.snapshot_shell_classes() }}">
+    <header class="{{ analysis_surface.snapshot_header_classes() }}">
+        <div class="flex min-w-0 items-start gap-3"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="shield-minus" class="h-4 w-4"></i></span><div class="min-w-0"><h3 class="text-lg font-semibold text-content-primary">Suppression Evidence</h3><p class="mt-1 text-sm leading-6 text-content-muted">Active silence scope and inhibition policy evidence from Alertmanager.</p></div></div>
+        <div class="flex flex-wrap items-center gap-2">{{ table_label.status_label(silence_summary.label, silence_tone, size='compact') }}{{ table_label.status_label(inhibition_summary.label, inhibition_tone, size='compact') }}</div>
+    </header>
+    <div class="grid lg:grid-cols-2">
+        <section class="p-5 sm:p-6">
+            <div class="flex items-start justify-between gap-3"><div><h4 class="text-sm font-semibold text-content-primary">Active Silence Scope</h4><p class="mt-1 text-xs leading-5 text-content-muted">Matchers and namespaces excluded from notification delivery.</p></div>{{ table_label.status_label(silence_summary.level|default('unknown')|title, silence_tone, size='compact') }}</div>
+            <dl class="mt-4 grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-3">
+                {% for label, value in [('Active', silence_summary.active_silences), ('Matched', silence_summary.matched_alerts), ('Pending', silence_summary.pending_silences)] %}<div class="bg-surface-card px-4 py-3"><dt class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</dt><dd class="mt-1 text-lg font-semibold text-content-primary">{{ value }}</dd></div>{% endfor %}
             </dl>
-            {% if silence_summary.silenced_matchers %}
-                <div class="mt-4 flex flex-wrap gap-2">
-                    {% for matcher in silence_summary.silenced_matchers %}
-                        {{ table_label.metadata_label(matcher, icon='filter', wrap=true, size='compact') }}
-                    {% endfor %}
-                </div>
-            {% else %}
-                <p class="mt-4 text-sm text-content-muted">No active silence matcher was detected.</p>
-            {% endif %}
-            {% if silence_summary.silenced_namespaces %}
-                <div class="mt-4 border-t border-outline-subtle pt-4">
-                    <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">Affected Namespaces</p>
-                    <div class="mt-2 flex flex-wrap gap-2">
-                        {% for namespace in silence_summary.silenced_namespaces %}
-                            {{ table_label.metadata_label(namespace, icon='box', wrap=true, size='compact') }}
-                        {% endfor %}
-                    </div>
-                </div>
-            {% endif %}
-        </div>
-
-        <div class="p-5 sm:p-6">
-            <div class="flex items-start justify-between gap-3">
-                <div>
-                    <h4 class="text-sm font-semibold text-content-primary">Inhibition Policy Readiness</h4>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Validate whether inhibition rules are available and matching the intended alert relationships.</p>
-                </div>
-                {{ table_label.status_label(inhibition_summary.label, tone=inhibition_summary.level|default('info'), size='compact') }}
-            </div>
-            <dl class="mt-4 grid grid-cols-2 divide-x divide-outline-subtle rounded-lg bg-surface-hover">
-                <div class="px-4 py-3">
-                    <dt class="text-xs text-content-muted">Rules Detected</dt>
-                    <dd class="mt-1 text-lg font-semibold text-content-primary">{{ inhibition_summary.rules_detected }}</dd>
-                </div>
-                <div class="px-4 py-3">
-                    <dt class="text-xs text-content-muted">Matched Alerts</dt>
-                    <dd class="mt-1 text-lg font-semibold text-content-primary">{{ inhibition_summary.matched_alerts }}</dd>
-                </div>
-            </dl>
-            {% if inhibition_summary.source_equal_labels %}
-                <div class="mt-4 flex flex-wrap gap-2">
-                    {% for label in inhibition_summary.source_equal_labels %}
-                        {{ table_label.metadata_label(label, icon='equal', wrap=true, size='compact') }}
-                    {% endfor %}
-                </div>
-            {% else %}
-                <p class="mt-4 text-sm leading-6 text-content-muted">{{ inhibition_summary.description }}</p>
-            {% endif %}
-        </div>
+            {% if silence_summary.silenced_matchers %}<div class="mt-4 flex flex-wrap gap-2">{% for matcher in silence_summary.silenced_matchers %}{{ table_label.metadata_label(matcher, 'filter', wrap=true, size='compact') }}{% endfor %}</div>{% else %}<p class="mt-4 text-sm text-content-muted">No active silence matcher was detected.</p>{% endif %}
+            {% if silence_summary.silenced_namespaces %}<div class="mt-4 border-t border-outline-subtle pt-4"><p class="{{ analysis_surface.metric_label_classes() }}">Affected Namespaces</p><div class="mt-2 flex flex-wrap gap-2">{% for namespace in silence_summary.silenced_namespaces %}{{ table_label.metadata_label(namespace, 'box', wrap=true, size='compact') }}{% endfor %}</div></div>{% endif %}
+        </section>
+        <section class="border-t border-outline-subtle p-5 sm:p-6 lg:border-l lg:border-t-0">
+            <div class="flex items-start justify-between gap-3"><div><h4 class="text-sm font-semibold text-content-primary">Inhibition Policy Readiness</h4><p class="mt-1 text-xs leading-5 text-content-muted">Rules and matched alerts that suppress lower-priority notifications.</p></div>{{ table_label.status_label(inhibition_summary.label, inhibition_tone, size='compact') }}</div>
+            <dl class="mt-4 grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2"><div class="bg-surface-card px-4 py-3"><dt class="{{ analysis_surface.metric_label_classes() }}">Rules Detected</dt><dd class="mt-1 text-lg font-semibold text-content-primary">{{ inhibition_summary.rules_detected }}</dd></div><div class="bg-surface-card px-4 py-3"><dt class="{{ analysis_surface.metric_label_classes() }}">Matched Alerts</dt><dd class="mt-1 text-lg font-semibold text-content-primary">{{ inhibition_summary.matched_alerts }}</dd></div></dl>
+            {% if inhibition_summary.source_equal_labels %}<div class="mt-4 flex flex-wrap gap-2">{% for label in inhibition_summary.source_equal_labels %}{{ table_label.metadata_label(label, 'equal', wrap=true, size='compact') }}{% endfor %}</div>{% else %}<p class="mt-4 text-sm leading-6 text-content-muted">{{ inhibition_summary.description }}</p>{% endif %}
+        </section>
     </div>
-
     {% if silence_summary['items'] %}
         <div class="border-t border-outline-subtle">
-            <div class="flex items-center justify-between gap-3 bg-surface-hover px-5 py-3 sm:px-6">
-                <div>
-                    <h4 class="text-sm font-semibold text-content-primary">Active Silence Records</h4>
-                    <p class="mt-1 text-xs text-content-muted">Current suppression windows and their affected alert count.</p>
-                </div>
-                {{ table_label.metadata_label(silence_summary['items']|length ~ ' Records', size='compact') }}
-            </div>
-            <div class="divide-y divide-outline-subtle">
-                {% for item in silence_summary['items'] %}
-                    <div class="grid gap-3 px-5 py-4 text-sm sm:px-6 md:grid-cols-3">
-                        <div class="min-w-0">
-                            <p class="font-semibold text-content-primary">{{ item.created_by }}</p>
-                            <p class="mt-1 break-words text-xs leading-5 text-content-muted">{{ item.comment }}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-content-muted">Suppression Window</p>
-                            <p class="mt-1 break-words font-semibold text-content-primary">{{ item.starts_at }} → {{ item.ends_at }}</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-content-muted">Matched Alerts</p>
-                            <p class="mt-1 font-semibold text-content-primary">{{ item.matched_alerts }}</p>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
+            <div class="flex items-center justify-between gap-3 bg-surface-hover px-5 py-3 sm:px-6"><div><h4 class="text-sm font-semibold text-content-primary">Active Silence Records</h4><p class="mt-1 text-xs text-content-muted">Current suppression windows and their affected alert count.</p></div>{{ table_label.metadata_label(silence_summary['items']|length ~ ' Records', size='compact') }}</div>
+            <div class="divide-y divide-outline-subtle">{% for item in silence_summary['items'] %}<article class="grid gap-3 bg-surface-card px-5 py-4 text-sm sm:px-6 md:grid-cols-3"><div class="min-w-0"><p class="font-semibold text-content-primary">{{ item.created_by }}</p><p class="mt-1 break-words text-xs leading-5 text-content-muted">{{ item.comment }}</p></div><div><p class="text-xs text-content-muted">Suppression Window</p><p class="mt-1 break-words font-semibold text-content-primary">{{ item.starts_at }} → {{ item.ends_at }}</p></div><div><p class="text-xs text-content-muted">Matched Alerts</p><p class="mt-1 font-semibold text-content-primary">{{ item.matched_alerts }}</p></div></article>{% endfor %}</div>
         </div>
     {% endif %}
-</div>
+    <div class="{{ analysis_surface.attention_strip_classes() }}"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="shield-check" class="h-4 w-4"></i></span><div><p class="text-sm font-semibold text-content-primary">Suppression Review Boundary</p><p class="mt-1 text-xs leading-5 text-content-muted">A silenced or inhibited alert remains operational evidence even when notification delivery is suppressed.</p></div></div>
+</section>

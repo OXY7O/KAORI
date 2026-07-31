@@ -165,13 +165,14 @@ def test_persisted_runtime_health_is_advisory_for_worker_and_page_dispatch() -> 
 def test_optional_alert_anomaly_failures_are_visible_as_partial_data() -> None:
     anomalies = _read('app/analytics/alerts/anomalies.py')
     application = _read('app/analytics/alerts/application.py')
-    source_status = _read('app/templates/analytics/alerts/partials/_source_status.html')
+    filters = _read('app/templates/analytics/alerts/partials/_filters.html')
 
     assert '-> tuple[list[dict[str, Any]], dict[str, Any]]' in anomalies
     assert "'partial': True" in anomalies
     assert 'collection_warnings' in application
     assert 'Prometheus Anomaly Candidates Are Unavailable' in application
-    assert 'collection_warnings|default([])' in source_status
+    assert 'collection_warnings|default([])' in filters
+    assert 'Source Evidence Incomplete' in filters
 
 
 def test_prometheus_clients_are_created_lazily_for_cluster_scoped_queries() -> None:

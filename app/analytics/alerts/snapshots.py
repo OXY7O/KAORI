@@ -94,7 +94,6 @@ def _empty_alerts_snapshot() -> AlertsSnapshot:
             'level': 'unavailable',
             'label': 'No Alert Source',
             'description': 'No alert source health signal is available.',
-            'class': 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
             'icon': 'circle-off',
             'checks': [],
             'selected_source': 'auto',

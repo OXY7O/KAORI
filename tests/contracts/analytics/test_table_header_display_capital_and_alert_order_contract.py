@@ -10,7 +10,7 @@ def test_active_alert_state_follows_scope_and_source_in_header_and_row() -> None
     row = (ALERTS_PARTIALS / "_alerts_table_row.html").read_text(encoding="utf-8")
     main_row = row.split('<div id="{{ row_key }}-details"', 1)[0]
 
-    assert table.index(">Scope &amp; Source</div>") < table.index(">State</div>")
+    assert table.index("evidence_list.header_cell('Scope & Source'") < table.index("evidence_list.header_cell('State'")
     assert main_row.index("{{ alert.namespace }}") < main_row.index("alert.status|title")
 
 

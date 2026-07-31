@@ -5,40 +5,38 @@
 {% set critical_alerts = critical_alerts|default(hero_summary.get('critical_alerts', 0)) %}
 {% set warning_alerts = warning_alerts|default(hero_summary.get('warning_alerts', 0)) %}
 {% set anomaly_count = anomaly_count|default(hero_summary.get('detected_anomalies', 0)) %}
+{% set evidence_incomplete = collection_warnings|default([])|length > 0 or anomaly_source_status.partial|default(false) %}
 {% if dependency_blocker %}
-    {% set posture_value = "Blocked" %}
+    {% set posture_value = 'Blocked' %}
     {% set posture_desc = dependency_blocker.title %}
-    {% set posture_tone = "warning" %}
-    {% set posture_icon = "lock-keyhole" %}
+    {% set posture_tone = 'warning' %}
+{% elif not source_status.connected|default(false) %}
+    {% set posture_value = 'Unknown' %}
+    {% set posture_desc = 'Alert source evidence is unavailable.' %}
+    {% set posture_tone = 'unknown' %}
 {% elif critical_alerts > 0 %}
-    {% set posture_value = "Critical" %}
-    {% set posture_desc = "Critical alerts need immediate review." %}
-    {% set posture_tone = "critical" %}
-    {% set posture_icon = "shield-alert" %}
+    {% set posture_value = 'Critical' %}
+    {% set posture_desc = 'Critical alert evidence requires immediate investigation.' %}
+    {% set posture_tone = 'critical' %}
 {% elif warning_alerts > 0 or anomaly_count > 0 %}
-    {% set posture_value = "Watch" %}
-    {% set posture_desc = "Alert or anomaly signals need review." %}
-    {% set posture_tone = "warning" %}
-    {% set posture_icon = "triangle-alert" %}
-{% elif source_status.connected %}
-    {% set posture_value = "Healthy" %}
-    {% set posture_desc = "Alert sources and signals are normal." %}
-    {% set posture_tone = "normal" %}
-    {% set posture_icon = "circle-check" %}
+    {% set posture_value = 'Review' %}
+    {% set posture_desc = 'Warning alerts or anomaly candidates require operational review.' %}
+    {% set posture_tone = 'warning' %}
+{% elif evidence_incomplete %}
+    {% set posture_value = 'Evidence Incomplete' %}
+    {% set posture_desc = 'Some signal sources are unavailable; do not treat missing evidence as healthy.' %}
+    {% set posture_tone = 'warning' %}
 {% else %}
-    {% set posture_value = "No Source" %}
-    {% set posture_desc = "Alert source is not connected." %}
-    {% set posture_tone = "unknown" %}
-    {% set posture_icon = "plug-zap" %}
+    {% set posture_value = 'Healthy' %}
+    {% set posture_desc = 'No active alert or anomaly evidence requires escalation.' %}
+    {% set posture_tone = 'normal' %}
 {% endif %}
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
-            {% call page_hero.intro('triangle-alert', 'Kubernetes analytics', 'radar') %}
+            {% call page_hero.intro('triangle-alert', 'Kubernetes Analytics', 'radar') %}
                 <h1 class="{{ page_hero.title_classes() }}">Alerts &amp; Anomalies</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">
-                    Review alert health, routing, silence visibility, anomaly signals, ownership, and operational readiness.
-                </p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review alert health, anomaly evidence, routing, suppression, ownership, and incident readiness from committed analytics snapshots.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('server', selected_cluster_name) }}
                     {% if dependency_blocker %}
@@ -52,30 +50,22 @@
         </div>
         <aside class="{{ page_hero.aside_classes() }}" aria-label="Alert posture">
             {% if dependency_blocker %}
-                {% set analytics_posture_label = "Alert posture" %}
+                {% set analytics_posture_label = 'Alert Posture' %}
                 {% include "analytics/components/_blocked_posture.html" %}
             {% else %}
                 <div class="{{ page_hero.context_panel_classes() }}">
-                    <div class="flex items-start justify-between gap-4">
-                        <div>
-                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Alert posture</p>
-                            <p class="mt-1 text-3xl font-bold leading-none text-brand-foreground">{{ posture_value }}</p>
-                            {{ page_hero.context_posture_note(posture_desc, posture_tone) }}
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Alert Posture</p>
+                            <h2 class="{{ page_hero.context_panel_title_classes() }}">{{ posture_value }}</h2>
                         </div>
-                        {{ table_label.status_label(posture_value, posture_tone, posture_icon) }}
+                        {{ page_hero.context_status_badge(posture_value, posture_tone) }}
                     </div>
-                    <div class="mt-auto grid grid-cols-2 gap-3 pt-4">
-                        <div class="{{ page_hero.context_metric_card_classes() }}">
-                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Critical alerts</p>
-                            <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ critical_alerts }}</p>
-                                <p class="{{ page_hero.context_metric_helper_classes() }}">Critical alerts in scope</p>
-                        </div>
-                        <div class="{{ page_hero.context_metric_card_classes() }}">
-                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">Confidence</p>
-                            <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ source_health.score }}/100</p>
-                                <p class="{{ page_hero.context_metric_helper_classes() }}">Signal source confidence score</p>
-                        </div>
+                    <div class="{{ page_hero.context_panel_metrics_classes() }}">
+                        {{ page_hero.context_metric('shield-alert', 'Critical Alerts', critical_alerts, 'Critical alert records in the selected scope') }}
+                        {{ page_hero.context_metric('shield-check', 'Source Health', source_health.score|default(0) ~ '/100', 'Committed source-health score') }}
                     </div>
+                    {{ page_hero.context_bottom_notice(posture_desc, posture_tone) }}
                 </div>
             {% endif %}
         </aside>

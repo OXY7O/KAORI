@@ -15,14 +15,23 @@
 {% macro inline_detail_shell_classes() -%}
     overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm
 {%- endmacro %}
-{% macro detail_row(label, value='-', break_all=False, wrap=True) -%}
+{% macro detail_row(label, value='-', break_all=False) -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
     <div class="grid min-w-0 gap-1 sm:grid-cols-[minmax(8rem,0.38fr)_minmax(0,1fr)] sm:gap-3">
         <span class="min-w-0 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ label }}</span>
-        <span class="min-w-0 {{ 'break-all' if break_all else ('break-words [overflow-wrap:anywhere]' if wrap else 'whitespace-nowrap') }} text-left text-xs font-medium leading-5 text-content-primary sm:text-right"
+        <span class="min-w-0 {{ 'break-all' if break_all else 'break-words' }} text-left text-xs font-medium leading-5 text-content-primary [overflow-wrap:anywhere] sm:text-right"
               title="{{ display_value }}">{{ display_value }}</span>
     </div>
 {%- endmacro %}
+{% macro stacked_detail_row(label, value='-', break_all=False) -%}
+    {% set display_value = value if value not in [None, ''] else '-' %}
+    <div class="min-w-0">
+        <span class="block min-w-0 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ label }}</span>
+        <span class="mt-1 block min-w-0 max-w-full whitespace-normal {{ 'break-all' if break_all else 'break-words' }} text-xs font-medium leading-5 text-content-primary [overflow-wrap:anywhere]"
+              title="{{ display_value }}">{{ display_value }}</span>
+    </div>
+{%- endmacro %}
+
 {% macro technical_row(label, value='-', break_all=True) -%}
     <div class="grid min-w-0 gap-1 sm:grid-cols-[minmax(8rem,0.38fr)_minmax(0,1fr)] sm:gap-3">
         <span class="min-w-0 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ label }}</span>

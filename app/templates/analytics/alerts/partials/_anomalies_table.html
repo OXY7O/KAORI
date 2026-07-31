@@ -1,51 +1,49 @@
+{% import "analytics/components/_evidence_record_list.html" as evidence_list %}
+{% import "analytics/components/_record_pagination.html" as record_pagination %}
 {% import "components/loading_bar.html" as loading_bar %}
 {% import "components/table_label.html" as table_label %}
-<div id="anomalies-table-container" data-alerts-swap-boundary class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
-    <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div class="min-w-0">
-                <h3 class="text-base font-semibold text-content-primary">Detected Anomaly Candidates</h3>
-                <p class="mt-1 text-sm leading-6 text-content-muted">Metric deviations requiring validation against workload, capacity, and source context.</p>
+{% call evidence_list.shell('Anomaly Candidates') %}
+    <div id="anomalies-table-container" data-alerts-swap-boundary>
+        <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="min-w-0"><h3 class="text-base font-semibold text-content-primary">Anomaly Candidates</h3><p class="mt-1 text-sm leading-6 text-content-muted">Prometheus-derived restart and readiness deviations requiring validation before incident escalation.</p></div>
+                {{ table_label.status_label((anomalies_pagination.total_items|default(0)) ~ ' Candidates', 'warning' if anomalies_pagination.total_items|default(0) else 'normal', size='compact') }}
             </div>
-            {{ table_label.status_label((anomalies_pagination.total_items|default(0)) ~ ' Detected', tone='warning' if anomalies_pagination.total_items|default(0) else 'normal', size='compact') }}
+            {{ loading_bar.render('anomalies-table-loading-indicator', label='Refreshing Anomaly Candidates') }}
+        </header>
+
+        {% set table_kind = 'anomalies' %}{% set endpoint_name = 'analytics.alerts_anomalies_table' %}{% set target_id = '#anomalies-table-container' %}
+        {% include "analytics/alerts/partials/_table_filters.html" %}
+
+        {% call evidence_list.header() %}
+            {{ evidence_list.header_cell('Anomaly', 4) }}
+            {{ evidence_list.header_cell('Severity', 1) }}
+            {{ evidence_list.header_cell('Namespace & Pod', 3) }}
+            {{ evidence_list.header_cell('Signal', 2) }}
+            {{ evidence_list.header_cell('Action', 2, 'right') }}
+        {% endcall %}
+
+        <div class="divide-y divide-outline-subtle">
+            {% if anomalies %}
+                {% for anomaly in anomalies %}{% set row_key = 'anomaly-' ~ anomalies_pagination.page ~ '-' ~ loop.index0 %}{% include "analytics/alerts/partials/_anomalies_table_row.html" %}{% endfor %}
+            {% else %}
+                {{ evidence_list.empty('No Anomalies Detected', 'No anomaly candidate matches the current source and local filters.', 'radar') }}
+            {% endif %}
         </div>
-        {{ loading_bar.render('anomalies-table-loading-indicator', label='Refreshing Detected Anomaly Candidates') }}
-    </header>
 
-    {% set table_kind = "anomalies" %}
-    {% set endpoint_name = "analytics.alerts_anomalies_table" %}
-    {% set target_id = "#anomalies-table-container" %}
-    {% include "analytics/alerts/partials/_table_filters.html" %}
-
-    <div class="hidden grid-cols-12 gap-4 border-b border-outline-subtle bg-surface-hover px-4 py-3 lg:grid">
-        <div class="col-span-4 text-xs font-semibold uppercase tracking-wide text-content-muted">Anomaly</div>
-        <div class="col-span-1 text-xs font-semibold uppercase tracking-wide text-content-muted">Severity</div>
-        <div class="col-span-3 text-xs font-semibold uppercase tracking-wide text-content-muted">Namespace &amp; Pod</div>
-        <div class="col-span-2 text-xs font-semibold uppercase tracking-wide text-content-muted">Signal</div>
-        <div class="col-span-2 text-right text-xs font-semibold uppercase tracking-wide text-content-muted">Action</div>
+        {% set pagination_query = {
+            'cluster_id': selected_cluster_id,
+            'source': selected_source,
+            'severity': selected_severity,
+            'status': selected_status,
+            'namespace': selected_namespace,
+            'search': selected_search,
+            'tab': 'anomalies',
+            'alerts_per_page': selected_alerts_per_page,
+            'anomalies_per_page': selected_anomalies_per_page
+        } %}
+        <div class="px-4 pb-4 sm:px-5">
+            {{ record_pagination.render(anomalies_pagination, 'page', 'anomalies_per_page', 'anomalies-table-container', 'anomalies-table-filter-form', 'anomalies-table-loading-indicator', 'analytics.alerts_anomalies_table', 'analytics.alerts', pagination_query, 'Anomalies') }}
+        </div>
     </div>
-
-    <div class="divide-y divide-outline-subtle bg-surface-card">
-        {% if anomalies %}
-            {% for anomaly in anomalies %}
-                {% set row_key = 'anomaly-' ~ anomalies_pagination.page ~ '-' ~ loop.index0 %}
-                {% include "analytics/alerts/partials/_anomalies_table_row.html" %}
-            {% endfor %}
-        {% else %}
-            {% set empty_state_icon = "radar" %}
-            {% set empty_state_title = "No Anomalies Detected" %}
-            {% set empty_state_description = "No metric deviation candidate matched the current analysis window." %}
-            {% set empty_state_min_height = "min-h-[210px]" %}
-            {% include "components/states/_empty_state.html" %}
-        {% endif %}
-    </div>
-
-    {% set pagination = anomalies_pagination %}
-    {% set endpoint_name = "analytics.alerts_anomalies_table" %}
-    {% set target_id = "#anomalies-table-container" %}
-    {% set row_label = "anomalies" %}
-    {% set page_size_name = "anomalies_per_page" %}
-    {% set sibling_page_size_name = "alerts_per_page" %}
-    {% set sibling_page_size_value = selected_alerts_per_page %}
-    {% include "analytics/alerts/partials/_pagination.html" %}
-</div>
+{% endcall %}

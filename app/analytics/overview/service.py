@@ -1006,7 +1006,7 @@ def _get_alerts_snapshot(*, cluster_id: str) -> dict[str, Any]:
         'highest_severity_description': raw.get('highest_severity_description') or 'No active critical alert detected.',
         'status': risk_meta['label'],
         'tone': risk_meta['tone'],
-        'href': '/analytics/alerts-anomalies',
+        'href': '/analytics/alerts?tab=alerts',
         'source_connected': source_connected,
         'recommendation_count': _get_snapshot_recommendation_count(
             raw,
@@ -1164,7 +1164,7 @@ def _build_actionable_recommendation_overview(
         ),
         source='alerts',
         source_label='Alerts & Anomalies',
-        href='/analytics/alerts-anomalies',
+        href='/analytics/alerts?tab=alerts',
         icon='bell',
         warning_threshold=1,
         critical_threshold=5,
@@ -1251,7 +1251,7 @@ def _build_actionable_recommendation_overview(
         _build_actionable_source(
             label='Alerts & Anomalies',
             count=alerts_count,
-            href='/analytics/alerts-anomalies',
+            href='/analytics/alerts?tab=alerts',
             description='Based on active alerts, source health, and anomaly candidates.',
         ),
     ]

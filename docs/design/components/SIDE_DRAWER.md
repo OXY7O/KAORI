@@ -77,3 +77,7 @@ Use a drawer when the row detail is too large for an expanded table row but the 
 - Use `density='compact'` for short identity/context sections.
 - Use `metric(..., variant='plain')` inside a divided summary row when nested metric cards would create card-inside-card density.
 - The summary surface prioritizes values; helper text is short and optional.
+
+## Long Values in Narrow Columns
+
+Drawer identity and snapshot sections may use a two-column layout, but long values must remain inside their owning column. Use `components/details/_detail_content.html::stacked_detail_row(...)` for values such as snapshot source, provider name, subject, issuer, or other descriptive text that can exceed a compact label/value row. The value uses normal wrapping and `overflow-wrap:anywhere`; do not add horizontal scrolling to the drawer for descriptive text.

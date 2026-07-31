@@ -32,43 +32,6 @@
     "app/templates/alertmanager/partials/_runtime_panel.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/analytics/alerts/index.html": {
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/analytics/alerts/partials/_alerts_table_row.html": {
-      "arbitrary_text_sizes": 2
-    },
-    "app/templates/analytics/alerts/partials/_anomalies_table_row.html": {
-      "arbitrary_text_sizes": 4
-    },
-    "app/templates/analytics/alerts/partials/_cluster_signal_overview.html": {
-      "arbitrary_text_sizes": 5,
-      "arbitrary_tracking": 1,
-      "copied_standard_surface_shells": 1,
-      "semantic_border_utilities": 1
-    },
-    "app/templates/analytics/alerts/partials/_filters.html": {
-      "arbitrary_text_sizes": 7,
-      "arbitrary_tracking": 1,
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/analytics/alerts/partials/_hero.html": {
-      "arbitrary_text_sizes": 2,
-      "arbitrary_tracking": 2
-    },
-    "app/templates/analytics/alerts/partials/_incident_readiness.html": {
-      "arbitrary_text_sizes": 5,
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/analytics/alerts/partials/_ownership_summary.html": {
-      "arbitrary_text_sizes": 1
-    },
-    "app/templates/analytics/alerts/partials/_silence_inhibition_summary.html": {
-      "arbitrary_tracking": 1
-    },
-    "app/templates/analytics/alerts/partials/_source_status.html": {
-      "semantic_border_utilities": 3
-    },
     "app/templates/analytics/components/_analysis_workspace.html": {
       "arbitrary_text_sizes": 5,
       "arbitrary_tracking": 1

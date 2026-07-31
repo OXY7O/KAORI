@@ -38,9 +38,6 @@ def build_inhibition_summary(
                 'Inhibition visibility requires Alertmanager alert lifecycle metadata. '
                 'Prometheus fallback does not include inhibitedBy context.'
             ),
-            'class': 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
-            if resolved_source == 'prometheus' and connected
-            else 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
             'icon': 'shield-alert',
             'source': resolved_source,
             'rules_detected': 0,
@@ -149,7 +146,6 @@ def build_inhibition_summary(
         'level': 'available',
         'label': 'Alertmanager Inhibition Context Available',
         'description': ('Inhibition visibility is derived from Alertmanager alert lifecycle metadata.'),
-        'class': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300',
         'icon': 'shield-alert',
         'source': resolved_source,
         'rules_detected': len(

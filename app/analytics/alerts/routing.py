@@ -300,28 +300,24 @@ def build_routing_summary(
         label = 'Alertmanager Routing Context Available'
         description = 'Alertmanager context is available.'
         icon = 'route'
-        class_name = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
     elif resolved_source == 'prometheus' and connected:
         enabled = False
         level = 'limited'
         label = 'Routing Context Limited'
         description = 'Prometheus fallback is active; Alertmanager context is limited.'
         icon = 'activity'
-        class_name = 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
     else:
         enabled = False
         level = 'unavailable'
         label = 'Routing Context Unavailable'
         description = 'Alert routing cannot be evaluated because no alert source is currently connected.'
         icon = 'circle-alert'
-        class_name = 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-300'
 
     return {
         'enabled': enabled,
         'level': level,
         'label': label,
         'description': description,
-        'class': class_name,
         'icon': icon,
         'source': resolved_source,
         'alert_count': len(
@@ -344,7 +340,6 @@ def build_empty_routing_summary() -> AlertRoutingSummary:
         'level': 'unavailable',
         'label': 'Routing Context Unavailable',
         'description': 'Alert routing cannot be evaluated because no alert source is currently connected.',
-        'class': 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
         'icon': 'circle-off',
         'source': 'none',
         'alert_count': 0,

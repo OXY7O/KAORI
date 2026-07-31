@@ -355,7 +355,7 @@ def test_dashboard_forecast_snapshot_exposes_chart_values_and_horizon() -> None:
                         'key': 'cpu',
                         'label': 'CPU Growth',
                         'status_label': 'Warning',
-                        'current_percent': 61.0,
+                        'latest_daily_average_percent': 61.0,
                         'projected_percent': 78.4,
                         'historical_points': [
                             {'percent': 48.0},
@@ -373,7 +373,7 @@ def test_dashboard_forecast_snapshot_exposes_chart_values_and_horizon() -> None:
                         'key': 'memory',
                         'label': 'Memory Growth',
                         'status_label': 'Critical',
-                        'current_percent': 74.0,
+                        'latest_daily_average_percent': 74.0,
                         'projected_percent': 92,
                         'historical_points': [
                             {'percent': 66.0},
@@ -396,7 +396,7 @@ def test_dashboard_forecast_snapshot_exposes_chart_values_and_horizon() -> None:
     assert snapshot.source_status == 'Available'
     assert snapshot.horizon_days == 60
     assert [item.projected_percent for item in snapshot.items] == [78.4, 92.0]
-    assert [item.current_percent for item in snapshot.items] == [61.0, 74.0]
+    assert [item.latest_daily_average_percent for item in snapshot.items] == [61.0, 74.0]
     assert all(item.historical_points for item in snapshot.items)
     assert all(item.forecast_points for item in snapshot.items)
     assert snapshot.item_count == 2

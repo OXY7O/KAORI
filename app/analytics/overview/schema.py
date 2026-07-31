@@ -262,7 +262,7 @@ def build_empty_overview_payload() -> dict[str, Any]:
             'highest_severity_description': 'No alert data available.',
             'status': 'unknown',
             'tone': 'gray',
-            'href': '/analytics/alerts-anomalies',
+            'href': '/analytics/alerts?tab=alerts',
             'source_connected': False,
             'recommendation_count': 0,
         },

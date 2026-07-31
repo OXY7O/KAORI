@@ -1,0 +1,95 @@
+# Analytics Alerts & Anomalies Standard
+
+Status: Canonical KAORI Analytics presentation and signal-evidence contract
+
+Implementation owners:
+
+- `app/analytics/alerts/`
+- `app/templates/analytics/alerts/`
+- `app/templates/analytics/components/_analysis_surfaces.html`
+- `app/templates/analytics/components/_evidence_record_list.html`
+- `app/templates/analytics/components/_record_pagination.html`
+
+## Purpose
+
+Alerts & Anomalies presents committed alert, anomaly, routing, suppression, ownership, and readiness evidence without treating a disconnected or partially available source as a healthy state. The page separates raw operational evidence from interpretation and recommended action.
+
+## Workspace Composition
+
+1. Hero with page posture, Critical Alerts, Source Health, and a full-width bottom notice.
+2. Controls and Data Readiness with Cluster, Source, committed snapshot metadata, and source warnings.
+3. Cluster Signal Overview with peer metrics, Investigation Posture, and Operational Reading.
+4. Canonical tabs: Alerts, Anomalies, Routing & Suppression, Ownership & Runbooks, Incident Readiness, Recommendations, and Operational Resources.
+5. Bright record and operational evidence.
+6. Darker interpretation, attention, suppression boundary, and recommended-action regions.
+
+## Signal Evidence Semantics
+
+Source and anomaly evidence are independent. Page posture follows the strongest applicable state:
+
+- `Blocked` when a dependency blocker prevents analysis;
+- `Unknown` when no alert source is connected;
+- `Critical` when critical alerts are active;
+- `Review` when warning alerts or anomaly candidates require investigation;
+- `Evidence Incomplete` when one or more optional sources are partial or unavailable;
+- `Healthy` only when required evidence is connected, optional collection is complete, and no active signal requires review.
+
+Missing evidence is never converted into zero, Normal, or Healthy.
+
+## Source Readiness and Committed Snapshot
+
+Source Readiness describes current Alertmanager or Prometheus connectivity. Committed Snapshot describes the worker-produced dataset being viewed. These are related but separate evidence boundaries. A currently degraded source does not invalidate already committed evidence, but it must be shown as a warning for future refreshes.
+
+Prometheus fallback may provide alert records while Alertmanager-specific routing, silence, and inhibition evidence remains limited. The page must state this limitation explicitly.
+
+## Semantic Status Ownership
+
+Domain payloads provide semantic levels such as `healthy`, `fallback`, `degraded`, `available`, `limited`, `ready`, `partial`, `weak`, `watch`, and `incident_risk`. Templates normalize these through `table_label.semantic_tone(...)`.
+
+Domain services do not emit CSS classes. Visual geometry and color remain owned by shared components.
+
+## Alerts and Anomalies Record Collection
+
+Alerts and Anomalies use the shared Evidence Record Collection and shared Record Pagination.
+
+- Normal links resolve to `/analytics/alerts` with the canonical `tab` parameter.
+- HTMX requests use the owning partial endpoint.
+- Filters retain Cluster, Source, Severity, State, Namespace, Search, active tab, and both page-size values.
+- Default page size is 5 with 5/10/25/50 options.
+- Expanded details are closed by default and retain a native `hidden` fallback across HTMX swaps.
+- Long labels and technical identifiers use controlled wrapping, not unconditional `break-all`.
+
+## Routing, Suppression, Ownership, and Readiness
+
+Routing, silence, inhibition, ownership, runbook, and readiness records are primary operational evidence and use bright surfaces. Review boundaries and recommended actions use darker soft surfaces.
+
+Silence and inhibition evidence must not be interpreted as automatically good or bad. The UI shows matched scope and operational impact; the operator decides whether the suppression is intended.
+
+## Progress and Severity
+
+Readiness and ownership progress fills remain KAORI Violet. Alert severity belongs to semantic badges, icons, and copy. Do not recolor progress bars red or amber unless a separate visualization contract is approved.
+
+## Canonical Navigation
+
+Use:
+
+- `?tab=alerts`
+- `?tab=anomalies`
+- `?tab=routing`
+- `?tab=ownership`
+- `?tab=readiness`
+- `?tab=recommendations`
+- `?tab=resources`
+
+The legacy `/analytics/alerts-anomalies` route is not part of the canonical contract.
+
+## Prohibited Patterns
+
+- No CSS classes in alert-domain payloads.
+- No page-local workspace tab shell.
+- No domain-local pagination partial.
+- No direct fragment endpoint as a normal `href`.
+- No Healthy posture when evidence is incomplete.
+- No dark fill around primary signal records or metrics.
+- No red or amber readiness progress fill.
+- No arbitrary micro typography in Alerts templates.

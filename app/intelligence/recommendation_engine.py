@@ -162,14 +162,14 @@ SOURCE_LABELS.update(
 
 SOURCE_HREFS.update(
     {
-        'alerts': '/analytics/alerts-anomalies',
-        'alerts_source': '/analytics/alerts-anomalies',
-        'alerts_critical': '/analytics/alerts-anomalies-anomalies?severity=critical',
-        'alerts_warning': '/analytics/alerts-anomalies-anomalies?severity=warning',
-        'alerts_anomaly': '/analytics/alerts-anomalies',
-        'alerts_affected_resources': '/analytics/alerts-anomalies',
-        'alerts_baseline': '/analytics/alerts-anomalies',
-        'alerts_practice': '/analytics/alerts-anomalies',
+        'alerts': '/analytics/alerts?tab=alerts',
+        'alerts_source': '/analytics/alerts?tab=readiness',
+        'alerts_critical': '/analytics/alerts?tab=alerts&severity=critical',
+        'alerts_warning': '/analytics/alerts?tab=alerts&severity=warning',
+        'alerts_anomaly': '/analytics/alerts?tab=anomalies',
+        'alerts_affected_resources': '/analytics/alerts?tab=alerts',
+        'alerts_baseline': '/analytics/alerts?tab=readiness',
+        'alerts_practice': '/analytics/alerts?tab=recommendations',
     }
 )
 
@@ -1696,7 +1696,7 @@ def build_alerts_actionable_recommendations(
                 source='alerts_source',
                 resource='alerts',
                 action_type='source_health',
-                href='/analytics/alerts-anomalies',
+                href='/analytics/alerts?tab=readiness',
                 icon='circle-alert',
             )
         )
@@ -1715,7 +1715,7 @@ def build_alerts_actionable_recommendations(
                 source='alerts_critical',
                 resource='alerts',
                 action_type='critical_alert_review',
-                href='/analytics/alerts-anomalies-anomalies?severity=critical',
+                href='/analytics/alerts?tab=alerts&severity=critical',
                 icon='circle-alert',
             )
         )
@@ -1732,7 +1732,7 @@ def build_alerts_actionable_recommendations(
                 source='alerts_warning',
                 resource='alerts',
                 action_type='warning_alert_review',
-                href='/analytics/alerts-anomalies-anomalies?severity=warning',
+                href='/analytics/alerts?tab=alerts&severity=warning',
                 icon='alert-triangle',
             )
         )
@@ -1759,7 +1759,7 @@ def build_alerts_actionable_recommendations(
                 source='alerts_anomaly',
                 resource='pod',
                 action_type='anomaly_review',
-                href='/analytics/alerts-anomalies',
+                href='/analytics/alerts?tab=anomalies',
                 icon='radar',
             )
         )
@@ -1780,7 +1780,7 @@ def build_alerts_actionable_recommendations(
                 source='alerts_affected_resources',
                 resource='namespace',
                 action_type='affected_resource_review',
-                href='/analytics/alerts-anomalies',
+                href='/analytics/alerts?tab=alerts',
                 icon='git-branch',
             )
         )
@@ -1879,9 +1879,9 @@ SOURCE_ROUTES = {
     'forecast': ('/analytics/forecast', 'Open forecast', 'line-chart'),
     'top_consumers': ('/analytics/top-consumers', 'Open top consumers', 'list-ordered'),
     'top consumers': ('/analytics/top-consumers', 'Open top consumers', 'list-ordered'),
-    'alerts': ('/analytics/alerts-anomalies', 'Open alerts', 'bell'),
-    'alerts & anomalies': ('/analytics/alerts-anomalies', 'Open alerts', 'bell'),
-    'alerts_and_anomalies': ('/analytics/alerts-anomalies', 'Open alerts', 'bell'),
+    'alerts': ('/analytics/alerts?tab=alerts', 'Open alerts', 'bell'),
+    'alerts & anomalies': ('/analytics/alerts?tab=alerts', 'Open alerts', 'bell'),
+    'alerts_and_anomalies': ('/analytics/alerts?tab=alerts', 'Open alerts', 'bell'),
 }
 
 
@@ -2155,7 +2155,7 @@ def _build_alert_recommendations(alerts_snapshot: dict[str, Any]) -> list[dict[s
                 ),
                 severity='critical',
                 icon='circle-alert',
-                href=str(alerts_snapshot.get('href') or '/analytics/alerts-anomalies'),
+                href='/analytics/alerts?tab=alerts&severity=critical',
                 priority=20,
                 action_label='Open alerts',
                 source='alerts',
@@ -2172,7 +2172,7 @@ def _build_alert_recommendations(alerts_snapshot: dict[str, Any]) -> list[dict[s
                 ),
                 severity='high' if active_alerts > 0 else 'medium',
                 icon='bell',
-                href=str(alerts_snapshot.get('href') or '/analytics/alerts-anomalies'),
+                href='/analytics/alerts?tab=alerts',
                 priority=30,
                 action_label='Review alerts',
                 source='alerts',
@@ -2190,7 +2190,7 @@ def _build_alert_recommendations(alerts_snapshot: dict[str, Any]) -> list[dict[s
                 ),
                 severity='medium',
                 icon='activity',
-                href=str(alerts_snapshot.get('href') or '/analytics/alerts-anomalies'),
+                href='/analytics/alerts?tab=anomalies',
                 priority=35,
                 action_label='Open anomalies',
                 source='anomalies',

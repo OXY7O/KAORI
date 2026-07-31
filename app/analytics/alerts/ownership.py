@@ -391,25 +391,21 @@ def build_ownership_summary(
         level = 'ready'
         label = 'Ownership Metadata Ready'
         description = 'Most active alerts include owner, runbook, and contact metadata for operational response.'
-        class_name = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
         icon = 'book-open'
     elif score >= 60:
         level = 'partial'
         label = 'Ownership Metadata Partial'
         description = 'Some alerts have owner or runbook context, but response metadata coverage is not complete.'
-        class_name = 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300'
         icon = 'clipboard-check'
     elif score >= 30:
         level = 'weak'
         label = 'Ownership Metadata Weak'
         description = 'Many alerts are missing owner, runbook, or contact metadata. Response readiness is weak.'
-        class_name = 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
         icon = 'triangle-alert'
     else:
         level = 'unknown'
         label = 'Ownership Metadata Missing'
         description = 'Most alerts do not include owner, runbook, or contact metadata.'
-        class_name = 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-300'
         icon = 'user-x'
 
     owner_group_rows: list[AlertOwnershipGroup] = [
@@ -444,7 +440,6 @@ def build_ownership_summary(
         'level': level,
         'label': label,
         'description': description,
-        'class': class_name,
         'icon': icon,
         'source': str(
             source_status.get(
@@ -472,7 +467,6 @@ def build_empty_ownership_summary() -> AlertOwnershipSummary:
         'level': 'unknown',
         'label': 'Ownership Metadata Unknown',
         'description': 'No alert ownership metadata is available yet.',
-        'class': 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
         'icon': 'search',
         'source': 'none',
         'alert_count': 0,

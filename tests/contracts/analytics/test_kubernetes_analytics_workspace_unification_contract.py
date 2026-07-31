@@ -12,8 +12,8 @@ def test_alert_signal_state_uses_separate_semantic_columns() -> None:
     table = read("alerts/partials/_alerts_table.html")
     content = read("alerts/partials/_alerts_table_row.html")
     main_row = content.split('<div id="{{ row_key }}-details"', 1)[0]
-    assert ">Severity</div>" in table
-    assert ">State</div>" in table
+    assert "evidence_list.header_cell('Severity'" in table
+    assert "evidence_list.header_cell('State'" in table
     assert "table_label.status_label(alert.severity|title" in main_row
     assert "table_label.status_label(alert.status|title" in main_row
 

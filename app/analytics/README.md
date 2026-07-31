@@ -596,3 +596,8 @@ Resource Forecast uses Holt-Winters as the default model, with Linear Trend and 
 ## Top Consumers presentation and snapshot contract
 
 Top Consumers follows `docs/design/components/ANALYTICS_TOP_CONSUMERS.md`. Namespace is a materialized snapshot dimension; local record controls do not create new snapshots. Structured consumer identity, resource-specific pressure, and Complete/Partial/Unavailable resource evidence replace display-string parsing and the former blended usage ratio. Rankings use the shared ranked evidence panel. Storage, Workload, and Top Consumers use the same shared Analytics record pagination component with full-page and HTMX ownership.
+
+## Alerts & Anomalies Presentation Contract
+
+The `analytics.alerts` workspace uses `/analytics/alerts` with canonical tab state for Alerts, Anomalies, Routing & Suppression, Ownership & Runbooks, Incident Readiness, Recommendations, and Operational Resources. Source readiness and committed worker snapshot evidence are separate boundaries. Partial optional evidence produces an incomplete or limited state rather than Healthy. Alert-domain payloads carry semantic levels and factual values only; shared Jinja components own status tones, record geometry, and pagination.
+

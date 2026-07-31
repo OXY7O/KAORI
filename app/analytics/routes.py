@@ -454,15 +454,6 @@ analytics_bp.add_url_rule(
 )
 
 analytics_bp.add_url_rule(
-    '/alerts-anomalies',
-    endpoint='alerts_anomalies',
-    view_func=alerts,
-    methods=[
-        'GET',
-    ],
-)
-
-analytics_bp.add_url_rule(
     '/alerts/table',
     endpoint='alerts_table',
     view_func=alerts_table,

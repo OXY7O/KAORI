@@ -14,6 +14,22 @@ from app.common.dependencies import render_dependency_blocker
 from app.rbac.decorators import permission_required
 
 
+
+_ALERT_TABS = {
+    'alerts',
+    'anomalies',
+    'routing',
+    'ownership',
+    'readiness',
+    'recommendations',
+    'resources',
+}
+
+
+def _selected_tab() -> str:
+    value = str(request.args.get('tab') or 'alerts').strip().lower()
+    return value if value in _ALERT_TABS else 'alerts'
+
 _PAGE = {
     'dataset_key': 'analytics.alerts',
     'title': 'Alerts & Anomalies',
@@ -38,6 +54,7 @@ def _present(materialized):
         anomalies_per_page=request.args.get('anomalies_per_page', request.args.get('per_page', '5')),
     )
     context['analytics_materialization'] = snapshot_meta(materialized)
+    context['selected_tab'] = _selected_tab()
     return context
 
 

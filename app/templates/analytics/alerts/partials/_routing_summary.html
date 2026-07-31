@@ -1,68 +1,17 @@
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
-<div class="border-b border-outline-subtle">
-    <div class="grid divide-y divide-outline-subtle sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-6">
-        {% set summary_metrics = [
-            ('Receivers', routing_summary.receiver_count, 'radio-receiver'),
-            ('Groups', routing_summary.group_count, 'layers-3'),
-            ('Namespaces', routing_summary.namespace_count, 'boxes'),
-            ('Fingerprints', routing_summary.fingerprint_count, 'fingerprint'),
-            ('Active Silences', silence_summary.active_silences, 'bell-off'),
-            ('Inhibited Alerts', inhibition_summary.matched_alerts, 'shield-minus')
-        ] %}
-        {% for label, value, icon in summary_metrics %}
-            <div class="flex items-center gap-3 px-5 py-4 sm:px-6">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-                </span>
-                <div class="min-w-0">
-                    <p class="text-xs text-content-muted">{{ label }}</p>
-                    <p class="mt-0.5 text-lg font-semibold text-content-primary">{{ value }}</p>
-                </div>
-            </div>
-        {% endfor %}
+{% set routing_tone = table_label.semantic_tone(routing_summary.level|default('unknown'))|trim %}
+<section class="{{ analysis_surface.snapshot_shell_classes() }}">
+    <header class="{{ analysis_surface.snapshot_header_classes() }}">
+        <div class="flex min-w-0 items-start gap-3"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="route" class="h-4 w-4"></i></span><div class="min-w-0"><h3 class="text-lg font-semibold text-content-primary">Routing Context</h3><p class="mt-1 text-sm leading-6 text-content-muted">Receiver, grouping, namespace, and severity distribution from the committed alert source.</p></div></div>
+        {{ table_label.status_label(routing_summary.label, routing_tone, size='compact') }}
+    </header>
+    {% set summary_metrics = [('Receivers', routing_summary.receiver_count), ('Groups', routing_summary.group_count), ('Namespaces', routing_summary.namespace_count), ('Fingerprints', routing_summary.fingerprint_count), ('Active Silences', silence_summary.active_silences), ('Inhibited Alerts', inhibition_summary.matched_alerts)] %}
+    <div class="grid gap-px border-b border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-6">{% for label, value in summary_metrics %}<article class="bg-surface-card px-4 py-4"><p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p><p class="mt-1 text-xl font-semibold text-content-primary">{{ value }}</p></article>{% endfor %}</div>
+    <div class="grid lg:grid-cols-3">
+        {% set groups = [('Receiver Distribution', routing_summary.receiver_groups, 'radio-receiver'), ('Namespace Distribution', routing_summary.namespace_groups, 'boxes'), ('Severity Distribution', routing_summary.severity_groups, 'gauge')] %}
+        {% for title, items, icon in groups %}<section class="p-5 sm:p-6 {% if not loop.first %}border-t border-outline-subtle lg:border-l lg:border-t-0{% endif %}"><div class="flex items-center justify-between gap-3"><h4 class="text-sm font-semibold text-content-primary">{{ title }}</h4><i data-lucide="{{ icon }}" class="h-4 w-4 text-kaori-primary"></i></div><div class="mt-4 space-y-4">{% for item in items %}<div><div class="flex items-center justify-between gap-3 text-sm"><span class="min-w-0 break-words font-medium text-content-secondary">{{ item.label|title if title == 'Severity Distribution' else item.label }}</span><span class="font-semibold text-content-primary">{{ item.count }}</span></div>{{ progress_bar.bar(item.percent, track_classes='mt-2 h-1.5 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=title ~ ' coverage') }}</div>{% else %}<p class="text-sm text-content-muted">No distribution evidence available.</p>{% endfor %}</div></section>{% endfor %}
     </div>
-
-    <div class="grid divide-y divide-outline-subtle xl:grid-cols-3 xl:divide-x xl:divide-y-0">
-        {% set groups = [
-            ('Receiver Distribution', routing_summary.receiver_groups, 'radio-receiver'),
-            ('Namespace Distribution', routing_summary.namespace_groups, 'boxes'),
-            ('Severity Distribution', routing_summary.severity_groups, 'gauge')
-        ] %}
-        {% for title, items, icon in groups %}
-            <div class="p-5 sm:p-6">
-                <div class="flex items-center justify-between gap-3">
-                    <h4 class="text-sm font-semibold text-content-primary">{{ title }}</h4>
-                    <i data-lucide="{{ icon }}" class="h-4 w-4 text-kaori-primary"></i>
-                </div>
-                <div class="mt-4 space-y-4">
-                    {% for item in items %}
-                        <div>
-                            <div class="flex items-center justify-between gap-3 text-sm">
-                                <span class="min-w-0 break-words font-medium text-content-secondary">{{ item.label|title if title == 'Severity Distribution' else item.label }}</span>
-                                <span class="shrink-0 font-semibold text-content-primary">{{ item.count }}</span>
-                            </div>
-                            {{ progress_bar.bar(item.percent, track_classes='mt-2 h-1.5 overflow-hidden rounded-full bg-outline-default', fill_classes='h-full rounded-full bg-kaori-primary', label=title ~ ' coverage') }}
-                        </div>
-                    {% else %}
-                        <p class="text-sm text-content-muted">No distribution data available.</p>
-                    {% endfor %}
-                </div>
-            </div>
-        {% endfor %}
-    </div>
-
-    {% if routing_summary.grouping_keys %}
-        <div class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-                <h4 class="text-sm font-semibold text-content-primary">Top Grouping Keys</h4>
-                <p class="mt-1 text-xs text-content-muted">Highest-volume Alertmanager grouping combinations.</p>
-            </div>
-            <div class="flex flex-wrap gap-2">
-                {% for item in routing_summary.grouping_keys %}
-                    {{ table_label.metadata_label(item.label ~ ' · ' ~ item.count, icon='tags', wrap=true, size='compact') }}
-                {% endfor %}
-            </div>
-        </div>
-    {% endif %}
-</div>
+    {% if routing_summary.grouping_keys %}<div class="{{ analysis_surface.attention_strip_classes() }}"><div class="min-w-0"><p class="text-sm font-semibold text-content-primary">Top Grouping Keys</p><p class="mt-1 text-xs text-content-muted">Highest-volume Alertmanager grouping combinations.</p></div><div class="ml-auto flex flex-wrap justify-end gap-2">{% for item in routing_summary.grouping_keys %}{{ table_label.metadata_label(item.label ~ ' · ' ~ item.count, 'tags', wrap=true, size='compact') }}{% endfor %}</div></div>{% endif %}
+</section>

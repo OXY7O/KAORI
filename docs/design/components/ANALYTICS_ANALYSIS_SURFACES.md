@@ -108,3 +108,8 @@ Full-page interactive forecast charts use the shared tokenized chart contract an
 Top Consumers and future consumer-oriented workspaces use `analytics/components/_ranked_evidence_panel.html` for rankings. Consumption, contribution, denominator pressure, and configuration state remain separate signals. Mixed-resource pages never sort raw CPU, bytes, and counts as one numeric domain.
 
 All record-oriented Analytics domains use `analytics/components/_record_pagination.html`. Domain-local pagination partials are prohibited. Full-page `href` and owning-partial HTMX endpoints must be explicit. Expanded record details are closed by default and include a native `hidden` fallback across HTMX swaps.
+
+## Alerts & Anomalies Signal Evidence
+
+Alerts & Anomalies follows `ANALYTICS_ALERTS_ANOMALIES.md`. Source readiness and committed snapshot evidence remain separate. Optional anomaly, routing, silence, or inhibition gaps produce `Evidence Incomplete` or a limited semantic state; they never produce Healthy by absence. Alerts and Anomalies records use the shared evidence collection and record pagination, while routing, suppression, ownership, and readiness evidence remain bright and their interpretation or recommended action remains darker.
+

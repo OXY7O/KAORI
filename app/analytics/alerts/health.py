@@ -212,7 +212,6 @@ def build_source_health(
             'level': 'unavailable',
             'label': 'No Cluster Selected',
             'description': 'Select a cluster before evaluating alert source health.',
-            'class': 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
             'icon': 'circle-off',
             'checks': [
                 {
@@ -285,28 +284,24 @@ def build_source_health(
         label = 'Alertmanager Healthy'
         description = 'Alertmanager is connected and used as the primary alert source.'
         icon = 'shield-check'
-        class_name = 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300'
     elif connected and resolved_source == 'prometheus' and fallback_used:
         score = 60 if alertmanager_configured else 80
         level = 'fallback'
         label = 'Prometheus Fallback Active'
         description = 'Alertmanager is unavailable, but Prometheus ALERTS fallback is connected.'
         icon = 'route'
-        class_name = 'bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-300'
     elif connected and resolved_source == 'prometheus':
         score = 75
         level = 'degraded'
         label = 'Prometheus Alerts Only'
         description = 'Prometheus ALERTS is connected, but Alertmanager routing, grouping, silence, and inhibition context is not the active source.'
         icon = 'activity'
-        class_name = 'bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300'
     elif alertmanager_configured or prometheus_configured:
         score = 40
         level = 'unavailable'
         label = 'Alert Source Unavailable'
         description = 'At least one alert source is configured, but no alert source is currently connected.'
         icon = 'circle-alert'
-        class_name = 'bg-red-100 text-red-700 dark:bg-red-500/10 dark:text-red-300'
     else:
         score = 20
         level = 'unavailable'
@@ -315,7 +310,6 @@ def build_source_health(
             'Configure Alertmanager as the primary source and Prometheus as fallback before relying on alert analysis.'
         )
         icon = 'plug-zap'
-        class_name = 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
 
     checks: list[AlertSourceHealthCheck] = [
         {
@@ -362,7 +356,6 @@ def build_source_health(
         'level': level,
         'label': label,
         'description': description,
-        'class': class_name,
         'icon': icon,
         'checks': checks,
         'selected_source': selected_source,

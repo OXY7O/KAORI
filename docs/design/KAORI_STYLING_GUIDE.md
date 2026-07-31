@@ -60,6 +60,7 @@ Review the baseline diff before committing. A lower count is expected; moving de
 | Analytics Capacity Analysis | `components/ANALYTICS_CAPACITY_ANALYSIS.md` | Capacity templates + shared analytics surfaces |
 | Analytics Storage Analysis | `components/ANALYTICS_STORAGE_ANALYSIS.md` | Storage templates + shared evidence record components |
 | Analytics Workload Analysis | `components/ANALYTICS_WORKLOAD_ANALYSIS.md` | Workload templates + shared analysis, evidence, and filter components |
+| Analytics Alerts & Anomalies | `components/ANALYTICS_ALERTS_ANOMALIES.md` | Alerts templates + shared analysis, evidence, and pagination components |
 | Compact section-header action | `components/SECTION_HEADER_ACTION.md` | `components/section_link_button.html` |
 | Right contextual rail | `components/RIGHT_CONTEXT_RAIL.md` | `components/context_rail.html` |
 | Primary flow box | `components/INFO_FLOW.md` | `components/info_flow.html` |
@@ -438,7 +439,7 @@ Use `inventory_asset_card.html` for one navigable Kubernetes asset type. Asset c
 
 ### Right-side detail drawer
 
-Use `side_drawer.html` for compact contextual summaries that benefit from keeping the comparison table visible, such as Inventory Overview cluster details. The shared drawer owns overlay, panel geometry, close behavior, scrolling, accessibility, optional footer action, and reusable `section(...)` and `metric(...)` content primitives. Rich operational drawers follow Summary → Identity/Snapshot → Domain Breakdown → Signals → Operational Context. Drawer and section descriptions stay concise; self-explanatory identity/context sections may omit descriptions. Summary values use a divided plain-metric row instead of nested metric cards when card-inside-card density would dominate. The final Operational Context remains visible, states the data boundary, and gives one state-aware next action.
+Use `side_drawer.html` for compact contextual summaries that benefit from keeping the comparison table visible, such as Inventory Overview cluster details. The shared drawer owns overlay, panel geometry, close behavior, scrolling, accessibility, optional footer action, and reusable `section(...)` and `metric(...)` content primitives. Rich operational drawers follow Summary → Identity/Snapshot → Domain Breakdown → Signals → Operational Context. Drawer and section descriptions stay concise; self-explanatory identity/context sections may omit descriptions. Summary values use a divided plain-metric row instead of nested metric cards when card-inside-card density would dominate. The final Operational Context remains visible, states the data boundary, and gives one state-aware next action. Long values inside narrow drawer identity or snapshot columns use `details/_detail_content.html::stacked_detail_row(...)` so labels and values wrap within their owning column instead of forcing horizontal overflow.
 
 ### Operational section card
 
@@ -804,6 +805,12 @@ Resource Forecast follows the shared Analytics Analysis Surface hierarchy and th
 - Historical Signal Quality is not forecast accuracy.
 - Unknown evidence displays N/A and suppresses progress.
 - Full-page charts use the shared interactive forecast chart and canonical resource tokens.
+
+
+
+### Analytics Alerts & Anomalies Standard
+
+Alerts & Anomalies follows `components/ANALYTICS_ALERTS_ANOMALIES.md`. Connected source health, committed snapshot availability, anomaly collection, routing, suppression, ownership, and incident readiness remain separate evidence signals. Missing or partial evidence must not resolve to Healthy. Primary records and operational evidence stay bright; interpretation, attention, and recommended actions use the darker soft surface. Semantic levels are normalized in the template layer and domain payloads never emit CSS classes.
 
 ## Analytics Top Consumers Standard
 

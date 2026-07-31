@@ -104,7 +104,7 @@ def test_large_analytics_record_sections_use_responsive_rows() -> None:
 
     for content in (anomaly, filesystem, pvc, pv, quota, mapping):
         assert "overflow-x-auto" not in content
-    assert "Detected Anomaly Candidates" in anomaly
+    assert "Anomaly Candidates" in anomaly
     assert "Node Filesystem Usage" in filesystem
     assert "Persistent Volume Claims" in pvc
     assert "Persistent Volumes" in pv

@@ -1,16 +1,24 @@
 {% extends "layouts/app.html" %}
-{% import "analytics/components/_content_tabs.html" as analytics_content_tabs %}
-{% import "components/table_label.html" as table_label %}
+{% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
 {% block title %}Alerts & Anomalies{% endblock title %}
 {% block dashboard_content %}
+    {% set selected_cluster_name = selected_cluster.name if selected_cluster else 'No Cluster Selected' %}
+    {% set active_tab = selected_tab|default('alerts', true) %}
+    {% set alert_tabs = [
+        ('alerts', 'Alerts', 'bell-ring'),
+        ('anomalies', 'Anomalies', 'radar'),
+        ('routing', 'Routing & Suppression', 'route'),
+        ('ownership', 'Ownership & Runbooks', 'book-open-check'),
+        ('readiness', 'Incident Readiness', 'siren'),
+        ('recommendations', 'Recommendations', 'list-checks'),
+        ('resources', 'Operational Resources', 'external-link')
+    ] %}
+    {% set allowed_tabs = ['alerts', 'anomalies', 'routing', 'ownership', 'readiness', 'recommendations', 'resources'] %}
+
     <div id="alerts-page-content"
          class="kaori-analytics-page space-y-6"
          data-analytics-page-request-tracking="false"
          data-alerts-swap-boundary>
-        {% set prometheus_status = integration_status.prometheus %}
-        {% set alertmanager_status = integration_status.alertmanager %}
-        {% set selected_cluster_name = selected_cluster.name if selected_cluster else 'No Cluster Selected' %}
-
         <form id="alerts-control-form"
               method="GET"
               action="{{ url_for('analytics.alerts') }}"
@@ -23,8 +31,10 @@
               hx-on::before-request="window.dispatchEvent(new CustomEvent('kaori:alerts-collapse'))"
               hx-indicator="#alerts-refresh-indicator"
               hx-sync="#alerts-page-content:replace"
+              data-analytics-preserve-tab
               class="space-y-6">
             <input type="hidden" name="page" value="1">
+            <input type="hidden" name="tab" value="{{ active_tab }}">
             {% include "analytics/alerts/partials/_hero.html" %}
             {% if dependency_blocker %}
                 {% include "components/dependencies/_blocker.html" %}
@@ -36,145 +46,95 @@
         {% if not dependency_blocker %}
             {% include "analytics/alerts/partials/_cluster_signal_overview.html" %}
 
-            <section data-alerts-tabset
-                     data-analytics-tabset
-                     data-analytics-tabset-id="alerts-content"
-                     data-default-tab="alerts"
-                     x-data='kaoriAnalyticsTabs("alerts", ["alerts", "anomalies", "routing", "ownership", "readiness", "recommendations", "resources"], "alerts-content")'
-                     class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-                <div class="flex flex-col gap-3 px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-                    <div class="flex min-w-0 items-start gap-3">
-                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                            <i data-lucide="layout-dashboard" class="h-5 w-5"></i>
-                        </span>
-                        <div class="min-w-0">
-                            <h2 class="text-lg font-semibold text-content-primary">Alerts &amp; Anomalies Workspace</h2>
-                            <p class="mt-1 text-sm leading-6 text-content-muted">Review alert records, anomaly candidates, routing behavior, ownership coverage, incident readiness, recommendations, and operational resources.</p>
-                        </div>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-2 text-xs text-content-muted">
-                        <span>{{ selected_cluster_name }}</span>
-                        <span aria-hidden="true">•</span>
-                        <span>{{ source_status.resolved_source|default('none')|title }} Source</span>
+            {% call analytics_workspace.tabbed(
+                'alerts-content',
+                alert_tabs,
+                'Alerts & Anomalies Workspace',
+                'Alerts & Anomalies Workspace',
+                'Review signal records, anomaly candidates, routing, ownership, incident readiness, and response resources.',
+                'layout-dashboard',
+                active_tab,
+                allowed_tabs
+            ) %}
+                <div id="alerts-content-panel-alerts"
+                     role="tabpanel"
+                     data-analytics-tab-panel="alerts"
+                     aria-labelledby="alerts-content-tab-alerts"
+                     x-show="activeTab === 'alerts'"
+                     x-bind:hidden="activeTab !== 'alerts'"
+                     x-cloak>
+                    {% include "analytics/alerts/partials/_alerts_table.html" %}
+                </div>
+
+                <div id="alerts-content-panel-anomalies"
+                     role="tabpanel"
+                     data-analytics-tab-panel="anomalies"
+                     aria-labelledby="alerts-content-tab-anomalies"
+                     x-show="activeTab === 'anomalies'"
+                     x-bind:hidden="activeTab !== 'anomalies'"
+                     hidden
+                     x-cloak>
+                    {% include "analytics/alerts/partials/_anomalies_table.html" %}
+                </div>
+
+                <div id="alerts-content-panel-routing"
+                     role="tabpanel"
+                     data-analytics-tab-panel="routing"
+                     aria-labelledby="alerts-content-tab-routing"
+                     x-show="activeTab === 'routing'"
+                     x-bind:hidden="activeTab !== 'routing'"
+                     hidden
+                     x-cloak>
+                    <div class="space-y-5">
+                        {% include "analytics/alerts/partials/_routing_summary.html" %}
+                        {% include "analytics/alerts/partials/_silence_inhibition_summary.html" %}
                     </div>
                 </div>
 
-                {% set alert_tabs = [
-                    ('alerts', 'Alerts', 'bell-ring'),
-                    ('anomalies', 'Anomalies', 'radar'),
-                    ('routing', 'Routing & Suppression', 'route'),
-                    ('ownership', 'Ownership & Runbook Coverage', 'book-open-check'),
-                    ('readiness', 'Incident Readiness', 'siren'),
-                    ('recommendations', 'Recommendations', 'list-checks'),
-                    ('resources', 'Operational Resources', 'external-link')
-                ] %}
-                {{ analytics_content_tabs.render('alerts-content', alert_tabs, 'Alerts & Anomalies Workspace', embedded=true) }}
-
-                <div class="p-5 sm:p-6">
-                    <div id="alerts-content-panel-alerts"
-                         role="tabpanel"
-                         data-analytics-tab-panel="alerts"
-                         data-alerts-tab-panel="alerts"
-                         aria-labelledby="alerts-content-tab-alerts"
-                         x-show="activeTab === 'alerts'"
-                         x-bind:hidden="activeTab !== 'alerts'"
-                         x-cloak
-                         class="space-y-4">
-                        {% include "analytics/alerts/partials/_alerts_table.html" %}
-                    </div>
-
-                    <div id="alerts-content-panel-anomalies"
-                         role="tabpanel"
-                         data-analytics-tab-panel="anomalies"
-                         data-alerts-tab-panel="anomalies"
-                         aria-labelledby="alerts-content-tab-anomalies"
-                         x-show="activeTab === 'anomalies'"
-                         x-bind:hidden="activeTab !== 'anomalies'"
-                         hidden
-                         x-cloak
-                         class="space-y-4">
-                        {% include "analytics/alerts/partials/_anomalies_table.html" %}
-                    </div>
-
-                    <div id="alerts-content-panel-routing"
-                         role="tabpanel"
-                         data-analytics-tab-panel="routing"
-                         data-alerts-tab-panel="routing"
-                         aria-labelledby="alerts-content-tab-routing"
-                         x-show="activeTab === 'routing'"
-                         x-bind:hidden="activeTab !== 'routing'"
-                         hidden
-                         x-cloak>
-                        <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
-                            <div class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:px-6 lg:flex-row lg:items-start lg:justify-between">
-                                <div class="flex min-w-0 items-start gap-3">
-                                    <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                                        <i data-lucide="route" class="h-5 w-5"></i>
-                                    </span>
-                                    <div class="min-w-0">
-                                        <h3 class="text-base font-semibold text-content-primary">Routing &amp; Suppression</h3>
-                                        <p class="mt-1 text-sm leading-6 text-content-muted">Review alert delivery, grouping behavior, active silences, and inhibition policy readiness in one operational workspace.</p>
-                                    </div>
-                                </div>
-                                <div class="flex flex-wrap items-center gap-2">
-                                    {{ table_label.status_label(routing_summary.label, tone=routing_summary.level|default('info'), size='detail') }}
-                                    {{ table_label.status_label(silence_summary.label, tone=silence_summary.level|default('info'), size='detail') }}
-                                </div>
-                            </div>
-                            {% include "analytics/alerts/partials/_routing_summary.html" %}
-                            {% include "analytics/alerts/partials/_silence_inhibition_summary.html" %}
-                        </section>
-                    </div>
-
-                    <div id="alerts-content-panel-ownership"
-                         role="tabpanel"
-                         data-analytics-tab-panel="ownership"
-                         data-alerts-tab-panel="ownership"
-                         aria-labelledby="alerts-content-tab-ownership"
-                         x-show="activeTab === 'ownership'"
-                         x-bind:hidden="activeTab !== 'ownership'"
-                         hidden
-                         x-cloak>
-                        {% include "analytics/alerts/partials/_ownership_summary.html" %}
-                    </div>
-
-                    <div id="alerts-content-panel-readiness"
-                         role="tabpanel"
-                         data-analytics-tab-panel="readiness"
-                         data-alerts-tab-panel="readiness"
-                         aria-labelledby="alerts-content-tab-readiness"
-                         x-show="activeTab === 'readiness'"
-                         x-bind:hidden="activeTab !== 'readiness'"
-                         hidden
-                         x-cloak>
-                        {% include "analytics/alerts/partials/_incident_readiness.html" %}
-                    </div>
-
-                    <div id="alerts-content-panel-recommendations"
-                         role="tabpanel"
-                         data-analytics-tab-panel="recommendations"
-                         data-alerts-tab-panel="recommendations"
-                         aria-labelledby="alerts-content-tab-recommendations"
-                         x-show="activeTab === 'recommendations'"
-                         x-bind:hidden="activeTab !== 'recommendations'"
-                         hidden
-                         x-cloak>
-                        {% include "analytics/alerts/partials/_recommendations.html" %}
-                    </div>
-
-                    <div id="alerts-content-panel-resources"
-                         role="tabpanel"
-                         data-analytics-tab-panel="resources"
-                         data-alerts-tab-panel="resources"
-                         aria-labelledby="alerts-content-tab-resources"
-                         x-show="activeTab === 'resources'"
-                         x-bind:hidden="activeTab !== 'resources'"
-                         hidden
-                         x-cloak>
-                        {% include "analytics/alerts/partials/_operational_resources.html" %}
-                    </div>
+                <div id="alerts-content-panel-ownership"
+                     role="tabpanel"
+                     data-analytics-tab-panel="ownership"
+                     aria-labelledby="alerts-content-tab-ownership"
+                     x-show="activeTab === 'ownership'"
+                     x-bind:hidden="activeTab !== 'ownership'"
+                     hidden
+                     x-cloak>
+                    {% include "analytics/alerts/partials/_ownership_summary.html" %}
                 </div>
-            </section>
+
+                <div id="alerts-content-panel-readiness"
+                     role="tabpanel"
+                     data-analytics-tab-panel="readiness"
+                     aria-labelledby="alerts-content-tab-readiness"
+                     x-show="activeTab === 'readiness'"
+                     x-bind:hidden="activeTab !== 'readiness'"
+                     hidden
+                     x-cloak>
+                    {% include "analytics/alerts/partials/_incident_readiness.html" %}
+                </div>
+
+                <div id="alerts-content-panel-recommendations"
+                     role="tabpanel"
+                     data-analytics-tab-panel="recommendations"
+                     aria-labelledby="alerts-content-tab-recommendations"
+                     x-show="activeTab === 'recommendations'"
+                     x-bind:hidden="activeTab !== 'recommendations'"
+                     hidden
+                     x-cloak>
+                    {% include "analytics/alerts/partials/_recommendations.html" %}
+                </div>
+
+                <div id="alerts-content-panel-resources"
+                     role="tabpanel"
+                     data-analytics-tab-panel="resources"
+                     aria-labelledby="alerts-content-tab-resources"
+                     x-show="activeTab === 'resources'"
+                     x-bind:hidden="activeTab !== 'resources'"
+                     hidden
+                     x-cloak>
+                    {% include "analytics/alerts/partials/_operational_resources.html" %}
+                </div>
+            {% endcall %}
         {% endif %}
     </div>
 {% endblock dashboard_content %}

@@ -122,7 +122,7 @@ class ForecastItem:
     icon: str
     key: str = 'resource'
     projected_percent: float | None = None
-    current_percent: float | None = None
+    latest_daily_average_percent: float | None = None
     trend: str = 'Unknown'
     historical_points: str = ''
     forecast_points: str = ''
