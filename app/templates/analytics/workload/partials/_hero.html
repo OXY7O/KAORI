@@ -1,4 +1,5 @@
 {% import "components/page_hero.html" as page_hero %}
+{% import "analytics/components/_hero_context.html" as analytics_hero %}
 {% import "components/table_label.html" as table_label %}
 {% set selected_cluster_name = cluster.name if cluster else 'No Cluster Selected' %}
 <div>
@@ -31,6 +32,7 @@
                             <div class="min-w-0">
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Workload Posture</p>
                                 <p class="mt-1 text-3xl font-semibold leading-none text-brand-foreground">{{ workload_posture.value }}</p>
+                                {{ analytics_hero.posture_description(workload_posture.description) }}
                             </div>
                             {{ table_label.status_label(workload_posture.value, workload_posture.tone, workload_posture.icon) }}
                         </div>
@@ -38,7 +40,7 @@
                             {{ page_hero.context_metric('shield-alert', 'Governance Findings', finding_count_display, 'Workload findings in the active scope') }}
                             {{ page_hero.context_metric('calendar-range', 'Time Range', selected_time_range, 'Committed observation window') }}
                         </div>
-                        {{ page_hero.context_bottom_notice(workload_posture.description, workload_posture.tone) }}
+                        {{ analytics_hero.manage_clusters_action() }}
                     </div>
                 {% endif %}
             </aside>

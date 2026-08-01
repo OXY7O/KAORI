@@ -1,4 +1,5 @@
 {% import "components/page_hero.html" as page_hero %}
+{% import "analytics/components/_hero_context.html" as analytics_hero %}
 {% import "components/table_label.html" as table_label %}
 {% set posture = payload.posture|default({}, true) %}
 {% set scope = payload.scope|default({}, true) %}
@@ -33,6 +34,7 @@
                         <div class="min-w-0">
                             <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Consumer Posture</p>
                             <p class="mt-1 text-3xl font-bold leading-none text-brand-foreground">{{ posture.label|default('Unknown') }}</p>
+                            {{ analytics_hero.posture_description(posture.description|default('Consumer evidence is unavailable.')) }}
                         </div>
                         {{ table_label.status_label(posture.label|default('Unknown'), posture.tone|default('unknown'), posture.icon|default('database-zap')) }}
                     </div>
@@ -40,7 +42,7 @@
                         {{ page_hero.context_metric('gauge', 'Highest Pressure', posture.highest_pressure|default('N/A'), 'Highest valid request, limit, pod-capacity, or claim-capacity pressure signal.') }}
                         {{ page_hero.context_metric('list-checks', 'Actionable', recommendation_count, 'Prioritized actions derived from the committed consumer snapshot.') }}
                     </div>
-                    {{ page_hero.context_bottom_notice(posture.description|default('Consumer evidence is unavailable.'), posture.tone|default('unknown')) }}
+                    {{ analytics_hero.manage_clusters_action() }}
                 </div>
             {% endif %}
         </aside>

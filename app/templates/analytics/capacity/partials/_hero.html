@@ -1,4 +1,5 @@
 {% import "components/page_hero.html" as page_hero %}
+{% import "analytics/components/_hero_context.html" as analytics_hero %}
 {% import "components/table_label.html" as table_label %}
 {% set selected_cluster_name = cluster.name if cluster else 'No Cluster Selected' %}
 {% if not capacity_headroom_available|default(false) %}
@@ -49,7 +50,7 @@
                         <div>
                             <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Capacity Posture</p>
                             <p class="mt-1 text-3xl font-bold leading-none text-brand-foreground">{{ posture_value }}</p>
-                            {{ page_hero.context_posture_note(posture_desc, posture_tone) }}
+                            {{ analytics_hero.posture_description(posture_desc) }}
                         </div>
                         {{ table_label.status_label(posture_value, posture_tone, posture_icon) }}
                     </div>
@@ -57,6 +58,7 @@
                         {{ page_hero.context_metric('gauge', 'Lowest Headroom', lowest_headroom_metric_display, 'Tightest Ready-worker scheduling margin', value_classes=page_hero.context_metric_value_classes(true)) }}
                         {{ page_hero.context_metric('clock-3', 'Time Range', selected_time_range, 'Observation window in use', value_classes=page_hero.context_metric_value_classes(true)) }}
                     </div>
+                    {{ analytics_hero.manage_clusters_action() }}
                 </div>
             {% endif %}
         </aside>

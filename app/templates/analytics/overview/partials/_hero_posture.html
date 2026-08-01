@@ -1,4 +1,5 @@
 {% import "components/page_hero.html" as page_hero %}
+{% import "analytics/components/_hero_context.html" as analytics_hero %}
 {% import "components/table_label.html" as table_label %}
 {% set actionable = payload.actionable_recommendations|default({}) %}
 {% set active_alerts = payload.health_summary.active_alerts.value|default(0) %}
@@ -26,6 +27,7 @@
         <div class="min-w-0">
             <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Operational Posture</p>
             <p class="mt-1 text-3xl font-semibold leading-none text-brand-foreground">{{ posture.value }}</p>
+            {{ analytics_hero.posture_description(posture_short_description) }}
         </div>
         {{ table_label.status_label(posture.status|replace('_', ' ')|title, posture_tone, posture_icon) }}
     </div>
@@ -41,5 +43,5 @@
             <p class="{{ page_hero.context_metric_helper_classes() }}">Firing alerts in current scope</p>
         </div>
     </div>
-    {{ page_hero.context_bottom_notice(posture_short_description, posture_tone) }}
+    {{ analytics_hero.manage_clusters_action() }}
 </div>

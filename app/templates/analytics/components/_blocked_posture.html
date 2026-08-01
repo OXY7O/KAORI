@@ -1,4 +1,5 @@
 {% import "components/page_hero.html" as page_hero %}
+{% import "analytics/components/_hero_context.html" as analytics_hero %}
 {% import "components/table_label.html" as table_label %}
 {% set blocker_tone = 'warning' if dependency_blocker.kind in ['cluster_required', 'prometheus_setup', 'prometheus_capability', 'alert_source_setup'] else 'critical' %}
 {% if dependency_blocker.kind == 'prometheus_capability' %}
@@ -37,4 +38,5 @@
             value_classes='text-lg font-bold leading-5'
         ) }}
     </div>
+    {{ analytics_hero.manage_clusters_action() }}
 </div>

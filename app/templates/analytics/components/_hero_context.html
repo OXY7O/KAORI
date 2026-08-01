@@ -1,0 +1,16 @@
+{% import "components/page_hero.html" as page_hero %}
+
+{% macro manage_clusters_action() -%}
+    <a href="{{ url_for('integrations.kubernetes') }}"
+       class="{{ page_hero.context_single_action_classes() }}"
+       data-analytics-manage-clusters-action>
+        <i data-lucide="server-cog" class="h-4 w-4" aria-hidden="true"></i>
+        Manage Clusters
+    </a>
+{%- endmacro %}
+
+{% macro posture_description(text) -%}
+    {% if text %}
+        <p class="mt-2 max-w-prose text-xs font-medium leading-5 text-brand-foreground-muted">{{ text }}</p>
+    {% endif %}
+{%- endmacro %}

@@ -1,5 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "analytics/components/_hero_context.html" as analytics_hero %}
 {% import "components/table_label.html" as table_label %}
 {% block title %}Resource Forecast{% endblock title %}
 {% block dashboard_content %}
@@ -58,6 +59,7 @@
                                 <div class="min-w-0">
                                     <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Forecast Posture</p>
                                     <p class="mt-1 text-3xl font-bold leading-none text-brand-foreground">{{ posture_value }}</p>
+                                    {{ analytics_hero.posture_description(posture_desc) }}
                                 </div>
                                 {{ table_label.status_label(posture_value, posture_tone, posture_icon) }}
                             </div>
@@ -65,7 +67,7 @@
                                 {{ page_hero.context_metric('gauge', 'Highest Projection', highest_projection, summary.highest_projected_label|default('No valid projection', true)) }}
                                 {{ page_hero.context_metric('list-checks', 'Actionable', recommendation_count, 'Forecast recommendations') }}
                             </div>
-                            {{ page_hero.context_bottom_notice(posture_desc, posture_tone) }}
+                            {{ analytics_hero.manage_clusters_action() }}
                         </div>
                     {% endif %}
                 </aside>

@@ -835,8 +835,6 @@ The canonical Integrations contract is documented in `components/INTEGRATIONS_WO
 - One shared runtime-history component is rendered directly; provider-local presentation wrappers are prohibited.
 - Dense technical matrices may scroll only inside their owning component when simultaneous column comparison is operationally necessary.
 
+## Kubernetes Analytics Hero Alignment
 
-### Inventory Overview Drawer Signals
-
-- Use `Committed Snapshot` as the compact Inventory Snapshot Source value.
-- Inventory Signal callouts use one full-width row per signal; subsequent signals stack vertically.
+Kubernetes Analytics heroes follow the Kubernetes Inventory Overview composition: intro and metadata on the left, a two-metric posture panel on the right, and a full-width `Manage Clusters` action at the bottom. Blocked states keep the same action. Domain data may differ, but posture geometry and navigation ownership must remain consistent.

@@ -1,4 +1,5 @@
 {% import "components/page_hero.html" as page_hero %}
+{% import "analytics/components/_hero_context.html" as analytics_hero %}
 {% import "components/table_label.html" as table_label %}
 <div class="{{ page_hero.context_panel_classes() }}">
     <div class="flex items-start justify-between gap-4">
@@ -20,8 +21,5 @@
             <div class="mt-1 h-4 w-28 animate-pulse rounded bg-brand-surface-strong"></div>
         </div>
     </div>
-    <div class="mt-3 flex min-h-10 w-full items-center gap-2.5 rounded-lg border border-brand-outline bg-brand-surface px-3 py-2.5">
-        <div class="h-7 w-7 animate-pulse rounded-md bg-brand-surface-strong"></div>
-        <div class="h-3 w-44 animate-pulse rounded-md bg-brand-surface-strong"></div>
-    </div>
+    {{ analytics_hero.manage_clusters_action() }}
 </div>

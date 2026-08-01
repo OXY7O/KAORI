@@ -1,4 +1,5 @@
 {% import "components/page_hero.html" as page_hero %}
+{% import "analytics/components/_hero_context.html" as analytics_hero %}
 {% import "components/table_label.html" as table_label %}
 {% set selected_cluster_name = cluster.name if cluster else 'No Cluster Selected' %}
 {% set cpu_util = summary.cpu_utilization|default(0) %}
@@ -42,7 +43,7 @@
                         <div class="min-w-0">
                             <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Utilization Posture</p>
                             <p class="mt-1 text-3xl font-bold leading-none text-brand-foreground">{{ posture_value }}</p>
-                            {{ page_hero.context_posture_note(posture_desc, posture_tone) }}
+                            {{ analytics_hero.posture_description(posture_desc) }}
                         </div>
                         {{ table_label.status_label(posture_value, posture_tone, posture_icon) }}
                     </div>
@@ -50,6 +51,7 @@
                         {{ page_hero.context_metric('gauge', 'Highest Pressure', highest_label ~ ' · ' ~ highest_util ~ '%', 'Highest current utilization') }}
                         {{ page_hero.context_metric('list-checks', 'Actionable', recommendation_count|default(0), 'Prioritized recommendations') }}
                     </div>
+                    {{ analytics_hero.manage_clusters_action() }}
                 </div>
             {% endif %}
         </aside>
