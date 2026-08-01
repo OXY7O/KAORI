@@ -107,7 +107,32 @@ REPORT_TYPE_DESCRIPTIONS = {
     ),
 }
 
+
+ANALYTICS_OVERVIEW_SECTION_KEYS = (
+    'executive_brief',
+    'resource_posture',
+    'trend_forecast',
+    'top_consumers',
+    'capacity_pressure',
+    'alerts_anomalies',
+    'reporting_summary',
+    'inventory_snapshot',
+    'data_freshness_reliability',
+    'recommendation_plan',
+    'methodology_evidence_boundary',
+)
+
 SECTION_LABELS = {
+    'executive_brief': 'Executive Brief',
+    'resource_posture': 'Resource Posture',
+    'trend_forecast': 'Trend & Forecast',
+    'capacity_pressure': 'Capacity Pressure',
+    'alerts_anomalies': 'Alerts & Anomalies',
+    'reporting_summary': 'Reporting Summary',
+    'inventory_snapshot': 'Inventory Snapshot',
+    'data_freshness_reliability': 'Data Freshness & Reliability',
+    'recommendation_plan': 'Recommendation Plan',
+    'methodology_evidence_boundary': 'Methodology & Evidence Boundary',
     'executive_summary': 'Executive Summary',
     'analytics_summary': 'Analytics Summary',
     'resource_snapshot': 'Resource Snapshot',
@@ -161,6 +186,16 @@ SECTION_LABELS = {
 }
 
 SECTION_DESCRIPTIONS = {
+    'executive_brief': 'Current operational position, priority findings, decisions, and evidence scope.',
+    'resource_posture': 'CPU, memory, storage, pod, and node posture with committed capacity headroom.',
+    'trend_forecast': 'Historical resource direction, forecast pressure, confidence, and limitations.',
+    'capacity_pressure': 'Current headroom, saturation risk, breach projection, and recommended capacity actions.',
+    'alerts_anomalies': 'Active alert severity, affected resources, recent anomalies, and response priorities.',
+    'reporting_summary': 'Report generation activity, schedules, storage readiness, and operational notes.',
+    'inventory_snapshot': 'Committed cluster, node, workload, pod, and core resource inventory summary.',
+    'data_freshness_reliability': 'Source recency, collection completeness, reliability, and data-quality issues.',
+    'recommendation_plan': 'Prioritized evidence-backed actions with owners, target windows, and validation gates.',
+    'methodology_evidence_boundary': 'Data sources, methodology, included evidence, exclusions, and status language.',
     'executive_summary': (
         'Summarizes report purpose, selected scope, key operational findings, and data context for the generated PDF.'
     ),
@@ -360,13 +395,7 @@ REQUIRES_SINGLE_CLUSTER_REPORT_TYPES = {
 
 
 REAL_DATA_SECTION_MAP = {
-    'analytics_overview': {
-        'executive_summary',
-        'analytics_summary',
-        'resource_snapshot',
-        'risk_overview',
-        'operational_recommendations',
-    },
+    'analytics_overview': set(ANALYTICS_OVERVIEW_SECTION_KEYS),
     'resource_utilization': {
         'executive_summary',
         'resource_snapshot',

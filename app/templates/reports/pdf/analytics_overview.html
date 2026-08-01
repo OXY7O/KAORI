@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>{{ document.report_name }}</title>
+    </head>
+    <body class="ao-document">
+        {% set p = document.presentation %}
+
+        {% macro header(page_number, title, subtitle) -%}
+            <header class="ao-header">
+                <div class="ao-brand-lockup">
+                    <img class="ao-logo" src="app/static/images/kaori-logo.svg" alt="KAORI">
+                    <div>
+                        <div class="ao-brand-name">KAORI</div>
+                        <div class="ao-brand-subtitle">Knowledge, Automation, Operations, Resilience &amp; Intelligence</div>
+                    </div>
+                </div>
+                <div class="ao-header-report">
+                    <strong>Analytics Overview</strong>
+                    <span>Kubernetes Operational Intelligence Report</span>
+                </div>
+            </header>
+            <div class="ao-page-heading">
+                <div class="ao-page-number">{{ page_number }}</div>
+                <div class="ao-page-heading-copy">
+                    <h1>{{ title }}</h1>
+                    <p>{{ subtitle }}</p>
+                </div>
+                <div class="ao-cutoff">
+                    <span class="ao-cutoff-icon">▣</span>
+                    <div><small>Data Cut-off</small><strong>{{ p.data_cutoff }}</strong></div>
+                </div>
+            </div>
+        {%- endmacro %}
+
+        {% macro footer(page_number) -%}
+            <footer class="ao-footer">
+                <div>Report ID: <strong class="ao-long-value">{{ p.report_id }}</strong><span class="ao-footer-separator">|</span>{{ p.classification }}</div>
+                <div>Page {{ page_number }} of {{ p.page_count }}</div>
+            </footer>
+        {%- endmacro %}
+
+        {% macro status(label, tone='neutral') -%}
+            <span class="ao-status ao-status-{{ tone }}"><span class="ao-status-dot"></span>{{ label }}</span>
+        {%- endmacro %}
+
+        {% macro metric(metric, compact=false) -%}
+            <article class="ao-metric-card ao-tone-{{ metric.tone }}{% if compact %} ao-metric-card-compact{% endif %}">
+                <div class="ao-metric-icon">{{ metric.label[:1] }}</div>
+                <div class="ao-metric-copy">
+                    <div class="ao-metric-label">{{ metric.label }}</div>
+                    <div class="ao-metric-value ao-long-value">{{ metric.value }}</div>
+                    {% if metric.status %}{{ status(metric.status, metric.tone) }}{% endif %}
+                    {% if metric.note %}<p>{{ metric.note }}</p>{% endif %}
+                </div>
+            </article>
+        {%- endmacro %}
+
+        {% macro empty(message) -%}
+            <div class="ao-empty">{{ message }}</div>
+        {%- endmacro %}
+
+        <section class="ao-page ao-cover-page">
+            <header class="ao-cover-header">
+                <div class="ao-brand-lockup ao-cover-brand">
+                    <img class="ao-logo ao-cover-logo" src="app/static/images/kaori-logo.svg" alt="KAORI">
+                    <div>
+                        <div class="ao-brand-name">KAORI</div>
+                        <div class="ao-brand-subtitle">Knowledge, Automation, Operations, Resilience &amp; Intelligence</div>
+                    </div>
+                </div>
+                <div class="ao-cover-lines"></div>
+            </header>
+
+            <main class="ao-cover-content">
+                <div class="ao-cover-title-row">
+                    <div>
+                        <h1>Analytics Overview</h1>
+                        <h2>Kubernetes Operational Intelligence Report</h2>
+                    </div>
+                    <span class="ao-prototype-label">SYSTEM TEMPLATE</span>
+                </div>
+                <p class="ao-cover-description">
+                    Executive view of cluster posture, capacity pressure, operational risk, resource concentration,
+                    and recommended actions for the selected reporting boundary.
+                </p>
+
+                <section class="ao-cover-posture ao-tone-{{ p.cover.overall_tone }}">
+                    <div class="ao-cover-posture-label">
+                        <span class="ao-large-symbol">!</span>
+                        <div><small>Overall Posture</small>{{ status(p.cover.overall_posture, p.cover.overall_tone) }}</div>
+                    </div>
+                    <div class="ao-cover-posture-copy">
+                        <strong>{{ p.cover.assessment }}</strong>
+                        <p>Primary concern: {{ p.cover.primary_concern }}</p>
+                    </div>
+                </section>
+
+                <div class="ao-cover-grid">
+                    <article class="ao-panel">
+                        <h3>Key Coverage</h3>
+                        <p class="ao-panel-subtitle">Operational areas included in this report.</p>
+                        <ul class="ao-coverage-list">
+                            {% for title, description in p.cover.coverage %}
+                                <li><strong>{{ title }}</strong><span>{{ description }}</span></li>
+                            {% endfor %}
+                        </ul>
+                    </article>
+                    <article class="ao-panel">
+                        <h3>Report Context</h3>
+                        <p class="ao-panel-subtitle">Scope, reporting period, and document control.</p>
+                        <dl class="ao-context-list">
+                            <div><dt>Scope</dt><dd class="ao-long-value">{{ p.cluster_scope }}</dd></div>
+                            <div><dt>Namespace</dt><dd class="ao-long-value">{{ p.namespace_scope }}</dd></div>
+                            <div><dt>Reporting Period</dt><dd>{{ p.period_label }}</dd></div>
+                            <div><dt>Data Cut-off</dt><dd>{{ p.data_cutoff }}</dd></div>
+                        </dl>
+                        <div class="ao-context-divider"></div>
+                        <h4>Document Control</h4>
+                        <dl class="ao-context-list">
+                            <div><dt>Report ID</dt><dd class="ao-long-value">{{ p.report_id }}</dd></div>
+                            <div><dt>Classification</dt><dd>{{ p.classification }}</dd></div>
+                            <div><dt>Generated By</dt><dd class="ao-long-value">{{ p.generated_by }}</dd></div>
+                        </dl>
+                    </article>
+                </div>
+
+                <aside class="ao-reading-guide">
+                    <span class="ao-guide-icon">⌘</span>
+                    <div><h3>Reading Guide</h3><p>Start with the Executive Brief, then review capacity posture, trend and forecast, risks, top consumers, and the recommendation plan in sequence.</p></div>
+                </aside>
+            </main>
+            <footer class="ao-cover-footer"><span>{{ p.classification }}</span><strong class="ao-long-value">{{ p.report_id }}</strong></footer>
+        </section>
+
+        <section class="ao-page">
+            {{ header(1, 'Executive Brief', 'Operational position at the report cut-off.') }}
+            <div class="ao-kpi-grid ao-kpi-grid-four">
+                {% for item in p.executive.metrics %}{{ metric(item) }}{% endfor %}
+            </div>
+
+            <article class="ao-callout ao-callout-primary">
+                <div class="ao-callout-icon">↗</div>
+                <div><h3>Executive Summary</h3><p>{{ p.executive.summary }}</p></div>
+            </article>
+
+            <div class="ao-two-column">
+                <article class="ao-panel">
+                    <h3>Top Priority Findings</h3>
+                    {% if p.executive.findings %}
+                        <ol class="ao-ranked-list">
+                            {% for item in p.executive.findings %}
+                                <li><span>{{ loop.index }}</span><div><strong class="ao-long-value">{{ item.title }}</strong><p>{{ item.description }}</p></div></li>
+                            {% endfor %}
+                        </ol>
+                    {% else %}{{ empty('No prioritized finding was returned.') }}{% endif %}
+                </article>
+                <article class="ao-panel">
+                    <h3>Decisions Required</h3>
+                    {% if p.executive.decisions %}
+                        <ul class="ao-decision-list">
+                            {% for item in p.executive.decisions %}
+                                <li><span class="ao-decision-icon">✓</span><div><strong class="ao-long-value">{{ item.title }}</strong><p>{{ item.description }}</p></div></li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}{{ empty('No decision item was returned.') }}{% endif %}
+                </article>
+            </div>
+
+            <article class="ao-evidence-strip">
+                <div class="ao-evidence-title">Evidence Scope</div>
+                {% for item in p.executive.evidence %}
+                    <div class="ao-evidence-item"><strong>{{ item.label }}</strong><span class="ao-long-value">{{ item.source }}</span>{{ status(item.status, item.tone) }}</div>
+                {% endfor %}
+            </article>
+
+            <aside class="ao-note"><strong>Note</strong> All metrics and findings use the committed observation boundary at the report cut-off. Live state after the cut-off is not included.</aside>
+            {{ footer(2) }}
+        </section>
+
+        <section class="ao-page">
+            {{ header(2, 'Resource Posture', 'Current resource utilization and committed capacity headroom.') }}
+            <div class="ao-two-column ao-resource-cards">
+                {% for item in (p.resource_posture.cpu, p.resource_posture.memory) %}
+                    <article class="ao-panel ao-resource-card">
+                        <h3>{{ item.label }} Capacity</h3>
+                        <p class="ao-panel-subtitle">{{ item.description }}</p>
+                        <div class="ao-resource-values">
+                            <div><small>Current</small><strong>{{ item.current }}</strong></div>
+                            <div><small>P95</small><strong class="ao-purple-value">{{ item.p95 }}</strong></div>
+                            <div><small>Headroom</small><strong>{{ item.headroom }}</strong></div>
+                            <div><small>Status</small>{{ status(item.status, item.tone) }}</div>
+                        </div>
+                        <div class="ao-threshold-heading">{{ item.label }} P95 against thresholds</div>
+                        <div class="ao-threshold-track">
+                            <span class="ao-threshold-fill" style="width: {{ item.percent }}%"></span>
+                            <i class="ao-threshold-warning"></i><i class="ao-threshold-critical"></i>
+                            <b style="left: {{ item.percent }}%">{{ item.p95 }}</b>
+                        </div>
+                        <div class="ao-threshold-labels"><span>0%</span><span>Warning 70%</span><span>Critical 85%</span><span>100%</span></div>
+                    </article>
+                {% endfor %}
+            </div>
+
+            <article class="ao-panel">
+                <h3>Storage, Pod, and Node Capacity</h3>
+                <p class="ao-panel-subtitle">Capacity values use committed observation evidence at the report cut-off.</p>
+                <table class="ao-table ao-table-capacity">
+                    <thead><tr><th>Resource</th><th>Used</th><th>Capacity</th><th>Headroom</th><th>Interpretation</th><th>Status</th></tr></thead>
+                    <tbody>
+                        {% for row in p.resource_posture.capacity_rows %}
+                            <tr><td><strong>{{ row.resource }}</strong></td><td>{{ row.used }}</td><td>{{ row.capacity }}</td><td>{{ row.headroom }}</td><td class="ao-long-value">{{ row.interpretation }}</td><td>{{ status(row.status, row.tone) }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </article>
+
+            <article class="ao-callout ao-callout-primary"><div class="ao-callout-icon">i</div><div><h3>Interpretation</h3><p>{{ p.resource_posture.interpretation }}</p></div></article>
+            <article class="ao-panel ao-threshold-summary">
+                <h3>Operational Thresholds</h3>
+                <div class="ao-threshold-summary-grid">
+                    {% for item in p.resource_posture.thresholds %}<div><strong class="ao-text-{{ item.tone }}">{{ item.label }}</strong><span>{{ item.condition }}</span></div>{% endfor %}
+                </div>
+            </article>
+            {{ footer(3) }}
+        </section>
+
+        <section class="ao-page">
+            {{ header(3, 'Trend & Forecast', 'Historical behavior, projected pressure, and confidence of the available forecast.') }}
+            <article class="ao-callout ao-callout-primary"><div class="ao-callout-icon">↗</div><div><h3>{{ p.trend_forecast.headline }}</h3><p>{{ p.trend_forecast.summary }}</p></div></article>
+            <article class="ao-panel ao-chart-panel">
+                <h3>{{ p.trend_forecast.headline }}</h3>
+                <p class="ao-panel-subtitle">Historical P95 and projected trajectory for the configured forecast window.</p>
+                {{ p.trend_forecast.chart_svg | safe }}
+                <p class="ao-chart-caption">Source: committed analytics forecast evidence | Data cut-off: {{ p.data_cutoff }} | Missing observations are shown as gaps, not zero values.</p>
+            </article>
+            <article class="ao-panel">
+                <h3>Projected Capacity Pressure</h3>
+                <table class="ao-table">
+                    <thead><tr><th>Resource</th><th>Current</th><th>Projected</th><th>Trend</th><th>Threshold ETA</th><th>Confidence</th><th>Assessment</th></tr></thead>
+                    <tbody>{% for row in p.trend_forecast.resource_rows %}<tr><td><strong>{{ row.resource }}</strong></td><td>{{ row.current }}</td><td>{{ row.projected }}</td><td>{{ row.growth }}</td><td>{{ row.eta }}</td><td>{{ status(row.confidence, 'info' if row.confidence == 'High' else 'neutral') }}</td><td class="ao-long-value">{{ row.assessment }}</td></tr>{% endfor %}</tbody>
+                </table>
+            </article>
+            <article class="ao-callout ao-callout-primary"><div class="ao-callout-icon">i</div><div><h3>Forecast Interpretation</h3><p>{{ p.trend_forecast.interpretation }}</p></div></article>
+            <article class="ao-note"><strong>Forecast Limitation</strong> {{ p.trend_forecast.limitation }}</article>
+            {{ footer(4) }}
+        </section>
+
+        <section class="ao-page">
+            {{ header(5, 'Top Consumers', 'Highest resource utilization by namespace and resource identity.') }}
+            <article class="ao-panel ao-consumer-panel">
+                <h3>{{ p.top_consumers.primary_label }}</h3>
+                {% if p.top_consumers.primary %}
+                    <table class="ao-table ao-consumer-table">
+                        <thead><tr><th>#</th><th>Full Resource Name</th><th>Namespace</th><th>Resource</th><th>Value</th><th>Share</th><th>Status</th></tr></thead>
+                        <tbody>{% for row in p.top_consumers.primary %}<tr><td><span class="ao-marker">{{ row.marker }}</span></td><td class="ao-name-cell ao-long-value"><strong>{{ row.name }}</strong></td><td class="ao-long-value">{{ row.namespace }}</td><td>{{ row.resource }}</td><td>{{ row.value }}</td><td><div class="ao-mini-bar"><span style="width: {{ row.percent }}%"></span></div>{{ '%.1f'|format(row.percent) }}%</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody>
+                    </table>
+                {% else %}{{ empty('No primary top-consumer evidence was returned.') }}{% endif %}
+            </article>
+
+            <article class="ao-panel ao-consumer-panel">
+                <h3>{{ p.top_consumers.secondary_label }}</h3>
+                {% if p.top_consumers.secondary %}
+                    <table class="ao-table ao-consumer-table">
+                        <thead><tr><th>#</th><th>Full Resource Name</th><th>Namespace</th><th>Resource</th><th>Value</th><th>Share</th><th>Status</th></tr></thead>
+                        <tbody>{% for row in p.top_consumers.secondary %}<tr><td><span class="ao-marker">{{ row.marker }}</span></td><td class="ao-name-cell ao-long-value"><strong>{{ row.name }}</strong></td><td class="ao-long-value">{{ row.namespace }}</td><td>{{ row.resource }}</td><td>{{ row.value }}</td><td><div class="ao-mini-bar"><span style="width: {{ row.percent }}%"></span></div>{{ '%.1f'|format(row.percent) }}%</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody>
+                    </table>
+                {% else %}{{ empty('No secondary top-consumer evidence was returned.') }}{% endif %}
+            </article>
+
+            <div class="ao-three-column">
+                <article class="ao-panel"><h3>Resource Mix</h3><div class="ao-donut" style="--segments:{% for item in p.top_consumers.mix.segments %}{{ item.color }} {{ item.start }}% {{ item.end }}%{% if not loop.last %},{% endif %}{% endfor %}"><strong>{{ p.top_consumers.mix.segments|length }}</strong><span>Displayed Consumers</span></div><ul class="ao-legend">{% for item in p.top_consumers.mix.segments %}<li><i style="background:{{ item.color }}"></i><span class="ao-marker">{{ item.marker }}</span><span class="ao-long-value">{{ item.name }}</span><strong>{{ '%.1f'|format(item.percent) }}%</strong></li>{% endfor %}</ul></article>
+                <article class="ao-panel"><h3>Resource Type View</h3>{% for item in p.top_consumers.resource_view %}<div class="ao-summary-row"><span>{{ item.label }}</span><strong>{{ item.value }}</strong>{{ status(item.status, item.tone) }}</div>{% endfor %}</article>
+                <article class="ao-panel"><h3>Observation Scope</h3>{% for item in p.top_consumers.observation_scope %}<div class="ao-summary-row ao-summary-row-stack"><span>{{ item.label }}</span><strong class="ao-long-value">{{ item.value }}</strong></div>{% endfor %}</article>
+            </div>
+            <article class="ao-callout ao-callout-primary"><div class="ao-callout-icon">★</div><div><h3>Insight</h3><p>{{ p.top_consumers.insight }}</p></div></article>
+            {{ footer(5) }}
+        </section>
+
+        <section class="ao-page ao-page-capacity">
+            {{ header(6, 'Capacity Pressure', 'Current capacity headroom and risk of saturation.') }}
+            <div class="ao-scaled-content">
+            <div class="ao-kpi-grid ao-kpi-grid-four">{% for item in p.capacity_pressure.metrics %}{{ metric(item) }}{% endfor %}</div>
+            <div class="ao-capacity-layout">
+                <article class="ao-panel ao-capacity-main"><h3>Capacity by Resource</h3><table class="ao-table"><thead><tr><th>Resource</th><th>Used</th><th>Capacity</th><th>Headroom</th><th>% Used</th><th>Status</th></tr></thead><tbody>{% for row in p.capacity_pressure.rows %}<tr><td><strong>{{ row.resource }}</strong></td><td>{{ row.used }}</td><td>{{ row.capacity }}</td><td>{{ row.headroom }}</td><td><div class="ao-mini-bar"><span style="width: {{ row.percent }}%"></span></div>{{ '%.1f'|format(row.percent) }}%</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table></article>
+                <article class="ao-panel ao-risk-panel"><h3>Risk Highlight</h3>{% for item in p.capacity_pressure.risk_highlights %}<div class="ao-risk-item"><span>!</span><div><strong class="ao-long-value">{{ item.title }}</strong><p>{{ item.description }}</p></div></div>{% endfor %}</article>
+            </div>
+            <div class="ao-two-column">
+                <article class="ao-panel"><h3>Headroom Distribution</h3><div class="ao-donut ao-donut-small"><strong>{{ p.capacity_pressure.distribution|sum(attribute='value') }}</strong><span>Clusters</span></div><ul class="ao-legend ao-legend-simple">{% for item in p.capacity_pressure.distribution %}<li><i class="ao-bg-{{ item.tone }}"></i><span>{{ item.label }}</span><strong>{{ item.value }}</strong></li>{% endfor %}</ul></article>
+                <article class="ao-panel"><h3>Capacity Forecast</h3><table class="ao-table"><thead><tr><th>Resource</th><th>Projected % Used</th><th>Pressure</th><th>Risk of Breach</th></tr></thead><tbody>{% for row in p.capacity_pressure.forecast %}<tr><td><strong>{{ row.resource }}</strong></td><td>{{ row.range }}</td><td>{{ status(row.pressure, row.tone) }}</td><td>{{ row.risk }}</td></tr>{% endfor %}</tbody></table></article>
+            </div>
+            <div class="ao-two-column"><article class="ao-callout ao-callout-primary"><div class="ao-callout-icon">i</div><div><h3>Interpretation</h3><p>{{ p.capacity_pressure.interpretation }}</p></div></article><article class="ao-callout ao-callout-info"><div class="ao-callout-icon">✓</div><div><h3>Recommended Actions</h3><ul>{% for item in p.capacity_pressure.actions %}<li class="ao-long-value">{{ item.title }}</li>{% endfor %}</ul></div></article></div>
+            </div>
+            {{ footer(6) }}
+        </section>
+
+        <section class="ao-page">
+            {{ header(7, 'Alerts & Anomalies', 'Active conditions and unusual patterns detected in the environment.') }}
+            <div class="ao-kpi-grid ao-kpi-grid-four">{% for item in p.alerts.metrics %}{{ metric(item) }}{% endfor %}</div>
+            <div class="ao-two-column"><article class="ao-panel ao-chart-panel"><h3>Alert Severity Summary</h3>{{ p.alerts.severity_svg|safe }}</article><article class="ao-panel"><h3>Alerts by Category</h3><div class="ao-donut ao-donut-small"><strong>{{ p.alerts.category_mix|sum(attribute='value') }}</strong><span>Total Alerts</span></div><ul class="ao-legend">{% for item in p.alerts.category_mix %}<li><i></i><span>{{ item.label }}</span><strong>{{ item.value }} ({{ '%.1f'|format(item.percent) }}%)</strong></li>{% endfor %}</ul></article></div>
+            <div class="ao-alert-layout">
+                <article class="ao-panel"><h3>Top Active Alerts</h3>{% if p.alerts.alerts %}<table class="ao-table"><thead><tr><th>#</th><th>Severity</th><th>Alert</th><th>Affected Resource</th><th>Namespace</th><th>Since</th><th>Status</th></tr></thead><tbody>{% for row in p.alerts.alerts %}<tr><td>{{ row.rank }}</td><td>{{ status(row.severity, row.tone) }}</td><td class="ao-name-cell ao-long-value">{{ row.name }}</td><td class="ao-long-value">{{ row.resource }}</td><td class="ao-long-value">{{ row.namespace }}</td><td>{{ row.since }}</td><td>{{ row.status }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty('No active alert detail was returned.') }}{% endif %}</article>
+                <article class="ao-panel"><h3>Recent Anomalies</h3>{% if p.alerts.anomalies %}<ul class="ao-anomaly-list">{% for row in p.alerts.anomalies %}<li><span>↗</span><div><strong class="ao-long-value">{{ row.name }}</strong><p class="ao-long-value">Namespace: {{ row.namespace }}</p><small>{{ row.detected_at }}</small></div></li>{% endfor %}</ul>{% else %}{{ empty('No recent anomaly detail was returned.') }}{% endif %}</article>
+            </div>
+            <article class="ao-callout ao-callout-primary"><div class="ao-callout-icon">i</div><div><h3>Alert Intelligence Summary</h3><p>{{ p.alerts.summary }}</p></div></article>
+            <article class="ao-panel"><h3>Recommended Next Steps</h3><div class="ao-four-column">{% for item in p.alerts.next_steps %}<div><strong class="ao-text-{{ item.tone }} ao-long-value">{{ item.title }}</strong><p>{{ item.description }}</p></div>{% else %}<div>{{ empty('No alert-specific next step was returned.') }}</div>{% endfor %}</div></article>
+            {{ footer(7) }}
+        </section>
+
+        <section class="ao-page">
+            {{ header(8, 'Reporting Summary', 'Report generation status, schedules, and storage readiness.') }}
+            <div class="ao-kpi-grid ao-kpi-grid-four">{% for item in p.reporting.metrics %}{{ metric(item) }}{% endfor %}</div>
+            <div class="ao-two-column"><article class="ao-panel ao-chart-panel"><h3>Report Generation Activity</h3><div class="ao-bar-series">{% for item in p.reporting.recent_reports %}<span style="height: {{ 20 + loop.index * 9 }}%"></span>{% else %}<span style="height:20%"></span>{% endfor %}</div><p class="ao-chart-caption">Recent generated-report records in descending generation order.</p></article><article class="ao-panel"><h3>Storage Readiness</h3><div class="ao-storage-summary"><strong class="ao-long-value">{{ p.reporting.storage.backend }}</strong>{{ status(p.reporting.storage.status, p.reporting.storage.tone) }}<p>{{ p.reporting.storage.description }}</p></div></article></div>
+            <div class="ao-two-column">
+                <article class="ao-panel"><h3>Scheduled Reports</h3>{% if p.reporting.schedules %}<table class="ao-table"><thead><tr><th>#</th><th>Full Schedule Name</th><th>Frequency</th><th>Next Run</th><th>Status</th></tr></thead><tbody>{% for row in p.reporting.schedules %}<tr><td>{{ loop.index }}</td><td class="ao-name-cell ao-long-value">{{ row.name }}</td><td>{{ row.frequency }}</td><td>{{ row.next_run }}</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty('No schedule record was available.') }}{% endif %}</article>
+                <article class="ao-panel"><h3>Recent Generated Reports</h3>{% if p.reporting.recent_reports %}<table class="ao-table"><thead><tr><th>#</th><th>Full Report Name</th><th>Generated At</th><th>Size</th><th>Status</th></tr></thead><tbody>{% for row in p.reporting.recent_reports %}<tr><td>{{ loop.index }}</td><td class="ao-name-cell ao-long-value">{{ row.name }}</td><td>{{ row.generated_at }}</td><td>{{ row.size }}</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty('No generated report record was available.') }}{% endif %}</article>
+            </div>
+            <div class="ao-two-column"><article class="ao-panel"><h3>Operational Notes</h3><ul class="ao-check-list">{% for item in p.reporting.notes %}<li>{{ item }}</li>{% endfor %}</ul></article><article class="ao-callout ao-callout-primary"><div class="ao-callout-icon">★</div><div><h3>Key Takeaway</h3><p>{{ p.reporting.takeaway }}</p></div></article></div>
+            {{ footer(8) }}
+        </section>
+
+        <section class="ao-page">
+            {{ header(9, 'Inventory Snapshot', 'Overview of clusters, nodes, workloads, and core Kubernetes resources.') }}
+            <div class="ao-kpi-grid ao-kpi-grid-six">{% for item in p.inventory.metrics %}<article class="ao-small-metric ao-tone-{{ item.tone }}"><small>{{ item.label }}</small><strong>{{ item.value }}</strong></article>{% endfor %}</div>
+            <div class="ao-two-column">
+                <article class="ao-panel"><h3>Resources by Cluster</h3>{% if p.inventory.clusters %}<table class="ao-table"><thead><tr><th>Full Cluster Name</th><th>Nodes</th><th>Namespaces</th><th>Workloads</th><th>Pods</th><th>Status</th></tr></thead><tbody>{% for row in p.inventory.clusters %}<tr><td class="ao-name-cell ao-long-value"><strong>{{ row.name }}</strong>{% if row.environment %}<small>{{ row.environment }}</small>{% endif %}</td><td>{{ row.nodes }}</td><td>{{ row.namespaces }}</td><td>{{ row.workloads }}</td><td>{{ row.pods }}</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty('No committed cluster inventory row was available.') }}{% endif %}</article>
+                <article class="ao-panel"><h3>Resource Distribution</h3><div class="ao-donut"><strong>{{ p.inventory.totals.pods }}</strong><span>Total Pods</span></div><ul class="ao-legend">{% for row in p.inventory.resource_distribution %}<li><i></i><span class="ao-marker">{{ row.marker }}</span><span class="ao-long-value">{{ row.name }}</span><strong>{{ row.value }} ({{ '%.1f'|format(row.percent) }}%)</strong></li>{% endfor %}</ul></article>
+            </div>
+            <div class="ao-two-column"><article class="ao-panel"><h3>Node Overview</h3><div class="ao-four-column"><div><strong>{{ p.inventory.total_nodes }}</strong><span>Total Nodes</span></div><div><strong>{{ p.inventory.total_nodes - p.inventory.not_ready_nodes }}</strong><span>Ready</span></div><div><strong>{{ p.inventory.not_ready_nodes }}</strong><span>Not Ready</span></div><div><strong>{{ '%.0f'|format(((p.inventory.total_nodes - p.inventory.not_ready_nodes) / p.inventory.total_nodes * 100) if p.inventory.total_nodes else 0) }}%</strong><span>Readiness</span></div></div></article><article class="ao-panel"><h3>Top Resource Counts</h3>{% for row in p.inventory.top_counts %}<div class="ao-summary-row"><span>{{ row.label }}</span><strong>{{ row.value }}</strong></div>{% endfor %}</article></div>
+            <div class="ao-two-column"><article class="ao-callout ao-callout-primary"><div class="ao-callout-icon">✓</div><div><h3>Inventory Health Summary</h3><ul>{% for item in p.inventory.health_summary %}<li>{{ item }}</li>{% endfor %}</ul></div></article><article class="ao-panel"><h3>Notes</h3><ul class="ao-check-list">{% for item in p.inventory.notes %}<li>{{ item }}</li>{% endfor %}</ul></article></div>
+            {{ footer(9) }}
+        </section>
+
+        <section class="ao-page ao-page-freshness">
+            {{ header(10, 'Data Freshness & Reliability', 'Observation recency, completeness, and data quality overview.') }}
+            <div class="ao-scaled-content">
+            <div class="ao-kpi-grid ao-kpi-grid-five">{% for item in p.freshness.metrics %}{{ metric(item, true) }}{% endfor %}</div>
+            <div class="ao-two-column"><article class="ao-panel"><h3>Data Freshness by Source</h3><table class="ao-table"><thead><tr><th>Source</th><th>Type</th><th>Last Successful</th><th>Freshness</th><th>Status</th></tr></thead><tbody>{% for row in p.freshness.sources %}<tr><td class="ao-name-cell ao-long-value"><strong>{{ row.source }}</strong></td><td>{{ row.type }}</td><td>{{ row.last_successful }}</td><td>{{ row.freshness }}</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table></article><article class="ao-panel ao-chart-panel"><h3>Freshness Over Time</h3>{{ p.freshness.freshness_svg|safe }}</article></div>
+            <article class="ao-panel"><h3>Data Reliability Summary</h3><div class="ao-kpi-grid ao-kpi-grid-five ao-reliability-grid">{% for item in p.freshness.reliability %}<div><small>{{ item.label }}</small><strong class="ao-long-value">{{ item.value }}</strong>{{ status('Good' if item.tone == 'normal' else 'Recorded', item.tone) }}</div>{% endfor %}</div></article>
+            <div class="ao-two-column"><article class="ao-panel"><h3>Observations by Recency</h3><div class="ao-donut ao-donut-small"><strong>{{ p.freshness.sources|length }}</strong><span>Sources</span></div><ul class="ao-legend ao-legend-simple">{% for item in p.freshness.recency %}<li><i class="ao-bg-{{ item.tone }}"></i><span>{{ item.label }}</span><strong>{{ item.value }} ({{ '%.1f'|format(item.percent) }}%)</strong></li>{% endfor %}</ul></article><article class="ao-panel"><h3>Data Quality Issues</h3><table class="ao-table"><thead><tr><th>Issue Type</th><th>Affected Source</th><th>Count</th><th>Impact</th><th>Status</th></tr></thead><tbody>{% for row in p.freshness.issues %}<tr><td class="ao-long-value">{{ row.issue_type }}</td><td class="ao-long-value">{{ row.source }}</td><td>{{ row.count }}</td><td>{{ status(row.impact, row.impact_tone) }}</td><td>{{ status(row.status, row.status_tone) }}</td></tr>{% endfor %}</tbody></table></article></div>
+            <div class="ao-two-column"><article class="ao-callout ao-callout-primary"><div class="ao-callout-icon">i</div><div><h3>What This Means</h3><ul>{% for item in p.freshness.meaning %}<li>{{ item }}</li>{% endfor %}</ul></div></article><article class="ao-callout ao-callout-info"><div class="ao-callout-icon">✓</div><div><h3>Recommended Actions</h3><ul>{% for item in p.freshness.actions %}<li>{{ item }}</li>{% endfor %}</ul></div></article></div>
+            </div>
+            {{ footer(10) }}
+        </section>
+
+        <section class="ao-page">
+            {{ header(11, 'Recommendation Plan', 'Prioritized actions, owners, and validation criteria for the current reporting boundary.') }}
+            <div class="ao-kpi-grid ao-kpi-grid-four">{% for item in p.recommendations.metrics %}<article class="ao-small-metric ao-tone-{{ item.tone }}"><small>{{ item.label }}</small><strong>{{ item.value }}</strong></article>{% endfor %}</div>
+            <div class="ao-recommendation-layout">
+                <article class="ao-panel"><h3>Priority Recommendations</h3><table class="ao-table ao-recommendation-table"><thead><tr><th>Priority</th><th>Full Recommendation</th><th>Affected Scope</th><th>Suggested Owner</th><th>Target Window</th><th>Status</th></tr></thead><tbody>{% for row in p.recommendations['items'] %}<tr><td>{{ status(row.priority, row.tone) }}</td><td class="ao-name-cell ao-long-value"><strong>{{ row.title }}</strong><small>{{ row.source }}</small></td><td class="ao-long-value">{{ row.scope }}</td><td class="ao-long-value">{{ row.owner }}</td><td>{{ row.target }}</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table></article>
+                <article class="ao-panel ao-recommendation-detail ao-tone-{{ p.recommendations.primary.tone }}"><h3>Recommendation Detail</h3><div class="ao-detail-title">{{ status(p.recommendations.primary.priority, p.recommendations.primary.tone) }}<strong class="ao-long-value">{{ p.recommendations.primary.title }}</strong></div><h4>Why This Matters</h4><p>{{ p.recommendations.primary.description }}</p><h4>Evidence</h4><p>{{ p.recommendations.primary.evidence }}</p><h4>Recommended Action</h4><p>{{ p.recommendations.primary.description }}</p><h4>Validation Criteria</h4><p>{{ p.recommendations.primary.validation }}</p><h4>Operational Impact</h4><p>Validate ownership, maintenance window, and rollback readiness before execution.</p></article>
+            </div>
+            <h3 class="ao-section-subtitle">Owner &amp; Target Window</h3>
+            <div class="ao-three-column">{% for item in p.recommendations.owners %}<article class="ao-panel ao-owner-card"><span class="ao-owner-icon">◎</span><div><h3 class="ao-long-value">{{ item.owner }}</h3><strong>{{ item.count }}</strong> Actions Assigned<p>{{ item.target }}</p></div></article>{% endfor %}</div>
+            <article class="ao-callout ao-callout-primary"><div class="ao-callout-icon">◎</div><div><h3>Execution Guidance</h3><p>{{ p.recommendations.guidance }}</p></div></article>
+            {{ footer(11) }}
+        </section>
+
+        <section class="ao-page ao-page-methodology">
+            {{ header(12, 'Methodology & Evidence Boundary', 'Data sources, reporting rules, coverage, and interpretation controls.') }}
+            <div class="ao-scaled-content">
+            <div class="ao-kpi-grid ao-kpi-grid-four">{% for item in p.methodology.metrics %}<article class="ao-small-metric ao-tone-{{ item.tone }}"><small>{{ item.label }}</small><strong class="ao-long-value">{{ item.value }}</strong></article>{% endfor %}</div>
+            <div class="ao-two-column"><article class="ao-panel"><h3>Data Sources &amp; Coverage</h3><table class="ao-table"><thead><tr><th>Source</th><th>Source Type</th><th>Freshness</th><th>Last Successful Collection</th></tr></thead><tbody>{% for row in p.methodology.sources %}<tr><td class="ao-name-cell ao-long-value">{{ row.source }}</td><td>{{ row.type }}</td><td>{{ row.freshness }}</td><td>{{ row.last_successful }}</td></tr>{% endfor %}</tbody></table></article><article class="ao-panel"><h3>Methodology Summary</h3><dl class="ao-method-list">{% for row in p.methodology.methodology %}<div><dt>{{ row.label }}</dt><dd class="ao-long-value">{{ row.value }}</dd></div>{% endfor %}</dl></article></div>
+            <article class="ao-panel ao-evidence-boundary"><h3>Evidence Boundary</h3><p>This report is built strictly within the committed observation boundary defined by the data cut-off.</p><div class="ao-two-column"><div class="ao-boundary-box ao-boundary-included"><h3>Included In This Report</h3><ul>{% for item in p.methodology.included %}<li>{{ item }}</li>{% endfor %}</ul></div><div class="ao-boundary-box ao-boundary-excluded"><h3>Not Included In This Report</h3><ul>{% for item in p.methodology.excluded %}<li>{{ item }}</li>{% endfor %}</ul></div></div></article>
+            <div class="ao-two-column"><article class="ao-panel"><h3>Known Limitations</h3><ol class="ao-ranked-list ao-ranked-list-compact">{% for item in p.methodology.limitations %}<li><span>{{ loop.index }}</span><div>{{ item }}</div></li>{% endfor %}</ol></article><article class="ao-panel"><h3>Status Language</h3><dl class="ao-status-language">{% for item in p.methodology.status_language %}<div><dt>{{ item.label }}</dt><dd>{{ item.description }}</dd></div>{% endfor %}</dl></article></div>
+            <article class="ao-callout ao-callout-primary"><div class="ao-callout-icon">i</div><div><h3>Operational Use Guidance</h3><p>{{ p.methodology.guidance }}</p></div></article>
+            </div>
+            {{ footer(12) }}
+        </section>
+    </body>
+</html>

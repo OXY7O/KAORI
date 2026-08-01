@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.reports.export.constants import (
+    ANALYTICS_OVERVIEW_SECTION_KEYS,
     DEFAULT_RECOMMENDATIONS,
     KUBERNETES_INVENTORY_REPORT_TYPES,
     REPORT_DOMAIN_LABELS,
@@ -16,6 +17,7 @@ from app.reports.export.constants import (
     SOURCE_KIND_LABELS,
 )
 from app.reports.export.formatting import format_period
+from app.reports.export.html_pdf.analytics_overview import build_analytics_overview_presentation
 from app.reports.export.html_pdf.charts import build_alert_severity_chart, build_forecast_chart
 from app.reports.export.html_pdf.document import (
     ReportDocument,
@@ -108,6 +110,8 @@ def build_report_document(
 ) -> ReportDocument:
     generated_at = datetime.now(UTC)
     selected_sections = list(report.sections_as_list())
+    if report.report_type == 'analytics_overview':
+        selected_sections = list(ANALYTICS_OVERVIEW_SECTION_KEYS)
     if not selected_sections:
         selected_sections = ['executive_summary', 'operational_recommendations']
 
@@ -146,11 +150,37 @@ def build_report_document(
     )
     cluster_scope = _cluster_scope(report, payload)
     namespace_scope = sanitize_text(getattr(report, 'namespace', None), fallback='All Namespaces')
+    report_id = str(getattr(report, 'id', '-'))
+    report_name = sanitize_text(getattr(report, 'name', None), fallback='KAORI Operational Report')
+    report_type_label = REPORT_TYPE_LABELS.get(report.report_type, humanize_key(report.report_type))
+    period_label = _report_period_label(report)
+    generated_at_label = generated_at.strftime('%d %b %Y %H:%M UTC')
+    data_cutoff = _derive_data_cutoff(payload, generated_at)
+    generated_by_label = sanitize_text(generated_by)
+    template_name = 'reports/pdf/report.html'
+    presentation: dict[str, Any] = {}
+    if report.report_type == 'analytics_overview' and not payload.get('_error'):
+        template_name = 'reports/pdf/analytics_overview.html'
+        presentation = build_analytics_overview_presentation(
+            report,
+            payload,
+            report_id=report_id,
+            report_name=report_name,
+            cluster_scope=cluster_scope,
+            namespace_scope=namespace_scope,
+            period_label=period_label,
+            data_cutoff=data_cutoff,
+            generated_at=generated_at_label,
+            generated_by=generated_by_label,
+            classification=classification,
+            overall_posture=overall_posture,
+            overall_tone=overall_tone,
+        )
 
     return ReportDocument(
-        report_id=str(getattr(report, 'id', '-')),
-        report_name=sanitize_text(getattr(report, 'name', None), fallback='KAORI Operational Report'),
-        report_type_label=REPORT_TYPE_LABELS.get(report.report_type, humanize_key(report.report_type)),
+        report_id=report_id,
+        report_name=report_name,
+        report_type_label=report_type_label,
         report_description=REPORT_TYPE_DESCRIPTIONS.get(
             report.report_type,
             'Operational report generated from the current KAORI template configuration.',
@@ -162,10 +192,10 @@ def build_report_document(
         source_kind_label=SOURCE_KIND_LABELS.get(getattr(report, 'source_kind', ''), 'Kubernetes'),
         cluster_scope=cluster_scope,
         namespace_scope=namespace_scope,
-        period_label=_report_period_label(report),
-        generated_at=generated_at.strftime('%d %b %Y %H:%M UTC'),
-        data_cutoff=_derive_data_cutoff(payload, generated_at),
-        generated_by=sanitize_text(generated_by),
+        period_label=period_label,
+        generated_at=generated_at_label,
+        data_cutoff=data_cutoff,
+        generated_by=generated_by_label,
         classification=classification,
         retention_label=f'{max(retention_days, 0)} Days' if retention_days > 0 else 'Policy Managed',
         overall_posture=overall_posture,
@@ -178,7 +208,9 @@ def build_report_document(
             'Unavailable sources are shown as report limitations and are excluded from conclusions that require live evidence.',
             'Critical operational decisions should be verified against live cluster data and the related JobExecution evidence.',
         ),
-        template_label=f'{REPORT_TYPE_LABELS.get(report.report_type, humanize_key(report.report_type))} Template',
+        template_label=f'{report_type_label} Template',
+        template_name=template_name,
+        presentation=presentation,
         metadata={
             'section_count': len(sections),
             'selected_section_keys': selected_sections,

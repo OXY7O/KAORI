@@ -12,6 +12,7 @@ from app.models.inventory import NamespaceInventory
 from app.models.report import Report
 from app.models.user import User
 from app.reports.export.constants import (
+    ANALYTICS_OVERVIEW_SECTION_KEYS,
     DEFAULT_REPORT_DOMAIN,
     DEFAULT_REPORT_SOURCE_KIND,
 )
@@ -24,13 +25,7 @@ REPORT_TYPE_OPTIONS: list[dict[str, Any]] = [
         'label': 'Analytics Overview Report',
         'description': 'High-level analytics summary across utilization, capacity, forecast, and alerts.',
         'icon': 'layout-dashboard',
-        'default_sections': [
-            'executive_summary',
-            'analytics_summary',
-            'resource_snapshot',
-            'risk_overview',
-            'operational_recommendations',
-        ],
+        'default_sections': list(ANALYTICS_OVERVIEW_SECTION_KEYS),
     },
     {
         'value': 'resource_utilization',
@@ -269,6 +264,56 @@ SECTION_OPTIONS: list[dict[str, str]] = [
         'value': 'executive_summary',
         'label': 'Executive Summary',
         'description': 'High-level report summary and key operational findings.',
+    },
+    {
+        'value': 'executive_brief',
+        'label': 'Executive Brief',
+        'description': 'Current operational position, priority findings, decisions, and evidence scope.',
+    },
+    {
+        'value': 'resource_posture',
+        'label': 'Resource Posture',
+        'description': 'CPU, memory, storage, pod, and node headroom posture.',
+    },
+    {
+        'value': 'trend_forecast',
+        'label': 'Trend & Forecast',
+        'description': 'Historical direction, forecast pressure, confidence, and limitations.',
+    },
+    {
+        'value': 'capacity_pressure',
+        'label': 'Capacity Pressure',
+        'description': 'Headroom, saturation risk, breach projection, and capacity actions.',
+    },
+    {
+        'value': 'alerts_anomalies',
+        'label': 'Alerts & Anomalies',
+        'description': 'Active alerts, affected resources, anomalies, and response priorities.',
+    },
+    {
+        'value': 'reporting_summary',
+        'label': 'Reporting Summary',
+        'description': 'Generation activity, schedules, storage readiness, and notes.',
+    },
+    {
+        'value': 'inventory_snapshot',
+        'label': 'Inventory Snapshot',
+        'description': 'Committed cluster, node, workload, pod, and resource inventory.',
+    },
+    {
+        'value': 'data_freshness_reliability',
+        'label': 'Data Freshness & Reliability',
+        'description': 'Source recency, completeness, reliability, and data-quality issues.',
+    },
+    {
+        'value': 'recommendation_plan',
+        'label': 'Recommendation Plan',
+        'description': 'Evidence-backed actions with owners, target windows, and validation gates.',
+    },
+    {
+        'value': 'methodology_evidence_boundary',
+        'label': 'Methodology & Evidence Boundary',
+        'description': 'Sources, methodology, inclusions, exclusions, and status language.',
     },
     {
         'value': 'analytics_summary',

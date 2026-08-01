@@ -13,6 +13,7 @@ from app.extensions.db import db
 from app.models.report import ReportTemplate
 from app.models.user import User
 from app.reports.export.constants import (
+    ANALYTICS_OVERVIEW_SECTION_KEYS,
     DEFAULT_REPORT_DOMAIN,
     DEFAULT_REPORT_SOURCE_KIND,
     REPORT_DOMAIN_DESCRIPTIONS,
@@ -33,13 +34,7 @@ SYSTEM_TEMPLATE_ITEMS: list[dict[str, Any]] = [
         'source_kind': DEFAULT_REPORT_SOURCE_KIND,
         'output_format': 'PDF',
         'icon': 'layout-dashboard',
-        'sections': [
-            'executive_summary',
-            'analytics_summary',
-            'resource_snapshot',
-            'risk_overview',
-            'operational_recommendations',
-        ],
+        'sections': list(ANALYTICS_OVERVIEW_SECTION_KEYS),
     },
     {
         'id': 'resource_utilization',

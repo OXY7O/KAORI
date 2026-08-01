@@ -19,9 +19,14 @@ def render_document_pdf(
     base_url: Path,
     metadata: dict[str, Any] | None = None,
 ) -> None:
-    template = template_environment.get_template('reports/pdf/report.html')
+    template = template_environment.get_template(document.template_name)
     rendered_html = template.render(document=document)
     font_config = FontConfiguration()
+
+    stylesheets = [CSS(filename=str(css_path), font_config=font_config)]
+    if document.template_name == 'reports/pdf/analytics_overview.html':
+        analytics_css_path = css_path.with_name('analytics_overview.css')
+        stylesheets.append(CSS(filename=str(analytics_css_path), font_config=font_config))
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     HTML(
@@ -29,7 +34,7 @@ def render_document_pdf(
         base_url=str(base_url),
     ).write_pdf(
         target=str(output_path),
-        stylesheets=[CSS(filename=str(css_path), font_config=font_config)],
+        stylesheets=stylesheets,
         font_config=font_config,
         presentational_hints=True,
         pdf_identifier=(metadata or {}).get('pdf_identifier'),
