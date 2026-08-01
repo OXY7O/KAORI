@@ -845,3 +845,7 @@ Kubernetes Analytics heroes follow the Kubernetes Inventory Overview composition
 Kubernetes Analytics hero posture panels follow Inventory density: status value uses the shared context title size, no description appears directly beneath the posture value, metric values stay compact, and long resource identifiers are reduced to short helper text rather than becoming the primary value.
 
 - Analytics hero metrics replace long technical identifiers with concise semantic role or scope labels; full identifiers belong in detail workspaces.
+
+## Analytics Reusable Presentation Ownership
+
+Kubernetes Analytics hero context panels must use the canonical macros in `components/page_hero.html`. Domain hero templates may supply semantic values, labels, status tones, and concise helper text, but must not override metric typography or recreate posture/metric geometry. Hero metadata is capped at three labels, posture metrics are capped at two, and metric values use the Inventory-aligned compact scale.
