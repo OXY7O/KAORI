@@ -16,8 +16,8 @@
 <div class="{{ page_hero.context_panel_classes() }}">
     <div class="flex items-start justify-between gap-4">
         <div class="min-w-0">
-            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Operational Posture</p>
-            <h2 class="{{ page_hero.context_panel_title_classes() }}">{{ posture.value }}</h2>
+            <h2 class="text-base font-semibold leading-6 text-brand-foreground">Operational Posture</h2>
+            <p class="mt-1 text-xs leading-5 text-brand-foreground-muted">Current cross-domain analytics state.</p>
         </div>
         {{ table_label.status_label(posture.status|replace('_', ' ')|title, posture_tone, posture_icon) }}
     </div>
