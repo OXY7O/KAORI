@@ -3,6 +3,17 @@
   const applySelector = '[data-validation-apply]';
   const validatedEventName = 'kaori:operation-validated';
 
+  const applyButtonsFor = (form) => {
+    if (!form) return [];
+    const buttons = Array.from(form.querySelectorAll(applySelector));
+    if (!form.id) return buttons;
+
+    document.querySelectorAll(`${applySelector}[data-validation-form="${form.id}"]`).forEach((button) => {
+      if (!buttons.includes(button)) buttons.push(button);
+    });
+    return buttons;
+  };
+
   const resolveFormId = (detail) => {
     if (!detail || typeof detail !== 'object') return '';
     return (
@@ -17,7 +28,7 @@
     if (!form) return;
 
     form.dataset.validationState = validated ? 'validated' : 'pending';
-    form.querySelectorAll(applySelector).forEach((button) => {
+    applyButtonsFor(form).forEach((button) => {
       if (!button.dataset.validationPendingTitle) {
         button.dataset.validationPendingTitle =
           button.getAttribute('title') ||
@@ -47,8 +58,15 @@
     const target = event.target;
     if (!(target instanceof Element)) return;
 
-    const form = target.closest(formSelector);
-    if (form && !target.matches('[name="operation"]')) setValidated(form, false);
+    const associatedForm = target.form instanceof HTMLFormElement ? target.form : null;
+    const explicitFormId = target.getAttribute('form');
+    const form =
+      target.closest(formSelector) ||
+      (associatedForm && associatedForm.matches(formSelector) ? associatedForm : null) ||
+      (explicitFormId ? document.getElementById(explicitFormId) : null);
+    if (form && form.matches(formSelector) && !target.matches('[name="operation"]')) {
+      setValidated(form, false);
+    }
   };
 
   const handleValidatedEvent = (event) => {

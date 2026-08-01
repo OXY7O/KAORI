@@ -85,6 +85,25 @@ def _build_tls_rotation_preview_response(rendered_html: str, payload: dict[str, 
     return response
 
 
+def _build_bulk_tls_rotation_preview_response(
+    rendered_html: str,
+    preview: dict[str, Any],
+):
+    response = make_response(rendered_html)
+    validation = preview.get('validation')
+    targets = preview.get('targets') or []
+    if (
+        validation is not None
+        and validation.is_valid
+        and validation.parsed_certificate is not None
+        and targets
+    ):
+        response.headers['HX-Trigger'] = (
+            '{"kaori:operation-validated":{"formId":"tls-secret-update-form"}}'
+        )
+    return response
+
+
 def _record_secret_activity(
     *,
     event_type: str,
@@ -1461,7 +1480,7 @@ def tls_secret_bulk_rotation_preview():
     operation_feedback = _notification_response_context(feedback)
 
     if request.headers.get('HX-Request'):
-        return render_template(
+        rendered_html = render_template(
             'kubernetes_operations/secrets/_bulk_feedback.html',
             payload=payload,
             preview=preview,
@@ -1469,6 +1488,7 @@ def tls_secret_bulk_rotation_preview():
             selected_ids=selected_ids,
             operation_feedback=operation_feedback,
         )
+        return _build_bulk_tls_rotation_preview_response(rendered_html, preview)
 
     return render_template(
         'kubernetes_operations/secrets/tls_rotation.html',
