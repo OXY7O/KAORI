@@ -9,14 +9,14 @@
             {% call page_hero.intro('chart-no-axes-combined', 'Kubernetes Analytics', 'activity') %}
                 <h1 class="{{ page_hero.title_classes() }}">Analytics Overview</h1>
                 <p class="mt-2 {{ page_hero.description_classes() }}">
-                    Consolidated operational posture for utilization, capacity, workloads, storage, consumers, forecasts, alerts, and prioritized actions.
+                    Review consolidated resource, workload, forecast, and alert posture.
                 </p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('server', selected_cluster_name) }}
                     {% if dependency_blocker %}
                         {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
                     {% else %}
-                        {{ page_hero.meta_label('clock-3', payload.selected_time_range|upper ~ ' Analysis Window') }}
+                        {{ page_hero.meta_label('clock-3', payload.selected_time_range|upper ~ ' Window') }}
                         {{ page_hero.meta_label('bell', active_alerts ~ ' Active Alerts') }}
                     {% endif %}
                 </div>

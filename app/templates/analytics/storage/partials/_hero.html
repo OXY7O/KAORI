@@ -1,6 +1,4 @@
 {% import "components/page_hero.html" as page_hero %}
-{% import "analytics/components/_hero_context.html" as analytics_hero %}
-{% import "components/table_label.html" as table_label %}
 {% set selected_cluster_name = cluster.name if cluster else 'No Cluster Selected' %}
 {% set filesystem = storage_summary.node_filesystem.summary if storage_summary is defined else {} %}
 {% set pvc = storage_summary.persistent_storage.pvc if storage_summary is defined else {} %}
@@ -10,18 +8,15 @@
 {% set highest_usage = filesystem.highest_usage if filesystem_available else none %}
 {% set pvc_used_percent = pvc.used_percent if pvc_available else none %}
 {% if not filesystem_available and not pvc_available %}
-    {% set posture_value = 'Unknown' %}
-    {% set posture_desc = 'Committed storage evidence is not available for the selected cluster.' %}
-    {% set posture_tone = 'unknown' %}
-    {% set posture_icon = 'circle-help' %}
+    {% set posture_label = 'Unknown' %}{% set posture_tone = 'unknown' %}
 {% else %}
     {% set highest_signal = [highest_usage|default(0, true), pvc_used_percent|default(0, true)]|max %}
     {% if highest_signal >= 90 %}
-        {% set posture_value = 'Critical' %}{% set posture_desc = 'Storage pressure needs immediate review.' %}{% set posture_tone = 'critical' %}{% set posture_icon = 'shield-alert' %}
+        {% set posture_label = 'Critical' %}{% set posture_tone = 'critical' %}
     {% elif highest_signal >= 75 %}
-        {% set posture_value = 'Watch' %}{% set posture_desc = 'Storage utilization is elevated.' %}{% set posture_tone = 'warning' %}{% set posture_icon = 'triangle-alert' %}
+        {% set posture_label = 'Watch' %}{% set posture_tone = 'warning' %}
     {% else %}
-        {% set posture_value = 'Healthy' %}{% set posture_desc = 'Storage signals are within the normal range.' %}{% set posture_tone = 'normal' %}{% set posture_icon = 'circle-check' %}
+        {% set posture_label = 'Healthy' %}{% set posture_tone = 'normal' %}
     {% endif %}
 {% endif %}
 <section class="{{ page_hero.shell_classes() }}">
@@ -29,31 +24,38 @@
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('hard-drive', 'Kubernetes Analytics', 'database') %}
                 <h1 class="{{ page_hero.title_classes() }}">Storage Analysis</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review node filesystem pressure, claim demand, persistent volume provisioning, lifecycle state, and capacity risk.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review filesystem pressure, PVC demand, and persistent storage risk.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('server', selected_cluster_name) }}
                     {% if dependency_blocker %}
                         {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
                     {% else %}
-                        {{ page_hero.meta_label('database', pv.count|default(0) ~ ' PV') }}
+                        {{ page_hero.meta_label('database', pv.count|default(0) ~ ' PVs') }}
                         {{ page_hero.meta_label('list-checks', recommendation_count|default(0) ~ ' Actionable') }}
                     {% endif %}
                 </div>
             {% endcall %}
         </div>
-        <aside class="{{ page_hero.aside_classes() }}" aria-label="Storage Posture">
-            {% if dependency_blocker %}
-                {% set analytics_posture_label = 'Storage Posture' %}{% include "analytics/components/_blocked_posture.html" %}
-            {% else %}
-                <div class="{{ page_hero.context_panel_classes() }}">
-                    {{ page_hero.context_posture_header('Storage Posture', posture_value, posture_value, posture_tone, posture_icon) }}
-                    <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                        {{ page_hero.context_metric('server', 'Highest Node Pressure', ('%.1f%%'|format(highest_usage|float)) if highest_usage is not none else 'N/A', 'Node Filesystem' if highest_usage is not none else 'No Evidence') }}
-                        {{ page_hero.context_metric('box', 'PVC Demand', ('%.1f%%'|format(pvc_used_percent|float)) if pvc_used_percent is not none else 'N/A', pvc.scope_label|default('All Namespaces')) }}
-                    </div>
-                    {{ analytics_hero.manage_clusters_action() }}
-                </div>
-            {% endif %}
-        </aside>
+        {% if dependency_blocker %}
+            <aside class="{{ page_hero.aside_classes() }}" aria-label="Storage Readiness">
+                {% set analytics_posture_label = 'Storage Posture' %}
+                {% include "analytics/components/_blocked_posture.html" %}
+            </aside>
+        {% else %}
+            {{ page_hero.context_card(
+                'Storage Posture',
+                'Storage Posture',
+                'Storage Pressure',
+                posture_label,
+                posture_tone,
+                [
+                    ('server', 'Node Pressure', ('%.1f%%'|format(highest_usage|float)) if highest_usage is not none else 'N/A', 'Node filesystem'),
+                    ('box', 'PVC Demand', ('%.1f%%'|format(pvc_used_percent|float)) if pvc_used_percent is not none else 'N/A', pvc.scope_label|default('All Namespaces'))
+                ],
+                'Manage Clusters',
+                url_for('integrations.kubernetes'),
+                'server-cog'
+            ) }}
+        {% endif %}
     </div>
 </section>

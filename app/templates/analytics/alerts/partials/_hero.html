@@ -1,68 +1,56 @@
 {% import "components/page_hero.html" as page_hero %}
-{% import "analytics/components/_hero_context.html" as analytics_hero %}
-{% import "components/table_label.html" as table_label %}
 {% set hero_summary = summary|default({}, true) %}
 {% set active_alerts = active_alerts|default(hero_summary.get('active_alerts', 0)) %}
 {% set critical_alerts = critical_alerts|default(hero_summary.get('critical_alerts', 0)) %}
 {% set warning_alerts = warning_alerts|default(hero_summary.get('warning_alerts', 0)) %}
 {% set anomaly_count = anomaly_count|default(hero_summary.get('detected_anomalies', 0)) %}
 {% set evidence_incomplete = collection_warnings|default([])|length > 0 or anomaly_source_status.partial|default(false) %}
-{% if dependency_blocker %}
-    {% set posture_value = 'Blocked' %}
-    {% set posture_desc = dependency_blocker.title %}
-    {% set posture_tone = 'warning' %}
-{% elif not source_status.connected|default(false) %}
-    {% set posture_value = 'Unknown' %}
-    {% set posture_desc = 'Alert source evidence is unavailable.' %}
-    {% set posture_tone = 'unknown' %}
+{% if not source_status.connected|default(false) %}
+    {% set posture_status = 'Unknown' %}{% set posture_tone = 'unknown' %}
 {% elif critical_alerts > 0 %}
-    {% set posture_value = 'Critical' %}
-    {% set posture_desc = 'Critical alert evidence requires immediate investigation.' %}
-    {% set posture_tone = 'critical' %}
-{% elif warning_alerts > 0 or anomaly_count > 0 %}
-    {% set posture_value = 'Review' %}
-    {% set posture_desc = 'Warning alerts or anomaly candidates require operational review.' %}
-    {% set posture_tone = 'warning' %}
-{% elif evidence_incomplete %}
-    {% set posture_value = 'Evidence Incomplete' %}
-    {% set posture_desc = 'Some signal sources are unavailable; do not treat missing evidence as healthy.' %}
-    {% set posture_tone = 'warning' %}
+    {% set posture_status = 'Critical' %}{% set posture_tone = 'critical' %}
+{% elif warning_alerts > 0 or anomaly_count > 0 or evidence_incomplete %}
+    {% set posture_status = 'Watch' %}{% set posture_tone = 'warning' %}
 {% else %}
-    {% set posture_value = 'Healthy' %}
-    {% set posture_desc = 'No active alert or anomaly evidence requires escalation.' %}
-    {% set posture_tone = 'normal' %}
+    {% set posture_status = 'Healthy' %}{% set posture_tone = 'normal' %}
 {% endif %}
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('triangle-alert', 'Kubernetes Analytics', 'radar') %}
                 <h1 class="{{ page_hero.title_classes() }}">Alerts &amp; Anomalies</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review alert health, anomaly evidence, routing, suppression, ownership, and incident readiness from committed analytics snapshots.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review active alerts, anomalies, routing, ownership, and readiness.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('server', selected_cluster_name) }}
                     {% if dependency_blocker %}
                         {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
                     {% else %}
-                        {{ page_hero.meta_label('bell-ring', active_alerts ~ ' Active Alerts') }}
+                        {{ page_hero.meta_label('bell-ring', active_alerts ~ ' Active') }}
                         {{ page_hero.meta_label('radar', anomaly_count ~ ' Anomalies') }}
                     {% endif %}
                 </div>
             {% endcall %}
         </div>
-        <aside class="{{ page_hero.aside_classes() }}" aria-label="Alert posture">
-            {% if dependency_blocker %}
+        {% if dependency_blocker %}
+            <aside class="{{ page_hero.aside_classes() }}" aria-label="Alert Source Readiness">
                 {% set analytics_posture_label = 'Alert Posture' %}
                 {% include "analytics/components/_blocked_posture.html" %}
-            {% else %}
-                <div class="{{ page_hero.context_panel_classes() }}">
-                    {{ page_hero.context_posture_header('Alert Posture', posture_value, posture_value, posture_tone) }}
-                    <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                        {{ page_hero.context_metric('shield-alert', 'Critical Alerts', critical_alerts, 'Critical alerts in scope') }}
-                        {{ page_hero.context_metric('shield-check', 'Source Health', source_health.score|default(0) ~ '/100', 'Committed source score') }}
-                    </div>
-                    {{ analytics_hero.manage_clusters_action() }}
-                </div>
-            {% endif %}
-        </aside>
+            </aside>
+        {% else %}
+            {{ page_hero.context_card(
+                'Alert Posture',
+                'Alert Posture',
+                'Signal Readiness',
+                posture_status,
+                posture_tone,
+                [
+                    ('shield-alert', 'Critical Alerts', critical_alerts, 'Critical signals in scope'),
+                    ('shield-check', 'Source Health', source_health.score|default(0) ~ '/100', 'Committed source score')
+                ],
+                'Manage Clusters',
+                url_for('integrations.kubernetes'),
+                'server-cog'
+            ) }}
+        {% endif %}
     </div>
 </section>

@@ -5,28 +5,17 @@
 {% set posture = payload.health_summary.cluster_health %}
 {% set posture_status = posture.status|default('unknown')|lower %}
 {% set posture_tone = table_label.semantic_tone(posture.tone or posture_status)|trim %}
-{% set posture_icon = {
-    'normal': 'circle-check',
-    'warning': 'triangle-alert',
-    'critical': 'shield-alert',
-    'unknown': 'circle-help',
-    'info': 'info',
-    'maintenance': 'wrench'
-}.get(posture_tone, 'circle-help') %}
-<div class="{{ page_hero.context_panel_classes() }}">
-    {{ page_hero.context_posture_header(
-        'Operational Posture',
-        'Analytics Status',
-        posture.status|replace('_', ' ')|title,
-        posture_tone,
-        posture_icon
-    ) }}
-    <div class="{{ page_hero.context_panel_metrics_classes() }}">
-        {{ page_hero.context_metric('list-checks', 'Actionable', actionable.total_count|default(0), 'Signals with recommended action') }}
-        {{ page_hero.context_metric('bell-ring', 'Active Alerts', active_alerts, 'Firing alerts in current scope') }}
-    </div>
-    <a href="{{ url_for('integrations.kubernetes') }}" class="{{ page_hero.context_single_action_classes() }}">
-        <i data-lucide="server-cog" class="h-4 w-4" aria-hidden="true"></i>
-        Manage Clusters
-    </a>
-</div>
+{% set posture_label = 'Healthy' if posture_tone == 'normal' else ('Watch' if posture_tone == 'warning' else ('Critical' if posture_tone == 'critical' else 'Unknown')) %}
+{{ page_hero.context_card_body(
+    'Operational Posture',
+    'Analytics Status',
+    posture_label,
+    posture_tone,
+    [
+        ('list-checks', 'Actionable', actionable.total_count|default(0), 'Prioritized recommendations'),
+        ('bell-ring', 'Active Alerts', active_alerts, 'Firing alerts in scope')
+    ],
+    'Manage Clusters',
+    url_for('integrations.kubernetes'),
+    'server-cog'
+) }}

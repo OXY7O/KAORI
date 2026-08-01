@@ -1,0 +1,46 @@
+from pathlib import Path
+
+
+ANALYTICS_HERO_FILES = [
+    Path('app/templates/analytics/utilization/partials/_hero.html'),
+    Path('app/templates/analytics/capacity/partials/_hero.html'),
+    Path('app/templates/analytics/storage/partials/_hero.html'),
+    Path('app/templates/analytics/workload/partials/_hero.html'),
+    Path('app/templates/analytics/top_consumers/partials/_hero.html'),
+    Path('app/templates/analytics/alerts/partials/_hero.html'),
+    Path('app/templates/analytics/forecast/index.html'),
+]
+
+
+def test_analytics_heroes_use_inventory_context_card_contract():
+    for path in ANALYTICS_HERO_FILES:
+        template = path.read_text()
+        assert 'page_hero.context_card(' in template, path
+        assert 'context_posture_header(' not in template, path
+        assert 'context_panel_classes()' not in template, path
+        assert 'analytics/components/_hero_context.html' not in template, path
+        assert 'value_classes=' not in template, path
+        assert 'text-2xl' not in template, path
+        assert 'text-3xl' not in template, path
+        assert template.count('page_hero.meta_label(') <= 4, path  # three normal labels plus one blocker branch label
+
+
+def test_overview_lazy_posture_uses_same_context_card_body():
+    posture = Path('app/templates/analytics/overview/partials/_hero_posture.html').read_text()
+    loading = Path('app/templates/analytics/overview/partials/_hero_posture_loading.html').read_text()
+    assert 'page_hero.context_card_body(' in posture
+    assert 'page_hero.context_card_body(' in loading
+    assert 'context_panel_classes()' not in posture
+    assert 'context_metric(' not in posture
+
+
+def test_shared_context_card_owns_inventory_metric_scale_and_action():
+    shared = Path('app/templates/components/page_hero.html').read_text()
+    assert 'macro context_card_body' in shared
+    assert 'metrics[:2]' in shared
+    assert 'text-lg font-semibold leading-6' in shared
+    assert "action_icon='server-cog'" in shared
+
+
+def test_analytics_hero_helper_is_removed():
+    assert not Path('app/templates/analytics/components/_hero_context.html').exists()

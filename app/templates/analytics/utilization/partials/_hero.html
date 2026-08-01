@@ -1,6 +1,4 @@
 {% import "components/page_hero.html" as page_hero %}
-{% import "analytics/components/_hero_context.html" as analytics_hero %}
-{% import "components/table_label.html" as table_label %}
 {% set selected_cluster_name = cluster.name if cluster else 'No Cluster Selected' %}
 {% set cpu_util = summary.cpu_utilization|default(0) %}
 {% set memory_util = summary.memory_utilization|default(0) %}
@@ -9,18 +7,18 @@
 {% set highest_util = [cpu_util, memory_util, storage_util, pod_util]|max %}
 {% if highest_util == memory_util %}{% set highest_label = 'Memory' %}{% elif highest_util == storage_util %}{% set highest_label = 'Storage' %}{% elif highest_util == pod_util %}{% set highest_label = 'Pods' %}{% else %}{% set highest_label = 'CPU' %}{% endif %}
 {% if highest_util > 90 %}
-    {% set posture_value = 'Critical' %}{% set posture_desc = 'Immediate resource pressure detected.' %}{% set posture_tone = 'critical' %}{% set posture_icon = 'shield-alert' %}
+    {% set posture_label = 'Critical' %}{% set posture_tone = 'critical' %}
 {% elif highest_util >= 75 %}
-    {% set posture_value = 'Warning' %}{% set posture_desc = 'Review high usage signals.' %}{% set posture_tone = 'warning' %}{% set posture_icon = 'triangle-alert' %}
+    {% set posture_label = 'Watch' %}{% set posture_tone = 'warning' %}
 {% else %}
-    {% set posture_value = 'Normal' %}{% set posture_desc = 'Resource usage is within the normal operating range.' %}{% set posture_tone = 'normal' %}{% set posture_icon = 'circle-check' %}
+    {% set posture_label = 'Healthy' %}{% set posture_tone = 'normal' %}
 {% endif %}
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('activity', 'Kubernetes Analytics', 'chart-no-axes-combined') %}
                 <h1 class="{{ page_hero.title_classes() }}">Resource Utilization</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Analyze CPU, memory, storage, pod utilization, historical trends, and node pressure for the selected cluster.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review current utilization, trends, and node pressure across core resources.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('server', selected_cluster_name) }}
                     {% if dependency_blocker %}
@@ -32,20 +30,26 @@
                 </div>
             {% endcall %}
         </div>
-        <aside class="{{ page_hero.aside_classes() }}" aria-label="Resource Utilization Posture">
-            {% if dependency_blocker %}
+        {% if dependency_blocker %}
+            <aside class="{{ page_hero.aside_classes() }}" aria-label="Resource Utilization Readiness">
                 {% set analytics_posture_label = 'Utilization Posture' %}
                 {% include "analytics/components/_blocked_posture.html" %}
-            {% else %}
-                <div class="{{ page_hero.context_panel_classes() }}">
-                    {{ page_hero.context_posture_header('Utilization Posture', posture_value, posture_value, posture_tone, posture_icon) }}
-                    <div class="mt-auto grid grid-cols-2 gap-2 pt-4">
-                        {{ page_hero.context_metric('gauge', 'Highest Pressure', highest_label ~ ' · ' ~ highest_util ~ '%', 'Highest current utilization') }}
-                        {{ page_hero.context_metric('list-checks', 'Actionable', recommendation_count|default(0), 'Prioritized recommendations') }}
-                    </div>
-                    {{ analytics_hero.manage_clusters_action() }}
-                </div>
-            {% endif %}
-        </aside>
+            </aside>
+        {% else %}
+            {{ page_hero.context_card(
+                'Resource Utilization Posture',
+                'Utilization Posture',
+                'Resource Pressure',
+                posture_label,
+                posture_tone,
+                [
+                    ('gauge', 'Highest Pressure', highest_util ~ '%', highest_label ~ ' utilization'),
+                    ('list-checks', 'Actionable', recommendation_count|default(0), 'Prioritized recommendations')
+                ],
+                'Manage Clusters',
+                url_for('integrations.kubernetes'),
+                'server-cog'
+            ) }}
+        {% endif %}
     </div>
 </section>

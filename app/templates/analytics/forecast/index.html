@@ -1,68 +1,59 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
-{% import "analytics/components/_hero_context.html" as analytics_hero %}
-{% import "components/table_label.html" as table_label %}
 {% block title %}Resource Forecast{% endblock title %}
 {% block dashboard_content %}
     <div id="forecast-page" class="space-y-6" data-analytics-page-request-tracking="false">
         {% set selected_cluster_name = cluster.name if cluster else 'No Cluster Selected' %}
         {% set summary = forecast_payload.summary %}
         {% set recommendation_count = forecast_payload.recommendation_count|default(0) %}
-        {% if dependency_blocker %}
-            {% set posture_value = 'Blocked' %}
-            {% set posture_desc = dependency_blocker.title %}
-            {% set posture_tone = 'unknown' %}
-            {% set posture_icon = 'lock-keyhole' %}
-        {% elif summary.critical_count|default(0) > 0 %}
-            {% set posture_value = 'Critical' %}
-            {% set posture_desc = 'Critical forecast evidence requires immediate capacity review.' %}
-            {% set posture_tone = 'critical' %}
-            {% set posture_icon = 'shield-alert' %}
+        {% if summary.critical_count|default(0) > 0 %}
+            {% set posture_status = 'Critical' %}{% set posture_tone = 'critical' %}
         {% elif summary.warning_count|default(0) > 0 %}
-            {% set posture_value = 'Watch' %}
-            {% set posture_desc = 'Forecast pressure requires review before the projected threshold window.' %}
-            {% set posture_tone = 'warning' %}
-            {% set posture_icon = 'triangle-alert' %}
+            {% set posture_status = 'Watch' %}{% set posture_tone = 'warning' %}
         {% elif forecast_payload.has_data %}
-            {% set posture_value = 'Healthy' %}
-            {% set posture_desc = 'Available projections remain below the configured warning threshold.' %}
-            {% set posture_tone = 'normal' %}
-            {% set posture_icon = 'circle-check' %}
+            {% set posture_status = 'Healthy' %}{% set posture_tone = 'normal' %}
         {% else %}
-            {% set posture_value = 'Unknown' %}
-            {% set posture_desc = 'Forecast evidence is unavailable for the selected scope.' %}
-            {% set posture_tone = 'unknown' %}
-            {% set posture_icon = 'database-zap' %}
+            {% set posture_status = 'Unknown' %}{% set posture_tone = 'unknown' %}
         {% endif %}
         {% set highest_projection = (summary.highest_projected_percent ~ '%') if summary.highest_projected_percent is not none else 'N/A' %}
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro('sparkles', 'Kubernetes Capacity Forecast', 'line-chart') %}
+                    {% call page_hero.intro('sparkles', 'Kubernetes Analytics', 'line-chart') %}
                         <h1 class="{{ page_hero.title_classes() }}">Resource Forecast</h1>
-                        <p class="mt-2 {{ page_hero.description_classes() }}">Forecast CPU, memory, storage, and pod demand to anticipate capacity pressure and future operational risk.</p>
+                        <p class="mt-2 {{ page_hero.description_classes() }}">Review projected demand, threshold timing, and future capacity risk.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('server', selected_cluster_name) }}
-                            {{ page_hero.meta_label('filter', ('Namespace ' ~ selected_namespace) if selected_namespace else 'All Namespaces') }}
-                            {{ page_hero.meta_label('calendar-range', selected_history_window ~ ' History') }}
+                            {% if dependency_blocker %}
+                                {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
+                            {% else %}
+                                {{ page_hero.meta_label('filter', ('Namespace ' ~ selected_namespace) if selected_namespace else 'All Namespaces') }}
+                                {{ page_hero.meta_label('calendar-range', selected_history_window ~ ' History') }}
+                            {% endif %}
                         </div>
                     {% endcall %}
                 </div>
-                <aside class="{{ page_hero.aside_classes() }}" aria-label="Forecast Posture">
-                    {% if dependency_blocker %}
+                {% if dependency_blocker %}
+                    <aside class="{{ page_hero.aside_classes() }}" aria-label="Forecast Readiness">
                         {% set analytics_posture_label = 'Forecast Posture' %}
                         {% include 'analytics/components/_blocked_posture.html' %}
-                    {% else %}
-                        <div class="{{ page_hero.context_panel_classes() }}">
-                            {{ page_hero.context_posture_header('Forecast Posture', posture_value, posture_value, posture_tone, posture_icon) }}
-                            <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                                {{ page_hero.context_metric('gauge', 'Highest Projection', highest_projection, summary.highest_projected_label|default('No Evidence', true)) }}
-                                {{ page_hero.context_metric('list-checks', 'Actionable', recommendation_count, 'Forecast recommendations') }}
-                            </div>
-                            {{ analytics_hero.manage_clusters_action() }}
-                        </div>
-                    {% endif %}
-                </aside>
+                    </aside>
+                {% else %}
+                    {{ page_hero.context_card(
+                        'Forecast Posture',
+                        'Forecast Posture',
+                        'Forecast Outlook',
+                        posture_status,
+                        posture_tone,
+                        [
+                            ('gauge', 'Highest Projection', highest_projection, summary.highest_projected_label|default('No Evidence', true)),
+                            ('list-checks', 'Actionable', recommendation_count, 'Forecast recommendations')
+                        ],
+                        'Manage Clusters',
+                        url_for('integrations.kubernetes'),
+                        'server-cog'
+                    ) }}
+                {% endif %}
             </div>
         </section>
         {% if dependency_blocker %}

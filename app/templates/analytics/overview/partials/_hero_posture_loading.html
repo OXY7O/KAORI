@@ -1,27 +1,14 @@
 {% import "components/page_hero.html" as page_hero %}
-{% import "components/table_label.html" as table_label %}
-<div class="{{ page_hero.context_panel_classes() }}">
-    <div class="flex items-start justify-between gap-3">
-        <div class="min-w-0">
-            <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Operational Posture</p>
-            <h2 class="{{ page_hero.context_panel_title_classes() }}">Analytics Status</h2>
-        </div>
-        {{ table_label.status_label('Checking', 'pending', 'loader-circle') }}
-    </div>
-    <div class="{{ page_hero.context_panel_metrics_classes() }}">
-        <div class="{{ page_hero.context_metric_card_classes() }}">
-            <div class="h-4 w-24 animate-pulse rounded bg-brand-surface-strong"></div>
-            <div class="mt-2 h-6 w-10 animate-pulse rounded bg-brand-surface-strong"></div>
-            <div class="mt-1 h-3 w-28 animate-pulse rounded bg-brand-surface-strong"></div>
-        </div>
-        <div class="{{ page_hero.context_metric_card_classes() }}">
-            <div class="h-4 w-24 animate-pulse rounded bg-brand-surface-strong"></div>
-            <div class="mt-2 h-6 w-10 animate-pulse rounded bg-brand-surface-strong"></div>
-            <div class="mt-1 h-3 w-28 animate-pulse rounded bg-brand-surface-strong"></div>
-        </div>
-    </div>
-    <a href="{{ url_for('integrations.kubernetes') }}" class="{{ page_hero.context_single_action_classes() }}">
-        <i data-lucide="server-cog" class="h-4 w-4" aria-hidden="true"></i>
-        Manage Clusters
-    </a>
-</div>
+{{ page_hero.context_card_body(
+    'Operational Posture',
+    'Analytics Status',
+    'Checking',
+    'info',
+    [
+        ('list-checks', 'Actionable', '—', 'Loading recommendations'),
+        ('bell-ring', 'Active Alerts', '—', 'Loading alert posture')
+    ],
+    'Manage Clusters',
+    url_for('integrations.kubernetes'),
+    'server-cog'
+) }}

@@ -1,42 +1,44 @@
 {% import "components/page_hero.html" as page_hero %}
-{% import "analytics/components/_hero_context.html" as analytics_hero %}
-{% import "components/table_label.html" as table_label %}
 {% set selected_cluster_name = cluster.name if cluster else 'No Cluster Selected' %}
-<div>
-    <section class="{{ page_hero.shell_classes() }}">
-        <div class="{{ page_hero.layout_classes() }}">
-            <div class="{{ page_hero.content_classes() }}">
-                {% call page_hero.intro('boxes', 'Kubernetes Analytics', 'layout-dashboard') %}
-                    <h1 class="{{ page_hero.title_classes() }}">Workload Analysis</h1>
-                    <p class="mt-2 {{ page_hero.description_classes() }}">
-                        Review tenant quotas, request and limit coverage, QoS metadata, runtime evidence, and right-sizing risk.
-                    </p>
-                    <div class="{{ page_hero.metadata_row_classes() }}">
-                        {{ page_hero.meta_label('server', selected_cluster_name) }}
-                        {% if dependency_blocker %}
-                            {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
-                        {% else %}
-                            {{ page_hero.meta_label('boxes', workload_count_display) }}
-                            {{ page_hero.meta_label('list-checks', recommendation_count_display) }}
-                        {% endif %}
-                    </div>
-                {% endcall %}
-            </div>
-            <aside class="{{ page_hero.aside_classes() }}" aria-label="Workload Posture">
-                {% if dependency_blocker %}
-                    {% set analytics_posture_label = "Workload Posture" %}
-                    {% include "analytics/components/_blocked_posture.html" %}
-                {% else %}
-                    <div class="{{ page_hero.context_panel_classes() }}">
-                        {{ page_hero.context_posture_header('Workload Posture', workload_posture.value, workload_posture.value, workload_posture.tone, workload_posture.icon) }}
-                        <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                            {{ page_hero.context_metric('shield-alert', 'Governance Findings', finding_count_display, 'Workload findings in the active scope') }}
-                            {{ page_hero.context_metric('calendar-range', 'Time Range', selected_time_range, 'Committed observation window') }}
-                        </div>
-                        {{ analytics_hero.manage_clusters_action() }}
-                    </div>
-                {% endif %}
-            </aside>
+{% set workload_tone = workload_posture.tone|default('unknown') %}
+{% set workload_status = 'Healthy' if workload_tone == 'normal' else ('Watch' if workload_tone == 'warning' else ('Critical' if workload_tone == 'critical' else 'Unknown')) %}
+<section class="{{ page_hero.shell_classes() }}">
+    <div class="{{ page_hero.layout_classes() }}">
+        <div class="{{ page_hero.content_classes() }}">
+            {% call page_hero.intro('boxes', 'Kubernetes Analytics', 'layout-dashboard') %}
+                <h1 class="{{ page_hero.title_classes() }}">Workload Analysis</h1>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review quotas, requests, limits, QoS, and right-sizing evidence.</p>
+                <div class="{{ page_hero.metadata_row_classes() }}">
+                    {{ page_hero.meta_label('server', selected_cluster_name) }}
+                    {% if dependency_blocker %}
+                        {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
+                    {% else %}
+                        {{ page_hero.meta_label('boxes', workload_count_display) }}
+                        {{ page_hero.meta_label('list-checks', recommendation_count_display) }}
+                    {% endif %}
+                </div>
+            {% endcall %}
         </div>
-    </section>
-</div>
+        {% if dependency_blocker %}
+            <aside class="{{ page_hero.aside_classes() }}" aria-label="Workload Readiness">
+                {% set analytics_posture_label = 'Workload Posture' %}
+                {% include "analytics/components/_blocked_posture.html" %}
+            </aside>
+        {% else %}
+            {{ page_hero.context_card(
+                'Workload Posture',
+                'Workload Posture',
+                'Workload Governance',
+                workload_status,
+                workload_tone,
+                [
+                    ('shield-alert', 'Findings', finding_count_display, 'Governance findings'),
+                    ('calendar-range', 'Time Range', selected_time_range, 'Observation window')
+                ],
+                'Manage Clusters',
+                url_for('integrations.kubernetes'),
+                'server-cog'
+            ) }}
+        {% endif %}
+    </div>
+</section>
