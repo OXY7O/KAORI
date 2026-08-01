@@ -71,6 +71,15 @@ def _notification_response_context(feedback: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _tls_workspace_redirect(location: str):
+    """Return a full-page redirect so successful TLS mutations restart cleanly."""
+    if request.headers.get('HX-Request') == 'true':
+        response = make_response('', 204)
+        response.headers['HX-Redirect'] = location
+        return response
+    return redirect(location)
+
+
 def _build_tls_rotation_preview_response(rendered_html: str, payload: dict[str, Any]):
     response = make_response(rendered_html)
     validation = payload.get('validation')
@@ -1433,6 +1442,10 @@ def tls_secret_rotate_apply(certificate_id: int):
         },
         queue_feedback=True,
     )
+    if is_success:
+        return _tls_workspace_redirect(
+            url_for('kubernetes_operations.tls_secret_rotate', certificate_id=certificate_id)
+        )
     return redirect(url_for('governance.tls_certificates_detail', certificate_id=certificate_id))
 
 
@@ -1538,9 +1551,15 @@ def tls_secret_bulk_rotation_apply():
                 if item.get('status') != 'success' and item.get('target') is not None
             ],
         },
+        queue_feedback=is_success,
     )
-    operation_feedback = _notification_response_context(feedback)
 
+    if is_success:
+        return _tls_workspace_redirect(
+            url_for('kubernetes_operations.tls_secret_bulk_rotation')
+        )
+
+    operation_feedback = _notification_response_context(feedback)
     if request.headers.get('HX-Request'):
         return render_template(
             'kubernetes_operations/secrets/_bulk_feedback.html',
