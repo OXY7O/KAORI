@@ -1,14 +1,6 @@
 <div id="recommendations-workspace-content">
     {% include 'intelligence/partials/_filters.html' %}
-    {% include 'intelligence/partials/_recommendation_records.html' %}
-    {% set query_params = payload.filters.copy() %}
-    {% set _ = query_params.update({'per_page': payload.pagination.per_page}) %}
-    {% import 'intelligence/components/_pagination.html' as intelligence_pagination %}
-    {{ intelligence_pagination.render(
-        payload,
-        'intelligence.recommendations',
-        query_params,
-        target='#recommendations-workspace-content',
-        indicator='#recommendations-loading-bar'
-    ) }}
+    <div id="recommendations-results-content" aria-live="polite">
+        {% include 'intelligence/partials/_recommendations_results.html' %}
+    </div>
 </div>

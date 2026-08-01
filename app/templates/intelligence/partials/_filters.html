@@ -4,11 +4,11 @@
       method="get"
       action="{{ url_for(endpoint_name) }}"
       hx-get="{{ url_for(endpoint_name) }}"
-      hx-target="#recommendations-workspace-content"
-      hx-swap="outerHTML"
+      hx-target="#recommendations-results-content"
+      hx-swap="innerHTML show:none focus-scroll:false"
       hx-push-url="true"
       hx-indicator="#recommendations-loading-bar"
-      hx-sync="this:replace"
+      hx-sync="#recommendations-results-content:replace"
       hx-trigger="input changed delay:350ms from:input[name='q'], change from:select"
       class="border-b border-outline-subtle bg-surface-hover px-4 py-4 sm:px-5">
     <input type="hidden" name="page" value="1">
@@ -22,8 +22,9 @@
         <a href="{{ url_for(endpoint_name) }}"
            hx-get="{{ url_for(endpoint_name) }}"
            hx-target="#recommendations-workspace-content"
-           hx-swap="outerHTML"
+           hx-swap="outerHTML show:none focus-scroll:false"
            hx-push-url="true"
+           hx-sync="#recommendations-workspace-content:replace"
            hx-indicator="#recommendations-loading-bar"
            class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
             <i data-lucide="rotate-ccw" class="h-3.5 w-3.5" aria-hidden="true"></i>

@@ -31,10 +31,13 @@ def recommendations() -> ResponseReturnValue:
         page_mode='recommendations',
     )
     if request.headers.get('HX-Request') == 'true':
-        return render_template(
-            'intelligence/partials/_recommendations_workspace.html',
-            payload=payload,
+        target = (request.headers.get('HX-Target') or '').strip()
+        template_name = (
+            'intelligence/partials/_recommendations_results.html'
+            if target == 'recommendations-results-content'
+            else 'intelligence/partials/_recommendations_workspace.html'
         )
+        return render_template(template_name, payload=payload)
     return render_template('intelligence/recommendations.html', payload=payload)
 
 

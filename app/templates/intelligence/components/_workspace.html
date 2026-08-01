@@ -3,20 +3,20 @@
 
 {% macro section(title, description, icon='brain-circuit', badge_text='', badge_tone='info', extra='', indicator_id='', loading_label='Loading') -%}
 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ extra }}">
-    <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
-        <div class="flex min-w-0 items-start gap-3">
-            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
-                <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-            </span>
-            <div class="min-w-0">
-                <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
-                <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+    <header class="border-b border-outline-subtle px-4 py-4 sm:px-5">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                    <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-base font-semibold text-content-primary">{{ title }}</h2>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
+                </div>
             </div>
+            {% if badge_text %}<div class="shrink-0">{{ table_label.status_label(badge_text, badge_tone, size='compact') }}</div>{% endif %}
         </div>
-        {% if badge_text %}{{ table_label.status_label(badge_text, badge_tone, size='compact') }}{% endif %}
-        {% if indicator_id %}
-            <div class="basis-full">{{ loading_bar.render(indicator_id, label=loading_label) }}</div>
-        {% endif %}
+        {% if indicator_id %}{{ loading_bar.render(indicator_id, label=loading_label) }}{% endif %}
     </header>
     {{ caller() }}
 </section>

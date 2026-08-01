@@ -167,6 +167,8 @@
     let activeDetailId = null
     let lockedMain = null
     let previousMainOverflow = ''
+    let previousMainScrollbarGutter = ''
+    let lockedMainScrollTop = 0
 
     function host() {
         return document.querySelector(HOST_SELECTOR)
@@ -200,14 +202,22 @@
         lockedMain = document.querySelector('main')
         if (!lockedMain) return
         previousMainOverflow = lockedMain.style.overflow
+        previousMainScrollbarGutter = lockedMain.style.scrollbarGutter
+        lockedMainScrollTop = lockedMain.scrollTop
+        lockedMain.style.scrollbarGutter = 'stable'
         lockedMain.style.overflow = 'hidden'
+        lockedMain.scrollTop = lockedMainScrollTop
     }
 
     function unlockBackground() {
         if (!lockedMain) return
         lockedMain.style.overflow = previousMainOverflow
+        lockedMain.style.scrollbarGutter = previousMainScrollbarGutter
+        lockedMain.scrollTop = lockedMainScrollTop
         lockedMain = null
         previousMainOverflow = ''
+        previousMainScrollbarGutter = ''
+        lockedMainScrollTop = 0
     }
 
     function setModalVisible(modalHost, visible) {

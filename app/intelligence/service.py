@@ -90,6 +90,34 @@ def _format_label(value: str) -> str:
     return value.replace('_', ' ').title()
 
 
+def _compact_recommendation_summary(value: Any, *, limit: int = 180) -> str:
+    text = ' '.join(str(value or '').split())
+    if not text:
+        return 'Evidence-backed operational guidance is available in View Details.'
+
+    for marker in (' Examples:', ' Example:', ' Examples include:'):
+        if marker in text:
+            text = text.split(marker, 1)[0].rstrip(' .') + '.'
+            break
+
+    if len(text) <= limit:
+        return text
+
+    first_sentence = text.split('. ', 1)[0].strip()
+    if 48 <= len(first_sentence) <= limit:
+        return first_sentence.rstrip('.') + '.'
+
+    words: list[str] = []
+    length = 0
+    for word in text.split():
+        projected = length + len(word) + (1 if words else 0)
+        if projected > limit:
+            break
+        words.append(word)
+        length = projected
+    return ' '.join(words).rstrip(' ,;:-') + '.'
+
+
 def _domain_label(value: str) -> str:
     return {'kubernetes': 'Kubernetes', 'server': 'Server', 'hci': 'HCI'}.get(value, _format_label(value))
 
@@ -248,6 +276,7 @@ def _base_payload(args: MultiDict[str, str], *, page_mode: str) -> dict[str, Any
                 if affected_count
                 else source_label
             )
+            item['list_summary'] = _compact_recommendation_summary(item.get('summary'))
 
     return {
         'page_mode': page_mode,
@@ -852,6 +881,7 @@ def get_recommendation_finding(recommendation_key: str) -> dict[str, Any] | None
             if affected_count
             else source_label
         )
+        finding['list_summary'] = _compact_recommendation_summary(finding.get('summary'))
         return finding
 
     return None

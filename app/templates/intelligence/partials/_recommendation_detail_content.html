@@ -5,58 +5,91 @@
     <div class="{{ detail.expanded_workspace_shell_classes() }}">
         <header data-resource-detail-header class="{{ detail.expanded_workspace_header_classes() }}">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="{{ detail.expanded_workspace_icon_classes() }}" aria-hidden="true"><i data-lucide="sparkles" class="h-5 w-5"></i></span>
+                <span class="{{ detail.expanded_workspace_icon_classes() }}" aria-hidden="true">
+                    <i data-lucide="sparkles" class="h-5 w-5"></i>
+                </span>
                 <div class="min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                         <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.title }}</h3>
                         {{ table_label.metadata_label(item.domain_label, 'boxes') }}
                         {{ table_label.metadata_label(item.category_label, 'tag') }}
                     </div>
-                    <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ item.summary }}</p>
+                    <p class="mt-1 max-w-5xl break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">
+                        {{ item.list_summary|default(item.summary, true) }}
+                    </p>
                 </div>
             </div>
-            <div class="self-start sm:self-auto">{{ table_label.status_label(item.severity_label, item.tone, size='detail') }}</div>
+            <div class="self-start sm:self-auto">
+                {{ table_label.status_label(item.severity_label, item.tone, size='detail') }}
+            </div>
         </header>
 
         <div data-resource-detail-summary class="grid gap-px border-b border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
-            <article class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-secondary">Affected Scope</p><p class="mt-1.5 text-base font-semibold text-content-primary">{{ item.scope_title|default('Cluster Scope', true) }}</p><p class="mt-0.5 text-xs leading-5 text-content-muted">{{ item.scope_supporting|default(item.source_kind_label, true) }}</p></article>
-            <article class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-secondary">Signal Source</p><p class="mt-1.5 text-base font-semibold text-content-primary">{{ item.signal_source_label }}</p><p class="mt-0.5 text-xs leading-5 text-content-muted">Authoritative evidence source</p></article>
-            <article class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-secondary">Logic</p><p class="mt-1.5 text-base font-semibold text-content-primary">{{ item.logic_type_label }}</p><p class="mt-0.5 text-xs leading-5 text-content-muted">Evaluation contract</p></article>
-            <article class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-secondary">Priority</p><div class="mt-2">{{ table_label.status_label(item.severity_label, item.tone, size='detail') }}</div><p class="mt-1 text-xs leading-5 text-content-muted">Operational review priority</p></article>
+            <article class="bg-surface-card p-4">
+                <p class="text-xs font-semibold text-content-secondary">Affected Scope</p>
+                <p class="mt-1.5 break-words text-base font-semibold text-content-primary [overflow-wrap:anywhere]">{{ item.scope_title|default('Cluster Scope', true) }}</p>
+                <p class="mt-0.5 text-xs leading-5 text-content-muted">{{ item.scope_supporting|default(item.source_kind_label, true) }}</p>
+            </article>
+            <article class="bg-surface-card p-4">
+                <p class="text-xs font-semibold text-content-secondary">Resource</p>
+                <p class="mt-1.5 text-base font-semibold text-content-primary">{{ item.source_kind_label }}</p>
+                <p class="mt-0.5 text-xs leading-5 text-content-muted">Affected resource type</p>
+            </article>
+            <article class="bg-surface-card p-4">
+                <p class="text-xs font-semibold text-content-secondary">Evidence Source</p>
+                <p class="mt-1.5 text-base font-semibold text-content-primary">{{ item.signal_source_label }}</p>
+                <p class="mt-0.5 text-xs leading-5 text-content-muted">Committed evidence boundary</p>
+            </article>
+            <article class="bg-surface-card p-4">
+                <p class="text-xs font-semibold text-content-secondary">Priority</p>
+                <div class="mt-2">{{ table_label.status_label(item.severity_label, item.tone, size='detail') }}</div>
+                <p class="mt-1 text-xs leading-5 text-content-muted">Operational review priority</p>
+            </article>
         </div>
 
-        <div class="grid items-stretch gap-4 p-5 lg:grid-cols-2">
-            {% call detail.detail_card('Finding Evidence', 'scan-search', item.source_kind_label, badge_size='detail') %}
-                {{ detail.stacked_detail_row('Affected Scope', item.affected_summary) }}
-                {{ detail.technical_row('Rule Key', item.rule_key) }}
-                {{ detail.stacked_detail_row('What It Checks', item.condition_summary) }}
-                {{ detail.stacked_detail_row('Impact', item.impact) }}
-            {% endcall %}
+        <div class="space-y-4 p-4 sm:p-5">
+            <div class="grid items-stretch gap-4 xl:grid-cols-[minmax(0,1.25fr)_minmax(20rem,0.75fr)]">
+                {% call detail.detail_card('Finding Overview', 'scan-search', item.source_kind_label, badge_size='detail') %}
+                    {{ detail.stacked_detail_row('Observed Finding', item.summary) }}
+                    {{ detail.stacked_detail_row('What It Checks', item.condition_summary) }}
+                    {{ detail.stacked_detail_row('Operational Impact', item.impact) }}
+                {% endcall %}
 
-            {% call detail.detail_card('Affected Context', 'target', item.affected_items|length ~ ' Fields', badge_size='detail') %}
-                {% for evidence_item in item.affected_items %}
-                    {{ detail.detail_row(evidence_item.label, evidence_item.value) }}
+                {% call detail.detail_card('Evidence Contract', 'shield-check', item.logic_type_label, badge_size='detail') %}
+                    {{ detail.detail_row('Signal Source', item.signal_source_label) }}
+                    {{ detail.detail_row('Logic Type', item.logic_type_label) }}
+                    {{ detail.detail_row('Domain', item.domain_label) }}
+                    <div class="min-w-0 border-t border-outline-subtle pt-2.5">
+                        <p class="text-xs leading-5 text-content-muted">Rule Key</p>
+                        <p class="mt-1 break-all font-mono text-xs font-medium leading-5 text-content-primary" title="{{ item.rule_key }}">{{ item.rule_key }}</p>
+                    </div>
+                {% endcall %}
+            </div>
+
+            {% call detail.detail_card('Affected Context', 'target', item.affected_items|length ~ ' Fields', badge_size='detail', stretch=false) %}
+                {% if item.affected_items %}
+                    {{ detail.evidence_grid(item.affected_items, columns=5, compact=true) }}
                 {% else %}
-                    {{ detail.stacked_detail_row('Evidence', 'No additional affected-resource context was recorded.') }}
-                {% endfor %}
+                    {{ detail.empty_evidence('No Additional Context', 'No additional affected-resource context was recorded for this recommendation.', 'database') }}
+                {% endif %}
             {% endcall %}
 
-            {% call detail.detail_card('Recommended Action', 'list-checks', item.priority|default(item.severity_label, true), 'status', item.tone, class_name='lg:col-span-2', badge_size='detail', stretch=false) %}
+            {% call detail.detail_card('Recommended Action', 'list-checks', item.priority|default(item.severity_label, true), 'status', item.tone, badge_size='detail', stretch=false) %}
                 <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
                     <p class="text-sm font-semibold leading-6 text-content-primary">{{ item.recommended_action }}</p>
                 </div>
-                <ol class="grid gap-2 sm:grid-cols-2">
+                <ol class="grid gap-3 lg:grid-cols-3">
                     {% for step in item.fix_steps %}
-                        <li class="flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-card p-3">
+                        <li class="flex min-w-0 items-start gap-3 rounded-lg border border-outline-subtle bg-surface-card p-3">
                             <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-xs font-semibold text-kaori-primary">{{ loop.index }}</span>
-                            <p class="text-xs leading-5 text-content-secondary">{{ step }}</p>
+                            <p class="min-w-0 break-words text-xs leading-5 text-content-secondary [overflow-wrap:anywhere]">{{ step }}</p>
                         </li>
                     {% endfor %}
                 </ol>
             {% endcall %}
         </div>
 
-        <section class="border-t border-outline-subtle bg-surface-elevated p-5" aria-label="Recommendation Evidence Boundary">
+        <section class="border-t border-outline-subtle bg-surface-elevated p-4 sm:p-5" aria-label="Recommendation Evidence Boundary">
             <div class="grid gap-3 lg:grid-cols-2">
                 {{ operational_callout.render(
                     'Committed Evidence Boundary',
