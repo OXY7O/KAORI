@@ -129,20 +129,40 @@
         </div>
 
         <div class="{{ overview_surface.interpretation_grid_classes() }}">
-            <article class="px-4 py-3 sm:px-5">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">How To Read</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">The filled lane shows current utilization; headroom is the remaining percentage before full allocatable capacity. Confirm sustained pressure in the Utilization Trend tab.</p>
-            </article>
-            <article class="border-t border-outline-subtle px-4 py-3 sm:px-5 lg:border-t-0">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">What To Do</p>
-                {% if overall_tone == 'critical' %}
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Review active alerts and top consumers immediately, then reduce load or add capacity before service impact expands.</p>
-                {% elif overall_tone == 'warning' %}
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Validate growth direction, workload ownership, and capacity commitments before scheduling remediation.</p>
-                {% else %}
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Continue monitoring trends and investigate sudden changes even while current utilization remains below warning thresholds.</p>
-                {% endif %}
-            </article>
+            {{ overview_surface.interpretation_callout(
+                'How To Read',
+                'Use Current Utilization With Remaining Headroom',
+                'The filled lane shows current utilization; headroom is the remaining percentage before full allocatable capacity. Confirm sustained pressure in the Utilization Trend tab.',
+                icon='chart-column'
+            ) }}
+            {% if overall_tone == 'critical' %}
+                {{ overview_surface.interpretation_callout(
+                    'What To Do',
+                    'Take Immediate Pressure Mitigation Action',
+                    'Review active alerts and top consumers immediately, then reduce load or add capacity before service impact expands.',
+                    icon='shield-alert',
+                    tone='critical',
+                    extra='border-t border-outline-subtle lg:border-t-0'
+                ) }}
+            {% elif overall_tone == 'warning' %}
+                {{ overview_surface.interpretation_callout(
+                    'What To Do',
+                    'Validate Growth And Ownership Before Remediation',
+                    'Validate growth direction, workload ownership, and capacity commitments before scheduling remediation.',
+                    icon='triangle-alert',
+                    tone='warning',
+                    extra='border-t border-outline-subtle lg:border-t-0'
+                ) }}
+            {% else %}
+                {{ overview_surface.interpretation_callout(
+                    'What To Do',
+                    'Continue Monitoring Trend Stability',
+                    'Continue monitoring trends and investigate sudden changes even while current utilization remains below warning thresholds.',
+                    icon='circle-check',
+                    tone='normal',
+                    extra='border-t border-outline-subtle lg:border-t-0'
+                ) }}
+            {% endif %}
         </div>
     </div>
 </section>

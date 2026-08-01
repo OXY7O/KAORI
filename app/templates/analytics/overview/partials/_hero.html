@@ -18,7 +18,6 @@
                     {% else %}
                         {{ page_hero.meta_label('clock-3', payload.selected_time_range|upper ~ ' Analysis Window') }}
                         {{ page_hero.meta_label('bell', active_alerts ~ ' Active Alerts') }}
-                        {{ page_hero.meta_label('list-checks', actionable.total_count|default(0) ~ ' Actionable') }}
                     {% endif %}
                 </div>
             {% endcall %}

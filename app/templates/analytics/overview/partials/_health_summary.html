@@ -148,24 +148,38 @@
         </div>
 
         <div class="{{ overview_surface.interpretation_grid_classes() }}">
-            <article class="px-4 py-3 sm:px-5">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Operational Reading</p>
-                {% if posture.critical > 0 %}
-                    <p class="mt-1 text-sm font-semibold text-status-critical">Critical Signals Are Present And Require Immediate Triage</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Open the relevant domain tab, validate the source snapshot, and resolve active service risk before optimization work.</p>
-                {% elif posture.warning > 0 %}
-                    <p class="mt-1 text-sm font-semibold text-status-warning">Warning Signals Require Planned Operational Review</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Compare the affected domain with current headroom, forecast direction, and alert context before scheduling remediation.</p>
-                {% else %}
-                    <p class="mt-1 text-sm font-semibold text-status-normal">No Immediate Operational Escalation Is Indicated</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Continue monitoring committed snapshots and review recommendations for preventive improvements.</p>
-                {% endif %}
-            </article>
-            <article class="border-t border-outline-subtle px-4 py-3 sm:px-5 lg:border-t-0">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Recommended Review Path</p>
-                <p class="mt-1 text-sm font-semibold text-content-primary">Start With Risk, Then Validate Capacity And Ownership</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Review Alerts, Capacity, Forecast, Workloads, and Storage tabs in that order when multiple domains require attention.</p>
-            </article>
+            {% if posture.critical > 0 %}
+                {{ overview_surface.interpretation_callout(
+                    'Operational Reading',
+                    'Critical Signals Are Present And Require Immediate Triage',
+                    'Open the relevant domain tab, validate the source snapshot, and resolve active service risk before optimization work.',
+                    icon='shield-alert',
+                    tone='critical'
+                ) }}
+            {% elif posture.warning > 0 %}
+                {{ overview_surface.interpretation_callout(
+                    'Operational Reading',
+                    'Warning Signals Require Planned Operational Review',
+                    'Compare the affected domain with current headroom, forecast direction, and alert context before scheduling remediation.',
+                    icon='triangle-alert',
+                    tone='warning'
+                ) }}
+            {% else %}
+                {{ overview_surface.interpretation_callout(
+                    'Operational Reading',
+                    'No Immediate Operational Escalation Is Indicated',
+                    'Continue monitoring committed snapshots and review recommendations for preventive improvements.',
+                    icon='circle-check',
+                    tone='normal'
+                ) }}
+            {% endif %}
+            {{ overview_surface.interpretation_callout(
+                'Recommended Review Path',
+                'Start With Risk, Then Validate Capacity And Ownership',
+                'Review Alerts, Capacity, Forecast, Workloads, and Storage tabs in that order when multiple domains require attention.',
+                icon='scan-search',
+                extra='border-t border-outline-subtle lg:border-t-0'
+            ) }}
         </div>
     </section>
 </div>
