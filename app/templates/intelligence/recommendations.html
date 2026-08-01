@@ -1,7 +1,7 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
+{% import "components/resource_detail_modal.html" as resource_detail_modal %}
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
-{% import "intelligence/components/_pagination.html" as intelligence_pagination %}
 {% block title %}Recommendations{% endblock title %}
 {% block dashboard_content %}
 {% set hero_metrics = [
@@ -9,17 +9,40 @@
     ('shield-alert', 'Critical', payload.summary.critical, 'Immediate review')
 ] %}
 <div class="space-y-6">
-<section class="{{ page_hero.shell_classes() }}"><div class="{{ page_hero.layout_classes() }}"><div class="{{ page_hero.content_classes() }}">
-{% call page_hero.intro('brain-circuit', 'Infrastructure Intelligence', 'sparkles') %}
-<h1 class="{{ page_hero.title_classes() }}">Recommendations</h1><p class="mt-2 {{ page_hero.description_classes() }}">Actionable guidance generated from current inventory, metrics, alert, and governance evidence.</p>
-<div class="{{ page_hero.metadata_row_classes() }}">{{ page_hero.meta_label('boxes', 'Kubernetes') }}{{ page_hero.meta_label('database', 'Committed Evidence') }}{{ page_hero.meta_label('list-checks', payload.summary.actionable ~ ' Findings') }}</div>
-{% endcall %}</div>
-{{ page_hero.context_card('Recommendation posture', 'Intelligence Posture', payload.posture.title, payload.posture.label, payload.posture.tone, hero_metrics, 'Open Rule Catalog', url_for('intelligence.catalog'), 'list-checks') }}
-</div></section>
-{% call intelligence_ui.section('Recommendation Workspace', 'Filter and review evidence-backed operational guidance. Recommendations are findings; rule definitions remain in Rule Catalog.', 'sparkles', payload.posture.label, payload.posture.tone) %}
-{% set endpoint_name = 'intelligence.recommendations' %}{% include 'intelligence/partials/_filters.html' %}
-{% include 'intelligence/partials/_recommendation_records.html' %}
-{% set query_params = payload.filters.copy() %}{{ intelligence_pagination.render(payload, endpoint_name, query_params) }}
-{% endcall %}
+    <section class="{{ page_hero.shell_classes() }}">
+        <div class="{{ page_hero.layout_classes() }}">
+            <div class="{{ page_hero.content_classes() }}">
+                {% call page_hero.intro('brain-circuit', 'Infrastructure Intelligence', 'sparkles') %}
+                    <h1 class="{{ page_hero.title_classes() }}">Recommendations</h1>
+                    <p class="mt-2 {{ page_hero.description_classes() }}">Actionable guidance generated from current inventory, metrics, alert, and governance evidence.</p>
+                    <div class="{{ page_hero.metadata_row_classes() }}">
+                        {{ page_hero.meta_label('boxes', 'Kubernetes') }}
+                        {{ page_hero.meta_label('database', 'Committed Evidence') }}
+                        {{ page_hero.meta_label('list-checks', payload.summary.actionable ~ ' Findings') }}
+                    </div>
+                {% endcall %}
+            </div>
+            {{ page_hero.context_card('Recommendation posture', 'Intelligence Posture', payload.posture.title, payload.posture.label, payload.posture.tone, hero_metrics, 'Open Rule Catalog', url_for('intelligence.catalog'), 'list-checks') }}
+        </div>
+    </section>
+
+    {% call intelligence_ui.section(
+        'Recommendation Workspace',
+        'Filter and review evidence-backed operational guidance. Recommendations are findings; rule definitions remain in Rule Catalog.',
+        'sparkles',
+        payload.posture.label,
+        payload.posture.tone,
+        indicator_id='recommendations-loading-bar',
+        loading_label='Refreshing Recommendations'
+    ) %}
+        {% include 'intelligence/partials/_recommendations_workspace.html' %}
+    {% endcall %}
 </div>
+
+{{ resource_detail_modal.host(
+    'Recommendation',
+    url_for('intelligence.recommendation_details', recommendation_key='0'),
+    footer_text='Recommendation evidence comes from the current committed KAORI data boundary.',
+    context_label='Intelligence'
+) }}
 {% endblock dashboard_content %}

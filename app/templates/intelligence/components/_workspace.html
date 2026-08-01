@@ -1,6 +1,7 @@
 {% import "components/table_label.html" as table_label %}
+{% import "components/loading_bar.html" as loading_bar %}
 
-{% macro section(title, description, icon='brain-circuit', badge_text='', badge_tone='info', extra='') -%}
+{% macro section(title, description, icon='brain-circuit', badge_text='', badge_tone='info', extra='', indicator_id='', loading_label='Loading') -%}
 <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm {{ extra }}">
     <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:px-5 lg:flex-row lg:items-start lg:justify-between">
         <div class="flex min-w-0 items-start gap-3">
@@ -13,6 +14,9 @@
             </div>
         </div>
         {% if badge_text %}{{ table_label.status_label(badge_text, badge_tone, size='compact') }}{% endif %}
+        {% if indicator_id %}
+            <div class="basis-full">{{ loading_bar.render(indicator_id, label=loading_label) }}</div>
+        {% endif %}
     </header>
     {{ caller() }}
 </section>

@@ -1,9 +1,13 @@
 from __future__ import annotations
 
-from flask import Blueprint, redirect, render_template, request, url_for
+from flask import Blueprint, abort, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 
-from app.intelligence.service import get_alert_intelligence_payload, get_recommendations_payload
+from app.intelligence.service import (
+    get_alert_intelligence_payload,
+    get_recommendation_finding,
+    get_recommendations_payload,
+)
 from app.rbac.decorators import permission_required
 
 intelligence_bp = Blueprint(
@@ -26,7 +30,24 @@ def recommendations() -> ResponseReturnValue:
         request.args,
         page_mode='recommendations',
     )
+    if request.headers.get('HX-Request') == 'true':
+        return render_template(
+            'intelligence/partials/_recommendations_workspace.html',
+            payload=payload,
+        )
     return render_template('intelligence/recommendations.html', payload=payload)
+
+
+@intelligence_bp.get('/recommendations/<path:recommendation_key>/details')
+@permission_required('intelligence.view')
+def recommendation_details(recommendation_key: str) -> ResponseReturnValue:
+    finding = get_recommendation_finding(recommendation_key)
+    if finding is None:
+        abort(404)
+    return render_template(
+        'intelligence/partials/_recommendation_detail_content.html',
+        item=finding,
+    )
 
 
 @intelligence_bp.route('/catalog')

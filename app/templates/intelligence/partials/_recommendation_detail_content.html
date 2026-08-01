@@ -1,0 +1,77 @@
+{% import "components/table_label.html" as table_label %}
+{% import "components/details/_detail_content.html" as detail %}
+{% import "components/operational_callout.html" as operational_callout %}
+<div data-kaori-detail-variant="full-workspace-modal" class="{{ detail.expanded_workspace_outer_classes() }}">
+    <div class="{{ detail.expanded_workspace_shell_classes() }}">
+        <header data-resource-detail-header class="{{ detail.expanded_workspace_header_classes() }}">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="{{ detail.expanded_workspace_icon_classes() }}" aria-hidden="true"><i data-lucide="sparkles" class="h-5 w-5"></i></span>
+                <div class="min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.title }}</h3>
+                        {{ table_label.metadata_label(item.domain_label, 'boxes') }}
+                        {{ table_label.metadata_label(item.category_label, 'tag') }}
+                    </div>
+                    <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ item.summary }}</p>
+                </div>
+            </div>
+            <div class="self-start sm:self-auto">{{ table_label.status_label(item.severity_label, item.tone, size='detail') }}</div>
+        </header>
+
+        <div data-resource-detail-summary class="grid gap-px border-b border-outline-subtle bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
+            <article class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-secondary">Affected Scope</p><p class="mt-1.5 text-base font-semibold text-content-primary">{{ item.scope_title|default('Cluster Scope', true) }}</p><p class="mt-0.5 text-xs leading-5 text-content-muted">{{ item.scope_supporting|default(item.source_kind_label, true) }}</p></article>
+            <article class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-secondary">Signal Source</p><p class="mt-1.5 text-base font-semibold text-content-primary">{{ item.signal_source_label }}</p><p class="mt-0.5 text-xs leading-5 text-content-muted">Authoritative evidence source</p></article>
+            <article class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-secondary">Logic</p><p class="mt-1.5 text-base font-semibold text-content-primary">{{ item.logic_type_label }}</p><p class="mt-0.5 text-xs leading-5 text-content-muted">Evaluation contract</p></article>
+            <article class="bg-surface-card p-4"><p class="text-xs font-semibold text-content-secondary">Priority</p><div class="mt-2">{{ table_label.status_label(item.severity_label, item.tone, size='detail') }}</div><p class="mt-1 text-xs leading-5 text-content-muted">Operational review priority</p></article>
+        </div>
+
+        <div class="grid items-stretch gap-4 p-5 lg:grid-cols-2">
+            {% call detail.detail_card('Finding Evidence', 'scan-search', item.source_kind_label, badge_size='detail') %}
+                {{ detail.stacked_detail_row('Affected Scope', item.affected_summary) }}
+                {{ detail.technical_row('Rule Key', item.rule_key) }}
+                {{ detail.stacked_detail_row('What It Checks', item.condition_summary) }}
+                {{ detail.stacked_detail_row('Impact', item.impact) }}
+            {% endcall %}
+
+            {% call detail.detail_card('Affected Context', 'target', item.affected_items|length ~ ' Fields', badge_size='detail') %}
+                {% for evidence_item in item.affected_items %}
+                    {{ detail.detail_row(evidence_item.label, evidence_item.value) }}
+                {% else %}
+                    {{ detail.stacked_detail_row('Evidence', 'No additional affected-resource context was recorded.') }}
+                {% endfor %}
+            {% endcall %}
+
+            {% call detail.detail_card('Recommended Action', 'list-checks', item.priority|default(item.severity_label, true), 'status', item.tone, class_name='lg:col-span-2', badge_size='detail', stretch=false) %}
+                <div class="rounded-lg border border-outline-subtle bg-surface-elevated p-4">
+                    <p class="text-sm font-semibold leading-6 text-content-primary">{{ item.recommended_action }}</p>
+                </div>
+                <ol class="grid gap-2 sm:grid-cols-2">
+                    {% for step in item.fix_steps %}
+                        <li class="flex items-start gap-3 rounded-lg border border-outline-subtle bg-surface-card p-3">
+                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-kaori-soft text-xs font-semibold text-kaori-primary">{{ loop.index }}</span>
+                            <p class="text-xs leading-5 text-content-secondary">{{ step }}</p>
+                        </li>
+                    {% endfor %}
+                </ol>
+            {% endcall %}
+        </div>
+
+        <section class="border-t border-outline-subtle bg-surface-elevated p-5" aria-label="Recommendation Evidence Boundary">
+            <div class="grid gap-3 lg:grid-cols-2">
+                {{ operational_callout.render(
+                    'Committed Evidence Boundary',
+                    'This recommendation is generated from committed KAORI inventory, analytics, governance, or alert evidence. Opening the modal does not query the source system live.',
+                    icon='database',
+                    tone='info'
+                ) }}
+                {{ operational_callout.render(
+                    'Validate Before Remediation',
+                    'Confirm the current resource state and ownership before applying the recommended operational change.',
+                    icon='clipboard-check',
+                    tone=item.tone,
+                    variant='semantic'
+                ) }}
+            </div>
+        </section>
+    </div>
+</div>

@@ -237,7 +237,7 @@
         refreshIcons()
     }
 
-    function setGenericHeader(elements, type, name) {
+    function setGenericHeader(elements, type, name, contextLabel = 'Inventory') {
         if (!elements.header) return
         elements.header.innerHTML = `
             <div class="flex min-w-0 items-start gap-3">
@@ -245,9 +245,9 @@
                     <i data-lucide="panel-top-open" class="h-5 w-5"></i>
                 </span>
                 <div class="min-w-0">
-                    <p class="text-xs font-semibold text-kaori-primary">${escapeHtml(type || 'Inventory Resource')} Details</p>
-                    <h2 id="resource-detail-modal-title" class="mt-0.5 break-words text-lg font-semibold text-content-primary [overflow-wrap:anywhere]">${escapeHtml(name || 'Inventory Resource Details')}</h2>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Loading committed inventory evidence.</p>
+                    <p class="text-xs font-semibold text-kaori-primary">${escapeHtml(contextLabel)} Details</p>
+                    <h2 id="resource-detail-modal-title" class="mt-0.5 break-words text-lg font-semibold text-content-primary [overflow-wrap:anywhere]">${escapeHtml(name || ((type || 'Resource') + ' Details'))}</h2>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Loading ${escapeHtml(String(contextLabel || 'Resource').toLowerCase())} evidence.</p>
                 </div>
             </div>
         `
@@ -324,7 +324,12 @@
         activeDetailId = String(detailId)
 
         setModalVisible(modalHost, true)
-        setGenericHeader(elements, type || modalHost.dataset.resourceType, name)
+        setGenericHeader(
+            elements,
+            type || modalHost.dataset.resourceType,
+            name,
+            modalHost.dataset.detailContextLabel || 'Inventory'
+        )
         setLoading(elements)
         refreshIcons()
         requestAnimationFrame(() => elements.dialog?.focus())
