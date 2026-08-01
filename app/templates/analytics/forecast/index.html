@@ -45,7 +45,6 @@
                             {{ page_hero.meta_label('server', selected_cluster_name) }}
                             {{ page_hero.meta_label('filter', ('Namespace ' ~ selected_namespace) if selected_namespace else 'All Namespaces') }}
                             {{ page_hero.meta_label('calendar-range', selected_history_window ~ ' History') }}
-                            {{ page_hero.meta_label('list-checks', recommendation_count ~ ' Actionable') }}
                         </div>
                     {% endcall %}
                 </div>
@@ -63,7 +62,7 @@
                                 {{ table_label.status_label(posture_value, posture_tone, posture_icon) }}
                             </div>
                             <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                                {{ page_hero.context_metric('gauge', 'Highest Projection', highest_projection, summary.highest_projected_label|default('No valid projection', true)|truncate(30, true, '…'), value_classes=page_hero.context_metric_value_classes(true)) }}
+                                {{ page_hero.context_metric('gauge', 'Highest Projection', highest_projection, summary.highest_projected_label|default('No Evidence', true), value_classes=page_hero.context_metric_value_classes(true)) }}
                                 {{ page_hero.context_metric('list-checks', 'Actionable', recommendation_count, 'Forecast recommendations', value_classes=page_hero.context_metric_value_classes(true)) }}
                             </div>
                             {{ analytics_hero.manage_clusters_action() }}

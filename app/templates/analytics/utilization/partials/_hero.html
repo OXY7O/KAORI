@@ -28,7 +28,6 @@
                     {% else %}
                         {{ page_hero.meta_label('cpu', 'CPU ' ~ cpu_util ~ '%') }}
                         {{ page_hero.meta_label('memory-stick', 'Memory ' ~ memory_util ~ '%') }}
-                        {{ page_hero.meta_label('list-checks', recommendation_count|default(0) ~ ' Actionable') }}
                     {% endif %}
                 </div>
             {% endcall %}

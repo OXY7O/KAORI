@@ -19,7 +19,6 @@
                     {% else %}
                         {{ page_hero.meta_label('scan-search', scope.label|default('Cluster')) }}
                         {{ page_hero.meta_label('database', coverage.label|default('0 of 4 Resources Complete')) }}
-                        {{ page_hero.meta_label('list-filter', total_rows ~ ' Consumers') }}
                     {% endif %}
                 </div>
             {% endcall %}
