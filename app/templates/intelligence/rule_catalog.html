@@ -1,0 +1,25 @@
+{% extends "layouts/app.html" %}
+{% import "components/page_hero.html" as page_hero %}
+{% import "intelligence/components/_workspace.html" as intelligence_ui %}
+{% import "intelligence/components/_pagination.html" as intelligence_pagination %}
+{% block title %}Rule Catalog{% endblock title %}
+{% block dashboard_content %}
+{% set hero_metrics = [
+    ('circle-check', 'Available', payload.summary.available, 'Evaluator definitions'),
+    ('calendar-clock', 'Reserved Plan', payload.summary.reserved, 'Disabled definitions')
+] %}
+<div class="space-y-6">
+<section class="{{ page_hero.shell_classes() }}"><div class="{{ page_hero.layout_classes() }}"><div class="{{ page_hero.content_classes() }}">
+{% call page_hero.intro('list-checks', 'Infrastructure Intelligence', 'book-open-check') %}
+<h1 class="{{ page_hero.title_classes() }}">Rule Catalog</h1><p class="mt-2 {{ page_hero.description_classes() }}">Canonical rule definitions, evidence sources, evaluator availability, and operational guidance across intelligence domains.</p>
+<div class="{{ page_hero.metadata_row_classes() }}">{{ page_hero.meta_label('list-checks', payload.catalog|length ~ ' Rules') }}{{ page_hero.meta_label('boxes', '3 Asset Domains') }}{{ page_hero.meta_label('radio-tower', 'Multiple Signal Sources') }}</div>
+{% endcall %}</div>
+{{ page_hero.context_card('Rule catalog posture', 'Catalog Posture', 'Rule Availability', payload.posture.label, payload.posture.tone, hero_metrics, 'Open Recommendations', url_for('intelligence.recommendations'), 'sparkles') }}
+</div></section>
+{% call intelligence_ui.section('Rule Definitions', 'Search rule ownership, source boundary, evaluator availability, severity, and recommended response.', 'list-checks', payload.posture.label, payload.posture.tone) %}
+{% set endpoint_name = 'intelligence.catalog' %}{% include 'intelligence/partials/_filters.html' %}
+{% include 'intelligence/partials/_catalog_records.html' %}
+{% set query_params = payload.filters.copy() %}{{ intelligence_pagination.render(payload, endpoint_name, query_params) }}
+{% endcall %}
+</div>
+{% endblock dashboard_content %}

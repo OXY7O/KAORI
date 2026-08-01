@@ -178,6 +178,9 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
     payload: dict[str, Any] = {
         'workspace': workspace,
         'workspaces': _workspace_rows(workspace),
+        'workspace_tabs': _workspace_tabs(),
+        'mutations_enabled': bool(current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False)),
+        'posture': {'label': 'Reserved Plan', 'tone': 'unknown'},
         'counts': counts,
         'clusters': clusters,
         'cluster_names': cluster_names,
@@ -203,7 +206,15 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
 
     if workspace == 'overview':
         rows = [_domain_row(item) for item in DOMAIN_DEFINITIONS]
-        payload['domain_rows'], payload['pagination'] = _paginate_sequence(rows, page=page, per_page=per_page)
+        grouped: dict[str, list[dict[str, Any]]] = {}
+        for row in rows:
+            grouped.setdefault(str(row['layer']), []).append(row)
+        payload['domain_rows'] = rows
+        payload['domain_groups'] = [
+            {'layer': layer, 'items': items}
+            for layer, items in grouped.items()
+        ]
+        payload['pagination'] = None
         payload['resource_label'] = 'domains'
     elif workspace == 'runbooks':
         query = KnowledgeRunbook.query.order_by(KnowledgeRunbook.updated_at.desc(), KnowledgeRunbook.id.desc())
@@ -347,9 +358,24 @@ def upsert_deployment_policy(
     return record
 
 
+
+def _workspace_tabs() -> list[dict[str, str]]:
+    definitions = (
+        ('overview', 'Foundation', 'layers-3'),
+        ('runbooks', 'Runbooks & Bindings', 'book-open-check'),
+        ('decisions', 'Decision Review', 'clipboard-check'),
+        ('operations', 'Resolver Operations', 'server-cog'),
+        ('readiness', 'Production Readiness', 'shield-check'),
+    )
+    from flask import url_for
+    return [
+        {'key': key, 'label': label, 'icon': icon, 'href': url_for('automation_control.index', workspace=key)}
+        for key, label, icon in definitions
+    ]
+
 def _workspace_rows(active: str) -> list[dict[str, str | bool]]:
     definitions = (
-        ('overview', 'Foundation Map', 'layers-3', 'Domains 1–20 and their operator surfaces.'),
+        ('overview', 'Foundation', 'layers-3', 'Domains 1–20 grouped by operational layer.'),
         (
             'runbooks',
             'Runbooks & Bindings',

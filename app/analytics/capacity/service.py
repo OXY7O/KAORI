@@ -48,6 +48,34 @@ WORKER_MEMORY_REQUESTS_TOTAL_QUERY = get_query_expression(
 WORKER_MEMORY_USAGE_QUERY = get_query_expression('analytics.capacity.queries.WORKER_MEMORY_USAGE_QUERY')
 WORKER_POD_ALLOCATABLE_QUERY = get_query_expression('analytics.capacity.queries.WORKER_POD_ALLOCATABLE_QUERY')
 
+RESOURCE_DISPLAY_LABELS = {
+    'cpu': 'CPU',
+    'memory': 'Memory',
+    'pods': 'Pods',
+    'storage': 'Storage',
+}
+
+
+def resource_display_label(resource: str) -> str:
+    return RESOURCE_DISPLAY_LABELS.get(resource, resource.replace('_', ' ').title())
+
+
+def allocation_pressure_tone(percent: float) -> str:
+    if percent > 90:
+        return 'critical'
+    if percent >= 75:
+        return 'warning'
+    return 'normal'
+
+
+def allocation_headroom_tone(percent: float) -> str:
+    if percent < 15:
+        return 'critical'
+    if percent < 40:
+        return 'warning'
+    return 'normal'
+
+
 CAPACITY_TIME_RANGE_STEP_MAP = {
     '1h': '5m',
     '6h': '15m',
@@ -707,44 +735,16 @@ class CapacityService(AnalyticsBaseService):
         actual: float,
         peak: float,
     ) -> list[dict[str, Any]]:
+        values = [
+            ('Allocatable', f'{safe_round(allocatable)} cores (100%)', 100.0, 'normal'),
+            ('Configured Requests', f'{safe_round(requests)} cores ({safe_round(raw_percent(requests, allocatable), 1)}%)', safe_percent(requests, allocatable), None),
+            ('Configured Limits', f'{safe_round(limits)} cores ({safe_round(raw_percent(limits, allocatable), 1)}%)', safe_percent(limits, allocatable), None),
+            ('Actual Avg Usage', f'{safe_round(actual)} cores ({safe_round(raw_percent(actual, allocatable), 1)}%)', safe_percent(actual, allocatable), None),
+            ('Peak Usage', f'{safe_round(peak)} cores ({safe_round(raw_percent(peak, allocatable), 1)}%)', safe_percent(peak, allocatable), None),
+        ]
         return [
-            {
-                'label': 'Allocatable',
-                'display': f'{safe_round(allocatable)} cores (100%)',
-                'percent': 100,
-            },
-            {
-                'label': 'Configured Requests',
-                'display': (f'{safe_round(requests)} cores ({safe_round(raw_percent(requests, allocatable), 1)}%)'),
-                'percent': safe_percent(
-                    requests,
-                    allocatable,
-                ),
-            },
-            {
-                'label': 'Configured Limits',
-                'display': (f'{safe_round(limits)} cores ({safe_round(raw_percent(limits, allocatable), 1)}%)'),
-                'percent': safe_percent(
-                    limits,
-                    allocatable,
-                ),
-            },
-            {
-                'label': 'Actual Avg Usage',
-                'display': (f'{safe_round(actual)} cores ({safe_round(raw_percent(actual, allocatable), 1)}%)'),
-                'percent': safe_percent(
-                    actual,
-                    allocatable,
-                ),
-            },
-            {
-                'label': 'Peak Usage',
-                'display': (f'{safe_round(peak)} cores ({safe_round(raw_percent(peak, allocatable), 1)}%)'),
-                'percent': safe_percent(
-                    peak,
-                    allocatable,
-                ),
-            },
+            {'label': label, 'display': display, 'percent': percent, 'tone': tone or allocation_pressure_tone(percent)}
+            for label, display, percent, tone in values
         ]
 
     def build_memory_allocation_items(
@@ -755,53 +755,16 @@ class CapacityService(AnalyticsBaseService):
         actual_bytes: float,
         peak_bytes: float,
     ) -> list[dict[str, Any]]:
+        values = [
+            ('Allocatable', f'{bytes_to_gib(allocatable_bytes)} GiB (100%)', 100.0, 'normal'),
+            ('Configured Requests', f'{bytes_to_gib(requests_bytes)} GiB ({safe_round(raw_percent(requests_bytes, allocatable_bytes), 1)}%)', safe_percent(requests_bytes, allocatable_bytes), None),
+            ('Configured Limits', f'{bytes_to_gib(limits_bytes)} GiB ({safe_round(raw_percent(limits_bytes, allocatable_bytes), 1)}%)', safe_percent(limits_bytes, allocatable_bytes), None),
+            ('Actual Avg Usage', f'{bytes_to_gib(actual_bytes)} GiB ({safe_round(raw_percent(actual_bytes, allocatable_bytes), 1)}%)', safe_percent(actual_bytes, allocatable_bytes), None),
+            ('Peak Usage', f'{bytes_to_gib(peak_bytes)} GiB ({safe_round(raw_percent(peak_bytes, allocatable_bytes), 1)}%)', safe_percent(peak_bytes, allocatable_bytes), None),
+        ]
         return [
-            {
-                'label': 'Allocatable',
-                'display': f'{bytes_to_gib(allocatable_bytes)} GiB (100%)',
-                'percent': 100,
-            },
-            {
-                'label': 'Configured Requests',
-                'display': (
-                    f'{bytes_to_gib(requests_bytes)} GiB '
-                    f'({safe_round(raw_percent(requests_bytes, allocatable_bytes), 1)}%)'
-                ),
-                'percent': safe_percent(
-                    requests_bytes,
-                    allocatable_bytes,
-                ),
-            },
-            {
-                'label': 'Configured Limits',
-                'display': (
-                    f'{bytes_to_gib(limits_bytes)} GiB ({safe_round(raw_percent(limits_bytes, allocatable_bytes), 1)}%)'
-                ),
-                'percent': safe_percent(
-                    limits_bytes,
-                    allocatable_bytes,
-                ),
-            },
-            {
-                'label': 'Actual Avg Usage',
-                'display': (
-                    f'{bytes_to_gib(actual_bytes)} GiB ({safe_round(raw_percent(actual_bytes, allocatable_bytes), 1)}%)'
-                ),
-                'percent': safe_percent(
-                    actual_bytes,
-                    allocatable_bytes,
-                ),
-            },
-            {
-                'label': 'Peak Usage',
-                'display': (
-                    f'{bytes_to_gib(peak_bytes)} GiB ({safe_round(raw_percent(peak_bytes, allocatable_bytes), 1)}%)'
-                ),
-                'percent': safe_percent(
-                    peak_bytes,
-                    allocatable_bytes,
-                ),
-            },
+            {'label': label, 'display': display, 'percent': percent, 'tone': tone or allocation_pressure_tone(percent)}
+            for label, display, percent, tone in values
         ]
 
     def build_pod_allocation_items(
@@ -810,38 +773,13 @@ class CapacityService(AnalyticsBaseService):
         current: float,
         remaining: float,
     ) -> list[dict[str, Any]]:
+        current_percent = safe_percent(current, capacity)
+        remaining_percent = safe_percent(remaining, capacity)
         return [
-            {
-                'label': 'Pod Capacity',
-                'display': f'{safe_round(capacity, 0):.0f} pods (100%)',
-                'percent': 100,
-            },
-            {
-                'label': 'Current Pods',
-                'display': (f'{safe_round(current, 0):.0f} pods ({safe_round(raw_percent(current, capacity), 1)}%)'),
-                'percent': safe_percent(
-                    current,
-                    capacity,
-                ),
-            },
-            {
-                'label': 'Remaining Pod Slots',
-                'display': (
-                    f'{safe_round(remaining, 0):.0f} pods ({safe_round(raw_percent(remaining, capacity), 1)}%)'
-                ),
-                'percent': safe_percent(
-                    remaining,
-                    capacity,
-                ),
-            },
-            {
-                'label': 'Pod Usage',
-                'display': f'{safe_round(raw_percent(current, capacity), 1)}%',
-                'percent': safe_percent(
-                    current,
-                    capacity,
-                ),
-            },
+            {'label': 'Pod Capacity', 'display': f'{safe_round(capacity, 0):.0f} pods (100%)', 'percent': 100, 'tone': 'normal'},
+            {'label': 'Current Pods', 'display': f'{safe_round(current, 0):.0f} pods ({safe_round(raw_percent(current, capacity), 1)}%)', 'percent': current_percent, 'tone': allocation_pressure_tone(current_percent)},
+            {'label': 'Remaining Pod Slots', 'display': f'{safe_round(remaining, 0):.0f} pods ({safe_round(raw_percent(remaining, capacity), 1)}%)', 'percent': remaining_percent, 'tone': allocation_headroom_tone(remaining_percent)},
+            {'label': 'Pod Usage', 'display': f'{safe_round(raw_percent(current, capacity), 1)}%', 'percent': current_percent, 'tone': allocation_pressure_tone(current_percent)},
         ]
 
     def get_capacity_risk_summary(
@@ -871,7 +809,7 @@ class CapacityService(AnalyticsBaseService):
             risks.append(
                 {
                     'resource': resource,
-                    'label': 'Pods' if resource == 'pods' else resource.title(),
+                    'label': resource_display_label(resource),
                     'headroom': headroom,
                     'evidence_available': available,
                     'status': status,
@@ -952,9 +890,9 @@ class CapacityService(AnalyticsBaseService):
         if requested_percent >= 100 and resource == 'memory':
             return {'label': 'Memory Limit Overcommit', 'tone': 'critical'}
         if peak_percent >= 100:
-            return {'label': f'{resource.title()} Peak Over Capacity', 'tone': 'critical'}
+            return {'label': f'{resource_display_label(resource)} Peak Over Capacity', 'tone': 'critical'}
         if actual_percent >= 95:
-            return {'label': f'{resource.title()} Usage Critical', 'tone': 'critical'}
+            return {'label': f'{resource_display_label(resource)} Usage Critical', 'tone': 'critical'}
         if pressure_percent >= 90:
             return {'label': 'Near Capacity', 'tone': 'warning'}
         if pressure_percent >= 75:

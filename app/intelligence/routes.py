@@ -36,7 +36,7 @@ def catalog() -> ResponseReturnValue:
         request.args,
         page_mode='catalog',
     )
-    return render_template('intelligence/recommendations.html', payload=payload)
+    return render_template('intelligence/rule_catalog.html', payload=payload)
 
 
 @intelligence_bp.route('/alert-intelligence')

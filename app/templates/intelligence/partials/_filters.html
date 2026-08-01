@@ -1,0 +1,17 @@
+{% set input_classes = "min-h-10 w-full rounded-lg border border-outline-strong bg-surface-card px-3 py-2 text-sm text-content-primary outline-none transition focus:border-kaori-primary focus:ring-2 focus:ring-kaori-accent/40" %}
+<form method="get" action="{{ url_for(endpoint_name) }}" class="grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4 sm:p-5">
+    <label class="block xl:col-span-2">
+        <span class="mb-1.5 block text-xs font-semibold text-content-secondary">Search</span>
+        <input type="search" name="q" value="{{ payload.filters.q }}" placeholder="Search title, rule key, evidence, or action" class="{{ input_classes }}">
+    </label>
+    <label class="block"><span class="mb-1.5 block text-xs font-semibold text-content-secondary">Domain</span><select name="domain" class="{{ input_classes }}">{% for option in payload.filter_options.domains %}<option value="{{ option.value }}" {% if payload.filters.domain == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label>
+    <label class="block"><span class="mb-1.5 block text-xs font-semibold text-content-secondary">Severity</span><select name="severity" class="{{ input_classes }}">{% for option in payload.filter_options.severities %}<option value="{{ option.value }}" {% if payload.filters.severity == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label>
+    <label class="block"><span class="mb-1.5 block text-xs font-semibold text-content-secondary">Category</span><select name="category" class="{{ input_classes }}">{% for option in payload.filter_options.categories %}<option value="{{ option.value }}" {% if payload.filters.category == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label>
+    <label class="block"><span class="mb-1.5 block text-xs font-semibold text-content-secondary">Status</span><select name="status" class="{{ input_classes }}">{% for option in payload.filter_options.statuses %}<option value="{{ option.value }}" {% if payload.filters.status == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label>
+    <label class="block"><span class="mb-1.5 block text-xs font-semibold text-content-secondary">Logic Type</span><select name="logic_type" class="{{ input_classes }}">{% for option in payload.filter_options.logic_types %}<option value="{{ option.value }}" {% if payload.filters.logic_type == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label>
+    <label class="block"><span class="mb-1.5 block text-xs font-semibold text-content-secondary">Signal Source</span><select name="signal_source" class="{{ input_classes }}">{% for option in payload.filter_options.signal_sources %}<option value="{{ option.value }}" {% if payload.filters.signal_source == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label>
+    <div class="flex items-end gap-2 xl:col-span-4">
+        <button type="submit" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-kaori-primary px-4 text-sm font-semibold text-white hover:bg-kaori-primary-dark"><i data-lucide="search" class="h-4 w-4"></i>Apply Filters</button>
+        <a href="{{ url_for(endpoint_name) }}" class="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-outline-strong bg-surface-card px-4 text-sm font-semibold text-content-secondary hover:bg-surface-hover"><i data-lucide="rotate-ccw" class="h-4 w-4"></i>Reset</a>
+    </div>
+</form>

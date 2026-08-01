@@ -1,0 +1,38 @@
+{% import "intelligence/components/_workspace.html" as intelligence_ui %}
+{% import "components/table_label.html" as table_label %}
+<div class="grid gap-3 p-4 sm:p-5">
+{% for item in payload.items %}
+    {% call intelligence_ui.record(item.title, item.summary, icon='list-checks', status_text=item.status_label, status_tone=item.status_tone) %}
+        <div class="mt-3 flex flex-wrap gap-2">
+            {{ table_label.status_label(item.severity_label, item.tone, size='compact') }}
+            {{ table_label.metadata_label(item.domain_label, 'boxes') }}
+            {{ table_label.metadata_label(item.category_label, 'tag') }}
+            {{ table_label.metadata_label(item.signal_source_label, 'radio-tower') }}
+        </div>
+        <dl class="mt-4 grid gap-3 rounded-lg border border-outline-subtle bg-surface-hover p-3 sm:grid-cols-2 xl:grid-cols-4">
+            {{ intelligence_ui.field('Rule Key', item.rule_key, true) }}
+            {{ intelligence_ui.field('Resource Type', item.source_kind_label) }}
+            {{ intelligence_ui.field('Logic Type', item.logic_type_label) }}
+            {{ intelligence_ui.field('Evaluator State', 'Available' if item.status == 'available' else ('Imported Evidence' if item.status == 'imported_signal' else 'Reserved Plan')) }}
+        </dl>
+        <details class="mt-3 rounded-lg border border-outline-subtle bg-surface-card">
+            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-xs font-semibold text-content-secondary hover:bg-surface-hover">
+                <span class="inline-flex items-center gap-2"><i data-lucide="book-open-check" class="h-4 w-4 text-kaori-primary"></i>View Rule Definition</span>
+                <i data-lucide="chevron-down" class="h-4 w-4"></i>
+            </summary>
+            <div class="grid gap-4 border-t border-outline-subtle p-4 lg:grid-cols-2">
+                <div><p class="text-[11px] font-semibold uppercase tracking-wide text-content-muted">Condition</p><p class="mt-1 text-sm leading-6 text-content-secondary">{{ item.condition_summary }}</p></div>
+                <div><p class="text-[11px] font-semibold uppercase tracking-wide text-content-muted">Recommended Action</p><p class="mt-1 text-sm leading-6 text-content-secondary">{{ item.recommended_action }}</p></div>
+                <div><p class="text-[11px] font-semibold uppercase tracking-wide text-content-muted">Impact</p><p class="mt-1 text-sm leading-6 text-content-secondary">{{ item.impact }}</p></div>
+                <div><p class="text-[11px] font-semibold uppercase tracking-wide text-content-muted">Signal Boundary</p><p class="mt-1 text-sm leading-6 text-content-secondary">{{ item.prometheus_relationship }}</p></div>
+            </div>
+        </details>
+    {% endcall %}
+{% else %}
+    <div class="rounded-lg border border-dashed border-outline-strong bg-surface-hover px-4 py-10 text-center">
+        <i data-lucide="search-x" class="mx-auto h-7 w-7 text-content-disabled"></i>
+        <p class="mt-2 text-sm font-semibold text-content-primary">No Rule Definitions Match The Current Filters</p>
+        <p class="mt-1 text-xs leading-5 text-content-muted">Adjust the catalog filters or search text.</p>
+    </div>
+{% endfor %}
+</div>

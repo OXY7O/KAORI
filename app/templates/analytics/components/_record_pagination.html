@@ -12,7 +12,6 @@
     href_endpoint,
     query_params,
     resource_label='Records',
-    scope_total=None,
     allowed_per_page=(5, 10, 25, 50)
 ) -%}
     {% set current_page = pagination.page|default(pagination.current_page|default(1)) %}
@@ -29,10 +28,11 @@
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
             <div class="text-xs text-content-muted">
                 Showing <span class="font-semibold text-content-secondary">{{ start_item }}</span>–<span class="font-semibold text-content-secondary">{{ end_item }}</span>
-                of <span class="font-semibold text-content-secondary">{{ total_rows }}</span> {{ resource_label }}
-                {% if scope_total is not none %}<span class="ml-1">· Scope Contains <span class="font-semibold text-content-secondary">{{ scope_total }}</span></span>{% endif %}
+                of <span class="font-semibold text-content-secondary">{{ total_rows }}</span>
             </div>
-            <select name="{{ per_page_param }}"
+            <div class="flex items-center gap-2">
+                <label for="{{ panel_id }}-per-page" class="text-xs font-semibold text-content-secondary">Rows</label>
+                <select id="{{ panel_id }}-per-page" name="{{ per_page_param }}"
                     aria-label="Rows Per Page"
                     class="{{ pagination_ui.page_size_classes() }}"
                     hx-get="{{ url_for(partial_endpoint) }}"
@@ -42,8 +42,9 @@
                     hx-sync="#{{ panel_id }}:replace"
                     hx-include="#{{ form_id }}, [name='{{ per_page_param }}']"
                     hx-indicator="#{{ indicator_id }}">
-                {% for option in allowed_per_page %}<option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
-            </select>
+                    {% for option in allowed_per_page %}<option value="{{ option }}" {% if per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}
+                </select>
+            </div>
         </div>
         {% if total_pages > 1 %}
             <nav class="flex flex-wrap items-center gap-2" aria-label="{{ resource_label }} Pagination">

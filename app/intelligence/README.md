@@ -39,3 +39,9 @@ violet focus states, and compact rectangular status/metadata labels. Semantic
 green, amber, red, cyan, and slate remain reserved for operational state,
 priority, or risk; decorative blue gradients and literal slate surfaces must not
 be reintroduced.
+
+## Intelligence Workspace Presentation
+
+Recommendations, Rule Catalog, Alert Intelligence, and Automation Control use the canonical Intelligence workspace contract documented in `docs/design/components/INTELLIGENCE_WORKSPACE_STANDARD.md`.
+
+Automation Control mutations are disabled by default. Set `AUTOMATION_CONTROL_MUTATIONS_ENABLED=true` only after validation gates and behavioral tests are complete. The disabled UI state is named **Reserved Plan**; MVP, placeholder, preview-only, and coming-soon labels are not used.

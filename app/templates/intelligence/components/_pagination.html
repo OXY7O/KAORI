@@ -1,0 +1,28 @@
+{% import "components/pagination.html" as pagination_ui %}
+{% macro render(payload, endpoint_name, query_params={}) -%}
+{% set pagination = payload.pagination %}
+{% if pagination %}
+<footer class="flex flex-col gap-3 border-t border-outline-subtle bg-surface-hover px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+    <p class="text-xs text-content-muted">Showing {{ pagination.start_item }}–{{ pagination.end_item }} of {{ pagination.total_items }}</p>
+    <div class="flex flex-wrap items-center gap-2">
+        <form method="get" action="{{ url_for(endpoint_name) }}" class="flex items-center gap-2">
+            {% for key, value in query_params.items() %}{% if key != 'per_page' and key != 'page' %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
+            <label class="text-xs font-semibold text-content-muted" for="{{ endpoint_name|replace('.', '-') }}-rows">Rows</label>
+            <select id="{{ endpoint_name|replace('.', '-') }}-rows" name="per_page" class="{{ pagination_ui.page_size_classes() }}">
+                {% if payload.filter_options is defined %}
+                    {% for size in payload.filter_options.per_page %}<option value="{{ size }}" {% if size == pagination.per_page %}selected{% endif %}>{{ size }}</option>{% endfor %}
+                {% elif payload.per_page_options is defined %}
+                    {% for size in payload.per_page_options %}<option value="{{ size }}" {% if size == pagination.per_page %}selected{% endif %}>{{ size }}</option>{% endfor %}
+                {% endif %}
+            </select>
+            <button type="submit" class="{{ pagination_ui.navigation_classes() }}">Apply</button>
+        </form>
+        {% set previous_params = query_params.copy() %}{% set _ = previous_params.update({'page': pagination.prev_page, 'per_page': pagination.per_page}) %}
+        {% if pagination.has_prev %}<a href="{{ url_for(endpoint_name, **previous_params) }}" class="{{ pagination_ui.navigation_classes() }}"><i data-lucide="chevron-left" class="h-3.5 w-3.5"></i>Previous</a>{% else %}<span class="{{ pagination_ui.navigation_classes(true) }}"><i data-lucide="chevron-left" class="h-3.5 w-3.5"></i>Previous</span>{% endif %}
+        {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, endpoint=endpoint_name, href_endpoint=endpoint_name, query_params=query_params) }}
+        {% set next_params = query_params.copy() %}{% set _ = next_params.update({'page': pagination.next_page, 'per_page': pagination.per_page}) %}
+        {% if pagination.has_next %}<a href="{{ url_for(endpoint_name, **next_params) }}" class="{{ pagination_ui.navigation_classes() }}">Next<i data-lucide="chevron-right" class="h-3.5 w-3.5"></i></a>{% else %}<span class="{{ pagination_ui.navigation_classes(true) }}">Next<i data-lucide="chevron-right" class="h-3.5 w-3.5"></i></span>{% endif %}
+    </div>
+</footer>
+{% endif %}
+{%- endmacro %}

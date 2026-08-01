@@ -395,6 +395,14 @@ def _handle_mutation(
     success_message: str,
     operation: Callable[[], object],
 ) -> ResponseReturnValue:
+    if not current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False):
+        queue_transient_feedback(
+            status='warning',
+            title='Automation Control Reserved Plan',
+            message='KAORI did not apply the requested mutation.',
+            detail='Mutation execution remains disabled until validation gates and behavioral tests are enabled.',
+        )
+        return redirect(url_for('automation_control.index', workspace=workspace))
     try:
         operation()
     except Exception as exc:
@@ -404,7 +412,7 @@ def _handle_mutation(
             status='error',
             title='Automation Control update failed',
             message='KAORI did not apply the requested change.',
-            detail=str(exc),
+            detail='Review the application log and Activity Audit for the failure context before retrying.',
         )
     else:
         queue_transient_feedback(

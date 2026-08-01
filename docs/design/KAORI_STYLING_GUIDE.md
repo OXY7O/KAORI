@@ -253,10 +253,6 @@ Do not darken the entire Prometheus/readiness body. Keep the source and committe
 
 Analytics status tones are normalized through `table_label.semantic_tone(...)`. Critical, Warning, and Normal values must never fall back to the Unknown/slate treatment.
 
-### Analytics Guidance Callout Standard
-
-All `How To Read`, `What To Do`, `What To Watch`, `Operational Reading`, `Recommended Action`, `Recommended Review Path`, `Forecast Decision`, and equivalent Analytics guidance use `analysis_surface.interpretation_callout(...)` or its wrapper-free `interpretation_content(...)` variant. The shared component owns icon geometry, eyebrow typography, headline scale, neutral body copy, and semantic tone. Domain templates provide only the label, concise headline, supporting description, icon, and semantic tone. Raw page-local guidance markup is prohibited. See `components/ANALYTICS_GUIDANCE_CALLOUT_STANDARD.md`.
-
 ## 9. Pagination Standard
 
 Every server-paginated table uses `components/pagination.html` and the global pagination contract.
@@ -839,33 +835,10 @@ The canonical Integrations contract is documented in `components/INTEGRATIONS_WO
 - One shared runtime-history component is rendered directly; provider-local presentation wrappers are prohibited.
 - Dense technical matrices may scroll only inside their owning component when simultaneous column comparison is operationally necessary.
 
-## Kubernetes Analytics Hero Alignment
+## Intelligence Workspace Standard
 
-Kubernetes Analytics heroes follow the Kubernetes Inventory Overview composition: intro and metadata on the left, a two-metric posture panel on the right, and a full-width `Manage Clusters` action at the bottom. Blocked states keep the same action. Domain data may differ, but posture geometry and navigation ownership must remain consistent.
-
-
-### Analytics Hero Posture Density
-
-Kubernetes Analytics hero posture panels follow Inventory density: status value uses the shared context title size, no description appears directly beneath the posture value, metric values stay compact, and long resource identifiers are reduced to short helper text rather than becoming the primary value.
-
-- Analytics hero metrics replace long technical identifiers with concise semantic role or scope labels; full identifiers belong in detail workspaces.
-
-## Analytics Reusable Presentation Ownership
-
-Kubernetes Analytics hero context panels must use the canonical macros in `components/page_hero.html`. Domain hero templates may supply semantic values, labels, status tones, and concise helper text, but must not override metric typography or recreate posture/metric geometry. Hero metadata is capped at three labels, posture metrics are capped at two, and metric values use the Inventory-aligned compact scale.
-
-
-## Semantic Status Bars
-
-Bars that communicate operational state must use the same semantic tone as the adjacent status label:
-
-- Normal / Healthy / Ready → green
-- Warning / Watch / Partial → amber
-- Critical / Failed / Blocked → red
-- Unknown / Unavailable → slate
-- Info / Pending → blue
-- Maintenance → violet
-
-This applies to utilization pressure, remaining-headroom risk, projected utilization, quota pressure, request fit, ownership coverage, incident readiness, and severity distribution.
-
-Violet remains canonical only for neutral magnitude or workflow progress that does **not** assert health, including loading indicators, materialization completion, ranked contribution share, receiver distribution, namespace distribution, and other factual composition bars.
+- Recommendations, Rule Catalog, Alert Intelligence, and Automation Control use Inventory-aligned heroes with at most three metadata labels and two posture metrics.
+- Primary collections use responsive evidence records. Technical tables are reserved for true matrix comparison.
+- Rule definitions distinguish `Available`, `Imported Signal`, and `Reserved Plan`.
+- A capability that is not fully connected and behavior-tested is rendered as `Reserved Plan` with disabled controls. Do not use MVP, placeholder, preview-only, or coming-soon language.
+- Automation mutations are disabled by default until validation, entered-reason, confirmation, and behavior contracts are enabled.

@@ -51,8 +51,40 @@
             </header>
 
             {% if rankings %}
-                <div class="grid gap-5 xl:grid-cols-2">
-                    {% for panel in rankings %}{{ ranked_evidence.render(panel) }}{% endfor %}
+                {% set ranking_tabs = [
+                    ('cpu', 'CPU', 'cpu'),
+                    ('memory', 'Memory', 'memory-stick'),
+                    ('pvc', 'PVC', 'database'),
+                    ('pods', 'Pods', 'boxes')
+                ] %}
+                <div class="overflow-hidden rounded-xl border border-outline-default bg-surface-card"
+                     data-analytics-tabset
+                     data-analytics-tabset-id="consumer-ranking-resource"
+                     data-analytics-update-query="false"
+                     data-default-tab="cpu"
+                     x-data='kaoriAnalyticsTabs("cpu", ["cpu", "memory", "pvc", "pods"], "consumer-ranking-resource")'>
+                    {{ analytics_content_tabs.render('consumer-ranking-resource', ranking_tabs, 'Consumer Ranking Resource', embedded=true) }}
+                    {% for resource_key, resource_label, resource_icon in ranking_tabs %}
+                        {% set selected_panel = namespace(value=none) %}
+                        {% for candidate in rankings %}{% if candidate.key == resource_key %}{% set selected_panel.value = candidate %}{% endif %}{% endfor %}
+                        <div id="consumer-ranking-resource-panel-{{ resource_key }}"
+                             role="tabpanel"
+                             data-analytics-tab-panel="{{ resource_key }}"
+                             aria-labelledby="consumer-ranking-resource-tab-{{ resource_key }}"
+                             x-show="activeTab === '{{ resource_key }}'"
+                             x-bind:hidden="activeTab !== '{{ resource_key }}'"
+                             {% if resource_key != 'cpu' %}hidden x-cloak{% endif %}
+                             class="p-4 sm:p-5">
+                            {% if selected_panel.value %}
+                                {{ ranked_evidence.render(selected_panel.value) }}
+                            {% else %}
+                                <div class="{{ analysis_surface.empty_evidence_classes('flex min-h-[280px] flex-col items-center justify-center px-5 py-8 text-center') }}">
+                                    <i data-lucide="{{ resource_icon }}" class="h-6 w-6 text-kaori-primary"></i>
+                                    <h3 class="mt-3 text-sm font-semibold text-content-primary">No {{ resource_label }} Ranking Evidence</h3>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endfor %}
                 </div>
             {% else %}
                 <div class="{{ analysis_surface.empty_evidence_classes('flex min-h-[280px] flex-col items-center justify-center px-5 py-8 text-center') }}">

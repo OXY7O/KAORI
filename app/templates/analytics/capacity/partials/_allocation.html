@@ -50,9 +50,21 @@
                     {% if section['available']|default(false) %}
                         <div class="mt-4 space-y-3">
                             {% for allocation_item in section['items']|default([], true) %}
+                                {% set item_label = allocation_item['label'] %}
+                                {% set item_percent = allocation_item['percent']|default(0)|float %}
+                                {% set item_tone = allocation_item['tone']|default('', true) %}
+                                {% if not item_tone %}
+                                    {% if item_label in ['Allocatable', 'Pod Capacity'] %}
+                                        {% set item_tone = 'normal' %}
+                                    {% elif item_label == 'Remaining Pod Slots' %}
+                                        {% set item_tone = progress_bar.headroom_tone(item_percent)|trim %}
+                                    {% else %}
+                                        {% set item_tone = progress_bar.pressure_tone(item_percent)|trim %}
+                                    {% endif %}
+                                {% endif %}
                                 <div>
-                                    <div class="flex items-center justify-between gap-3 text-xs"><span class="font-medium text-content-secondary">{{ allocation_item['label'] }}</span><span class="font-semibold tabular-nums text-content-primary">{{ allocation_item['display'] }}</span></div>
-                                    {{ progress_bar.semantic_bar(allocation_item['percent'], section_status['tone']|default('unknown'), track_classes='mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-hover', label=allocation_item['label'] ~ ' allocation status') }}
+                                    <div class="flex items-center justify-between gap-3 text-xs"><span class="font-medium text-content-secondary">{{ item_label }}</span><span class="font-semibold tabular-nums text-content-primary">{{ allocation_item['display'] }}</span></div>
+                                    {{ progress_bar.semantic_bar(item_percent, item_tone, track_classes='mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-hover', label=item_label ~ ' allocation status') }}
                                 </div>
                             {% endfor %}
                         </div>

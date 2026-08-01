@@ -35,8 +35,8 @@ SEVERITY_OPTIONS = [
 ]
 STATUS_OPTIONS = [
     {'value': '', 'label': 'All Statuses'},
-    {'value': 'available', 'label': 'Ready'},
-    {'value': 'reserved', 'label': 'Integration Scope'},
+    {'value': 'available', 'label': 'Available'},
+    {'value': 'reserved', 'label': 'Reserved Plan'},
     {'value': 'imported_signal', 'label': 'Imported Signal'},
 ]
 SOURCE_KIND_OPTIONS = [
@@ -96,8 +96,8 @@ def _domain_label(value: str) -> str:
 
 def _status_label(value: str) -> str:
     return {
-        'available': 'Ready',
-        'reserved': 'Integration Scope',
+        'available': 'Available',
+        'reserved': 'Reserved Plan',
         'imported_signal': 'Imported Signal',
     }.get(value, _format_label(value))
 
@@ -141,15 +141,15 @@ def _normalize_rule(rule: dict[str, Any]) -> dict[str, Any]:
         'logic_type_label': _logic_label(logic_type),
         'signal_source_label': _signal_label(signal_source),
         'tone': {
-            'critical': 'red',
-            'warning': 'amber',
-            'info': 'blue',
-        }.get(severity, 'slate'),
+            'critical': 'critical',
+            'warning': 'warning',
+            'info': 'info',
+        }.get(severity, 'unknown'),
         'status_tone': {
-            'available': 'emerald',
-            'reserved': 'amber',
-            'imported_signal': 'purple',
-        }.get(status, 'slate'),
+            'available': 'normal',
+            'reserved': 'unknown',
+            'imported_signal': 'maintenance',
+        }.get(status, 'unknown'),
     }
 
 
@@ -811,163 +811,88 @@ def _severity_rank(value: str) -> int:
 def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = 'recommendations') -> dict[str, Any]:
     payload = _base_payload(args, page_mode=page_mode)
     catalog = payload['catalog']
+    findings = payload['recommendation_findings'] if page_mode != 'catalog' else []
 
-    kubernetes_count = sum(1 for rule in catalog if rule['domain'] == 'kubernetes')
-    server_count = sum(1 for rule in catalog if rule['domain'] == 'server')
-    hci_count = sum(1 for rule in catalog if rule['domain'] == 'hci')
-    imported_count = sum(1 for rule in catalog if rule['status'] == 'imported_signal')
-    ready_count = sum(1 for rule in catalog if rule['status'] == 'available')
-    integration_count = sum(1 for rule in catalog if rule['status'] == 'reserved')
+    critical = sum(1 for item in findings if item.get('severity') == 'critical')
+    warning = sum(1 for item in findings if item.get('severity') == 'warning')
+    available = sum(1 for rule in catalog if rule.get('status') == 'available')
+    reserved = sum(1 for rule in catalog if rule.get('status') == 'reserved')
+    imported = sum(1 for rule in catalog if rule.get('status') == 'imported_signal')
 
-    is_catalog = page_mode == 'catalog'
-    payload.update(
-        {
-            'page_title': 'Catalog' if is_catalog else 'Recommendations',
-            'page_subtitle': (
-                'Rule registry for Kubernetes, Server, and HCI intelligence domains.'
-                if is_catalog
-                else 'Actionable guidance from inventory state, metrics signals, alert context, and report readiness.'
-            ),
-            'hero_label': 'Infrastructure Intelligence',
-            'engine_status': 'Signal-Based Guidance',
-            'engine_description': (
-                'Evaluates inventory, metrics, alerts, and provider signals across Kubernetes, Server, and HCI assets.'
-            ),
-            'workspace_label': 'Recommendation Rule Catalog' if is_catalog else 'Actionable Recommendation Workspace',
-            'workspace_description': (
-                'Catalog lists rule definitions, signal sources, asset scope, detection logic, and visibility across report families.'
-                if is_catalog
-                else 'Recommendations show findings triggered by catalog rules against current inventory, metrics, alerts, and report context.'
-            ),
-            'workspace_action_label': 'Open Recommendations' if is_catalog else 'Open Catalog',
-            'workspace_action_endpoint': 'intelligence.recommendations' if is_catalog else 'intelligence.catalog',
-            'summary_cards': [
-                {
-                    'label': 'Kubernetes',
-                    'value': kubernetes_count,
-                    'caption': 'Prometheus + Alertmanager per cluster',
-                    'icon': 'boxes',
-                    'tone': 'green',
+    if page_mode == 'catalog':
+        payload.update(
+            {
+                'page_title': 'Rule Catalog',
+                'summary': {'available': available, 'reserved': reserved, 'imported': imported},
+                'posture': {
+                    'title': 'Rule Availability',
+                    'label': 'Available' if available else 'Reserved Plan',
+                    'tone': 'normal' if available else 'unknown',
                 },
-                {
-                    'label': 'Server',
-                    'value': server_count,
-                    'caption': 'Node Exporter metric scope',
-                    'icon': 'server',
-                    'tone': 'blue',
+            }
+        )
+    else:
+        posture_tone = 'critical' if critical else ('warning' if warning else 'normal')
+        posture_label = 'Critical' if critical else ('Review' if warning else 'Normal')
+        payload.update(
+            {
+                'page_title': 'Recommendations',
+                'summary': {'actionable': len(findings), 'critical': critical, 'warning': warning},
+                'posture': {
+                    'title': 'Recommendation Readiness',
+                    'label': posture_label,
+                    'tone': posture_tone,
                 },
-                {
-                    'label': 'HCI',
-                    'value': hci_count,
-                    'caption': 'HCI API integration scope',
-                    'icon': 'network',
-                    'tone': 'amber',
-                },
-                {
-                    'label': 'Imported Signals',
-                    'value': imported_count,
-                    'caption': 'Alert and metric enrichment',
-                    'icon': 'radio-tower',
-                    'tone': 'purple',
-                },
-            ],
-            'asset_cards': [
-                {
-                    'title': 'Kubernetes Intelligence',
-                    'status': 'Ready',
-                    'description': 'Uses Kubernetes inventory, Prometheus metrics, and Alertmanager signals per connected cluster.',
-                    'icon': 'boxes',
-                    'report_family': 'KAORI Kubernetes Reports',
-                    'signal_source': 'Kubernetes API · Prometheus · Alertmanager',
-                    'count': kubernetes_count,
-                },
-                {
-                    'title': 'Server Intelligence',
-                    'status': 'Integration Scope',
-                    'description': 'Server recommendations are categorized for Node Exporter metrics and future server inventory context.',
-                    'icon': 'server',
-                    'report_family': 'KAORI Server Reports',
-                    'signal_source': 'Node Exporter',
-                    'count': server_count,
-                },
-                {
-                    'title': 'HCI Intelligence',
-                    'status': 'Integration Scope',
-                    'description': 'HCI recommendations are categorized for provider API signals, datastore health, host balance, and VM placement.',
-                    'icon': 'network',
-                    'report_family': 'KAORI HCI Reports',
-                    'signal_source': 'HCI API',
-                    'count': hci_count,
-                },
-            ],
-            'context_cards': [
-                {
-                    'title': 'Recommendations',
-                    'description': 'Shows actionable guidance generated from rules, inventory, metrics, alert context, and report-readiness signals.',
-                    'icon': 'sparkles',
-                },
-                {
-                    'title': 'Catalog',
-                    'description': 'Defines the rule registry: asset domain, condition, source, impact, status, and related report family.',
-                    'icon': 'list-checks',
-                },
-                {
-                    'title': 'Alert Intelligence',
-                    'description': 'Enriches Prometheus and Alertmanager signals before they become investigation steps or recommendations.',
-                    'icon': 'triangle-alert',
-                },
-            ],
-            'ready_count': ready_count,
-            'integration_count': integration_count,
-        }
-    )
+            }
+        )
     return payload
 
 
 def get_alert_intelligence_payload() -> dict[str, Any]:
+    sources = [
+        {
+            'title': 'Kubernetes Alert Evidence',
+            'description': 'Prometheus detection and Alertmanager routing remain authoritative. KAORI can link committed Kubernetes context to current alert workspaces.',
+            'icon': 'activity',
+            'status': 'Available Evidence',
+            'tone': 'normal',
+            'owner': 'Prometheus + Alertmanager',
+            'boundary': 'Context linking and investigation guidance',
+            'reserved_reason': '',
+        },
+        {
+            'title': 'Server Signal Enrichment',
+            'description': 'Server-level enrichment requires a validated Node Exporter and server inventory contract.',
+            'icon': 'server',
+            'status': 'Reserved Plan',
+            'tone': 'unknown',
+            'owner': 'Server metrics integration',
+            'boundary': 'Disabled until provider and behavior contracts are complete',
+            'reserved_reason': 'No active server enrichment execution path is exposed.',
+        },
+        {
+            'title': 'HCI Signal Enrichment',
+            'description': 'HCI enrichment requires a validated provider API, asset identity, and health-signal contract.',
+            'icon': 'network',
+            'status': 'Reserved Plan',
+            'tone': 'unknown',
+            'owner': 'HCI provider integration',
+            'boundary': 'Disabled until provider and behavior contracts are complete',
+            'reserved_reason': 'No active HCI enrichment execution path is exposed.',
+        },
+    ]
     return {
-        'page_title': 'Alert Intelligence',
-        'page_subtitle': 'Alert enrichment workspace for Prometheus, Alertmanager, Server, and HCI signals.',
-        'hero_label': 'Alert Signal Intelligence',
-        'engine_status': 'Enrichment Ready',
-        'engine_description': 'Prometheus detects, Alertmanager routes, Node Exporter and HCI API extend infrastructure context.',
-        'boundaries': [
-            {
-                'title': 'Kubernetes Alert Path',
-                'description': 'Prometheus owns metric detection and Alertmanager owns grouping, silence, routing, and notification per cluster.',
-                'icon': 'activity',
-            },
-            {
-                'title': 'Server Signal Path',
-                'description': 'Node Exporter supplies server-level CPU, memory, disk, and network metrics for KAORI Server Reports intelligence.',
-                'icon': 'server',
-            },
-            {
-                'title': 'HCI Signal Path',
-                'description': 'HCI API integration supplies datastore, host balance, cluster health, and VM placement context for KAORI HCI Reports intelligence.',
-                'icon': 'network',
-            },
-        ],
-        'dummy_flow': [
-            {
-                'step': '1',
-                'title': 'Import Signal',
-                'description': 'Read Kubernetes alerts from Alertmanager, server metrics from Node Exporter, or HCI health from provider APIs.',
-            },
-            {
-                'step': '2',
-                'title': 'Map Asset',
-                'description': 'Classify the signal under Kubernetes, Server, or HCI and link it to the affected cluster, node, host, datastore, VM, or workload.',
-            },
-            {
-                'step': '3',
-                'title': 'Enrich Context',
-                'description': 'Attach ownership, inventory state, trend, capacity, related reports, and report-family context.',
-            },
-            {
-                'step': '4',
-                'title': 'Recommend Action',
-                'description': 'Produce investigation guidance without replacing Prometheus rules or Alertmanager routing policy.',
-            },
+        'posture': {'label': 'Reserved Plan', 'tone': 'unknown'},
+        'summary': {
+            'available_sources': sum(1 for item in sources if item['status'] == 'Available Evidence'),
+            'reserved_sources': sum(1 for item in sources if item['status'] == 'Reserved Plan'),
+        },
+        'sources': sources,
+        'flow': [
+            {'step': '1', 'title': 'Import Signal Evidence', 'description': 'Read current evidence from the authoritative alert workspace.', 'status': 'Available', 'tone': 'normal'},
+            {'step': '2', 'title': 'Map Asset Identity', 'description': 'Associate alert labels with committed cluster, namespace, workload, and inventory identity.', 'status': 'Available', 'tone': 'normal'},
+            {'step': '3', 'title': 'Cross-Source Enrichment', 'description': 'Join server and HCI context only after their provider contracts are enabled.', 'status': 'Reserved Plan', 'tone': 'unknown'},
+            {'step': '4', 'title': 'Automation Handoff', 'description': 'Create governed decision evidence only after Automation Control validation is enabled.', 'status': 'Reserved Plan', 'tone': 'unknown'},
         ],
     }
+

@@ -16,29 +16,20 @@
            class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if intelligence_active else 'text-white/[0.35]' }}"></i>
     </summary>
     <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
-        <a href="{{ url_for('intelligence.recommendations') }}"
-           class="{{ 'bg-white/[0.08] text-kaori-accent' if endpoint in ['intelligence.index', 'intelligence.recommendations'] else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
-            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if endpoint in ['intelligence.index', 'intelligence.recommendations'] else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
-            <i data-lucide="sparkles" class="h-3.5 w-3.5"></i>
-            <span class="truncate whitespace-nowrap">Recommendations</span>
-        </a>
-        <a href="{{ url_for('automation_control.index') }}"
-           class="{{ 'bg-white/[0.08] text-kaori-accent' if endpoint == 'automation_control.index' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
-            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if endpoint == 'automation_control.index' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
-            <i data-lucide="workflow" class="h-3.5 w-3.5"></i>
-            <span class="truncate whitespace-nowrap">Automation Control</span>
-        </a>
-        <a href="{{ url_for('intelligence.alert_intelligence') }}"
-           class="{{ 'bg-white/[0.08] text-kaori-accent' if endpoint == 'intelligence.alert_intelligence' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
-            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if endpoint == 'intelligence.alert_intelligence' else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
-            <i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i>
-            <span class="truncate whitespace-nowrap">Alert Intelligence</span>
-        </a>
-        <a href="{{ url_for('intelligence.catalog') }}"
-           class="{{ 'bg-white/[0.08] text-kaori-accent' if endpoint in ['intelligence.catalog'] else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
-            <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if endpoint in ['intelligence.catalog'] else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
-            <i data-lucide="list-checks" class="h-3.5 w-3.5"></i>
-            <span class="truncate whitespace-nowrap">Catalog</span>
-        </a>
+        {% set intelligence_links = [
+            ('intelligence.recommendations', 'sparkles', 'Recommendations'),
+            ('intelligence.alert_intelligence', 'triangle-alert', 'Alert Intelligence'),
+            ('intelligence.catalog', 'list-checks', 'Rule Catalog'),
+            ('automation_control.index', 'workflow', 'Automation Control')
+        ] %}
+        {% for target_endpoint, icon, label in intelligence_links %}
+            {% set active = endpoint == target_endpoint or (target_endpoint == 'intelligence.recommendations' and endpoint == 'intelligence.index') %}
+            <a href="{{ url_for(target_endpoint) }}"
+               class="{{ 'bg-white/[0.08] text-kaori-accent' if active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
+                <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
+                <i data-lucide="{{ icon }}" class="h-3.5 w-3.5"></i>
+                <span class="truncate whitespace-nowrap">{{ label }}</span>
+            </a>
+        {% endfor %}
     </div>
 </details>

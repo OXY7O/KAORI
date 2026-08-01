@@ -34,11 +34,11 @@
     }
 
     function analyticsTabButtons(tabset) {
-        return Array.from(tabset.querySelectorAll('[data-analytics-tab-button]'));
+        return Array.from(tabset.querySelectorAll('[data-analytics-tab-button]')).filter((button) => button.closest('[data-analytics-tabset]') === tabset);
     }
 
     function analyticsTabPanels(tabset) {
-        return Array.from(tabset.querySelectorAll('[data-analytics-tab-panel]'));
+        return Array.from(tabset.querySelectorAll('[data-analytics-tab-panel]')).filter((panel) => panel.closest('[data-analytics-tabset]') === tabset);
     }
 
     function notifyAnalyticsTabVisible(panel, tabId, tabsetId) {
@@ -81,10 +81,12 @@
             panel.hidden = panel.dataset.analyticsTabPanel !== tabId;
         });
 
-        const pageRoot = tabset.closest('[id$="-page"]') || document;
-        pageRoot.querySelectorAll('[data-analytics-preserve-tab] input[name="tab"]').forEach((field) => {
-            field.value = tabId;
-        });
+        if (tabset.dataset.analyticsUpdateQuery !== 'false') {
+            const pageRoot = tabset.closest('[id$="-page"]') || document;
+            pageRoot.querySelectorAll('[data-analytics-preserve-tab] input[name="tab"]').forEach((field) => {
+                field.value = tabId;
+            });
+        }
 
         const tabsetId = tabset.dataset.analyticsTabsetId || tabset.id || 'default';
         if (persist) {
