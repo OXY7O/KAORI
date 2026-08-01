@@ -30,3 +30,28 @@ def test_analytics_manage_clusters_action_targets_kubernetes_integrations():
     assert "url_for('integrations.kubernetes')" in template
     assert 'Manage Clusters' in template
     assert 'page_hero.context_single_action_classes()' in template
+
+
+def test_analytics_posture_uses_inventory_title_density_without_description():
+    hero_paths = [
+        'app/templates/analytics/utilization/partials/_hero.html',
+        'app/templates/analytics/capacity/partials/_hero.html',
+        'app/templates/analytics/storage/partials/_hero.html',
+        'app/templates/analytics/workload/partials/_hero.html',
+        'app/templates/analytics/top_consumers/partials/_hero.html',
+        'app/templates/analytics/alerts/partials/_hero.html',
+        'app/templates/analytics/overview/partials/_hero_posture.html',
+        'app/templates/analytics/forecast/index.html',
+    ]
+    for path in hero_paths:
+        content = Path(path).read_text()
+        assert 'analytics_hero.posture_description' not in content
+        assert 'text-3xl font-bold leading-none text-brand-foreground' not in content
+        assert 'text-3xl font-semibold leading-none text-brand-foreground' not in content
+
+
+def test_storage_hero_uses_concise_primary_pressure_value():
+    content = Path('app/templates/analytics/storage/partials/_hero.html').read_text()
+    assert "'Highest Node Pressure', ('%.1f%%'" in content
+    assert "truncate(30, true, '…')" in content
+    assert "filesystem.highest_node ~ ' · '" not in content

@@ -838,3 +838,8 @@ The canonical Integrations contract is documented in `components/INTEGRATIONS_WO
 ## Kubernetes Analytics Hero Alignment
 
 Kubernetes Analytics heroes follow the Kubernetes Inventory Overview composition: intro and metadata on the left, a two-metric posture panel on the right, and a full-width `Manage Clusters` action at the bottom. Blocked states keep the same action. Domain data may differ, but posture geometry and navigation ownership must remain consistent.
+
+
+### Analytics Hero Posture Density
+
+Kubernetes Analytics hero posture panels follow Inventory density: status value uses the shared context title size, no description appears directly beneath the posture value, metric values stay compact, and long resource identifiers are reduced to short helper text rather than becoming the primary value.

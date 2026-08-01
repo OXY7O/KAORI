@@ -58,14 +58,13 @@
                             <div class="flex items-start justify-between gap-4">
                                 <div class="min-w-0">
                                     <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Forecast Posture</p>
-                                    <p class="mt-1 text-3xl font-bold leading-none text-brand-foreground">{{ posture_value }}</p>
-                                    {{ analytics_hero.posture_description(posture_desc) }}
+                                    <p class="{{ page_hero.context_panel_title_classes() }}">{{ posture_value }}</p>
                                 </div>
                                 {{ table_label.status_label(posture_value, posture_tone, posture_icon) }}
                             </div>
                             <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                                {{ page_hero.context_metric('gauge', 'Highest Projection', highest_projection, summary.highest_projected_label|default('No valid projection', true)) }}
-                                {{ page_hero.context_metric('list-checks', 'Actionable', recommendation_count, 'Forecast recommendations') }}
+                                {{ page_hero.context_metric('gauge', 'Highest Projection', highest_projection, summary.highest_projected_label|default('No valid projection', true)|truncate(30, true, '…'), value_classes=page_hero.context_metric_value_classes(true)) }}
+                                {{ page_hero.context_metric('list-checks', 'Actionable', recommendation_count, 'Forecast recommendations', value_classes=page_hero.context_metric_value_classes(true)) }}
                             </div>
                             {{ analytics_hero.manage_clusters_action() }}
                         </div>

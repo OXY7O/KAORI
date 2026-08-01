@@ -11,3 +11,8 @@ Every Kubernetes Analytics page must use the same hero grammar:
 5. Dependency-blocked states retain the same `Manage Clusters` action so the operator always has a consistent recovery path.
 
 The data remains domain-specific. Utilization shows pressure, Capacity shows headroom, Storage shows filesystem/PVC evidence, Workload shows governance signals, Forecast shows projections, Top Consumers shows pressure/actionability, and Alerts shows critical/source evidence.
+
+
+## Compact Posture Density
+
+Analytics posture values use the same title geometry as the Inventory context card (`context_panel_title_classes`). The posture header must not include an additional description line. Domain metrics use compact values and short helpers; long dynamic identifiers remain helper text and are truncated for presentation while the detailed workspace retains the complete value.

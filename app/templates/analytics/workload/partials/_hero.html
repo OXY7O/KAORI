@@ -31,14 +31,13 @@
                         <div class="flex items-start justify-between gap-4">
                             <div class="min-w-0">
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Workload Posture</p>
-                                <p class="mt-1 text-3xl font-semibold leading-none text-brand-foreground">{{ workload_posture.value }}</p>
-                                {{ analytics_hero.posture_description(workload_posture.description) }}
+                                <p class="{{ page_hero.context_panel_title_classes() }}">{{ workload_posture.value }}</p>
                             </div>
                             {{ table_label.status_label(workload_posture.value, workload_posture.tone, workload_posture.icon) }}
                         </div>
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                            {{ page_hero.context_metric('shield-alert', 'Governance Findings', finding_count_display, 'Workload findings in the active scope') }}
-                            {{ page_hero.context_metric('calendar-range', 'Time Range', selected_time_range, 'Committed observation window') }}
+                            {{ page_hero.context_metric('shield-alert', 'Governance Findings', finding_count_display, 'Workload findings in the active scope', value_classes=page_hero.context_metric_value_classes(true)) }}
+                            {{ page_hero.context_metric('calendar-range', 'Time Range', selected_time_range, 'Committed observation window', value_classes=page_hero.context_metric_value_classes(true)) }}
                         </div>
                         {{ analytics_hero.manage_clusters_action() }}
                     </div>

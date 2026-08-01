@@ -59,13 +59,12 @@
                         <div class="min-w-0">
                             <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Alert Posture</p>
                             <h2 class="{{ page_hero.context_panel_title_classes() }}">{{ posture_value }}</h2>
-                            {{ analytics_hero.posture_description(posture_desc) }}
                         </div>
                         {{ page_hero.context_status_badge(posture_value, posture_tone) }}
                     </div>
                     <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                        {{ page_hero.context_metric('shield-alert', 'Critical Alerts', critical_alerts, 'Critical alert records in the selected scope') }}
-                        {{ page_hero.context_metric('shield-check', 'Source Health', source_health.score|default(0) ~ '/100', 'Committed source-health score') }}
+                        {{ page_hero.context_metric('shield-alert', 'Critical Alerts', critical_alerts, 'Critical alerts in scope', value_classes=page_hero.context_metric_value_classes(true)) }}
+                        {{ page_hero.context_metric('shield-check', 'Source Health', source_health.score|default(0) ~ '/100', 'Committed source score', value_classes=page_hero.context_metric_value_classes(true)) }}
                     </div>
                     {{ analytics_hero.manage_clusters_action() }}
                 </div>

@@ -33,14 +33,13 @@
                     <div class="flex items-start justify-between gap-4">
                         <div class="min-w-0">
                             <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Consumer Posture</p>
-                            <p class="mt-1 text-3xl font-bold leading-none text-brand-foreground">{{ posture.label|default('Unknown') }}</p>
-                            {{ analytics_hero.posture_description(posture.description|default('Consumer evidence is unavailable.')) }}
+                            <p class="{{ page_hero.context_panel_title_classes() }}">{{ posture.label|default('Unknown') }}</p>
                         </div>
                         {{ table_label.status_label(posture.label|default('Unknown'), posture.tone|default('unknown'), posture.icon|default('database-zap')) }}
                     </div>
                     <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                        {{ page_hero.context_metric('gauge', 'Highest Pressure', posture.highest_pressure|default('N/A'), 'Highest valid request, limit, pod-capacity, or claim-capacity pressure signal.') }}
-                        {{ page_hero.context_metric('list-checks', 'Actionable', recommendation_count, 'Prioritized actions derived from the committed consumer snapshot.') }}
+                        {{ page_hero.context_metric('gauge', 'Highest Pressure', posture.highest_pressure|default('N/A'), 'Highest valid pressure signal', value_classes=page_hero.context_metric_value_classes(true)) }}
+                        {{ page_hero.context_metric('list-checks', 'Actionable', recommendation_count, 'Prioritized actions', value_classes=page_hero.context_metric_value_classes(true)) }}
                     </div>
                     {{ analytics_hero.manage_clusters_action() }}
                 </div>
