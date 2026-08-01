@@ -75,22 +75,28 @@
                 </div>
             {% endif %}
 
-            <div class="mt-4 overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
-                <div class="grid lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle">
-                    {{ overview_surface.interpretation_callout(
-                        'How To Read',
-                        'Compare Projection With Threshold Timing',
-                        'Compare the dashed projection with warning and critical thresholds. A rising line is actionable when current utilization or headroom is already constrained.',
-                        icon='chart-spline'
-                    ) }}
-                    {{ overview_surface.interpretation_callout(
-                        'What To Do',
-                        'Validate Signal Quality Before Capacity Changes',
-                        'Validate historical signal quality, growth drivers, and the nearest threshold ETA before scheduling capacity or workload changes.',
-                        icon='scan-search',
-                        extra='border-t border-outline-subtle lg:border-t-0'
-                    ) }}
-                </div>
+            <div class="{{ overview_surface.interpretation_grid_classes('mt-4 rounded-lg border border-outline-subtle lg:grid-cols-3') }}">
+                {{ overview_surface.interpretation_callout(
+                    'How To Read',
+                    'Compare Projection With Threshold Timing',
+                    'Compare the dashed projection with warning and critical thresholds. A rising line is actionable when current utilization or headroom is already constrained.',
+                    icon='chart-column'
+                ) }}
+                {{ overview_surface.interpretation_callout(
+                    'What To Do',
+                    'Validate Signal Quality Before Capacity Changes',
+                    'Validate historical signal quality, growth drivers, and the nearest threshold ETA before scheduling capacity or workload changes.',
+                    icon='scan-search',
+                    extra='border-t border-outline-subtle lg:border-t-0'
+                ) }}
+                {{ overview_surface.interpretation_callout(
+                    'Forecast Decision',
+                    forecast.risk_note,
+                    'Use the current risk posture, projected horizon, and nearest threshold direction to decide whether monitoring is enough or capacity planning should begin now.',
+                    icon='triangle-alert' if risk_count > 0 else 'circle-check',
+                    tone='warning' if risk_count > 0 else 'normal',
+                    extra='border-t border-outline-subtle lg:border-t-0'
+                ) }}
             </div>
         </article>
 
@@ -122,13 +128,7 @@
             {% else %}
                 <p class="mt-4 text-xs leading-5 text-content-muted">No resource outlook is available for the current snapshot.</p>
             {% endif %}
-            <div class="{{ overview_surface.guidance_card_classes('mt-4 flex items-start gap-3 p-3') }}">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {% if risk_count > 0 %}bg-status-warning-soft text-status-warning{% else %}bg-status-normal-soft text-status-normal{% endif %}"><i data-lucide="{{ 'triangle-alert' if risk_count > 0 else 'circle-check' }}" class="h-4 w-4"></i></span>
-                <div class="min-w-0">
-                    <p class="text-xs font-semibold text-content-primary">Forecast Decision</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ forecast.risk_note }}</p>
-                </div>
-            </div>
+
         </aside>
     </div>
 </section>
