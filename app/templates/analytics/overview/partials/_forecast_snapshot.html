@@ -75,14 +75,21 @@
                 </div>
             {% endif %}
 
-            <div class="{{ overview_surface.guidance_card_classes('mt-4 grid px-4 lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle') }}">
-                <div class="py-3 lg:pr-4">
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">How to Read</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Compare the dashed projection with warning and critical thresholds. A rising line is actionable when current utilization or headroom is already constrained.</p>
-                </div>
-                <div class="border-t border-outline-subtle py-3 lg:border-t-0 lg:pl-4">
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">What to Do</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Validate historical signal quality, growth drivers, and the nearest threshold ETA before scheduling capacity or workload changes.</p>
+            <div class="mt-4 overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
+                <div class="grid lg:grid-cols-2 lg:divide-x lg:divide-outline-subtle">
+                    {{ overview_surface.interpretation_callout(
+                        'How To Read',
+                        'Compare Projection With Threshold Timing',
+                        'Compare the dashed projection with warning and critical thresholds. A rising line is actionable when current utilization or headroom is already constrained.',
+                        icon='chart-spline'
+                    ) }}
+                    {{ overview_surface.interpretation_callout(
+                        'What To Do',
+                        'Validate Signal Quality Before Capacity Changes',
+                        'Validate historical signal quality, growth drivers, and the nearest threshold ETA before scheduling capacity or workload changes.',
+                        icon='scan-search',
+                        extra='border-t border-outline-subtle lg:border-t-0'
+                    ) }}
                 </div>
             </div>
         </article>

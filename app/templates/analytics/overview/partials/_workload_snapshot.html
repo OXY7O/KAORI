@@ -82,24 +82,49 @@
             </div>
         </article>
 
-        <aside class="{{ overview_surface.interpretation_panel_classes('border-t border-outline-subtle px-4 py-4 sm:px-5 xl:border-t-0') }}">
-            <p class="{{ overview_surface.metric_label_classes() }}">Recommended Action</p>
-            {% if missing_requests > 0 %}
-                <p class="mt-1 text-sm font-semibold text-status-critical">Define Missing Requests First</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Complete CPU and memory requests before interpreting scheduling, quota, or right-sizing evidence.</p>
-            {% elif memory_limit_gaps > 0 %}
-                <p class="mt-1 text-sm font-semibold text-status-warning">Review Memory Limit Coverage</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Apply memory limits according to workload criticality while preserving intentional CPU limit policy.</p>
-            {% elif workload.under_provisioned > 0 or workload.over_provisioned > 0 %}
-                <p class="mt-1 text-sm font-semibold text-kaori-primary">Validate Evidence-Gated Right-Sizing</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Prioritize under-provisioned workloads, then reduce excess requests only where current and selected-window evidence is complete.</p>
-            {% elif workload.cpu_limits_unset > 0 %}
-                <p class="mt-1 text-sm font-semibold text-status-info">Confirm CPU Limit Policy</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Unset CPU limits are informational by default. Confirm that the configuration matches the workload governance policy.</p>
-            {% else %}
-                <p class="mt-1 text-sm font-semibold text-status-normal">Continue Workload Governance Monitoring</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">No immediate request, memory-limit, or evidence-complete right-sizing finding is present.</p>
-            {% endif %}
-        </aside>
+        {% if missing_requests > 0 %}
+            {{ overview_surface.interpretation_callout(
+                'Recommended Action',
+                'Define Missing Requests First',
+                'Complete CPU and memory requests before interpreting scheduling, quota, or right-sizing evidence.',
+                icon='badge-alert',
+                tone='critical',
+                extra='border-t border-outline-subtle xl:border-t-0'
+            ) }}
+        {% elif memory_limit_gaps > 0 %}
+            {{ overview_surface.interpretation_callout(
+                'Recommended Action',
+                'Review Memory Limit Coverage',
+                'Apply memory limits according to workload criticality while preserving intentional CPU limit policy.',
+                icon='triangle-alert',
+                tone='warning',
+                extra='border-t border-outline-subtle xl:border-t-0'
+            ) }}
+        {% elif workload.under_provisioned > 0 or workload.over_provisioned > 0 %}
+            {{ overview_surface.interpretation_callout(
+                'Recommended Action',
+                'Validate Evidence-Gated Right-Sizing',
+                'Prioritize under-provisioned workloads, then reduce excess requests only where current and selected-window evidence is complete.',
+                icon='scale',
+                extra='border-t border-outline-subtle xl:border-t-0'
+            ) }}
+        {% elif workload.cpu_limits_unset > 0 %}
+            {{ overview_surface.interpretation_callout(
+                'Recommended Action',
+                'Confirm CPU Limit Policy',
+                'Unset CPU limits are informational by default. Confirm that the configuration matches the workload governance policy.',
+                icon='info',
+                extra='border-t border-outline-subtle xl:border-t-0'
+            ) }}
+        {% else %}
+            {{ overview_surface.interpretation_callout(
+                'Recommended Action',
+                'Continue Workload Governance Monitoring',
+                'No immediate request, memory-limit, or evidence-complete right-sizing finding is present.',
+                icon='circle-check',
+                tone='normal',
+                extra='border-t border-outline-subtle xl:border-t-0'
+            ) }}
+        {% endif %}
     </div>
 </section>

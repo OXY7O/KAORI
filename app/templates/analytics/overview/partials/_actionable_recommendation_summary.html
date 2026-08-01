@@ -72,16 +72,33 @@
         </article>
 
         <aside class="{{ overview_surface.interpretation_panel_classes('border-t border-outline-subtle px-4 py-4 sm:px-5 xl:border-t-0') }}">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Operational Triage</p>
             {% if summary.priority_summary.critical > 0 %}
-                <p class="mt-1 text-sm font-semibold text-status-critical">Resolve Critical Recommendations First</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Validate service impact, ownership, evidence freshness, and rollback options before planned optimization work.</p>
+                {{ overview_surface.interpretation_callout(
+                    'Operational Triage',
+                    'Resolve Critical Recommendations First',
+                    'Validate service impact, ownership, evidence freshness, and rollback options before planned optimization work.',
+                    icon='siren',
+                    tone='critical',
+                    extra='-mx-4 -mt-4 sm:-mx-5'
+                ) }}
             {% elif summary.priority_summary.warning > 0 %}
-                <p class="mt-1 text-sm font-semibold text-status-warning">Schedule Warning Recommendations</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Prioritize by affected resource, forecast direction, and remaining operational headroom.</p>
+                {{ overview_surface.interpretation_callout(
+                    'Operational Triage',
+                    'Schedule Warning Recommendations',
+                    'Prioritize by affected resource, forecast direction, and remaining operational headroom.',
+                    icon='triangle-alert',
+                    tone='warning',
+                    extra='-mx-4 -mt-4 sm:-mx-5'
+                ) }}
             {% else %}
-                <p class="mt-1 text-sm font-semibold text-status-normal">No Immediate Action Queue</p>
-                <p class="mt-1 text-xs leading-5 text-content-muted">Continue preventive review and confirm that committed snapshots remain current.</p>
+                {{ overview_surface.interpretation_callout(
+                    'Operational Triage',
+                    'No Immediate Action Queue',
+                    'Continue preventive review and confirm that committed snapshots remain current.',
+                    icon='circle-check',
+                    tone='normal',
+                    extra='-mx-4 -mt-4 sm:-mx-5'
+                ) }}
             {% endif %}
 
             <div class="{{ overview_surface.nested_evidence_card_classes('mt-4 p-3') }}">

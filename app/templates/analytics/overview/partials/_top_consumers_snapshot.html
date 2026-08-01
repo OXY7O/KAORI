@@ -81,13 +81,18 @@
     </div>
 
     <div class="{{ overview_surface.interpretation_grid_classes() }}">
-        <article class="px-4 py-3 sm:px-5">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">How To Read</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Each resource group is ranked from highest to lowest. Compare the displayed value with workload ownership, expected demand, and the selected time window.</p>
-        </article>
-        <article class="border-t border-outline-subtle px-4 py-3 sm:px-5 lg:border-t-0">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Recommended Action</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Investigate sustained outliers first. Confirm whether requests, limits, replicas, or storage allocation match the workload purpose before changing capacity.</p>
-        </article>
+        {{ overview_surface.interpretation_callout(
+            'How To Read',
+            'Compare Rank With Ownership And Expected Demand',
+            'Each resource group is ranked from highest to lowest. Compare the displayed value with workload ownership, expected demand, and the selected time window.',
+            icon='list-ordered'
+        ) }}
+        {{ overview_surface.interpretation_callout(
+            'Recommended Action',
+            'Investigate Sustained Outliers Before Resizing',
+            'Confirm whether requests, limits, replicas, or storage allocation match the workload purpose before changing capacity.',
+            icon='scan-search',
+            extra='border-t border-outline-subtle lg:border-t-0'
+        ) }}
     </div>
 </section>

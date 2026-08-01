@@ -86,14 +86,31 @@
                 {{ table_label.status_label(alerts.recent_anomalies ~ ' Candidates', 'maintenance', size='compact') }}
             </div>
             <p class="mt-2 text-xs leading-5 text-content-muted">{{ alerts.highest_severity_description }}</p>
-            <div class="{{ overview_surface.guidance_card_classes('mt-4 p-3') }}">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Recommended Action</p>
+            <div class="mt-4 overflow-hidden rounded-lg border border-outline-subtle bg-surface-hover">
                 {% if immediate_count > 0 %}
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Validate routing, ownership, runbook coverage, and recent deployment changes for the highest-severity active signal.</p>
+                    {{ overview_surface.interpretation_callout(
+                        'Recommended Action',
+                        'Validate Critical Signal Ownership And Routing',
+                        'Validate routing, ownership, runbook coverage, and recent deployment changes for the highest-severity active signal.',
+                        icon='shield-alert',
+                        tone='critical'
+                    ) }}
                 {% elif alerts.recent_anomalies > 0 %}
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Correlate anomaly candidates with workload, traffic, and deployment changes before escalating them as incidents.</p>
+                    {{ overview_surface.interpretation_callout(
+                        'Recommended Action',
+                        'Correlate Anomaly Candidates Before Escalation',
+                        'Correlate anomaly candidates with workload, traffic, and deployment changes before escalating them as incidents.',
+                        icon='search-code',
+                        tone='warning'
+                    ) }}
                 {% else %}
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Continue monitoring signal quality and ownership coverage. No immediate incident escalation is indicated.</p>
+                    {{ overview_surface.interpretation_callout(
+                        'Recommended Action',
+                        'Continue Signal Quality Monitoring',
+                        'Continue monitoring signal quality and ownership coverage. No immediate incident escalation is indicated.',
+                        icon='circle-check',
+                        tone='normal'
+                    ) }}
                 {% endif %}
             </div>
         </aside>
