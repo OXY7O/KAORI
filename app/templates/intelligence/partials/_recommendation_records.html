@@ -1,7 +1,7 @@
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% import "components/table_label.html" as table_label %}
 <div class="grid gap-3 p-4 sm:p-5">
-{% for item in payload.items %}
+{% for item in payload['items']|default([], true) %}
     {% set tone = item.tone|default('info') %}
     {% call intelligence_ui.record(item.title, item.summary, icon='sparkles', status_text=item.severity_label, status_tone=tone) %}
         <div class="mt-3 flex flex-wrap gap-2">

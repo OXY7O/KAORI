@@ -1,7 +1,7 @@
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% import "components/table_label.html" as table_label %}
 <div class="grid gap-3 p-4 sm:p-5">
-{% for item in payload.items %}
+{% for item in payload['items']|default([], true) %}
     {% call intelligence_ui.record(item.title, item.summary, icon='list-checks', status_text=item.status_label, status_tone=item.status_tone) %}
         <div class="mt-3 flex flex-wrap gap-2">
             {{ table_label.status_label(item.severity_label, item.tone, size='compact') }}

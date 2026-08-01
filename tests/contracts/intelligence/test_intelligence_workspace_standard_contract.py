@@ -36,7 +36,7 @@ def test_automation_workspace_uses_integrated_tabs_and_grouped_foundations():
     template = read('app/templates/intelligence/automation_control.html')
     overview = read('app/templates/intelligence/partials/automation_control/_overview.html')
     assert 'link_tabs(' in template
-    assert 'payload.domain_groups' in overview
+    assert "payload['domain_groups']|default([], true)" in overview
     assert 'overflow-x-auto' not in overview
 
 
