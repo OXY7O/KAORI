@@ -1,10 +1,15 @@
 # Kubernetes Operation Notifications
 
-## Validate versus mutate feedback ownership
+## CRUD mutation contract
 
-- Validation performed through HTMX returns immediate out-of-band feedback in the same response.
-- A successful mutating operation that uses `HX-Redirect` must queue its feedback before returning the redirect header.
-- The redirected page consumes the queued feedback and displays the persistent KAORI toast.
-- Audit and notification persistence remain part of the same `record_operational_activity` call.
+ConfigMap and Secret CRUD operations use two notification paths:
 
-This prevents successful create/update/delete operations from losing their toast during navigation while avoiding duplicate validation notifications.
+- validation or dry-run feedback is returned immediately through the owning HTMX out-of-band notification response;
+- successful Create, Update/Replace, and Delete mutations are queued before `HX-Redirect` or normal redirect, then rendered by the destination page navigation notification region.
+
+A successful mutation must never depend on rendering an OOB fragment after a redirect. Activity Log recording and user notification are both required, but they are separate responsibilities.
+
+Canonical coverage:
+
+- ConfigMap: Create, Update, Delete;
+- Secret: Create, Replace, Delete.

@@ -93,11 +93,6 @@ def _feedback(
     action_url: str,
     queue_feedback: bool | None = None,
 ) -> dict[str, Any]:
-    should_queue_feedback = (
-        request.headers.get('HX-Request') != 'true'
-        if queue_feedback is None
-        else queue_feedback
-    )
     return record_operational_activity(
         user_id=current_user.id,
         event_type=event_type,
@@ -108,7 +103,11 @@ def _feedback(
         action_label='Open ConfigMap Management',
         action_icon='file-cog',
         metadata=metadata,
-        queue_feedback=should_queue_feedback,
+        queue_feedback=(
+            request.headers.get('HX-Request') != 'true'
+            if queue_feedback is None
+            else queue_feedback
+        ),
     )
 
 
@@ -253,10 +252,10 @@ def create_configmap_page():
                 message=message,
                 metadata=metadata,
                 action_url=url_for('kubernetes_operations.configmap_management'),
-                # Validation feedback is rendered immediately through the HTMX
-                # OOB response. Successful creation redirects to a fresh form,
-                # so queue the mutation feedback for that next navigation.
-                queue_feedback=(request.headers.get('HX-Request') != 'true' or not dry_run),
+                queue_feedback=(
+                    request.headers.get('HX-Request') != 'true'
+                    or not dry_run
+                ),
             )
         except ValueError as exc:
             title = 'ConfigMap validation failed' if dry_run else 'ConfigMap creation failed'
@@ -403,6 +402,10 @@ def update_configmap_page():
                     'kubernetes_operations.update_configmap',
                     request.form,
                 ),
+                queue_feedback=(
+                    request.headers.get('HX-Request') != 'true'
+                    or not dry_run
+                ),
             )
         except ValueError as exc:
             feedback = _feedback(
@@ -506,6 +509,10 @@ def delete_configmap_page():
                 ),
                 metadata=metadata,
                 action_url=url_for('kubernetes_operations.configmap_management'),
+                queue_feedback=(
+                    request.headers.get('HX-Request') != 'true'
+                    or not validate_only
+                ),
             )
         except ValueError as exc:
             session.pop(_CONFIGMAP_DELETE_RECEIPT_SESSION_KEY, None)
