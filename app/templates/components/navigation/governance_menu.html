@@ -6,7 +6,7 @@
 <details class="sidebar-menu space-y-1"
          {% if governance_active %}open{% endif %}>
     <!-- Governance Parent -->
-    <summary class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if governance_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-[12px] font-semibold transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2"
+    <summary class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if governance_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-sm font-semibold transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2"
              title="K8s Governance"
              aria-label="K8s Governance"
              @click="if (!sidebarExpanded) { $event.preventDefault(); toggleSidebar(); $el.parentElement.open = true }">
@@ -14,7 +14,7 @@
             <span class="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg {{ 'bg-white/15 text-white' if governance_active else 'bg-white/5 text-brand-foreground-muted group-hover:bg-white/10 group-hover:text-white' }} transition">
                 <i data-lucide="shield-check" class="h-4 w-4"></i>
             </span>
-            <span class="sidebar-expanded-only truncate whitespace-nowrap text-[12px] leading-5">K8s Governance</span>
+            <span class="sidebar-expanded-only truncate whitespace-nowrap text-sm leading-5">K8s Governance</span>
         </div>
         <i data-lucide="chevron-right"
            class="sidebar-expanded-only sidebar-menu-chevron h-4 w-4 {{ 'text-kaori-accent' if governance_active else 'text-white/[0.35]' }}"></i>
@@ -22,7 +22,7 @@
     <!-- Governance Sub Menu -->
     <div class="sidebar-expanded-only sidebar-submenu ml-6 mt-1 space-y-1 border-l border-white/10 pl-3">
         <a href="{{ url_for('governance.tls_certificates') }}"
-           class="{{ 'bg-white/[0.08] text-kaori-accent' if tls_certificates_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-[11px] leading-4 transition">
+           class="{{ 'bg-white/[0.08] text-kaori-accent' if tls_certificates_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} group flex items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs leading-4 transition">
             <span class="h-1.5 w-1.5 rounded-full {{ 'bg-kaori-accent' if tls_certificates_active else 'bg-white/20 group-hover:bg-white/[0.45]' }}"></span>
             <i data-lucide="badge-check" class="h-3.5 w-3.5"></i>
             <span class="truncate whitespace-nowrap">TLS Certificates</span>

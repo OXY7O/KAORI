@@ -13,7 +13,7 @@
             title="Notifications">
         <i data-lucide="bell" class="h-5 w-5"></i>
         {% if navigation_unread_count|default(0) > 0 %}
-            <span class="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-kaori-primary px-1 text-[10px] font-semibold text-white ring-2 ring-surface-card">
+            <span class="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-kaori-primary px-1 text-xs font-semibold text-white ring-2 ring-surface-card">
                 {{ '9+' if navigation_unread_count > 9 else navigation_unread_count }}
             </span>
         {% endif %}
@@ -29,7 +29,7 @@
                     <div class="flex items-center gap-2">
                         <p class="text-sm font-semibold text-content-primary">Notifications</p>
                         {% if navigation_unread_count|default(0) > 0 %}
-                            <span class="rounded-full bg-kaori-soft px-2 py-0.5 text-[10px] font-semibold text-kaori-primary">
+                            <span class="rounded-full bg-kaori-soft px-2 py-0.5 text-xs font-semibold text-kaori-primary">
                                 {{ navigation_unread_count }} unread
                             </span>
                         {% endif %}
@@ -45,7 +45,7 @@
                                 hx-post="{{ url_for('notifications.mark_all_read') }}"
                                 hx-target="#notification-center"
                                 hx-swap="outerHTML"
-                                class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-[10px] font-semibold text-kaori-primary transition hover:bg-kaori-soft cursor-pointer disabled:cursor-not-allowed">
+                                class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft cursor-pointer disabled:cursor-not-allowed">
                             <i data-lucide="check-check" class="h-3 w-3"></i>
                             Mark All Read
                         </button>
@@ -84,20 +84,20 @@
                                             </div>
                                             <p class="mt-1 text-xs leading-4 text-content-secondary">{{ notification.message }}</p>
                                         </div>
-                                        <span class="whitespace-nowrap text-[10px] font-medium text-content-muted">{{ notification.created_label }}</span>
+                                        <span class="whitespace-nowrap text-xs font-medium text-content-muted">{{ notification.created_label }}</span>
                                     </div>
                                     {% if notification.synced_count is not none and notification.total_count is not none %}
                                         <div class="mt-2 flex flex-wrap gap-1.5">
-                                            <span class="rounded-lg bg-surface-card px-2 py-1 text-[10px] font-semibold text-content-secondary shadow-sm">
+                                            <span class="rounded-lg bg-surface-card px-2 py-1 text-xs font-semibold text-content-secondary shadow-sm">
                                                 {{ notification.synced_count }}/{{ notification.total_count }} synced
                                             </span>
                                             {% if notification.failed_count %}
-                                                <span class="rounded-lg bg-status-critical-soft px-2 py-1 text-[10px] font-semibold text-status-critical-text">
+                                                <span class="rounded-lg bg-status-critical-soft px-2 py-1 text-xs font-semibold text-status-critical-text">
                                                     {{ notification.failed_count }} failed
                                                 </span>
                                             {% endif %}
                                             {% if notification.duration_seconds is not none %}
-                                                <span class="rounded-lg bg-surface-card px-2 py-1 text-[10px] font-semibold text-content-muted shadow-sm">
+                                                <span class="rounded-lg bg-surface-card px-2 py-1 text-xs font-semibold text-content-muted shadow-sm">
                                                     {{ notification.duration_seconds }}s
                                                 </span>
                                             {% endif %}
@@ -106,7 +106,7 @@
                                     <div class="mt-2 flex items-center gap-2">
                                         {% if notification.action_url %}
                                             <a href="{{ notification.action_url }}"
-                                               class="inline-flex items-center gap-1 text-[10px] font-semibold text-kaori-primary hover:text-kaori-primary-hover">
+                                               class="inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:text-kaori-primary-hover">
                                                 View details
                                                 <i data-lucide="arrow-up-right" class="h-3 w-3"></i>
                                             </a>
@@ -121,7 +121,7 @@
                                                         hx-post="{{ url_for('notifications.mark_read', notification_id=notification.id) }}"
                                                         hx-target="#notification-center"
                                                         hx-swap="outerHTML"
-                                                        class="inline-flex items-center gap-1 text-[10px] font-semibold text-content-muted hover:text-content-primary cursor-pointer disabled:cursor-not-allowed">
+                                                        class="inline-flex items-center gap-1 text-xs font-semibold text-content-muted hover:text-content-primary cursor-pointer disabled:cursor-not-allowed">
                                                     <i data-lucide="check" class="h-3 w-3"></i>
                                                     Mark Read
                                                 </button>
@@ -146,18 +146,18 @@
             {% endif %}
         </div>
         <div class="flex items-center justify-between gap-3 border-t border-outline-subtle bg-surface-hover px-4 py-3  ">
-            <p class="text-[10px] font-medium text-content-muted">
+            <p class="text-xs font-medium text-content-muted">
                 Latest {{ navigation_notifications|length }} of {{ navigation_total_count|default(navigation_notifications|length) }} activities
             </p>
             {% if current_user.has_permission('settings.view_operational_activity') %}
                 <a href="{{ url_for('notifications.activity_log') }}"
                    @click="notificationOpen = false"
-                   class="inline-flex items-center gap-1.5 text-[10px] font-semibold text-kaori-primary hover:text-kaori-primary-hover">
+                   class="inline-flex items-center gap-1.5 text-xs font-semibold text-kaori-primary hover:text-kaori-primary-hover">
                     View audit log
                     <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
                 </a>
             {% else %}
-                <span class="inline-flex items-center gap-1 text-[10px] font-semibold text-content-muted">Personal notifications</span>
+                <span class="inline-flex items-center gap-1 text-xs font-semibold text-content-muted">Personal notifications</span>
             {% endif %}
         </div>
     </div>
