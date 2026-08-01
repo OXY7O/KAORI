@@ -24,12 +24,12 @@
     <div class="{{ page_hero.context_panel_metrics_classes() }}">
         <div class="{{ page_hero.context_metric_card_classes() }}">
             <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Actionable</p>
-            <p class="mt-1 text-2xl font-semibold text-brand-foreground">{{ actionable.total_count|default(0) }}</p>
+            <p class="mt-1 text-lg font-semibold leading-6 text-brand-foreground">{{ actionable.total_count|default(0) }}</p>
             <p class="{{ page_hero.context_metric_helper_classes() }}">Signals with recommended action</p>
         </div>
         <div class="{{ page_hero.context_metric_card_classes() }}">
             <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Active Alerts</p>
-            <p class="mt-1 text-2xl font-semibold text-brand-foreground">{{ active_alerts }}</p>
+            <p class="mt-1 text-lg font-semibold leading-6 text-brand-foreground">{{ active_alerts }}</p>
             <p class="{{ page_hero.context_metric_helper_classes() }}">Firing alerts in current scope</p>
         </div>
     </div>
