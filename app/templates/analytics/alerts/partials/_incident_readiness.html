@@ -57,10 +57,13 @@
             </div>
         </section>
         <aside class="border-t border-outline-subtle bg-surface-hover p-5 sm:p-6 lg:border-l lg:border-t-0">
-            <div class="flex items-start gap-3">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="compass" class="h-4 w-4"></i></span>
-                <div class="min-w-0"><h3 class="text-sm font-semibold text-content-primary">Recommended Action</h3><p class="mt-1 text-sm leading-6 text-content-secondary">{{ incident_readiness.recommended_action }}</p></div>
-            </div>
+            {{ analysis_surface.interpretation_content(
+                'Recommended Action',
+                incident_readiness.recommended_action,
+                'Review silence risk, inhibition risk, ownership, and runbook readiness before escalating or suppressing active signals.',
+                icon='compass',
+                tone=readiness_tone
+            ) }}
             <dl class="mt-4 grid gap-px overflow-hidden rounded-lg border border-outline-subtle bg-outline-subtle sm:grid-cols-2">
                 <div class="bg-surface-card px-4 py-3"><dt class="{{ analysis_surface.metric_label_classes() }}">Silence Risk</dt><dd class="mt-1 text-base font-semibold text-content-primary">{{ incident_readiness.silence_risk }}</dd><p class="mt-1 text-xs text-content-muted">Matched active silences</p></div>
                 <div class="bg-surface-card px-4 py-3"><dt class="{{ analysis_surface.metric_label_classes() }}">Inhibition Risk</dt><dd class="mt-1 text-base font-semibold text-content-primary">{{ incident_readiness.inhibition_risk }}</dd><p class="mt-1 text-xs text-content-muted">Suppressed alerts</p></div>

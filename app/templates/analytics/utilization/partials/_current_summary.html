@@ -19,9 +19,23 @@
                 {{ pressure_lane.render(metric.label, metric.icon, metric.value, metric.detail, metric.description, tone=tone) }}
             {% endfor %}
         </div>
+        {% set highest_utilization = [summary.cpu_utilization|default(0), summary.memory_utilization|default(0), summary.storage_utilization|default(0), summary.pod_utilization|default(0)]|max %}
+        {% set action_tone = 'critical' if highest_utilization > 90 else ('warning' if highest_utilization >= 75 else 'normal') %}
         <div class="{{ analysis_surface.interpretation_grid_classes() }}">
-            <div class="px-4 py-3"><p class="{{ analysis_surface.metric_label_classes() }}">How To Read</p><p class="mt-1 text-xs leading-5 text-content-secondary">Compare percentage pressure with absolute used and capacity values. High percentage on a small pool can require a different response from broad cluster saturation.</p></div>
-            <div class="px-4 py-3"><p class="{{ analysis_surface.metric_label_classes() }}">What To Do</p><p class="mt-1 text-xs leading-5 text-content-secondary">Open Trend Analysis for sustained pressure and Node Detail for concentration. Resize workloads or expand capacity only after both views confirm the risk.</p></div>
+            {{ analysis_surface.interpretation_callout(
+                'How To Read',
+                'Compare Percentage Pressure With Absolute Consumption',
+                'Compare percentage pressure with absolute used and capacity values. High percentage on a small pool can require a different response from broad cluster saturation.',
+                icon='chart-column'
+            ) }}
+            {{ analysis_surface.interpretation_callout(
+                'What To Do',
+                'Validate Trend And Node Concentration Before Resizing',
+                'Open Trend Analysis for sustained pressure and Node Detail for concentration. Resize workloads or expand capacity only after both views confirm the risk.',
+                icon='scan-search',
+                tone=action_tone,
+                extra='border-t border-outline-subtle lg:border-t-0'
+            ) }}
         </div>
     </section>
 </section>

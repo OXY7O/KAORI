@@ -86,20 +86,19 @@
                         {% endfor %}
                     </dl>
 
-                    <div class="{{ analysis_surface.record_guidance_classes('p-4') }}">
-                        <div class="flex items-start gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary shadow-sm">
-                                <i data-lucide="search" class="h-4 w-4"></i>
-                            </span>
-                            <div class="min-w-0">
-                                <h4 class="text-sm font-semibold text-content-primary">Recommended Anomaly Review</h4>
-                                <p class="mt-1 text-sm leading-6 text-content-muted">Validate whether this deviation is workload-driven, capacity-driven, or caused by source gaps. Compare recent deployments, namespace density, and node pressure before creating an incident.</p>
-                                <div class="mt-3 flex flex-wrap gap-2">
-                                    {{ table_label.metadata_label('Scope: ' ~ anomaly.namespace, size='compact', wrap=true) }}
-                                    {{ table_label.metadata_label('Signal: ' ~ anomaly.signal, size='compact', wrap=true) }}
-                                    {{ table_label.status_label('Priority: ' ~ (anomaly.severity|title), tone=severity_tone, size='compact') }}
-                                </div>
-                            </div>
+                    <div class="{{ analysis_surface.record_guidance_classes('p-0') }}">
+                        {{ analysis_surface.interpretation_callout(
+                            'Recommended Anomaly Review',
+                            'Validate The Deviation Before Creating An Incident',
+                            'Determine whether this deviation is workload-driven, capacity-driven, or caused by source gaps. Compare recent deployments, namespace density, and node pressure before escalating.',
+                            icon='search',
+                            tone=severity_tone,
+                            compact=true
+                        ) }}
+                        <div class="flex flex-wrap gap-2 border-t border-outline-subtle px-3 py-3">
+                            {{ table_label.metadata_label('Scope: ' ~ anomaly.namespace, size='compact', wrap=true) }}
+                            {{ table_label.metadata_label('Signal: ' ~ anomaly.signal, size='compact', wrap=true) }}
+                            {{ table_label.status_label('Priority: ' ~ (anomaly.severity|title), tone=severity_tone, size='compact') }}
                         </div>
                     </div>
                 </div>

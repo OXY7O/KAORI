@@ -67,8 +67,21 @@
         </div>
     </section>
 
+    {% set capacity_action_tone = table_label.semantic_tone(capacity_posture.tone|default('unknown'))|trim if capacity_posture is defined else 'info' %}
     <div class="{{ analysis_surface.interpretation_grid_classes('rounded-lg border border-outline-subtle') }}">
-        <div class="px-4 py-3"><p class="{{ analysis_surface.metric_label_classes() }}">How To Read</p><p class="mt-1 text-xs leading-5 text-content-secondary">High utilization with low headroom indicates immediate capacity pressure. High requests with low actual usage indicates reservation inefficiency.</p></div>
-        <div class="border-t border-outline-subtle px-4 py-3 lg:border-t-0"><p class="{{ analysis_surface.metric_label_classes() }}">What To Do</p><p class="mt-1 text-xs leading-5 text-content-secondary">Validate the constrained resource, identify workloads driving commitments, then resize requests or expand Ready-worker capacity.</p></div>
+        {{ analysis_surface.interpretation_callout(
+            'How To Read',
+            'Compare Utilization, Commitments, And Remaining Headroom',
+            'High utilization with low headroom indicates immediate capacity pressure. High requests with low actual usage indicates reservation inefficiency.',
+            icon='chart-pie'
+        ) }}
+        {{ analysis_surface.interpretation_callout(
+            'What To Do',
+            'Validate The Constrained Resource Before Expanding Capacity',
+            'Validate the constrained resource, identify workloads driving commitments, then resize requests or expand Ready-worker capacity.',
+            icon='scan-search',
+            tone=capacity_action_tone,
+            extra='border-t border-outline-subtle lg:border-t-0'
+        ) }}
     </div>
 </div>

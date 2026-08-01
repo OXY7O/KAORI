@@ -68,8 +68,21 @@
         </div>
     </section>
 
+    {% set storage_action_tone = table_label.semantic_tone(storage_overview.tone|default('unknown'))|trim if storage_overview is defined else 'info' %}
     <section class="{{ analysis_surface.interpretation_grid_classes() }}">
-        <div class="p-4"><p class="{{ analysis_surface.metric_label_classes() }}">How To Read</p><p class="mt-1 text-xs leading-5 text-content-secondary">Filesystem pressure is node-scoped, PVC demand is namespace-scoped, and PV provisioning remains cluster-scoped. Do not combine them into one utilization percentage.</p></div>
-        <div class="p-4"><p class="{{ analysis_surface.metric_label_classes() }}">What To Do</p><p class="mt-1 text-xs leading-5 text-content-secondary">Investigate filesystem or PVC lanes at 75% and above. Review PV binding, lifecycle, storage class, and reclaim policy before cleanup or capacity changes.</p></div>
+        {{ analysis_surface.interpretation_callout(
+            'How To Read',
+            'Keep Filesystem, PVC, And PV Boundaries Separate',
+            'Filesystem pressure is node-scoped, PVC demand is namespace-scoped, and PV provisioning remains cluster-scoped. Do not combine them into one utilization percentage.',
+            icon='database'
+        ) }}
+        {{ analysis_surface.interpretation_callout(
+            'What To Do',
+            'Investigate Pressure Before Cleanup Or Expansion',
+            'Investigate filesystem or PVC lanes at 75% and above. Review PV binding, lifecycle, storage class, and reclaim policy before cleanup or capacity changes.',
+            icon='scan-search',
+            tone=storage_action_tone,
+            extra='border-t border-outline-subtle lg:border-t-0'
+        ) }}
     </section>
 </div>

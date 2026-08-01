@@ -253,6 +253,10 @@ Do not darken the entire Prometheus/readiness body. Keep the source and committe
 
 Analytics status tones are normalized through `table_label.semantic_tone(...)`. Critical, Warning, and Normal values must never fall back to the Unknown/slate treatment.
 
+### Analytics Guidance Callout Standard
+
+All `How To Read`, `What To Do`, `What To Watch`, `Operational Reading`, `Recommended Action`, `Recommended Review Path`, `Forecast Decision`, and equivalent Analytics guidance use `analysis_surface.interpretation_callout(...)` or its wrapper-free `interpretation_content(...)` variant. The shared component owns icon geometry, eyebrow typography, headline scale, neutral body copy, and semantic tone. Domain templates provide only the label, concise headline, supporting description, icon, and semantic tone. Raw page-local guidance markup is prohibited. See `components/ANALYTICS_GUIDANCE_CALLOUT_STANDARD.md`.
+
 ## 9. Pagination Standard
 
 Every server-paginated table uses `components/pagination.html` and the global pagination contract.

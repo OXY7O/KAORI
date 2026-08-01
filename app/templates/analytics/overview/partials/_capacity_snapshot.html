@@ -47,34 +47,19 @@
     </div>
 
     <div class="{{ overview_surface.interpretation_grid_classes() }}">
-        <article class="px-4 py-4 sm:px-5">
-            <div class="flex items-start gap-3">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
-                    <i data-lucide="chart-pie" class="h-4 w-4"></i>
-                </span>
-                <div class="min-w-0">
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">How To Read</p>
-                    <p class="mt-1 text-sm font-semibold text-content-primary">Headroom Is Remaining Worker Allocatable Capacity</p>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">CPU and memory values represent remaining allocatable capacity. Pod capacity represents available scheduling slots across worker nodes.</p>
-                </div>
-            </div>
-        </article>
-        <article class="border-t border-outline-subtle px-4 py-4 sm:px-5 lg:border-t-0">
-            <div class="flex items-start gap-3">
-                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {% if recommendations > 0 %}bg-status-warning-soft text-status-warning{% else %}bg-status-normal-soft text-status-normal{% endif %}">
-                    <i data-lucide="{{ 'triangle-alert' if recommendations > 0 else 'circle-check' }}" class="h-4 w-4"></i>
-                </span>
-                <div class="min-w-0">
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Recommended Action</p>
-                    {% if recommendations > 0 %}
-                        <p class="mt-1 text-sm font-semibold text-status-warning">Review {{ recommendations }} Capacity Recommendation{{ '' if recommendations == 1 else 's' }}</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Validate requests, limits, usage peaks, and worker distribution before adding capacity or changing workload placement.</p>
-                    {% else %}
-                        <p class="mt-1 text-sm font-semibold text-status-normal">Continue Monitoring Capacity Headroom</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">No immediate capacity recommendation is present. Recheck when workload growth, forecast risk, or scheduling pressure changes.</p>
-                    {% endif %}
-                </div>
-            </div>
-        </article>
+        {{ overview_surface.interpretation_callout(
+            'How To Read',
+            'Headroom Is Remaining Worker Allocatable Capacity',
+            'CPU and memory values represent remaining allocatable capacity. Pod capacity represents available scheduling slots across worker nodes.',
+            icon='chart-pie'
+        ) }}
+        {{ overview_surface.interpretation_callout(
+            'Recommended Action',
+            ('Review ' ~ recommendations ~ ' Capacity Recommendation' ~ ('' if recommendations == 1 else 's')) if recommendations > 0 else 'Continue Monitoring Capacity Headroom',
+            'Validate requests, limits, usage peaks, and worker distribution before adding capacity or changing workload placement.' if recommendations > 0 else 'No immediate capacity recommendation is present. Recheck when workload growth, forecast risk, or scheduling pressure changes.',
+            icon='triangle-alert' if recommendations > 0 else 'circle-check',
+            tone='warning' if recommendations > 0 else 'normal',
+            extra='border-t border-outline-subtle lg:border-t-0'
+        ) }}
     </div>
 </section>

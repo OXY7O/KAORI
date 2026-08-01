@@ -51,5 +51,13 @@
         </aside>
     </div>
 
-    <div class="{{ analysis_surface.guidance_card_classes('px-4 py-3') }}"><p class="{{ analysis_surface.metric_label_classes() }}">Recommended Action</p><p class="mt-1 text-xs leading-5 text-content-secondary">{{ storage_risk.get('reason', '-') }} Verify the highest-pressure node and mount before deleting data, rescheduling workloads, or expanding storage.</p></div>
+    <div class="{{ analysis_surface.guidance_card_classes() }}">
+        {{ analysis_surface.interpretation_callout(
+            'Recommended Action',
+            storage_risk.get('reason', 'Review Filesystem Pressure'),
+            'Verify the highest-pressure node and mount before deleting data, rescheduling workloads, or expanding storage.',
+            icon='hard-drive',
+            tone=storage_tone
+        ) }}
+    </div>
 </div>

@@ -55,9 +55,22 @@
         </aside>
     </div>
 
+    {% set trend_action_tone = table_label.semantic_tone(trend_info.tone|default('unknown'))|trim %}
     <div class="{{ analysis_surface.interpretation_grid_classes() }}">
-        <div class="px-4 py-3"><p class="{{ analysis_surface.metric_label_classes() }}">How To Read</p><p class="mt-1 text-xs leading-5 text-content-secondary">Current is the latest sample, Average represents sustained pressure, and Peak shows the maximum excursion in the selected window.</p></div>
-        <div class="px-4 py-3"><p class="{{ analysis_surface.metric_label_classes() }}">What To Do</p><p class="mt-1 text-xs leading-5 text-content-secondary">Investigate when current and average remain elevated. Use Node Detail to locate concentration before resizing the cluster.</p></div>
+        {{ analysis_surface.interpretation_callout(
+            'How To Read',
+            'Separate Current, Sustained, And Peak Pressure',
+            'Current is the latest sample, Average represents sustained pressure, and Peak shows the maximum excursion in the selected window.',
+            icon='chart-no-axes-combined'
+        ) }}
+        {{ analysis_surface.interpretation_callout(
+            'What To Do',
+            'Investigate Sustained Pressure Before Resizing',
+            'Investigate when current and average remain elevated. Use Node Detail to locate concentration before resizing the cluster.',
+            icon='scan-search',
+            tone=trend_action_tone,
+            extra='border-t border-outline-subtle lg:border-t-0'
+        ) }}
     </div>
     <script type="application/json" data-utilization-trend-data>{{ {'cpu': trends.cpu|default([]), 'memory': trends.memory|default([]), 'pods': trends.pods|default([])}|tojson }}</script>
 </div>

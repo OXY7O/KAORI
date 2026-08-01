@@ -75,10 +75,12 @@
                     <div><dt class="text-xs text-content-muted">Horizon</dt><dd class="mt-1 text-sm font-semibold text-content-primary">{{ forecast_payload.horizon_days }} Days</dd></div>
                 </dl>
             </div>
-            <div class="px-4 py-4 sm:px-5">
-                <p class="{{ analysis_surface.metric_label_classes() }}">How To Read</p>
-                <p class="mt-2 text-xs leading-5 text-content-secondary">{{ forecast_payload.method_description }} Historical Signal Quality describes sample completeness and stability; it is not a claim of forecast accuracy.</p>
-            </div>
+            {{ analysis_surface.interpretation_callout(
+                'How To Read',
+                'Read The Model Boundary Before Using The Projection',
+                forecast_payload.method_description ~ ' Historical Signal Quality describes sample completeness and stability; it is not a claim of forecast accuracy.',
+                icon='chart-spline'
+            ) }}
         </div>
     </div>
 {% endcall %}

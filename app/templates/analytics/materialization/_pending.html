@@ -1,4 +1,5 @@
 {% import "components/table_label.html" as table_label %}
+{% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% set progress_percent = materialization_progress_percent if materialization_progress_percent is defined else none %}
 {% set progress_message = materialization_progress_message if materialization_progress_message is defined else none %}
@@ -49,8 +50,14 @@
                         <p class="mt-2 text-sm leading-6 text-status-critical-text">{{ error_detail }}</p>
                         {% if error_remediation %}
                             <div class="mt-3 border-t border-status-critical-border pt-3">
-                                <p class="text-xs font-semibold uppercase tracking-wide text-status-critical-text">Recommended Action</p>
-                                <p class="mt-1 text-sm leading-6 text-status-critical-text">{{ error_remediation }}</p>
+                                {{ analysis_surface.interpretation_content(
+                                    'Recommended Action',
+                                    'Restore Analytics Materialization',
+                                    error_remediation,
+                                    icon='triangle-alert',
+                                    tone='critical',
+                                    compact=true
+                                ) }}
                             </div>
                         {% endif %}
                         {% if materialization_job_public_id is defined and materialization_job_public_id %}

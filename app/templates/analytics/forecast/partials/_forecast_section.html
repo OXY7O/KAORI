@@ -136,15 +136,23 @@
                             {% endif %}
                         </div>
 
+                        {% set forecast_action_headline = 'Expand Capacity Or Reduce Demand Before The Critical ETA' if tone == 'critical' else ('Plan Remediation Before The Warning ETA' if tone == 'warning' else ('Restore Forecast Evidence Before Deciding' if tone == 'unknown' else 'Continue Monitoring Forecast Direction')) %}
+                        {% set forecast_action_body = 'Prioritize capacity expansion or workload reduction before the Critical ETA and validate the projection after the next committed snapshot.' if tone == 'critical' else ('Review growth drivers and schedule remediation before the Warning ETA.' if tone == 'warning' else ('Restore history or capacity evidence before making a forecast-based capacity decision.' if tone == 'unknown' else 'Continue monitoring. No immediate capacity change is required unless trend or threshold timing worsens.')) %}
                         <div class="{{ analysis_surface.interpretation_grid_classes() }}">
-                            <div class="px-4 py-4 sm:px-5">
-                                <p class="{{ analysis_surface.metric_label_classes() }}">How To Read</p>
-                                <p class="mt-2 text-xs leading-5 text-content-secondary">The latest daily average is the final committed daily observation, not an instantaneous reading. Historical Signal Quality describes sample completeness and stability, not model accuracy.</p>
-                            </div>
-                            <div class="px-4 py-4 sm:px-5">
-                                <p class="{{ analysis_surface.metric_label_classes() }}">Recommended Action</p>
-                                <p class="mt-2 text-xs leading-5 text-content-secondary">{% if tone == 'critical' %}Prioritize capacity expansion or workload reduction before the Critical ETA and validate the projection after the next committed snapshot.{% elif tone == 'warning' %}Review growth drivers and schedule remediation before the Warning ETA.{% elif tone == 'unknown' %}Restore history or capacity evidence before making a forecast-based capacity decision.{% else %}Continue monitoring. No immediate capacity change is required unless trend or threshold timing worsens.{% endif %}</p>
-                            </div>
+                            {{ analysis_surface.interpretation_callout(
+                                'How To Read',
+                                'Use Committed Daily Evidence And Signal Quality',
+                                'The latest daily average is the final committed daily observation, not an instantaneous reading. Historical Signal Quality describes sample completeness and stability, not model accuracy.',
+                                icon='chart-no-axes-combined'
+                            ) }}
+                            {{ analysis_surface.interpretation_callout(
+                                'Recommended Action',
+                                forecast_action_headline,
+                                forecast_action_body,
+                                icon='shield-alert' if tone == 'critical' else ('triangle-alert' if tone == 'warning' else ('circle-help' if tone == 'unknown' else 'circle-check')),
+                                tone=tone,
+                                extra='border-t border-outline-subtle lg:border-t-0'
+                            ) }}
                         </div>
                     </div>
                 {% else %}
@@ -217,8 +225,19 @@
                 </section>
 
                 <div class="{{ analysis_surface.interpretation_grid_classes() }}">
-                    <div class="px-4 py-4 sm:px-5"><p class="{{ analysis_surface.metric_label_classes() }}">How To Read</p><p class="mt-2 text-xs leading-5 text-content-secondary">Compare the slope and threshold timing across resources, but retain each panel's scope boundary. Namespace CPU, memory, and pods are demand shares against cluster capacity; namespace storage uses namespace claim capacity.</p></div>
-                    <div class="px-4 py-4 sm:px-5"><p class="{{ analysis_surface.metric_label_classes() }}">What To Do</p><p class="mt-2 text-xs leading-5 text-content-secondary">Prioritize the nearest threshold ETA, validate demand drivers, and treat Low or Unavailable Historical Signal Quality as a reason to gather evidence before committing capacity changes.</p></div>
+                    {{ analysis_surface.interpretation_callout(
+                        'How To Read',
+                        'Compare Slope And Threshold Timing Within Each Scope',
+                        "Compare the slope and threshold timing across resources, but retain each panel's scope boundary. Namespace CPU, memory, and pods are demand shares against cluster capacity; namespace storage uses namespace claim capacity.",
+                        icon='chart-no-axes-combined'
+                    ) }}
+                    {{ analysis_surface.interpretation_callout(
+                        'What To Do',
+                        'Prioritize The Nearest Threshold With Reliable Evidence',
+                        'Prioritize the nearest threshold ETA, validate demand drivers, and treat Low or Unavailable Historical Signal Quality as a reason to gather evidence before committing capacity changes.',
+                        icon='scan-search',
+                        extra='border-t border-outline-subtle lg:border-t-0'
+                    ) }}
                 </div>
             </div>
         </div>

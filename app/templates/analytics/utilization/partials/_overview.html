@@ -31,6 +31,14 @@
     </div>
     <div class="mt-4 grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(300px,0.65fr)]">
         <div class="{{ analysis_surface.nested_evidence_card_classes('px-4 py-4') }}"><div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="activity" class="h-4 w-4"></i></span><div><h3 class="text-sm font-semibold text-content-primary">Utilization Posture</h3><p class="mt-1 text-sm leading-6 text-content-secondary">The overview uses allocatable capacity as the denominator. Open Trend Analysis to confirm whether current pressure is sustained, rising, or only a short-lived peak.</p></div></div></div>
-        <div class="{{ analysis_surface.guidance_card_classes('px-4 py-4') }}"><p class="{{ analysis_surface.metric_label_classes() }}">Decision Thresholds</p><p class="mt-1 text-sm font-semibold text-content-primary">Warning at 75% · Critical above 90%</p><p class="mt-1 text-xs leading-5 text-content-muted">Validate node-level concentration before changing cluster-wide capacity.</p></div>
+        <div class="{{ analysis_surface.guidance_card_classes() }}">
+            {{ analysis_surface.interpretation_callout(
+                'Decision Thresholds',
+                'Warning At 75% · Critical Above 90%',
+                'Validate node-level concentration before changing cluster-wide capacity.',
+                icon='gauge',
+                tone='warning'
+            ) }}
+        </div>
     </div>
 {% endcall %}

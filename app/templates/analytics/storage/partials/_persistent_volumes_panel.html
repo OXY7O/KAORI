@@ -87,5 +87,13 @@
         'Volumes'
     ) }}
 
-    <section class="{{ analysis_surface.record_guidance_classes() }}"><div class="flex items-start gap-3"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"><i data-lucide="shield-check" class="h-4 w-4"></i></span><div><h4 class="{{ analysis_surface.section_title_classes() }}">Operational Guidance</h4><p class="mt-1 text-xs leading-5 text-content-secondary">Validate claim ownership and reclaim policy before deleting, reusing, or cleaning up Released and Available volumes. A reclaim policy is factual configuration, not a healthy or unhealthy state by itself.</p></div></div></section>
+    <section class="{{ analysis_surface.record_guidance_classes('p-0') }}">
+        {{ analysis_surface.interpretation_callout(
+            'Operational Guidance',
+            'Validate Ownership And Reclaim Policy Before Cleanup',
+            'Validate claim ownership and reclaim policy before deleting, reusing, or cleaning up Released and Available volumes. A reclaim policy is factual configuration, not a healthy or unhealthy state by itself.',
+            icon='shield-check',
+            compact=true
+        ) }}
+    </section>
 </div>

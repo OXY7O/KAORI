@@ -63,14 +63,19 @@
             {% endif %}
 
             <div class="{{ analysis_surface.interpretation_grid_classes() }}">
-                <section class="p-4">
-                    <h3 class="{{ analysis_surface.section_title_classes() }}">How To Read</h3>
-                    <p class="{{ analysis_surface.section_description_classes() }}">Consumption answers who uses the most. Contribution answers how much of the selected scope each consumer represents. Pressure compares usage against the relevant request, limit, cluster-capacity, or claim-capacity boundary.</p>
-                </section>
-                <section class="p-4">
-                    <h3 class="{{ analysis_surface.section_title_classes() }}">Recommended Review Path</h3>
-                    <p class="{{ analysis_surface.section_description_classes() }}">Open Consumer Records to inspect configuration and denominator evidence. Prioritize Critical rows, then Warning rows with high selected-scope contribution.</p>
-                </section>
+                {{ analysis_surface.interpretation_callout(
+                    'How To Read',
+                    'Separate Consumption, Contribution, And Pressure',
+                    'Consumption answers who uses the most. Contribution answers how much of the selected scope each consumer represents. Pressure compares usage against the relevant request, limit, cluster-capacity, or claim-capacity boundary.',
+                    icon='list-ordered'
+                ) }}
+                {{ analysis_surface.interpretation_callout(
+                    'Recommended Review Path',
+                    'Validate Configuration And Denominator Evidence',
+                    'Open Consumer Records to inspect configuration and denominator evidence. Prioritize Critical rows, then Warning rows with high selected-scope contribution.',
+                    icon='scan-search',
+                    extra='border-t border-outline-subtle lg:border-t-0'
+                ) }}
             </div>
         </div>
 

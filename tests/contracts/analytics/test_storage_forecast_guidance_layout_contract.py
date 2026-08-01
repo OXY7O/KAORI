@@ -10,6 +10,6 @@ def test_storage_snapshot_fills_lower_left_area_with_guidance_blocks():
 
 def test_forecast_decision_moves_into_interpretation_row():
     template = Path('app/templates/analytics/overview/partials/_forecast_snapshot.html').read_text()
-    assert "interpretation_grid_classes('mt-4 rounded-lg border border-outline-subtle lg:grid-cols-3')" in template
+    assert "interpretation_grid_classes('border-t border-outline-subtle lg:grid-cols-3')" in template
     assert 'Forecast Decision' in template
     assert "guidance_card_classes('mt-4 flex items-start gap-3 p-3')" not in template

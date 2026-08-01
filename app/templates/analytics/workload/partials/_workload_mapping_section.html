@@ -172,14 +172,15 @@
                                 </section>
                             </div>
 
-                            <div class="mt-3 {{ analysis_surface.record_guidance_classes() }}">
-                                <div class="flex items-start gap-3">
-                                    <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="sparkles" class="h-4 w-4"></i></span>
-                                    <div>
-                                        <h4 class="{{ analysis_surface.section_title_classes() }}">Recommended Action</h4>
-                                        <p class="mt-1 text-sm leading-6 text-content-secondary">{{ row.recommendation }} Right-sizing is active only when current and selected-window CPU and memory evidence is complete.</p>
-                                    </div>
-                                </div>
+                            <div class="mt-3 {{ analysis_surface.record_guidance_classes('p-0') }}">
+                                {{ analysis_surface.interpretation_callout(
+                                    'Recommended Action',
+                                    row.recommendation,
+                                    'Right-sizing is active only when current and selected-window CPU and memory evidence is complete.',
+                                    icon='sparkles',
+                                    tone=row.risk.tone,
+                                    compact=true
+                                ) }}
                             </div>
                         </div>
                     </article>

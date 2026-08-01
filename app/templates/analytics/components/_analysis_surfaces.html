@@ -1,3 +1,4 @@
+{% import "components/table_label.html" as table_label %}
 {#
   KAORI Analytics analysis presentation primitives.
 
@@ -103,19 +104,24 @@
 {%- endmacro %}
 
 
-{% macro interpretation_callout(label, headline, body, icon='info', tone='info', extra='') -%}
-    {% set icon_classes = 'bg-status-critical-soft text-status-critical' if tone == 'critical' else ('bg-status-warning-soft text-status-warning' if tone == 'warning' else ('bg-status-normal-soft text-status-normal' if tone == 'normal' else 'bg-kaori-soft text-kaori-primary')) %}
-    {% set headline_classes = 'text-status-critical' if tone == 'critical' else ('text-status-warning' if tone == 'warning' else ('text-status-normal' if tone == 'normal' else 'text-content-primary')) %}
-    <article class="px-4 py-4 sm:px-5 {{ extra }}">
-        <div class="flex items-start gap-3">
-            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ icon_classes }}">
-                <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
-            </span>
-            <div class="min-w-0">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">{{ label }}</p>
-                {% if headline %}<p class="mt-1 text-sm font-semibold {{ headline_classes }}">{{ headline }}</p>{% endif %}
-                <p class="mt-1 text-xs leading-5 text-content-muted">{{ body }}</p>
-            </div>
+{% macro interpretation_content(label, headline, body, icon='info', tone='info', compact=false) -%}
+    {% set resolved_tone = table_label.semantic_tone(tone)|trim %}
+    {% set icon_classes = table_label.tone_surface_classes(resolved_tone)|trim %}
+    {% set headline_classes = table_label.tone_icon_classes(resolved_tone)|trim if resolved_tone in ['critical', 'warning', 'normal'] else 'text-content-primary' %}
+    <div class="flex items-start gap-3">
+        <span class="flex {{ 'h-7 w-7 rounded-md' if compact else 'h-8 w-8 rounded-lg' }} shrink-0 items-center justify-center {{ icon_classes }}">
+            <i data-lucide="{{ icon }}" class="{{ 'h-3.5 w-3.5' if compact else 'h-4 w-4' }}"></i>
+        </span>
+        <div class="min-w-0">
+            <p class="{{ metric_label_classes() }}">{{ label }}</p>
+            {% if headline %}<p class="mt-1 text-sm font-semibold {{ headline_classes }}">{{ headline }}</p>{% endif %}
+            <p class="mt-1 text-xs leading-5 text-content-muted">{{ body }}</p>
         </div>
+    </div>
+{%- endmacro %}
+
+{% macro interpretation_callout(label, headline, body, icon='info', tone='info', extra='', compact=false) -%}
+    <article class="{{ 'px-3 py-3' if compact else 'px-4 py-4 sm:px-5' }} {{ extra }}">
+        {{ interpretation_content(label, headline, body, icon, tone, compact) }}
     </article>
 {%- endmacro %}

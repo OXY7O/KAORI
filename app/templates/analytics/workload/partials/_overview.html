@@ -72,13 +72,12 @@
         </aside>
     </div>
 
-    <div class="mt-4 {{ analysis_surface.guidance_card_classes('px-4 py-4') }}">
-        <div class="flex items-start gap-3">
-            <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="book-open-check" class="h-4 w-4"></i></span>
-            <div>
-                <h3 class="{{ analysis_surface.section_title_classes() }}">Operational Reading</h3>
-                <p class="mt-1 text-sm leading-6 text-content-secondary">Workload governance combines ResourceQuota coverage, request configuration, memory limit policy, factual QoS classification, runtime evidence coverage, and selected-window pressure. Review Critical and High-risk records before changing requests, limits, quota, or replicas.</p>
-            </div>
-        </div>
+    <div class="mt-4 {{ analysis_surface.guidance_card_classes() }}">
+        {{ analysis_surface.interpretation_callout(
+            'Operational Reading',
+            'Evaluate Governance And Runtime Evidence Together',
+            'Workload governance combines ResourceQuota coverage, request configuration, memory limit policy, factual QoS classification, runtime evidence coverage, and selected-window pressure. Review Critical and High-risk records before changing requests, limits, quota, or replicas.',
+            icon='book-open-check'
+        ) }}
     </div>
 {% endcall %}

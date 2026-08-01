@@ -49,7 +49,14 @@
             </section>
 
             <section class="{{ analysis_surface.guidance_card_classes() }}">
-                <header class="border-b border-outline-subtle px-4 py-3"><h4 class="{{ analysis_surface.section_title_classes() }}">Recommended Review Path</h4><p class="{{ analysis_surface.section_description_classes() }}">Continue into the domain that owns the supporting evidence.</p></header>
+                <div class="border-b border-outline-subtle">
+                    {{ analysis_surface.interpretation_callout(
+                        'Recommended Review Path',
+                        'Continue Into The Domain That Owns The Evidence',
+                        'Use the resource-specific review links below to validate the signal before changing capacity or workload placement.',
+                        icon='route'
+                    ) }}
+                </div>
                 <div class="{{ analysis_surface.review_path_grid_classes() }}">
                     {% for review in review_paths|default([]) %}
                         <a href="{{ review.href }}?cluster_id={{ cluster.id }}&time_range={{ selected_time_range }}" class="rounded-lg border border-outline-subtle bg-surface-card px-4 py-3 transition hover:border-kaori-primary/40 hover:bg-kaori-mist/25">

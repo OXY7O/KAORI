@@ -27,6 +27,8 @@ Use:
 - `context_panel_classes(...)`
 - `interpretation_grid_classes(...)`
 - `guidance_card_classes(...)`
+- `interpretation_callout(...)`
+- `interpretation_content(...)`
 
 The previous Overview-only surface component was removed. Do not introduce a compatibility wrapper or duplicate page-local surface macros.
 
@@ -37,6 +39,8 @@ Controls, readiness, committed snapshot metadata, charts, ranked records, pressu
 ## Interpretation and Attention
 
 Use `bg-surface-hover` only for interpretation, recommended action, review path, decision guidance, or attention. An attention strip also carries a semantic Warning or Critical cue.
+
+All operator guidance is rendered through the canonical callout contract documented in `ANALYTICS_GUIDANCE_CALLOUT_STANDARD.md`. `interpretation_callout(...)` owns the wrapper and spacing. `interpretation_content(...)` supplies the same icon-led hierarchy inside an existing record, side panel, or pressure lane.
 
 ## Resource Pressure Lane
 

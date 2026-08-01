@@ -57,7 +57,6 @@ The Styling Guide selects the correct reusable component. The Design System and 
 - `components/HEALTH_INTERPRETATION.md`
 - `components/INTEGRATION_MANAGE_WORKSPACE.md`
 - `components/INTEGRATIONS_WORKSPACE_STANDARD.md`
-  - Canonical Integrations provider registry, semantic status, runtime evidence, binding, and pagination contract.
 - `components/OPERATIONAL_ACTION_FEEDBACK.md`
 - `components/OPERATIONAL_WORKFLOW_CARD.md`
 - `components/STRUCTURED_ENTRY_EDITOR.md`
@@ -74,6 +73,8 @@ The Styling Guide selects the correct reusable component. The Design System and 
 - `patterns/KUBERNETES_STORAGE_CONFIGURATION_INVENTORY.md`
 - `patterns/KUBERNETES_CONFIGMAP_SECRET_OPERATIONS.md`
 
+- `components/ANALYTICS_GUIDANCE_CALLOUT_STANDARD.md` — canonical icon-led How To Read, What To Do, Operational Reading, and Recommended Action presentation across Kubernetes Analytics.
+
 ## Domain Specifications
 
 Domain-specific UI rules live under `docs/modules/` or the owning module README. They may define page content, columns, metrics, actions, and provider workflows, but they may not override global tokens or shared component geometry.
@@ -86,6 +87,8 @@ Domain-specific UI rules live under `docs/modules/` or the owning module README.
 - Mentions a provider, object type, route, column, metric, or domain action → module specification.
 
 ## Current Baseline Audit
+
+- `audits/ANALYTICS_GUIDANCE_CALLOUT_AUDIT_20260801.md` — full Kubernetes Analytics guidance consistency audit and disposition.
 
 - `audits/KAORI_STYLING_BASELINE_AUDIT_2026_07.md`
 - `audits/WELCOME_STYLING_AUDIT_2026_07.md`

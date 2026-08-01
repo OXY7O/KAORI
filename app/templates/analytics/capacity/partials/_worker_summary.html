@@ -33,8 +33,12 @@
         </div>
     </section>
 
-    <div class="{{ analysis_surface.guidance_card_classes('flex items-start gap-3 px-4 py-3') }}">
-        <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary"></i>
-        <p class="text-xs leading-5 text-content-secondary"><span class="font-semibold text-content-primary">Operational Reading:</span> Use this fleet baseline before evaluating quota changes or workload placement. A healthy node count does not guarantee capacity when one resource domain has low headroom.</p>
+    <div class="{{ analysis_surface.guidance_card_classes() }}">
+        {{ analysis_surface.interpretation_callout(
+            'Operational Reading',
+            'Use Ready-Worker Capacity As The Scheduling Baseline',
+            'Use this fleet baseline before evaluating quota changes or workload placement. A healthy node count does not guarantee capacity when one resource domain has low headroom.',
+            icon='server-cog'
+        ) }}
     </div>
 </div>

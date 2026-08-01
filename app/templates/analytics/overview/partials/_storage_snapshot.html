@@ -77,22 +77,28 @@
                 {% if storage.pvc_risk_count > 0 %}
                     <p class="mt-1 text-sm font-semibold text-content-primary">Review Namespace Storage Pressure</p>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Review at-risk PVCs, namespace growth, storage class expansion support, and remaining free capacity before exhaustion.</p>
-                    <div class="{{ overview_surface.guidance_card_classes('mt-4 flex items-start gap-3 p-3') }}">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>
-                        <div class="min-w-0">
-                            <p class="text-xs font-semibold text-content-primary">Recommended Action</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">Validate growth and schedule PVC expansion or cleanup for the highest-risk namespace.</p>
-                        </div>
+                    <div class="{{ overview_surface.guidance_card_classes('mt-4') }}">
+                        {{ overview_surface.interpretation_callout(
+                            'Recommended Action',
+                            'Plan PVC Expansion Or Cleanup',
+                            'Validate growth and schedule PVC expansion or cleanup for the highest-risk namespace.',
+                            icon='triangle-alert',
+                            tone='warning',
+                            compact=true
+                        ) }}
                     </div>
                 {% else %}
                     <p class="mt-1 text-sm font-semibold text-content-primary">Storage Posture Is Healthy</p>
                     <p class="mt-1 text-xs leading-5 text-content-muted">Current persistent storage posture is healthy. Continue monitoring namespace growth and forecasted demand.</p>
-                    <div class="{{ overview_surface.guidance_card_classes('mt-4 flex items-start gap-3 p-3') }}">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-normal-soft text-status-normal"><i data-lucide="circle-check" class="h-4 w-4"></i></span>
-                        <div class="min-w-0">
-                            <p class="text-xs font-semibold text-content-primary">Recommended Action</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">No immediate storage remediation is required.</p>
-                        </div>
+                    <div class="{{ overview_surface.guidance_card_classes('mt-4') }}">
+                        {{ overview_surface.interpretation_callout(
+                            'Recommended Action',
+                            'Continue Monitoring Storage Growth',
+                            'No immediate storage remediation is required.',
+                            icon='circle-check',
+                            tone='normal',
+                            compact=true
+                        ) }}
                     </div>
                 {% endif %}
             </aside>

@@ -203,15 +203,15 @@
                                     </section>
                                 </div>
 
-                                <section class="{{ analysis_surface.record_guidance_classes('mt-4') }}">
-                                    <div class="flex items-start gap-3">
-                                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary" aria-hidden="true"><i data-lucide="list-checks" class="h-4 w-4"></i></span>
-                                        <div class="min-w-0">
-                                            <h3 class="text-sm font-semibold text-content-primary">Recommended Action</h3>
-                                            <p class="mt-1 text-sm leading-6 text-content-secondary">{{ row.recommendation }}</p>
-                                            <p class="mt-2 text-xs leading-5 text-content-muted">Prioritize configuration gaps and resource-specific pressure before acting on contribution share alone.</p>
-                                        </div>
-                                    </div>
+                                <section class="{{ analysis_surface.record_guidance_classes('mt-4 p-0') }}">
+                                    {{ analysis_surface.interpretation_callout(
+                                        'Recommended Action',
+                                        row.recommendation,
+                                        'Prioritize configuration gaps and resource-specific pressure before acting on contribution share alone.',
+                                        icon='list-checks',
+                                        tone=risk.tone|default('unknown'),
+                                        compact=true
+                                    ) }}
                                 </section>
                             </div>
                         </article>

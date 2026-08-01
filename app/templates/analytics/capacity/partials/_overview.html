@@ -54,10 +54,13 @@
                 </div>
             </div>
         </div>
-        <div class="{{ analysis_surface.guidance_card_classes('px-4 py-4') }}">
-            <p class="{{ analysis_surface.metric_label_classes() }}">Measurement Standard</p>
-            <p class="mt-1 text-sm font-semibold text-content-primary">Ready Worker Allocatable Capacity</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">CPU uses Cores, memory and storage use GiB, and pod capacity uses whole Pods.</p>
+        <div class="{{ analysis_surface.guidance_card_classes() }}">
+            {{ analysis_surface.interpretation_callout(
+                'Measurement Standard',
+                'Ready Worker Allocatable Capacity',
+                'CPU uses Cores, memory and storage use GiB, and pod capacity uses whole Pods.',
+                icon='ruler'
+            ) }}
         </div>
     </div>
 {% endcall %}

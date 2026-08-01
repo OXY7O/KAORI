@@ -44,9 +44,14 @@
             </div>
         </div>
         <div class="min-w-0 lg:col-span-4">
-            <p class="{{ analysis_surface.metric_label_classes() }}">Operational Reading</p>
-            <p class="mt-1 text-xs leading-5 text-content-secondary">{{ (reason or description) if resolved_available else 'Restore committed capacity evidence before making scheduling or growth decisions for this resource.' }}</p>
-            {% if resolved_available and reason and description %}<p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>{% endif %}
+            {{ analysis_surface.interpretation_content(
+                'Operational Reading',
+                (reason or description) if resolved_available else 'Restore Capacity Evidence Before Deciding',
+                description if resolved_available and reason and description else ('Use the committed utilization, absolute consumption, and remaining headroom together.' if resolved_available else 'Restore committed capacity evidence before making scheduling or growth decisions for this resource.'),
+                icon=resolved_icon,
+                tone=resolved_tone,
+                compact=true
+            ) }}
         </div>
     </article>
 {%- endmacro %}

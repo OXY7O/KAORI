@@ -157,11 +157,15 @@
                                     <p class="mt-4 text-xs leading-5 text-content-muted">A configured zero value remains a configured key. Pressure is shown only when a valid denominator and usage observation exist.</p>
                                 </section>
                             </div>
-                            <div class="mt-3 {{ analysis_surface.record_guidance_classes() }}">
-                                <div class="flex items-start gap-3">
-                                    <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="lightbulb" class="h-4 w-4"></i></span>
-                                    <div><h4 class="{{ analysis_surface.section_title_classes() }}">Recommended Action</h4><p class="mt-1 text-sm leading-6 text-content-secondary">{{ row.recommendation }} Validate the pressure resource, runtime demand, and tenant ownership before changing quota boundaries.</p></div>
-                                </div>
+                            <div class="mt-3 {{ analysis_surface.record_guidance_classes('p-0') }}">
+                                {{ analysis_surface.interpretation_callout(
+                                    'Recommended Action',
+                                    row.recommendation,
+                                    'Validate the pressure resource, runtime demand, and tenant ownership before changing quota boundaries.',
+                                    icon='lightbulb',
+                                    tone=row.risk.tone,
+                                    compact=true
+                                ) }}
                             </div>
                         </div>
                     </article>
