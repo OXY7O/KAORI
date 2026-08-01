@@ -49,71 +49,97 @@
         {% endfor %}
     </div>
 
-    <div class="grid border-t border-outline-subtle xl:grid-cols-3 xl:divide-x xl:divide-outline-subtle">
-        <article class="px-4 py-4 sm:px-5 xl:col-span-2">
-            <div class="flex items-center justify-between gap-3">
-                <div>
-                    <h3 class="text-sm font-semibold text-content-primary">PVC Capacity Utilization</h3>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Used and free capacity across the committed persistent storage snapshot.</p>
+    <div class="border-t border-outline-subtle">
+        <div class="grid xl:grid-cols-3 xl:divide-x xl:divide-outline-subtle">
+            <article class="px-4 py-4 sm:px-5 xl:col-span-2">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-sm font-semibold text-content-primary">PVC Capacity Utilization</h3>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Used and free capacity across the committed persistent storage snapshot.</p>
+                    </div>
+                    <span class="text-xl font-semibold text-content-primary">{{ storage.used_percent }}%</span>
                 </div>
-                <span class="text-xl font-semibold text-content-primary">{{ storage.used_percent }}%</span>
-            </div>
-            {{ progress_bar.bar(used_percent, track_classes='mt-4 h-3 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full transition-all duration-500 ' ~ bar_class, label='PVC Capacity Utilization') }}
-            <div class="mt-3 grid grid-cols-2 divide-x divide-outline-subtle border-y border-outline-subtle py-3">
-                <div class="pr-4">
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Used Capacity</p>
-                    <p class="mt-1 text-sm font-semibold text-content-primary">{{ storage.used_percent }}%</p>
+                {{ progress_bar.bar(used_percent, track_classes='mt-4 h-3 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full transition-all duration-500 ' ~ bar_class, label='PVC Capacity Utilization') }}
+                <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Used Capacity</p>
+                        <p class="mt-1 text-sm font-semibold text-content-primary">{{ storage.used_percent }}%</p>
+                    </div>
+                    <div class="rounded-lg border border-outline-subtle bg-surface-card p-3">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Free Capacity</p>
+                        <p class="mt-1 text-sm font-semibold text-status-normal">{{ storage.free_percent }}%</p>
+                    </div>
                 </div>
-                <div class="pl-4">
-                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Free Capacity</p>
-                    <p class="mt-1 text-sm font-semibold text-status-normal">{{ storage.free_percent }}%</p>
-                </div>
-            </div>
-            <div class="{{ overview_surface.interpretation_grid_classes('mt-4 rounded-lg border border-outline-subtle') }}">
-                {{ overview_surface.interpretation_callout(
-                    'How To Read',
-                    'Compare Used Capacity With Remaining Free Capacity',
-                    'Requested capacity is the provisioned PVC size, while used capacity reflects current consumption inside that provisioned storage.',
-                    icon='chart-column'
-                ) }}
-                {% if storage.pvc_risk_count > 0 %}
-                    {{ overview_surface.interpretation_callout(
-                        'What To Watch',
-                        'Review Free Capacity Before Namespace Growth',
-                        'Track remaining free capacity, PVC risk count, and namespace growth before storage exhaustion or expansion is required.',
-                        icon='triangle-alert',
-                        tone='warning',
-                        extra='border-t border-outline-subtle lg:border-t-0'
-                    ) }}
-                {% else %}
-                    {{ overview_surface.interpretation_callout(
-                        'What To Watch',
-                        'Continue Monitoring Namespace Storage Growth',
-                        'Current storage posture is healthy. Monitor free capacity and namespace demand so expansion can be planned before utilization accelerates.',
-                        icon='circle-check',
-                        tone='normal',
-                        extra='border-t border-outline-subtle lg:border-t-0'
-                    ) }}
-                {% endif %}
-            </div>
-        </article>
+            </article>
 
-        <aside class="{{ overview_surface.context_panel_classes('border-t border-outline-subtle px-4 py-4 sm:px-5 xl:border-t-0') }}">
-            <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Storage Risk Context</p>
-            <p class="mt-1 text-sm font-semibold text-content-primary">Top Namespace: {{ storage.top_namespace }}</p>
+            <aside class="{{ overview_surface.context_panel_classes('border-t border-outline-subtle px-4 py-4 sm:px-5 xl:border-t-0') }}">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">Storage Risk Context</p>
+                {% if storage.pvc_risk_count > 0 %}
+                    <p class="mt-1 text-sm font-semibold text-content-primary">Review Namespace Storage Pressure</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Review at-risk PVCs, namespace growth, storage class expansion support, and remaining free capacity before exhaustion.</p>
+                    <div class="{{ overview_surface.guidance_card_classes('mt-4 flex items-start gap-3 p-3') }}">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-content-primary">Recommended Action</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Validate growth and schedule PVC expansion or cleanup for the highest-risk namespace.</p>
+                        </div>
+                    </div>
+                {% else %}
+                    <p class="mt-1 text-sm font-semibold text-content-primary">Storage Posture Is Healthy</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Current persistent storage posture is healthy. Continue monitoring namespace growth and forecasted demand.</p>
+                    <div class="{{ overview_surface.guidance_card_classes('mt-4 flex items-start gap-3 p-3') }}">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-normal-soft text-status-normal"><i data-lucide="circle-check" class="h-4 w-4"></i></span>
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold text-content-primary">Recommended Action</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">No immediate storage remediation is required.</p>
+                        </div>
+                    </div>
+                {% endif %}
+            </aside>
+        </div>
+        <div class="{{ overview_surface.interpretation_grid_classes('lg:grid-cols-3') }}">
+            {{ overview_surface.interpretation_callout(
+                'How To Read',
+                'Compare Used Capacity With Remaining Free Capacity',
+                'Requested capacity is the provisioned PVC size, while used capacity reflects current consumption inside that provisioned storage.',
+                icon='chart-column'
+            ) }}
             {% if storage.pvc_risk_count > 0 %}
-                <p class="mt-1 text-xs leading-5 text-content-muted">Review at-risk PVCs, namespace growth, storage class expansion support, and remaining free capacity before exhaustion.</p>
-                <div class="{{ overview_surface.guidance_card_classes('mt-4 flex items-start gap-3 p-3') }}">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>
-                    <div><p class="text-xs font-semibold text-content-primary">Recommended Action</p><p class="mt-1 text-xs leading-5 text-content-muted">Validate growth and schedule PVC expansion or cleanup for the highest-risk namespace.</p></div>
-                </div>
+                {{ overview_surface.interpretation_callout(
+                    'What To Watch',
+                    'Review Free Capacity Before Namespace Growth',
+                    'Track remaining free capacity, PVC risk count, and namespace growth before storage exhaustion or expansion is required.',
+                    icon='triangle-alert',
+                    tone='warning',
+                    extra='border-t border-outline-subtle lg:border-t-0'
+                ) }}
+                {{ overview_surface.interpretation_callout(
+                    'Top Namespace',
+                    storage.top_namespace,
+                    'This namespace currently represents the highest persistent storage risk concentration in the committed snapshot.',
+                    icon='folders',
+                    tone='warning',
+                    extra='border-t border-outline-subtle lg:border-t-0'
+                ) }}
             {% else %}
-                <p class="mt-1 text-xs leading-5 text-content-muted">Current persistent storage posture is healthy. Continue monitoring namespace growth and forecasted demand.</p>
-                <div class="{{ overview_surface.guidance_card_classes('mt-4 flex items-start gap-3 p-3') }}">
-                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-normal-soft text-status-normal"><i data-lucide="circle-check" class="h-4 w-4"></i></span>
-                    <div><p class="text-xs font-semibold text-content-primary">Recommended Action</p><p class="mt-1 text-xs leading-5 text-content-muted">No immediate storage remediation is required.</p></div>
-                </div>
+                {{ overview_surface.interpretation_callout(
+                    'What To Watch',
+                    'Continue Monitoring Namespace Storage Growth',
+                    'Current storage posture is healthy. Monitor free capacity and namespace demand so expansion can be planned before utilization accelerates.',
+                    icon='circle-check',
+                    tone='normal',
+                    extra='border-t border-outline-subtle lg:border-t-0'
+                ) }}
+                {{ overview_surface.interpretation_callout(
+                    'Top Namespace',
+                    storage.top_namespace,
+                    'This namespace currently has the highest observed storage footprint in the committed snapshot.',
+                    icon='folders',
+                    tone='normal',
+                    extra='border-t border-outline-subtle lg:border-t-0'
+                ) }}
             {% endif %}
-        </aside>
+        </div>
     </div>
+
 </section>

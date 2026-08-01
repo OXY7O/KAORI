@@ -74,30 +74,6 @@
                     </div>
                 </div>
             {% endif %}
-
-            <div class="{{ overview_surface.interpretation_grid_classes('mt-4 rounded-lg border border-outline-subtle lg:grid-cols-3') }}">
-                {{ overview_surface.interpretation_callout(
-                    'How To Read',
-                    'Compare Projection With Threshold Timing',
-                    'Compare the dashed projection with warning and critical thresholds. A rising line is actionable when current utilization or headroom is already constrained.',
-                    icon='chart-column'
-                ) }}
-                {{ overview_surface.interpretation_callout(
-                    'What To Do',
-                    'Validate Signal Quality Before Capacity Changes',
-                    'Validate historical signal quality, growth drivers, and the nearest threshold ETA before scheduling capacity or workload changes.',
-                    icon='scan-search',
-                    extra='border-t border-outline-subtle lg:border-t-0'
-                ) }}
-                {{ overview_surface.interpretation_callout(
-                    'Forecast Decision',
-                    forecast.risk_note,
-                    'Use the current risk posture, projected horizon, and nearest threshold direction to decide whether monitoring is enough or capacity planning should begin now.',
-                    icon='triangle-alert' if risk_count > 0 else 'circle-check',
-                    tone='warning' if risk_count > 0 else 'normal',
-                    extra='border-t border-outline-subtle lg:border-t-0'
-                ) }}
-            </div>
         </article>
 
         <aside class="{{ overview_surface.context_panel_classes('border-t border-outline-subtle px-4 py-4 sm:px-5 xl:border-t-0') }}">
@@ -130,5 +106,28 @@
             {% endif %}
 
         </aside>
+    </div>
+    <div class="{{ overview_surface.interpretation_grid_classes('border-t border-outline-subtle lg:grid-cols-3') }}">
+        {{ overview_surface.interpretation_callout(
+            'How To Read',
+            'Compare Projection With Threshold Timing',
+            'Compare the dashed projection with warning and critical thresholds. A rising line is actionable when current utilization or headroom is already constrained.',
+            icon='chart-column'
+        ) }}
+        {{ overview_surface.interpretation_callout(
+            'What To Do',
+            'Validate Signal Quality Before Capacity Changes',
+            'Validate historical signal quality, growth drivers, and the nearest threshold ETA before scheduling capacity or workload changes.',
+            icon='scan-search',
+            extra='border-t border-outline-subtle lg:border-t-0'
+        ) }}
+        {{ overview_surface.interpretation_callout(
+            'Forecast Decision',
+            forecast.risk_note,
+            'Use the current risk posture, projected horizon, and nearest threshold direction to decide whether monitoring is enough or capacity planning should begin now.',
+            icon='triangle-alert' if risk_count > 0 else 'circle-check',
+            tone='warning' if risk_count > 0 else 'normal',
+            extra='border-t border-outline-subtle lg:border-t-0'
+        ) }}
     </div>
 </section>
