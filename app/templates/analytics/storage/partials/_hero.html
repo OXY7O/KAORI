@@ -51,7 +51,7 @@
                         {{ table_label.status_label(posture_value, posture_tone, posture_icon) }}
                     </div>
                     <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                        {{ page_hero.context_metric('server', 'Highest Node Pressure', ('%.1f%%'|format(highest_usage|float)) if highest_usage is not none else 'N/A', (filesystem.highest_node|default('Node not reported', true)|truncate(30, true, '…')) if highest_usage is not none else 'Filesystem evidence unavailable', value_classes=page_hero.context_metric_value_classes(true)) }}
+                        {{ page_hero.context_metric('server', 'Highest Node Pressure', ('%.1f%%'|format(highest_usage|float)) if highest_usage is not none else 'N/A', 'Node Filesystem' if highest_usage is not none else 'No Evidence', value_classes=page_hero.context_metric_value_classes(true)) }}
                         {{ page_hero.context_metric('box', 'PVC Demand', ('%.1f%%'|format(pvc_used_percent|float)) if pvc_used_percent is not none else 'N/A', pvc.scope_label|default('All Namespaces'), value_classes=page_hero.context_metric_value_classes(true)) }}
                     </div>
                     {{ analytics_hero.manage_clusters_action() }}

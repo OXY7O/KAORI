@@ -54,7 +54,7 @@
                         {{ table_label.status_label(posture_value, posture_tone, posture_icon) }}
                     </div>
                     <div class="{{ page_hero.context_panel_metrics_classes() }}">
-                        {{ page_hero.context_metric('gauge', 'Lowest Headroom', lowest_headroom_metric_display, 'Tightest Ready-worker scheduling margin', value_classes=page_hero.context_metric_value_classes(true)) }}
+                        {{ page_hero.context_metric('gauge', 'Lowest Headroom', lowest_headroom_metric_display, 'Ready-Worker Capacity', value_classes=page_hero.context_metric_value_classes(true)) }}
                         {{ page_hero.context_metric('clock-3', 'Time Range', selected_time_range, 'Observation window in use', value_classes=page_hero.context_metric_value_classes(true)) }}
                     </div>
                     {{ analytics_hero.manage_clusters_action() }}

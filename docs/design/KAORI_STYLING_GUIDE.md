@@ -843,3 +843,5 @@ Kubernetes Analytics heroes follow the Kubernetes Inventory Overview composition
 ### Analytics Hero Posture Density
 
 Kubernetes Analytics hero posture panels follow Inventory density: status value uses the shared context title size, no description appears directly beneath the posture value, metric values stay compact, and long resource identifiers are reduced to short helper text rather than becoming the primary value.
+
+- Analytics hero metrics replace long technical identifiers with concise semantic role or scope labels; full identifiers belong in detail workspaces.

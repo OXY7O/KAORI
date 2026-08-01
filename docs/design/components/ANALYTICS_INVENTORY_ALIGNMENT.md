@@ -16,3 +16,7 @@ The data remains domain-specific. Utilization shows pressure, Capacity shows hea
 ## Compact Posture Density
 
 Analytics posture values use the same title geometry as the Inventory context card (`context_panel_title_classes`). The posture header must not include an additional description line. Domain metrics use compact values and short helpers; long dynamic identifiers remain helper text and are truncated for presentation while the detailed workspace retains the complete value.
+
+## Dynamic identity rule
+
+Analytics hero metrics must not truncate or expose long technical identifiers. The hero presents a semantic context label instead, for example `Node Filesystem`, `Ready-Worker Capacity`, `Namespace Scope`, or `Selected Cluster`. Full hostnames, object names, and technical identifiers remain available in the detailed workspace.

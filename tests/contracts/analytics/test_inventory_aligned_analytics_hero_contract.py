@@ -55,3 +55,16 @@ def test_storage_hero_uses_concise_primary_pressure_value():
     assert "'Highest Node Pressure', ('%.1f%%'" in content
     assert "truncate(30, true, '…')" in content
     assert "filesystem.highest_node ~ ' · '" not in content
+
+
+def test_storage_hero_uses_semantic_context_instead_of_truncated_node_name():
+    template = _read("app/templates/analytics/storage/partials/_hero.html")
+    assert "'Node Filesystem' if highest_usage is not none" in template
+    assert "filesystem.highest_node|default" not in template
+    assert "truncate(30" not in template
+
+
+def test_capacity_hero_uses_compact_ready_worker_context():
+    template = _read("app/templates/analytics/capacity/partials/_hero.html")
+    assert "'Ready-Worker Capacity'" in template
+    assert "Tightest Ready-worker scheduling margin" not in template
