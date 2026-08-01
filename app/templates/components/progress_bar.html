@@ -1,3 +1,4 @@
+{% import "components/table_label.html" as table_label %}
 {% macro bar(value, track_classes, fill_classes, label='Progress') -%}
     {% set safe_value = value | default(0, true) | int %}
     {% if safe_value < 0 %}{% set safe_value = 0 %}{% elif safe_value > 100 %}{% set safe_value = 100 %}{% endif %}
@@ -33,4 +34,52 @@
               value="{{ safe_value }}"
               max="100"
               aria-label="{{ label }}">{{ safe_value }}%</progress>
+{%- endmacro %}
+
+
+{% macro semantic_fill_classes(tone='info') -%}
+    {% set resolved_tone = table_label.semantic_tone(tone)|trim %}
+    {%- if resolved_tone == 'normal' -%}bg-status-normal
+    {%- elif resolved_tone == 'warning' -%}bg-status-warning
+    {%- elif resolved_tone == 'critical' -%}bg-status-critical
+    {%- elif resolved_tone == 'unknown' -%}bg-status-unknown
+    {%- elif resolved_tone == 'maintenance' -%}bg-kaori-primary
+    {%- else -%}bg-status-info
+    {%- endif -%}
+{%- endmacro %}
+
+{% macro pressure_tone(value, available=true, warning_threshold=75, critical_threshold=90) -%}
+    {% set resolved_value = value|default(0, true)|float %}
+    {%- if not available -%}unknown
+    {%- elif resolved_value > critical_threshold -%}critical
+    {%- elif resolved_value >= warning_threshold -%}warning
+    {%- else -%}normal
+    {%- endif -%}
+{%- endmacro %}
+
+{% macro headroom_tone(value, available=true, warning_threshold=40, critical_threshold=15) -%}
+    {% set resolved_value = value|default(0, true)|float %}
+    {%- if not available -%}unknown
+    {%- elif resolved_value < critical_threshold -%}critical
+    {%- elif resolved_value < warning_threshold -%}warning
+    {%- else -%}normal
+    {%- endif -%}
+{%- endmacro %}
+
+{% macro score_tone(value, available=true, warning_threshold=75, critical_threshold=50) -%}
+    {% set resolved_value = value|default(0, true)|float %}
+    {%- if not available -%}unknown
+    {%- elif resolved_value < critical_threshold -%}critical
+    {%- elif resolved_value < warning_threshold -%}warning
+    {%- else -%}normal
+    {%- endif -%}
+{%- endmacro %}
+
+{% macro semantic_bar(value, tone='info', track_classes='h-2 overflow-hidden rounded-full bg-surface-hover', label='Status', extra_fill_classes='') -%}
+    {{ bar(
+        value,
+        track_classes=track_classes,
+        fill_classes='h-full rounded-full transition-all duration-500 ' ~ semantic_fill_classes(tone)|trim ~ ' ' ~ extra_fill_classes,
+        label=label
+    ) }}
 {%- endmacro %}

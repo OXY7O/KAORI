@@ -32,7 +32,7 @@
                         </p>
                     </div>
                     {% if item.evidence_available %}
-                        {{ progress_bar.bar(item.utilization_percent, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=label ~ ' utilization') }}
+                        {{ progress_bar.semantic_bar(item.utilization_percent, item.tone, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover', label=label ~ ' capacity status') }}
                     {% else %}
                         <div class="mt-3 flex h-8 items-center rounded-md border border-dashed border-outline-strong bg-surface-hover px-3 text-xs font-medium text-content-muted">No committed capacity evidence</div>
                     {% endif %}

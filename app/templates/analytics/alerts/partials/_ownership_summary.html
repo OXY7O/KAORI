@@ -13,7 +13,7 @@
         </div>
         <div class="min-w-[10rem] rounded-lg border border-outline-subtle bg-surface-card px-3 py-2">
             <div class="flex items-center justify-between gap-3 text-xs"><span class="font-semibold text-content-secondary">Coverage Score</span><span class="font-semibold text-content-primary">{{ ownership_summary.score }}/100</span></div>
-            {{ progress_bar.bar(ownership_summary.score, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label='Ownership and runbook coverage score') }}
+            {{ progress_bar.semantic_bar(ownership_summary.score, ownership_tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label='Ownership and runbook coverage status') }}
         </div>
     </header>
 

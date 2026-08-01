@@ -52,7 +52,7 @@
                             {% for allocation_item in section['items']|default([], true) %}
                                 <div>
                                     <div class="flex items-center justify-between gap-3 text-xs"><span class="font-medium text-content-secondary">{{ allocation_item['label'] }}</span><span class="font-semibold tabular-nums text-content-primary">{{ allocation_item['display'] }}</span></div>
-                                    {{ progress_bar.bar(allocation_item['percent'], track_classes='mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=allocation_item['label']) }}
+                                    {{ progress_bar.semantic_bar(allocation_item['percent'], section_status['tone']|default('unknown'), track_classes='mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-hover', label=allocation_item['label'] ~ ' allocation status') }}
                                 </div>
                             {% endfor %}
                         </div>

@@ -24,7 +24,7 @@
                         <div>
                             <div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">Remaining Headroom</span><span class="font-semibold tabular-nums {{ 'text-content-primary' if item.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ item.headroom_display }}</span></div>
                             {% if item.evidence_available %}
-                                {{ progress_bar.bar(item.headroom, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=item.label ~ ' headroom') }}
+                                {{ progress_bar.semantic_bar(item.headroom, tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=item.label ~ ' headroom status') }}
                             {% else %}
                                 <div class="mt-2 flex h-8 items-center rounded-md border border-dashed border-outline-strong bg-surface-hover px-3 text-xs font-medium text-content-muted">Evidence unavailable</div>
                             {% endif %}

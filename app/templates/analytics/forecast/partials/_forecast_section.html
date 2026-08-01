@@ -102,7 +102,7 @@
                                         <p class="mt-1 text-3xl font-bold {{ 'text-content-primary' if item.projected_percent is not none else analysis_surface.unavailable_value_classes() }}">{{ (item.projected_percent ~ '%') if item.projected_percent is not none else 'N/A' }}</p>
                                         <p class="mt-1 text-xs leading-5 text-content-muted">{{ item.projected_display }} of {{ item.capacity_display }} · {{ item.capacity_label }}</p>
                                         {% if item.projected_percent is not none %}
-                                            {{ progress_bar.bar(item.projected_percent, track_classes='mt-4 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=item.label ~ ' projected utilization') }}
+                                            {{ progress_bar.semantic_bar(item.projected_percent, tone, track_classes='mt-4 h-2 overflow-hidden rounded-full bg-surface-hover', label=item.label ~ ' projected utilization status') }}
                                         {% endif %}
                                     </div>
                                     <dl class="grid grid-cols-2 divide-x divide-outline-subtle border-t border-outline-subtle pt-3">

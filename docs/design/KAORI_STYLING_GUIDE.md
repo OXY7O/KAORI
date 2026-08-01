@@ -849,3 +849,19 @@ Kubernetes Analytics hero posture panels follow Inventory density: status value 
 ## Analytics Reusable Presentation Ownership
 
 Kubernetes Analytics hero context panels must use the canonical macros in `components/page_hero.html`. Domain hero templates may supply semantic values, labels, status tones, and concise helper text, but must not override metric typography or recreate posture/metric geometry. Hero metadata is capped at three labels, posture metrics are capped at two, and metric values use the Inventory-aligned compact scale.
+
+
+## Semantic Status Bars
+
+Bars that communicate operational state must use the same semantic tone as the adjacent status label:
+
+- Normal / Healthy / Ready → green
+- Warning / Watch / Partial → amber
+- Critical / Failed / Blocked → red
+- Unknown / Unavailable → slate
+- Info / Pending → blue
+- Maintenance → violet
+
+This applies to utilization pressure, remaining-headroom risk, projected utilization, quota pressure, request fit, ownership coverage, incident readiness, and severity distribution.
+
+Violet remains canonical only for neutral magnitude or workflow progress that does **not** assert health, including loading indicators, materialization completion, ranked contribution share, receiver distribution, namespace distribution, and other factual composition bars.

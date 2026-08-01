@@ -24,7 +24,7 @@
                         {{ table_label.status_label('Critical' if value > 90 else ('Warning' if value >= 75 else 'Normal'), tone=tone, size='compact') }}
                     </div>
                     <div class="mt-4 flex items-end justify-between gap-3"><p class="text-2xl font-semibold tabular-nums text-content-primary">{{ '%.1f'|format(value|float) }}%</p><p class="max-w-[58%] text-right text-xs leading-5 text-content-muted">{{ helper }}</p></div>
-                    {{ progress_bar.bar(value, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=label ~ ' utilization') }}
+                    {{ progress_bar.semantic_bar(value, tone, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover', label=label ~ ' utilization status') }}
                 </article>
             {% endfor %}
         </div>

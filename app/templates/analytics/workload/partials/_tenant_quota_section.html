@@ -86,7 +86,7 @@
                                     <span class="font-semibold tabular-nums {{ 'text-content-primary' if row.quota_pressure_available else analysis_surface.unavailable_value_classes() }}">{{ row.quota_usage_percent_display }}{% if row.quota_pressure_available %}%{% endif %}</span>
                                 </div>
                                 {% if row.quota_pressure_available %}
-                                    {{ progress_bar.bar(row.quota_usage_percent, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=row.namespace ~ ' quota pressure') }}
+                                    {{ progress_bar.semantic_bar(row.quota_usage_percent, row.risk.tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.namespace ~ ' quota pressure status') }}
                                 {% else %}
                                     <div class="mt-2 rounded-md border border-dashed border-outline-strong bg-surface-hover px-3 py-2 text-xs text-content-muted">Quota usage evidence is unavailable.</div>
                                 {% endif %}

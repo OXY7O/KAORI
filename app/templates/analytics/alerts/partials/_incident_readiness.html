@@ -16,7 +16,7 @@
         </div>
         <div class="min-w-[10rem] rounded-lg border border-outline-subtle bg-surface-card px-3 py-2">
             <div class="flex items-center justify-between gap-3 text-xs"><span class="font-semibold text-content-secondary">Readiness Score</span><span class="font-semibold text-content-primary">{{ incident_readiness.score }}/100</span></div>
-            {{ progress_bar.bar(incident_readiness.score, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label='Incident readiness score') }}
+            {{ progress_bar.semantic_bar(incident_readiness.score, readiness_tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label='Incident readiness status') }}
         </div>
     </header>
 

@@ -141,7 +141,7 @@
                                             <div class="flex items-center justify-between gap-3"><dt class="text-content-muted">{{ label }}</dt><dd class="text-right font-semibold text-content-primary">{{ value }}</dd></div>
                                         {% endfor %}
                                     </dl>
-                                    {% if row.cpu_request_utilization_available %}{{ progress_bar.bar(row.cpu_request_utilization, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=row.workload ~ ' CPU request utilization') }}{% endif %}
+                                    {% if row.cpu_request_utilization_available %}{% set cpu_fit_tone = progress_bar.pressure_tone(row.cpu_request_utilization)|trim %}{{ progress_bar.semantic_bar(row.cpu_request_utilization, cpu_fit_tone, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.workload ~ ' CPU request utilization status') }}{% endif %}
                                 </section>
                                 <section class="p-4">
                                     <div class="flex items-center gap-2"><span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="memory-stick" class="h-4 w-4"></i></span><h4 class="{{ analysis_surface.section_title_classes() }}">Memory Profile</h4></div>
@@ -150,7 +150,7 @@
                                             <div class="flex items-center justify-between gap-3"><dt class="text-content-muted">{{ label }}</dt><dd class="text-right font-semibold text-content-primary">{{ value }}</dd></div>
                                         {% endfor %}
                                     </dl>
-                                    {% if row.memory_request_utilization_available %}{{ progress_bar.bar(row.memory_request_utilization, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=row.workload ~ ' memory request utilization') }}{% endif %}
+                                    {% if row.memory_request_utilization_available %}{% set memory_fit_tone = progress_bar.pressure_tone(row.memory_request_utilization)|trim %}{{ progress_bar.semantic_bar(row.memory_request_utilization, memory_fit_tone, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover', label=row.workload ~ ' memory request utilization status') }}{% endif %}
                                 </section>
                                 <section class="p-4">
                                     <div class="flex items-center justify-between gap-3">

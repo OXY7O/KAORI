@@ -34,7 +34,7 @@
                 <p class="max-w-full text-right text-xs font-semibold leading-5 {{ 'text-content-secondary' if resolved_available else analysis_surface.unavailable_value_classes() }}">{{ used_capacity if resolved_available else 'N/A' }}</p>
             </div>
             {% if resolved_available %}
-                {{ progress_bar.bar(percent, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover', fill_classes='h-full rounded-full bg-kaori-primary', label=label ~ ' utilization') }}
+                {{ progress_bar.semantic_bar(percent, resolved_tone, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover', label=label ~ ' utilization status') }}
             {% else %}
                 <div class="mt-3 flex h-8 items-center rounded-md border border-dashed border-outline-strong bg-surface-hover px-3 text-xs font-medium text-content-muted">Capacity evidence unavailable</div>
             {% endif %}
