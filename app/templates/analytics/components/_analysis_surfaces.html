@@ -101,3 +101,33 @@
 {% macro record_guidance_classes(extra='') -%}
     rounded-lg border border-outline-subtle bg-surface-hover px-4 py-4 {{ extra }}
 {%- endmacro %}
+
+{% macro interpretation_callout(label, headline, body, icon='info', tone='info', extra='') -%}
+    {% set resolved_tone = tone|default('info', true)|lower %}
+    {% set icon_classes =
+        'bg-status-critical-soft text-status-critical' if resolved_tone == 'critical'
+        else ('bg-status-warning-soft text-status-warning' if resolved_tone == 'warning'
+        else ('bg-status-normal-soft text-status-normal' if resolved_tone == 'normal'
+        else 'bg-kaori-soft text-kaori-primary'))
+    %}
+    {% set headline_classes =
+        'text-status-critical' if resolved_tone == 'critical'
+        else ('text-status-warning' if resolved_tone == 'warning'
+        else ('text-status-normal' if resolved_tone == 'normal'
+        else 'text-content-primary'))
+    %}
+    <article class="px-4 py-4 sm:px-5 {{ extra }}">
+        <div class="flex items-start gap-3">
+            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ icon_classes }}" aria-hidden="true">
+                <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
+            </span>
+            <div class="min-w-0">
+                <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-content-muted">{{ label }}</p>
+                {% if headline %}
+                    <p class="mt-1 text-sm font-semibold {{ headline_classes }}">{{ headline }}</p>
+                {% endif %}
+                <p class="mt-1 text-xs leading-5 text-content-muted">{{ body }}</p>
+            </div>
+        </div>
+    </article>
+{%- endmacro %}
