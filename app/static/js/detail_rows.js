@@ -166,8 +166,7 @@
     let activeOpener = null
     let activeDetailId = null
     let lockedMain = null
-    let previousMainOverflow = ''
-    let previousMainScrollbarGutter = ''
+    let previousMainOverflowY = ''
     let lockedMainScrollTop = 0
 
     function host() {
@@ -199,24 +198,21 @@
     }
 
     function lockBackground() {
+        if (lockedMain) return
         lockedMain = document.querySelector('main')
         if (!lockedMain) return
-        previousMainOverflow = lockedMain.style.overflow
-        previousMainScrollbarGutter = lockedMain.style.scrollbarGutter
+        previousMainOverflowY = lockedMain.style.overflowY
         lockedMainScrollTop = lockedMain.scrollTop
-        lockedMain.style.scrollbarGutter = 'stable'
-        lockedMain.style.overflow = 'hidden'
+        lockedMain.style.overflowY = 'hidden'
         lockedMain.scrollTop = lockedMainScrollTop
     }
 
     function unlockBackground() {
         if (!lockedMain) return
-        lockedMain.style.overflow = previousMainOverflow
-        lockedMain.style.scrollbarGutter = previousMainScrollbarGutter
+        lockedMain.style.overflowY = previousMainOverflowY
         lockedMain.scrollTop = lockedMainScrollTop
         lockedMain = null
-        previousMainOverflow = ''
-        previousMainScrollbarGutter = ''
+        previousMainOverflowY = ''
         lockedMainScrollTop = 0
     }
 
@@ -366,7 +362,7 @@
         }
     }
 
-    function openFromButton(button, historyMode = 'push') {
+    function openFromButton(button, historyMode = 'replace') {
         const modalHost = host()
         if (!modalHost) return
         const detailId = button.dataset.detailId || ''
@@ -415,10 +411,7 @@
         elements.error.classList.add('hidden')
         elements.loading.classList.remove('hidden')
 
-        if (updateHistory) {
-            if (history.state?.kaoriResourceDetail && history.state?.detailSession === SESSION_TOKEN) history.back()
-            else updateUrl(null, 'replace')
-        }
+        if (updateHistory) updateUrl(null, 'replace')
 
         if (activeOpener?.isConnected) activeOpener.focus()
         activeOpener = null
@@ -434,7 +427,7 @@
         const toggle = element?.closest(TOGGLE_SELECTOR)
         if (toggle) {
             event.preventDefault()
-            openFromButton(toggle, 'push')
+            openFromButton(toggle, 'replace')
             return
         }
 
@@ -451,6 +444,7 @@
 
         if (event.key === 'Escape') {
             event.preventDefault()
+            event.stopPropagation()
             closeModal()
             return
         }

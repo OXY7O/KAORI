@@ -34,7 +34,9 @@ def test_recommendations_pagination_matches_kaori_contract():
     service = read('app/intelligence/service.py')
     assert 'Showing <span' in pagination
     assert '>Rows</label>' in pagination
-    assert pagination.index('Showing <span') < pagination.index('>Rows</label>')
+    assert pagination.index('>Rows</label>') < pagination.index('Showing <span')
+    assert 'name="page" value="{{ pagination.page }}"' in pagination
+    assert 'hx-push-url="true"' in pagination
     assert 'data-kaori-auto-submit' in pagination
     assert 'innerHTML show:none focus-scroll:false' in pagination
     assert '>Apply</button>' not in pagination
