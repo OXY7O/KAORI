@@ -81,7 +81,7 @@
     }
 
     const typeUi = {
-        cluster: { icon: 'server-cog', domain: 'scope' },
+        cluster: { icon: 'server', domain: 'scope' },
         namespace: { icon: 'layers-3', domain: 'scope' },
         node: { icon: 'server', domain: 'compute' },
         workload: { icon: 'boxes', domain: 'compute' },
@@ -808,10 +808,14 @@
     const renderValueRows = (container, fields) => {
         container?.replaceChildren()
         fields.forEach((field) => {
-            const row = cloneTemplate('topology-field-row-template')
+            const normalizedLabel = String(field.label || '').trim().toLowerCase()
+            const templateId = normalizedLabel === 'api server'
+                ? 'topology-stacked-field-row-template'
+                : 'topology-field-row-template'
+            const row = cloneTemplate(templateId)
             if (!row) return
             text(row, '[data-field-label]', field.label)
-            const displayValue = String(field.label || '').trim().toLowerCase() === 'status'
+            const displayValue = normalizedLabel === 'status'
                 ? titleCaseText(field.value)
                 : field.value
             text(row, '[data-field-value]', displayValue || 'Not Reported')

@@ -15,11 +15,12 @@
 {% macro inline_detail_shell_classes() -%}
     overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm
 {%- endmacro %}
-{% macro detail_row(label, value='-', break_all=False) -%}
+{% macro detail_row(label, value='-', break_all=False, nowrap=False) -%}
     {% set display_value = value if value not in [None, ''] else '-' %}
+    {% set value_wrap_classes = 'whitespace-nowrap' if nowrap else ('break-all' if break_all else 'break-words') %}
     <div class="grid min-w-0 gap-1 sm:grid-cols-[minmax(8rem,0.38fr)_minmax(0,1fr)] sm:gap-3">
         <span class="min-w-0 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ label }}</span>
-        <span class="min-w-0 {{ 'break-all' if break_all else 'break-words' }} text-left text-xs font-medium leading-5 text-content-primary [overflow-wrap:anywhere] sm:text-right"
+        <span class="min-w-0 {{ value_wrap_classes }} text-left text-xs font-medium leading-5 text-content-primary [overflow-wrap:anywhere] sm:text-right"
               title="{{ display_value }}">{{ display_value }}</span>
     </div>
 {%- endmacro %}

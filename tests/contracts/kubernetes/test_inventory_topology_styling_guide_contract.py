@@ -135,3 +135,15 @@ def test_topology_reference_pattern_is_documented() -> None:
     assert 'Renderer failure must not remove access' in pattern or 'Renderer errors preserve Resource List access' in pattern
     assert 'Approved package' in audit
     assert 'Kubernetes Topology Reference Pattern' in inventory_readme
+
+
+def test_topology_cluster_icon_and_api_server_layout_are_readable() -> None:
+    inspector = _read('app/templates/inventory/topology/partials/_inspector_templates.html')
+    script = _read('app/static/js/inventory/topology.js')
+
+    assert "cluster: { icon: 'server', domain: 'scope' }" in script
+    assert "cluster: { icon: 'server-cog', domain: 'scope' }" not in script
+    assert 'topology-stacked-field-row-template' in inspector
+    assert "normalizedLabel === 'api server'" in script
+    assert "? 'topology-stacked-field-row-template'" in script
+    assert '[overflow-wrap:anywhere]' in inspector

@@ -108,7 +108,7 @@ def test_snapshot_source_uses_compact_non_wrapping_value() -> None:
 
     assert "'snapshot_source': 'Committed Snapshot'" in backend
     assert "detail_row('Snapshot Source', cluster.snapshot_source)" in content
-    assert "{% macro detail_row(label, value='-', break_all=False) -%}" in details_macro
+    assert "{% macro detail_row(label, value='-', break_all=False, nowrap=False) -%}" in details_macro
     assert "sm:text-right" in details_macro
 
 
@@ -119,3 +119,16 @@ def test_inventory_signals_use_full_width_stacked_callouts() -> None:
     assert '<div class="grid gap-3">' in signals_section
     assert 'sm:grid-cols-2' not in signals_section
     assert "extra_classes='w-full'" in signals_section
+
+
+def test_snapshot_last_collected_uses_numeric_non_wrapping_datetime() -> None:
+    content = read('app/templates/inventory/overview/partials/_resources_by_cluster_content.html')
+    details_macro = read('app/templates/components/details/_detail_content.html')
+    presentation = read('app/bootstrap/presentation.py')
+
+    assert "user_datetime(date_format='day_month_numeric')" in content
+    assert "detail_row('Last Collected'" in content
+    assert "nowrap=True" in content
+    assert "value_wrap_classes = 'whitespace-nowrap' if nowrap" in details_macro
+    assert "date_format: str | None = None" in presentation
+    assert "date_format=date_format or preferences['date_format']" in presentation

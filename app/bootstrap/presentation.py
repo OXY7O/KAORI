@@ -94,13 +94,15 @@ def register_presentation(app: Flask) -> None:
         empty: str = '-',
         include_seconds: bool = False,
         include_timezone: bool = True,
+        date_format: str | None = None,
+        time_format: str | None = None,
     ) -> str:
         preferences = _user_time_preferences()
         return format_user_datetime(
             value,
             preferences['timezone_name'],
-            date_format=preferences['date_format'],
-            time_format=preferences['time_format'],
+            date_format=date_format or preferences['date_format'],
+            time_format=time_format or preferences['time_format'],
             locale=preferences['locale'],
             include_seconds=include_seconds,
             include_timezone=include_timezone,

@@ -58,7 +58,7 @@
                     <a href="{{ url_for('welcome.index') }}"
                        title="Welcome"
                        aria-label="Welcome"
-                       class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if request.endpoint == 'welcome.index' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm font-semibold transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2">
+                       class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if request.endpoint == 'welcome.index' else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 py-2 text-base font-semibold transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2">
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ 'bg-white/15 text-white' if request.endpoint == 'welcome.index' else 'bg-white/5 text-brand-foreground-muted group-hover:bg-white/10 group-hover:text-white' }} transition">
                             <i data-lucide="sparkles" class="h-4 w-4"></i>
                         </span>
