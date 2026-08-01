@@ -168,6 +168,7 @@
     let lockedMain = null
     let previousMainOverflowY = ''
     let lockedMainScrollTop = 0
+    let closeTimer = null
 
     function host() {
         return document.querySelector(HOST_SELECTOR)
@@ -216,12 +217,56 @@
         lockedMainScrollTop = 0
     }
 
-    function setModalVisible(modalHost, visible) {
-        modalHost.classList.toggle('hidden', !visible)
-        modalHost.classList.toggle('flex', visible)
-        modalHost.setAttribute('aria-hidden', visible ? 'false' : 'true')
-        if (visible) lockBackground()
-        else unlockBackground()
+    function isDrawer(modalHost) {
+        return modalHost.dataset.resourceDetailPresentation === 'drawer'
+    }
+
+    function hideHost(modalHost) {
+        modalHost.classList.add('hidden')
+        modalHost.classList.remove('flex', 'pointer-events-none')
+        modalHost.setAttribute('aria-hidden', 'true')
+        unlockBackground()
+    }
+
+    function setModalVisible(modalHost, visible, afterHidden = null) {
+        const elements = modalElements(modalHost)
+        const drawer = isDrawer(modalHost)
+
+        if (closeTimer) {
+            window.clearTimeout(closeTimer)
+            closeTimer = null
+        }
+
+        if (visible) {
+            modalHost.classList.remove('hidden', 'pointer-events-none')
+            modalHost.classList.add('flex')
+            modalHost.setAttribute('aria-hidden', 'false')
+
+            if (drawer) {
+                unlockBackground()
+                elements.dialog?.classList.add('translate-x-full')
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => elements.dialog?.classList.remove('translate-x-full'))
+                })
+            } else {
+                lockBackground()
+            }
+            return
+        }
+
+        if (drawer && elements.dialog) {
+            modalHost.classList.add('pointer-events-none')
+            elements.dialog.classList.add('translate-x-full')
+            closeTimer = window.setTimeout(() => {
+                hideHost(modalHost)
+                closeTimer = null
+                if (afterHidden) afterHidden()
+            }, 200)
+            return
+        }
+
+        hideHost(modalHost)
+        if (afterHidden) afterHidden()
     }
 
     function setLoading(elements) {
@@ -243,17 +288,18 @@
         refreshIcons()
     }
 
-    function setGenericHeader(elements, type, name, contextLabel = 'Inventory') {
+    function setGenericHeader(elements, type, name, contextLabel = 'Inventory', presentation = 'modal') {
         if (!elements.header) return
+        const icon = presentation === 'drawer' ? 'panel-right-open' : 'panel-top-open'
         elements.header.innerHTML = `
             <div class="flex min-w-0 items-start gap-3">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary" aria-hidden="true">
-                    <i data-lucide="panel-top-open" class="h-5 w-5"></i>
+                    <i data-lucide="${icon}" class="h-5 w-5"></i>
                 </span>
                 <div class="min-w-0">
-                    <p class="text-xs font-semibold text-kaori-primary">${escapeHtml(contextLabel)} Details</p>
-                    <h2 id="resource-detail-modal-title" class="mt-0.5 break-words text-lg font-semibold text-content-primary [overflow-wrap:anywhere]">${escapeHtml(name || ((type || 'Resource') + ' Details'))}</h2>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Loading ${escapeHtml(String(contextLabel || 'Resource').toLowerCase())} evidence.</p>
+                    <p class="text-xs font-semibold leading-5 text-kaori-primary">${escapeHtml(contextLabel)} Details</p>
+                    <h2 id="resource-detail-modal-title" class="break-words text-lg font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">${escapeHtml(name || ((type || 'Resource') + ' Details'))}</h2>
+                    <p class="mt-1 text-sm leading-5 text-content-muted">Loading ${escapeHtml(String(contextLabel || 'Resource').toLowerCase())} evidence.</p>
                 </div>
             </div>
         `
@@ -334,7 +380,8 @@
             elements,
             type || modalHost.dataset.resourceType,
             name,
-            modalHost.dataset.detailContextLabel || 'Inventory'
+            modalHost.dataset.detailContextLabel || 'Inventory',
+            modalHost.dataset.resourceDetailPresentation || 'modal'
         )
         setLoading(elements)
         refreshIcons()
@@ -402,19 +449,22 @@
         if (activeController) activeController.abort()
         activeController = null
         activeDetailId = null
-        setModalVisible(modalHost, false)
-
-        const elements = modalElements(modalHost)
-        elements.content.innerHTML = ''
-        elements.summary.innerHTML = ''
-        elements.summary.classList.add('hidden')
-        elements.error.classList.add('hidden')
-        elements.loading.classList.remove('hidden')
 
         if (updateHistory) updateUrl(null, 'replace')
 
-        if (activeOpener?.isConnected) activeOpener.focus()
+        const opener = activeOpener
         activeOpener = null
+        setModalVisible(modalHost, false, () => {
+            const elements = modalElements(modalHost)
+            if (elements.content) elements.content.innerHTML = ''
+            if (elements.summary) {
+                elements.summary.innerHTML = ''
+                elements.summary.classList.add('hidden')
+            }
+            elements.error?.classList.add('hidden')
+            elements.loading?.classList.remove('hidden')
+            if (opener?.isConnected) opener.focus()
+        })
     }
 
     function focusableElements(dialog) {

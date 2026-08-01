@@ -39,11 +39,11 @@
     {% endcall %}
 </div>
 
-{{ resource_detail_modal.host(
+{{ resource_detail_modal.drawer_host(
     'Recommendation',
     url_for('intelligence.recommendation_details', recommendation_key='0'),
     footer_text='Recommendation evidence comes from the current committed KAORI data boundary.',
     context_label='Intelligence',
-    dialog_max_width='max-w-5xl'
+    dialog_max_width='max-w-2xl'
 ) }}
 {% endblock dashboard_content %}

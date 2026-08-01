@@ -18,13 +18,13 @@ def test_recommendations_filters_refresh_only_results_without_apply_button():
     assert 'Reset' in filters
 
 
-def test_recommendations_use_modal_details_not_inline_expandables():
+def test_recommendations_use_drawer_details_not_inline_expandables():
     records = read('app/templates/intelligence/partials/_recommendation_records.html')
     page = read('app/templates/intelligence/recommendations.html')
     routes = read('app/intelligence/routes.py')
     assert 'resource_detail_modal.detail_button' in records
     assert '<details' not in records
-    assert 'resource_detail_modal.host(' in page
+    assert 'resource_detail_modal.drawer_host(' in page
     assert "def recommendation_details(" in routes
     assert "_recommendation_detail_content.html" in routes
 
@@ -34,8 +34,9 @@ def test_recommendations_pagination_matches_kaori_contract():
     service = read('app/intelligence/service.py')
     assert 'Showing <span' in pagination
     assert '>Rows</label>' in pagination
-    assert pagination.index('>Rows</label>') < pagination.index('Showing <span')
-    assert 'name="page" value="{{ pagination.page }}"' in pagination
+    assert pagination.index('Showing <span') < pagination.index('>Rows</label>')
+    assert "{{ 'Recommendation' if pagination.total_items == 1 else 'Recommendations' }}" in pagination
+    assert 'name="page" value="1"' in pagination
     assert 'hx-push-url="true"' in pagination
     assert 'data-kaori-auto-submit' in pagination
     assert 'innerHTML show:none focus-scroll:false' in pagination

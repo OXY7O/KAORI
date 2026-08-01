@@ -455,66 +455,62 @@ def _build_fix_steps(item: dict[str, Any]) -> list[str]:
     source_kind = str(item.get('source_kind') or '')
     category = str(item.get('category') or '')
     action = str(item.get('recommended_action') or '').strip()
-    steps: list[str] = []
-
-    if action:
-        steps.append(action)
 
     if source_kind == 'pod':
-        steps.extend(
-            [
-                'Open Pod Inventory or the related workload page and inspect events, restarts, image pull state, probes, and node placement.',
-                'Apply the manifest/configuration fix, restart or roll out the affected workload, then resync inventory to confirm the finding is cleared.',
-            ]
-        )
+        steps = [
+            'Review the committed Pod finding, affected namespace, workload ownership, restart count, phase, and related inventory evidence.',
+            'Open Pod Inventory or the related workload page and validate live events, image pull state, probes, scheduling constraints, restarts, and node placement.',
+            'Apply the approved manifest or configuration correction, then restart or safely roll out the affected workload.',
+            'Resync Pod inventory and confirm the workload is healthy and this recommendation no longer appears.',
+        ]
     elif source_kind == 'node':
-        steps.extend(
-            [
-                'Open Node Inventory and check kubelet, container runtime, disk pressure, memory pressure, network reachability, and recent node events.',
-                'Recover or cordon/drain the node as needed, then resync inventory and validate schedulable capacity.',
-            ]
-        )
+        steps = [
+            'Review the committed Node finding, pressure conditions, schedulability, capacity, and affected workload context.',
+            'Open Node Inventory and validate kubelet, container runtime, disk pressure, memory pressure, network reachability, and recent node events.',
+            'Recover the node or cordon and drain it safely before applying the required infrastructure correction.',
+            'Resync Node inventory and confirm healthy conditions, schedulable capacity, and recommendation clearance.',
+        ]
     elif source_kind == 'persistent_volume':
-        steps.extend(
-            [
-                'Open Storage Analysis and review PVC/PV status, storage class, provisioner health, and the affected namespace/workload dependency.',
-                'Fix binding/provisioning or expand/clean storage, then resync inventory and rerun the recommendation filter.',
-            ]
-        )
+        steps = [
+            'Review the committed PVC/PV finding, namespace, storage class, binding state, capacity, and affected workload dependency.',
+            'Open Storage Analysis and validate PVC/PV events, provisioner health, access modes, quota, and current attachment or mount state.',
+            'Correct binding or provisioning, expand capacity, or remove the blocking storage condition using the approved change path.',
+            'Resync storage inventory and confirm the claim is healthy and this recommendation no longer appears.',
+        ]
     elif source_kind == 'tls_secret':
-        steps.extend(
-            [
-                'Open Governance > K8s Operation > Kubernetes TLS Secret and review the affected Secret, issuer, SAN coverage, expiry, and Ingress usage mapping.',
-                'Use TLS Secret Update to upload the renewed tls.crt and tls.key, validate the selected existing Secret targets with HTMX preview, then update only the approved targets.',
-                'Resync TLS inventory and validate the affected Ingress endpoints after the update completes.',
-            ]
-        )
+        steps = [
+            'Review the committed TLS Secret finding, issuer, SAN coverage, expiry, namespace ownership, and Ingress usage mapping.',
+            'Open Governance > K8s Operation > Kubernetes TLS Secret and validate the replacement certificate, private key match, selected existing Secret targets, and HTMX preview.',
+            'Upload the renewed tls.crt and tls.key, then update only the approved existing Kubernetes TLS Secret targets.',
+            'Resync TLS inventory, validate the affected Ingress endpoint certificate chain, and confirm the recommendation is cleared.',
+        ]
     elif source_kind == 'workload':
-        steps.extend(
-            [
-                'Open Workload Analysis and review requests, limits, rollout status, container images, and namespace policy context.',
-                'Patch the workload manifest, roll out safely, then resync inventory to verify the rule no longer triggers.',
-            ]
-        )
+        steps = [
+            'Review the committed workload finding, controller type, namespace, rollout state, replica health, and affected container context.',
+            'Open Workload Analysis and validate requests, limits, rollout conditions, images, probes, events, and namespace policy constraints.',
+            'Patch the approved workload manifest and complete a controlled rollout of the affected workload.',
+            'Resync workload inventory and confirm healthy rollout state and recommendation clearance.',
+        ]
     elif category == 'capacity':
-        steps.extend(
-            [
-                'Review capacity trend and top consumers before changing limits, quotas, or infrastructure allocation.',
-                'Apply the capacity action and validate the result through analytics and generated report context.',
-            ]
-        )
+        steps = [
+            'Review the committed capacity finding, selected scope, utilization trend, saturation point, and top-consumer evidence.',
+            'Validate the current Prometheus source, time range, workload demand, quotas, limits, and infrastructure allocation before changing capacity.',
+            'Apply the approved capacity, quota, limit, or infrastructure allocation change.',
+            'Refresh analytics and generated report context, then confirm the risk state and recommendation are cleared.',
+        ]
     else:
-        steps.extend(
-            [
-                'Open the related inventory or analytics page shown under Visibility and validate the affected resource context.',
-                'Apply the recommended remediation, then resync data sources to confirm the recommendation is resolved.',
-            ]
-        )
+        steps = [
+            'Review the committed recommendation evidence, affected scope, resource identifiers, and rule condition.',
+            'Open the related inventory, analytics, governance, or integration page and validate the current live resource state and ownership.',
+            action or 'Apply the recommended remediation through the approved operational change path.',
+            'Resync the relevant KAORI data source and confirm the condition is resolved and the recommendation no longer appears.',
+        ]
 
     deduped: list[str] = []
     for step in steps:
-        if step and step not in deduped:
-            deduped.append(step)
+        normalized = str(step or '').strip()
+        if normalized and normalized not in deduped:
+            deduped.append(normalized)
     return deduped[:4]
 
 
