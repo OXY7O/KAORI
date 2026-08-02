@@ -83,14 +83,14 @@ def build_analytics_overview_presentation(
 
     common = {
         'page_count': len(_ANALYTICS_PAGE_TITLES),
-        'presentation_version': 'v6.15-analytical-publication',
+        'presentation_version': 'v6.16-layout-audit',
         'layout_contract': {
             'paper': 'A4 Portrait',
             'section_page_breaks': True,
             'truncate_identities': True,
             'identity_policy': 'top-n-summarized',
             'status_style': 'plain-colored-text',
-            'visual_style': 'analytical-publication',
+            'visual_style': 'analytical-publication-v6.16',
         },
         'report_id': report_id,
         'report_name': report_name,
@@ -888,7 +888,12 @@ def _forecast_svg(series: Sequence[Mapping[str, Any]]) -> str:
     )
     projected_y = _chart_y(projected)
     latest_y = _chart_y(latest)
-    projected_label_y = max(12.0, projected_y - 8.0)
+    # Keep the terminal value label away from the warning/critical threshold labels.
+    if 66.0 <= projected <= 74.0 or 81.0 <= projected <= 89.0:
+        projected_label_y = min(178.0, projected_y + 16.0)
+    else:
+        projected_label_y = max(14.0, projected_y - 9.0)
+    threshold_label_x = min(610.0, forecast_start_x + 165.0)
 
     return f'''<svg class="ao-chart-svg chart" viewBox="0 0 800 230" role="img" aria-label="{label} demand forecast">
         <rect x="{forecast_start_x:.1f}" y="18" width="{748-forecast_start_x:.1f}" height="164" fill="#faf7ff"/>
@@ -903,12 +908,12 @@ def _forecast_svg(series: Sequence[Mapping[str, Any]]) -> str:
         <line x1="{forecast_start_x:.1f}" x2="{forecast_start_x:.1f}" y1="18" y2="182" stroke="#a78bfa" stroke-width="1.1" stroke-dasharray="4 4"/>
         <g fill="#64748b" font-size="10"><text x="24" y="186">0%</text><text x="24" y="147">25%</text>
             <text x="24" y="108">50%</text><text x="24" y="69">70%</text><text x="24" y="43">85%</text></g>
-        <text x="738" y="60" text-anchor="end" fill="#b45309" font-size="9.5">Warning 70%</text>
-        <text x="738" y="34" text-anchor="end" fill="#b91c1c" font-size="9.5">Critical 85%</text>
+        <text x="{threshold_label_x:.1f}" y="60" text-anchor="start" fill="#b45309" font-size="9.5">Warning 70%</text>
+        <text x="{threshold_label_x:.1f}" y="34" text-anchor="start" fill="#b91c1c" font-size="9.5">Critical 85%</text>
         {historical_line}{forecast_line}
         <circle cx="{forecast_start_x:.1f}" cy="{latest_y:.1f}" r="3.4" fill="#7c3aed"/>
         <circle cx="742" cy="{projected_y:.1f}" r="3.6" fill="#8b5cf6"/>
-        <text x="716" y="{projected_label_y:.1f}" text-anchor="end" fill="#5b21b6" font-size="10.5" font-weight="700">{projected:.1f}%</text>
+        <text x="730" y="{projected_label_y:.1f}" text-anchor="end" fill="#5b21b6" font-size="10.5" font-weight="700">{projected:.1f}%</text>
         <g fill="#64748b" font-size="9.2" text-anchor="middle"><text x="68" y="207">Start</text>
             <text x="284" y="207">Historical</text><text x="536" y="207">Near-term</text><text x="742" y="207">Horizon</text></g>
         <line x1="80" x2="108" y1="223" y2="223" stroke="#7c3aed" stroke-width="2.5"/>

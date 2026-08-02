@@ -14,7 +14,7 @@ from app.reports.export.html_pdf.builder import build_report_document
 @dataclass
 class AnalyticsOverviewReportStub:
     id: int = 115
-    name: str = 'Analytics Overview V6.15 Validation'
+    name: str = 'Analytics Overview V6.16 Validation'
     report_type: str = 'analytics_overview'
     report_domain: str = 'kubernetes'
     source_kind: str = 'kubernetes'
@@ -139,20 +139,20 @@ def _rendered_html() -> tuple[object, str, Path]:
     return document, rendered_html, project_root
 
 
-def test_analytics_overview_uses_v615_analytical_publication_and_12_pages() -> None:
+def test_analytics_overview_uses_v616_layout_audit_and_12_pages() -> None:
     document, rendered_html, _ = _rendered_html()
 
     assert document.template_name == 'reports/pdf/analytics_overview.html'
     assert document.metadata['selected_section_keys'] == list(ANALYTICS_OVERVIEW_SECTION_KEYS)
     assert document.presentation['page_count'] == 12
-    assert document.presentation['presentation_version'] == 'v6.15-analytical-publication'
+    assert document.presentation['presentation_version'] == 'v6.16-layout-audit'
     assert document.presentation['layout_contract'] == {
         'paper': 'A4 Portrait',
         'section_page_breaks': True,
         'truncate_identities': True,
         'identity_policy': 'top-n-summarized',
         'status_style': 'plain-colored-text',
-        'visual_style': 'analytical-publication',
+        'visual_style': 'analytical-publication-v6.16',
     }
     assert rendered_html.count('<section class="page') == 12
 
@@ -251,3 +251,27 @@ def test_analytics_overview_css_locks_page_footer_and_table_overflow() -> None:
     assert 'overflow-wrap:anywhere' in compact
     assert 'table-layout:fixed' in compact
     assert 'text-overflow:ellipsis' not in compact
+
+
+def test_v616_overview_layout_uses_stacked_long_form_sections() -> None:
+    _, rendered_html, _ = _rendered_html()
+
+    assert 'consumer-bars-stacked' in rendered_html
+    assert 'Resource Mix in Scope' in rendered_html
+    assert 'Share of in-scope pods represented by each cluster' in rendered_html
+    assert 'stacked-sections freshness-notes' in rendered_html
+    assert 'stacked-sections recommendation-detail' in rendered_html
+    assert 'stacked-sections methodology-secondary' in rendered_html
+
+
+def test_v616_css_has_consistent_vertical_rhythm_and_safe_fractional_grids() -> None:
+    _, _, project_root = _rendered_html()
+    stylesheet = (
+        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
+    ).read_text()
+
+    assert 'margin-bottom:3.2mm' in stylesheet
+    assert 'consumer-bars-stacked' in stylesheet
+    assert 'minmax(0,.44fr)' in stylesheet
+    assert 'minmax(0,.56fr)' in stylesheet
+    assert 'grid-template-columns:44% 56%' not in stylesheet
