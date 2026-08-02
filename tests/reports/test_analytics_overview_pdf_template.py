@@ -145,7 +145,7 @@ def test_analytics_overview_uses_v616_layout_audit_and_12_pages() -> None:
     assert document.template_name == 'reports/pdf/analytics_overview.html'
     assert document.metadata['selected_section_keys'] == list(ANALYTICS_OVERVIEW_SECTION_KEYS)
     assert document.presentation['page_count'] == 12
-    assert document.presentation['presentation_version'] == 'v6.16-layout-audit'
+    assert document.presentation['presentation_version'] == 'v6.17-spacing-rhythm-audit'
     assert document.presentation['layout_contract'] == {
         'paper': 'A4 Portrait',
         'section_page_breaks': True,
@@ -245,6 +245,8 @@ def test_analytics_overview_css_locks_page_footer_and_table_overflow() -> None:
     compact = stylesheet.replace(' ', '')
 
     assert '@page' in stylesheet
+    assert '@bottom-right { content: none; }' in stylesheet
+    assert '@bottom-left { content: none; }' in stylesheet
     assert 'height:297mm' in compact
     assert 'page-break-after:always' in compact
     assert 'bottom:4.5mm' in compact
@@ -253,7 +255,7 @@ def test_analytics_overview_css_locks_page_footer_and_table_overflow() -> None:
     assert 'text-overflow:ellipsis' not in compact
 
 
-def test_v616_overview_layout_uses_stacked_long_form_sections() -> None:
+def test_v617_overview_layout_uses_stacked_long_form_sections() -> None:
     _, rendered_html, _ = _rendered_html()
 
     assert 'consumer-bars-stacked' in rendered_html
@@ -264,13 +266,13 @@ def test_v616_overview_layout_uses_stacked_long_form_sections() -> None:
     assert 'stacked-sections methodology-secondary' in rendered_html
 
 
-def test_v616_css_has_consistent_vertical_rhythm_and_safe_fractional_grids() -> None:
+def test_v617_css_has_consistent_vertical_rhythm_and_safe_fractional_grids() -> None:
     _, _, project_root = _rendered_html()
     stylesheet = (
         project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
     ).read_text()
 
-    assert 'margin-bottom:3.2mm' in stylesheet
+    assert 'margin:0 0 5mm' in stylesheet
     assert 'consumer-bars-stacked' in stylesheet
     assert 'minmax(0,.44fr)' in stylesheet
     assert 'minmax(0,.56fr)' in stylesheet

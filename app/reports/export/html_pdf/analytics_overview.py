@@ -83,7 +83,7 @@ def build_analytics_overview_presentation(
 
     common = {
         'page_count': len(_ANALYTICS_PAGE_TITLES),
-        'presentation_version': 'v6.16-layout-audit',
+        'presentation_version': 'v6.17-spacing-rhythm-audit',
         'layout_contract': {
             'paper': 'A4 Portrait',
             'section_page_breaks': True,
