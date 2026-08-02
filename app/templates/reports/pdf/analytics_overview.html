@@ -4,11 +4,12 @@
   <meta charset="utf-8">
   <title>{{ document.report_name }}</title>
 </head>
-<body class="ao-v618">
+<body class="ao-v618 kaori-reporting-standard">
+{% import "reports/pdf/components/_reporting_standard.html" as rs with context %}
 {% set p = document.presentation %}
 
 {% macro status(label, tone='neutral') -%}
-<span class="status status-{{ 'normal' if tone == 'good' else tone }}">{{ label }}</span>
+{{ rs.status(label, tone) }}
 {%- endmacro %}
 
 {% macro overview_text(value, limit=92) -%}
@@ -16,52 +17,19 @@
 {%- endmacro %}
 
 {% macro report_header() -%}
-<header class="report-header">
-  <div class="report-brand">
-    <img src="app/static/images/kaori-logo.svg" alt="KAORI">
-    <div>
-      <strong>KAORI</strong>
-      <span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span>
-    </div>
-  </div>
-  <div class="running-title">
-    <strong>Analytics Overview</strong>
-    <span>Kubernetes Operational Intelligence Report</span>
-  </div>
-</header>
+{{ rs.report_header(p.report_title, p.report_subtitle) }}
 {%- endmacro %}
 
 {% macro section_head(number, title, subtitle) -%}
-<div class="section-head">
-  <div class="section-badge"><span>{{ number }}</span></div>
-  <div class="section-title-copy">
-    <h1>{{ title }}</h1>
-    <p>{{ subtitle }}</p>
-  </div>
-  <div class="cutoff">
-    <span>Data Cut-off</span>
-    <strong>{{ p.data_cutoff }}</strong>
-  </div>
-</div>
+{{ rs.section_head(number, title, subtitle, p.data_cutoff) }}
 {%- endmacro %}
 
 {% macro footer(page_number) -%}
-<footer class="page-footer">
-  <span>Report ID: {{ p.report_id }} &nbsp;|&nbsp; {{ p.classification }}</span>
-  <span>Page {{ page_number }} of {{ p.page_count }}</span>
-</footer>
+{{ rs.footer(page_number, p.report_id, p.classification, p.page_count) }}
 {%- endmacro %}
 
 {% macro metric_strip(items, mode='four') -%}
-<div class="metric-strip metric-strip-{{ mode }}">
-  {% for item in items %}
-  <div class="metric-item">
-    <span class="metric-label">{{ item.label }}</span>
-    <strong class="metric-value{% if item.value|string|length > 14 %} metric-value-long{% endif %}">{{ item.value }}</strong>
-    {% if item.status %}{{ status(item.status, item.tone) }}{% endif %}
-  </div>
-  {% endfor %}
-</div>
+{{ rs.metric_strip(items, mode) }}
 {%- endmacro %}
 
 {% macro empty_note(message) -%}<p class="empty-note">{{ message }}</p>{%- endmacro %}
@@ -115,7 +83,7 @@
 </section>
 
 <section class="page page-executive">
-  {{ report_header() }}{{ section_head(1, 'Executive Brief', 'Operational position at the report cut-off.') }}
+  {{ report_header() }}{{ section_head(1, 'Executive Brief', 'Management position at the report cut-off.') }}
   <main class="page-body">
     {{ metric_strip(p.executive.metrics, 'four') }}
     <div class="metric-definitions">
@@ -132,7 +100,7 @@
 </section>
 
 <section class="page page-resource">
-  {{ report_header() }}{{ section_head(2, 'Resource Posture', 'Current utilization and committed capacity headroom.') }}
+  {{ report_header() }}{{ section_head(2, 'Resource Posture', 'Current utilization and committed headroom.') }}
   <main class="page-body">
     <div class="split split-balanced resource-summaries">
       {% for item in (p.resource_posture.cpu, p.resource_posture.memory) %}
@@ -146,7 +114,7 @@
 </section>
 
 <section class="page page-forecast">
-  {{ report_header() }}{{ section_head(3, 'Trend & Forecast', 'Historical behavior, projected pressure, and confidence of the available forecast.') }}
+  {{ report_header() }}{{ section_head(3, 'Trend & Forecast', 'Historical direction and projected threshold pressure.') }}
   <main class="page-body">
     <section class="narrative-section forecast-signal"><h2>Forecast Signal</h2><p>{{ p.trend_forecast.headline }} {{ p.trend_forecast.summary }}</p></section>
     <figure class="report-figure forecast-figure"><figcaption><strong>Figure 1 - Memory Demand Forecast</strong><span>Historical memory P95 and projected demand across the configured planning window.</span></figcaption><div class="chart-frame">{{ p.trend_forecast.chart_svg|safe }}</div><p class="source-note">Source: committed analytics forecast evidence. Missing observations are shown as gaps, not zero values.</p></figure>
@@ -156,7 +124,7 @@
 </section>
 
 <section class="page page-consumers">
-  {{ report_header() }}{{ section_head(5, 'Top Consumers', 'Highest resource utilization by namespace and resource identity.') }}
+  {{ report_header() }}{{ section_head(4, 'Top Consumers', 'Leading resource demand within the selected scope.') }}
   <main class="page-body">
     <figure class="report-figure consumers-figure">
       <figcaption>
@@ -226,7 +194,7 @@
 </section>
 
 <section class="page page-capacity">
-  {{ report_header() }}{{ section_head(6, 'Capacity Pressure', 'Current capacity headroom and risk of saturation.') }}
+  {{ report_header() }}{{ section_head(5, 'Capacity Pressure', 'Current headroom and saturation risk.') }}
   <main class="page-body">
     {{ metric_strip(p.capacity_pressure.metrics, 'four') }}
     <div class="metric-definitions">{% for item in p.capacity_pressure.metrics %}<p><strong>{{ item.label }}</strong> {{ item.note }}</p>{% endfor %}</div>
@@ -282,7 +250,7 @@
 </section>
 
 <section class="page page-alerts">
-  {{ report_header() }}{{ section_head(7, 'Alerts & Anomalies', 'Active conditions and unusual patterns detected in the environment.') }}
+  {{ report_header() }}{{ section_head(6, 'Alerts & Anomalies', 'Active conditions and unusual operating patterns.') }}
   <main class="page-body">
     {{ metric_strip(p.alerts.metrics, 'four') }}
 
@@ -332,7 +300,7 @@
 </section>
 
 <section class="page page-reporting">
-  {{ report_header() }}{{ section_head(8, 'Reporting Summary', 'Report generation status, schedules, and storage readiness.') }}
+  {{ report_header() }}{{ section_head(7, 'Reporting Summary', 'Generation status, schedules, and storage readiness.') }}
   <main class="page-body">
     {{ metric_strip(p.reporting.metrics, 'four') }}
 
@@ -384,7 +352,7 @@
 </section>
 
 <section class="page page-inventory">
-  {{ report_header() }}{{ section_head(9, 'Inventory Snapshot', 'Overview of clusters, nodes, workloads, and core Kubernetes resources.') }}
+  {{ report_header() }}{{ section_head(8, 'Inventory Snapshot', 'Committed Kubernetes resource totals and coverage.') }}
   <main class="page-body">
     {{ metric_strip(p.inventory.metrics, 'six') }}
 
@@ -439,9 +407,9 @@
 </section>
 
 <section class="page page-freshness">
-  {{ report_header() }}{{ section_head(10, 'Data Freshness & Reliability', 'Observation recency, completeness, and data-quality overview.') }}
+  {{ report_header() }}{{ section_head(9, 'Data Freshness & Reliability', 'Source recency, completeness, and data quality.') }}
   <main class="page-body">
-    <div class="metric-strip metric-strip-four">{% for item in p.freshness.metrics %}{% if item.label != 'Failed Datasets' %}<div class="metric-item"><span class="metric-label">{{ item.label }}</span><strong class="metric-value">{{ item.value }}</strong>{% if item.status %}{{ status(item.status, item.tone) }}{% endif %}</div>{% endif %}{% endfor %}</div>
+    {% set freshness_metrics = p.freshness.metrics | rejectattr('label', 'equalto', 'Failed Datasets') | list %}{{ metric_strip(freshness_metrics, 'four') }}
 
     <div class="split freshness-visual">
       <figure class="report-figure">
@@ -495,7 +463,7 @@
 </section>
 
 <section class="page page-recommendations">
-  {{ report_header() }}{{ section_head(11, 'Recommendation Plan', 'Prioritized actions, owners, and validation criteria for the current reporting boundary.') }}
+  {{ report_header() }}{{ section_head(10, 'Recommendation Plan', 'Prioritized actions, ownership, and validation.') }}
   <main class="page-body">
     {{ metric_strip(p.recommendations.metrics, 'four') }}
 
@@ -533,7 +501,7 @@
 </section>
 
 <section class="page page-methodology">
-  {{ report_header() }}{{ section_head(12, 'Methodology & Evidence Boundary', 'Data sources, reporting rules, coverage, and interpretation controls.') }}
+  {{ report_header() }}{{ section_head(11, 'Methodology & Evidence Boundary', 'Data sources, reporting rules, and evidence limits.') }}
   <main class="page-body">
     {{ metric_strip(p.methodology.metrics, 'four') }}
 

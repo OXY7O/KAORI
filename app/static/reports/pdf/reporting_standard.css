@@ -1,0 +1,246 @@
+/* KAORI Reporting Standard v1
+   Shared typography, page-title, metric, header, and footer primitives.
+   Report-specific styles should compose these classes rather than redefine them. */
+
+:root {
+  --rs-violet: #5b21b6;
+  --rs-violet-bright: #7c3aed;
+  --rs-violet-soft: #f5f3ff;
+  --rs-text: #172033;
+  --rs-muted: #64748b;
+  --rs-line: #d8dee9;
+  --rs-line-soft: #e9edf3;
+  --rs-green: #15803d;
+  --rs-amber: #b45309;
+  --rs-red: #b91c1c;
+  --rs-blue: #2563eb;
+  --rs-slate: #475569;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("../../fonts/inter/inter-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+}
+
+body.kaori-reporting-standard {
+  font-family: "Inter", "DejaVu Sans", Arial, sans-serif;
+  color: var(--rs-text);
+  font-size: 8.5pt;
+  font-weight: 400;
+  line-height: 1.5;
+  font-variant-numeric: tabular-nums;
+}
+
+body.kaori-reporting-standard h1,
+body.kaori-reporting-standard h2,
+body.kaori-reporting-standard h3,
+body.kaori-reporting-standard strong {
+  font-family: "Inter", "DejaVu Sans", Arial, sans-serif;
+}
+
+/* Running header */
+.rs-report-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 24mm;
+  padding: 6.2mm 14mm 5.5mm;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 58mm;
+  column-gap: 8mm;
+  align-items: center;
+  overflow: hidden;
+  color: #fff;
+  background: var(--rs-violet);
+  border-bottom: .7mm solid var(--rs-violet-bright);
+}
+.rs-report-header::after {
+  content: "";
+  position: absolute;
+  width: 52mm;
+  height: 52mm;
+  right: -17mm;
+  top: -28mm;
+  border: 1px solid rgba(255,255,255,.18);
+  border-radius: 50%;
+}
+.rs-report-brand {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 3mm;
+  min-width: 0;
+}
+.rs-report-brand img { width: 10.5mm; height: 10.5mm; object-fit: contain; }
+.rs-report-brand div { min-width: 0; }
+.rs-report-brand strong { display: block; font-size: 13pt; font-weight: 700; line-height: 1; }
+.rs-report-brand span {
+  display: block;
+  max-width: 96mm;
+  margin-top: 1.15mm;
+  color: #ede9fe;
+  font-size: 5.8pt;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.rs-running-title { position: relative; z-index: 1; min-width: 0; text-align: right; }
+.rs-running-title strong { display: block; font-size: 9.4pt; font-weight: 600; line-height: 1.1; }
+.rs-running-title span { display: block; margin-top: 1.1mm; color: #ede9fe; font-size: 6.2pt; line-height: 1.1; }
+
+/* Global page title block.
+   The badge and title copy share the same visual center. The subtitle is always one line. */
+.rs-section-head {
+  position: absolute;
+  top: 24mm;
+  left: 14mm;
+  right: 14mm;
+  height: 27mm;
+  display: grid;
+  grid-template-columns: 13mm minmax(0, 1fr) 44mm;
+  column-gap: 5mm;
+  align-items: center;
+  border-bottom: .35mm solid var(--rs-line);
+}
+.rs-section-number {
+  width: 13mm;
+  height: 13mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2.2mm;
+  color: #fff;
+  background: var(--rs-violet-bright);
+}
+.rs-section-number span {
+  display: block;
+  font-size: 12pt;
+  font-weight: 700;
+  line-height: 1;
+  transform: translateY(.05mm);
+}
+.rs-section-copy {
+  min-width: 0;
+  min-height: 13mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.rs-section-copy h1 {
+  margin: 0;
+  font-size: 17pt;
+  font-weight: 700;
+  line-height: 1.04;
+  letter-spacing: -.018em;
+  white-space: nowrap;
+}
+.rs-section-copy p {
+  margin: 1.25mm 0 0;
+  color: var(--rs-muted);
+  font-size: 7.65pt;
+  font-weight: 400;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+.rs-section-head-long .rs-section-copy h1 { font-size: 15.2pt; letter-spacing: -.012em; }
+.rs-section-head-long .rs-section-copy p { font-size: 7.35pt; }
+.rs-data-cutoff { align-self: center; text-align: right; }
+.rs-data-cutoff span { display: block; color: var(--rs-muted); font-size: 6.45pt; line-height: 1.05; }
+.rs-data-cutoff strong {
+  display: block;
+  margin-top: 1.2mm;
+  font-size: 7.55pt;
+  font-weight: 600;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+
+/* Global metric strip.
+   Long values are intentionally smaller and may use two lines; they are never enlarged to fill space. */
+.rs-metric-strip {
+  display: grid;
+  margin: 0 0 6mm;
+  min-width: 0;
+}
+.rs-metric-strip-four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.rs-metric-strip-five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.rs-metric-strip-six { grid-template-columns: repeat(3, minmax(0, 1fr)); row-gap: 5mm; }
+.rs-metric-item {
+  min-width: 0;
+  min-height: 22mm;
+  padding: 1.8mm 4mm 1.5mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  border-left: .3mm solid var(--rs-line);
+}
+.rs-metric-item:first-child,
+.rs-metric-strip-six .rs-metric-item:nth-child(4) { border-left: 0; }
+.rs-metric-label {
+  display: block;
+  color: #5b6f8f;
+  font-size: 6.25pt;
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+.rs-metric-value {
+  display: block;
+  margin-top: 2.3mm;
+  color: var(--rs-text);
+  font-size: 14pt;
+  font-weight: 700;
+  line-height: 1.02;
+  letter-spacing: -.018em;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.rs-metric-value-medium .rs-metric-value {
+  margin-top: 2.1mm;
+  font-size: 11.2pt;
+  line-height: 1.08;
+}
+.rs-metric-value-long .rs-metric-value {
+  margin-top: 1.8mm;
+  max-width: 95%;
+  font-size: 9.4pt;
+  line-height: 1.12;
+  letter-spacing: -.008em;
+}
+.rs-status {
+  display: block;
+  margin-top: 1.6mm;
+  font-size: 6.75pt;
+  font-weight: 600;
+  line-height: 1.12;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+.rs-status-normal { color: var(--rs-green); }
+.rs-status-warning { color: var(--rs-amber); }
+.rs-status-critical { color: var(--rs-red); }
+.rs-status-info { color: var(--rs-blue); }
+.rs-status-neutral { color: var(--rs-slate); }
+
+/* Locked footer */
+.rs-page-footer {
+  position: absolute;
+  left: 14mm;
+  right: 14mm;
+  bottom: 4.5mm;
+  height: 7mm;
+  padding-top: 1.8mm;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  border-top: .35mm solid var(--rs-violet-bright);
+  color: var(--rs-muted);
+  font-size: 6.4pt;
+  line-height: 1;
+}

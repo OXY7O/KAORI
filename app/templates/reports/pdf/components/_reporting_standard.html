@@ -1,0 +1,57 @@
+{# KAORI Reporting Standard v1 shared presentation primitives. #}
+
+{% macro status(label, tone='neutral') -%}
+<span class="rs-status rs-status-{{ 'normal' if tone == 'good' else tone }}">{{ label }}</span>
+{%- endmacro %}
+
+{% macro report_header(report_title='Analytics Overview', report_subtitle='Kubernetes Operational Intelligence Report') -%}
+<header class="rs-report-header">
+  <div class="rs-report-brand">
+    <img src="app/static/images/kaori-logo.svg" alt="KAORI">
+    <div>
+      <strong>KAORI</strong>
+      <span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span>
+    </div>
+  </div>
+  <div class="rs-running-title">
+    <strong>{{ report_title }}</strong>
+    <span>{{ report_subtitle }}</span>
+  </div>
+</header>
+{%- endmacro %}
+
+{% macro section_head(number, title, subtitle, data_cutoff) -%}
+{% set long_title = title|string|length > 28 %}
+<div class="rs-section-head{% if long_title %} rs-section-head-long{% endif %}">
+  <div class="rs-section-number"><span>{{ number }}</span></div>
+  <div class="rs-section-copy">
+    <h1>{{ title }}</h1>
+    <p>{{ subtitle }}</p>
+  </div>
+  <div class="rs-data-cutoff">
+    <span>Data Cut-off</span>
+    <strong>{{ data_cutoff }}</strong>
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro footer(page_number, report_id, classification, page_count) -%}
+<footer class="rs-page-footer">
+  <span>Report ID: {{ report_id }} &nbsp;|&nbsp; {{ classification }}</span>
+  <span>Page {{ page_number }} of {{ page_count }}</span>
+</footer>
+{%- endmacro %}
+
+{% macro metric_strip(items, mode='four') -%}
+<div class="rs-metric-strip rs-metric-strip-{{ mode }}">
+  {% for item in items %}
+  {% set value_text = item.value|string %}
+  {% set value_size = 'long' if value_text|length > 17 else 'medium' if value_text|length > 10 else 'normal' %}
+  <div class="rs-metric-item rs-metric-value-{{ value_size }}">
+    <span class="rs-metric-label">{{ item.label }}</span>
+    <strong class="rs-metric-value">{{ item.value }}</strong>
+    {% if item.status %}{{ status(item.status, item.tone) }}{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{%- endmacro %}
