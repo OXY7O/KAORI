@@ -75,19 +75,19 @@
                 {% call detail.detail_card('Collection Evidence', 'database-backup', presentation.ingress_mapping_label or 'Not Reported', 'status', presentation.ingress_mapping_tone or 'unknown', badge_size='detail', stretch=false, density='compact') %}
                     <div class="grid gap-2 sm:grid-cols-2">
                         <article class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5">
-                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Secret Collection</p>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Secret Collection</p>
                             <div class="mt-2">{{ table_label.status_label(presentation.secret_collection_label or 'Not Reported', presentation.secret_collection_tone or 'unknown', size='compact') }}</div>
                         </article>
                         <article class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5">
-                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Ingress Mapping</p>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Ingress Mapping</p>
                             <div class="mt-2">{{ table_label.status_label(presentation.ingress_mapping_label or 'Not Reported', presentation.ingress_mapping_tone or 'unknown', size='compact') }}</div>
                         </article>
                         <article class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5">
-                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Collected</p>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Collected</p>
                             <p class="mt-2 text-sm font-semibold leading-5 text-content-primary">{{ record.collected_at|user_datetime('Not Reported') }}</p>
                         </article>
                         <article class="rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2.5">
-                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Inventory Updated</p>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Inventory Updated</p>
                             <p class="mt-2 whitespace-nowrap text-sm font-semibold leading-5 text-content-primary">{{ record.updated_at|user_datetime('Not Updated') }}</p>
                         </article>
                     </div>

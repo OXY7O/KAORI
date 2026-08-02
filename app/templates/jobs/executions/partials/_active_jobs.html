@@ -41,7 +41,7 @@
     <div class="grid grid-cols-2 border-b border-outline-subtle bg-surface-hover sm:grid-cols-4">
         {% for label, value in [('Active', job_stats.active), ('Running', job_stats.running), ('Queued', job_stats.queued), ('Attention', job_stats.attention)] %}
             <div class="px-5 py-3 {% if not loop.last %}border-r border-outline-subtle{% endif %}">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ label }}</p>
+                <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">{{ label }}</p>
                 <p class="mt-1 text-lg font-bold text-content-primary">{{ value }}</p>
             </div>
         {% endfor %}
@@ -62,7 +62,7 @@
                                     {{ table_label.status_indicator_label(row.status_label, tone=row.status_tone) }}
                                 </div>
                                 <p class="mt-1 break-words text-xs leading-5 text-content-muted">{{ row.provider_label }} · {{ row.scope }}</p>
-                                <p class="mt-1 text-[10px] font-medium text-content-muted">{{ row.workload_label }} · {{ row.public_id[:8] }}</p>
+                                <p class="mt-1 text-xs font-medium text-content-muted">{{ row.workload_label }} · {{ row.public_id[:8] }}</p>
                             </div>
                         </div>
 
@@ -74,12 +74,12 @@
                             {% if row.progress_mode == 'determinate' %}
                                 {{ progress_bar.determinate(row.progress, label=row.operation_label ~ ' progress', classes='mt-2 h-1.5 w-full overflow-hidden rounded-full accent-kaori-primary') }}
                             {% else %}
-                                <div class="mt-2 flex items-center gap-2 text-[10px] font-medium text-content-muted">
+                                <div class="mt-2 flex items-center gap-2 text-xs font-medium text-content-muted">
                                     <span class="h-1.5 w-1.5 rounded-full bg-status-info"></span>
                                     <span>{{ 'Waiting for worker capacity' if row.progress_mode == 'queued' else 'Worker progress is not yet measurable' }}</span>
                                 </div>
                             {% endif %}
-                            <p class="mt-2 text-[10px] text-content-muted">Attempt {{ row.attempt_count }}/{{ row.max_attempts }}</p>
+                            <p class="mt-2 text-xs text-content-muted">Attempt {{ row.attempt_count }}/{{ row.max_attempts }}</p>
                         </div>
 
                         <dl class="grid min-w-0 grid-cols-2 gap-x-4 gap-y-3 text-xs lg:col-span-3">

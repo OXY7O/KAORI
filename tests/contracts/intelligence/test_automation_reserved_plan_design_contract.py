@@ -1,17 +1,29 @@
 from pathlib import Path
 
 
-def test_guided_forms_are_disabled_until_logic_is_enabled():
-    runbooks = Path('app/templates/intelligence/partials/automation_control/_runbooks.html').read_text()
-    decisions = Path('app/templates/intelligence/partials/automation_control/_decisions.html').read_text()
-    operations = Path('app/templates/intelligence/partials/automation_control/_operations.html').read_text()
-    readiness = Path('app/templates/intelligence/partials/automation_control/_readiness.html').read_text()
-    for content in (runbooks, decisions, operations, readiness):
-        assert 'fieldset disabled' in content or 'reserved_plan(' in content
-        assert 'Reserved Plan' in content
+def read(path: str) -> str:
+    return Path(path).read_text()
 
 
-def test_advanced_json_is_secondary_and_collapsed():
-    runbooks = Path('app/templates/intelligence/partials/automation_control/_runbooks.html').read_text()
-    assert '<details' in runbooks
-    assert 'Advanced JSON' in runbooks
+def test_automation_mutations_are_presented_as_governed_reserved_plans():
+    main = read('app/templates/intelligence/automation_control.html')
+    partials = [
+        read('app/templates/intelligence/partials/automation_control/_runbooks.html'),
+        read('app/templates/intelligence/partials/automation_control/_decisions.html'),
+        read('app/templates/intelligence/partials/automation_control/_operations.html'),
+        read('app/templates/intelligence/partials/automation_control/_readiness.html'),
+    ]
+
+    assert 'Read-Only Governance' in main
+    for content in partials:
+        assert 'reserved_plan(' in content
+        assert 'fieldset disabled' not in content
+
+
+def test_runbook_workspace_does_not_render_a_fake_advanced_json_form():
+    runbooks = read('app/templates/intelligence/partials/automation_control/_runbooks.html')
+    assert 'Authoring & Publication Controls' in runbooks
+    assert 'Runbook Library' in runbooks
+    assert 'Advanced JSON' not in runbooks
+    assert '<details' not in runbooks
+    assert '<fieldset' not in runbooks

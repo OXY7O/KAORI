@@ -78,7 +78,7 @@
                     <article class="flex min-h-[12rem] flex-col bg-surface-card p-5">
                         <div class="flex items-start justify-between gap-3">
                             <div class="min-w-0">
-                                <p class="text-xs font-semibold uppercase tracking-[0.12em] text-content-muted">{{ label }}</p>
+                                <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">{{ label }}</p>
                                 <p class="mt-2 truncate text-3xl font-bold tracking-tight text-content-primary">{{ value }}</p>
                             </div>
                             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ tone }}">
@@ -153,7 +153,7 @@
                                     <div class="min-w-0">
                                         <div class="flex flex-wrap items-center gap-2">
                                             <h3 class="text-sm font-bold text-content-primary sm:text-base">{{ module_label(module_name) }}</h3>
-                                            <span class="rounded-md border border-outline-default bg-surface-subtle px-2 py-1 font-mono text-[11px] font-semibold text-content-muted">{{ module_name }}</span>
+                                            <span class="rounded-md border border-outline-default bg-surface-subtle px-2 py-1 font-mono text-xs font-semibold text-content-muted">{{ module_name }}</span>
                                         </div>
                                         <p class="mt-1 text-sm text-content-muted">{{ module_permissions|length }} permission contracts in this module.</p>
                                     </div>
@@ -175,12 +175,12 @@
                                              class="rounded-xl border border-outline-default bg-surface-card p-4 shadow-sm transition hover:border-brand-outline">
                                         <div class="flex flex-wrap items-center justify-between gap-2">
                                             <h4 class="text-sm font-bold text-content-primary">{{ permission_title(permission) }}</h4>
-                                            <span class="rounded-md bg-kaori-soft px-2.5 py-1 text-[11px] font-semibold text-kaori-primary">{{ action_label(permission.action) }}</span>
+                                            <span class="rounded-md bg-kaori-soft px-2.5 py-1 text-xs font-semibold text-kaori-primary">{{ action_label(permission.action) }}</span>
                                         </div>
                                         <p class="mt-2 text-sm leading-6 text-content-secondary">{{ permission.description or 'No permission description is defined.' }}</p>
                                         <div class="mt-3 rounded-lg border border-outline-default bg-surface-subtle px-3 py-2 font-mono text-xs font-semibold text-content-muted">{{ permission.key }}</div>
                                         <div class="mt-4">
-                                            <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-content-muted">Used by roles</p>
+                                            <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">Used by roles</p>
                                             <div class="mt-2 flex flex-wrap gap-2">
                                                 {% if role_usage %}
                                                     {% for role in role_usage|sort(attribute='display_name') %}

@@ -190,7 +190,7 @@
                                             <p class="mt-0.5 text-xs leading-5 text-content-muted">Stable machine identity and user-facing access label.</p>
                                         </div>
                                     </div>
-                                    <span class="inline-flex min-h-7 items-center rounded-md border border-brand-outline bg-kaori-soft px-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-kaori-primary">Custom profile</span>
+                                    <span class="inline-flex min-h-7 items-center rounded-md border border-brand-outline bg-kaori-soft px-2.5 text-xs font-bold uppercase tracking-wide text-kaori-primary">Custom profile</span>
                                 </div>
                                 <div class="grid gap-5 lg:grid-cols-2">
                                     <label class="space-y-2">
@@ -226,7 +226,7 @@
                                     <span class="min-w-0 flex-1">
                                         <span class="flex flex-wrap items-center gap-2">
                                             <span class="text-sm font-bold text-content-primary">Assignment availability</span>
-                                            <span class="rounded-md border border-brand-outline bg-surface-card px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-kaori-primary">Active role</span>
+                                            <span class="rounded-md border border-brand-outline bg-surface-card px-2 py-0.5 text-xs font-bold uppercase tracking-wide text-kaori-primary">Active role</span>
                                         </span>
                                         <span class="mt-1 block text-sm leading-6 text-content-muted">Active custom roles can be assigned in User Management and selected as an Identity Provider default. Deactivation removes role-derived access from assigned users.</span>
                                     </span>
@@ -244,7 +244,7 @@
                                     <p class="mt-0.5 text-sm leading-5 text-content-muted">Review {{ selected_count }} mapped permissions across {{ selected_module_ns.count }} modules. Expand only the modules you need.</p>
                                 </div>
                             </div>
-                            <span class="inline-flex min-h-7 shrink-0 items-center rounded-md border border-brand-outline bg-kaori-soft px-2.5 text-[10px] font-bold uppercase tracking-[0.1em] text-kaori-primary">RBAC scope</span>
+                            <span class="inline-flex min-h-7 shrink-0 items-center rounded-md border border-brand-outline bg-kaori-soft px-2.5 text-xs font-bold uppercase tracking-wide text-kaori-primary">RBAC scope</span>
                         </header>
                         <div>
                             <div class="flex flex-col gap-3 border-b border-outline-default bg-surface-card px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
@@ -335,7 +335,7 @@
                                                     </span>
                                                     <span class="min-w-0">
                                                         <span class="block text-sm font-bold text-content-primary">{{ permission_label(permission) }}</span>
-                                                        <span class="mt-1 block font-mono text-[11px] font-semibold text-content-muted">{{ permission.key }}</span>
+                                                        <span class="mt-1 block font-mono text-xs font-semibold text-content-muted">{{ permission.key }}</span>
                                                         <span class="mt-1.5 block text-xs leading-5 text-content-muted">{{ permission.description or 'No permission description is defined.' }}</span>
                                                     </span>
                                                 </label>
@@ -391,34 +391,34 @@
                             <div class="rounded-xl border border-brand-outline bg-kaori-soft p-4">
                                 <div class="flex items-start justify-between gap-3">
                                     <div>
-                                        <p class="text-[10px] font-bold uppercase tracking-[0.12em] text-kaori-primary">Effective coverage</p>
+                                        <p class="text-xs font-bold uppercase tracking-wider text-kaori-primary">Effective coverage</p>
                                         <p class="mt-2 text-3xl font-bold tracking-tight text-content-primary"><span data-role-selected-count>{{ selected_count }}</span> <span class="text-sm font-semibold text-content-muted">permissions</span></p>
                                         <p class="mt-1 text-xs leading-5 text-content-muted">Distributed across <strong data-role-selected-module-count class="text-content-primary">{{ selected_module_ns.count }}</strong> application modules.</p>
                                     </div>
                                     {% if role and role.is_active %}
-                                        <span class="rounded-md border border-status-normal-border bg-status-normal-soft px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-status-normal-text">Active</span>
+                                        <span class="rounded-md border border-status-normal-border bg-status-normal-soft px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-status-normal-text">Active</span>
                                     {% elif role %}
-                                        <span class="rounded-md border border-status-disabled-border bg-status-disabled-soft px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-status-disabled-text">Inactive</span>
+                                        <span class="rounded-md border border-status-disabled-border bg-status-disabled-soft px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-status-disabled-text">Inactive</span>
                                     {% else %}
-                                        <span class="rounded-md border border-status-pending-border bg-status-pending-soft px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-status-pending-text">Draft</span>
+                                        <span class="rounded-md border border-status-pending-border bg-status-pending-soft px-2.5 py-1 text-xs font-bold uppercase tracking-wide text-status-pending-text">Draft</span>
                                     {% endif %}
                                 </div>
                             </div>
                             <dl class="grid grid-cols-2 gap-3">
                                 <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
-                                    <dt class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Role type</dt>
+                                    <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Role type</dt>
                                     <dd class="mt-1.5 text-sm font-bold text-content-primary">
                                         {{ 'Default baseline' if role and role.is_system else 'Custom role' }}
                                     </dd>
                                 </div>
                                 <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
-                                    <dt class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Assigned users</dt>
+                                    <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Assigned users</dt>
                                     <dd class="mt-1.5 text-sm font-bold text-content-primary">
                                         {{ assigned_user_count if role else 0 }}
                                     </dd>
                                 </div>
                                 <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
-                                    <dt class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Lifecycle</dt>
+                                    <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Lifecycle</dt>
                                     <dd class="mt-1.5 text-sm font-bold text-content-primary">
                                         {% if page_mode == 'clone' %}
                                             Clone draft
@@ -432,7 +432,7 @@
                                     </dd>
                                 </div>
                                 <div class="rounded-xl border border-outline-default bg-surface-subtle p-3.5">
-                                    <dt class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">Assignment model</dt>
+                                    <dt class="text-xs font-semibold uppercase tracking-wider text-content-muted">Assignment model</dt>
                                     <dd class="mt-1.5 text-sm font-bold text-content-primary">
                                         One role / user
                                     </dd>

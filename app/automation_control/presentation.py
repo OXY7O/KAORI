@@ -175,10 +175,12 @@ def build_automation_control_context(query_args: Mapping[str, Any]) -> dict[str,
         'readiness_records': ResolverProductionReadinessRecord.query.count(),
     }
 
+    workspace_rows = _workspace_rows(workspace)
     payload: dict[str, Any] = {
         'workspace': workspace,
-        'workspaces': _workspace_rows(workspace),
+        'workspaces': workspace_rows,
         'workspace_tabs': _workspace_tabs(),
+        'active_workspace': next(item for item in workspace_rows if item['active']),
         'mutations_enabled': bool(current_app.config.get('AUTOMATION_CONTROL_MUTATIONS_ENABLED', False)),
         'posture': {'label': 'Reserved Plan', 'tone': 'unknown'},
         'counts': counts,

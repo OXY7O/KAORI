@@ -222,7 +222,7 @@
                                                             <input type="checkbox" name="notification_channels" value="{{ channel.value }}" class="mt-0.5 rounded border-outline-default text-kaori-primary" {% if channel.value in schedule.edit_state.notification_channels %}checked{% endif %} {% if not channel.selectable %}disabled{% endif %}>
                                                             <span class="min-w-0">
                                                                 <span class="flex items-center gap-2 text-xs font-semibold text-content-primary"><i data-lucide="{{ channel.icon }}" class="h-3.5 w-3.5 text-kaori-primary"></i>{{ channel.label }}</span>
-                                                                <span class="mt-1 block text-[11px] leading-4 text-content-muted">{{ channel.status }}</span>
+                                                                <span class="mt-1 block text-xs leading-4 text-content-muted">{{ channel.status }}</span>
                                                             </span>
                                                         </label>
                                                     {% endfor %}
@@ -456,7 +456,7 @@
                                                class="mt-1 rounded border-outline-default text-kaori-primary">
                                         <span class="min-w-0">
                                             <span class="flex items-center gap-2 text-xs font-semibold text-content-primary"><i data-lucide="{{ channel.icon }}" class="h-3.5 w-3.5 text-kaori-primary"></i>{{ channel.label }}</span>
-                                            <span class="mt-1 block text-[11px] leading-4 text-content-muted">{{ channel.status }}</span>
+                                            <span class="mt-1 block text-xs leading-4 text-content-muted">{{ channel.status }}</span>
                                         </span>
                                     </label>
                                 {% endfor %}

@@ -1,14 +1,21 @@
 {% import "components/table.html" as table_ui %}
-{% set endpoint_name = 'intelligence.recommendations' %}
-<form id="recommendation-filter-form"
+{% set resolved_endpoint = endpoint_name|default('intelligence.recommendations') %}
+{% set resolved_scope = filter_scope|default('recommendation') %}
+{% set resolved_title = filter_title|default('Recommendation Filters') %}
+{% set resolved_description = filter_description|default('Results refresh automatically when search or scope filters change.') %}
+{% set resolved_search_placeholder = search_placeholder|default('Search recommendation, evidence, or action') %}
+{% set resolved_results_target = filter_results_target|default('#recommendations-results-content') %}
+{% set resolved_workspace_target = filter_workspace_target|default('#recommendations-workspace-content') %}
+{% set resolved_indicator = filter_indicator|default('#recommendations-loading-bar') %}
+<form id="{{ resolved_scope }}-filter-form"
       method="get"
-      action="{{ url_for(endpoint_name) }}"
-      hx-get="{{ url_for(endpoint_name) }}"
-      hx-target="#recommendations-results-content"
+      action="{{ url_for(resolved_endpoint) }}"
+      hx-get="{{ url_for(resolved_endpoint) }}"
+      hx-target="{{ resolved_results_target }}"
       hx-swap="innerHTML show:none focus-scroll:false"
       hx-push-url="true"
-      hx-indicator="#recommendations-loading-bar"
-      hx-sync="#recommendations-results-content:replace"
+      hx-indicator="{{ resolved_indicator }}"
+      hx-sync="{{ resolved_results_target }}:replace"
       hx-trigger="input changed delay:350ms from:input[name='q'], change from:select"
       class="border-b border-outline-subtle bg-surface-hover px-4 py-4 sm:px-5">
     <input type="hidden" name="page" value="1">
@@ -16,16 +23,16 @@
 
     <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
-            <p class="text-sm font-semibold text-content-primary">Recommendation Filters</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Results refresh automatically when search or scope filters change.</p>
+            <p class="text-sm font-semibold leading-5 text-content-primary">{{ resolved_title }}</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">{{ resolved_description }}</p>
         </div>
-        <a href="{{ url_for(endpoint_name) }}"
-           hx-get="{{ url_for(endpoint_name) }}"
-           hx-target="#recommendations-workspace-content"
+        <a href="{{ url_for(resolved_endpoint) }}"
+           hx-get="{{ url_for(resolved_endpoint) }}"
+           hx-target="{{ resolved_workspace_target }}"
            hx-swap="outerHTML show:none focus-scroll:false"
            hx-push-url="true"
-           hx-sync="#recommendations-workspace-content:replace"
-           hx-indicator="#recommendations-loading-bar"
+           hx-sync="{{ resolved_workspace_target }}:replace"
+           hx-indicator="{{ resolved_indicator }}"
            class="inline-flex min-h-9 shrink-0 items-center justify-center gap-2 rounded-lg border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary transition-colors hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">
             <i data-lucide="rotate-ccw" class="h-3.5 w-3.5" aria-hidden="true"></i>
             Reset
@@ -35,7 +42,7 @@
     <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <label class="block xl:col-span-2">
             <span class="{{ table_ui.filter_label_classes() }}">Search</span>
-            {{ table_ui.search_field('q', payload.filters.q, 'Search recommendation, evidence, or action') }}
+            {{ table_ui.search_field('q', payload.filters.q, resolved_search_placeholder) }}
         </label>
         <label class="block">
             <span class="{{ table_ui.filter_label_classes() }}">Domain</span>

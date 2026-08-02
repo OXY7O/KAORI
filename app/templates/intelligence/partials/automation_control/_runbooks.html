@@ -1,15 +1,78 @@
-{% import "intelligence/components/_workspace.html" as intelligence_ui %}
 {% import "components/table_label.html" as table_label %}
-{% call intelligence_ui.section('Runbooks & Bindings', 'Final guided authoring layout is present, while mutations remain disabled as a Reserved Plan.', 'book-open-check', 'Reserved Plan', 'unknown') %}
-<div class="grid gap-4 p-4 xl:grid-cols-2 sm:p-5">
-<fieldset disabled class="rounded-lg border border-outline-subtle bg-surface-hover p-4 opacity-80"><legend class="px-2 text-sm font-semibold text-content-primary">Runbook Definition</legend><div class="grid gap-3 sm:grid-cols-2"><label class="text-xs font-semibold text-content-secondary">Runbook Key<input class="mt-1 min-h-10 w-full rounded-lg border border-outline-strong bg-surface-card px-3" placeholder="kubernetes.restart_deployment"></label><label class="text-xs font-semibold text-content-secondary">Title<input class="mt-1 min-h-10 w-full rounded-lg border border-outline-strong bg-surface-card px-3" placeholder="Restart Kubernetes Deployment"></label><label class="sm:col-span-2 text-xs font-semibold text-content-secondary">Description<textarea rows="3" class="mt-1 w-full rounded-lg border border-outline-strong bg-surface-card px-3 py-2" placeholder="Describe the governed operational outcome."></textarea></label></div><button class="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-subtle px-4 text-sm font-semibold text-content-disabled"><i data-lucide="lock-keyhole" class="h-4 w-4"></i>Reserved Plan</button></fieldset>
-<fieldset disabled class="rounded-lg border border-outline-subtle bg-surface-hover p-4 opacity-80"><legend class="px-2 text-sm font-semibold text-content-primary">Revision & Binding Definition</legend><div class="grid gap-3 sm:grid-cols-2"><label class="text-xs font-semibold text-content-secondary">Runbook<select class="mt-1 min-h-10 w-full rounded-lg border border-outline-strong bg-surface-card px-3"><option>Select runbook</option></select></label><label class="text-xs font-semibold text-content-secondary">Version<input class="mt-1 min-h-10 w-full rounded-lg border border-outline-strong bg-surface-card px-3" value="1.0.0"></label><label class="text-xs font-semibold text-content-secondary">Action Key<input class="mt-1 min-h-10 w-full rounded-lg border border-outline-strong bg-surface-card px-3"></label><label class="text-xs font-semibold text-content-secondary">Approval Policy<select class="mt-1 min-h-10 w-full rounded-lg border border-outline-strong bg-surface-card px-3"><option>Needs Approval</option></select></label></div><details class="mt-4 rounded-lg border border-outline-subtle bg-surface-card"><summary class="cursor-pointer px-3 py-2.5 text-xs font-semibold text-content-secondary">Advanced JSON</summary><div class="grid gap-3 border-t border-outline-subtle p-3 sm:grid-cols-2"><textarea rows="4" class="rounded-lg border border-outline-strong bg-surface-card p-2 font-mono text-xs">{}</textarea><textarea rows="4" class="rounded-lg border border-outline-strong bg-surface-card p-2 font-mono text-xs">[]</textarea></div></details><button class="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-subtle px-4 text-sm font-semibold text-content-disabled"><i data-lucide="lock-keyhole" class="h-4 w-4"></i>Reserved Plan</button></fieldset>
-</div>
+{% import "intelligence/components/_workspace.html" as intelligence_ui %}
+{% import "intelligence/components/_pagination.html" as intelligence_pagination %}
+
+{% call intelligence_ui.section(
+    'Runbook Governance',
+    'Stable runbook identities, immutable revisions, and deterministic alert bindings define the knowledge boundary for future automation.',
+    'book-open-check',
+    'Read-Only',
+    'unknown'
+) %}
+    <div class="p-4 sm:p-5">
+        {{ intelligence_ui.reserved_plan(
+            'Authoring & Publication Controls',
+            'Runbook creation, revision publication, withdrawal, and alert-binding mutations remain disabled until validation behavior and confirmation gates are enabled.',
+            action_label='Reserved Plan',
+            icon='book-lock'
+        ) }}
+    </div>
 {% endcall %}
-{% call intelligence_ui.section('Runbook Library', 'Stable runbook identities and immutable revisions are shown as responsive evidence records.', 'library') %}
-<div class="grid gap-3 p-4 sm:p-5">{% for row in payload.runbook_rows %}{% call intelligence_ui.record(row.title, row.description, icon='book-open-check', status_text=row.status|replace('_',' ')|title, status_tone='normal' if row.status == 'active' else 'warning') %}<dl class="mt-4 grid gap-3 rounded-lg border border-outline-subtle bg-surface-hover p-3 sm:grid-cols-2 xl:grid-cols-4">{{ intelligence_ui.field('Runbook Key', row.key, true) }}{{ intelligence_ui.field('Revisions', row.revision_count) }}{{ intelligence_ui.field('Published', row.published_count) }}{{ intelligence_ui.field('Updated', row.updated_at) }}</dl>{% endcall %}{% else %}<p class="py-8 text-center text-sm text-content-muted">No runbooks are available.</p>{% endfor %}</div>
+
+{% call intelligence_ui.section(
+    'Runbook Library',
+    'Primary runbook identities ordered by the latest update. Each identity summarizes revision and publication coverage.',
+    'library'
+) %}
+    <div class="grid gap-3 p-4 sm:p-5">
+        {% for row in payload.runbook_rows %}
+            {% call intelligence_ui.record(row.title, row.description, icon='book-open-check', status_text=row.status|replace('_',' ')|title, status_tone='normal' if row.status == 'active' else 'warning') %}
+                <dl class="mt-4 grid gap-3 rounded-lg border border-outline-subtle bg-surface-hover p-3 sm:grid-cols-2 xl:grid-cols-4">
+                    {{ intelligence_ui.field('Runbook Key', row.key, true) }}
+                    {{ intelligence_ui.field('Revisions', row.revision_count) }}
+                    {{ intelligence_ui.field('Published', row.published_count) }}
+                    {{ intelligence_ui.field('Updated', row.updated_at) }}
+                </dl>
+            {% endcall %}
+        {% else %}
+            {{ intelligence_ui.empty_state('No Runbooks Available', 'Create and publication controls remain reserved until the runbook behavior contract is enabled.', 'book-open-check') }}
+        {% endfor %}
+    </div>
+    {% set query_params = {'workspace': 'runbooks'} %}
+    {{ intelligence_pagination.render(payload, 'automation_control.index', query_params, resource_label='Runbooks', per_page_options=payload.per_page_options) }}
 {% endcall %}
+
 <section class="grid gap-4 xl:grid-cols-2">
-{% call intelligence_ui.section('Recent Revisions', 'Publication state and validation evidence for immutable revisions.', 'file-check-2') %}<div class="grid gap-3 p-4 sm:p-5">{% for row in payload.revision_rows %}{% call intelligence_ui.record(row.runbook_key ~ ' · ' ~ row.version, row.action_key, icon='file-check-2', status_text=row.status|title, status_tone='normal' if row.status == 'published' else ('warning' if row.status == 'draft' else 'unknown')) %}<dl class="mt-3 grid gap-3 sm:grid-cols-2">{{ intelligence_ui.field('Resolver', row.resolver_key, true) }}{{ intelligence_ui.field('Approval', row.approval_policy|replace('_',' ')|title) }}</dl><div class="mt-3">{{ intelligence_ui.reserved_plan('Revision Mutation', 'Publish and withdraw controls require validated behavior contracts.', compact=true) }}</div>{% endcall %}{% else %}<p class="py-8 text-center text-sm text-content-muted">No revisions are available.</p>{% endfor %}</div>{% endcall %}
-{% call intelligence_ui.section('Alert Bindings', 'Deterministic selectors linking published revisions to alert evidence.', 'link') %}<div class="grid gap-3 p-4 sm:p-5">{% for row in payload.binding_rows %}{% call intelligence_ui.record(row.binding_key, row.selector, icon='link', status_text=row.status|replace('_',' ')|title, status_tone='normal' if row.status == 'active' else 'unknown') %}<dl class="mt-3 grid gap-3 sm:grid-cols-2">{{ intelligence_ui.field('Revision', row.runbook_key ~ ' · ' ~ row.version) }}{{ intelligence_ui.field('Scope', row.cluster_id ~ ' / ' ~ row.namespace) }}{{ intelligence_ui.field('Priority', row.priority) }}</dl>{% endcall %}{% else %}<p class="py-8 text-center text-sm text-content-muted">No alert bindings are available.</p>{% endfor %}</div>{% endcall %}
+    {% call intelligence_ui.section('Recent Revisions', 'Publication state and validation evidence for the latest immutable revisions.', 'file-check-2') %}
+        <div class="grid gap-3 p-4 sm:p-5">
+            {% for row in payload.revision_rows %}
+                {% call intelligence_ui.record(row.runbook_key ~ ' · ' ~ row.version, row.action_key, icon='file-check-2', status_text=row.status|title, status_tone='normal' if row.status == 'published' else ('warning' if row.status == 'draft' else 'unknown')) %}
+                    <dl class="mt-3 grid gap-3 sm:grid-cols-2">
+                        {{ intelligence_ui.field('Resolver', row.resolver_key, true) }}
+                        {{ intelligence_ui.field('Approval Policy', row.approval_policy|replace('_',' ')|title) }}
+                        {{ intelligence_ui.field('Validation', 'Passed' if row.validation_valid else ('Failed' if row.validation_valid is sameas false else 'Not Recorded')) }}
+                        {{ intelligence_ui.field('Created', row.created_at) }}
+                    </dl>
+                {% endcall %}
+            {% else %}
+                {{ intelligence_ui.empty_state('No Revisions Available', 'No immutable runbook revision evidence has been recorded.', 'file-check-2') }}
+            {% endfor %}
+        </div>
+    {% endcall %}
+
+    {% call intelligence_ui.section('Alert Bindings', 'Deterministic selectors linking published revisions to alert evidence.', 'link') %}
+        <div class="grid gap-3 p-4 sm:p-5">
+            {% for row in payload.binding_rows %}
+                {% call intelligence_ui.record(row.binding_key, row.selector, icon='link', status_text=row.status|replace('_',' ')|title, status_tone='normal' if row.status == 'active' else 'unknown') %}
+                    <dl class="mt-3 grid gap-3 sm:grid-cols-2">
+                        {{ intelligence_ui.field('Revision', row.runbook_key ~ ' · ' ~ row.version) }}
+                        {{ intelligence_ui.field('Scope', row.cluster_id ~ ' / ' ~ row.namespace) }}
+                        {{ intelligence_ui.field('Priority', row.priority) }}
+                    </dl>
+                {% endcall %}
+            {% else %}
+                {{ intelligence_ui.empty_state('No Alert Bindings Available', 'No deterministic alert-to-runbook selector has been recorded.', 'link') }}
+            {% endfor %}
+        </div>
+    {% endcall %}
 </section>

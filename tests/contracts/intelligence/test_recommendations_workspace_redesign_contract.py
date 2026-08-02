@@ -8,10 +8,12 @@ def read(path: str) -> str:
 def test_recommendations_filters_refresh_only_results_without_apply_button():
     filters = read('app/templates/intelligence/partials/_filters.html')
     assert 'hx-get=' in filters
-    assert 'hx-target="#recommendations-results-content"' in filters
+    assert "filter_results_target|default('#recommendations-results-content')" in filters
+    assert 'hx-target="{{ resolved_results_target }}"' in filters
     assert 'hx-swap="innerHTML show:none focus-scroll:false"' in filters
-    assert 'hx-sync="#recommendations-results-content:replace"' in filters
-    assert 'hx-indicator="#recommendations-loading-bar"' in filters
+    assert 'hx-sync="{{ resolved_results_target }}:replace"' in filters
+    assert "filter_indicator|default('#recommendations-loading-bar')" in filters
+    assert 'hx-indicator="{{ resolved_indicator }}"' in filters
     assert 'input changed delay:350ms' in filters
     assert 'change from:select' in filters
     assert 'Apply Filters' not in filters
@@ -35,7 +37,10 @@ def test_recommendations_pagination_matches_kaori_contract():
     assert 'Showing <span' in pagination
     assert '>Rows</label>' in pagination
     assert pagination.index('Showing <span') < pagination.index('>Rows</label>')
-    assert "{{ 'Recommendation' if pagination.total_items == 1 else 'Recommendations' }}" in pagination
+    assert 'resource_label' in pagination
+    assert 'payload.filter_options is defined' in pagination
+    assert 'payload.per_page_options' in pagination
+    assert 'pagination.allowed_per_page' in pagination
     assert 'name="page" value="1"' in pagination
     assert 'hx-push-url="true"' in pagination
     assert 'data-kaori-auto-submit' in pagination

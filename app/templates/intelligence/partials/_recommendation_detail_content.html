@@ -1,3 +1,4 @@
+{% import "components/operational_callout.html" as operational_callout %}
 {% import "components/table_label.html" as table_label %}
 {% import "components/details/_detail_content.html" as detail %}
 {% set remediation_phases = ['Review Evidence', 'Validate Live State', 'Apply Remediation', 'Verify & Close'] %}
@@ -16,7 +17,7 @@
 
 {% macro assessment_item(label, value) -%}
     <article class="px-4 py-3.5">
-        <p class="text-xs font-semibold leading-5 text-content-secondary">{{ label }}</p>
+        <p class="text-xs font-medium leading-5 text-content-muted">{{ label }}</p>
         <p class="mt-1 break-words text-sm leading-6 text-content-secondary [overflow-wrap:anywhere]">{{ value }}</p>
     </article>
 {%- endmacro %}
@@ -38,8 +39,8 @@
                     </span>
                     <div class="min-w-0">
                         <p class="text-xs font-semibold leading-5 text-kaori-primary">Recommendation Review</p>
-                        <h3 class="break-words text-lg font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.title }}</h3>
-                        <p class="mt-1 break-words text-sm leading-5 text-content-muted [overflow-wrap:anywhere]">{{ item.list_summary|default(item.summary, true) }}</p>
+                        <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.title }}</h3>
+                        <p class="mt-1 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ item.list_summary|default(item.summary, true) }}</p>
                         <div class="mt-2 flex flex-wrap items-center gap-1.5">
                             {{ table_label.metadata_label(item.domain_label, 'boxes') }}
                             {{ table_label.metadata_label(item.category_label, 'tag') }}
@@ -55,19 +56,19 @@
 
         <div data-resource-detail-summary class="grid grid-cols-2 gap-px bg-outline-subtle">
             <article class="min-w-0 bg-surface-card px-4 py-3">
-                <p class="text-xs font-semibold leading-5 text-content-muted">Affected Scope</p>
+                <p class="text-xs font-medium leading-5 text-content-muted">Affected Scope</p>
                 <p class="mt-0.5 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ item.scope_title|default('Cluster Scope', true) }}</p>
             </article>
             <article class="min-w-0 bg-surface-card px-4 py-3">
-                <p class="text-xs font-semibold leading-5 text-content-muted">Resource Type</p>
+                <p class="text-xs font-medium leading-5 text-content-muted">Resource Type</p>
                 <p class="mt-0.5 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ item.source_kind_label }}</p>
             </article>
             <article class="min-w-0 bg-surface-card px-4 py-3">
-                <p class="text-xs font-semibold leading-5 text-content-muted">Signal Source</p>
+                <p class="text-xs font-medium leading-5 text-content-muted">Signal Source</p>
                 <p class="mt-0.5 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ item.signal_source_label }}</p>
             </article>
             <article class="min-w-0 bg-surface-card px-4 py-3">
-                <p class="text-xs font-semibold leading-5 text-content-muted">Review Priority</p>
+                <p class="text-xs font-medium leading-5 text-content-muted">Review Priority</p>
                 <div class="mt-1">{{ table_label.status_label(item.priority|default(item.severity_label, true), item.tone, size='compact') }}</div>
             </article>
         </div>
@@ -108,14 +109,14 @@
                 </div>
 
                 <div class="border-t border-outline-subtle px-4 py-3">
-                    <p class="text-xs font-semibold leading-5 text-content-secondary">Evidence Contract</p>
+                    <p class="text-xs font-medium leading-5 text-content-muted">Evidence Contract</p>
                     <dl class="mt-1 divide-y divide-outline-subtle">
                         {{ evidence_row('Signal Source', item.signal_source_label) }}
                         {{ evidence_row('Logic Type', item.logic_type_label) }}
                         {{ evidence_row('Domain', item.domain_label) }}
                     </dl>
                     <div class="border-t border-outline-subtle pt-3">
-                        <p class="text-xs font-semibold leading-5 text-content-secondary">Rule Key</p>
+                        <p class="text-xs font-medium leading-5 text-content-muted">Rule Key</p>
                         <p class="mt-1.5 break-all rounded-lg border border-outline-subtle bg-surface-elevated px-3 py-2 font-mono text-xs font-medium leading-5 text-content-primary" title="{{ item.rule_key }}">{{ item.rule_key }}</p>
                     </div>
                 </div>
@@ -157,14 +158,14 @@
                         <div class="mt-4">{{ detail.empty_evidence('No Remediation Steps', 'No structured remediation sequence was recorded for this recommendation.', 'list-checks') }}</div>
                     {% endif %}
 
-                    <div class="mt-4 flex items-start gap-3 rounded-lg border border-status-warning-border bg-status-warning-soft px-3.5 py-3">
-                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning-text" aria-hidden="true">
-                            <i data-lucide="clipboard-check" class="h-4 w-4"></i>
-                        </span>
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold leading-5 text-content-primary">Verification Gate</p>
-                            <p class="mt-1 text-sm leading-6 text-content-secondary">Validate current ownership and live resource state before applying changes. After remediation, resync the relevant KAORI source and confirm this recommendation no longer appears.</p>
-                        </div>
+                    <div class="mt-4">
+                        {{ operational_callout.render(
+                            'Verification Gate',
+                            'Validate current ownership and live resource state before applying changes. After remediation, resync the relevant KAORI source and confirm this recommendation no longer appears.',
+                            icon='clipboard-check',
+                            tone='warning',
+                            variant='neutral'
+                        ) }}
                     </div>
                 </div>
             </section>

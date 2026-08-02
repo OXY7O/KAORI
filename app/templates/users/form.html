@@ -130,7 +130,7 @@
                                             <div class="min-w-0">
                                                 <div class="flex flex-wrap items-center gap-2">
                                                     <h4 class="text-sm font-semibold text-kaori-strong">Local Database</h4>
-                                                    <span class="inline-flex rounded-md border border-brand-outline bg-surface-card px-2 py-0.5 text-[11px] font-semibold text-kaori-primary">Created on this page</span>
+                                                    <span class="inline-flex rounded-md border border-brand-outline bg-surface-card px-2 py-0.5 text-xs font-semibold text-kaori-primary">Created on this page</span>
                                                 </div>
                                                 <p class="mt-1.5 text-xs leading-5 text-kaori-primary">
                                                     KAORI owns this account credential. LDAP identities must use Directory Provisioning; Google and GitHub identities use an existing identity link or controlled JIT.
@@ -160,7 +160,7 @@
                                                 <p class="text-xs font-semibold uppercase tracking-widest text-kaori-primary">Authoritative Provider</p>
                                                 <div class="mt-1 flex flex-wrap items-center gap-2">
                                                     <h4 class="text-sm font-semibold text-kaori-strong">{{ identity_context.provider_name }}</h4>
-                                                    <span class="inline-flex rounded-md border border-brand-outline bg-surface-card px-2 py-0.5 text-[11px] font-semibold text-kaori-primary">{{ identity_context.type_label }}</span>
+                                                    <span class="inline-flex rounded-md border border-brand-outline bg-surface-card px-2 py-0.5 text-xs font-semibold text-kaori-primary">{{ identity_context.type_label }}</span>
                                                 </div>
                                                 <p class="mt-1.5 text-xs leading-5 text-kaori-primary">
                                                     Identity-source ownership is read-only here. Change provider configuration from Identity Providers, not from the user profile.
@@ -184,23 +184,23 @@
                                 {% if user.auth_source != 'database' %}
                                     <div class="mt-4 grid gap-3 rounded-lg border border-outline-subtle bg-surface-card p-4 sm:grid-cols-2">
                                         <div>
-                                            <p class="text-[11px] font-semibold uppercase tracking-widest text-content-muted">External Username</p>
+                                            <p class="text-xs font-semibold uppercase tracking-widest text-content-muted">External Username</p>
                                             <p class="mt-1 break-all text-sm font-semibold text-content-primary">{{ identity_context.external_username or user.username }}</p>
                                         </div>
                                         <div>
-                                            <p class="text-[11px] font-semibold uppercase tracking-widest text-content-muted">Stable External Subject</p>
+                                            <p class="text-xs font-semibold uppercase tracking-widest text-content-muted">Stable External Subject</p>
                                             <p class="mt-1 break-all font-mono text-xs font-semibold text-content-secondary"
                                                title="{{ identity_context.subject or '' }}">{{ identity_context.subject or 'Not recorded' }}</p>
                                         </div>
                                         {% if identity_context.provider_key %}
                                             <div>
-                                                <p class="text-[11px] font-semibold uppercase tracking-widest text-content-muted">Provider Key</p>
+                                                <p class="text-xs font-semibold uppercase tracking-widest text-content-muted">Provider Key</p>
                                                 <p class="mt-1 font-mono text-xs font-semibold text-content-secondary">{{ identity_context.provider_key }}</p>
                                             </div>
                                         {% endif %}
                                         {% if identity_context.distinguished_name %}
                                             <div>
-                                                <p class="text-[11px] font-semibold uppercase tracking-widest text-content-muted">Directory DN</p>
+                                                <p class="text-xs font-semibold uppercase tracking-widest text-content-muted">Directory DN</p>
                                                 <p class="mt-1 break-all font-mono text-xs leading-5 text-content-secondary"
                                                    title="{{ identity_context.distinguished_name }}">{{ identity_context.distinguished_name }}</p>
                                             </div>
@@ -366,7 +366,7 @@
                                     <div class="min-w-0">
                                         <div class="flex flex-wrap items-center gap-2">
                                             <h3 class="text-sm font-semibold text-content-primary">Local Database</h3>
-                                            <span class="inline-flex rounded-md border border-brand-outline bg-kaori-soft px-2 py-0.5 text-[11px] font-semibold text-kaori-primary">Complete This Form</span>
+                                            <span class="inline-flex rounded-md border border-brand-outline bg-kaori-soft px-2 py-0.5 text-xs font-semibold text-kaori-primary">Complete This Form</span>
                                         </div>
                                         <ol class="mt-2 space-y-1 text-xs leading-5 text-content-muted">
                                             <li><strong class="font-semibold text-content-secondary">1.</strong> Enter the KAORI identity profile and initial password.</li>
@@ -384,7 +384,7 @@
                                     <div class="min-w-0">
                                         <div class="flex flex-wrap items-center gap-2">
                                             <h3 class="text-sm font-semibold text-content-primary">LDAP / Active Directory</h3>
-                                            <span class="inline-flex rounded-md border border-outline-default bg-surface-hover px-2 py-0.5 text-[11px] font-semibold text-content-secondary">Use Directory Provisioning</span>
+                                            <span class="inline-flex rounded-md border border-outline-default bg-surface-hover px-2 py-0.5 text-xs font-semibold text-content-secondary">Use Directory Provisioning</span>
                                         </div>
                                         <ol class="mt-2 space-y-1 text-xs leading-5 text-content-muted">
                                             <li><strong class="font-semibold text-content-secondary">1.</strong> Open LDAP Provisioning and select the configured directory provider.</li>
@@ -402,7 +402,7 @@
                                     <div class="min-w-0">
                                         <div class="flex flex-wrap items-center gap-2">
                                             <h3 class="text-sm font-semibold text-content-primary">Google or GitHub SSO</h3>
-                                            <span class="inline-flex rounded-md border border-outline-default bg-surface-hover px-2 py-0.5 text-[11px] font-semibold text-content-secondary">Use SSO Admission</span>
+                                            <span class="inline-flex rounded-md border border-outline-default bg-surface-hover px-2 py-0.5 text-xs font-semibold text-content-secondary">Use SSO Admission</span>
                                         </div>
                                         <ol class="mt-2 space-y-1 text-xs leading-5 text-content-muted">
                                             <li><strong class="font-semibold text-content-secondary">1.</strong> Enable and validate the required identity provider.</li>
@@ -481,7 +481,7 @@
                                     <div class="min-w-0">
                                         <div class="flex flex-wrap items-center gap-2">
                                             <h3 class="text-sm font-semibold text-kaori-strong">{{ identity_context.provider_name }}</h3>
-                                            <span class="inline-flex rounded-md border {{ 'border-status-normal-border bg-status-normal-soft text-status-normal-text' if identity_context.provider_enabled else 'border-status-warning-border bg-status-warning-soft text-status-warning-text' }} px-2 py-0.5 text-[11px] font-semibold">{{ 'Provider ready' if identity_context.provider_enabled else 'Provider disabled' }}</span>
+                                            <span class="inline-flex rounded-md border {{ 'border-status-normal-border bg-status-normal-soft text-status-normal-text' if identity_context.provider_enabled else 'border-status-warning-border bg-status-warning-soft text-status-warning-text' }} px-2 py-0.5 text-xs font-semibold">{{ 'Provider ready' if identity_context.provider_enabled else 'Provider disabled' }}</span>
                                         </div>
                                         <p class="mt-1.5 text-xs leading-5 text-kaori-primary">{{ identity_context.credential_detail }}</p>
                                     </div>

@@ -52,11 +52,11 @@
                             {{ table_label.status_label(status_text, status_tone, status_icon) }}
                         </div>
                         <div class="mt-3 flex items-center gap-2">
-                            <span class="inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-kaori-soft px-1.5 text-[10px] font-bold text-kaori-primary">{{ step_number }}</span>
+                            <span class="inline-flex h-6 min-w-6 items-center justify-center rounded-md bg-kaori-soft px-1.5 text-xs font-bold text-kaori-primary">{{ step_number }}</span>
                             <h3 class="text-sm font-semibold text-content-primary">{{ step.label }}</h3>
                         </div>
                         <p class="mt-2 text-xs leading-5 text-content-secondary">{{ step.description }}</p>
-                        <p class="mt-2 text-[11px] font-medium leading-4 {{ 'text-status-normal-text' if is_complete else ('text-status-warning-text' if is_current else 'text-content-muted') }}">
+                        <p class="mt-2 text-xs font-medium leading-5 {{ 'text-status-normal-text' if is_complete else ('text-status-warning-text' if is_current else 'text-content-muted') }}">
                             {% if is_complete %}
                                 Validated and available.
                             {% elif is_current %}

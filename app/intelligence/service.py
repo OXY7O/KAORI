@@ -852,6 +852,20 @@ def _severity_rank(value: str) -> int:
     }.get(value.lower(), 9)
 
 
+
+def get_catalog_rule(rule_key: str) -> dict[str, Any] | None:
+    """Return one normalized catalog definition by its canonical rule key."""
+
+    resolved_key = _clean(rule_key)
+    if not resolved_key:
+        return None
+
+    for raw_rule in INTELLIGENCE_CATALOG:
+        rule = _normalize_rule(dict(raw_rule))
+        if _clean(str(rule.get('rule_key'))) == resolved_key:
+            return rule
+    return None
+
 def get_recommendation_finding(recommendation_key: str) -> dict[str, Any] | None:
     """Return one active recommendation finding by its canonical finding key."""
 
@@ -924,50 +938,113 @@ def get_recommendations_payload(args: MultiDict[str, str], *, page_mode: str = '
 
 
 def get_alert_intelligence_payload() -> dict[str, Any]:
+    imported_rules = sum(
+        1
+        for rule in INTELLIGENCE_CATALOG
+        if str(rule.get('status')) == 'imported_signal'
+    )
     sources = [
         {
+            'key': 'kubernetes',
             'title': 'Kubernetes Alert Evidence',
-            'description': 'Prometheus detection and Alertmanager routing remain authoritative. KAORI can link committed Kubernetes context to current alert workspaces.',
+            'description': 'Prometheus detects the condition and Alertmanager owns grouping, inhibition, routing, and notification.',
             'icon': 'activity',
             'status': 'Available Evidence',
             'tone': 'normal',
             'owner': 'Prometheus + Alertmanager',
-            'boundary': 'Context linking and investigation guidance',
+            'kaori_role': 'Link committed cluster, namespace, workload, inventory, and analytical context.',
+            'output': 'Investigation context and evidence-backed operator guidance',
             'reserved_reason': '',
         },
         {
+            'key': 'server',
             'title': 'Server Signal Enrichment',
-            'description': 'Server-level enrichment requires a validated Node Exporter and server inventory contract.',
+            'description': 'Server enrichment requires validated Node Exporter identity, metric, and inventory ownership contracts.',
             'icon': 'server',
             'status': 'Reserved Plan',
             'tone': 'unknown',
             'owner': 'Server metrics integration',
-            'boundary': 'Disabled until provider and behavior contracts are complete',
+            'kaori_role': 'Reserved until the provider and behavior contracts are complete.',
+            'output': 'No active enrichment output',
             'reserved_reason': 'No active server enrichment execution path is exposed.',
         },
         {
+            'key': 'hci',
             'title': 'HCI Signal Enrichment',
             'description': 'HCI enrichment requires a validated provider API, asset identity, and health-signal contract.',
             'icon': 'network',
             'status': 'Reserved Plan',
             'tone': 'unknown',
             'owner': 'HCI provider integration',
-            'boundary': 'Disabled until provider and behavior contracts are complete',
+            'kaori_role': 'Reserved until provider identity and evidence semantics are validated.',
+            'output': 'No active enrichment output',
             'reserved_reason': 'No active HCI enrichment execution path is exposed.',
         },
     ]
+    flow = [
+        {
+            'step': '1',
+            'title': 'Detect & Route',
+            'description': 'Prometheus evaluates alert rules; Alertmanager groups, inhibits, routes, and notifies.',
+            'owner': 'Prometheus + Alertmanager',
+            'output': 'Authoritative alert instance',
+            'status': 'Available',
+            'tone': 'normal',
+            'icon': 'bell-ring',
+        },
+        {
+            'step': '2',
+            'title': 'Resolve Identity',
+            'description': 'KAORI maps alert labels to committed cluster, namespace, workload, node, and storage identities.',
+            'owner': 'KAORI Intelligence',
+            'output': 'Resolved affected scope',
+            'status': 'Available',
+            'tone': 'normal',
+            'icon': 'scan-search',
+        },
+        {
+            'step': '3',
+            'title': 'Enrich Evidence',
+            'description': 'KAORI joins inventory, analytics, governance, and ownership evidence without replacing detection.',
+            'owner': 'KAORI Intelligence',
+            'output': 'Investigation context',
+            'status': 'Available',
+            'tone': 'normal',
+            'icon': 'database-zap',
+        },
+        {
+            'step': '4',
+            'title': 'Govern Handoff',
+            'description': 'A reviewed finding can enter Automation Control only after decision and resolver gates are enabled.',
+            'owner': 'Automation Control',
+            'output': 'Reserved decision candidate',
+            'status': 'Reserved Plan',
+            'tone': 'unknown',
+            'icon': 'workflow',
+        },
+    ]
     return {
-        'posture': {'label': 'Reserved Plan', 'tone': 'unknown'},
+        'posture': {'label': 'Evidence Available', 'tone': 'normal'},
         'summary': {
             'available_sources': sum(1 for item in sources if item['status'] == 'Available Evidence'),
             'reserved_sources': sum(1 for item in sources if item['status'] == 'Reserved Plan'),
+            'imported_rules': imported_rules,
         },
         'sources': sources,
-        'flow': [
-            {'step': '1', 'title': 'Import Signal Evidence', 'description': 'Read current evidence from the authoritative alert workspace.', 'status': 'Available', 'tone': 'normal'},
-            {'step': '2', 'title': 'Map Asset Identity', 'description': 'Associate alert labels with committed cluster, namespace, workload, and inventory identity.', 'status': 'Available', 'tone': 'normal'},
-            {'step': '3', 'title': 'Cross-Source Enrichment', 'description': 'Join server and HCI context only after their provider contracts are enabled.', 'status': 'Reserved Plan', 'tone': 'unknown'},
-            {'step': '4', 'title': 'Automation Handoff', 'description': 'Create governed decision evidence only after Automation Control validation is enabled.', 'status': 'Reserved Plan', 'tone': 'unknown'},
-        ],
+        'flow': flow,
+        'contracts': {
+            'kaori_owns': [
+                'Alert label-to-asset identity resolution',
+                'Committed inventory and analytics enrichment',
+                'Evidence-backed investigation guidance',
+                'Governed handoff boundaries for future automation',
+            ],
+            'external_owns': [
+                'Prometheus rule evaluation and alert state',
+                'Alertmanager grouping, inhibition, routing, and notification',
+                'Live provider state outside committed KAORI evidence',
+                'Automated mutation while control gates remain disabled',
+            ],
+        },
     }
 

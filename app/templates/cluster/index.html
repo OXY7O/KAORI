@@ -33,12 +33,12 @@
                         </div>
                         <div class="mt-4 grid grid-cols-2 gap-2">
                             <div class="{{ page_hero.context_metric_card_classes() }}">
-                                <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Connected</p>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-brand-foreground-muted">Connected</p>
                                 <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ connected_clusters }}</p>
                                 <p class="{{ page_hero.context_metric_helper_classes() }}">Kubernetes connections available</p>
                             </div>
                             <div class="{{ page_hero.context_metric_card_classes() }}">
-                                <p class="text-[10px] font-semibold uppercase tracking-wide text-brand-foreground-muted">Inventory Synced</p>
+                                <p class="text-xs font-semibold uppercase tracking-wide text-brand-foreground-muted">Inventory Synced</p>
                                 <p class="mt-1 text-2xl font-bold text-brand-foreground">{{ synced_clusters }}</p>
                                 <p class="{{ page_hero.context_metric_helper_classes() }}">Clusters with committed inventory</p>
                             </div>

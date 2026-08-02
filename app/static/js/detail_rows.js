@@ -63,28 +63,30 @@
         })
     }
 
-    function renderLoading(target) {
+    function renderLoading(target, button) {
+        const context = button?.dataset.detailContext || 'Inventory Details'
         target.setAttribute('aria-busy', 'true')
         target.innerHTML = `
             <div class="bg-kaori-mist/50 px-3 py-3 sm:px-4 sm:py-4">
                 <div class="flex min-h-28 items-center justify-center gap-3 rounded-2xl border border-brand-outline bg-surface-card px-5 py-6 shadow-sm">
                     <span class="h-5 w-5 animate-spin rounded-full border-2 border-outline-default border-t-kaori-primary" aria-hidden="true"></span>
                     <div>
-                        <p class="text-sm font-semibold text-content-primary">Loading Inventory Details</p>
-                        <p class="mt-0.5 text-xs leading-5 text-content-muted">Reading the latest committed inventory evidence.</p>
+                        <p class="text-sm font-semibold leading-5 text-content-primary">Loading ${context}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Reading the latest committed KAORI evidence.</p>
                     </div>
                 </div>
             </div>
         `
     }
 
-    function renderError(target) {
+    function renderError(target, button) {
+        const context = button?.dataset.detailContext || 'Inventory Details'
         target.removeAttribute('aria-busy')
         target.innerHTML = `
             <div class="bg-kaori-mist/50 px-3 py-3 sm:px-4 sm:py-4">
                 <div class="rounded-2xl border border-status-critical-border bg-status-critical-soft px-5 py-5">
-                    <p class="text-sm font-semibold text-status-critical-text">Unable to Load Inventory Details</p>
-                    <p class="mt-1 text-xs leading-5 text-status-critical-text">Refresh the inventory snapshot or close and open this detail again.</p>
+                    <p class="text-sm font-semibold leading-5 text-status-critical-text">Unable to Load ${context}</p>
+                    <p class="mt-1 text-xs leading-5 text-status-critical-text">Refresh the current workspace or close and open this detail again.</p>
                 </div>
             </div>
         `
@@ -116,7 +118,7 @@
             refreshIcons()
         } catch (error) {
             if (error.name === 'AbortError') return
-            renderError(target)
+            renderError(target, button)
             setButtonState(button, true)
             target.dataset.open = 'true'
         } finally {
@@ -133,7 +135,7 @@
         row.classList.remove('hidden')
         target.dataset.open = 'true'
         setButtonState(button, true)
-        renderLoading(target)
+        renderLoading(target, button)
         refreshIcons()
         loadDetail(button, target, detailUrl)
     }

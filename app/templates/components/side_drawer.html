@@ -41,9 +41,9 @@
             <header class="flex items-start justify-between gap-4 border-b border-outline-subtle px-5 py-4 sm:px-6">
                 <div class="min-w-0">
                     <p class="text-xs font-semibold text-kaori-primary">Details</p>
-                    <h2 id="{{ id }}-title" class="mt-1 text-lg font-semibold text-content-primary">{{ title }}</h2>
+                    <h2 id="{{ id }}-title" class="mt-1 text-base font-semibold leading-6 text-content-primary">{{ title }}</h2>
                     {% if description %}
-                        <p id="{{ id }}-description" class="mt-1 text-sm leading-6 text-content-secondary">{{ description }}</p>
+                        <p id="{{ id }}-description" class="mt-1 text-sm leading-5 text-content-secondary">{{ description }}</p>
                     {% endif %}
                 </div>
                 <button type="button"
@@ -81,12 +81,12 @@
     <section class="rounded-xl border {{ shell_classes }} {{ padding_classes }}">
         <div class="flex items-start justify-between gap-4">
             <div class="flex min-w-0 items-start gap-3">
-                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-kaori-primary"
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"
                       aria-hidden="true">
                     <i data-lucide="{{ icon }}" class="h-4 w-4"></i>
                 </span>
                 <div class="min-w-0">
-                    <h3 class="text-base font-semibold text-content-primary">{{ title }}</h3>
+                    <h3 class="text-sm font-semibold leading-5 text-content-primary">{{ title }}</h3>
                     {% if description %}
                         <p class="mt-1 text-xs leading-5 text-content-muted">{{ description }}</p>
                     {% endif %}
@@ -106,7 +106,7 @@
                 <i data-lucide="{{ icon }}" class="h-3.5 w-3.5 shrink-0 text-kaori-primary" aria-hidden="true"></i>
                 <dt class="truncate text-xs font-semibold">{{ label }}</dt>
             </div>
-            <dd class="mt-1.5 break-words text-lg font-semibold leading-6 text-content-primary">{{ value }}</dd>
+            <dd class="mt-1.5 break-words text-base font-semibold leading-6 text-content-primary">{{ value }}</dd>
             {% if helper %}<p class="mt-0.5 text-xs leading-5 text-content-muted">{{ helper }}</p>{% endif %}
         </div>
     {% else %}
@@ -115,7 +115,7 @@
                 <i data-lucide="{{ icon }}" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
                 <dt class="text-xs font-semibold">{{ label }}</dt>
             </div>
-            <dd class="mt-2 text-lg font-semibold text-content-primary">{{ value }}</dd>
+            <dd class="mt-2 text-base font-semibold leading-6 text-content-primary">{{ value }}</dd>
             {% if helper %}<p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>{% endif %}
         </div>
     {% endif %}

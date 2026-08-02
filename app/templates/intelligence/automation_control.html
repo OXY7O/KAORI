@@ -1,8 +1,6 @@
 {% extends "layouts/app.html" %}
 {% import "components/page_hero.html" as page_hero %}
-{% import "components/table_label.html" as table_label %}
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
-{% import "intelligence/components/_pagination.html" as intelligence_pagination %}
 {% block title %}Automation Control{% endblock title %}
 {% block dashboard_content %}
 {% set hero_metrics = [
@@ -10,18 +8,59 @@
     ('clipboard-clock', 'Pending Decisions', payload.counts.pending_decisions, 'Awaiting workflow')
 ] %}
 <div class="space-y-6">
-<section class="{{ page_hero.shell_classes() }}"><div class="{{ page_hero.layout_classes() }}"><div class="{{ page_hero.content_classes() }}">
-{% call page_hero.intro('workflow', 'Governed Automation', 'shield-check') %}
-<h1 class="{{ page_hero.title_classes() }}">Automation Control</h1><p class="mt-2 {{ page_hero.description_classes() }}">Review runbook, decision, resolver, and rollout evidence through explicit governance boundaries.</p>
-<div class="{{ page_hero.metadata_row_classes() }}">{{ page_hero.meta_label('layers-3', '20 Foundations') }}{{ page_hero.meta_label('book-lock', 'Immutable Evidence') }}{{ page_hero.meta_label('lock-keyhole', 'Mutation Disabled') }}</div>
-{% endcall %}</div>
-{{ page_hero.context_card('Automation posture', 'Automation Posture', 'Governed Automation', payload.posture.label, payload.posture.tone, hero_metrics, 'Review Production Readiness', url_for('automation_control.index', workspace='readiness'), 'shield-check') }}
-</div></section>
-<section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
-{{ intelligence_ui.link_tabs(payload.workspace_tabs, payload.workspace, 'Automation Control Workspaces') }}
-<div class="p-4 sm:p-5">{{ intelligence_ui.reserved_plan('Mutation Controls', 'Create, publish, approve, execute, requeue, policy, safety-control, and rollout mutations remain disabled until validation gates and behavioral tests are enabled.', action_label='Reserved Plan') }}</div>
-</section>
-{% if payload.workspace == 'overview' %}{% include 'intelligence/partials/automation_control/_overview.html' %}{% elif payload.workspace == 'runbooks' %}{% include 'intelligence/partials/automation_control/_runbooks.html' %}{% elif payload.workspace == 'decisions' %}{% include 'intelligence/partials/automation_control/_decisions.html' %}{% elif payload.workspace == 'operations' %}{% include 'intelligence/partials/automation_control/_operations.html' %}{% else %}{% include 'intelligence/partials/automation_control/_readiness.html' %}{% endif %}
-{% if payload.pagination %}{% set query_params = {'workspace': payload.workspace} %}{{ intelligence_pagination.render(payload, 'automation_control.index', query_params) }}{% endif %}
+    <section class="{{ page_hero.shell_classes() }}">
+        <div class="{{ page_hero.layout_classes() }}">
+            <div class="{{ page_hero.content_classes() }}">
+                {% call page_hero.intro('workflow', 'Governed Automation', 'shield-check') %}
+                    <h1 class="{{ page_hero.title_classes() }}">Automation Control</h1>
+                    <p class="mt-2 {{ page_hero.description_classes() }}">Govern runbooks, decision evidence, resolver safety, and staged rollout without exposing unvalidated mutation paths.</p>
+                    <div class="{{ page_hero.metadata_row_classes() }}">
+                        {{ page_hero.meta_label('book-lock', 'Immutable Evidence') }}
+                        {{ page_hero.meta_label('shield-check', 'Explicit Gates') }}
+                        {{ page_hero.meta_label('lock-keyhole', 'Mutation Disabled') }}
+                    </div>
+                {% endcall %}
+            </div>
+            {{ page_hero.context_card('Automation posture', 'Automation Posture', 'Governed Automation', payload.posture.label, payload.posture.tone, hero_metrics, 'Review Production Readiness', url_for('automation_control.index', workspace='readiness'), 'shield-check') }}
+        </div>
+    </section>
+
+    <section class="grid gap-px overflow-hidden rounded-xl border border-outline-default bg-outline-subtle shadow-sm sm:grid-cols-2 xl:grid-cols-4">
+        {{ intelligence_ui.metric('book-open-check', 'Runbooks', payload.counts.runbooks, 'Stable runbook identities', 'info') }}
+        {{ intelligence_ui.metric('clipboard-clock', 'Pending Candidates', payload.counts.pending_candidates, 'Awaiting operator review', 'warning') }}
+        {{ intelligence_ui.metric('triangle-alert', 'Dead Letters', payload.counts.dead_letters, 'Retained execution failures', 'critical' if payload.counts.dead_letters else 'normal') }}
+        {{ intelligence_ui.metric('shield-check', 'Readiness Records', payload.counts.readiness_records, 'Resolver rollout evidence', 'maintenance') }}
+    </section>
+
+    <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
+        {{ intelligence_ui.link_tabs(payload.workspace_tabs, payload.workspace, 'Automation Control Workspaces') }}
+        <div class="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <div class="flex min-w-0 items-start gap-3">
+                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                    <i data-lucide="{{ payload.active_workspace.icon }}" class="h-4 w-4"></i>
+                </span>
+                <div class="min-w-0">
+                    <h2 class="text-sm font-semibold leading-5 text-content-primary">{{ payload.active_workspace.label }}</h2>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">{{ payload.active_workspace.description }}</p>
+                </div>
+            </div>
+            <span class="inline-flex shrink-0 items-center gap-2 rounded-lg border border-outline-subtle bg-surface-hover px-3 py-2 text-xs font-semibold text-content-secondary">
+                <i data-lucide="{{ 'unlock' if payload.mutations_enabled else 'lock-keyhole' }}" class="h-3.5 w-3.5 text-kaori-primary" aria-hidden="true"></i>
+                {{ 'Mutation Enabled' if payload.mutations_enabled else 'Read-Only Governance' }}
+            </span>
+        </div>
+    </section>
+
+    {% if payload.workspace == 'overview' %}
+        {% include 'intelligence/partials/automation_control/_overview.html' %}
+    {% elif payload.workspace == 'runbooks' %}
+        {% include 'intelligence/partials/automation_control/_runbooks.html' %}
+    {% elif payload.workspace == 'decisions' %}
+        {% include 'intelligence/partials/automation_control/_decisions.html' %}
+    {% elif payload.workspace == 'operations' %}
+        {% include 'intelligence/partials/automation_control/_operations.html' %}
+    {% else %}
+        {% include 'intelligence/partials/automation_control/_readiness.html' %}
+    {% endif %}
 </div>
 {% endblock dashboard_content %}

@@ -23,7 +23,7 @@
             <p class="mt-1 text-xs leading-5 text-content-muted">
                 {{ payload.sync_state.progress_message or payload.sync_state.helper }}
             </p>
-            <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] leading-5 text-content-muted">
+            <div class="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs leading-5 text-content-muted">
                 <span><span class="font-semibold text-content-secondary">Automatic Sync:</span> {{ 'Enabled' if payload.sync_state.automatic_enabled else 'Manual Only' }}</span>
                 <span><span class="font-semibold text-content-secondary">Last Successful:</span> {{ payload.sync_state.last_success_label }}</span>
                 <span><span class="font-semibold text-content-secondary">Next Scheduled:</span> {{ payload.sync_state.next_run_label }}</span>

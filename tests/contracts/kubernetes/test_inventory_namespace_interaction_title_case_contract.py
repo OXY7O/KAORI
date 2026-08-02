@@ -39,7 +39,8 @@ def test_expandable_rows_use_deterministic_fetch_request_flow():
     assert "fetch(detailUrl" in script
     assert "credentials: 'same-origin'" in script
     assert "'HX-Request': 'true'" in script
-    assert "renderLoading(target)" in script
+    assert "renderLoading(target, button)" in script
+    assert "button?.dataset.detailContext" in script
     assert "target.dataset.open = 'true'" in script
     assert "window.htmx?.process" in script
     assert 'hx-get="{{ detail_url }}"' not in macro

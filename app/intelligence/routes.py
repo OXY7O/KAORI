@@ -5,6 +5,7 @@ from flask.typing import ResponseReturnValue
 
 from app.intelligence.service import (
     get_alert_intelligence_payload,
+    get_catalog_rule,
     get_recommendation_finding,
     get_recommendations_payload,
 )
@@ -60,7 +61,27 @@ def catalog() -> ResponseReturnValue:
         request.args,
         page_mode='catalog',
     )
+    if request.headers.get('HX-Request') == 'true':
+        target = (request.headers.get('HX-Target') or '').strip()
+        template_name = (
+            'intelligence/partials/_catalog_results.html'
+            if target == 'catalog-results-content'
+            else 'intelligence/partials/_catalog_workspace.html'
+        )
+        return render_template(template_name, payload=payload)
     return render_template('intelligence/rule_catalog.html', payload=payload)
+
+
+@intelligence_bp.get('/catalog/<path:rule_key>/details')
+@permission_required('intelligence.view')
+def catalog_rule_details(rule_key: str) -> ResponseReturnValue:
+    rule = get_catalog_rule(rule_key)
+    if rule is None:
+        abort(404)
+    return render_template(
+        'intelligence/partials/_catalog_detail_content.html',
+        item=rule,
+    )
 
 
 @intelligence_bp.route('/alert-intelligence')

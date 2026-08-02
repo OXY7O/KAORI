@@ -17,7 +17,7 @@
                     <i data-lucide="route" class="h-4 w-4" aria-hidden="true"></i>
                     Integration Coverage
                     <span :class="activeTab === 'coverage' ? 'border-white bg-white text-kaori-primary-dark' : 'border-brand-outline bg-kaori-soft text-kaori-primary'"
-                          class="rounded-md border px-1.5 py-0.5 text-[10px] font-semibold">{{ coverage_count }}</span>
+                          class="rounded-md border px-1.5 py-0.5 text-xs font-semibold">{{ coverage_count }}</span>
                 </button>
                 <button type="button"
                         id="{{ provider_key }}-registry-tab"
@@ -30,7 +30,7 @@
                     <i data-lucide="database-zap" class="h-4 w-4" aria-hidden="true"></i>
                     Connection Registry
                     <span :class="activeTab === 'registry' ? 'border-white bg-white text-kaori-primary-dark' : 'border-brand-outline bg-kaori-soft text-kaori-primary'"
-                          class="rounded-md border px-1.5 py-0.5 text-[10px] font-semibold">{{ registry_count }}</span>
+                          class="rounded-md border px-1.5 py-0.5 text-xs font-semibold">{{ registry_count }}</span>
                 </button>
             </div>
             <p class="px-2 text-xs font-medium leading-5 text-kaori-primary">Switch views without leaving the {{ provider_key|title }} integration workspace.</p>

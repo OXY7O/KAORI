@@ -16,8 +16,9 @@ def test_recommendation_detail_uses_canonical_side_drawer_hierarchy():
     assert 'Step {{ loop.index }} of {{ item.fix_steps|length }}' in template
     assert 'Verification Gate' in template
     assert 'absolute bottom-0 left-4 top-8 w-px' in template
+    assert 'text-base font-semibold leading-6' in template
     assert 'text-[11px]' not in template
-    assert 'text-base' not in template
+    assert 'text-[10px]' not in template
 
 
 def test_shared_resource_detail_host_supports_drawer_without_main_layout_lock():

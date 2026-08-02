@@ -26,18 +26,18 @@
                                     <span class="font-semibold text-content-primary">{{ user.display_label }}</span>
                                     {% if not user.has_display_name %}
                                         <span title="No display name is set. Username is used as the visible account label."
-                                              class="inline-flex items-center gap-1 rounded-md bg-surface-subtle px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-content-muted ring-1 ring-outline-default/50 dark:ring-outline-default">
+                                              class="inline-flex items-center gap-1 rounded-md bg-surface-subtle px-2 py-0.5 text-xs font-extrabold uppercase tracking-wide text-content-muted ring-1 ring-outline-default/50 dark:ring-outline-default">
                                             <i data-lucide="user-round" class="h-3 w-3"></i> Username label
                                         </span>
                                     {% endif %}
                                     {% if user.is_super_admin %}
                                         <span title="Emergency Access Super Admin with elevated control over administrative accounts."
-                                              class="inline-flex items-center gap-1 rounded-md bg-kaori-soft px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-kaori-primary ring-1 ring-brand-outline ">
+                                              class="inline-flex items-center gap-1 rounded-md bg-kaori-soft px-2 py-0.5 text-xs font-extrabold uppercase tracking-wide text-kaori-primary ring-1 ring-brand-outline ">
                                             <i data-lucide="shield-check" class="h-3 w-3"></i> Super Admin
                                         </span>
                                     {% elif user.role_name == 'admin' %}
                                         <span title="Administrator role without Emergency Access privileges."
-                                              class="inline-flex items-center gap-1 rounded-md bg-kaori-soft px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-kaori-primary ring-1 ring-brand-outline ">
+                                              class="inline-flex items-center gap-1 rounded-md bg-kaori-soft px-2 py-0.5 text-xs font-extrabold uppercase tracking-wide text-kaori-primary ring-1 ring-brand-outline ">
                                             <i data-lucide="shield" class="h-3 w-3"></i> Admin
                                         </span>
                                     {% endif %}

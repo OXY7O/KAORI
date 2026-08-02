@@ -33,7 +33,7 @@
     <div class="grid grid-cols-2 border-b border-outline-subtle bg-surface-card sm:grid-cols-4">
         {% for label, value in [('Total Records', job_stats.total), ('Active', job_stats.active), ('Needs Attention', job_stats.attention), ('Completed · 24H', job_stats.completed_24h)] %}
             <div class="px-5 py-3 {% if not loop.last %}border-r border-outline-subtle{% endif %}">
-                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ label }}</p>
+                <p class="text-xs font-semibold uppercase tracking-wider text-content-muted">{{ label }}</p>
                 <p class="mt-1 text-lg font-bold text-content-primary">{{ value }}</p>
             </div>
         {% endfor %}
@@ -93,7 +93,7 @@
     </form>
 
     {% if job_rows %}
-        <div class="hidden border-b border-outline-subtle bg-surface-card px-5 py-2.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted lg:grid lg:grid-cols-12 lg:gap-4 sm:px-6">
+        <div class="hidden border-b border-outline-subtle bg-surface-card px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-content-muted lg:grid lg:grid-cols-12 lg:gap-4 sm:px-6">
             <span class="lg:col-span-3">Job</span>
             <span class="lg:col-span-3">Execution Context</span>
             <span class="lg:col-span-2">Status & Progress</span>
@@ -110,7 +110,7 @@
                         <div class="min-w-0">
                             <h4 class="break-words text-sm font-semibold text-content-primary">{{ row.operation_label }}</h4>
                             <p class="mt-1 break-all text-xs text-content-muted">{{ row.public_id }}</p>
-                            <p class="mt-1 text-[10px] font-medium text-content-muted">{{ row.workload_label }} · {{ row.job_type }}</p>
+                            <p class="mt-1 text-xs font-medium text-content-muted">{{ row.workload_label }} · {{ row.job_type }}</p>
                         </div>
                     </div>
 
@@ -146,9 +146,9 @@
                                 classes='mt-2 h-1.5 w-full overflow-hidden rounded-full accent-kaori-primary'
                             ) }}
                         {% else %}
-                            <p class="mt-2 text-[10px] font-medium text-content-muted">Progress is not yet measurable.</p>
+                            <p class="mt-2 text-xs font-medium text-content-muted">Progress is not yet measurable.</p>
                         {% endif %}
-                        <p class="mt-2 text-[10px] text-content-muted">Attempt {{ row.attempt_count }}/{{ row.max_attempts }}</p>
+                        <p class="mt-2 text-xs text-content-muted">Attempt {{ row.attempt_count }}/{{ row.max_attempts }}</p>
                     </div>
 
                     <dl class="grid min-w-0 grid-cols-2 gap-x-4 gap-y-2 text-xs lg:col-span-2 lg:grid-cols-1">

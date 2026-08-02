@@ -44,3 +44,47 @@ def test_intelligence_templates_do_not_use_inline_script_or_onchange():
     content = '\n'.join(path.read_text() for path in Path('app/templates/intelligence').rglob('*.html'))
     assert '<script' not in content
     assert 'onchange=' not in content
+
+
+def test_rule_catalog_uses_adjacent_inline_rule_definition_instead_of_modal():
+    records = read('app/templates/intelligence/partials/_catalog_records.html')
+    details = read('app/templates/intelligence/partials/_catalog_detail_content.html')
+    routes = read('app/intelligence/routes.py')
+
+    assert 'data-detail-toggle' in records
+    assert 'data-detail-row' in records
+    assert 'data-detail-group="rule-catalog"' in records
+    assert 'data-detail-context="Rule Definition"' in records
+    assert '<details' not in records
+    assert 'resource_detail_modal' not in records
+    assert "def catalog_rule_details(" in routes
+    assert "_catalog_detail_content.html" in routes
+    assert 'Evaluation Logic' in details
+    assert 'Operator Response' in details
+    assert 'Coverage Contract' in details
+    assert Path('app/templates/intelligence/partials/_catalog_workspace.html').exists()
+    assert Path('app/templates/intelligence/partials/_catalog_results.html').exists()
+    workspace = read('app/templates/intelligence/partials/_catalog_workspace.html')
+    results = read('app/templates/intelligence/partials/_catalog_results.html')
+    assert "filter_results_target = '#catalog-results-content'" in workspace
+    assert "filter_workspace_target = '#catalog-workspace-content'" in workspace
+    assert "target='#catalog-results-content'" in results
+    assert "target == 'catalog-results-content'" in routes
+
+
+def test_shared_productive_typography_uses_named_size_tokens_for_primary_surfaces():
+    paths = [
+        'app/templates/components/page_hero.html',
+        'app/templates/components/side_drawer.html',
+        'app/templates/components/resource_detail_modal.html',
+        'app/templates/components/table_label.html',
+        'app/templates/inventory/components/_summary.html',
+        'app/templates/intelligence/components/_workspace.html',
+        'app/templates/intelligence/partials/_recommendation_detail_content.html',
+        'app/templates/intelligence/partials/_catalog_detail_content.html',
+    ]
+    content = '\n'.join(read(path) for path in paths)
+    assert 'text-[10px]' not in content
+    assert 'text-[11px]' not in content
+    assert 'text-[12px]' not in content
+    assert 'tracking-[0.' not in content

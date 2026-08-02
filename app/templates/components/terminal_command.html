@@ -2,13 +2,13 @@
     <div class="overflow-hidden rounded-lg border border-outline-strong bg-kaori-primary-dark shadow-sm"
          x-data="{ copied: false, copyCommand() { const task = navigator.clipboard?.writeText(this.$refs.command.textContent.trim()); if (!task) return; task.then(() => { this.copied = true; setTimeout(() => this.copied = false, 1400) }) } }">
         <div class="flex items-center justify-between gap-3 border-b border-white/10 bg-black/15 px-3 py-2">
-            <div class="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.12em] text-brand-foreground-muted">
+            <div class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-brand-foreground-muted">
                 <span class="flex gap-1" aria-hidden="true"><span class="h-2 w-2 rounded-full bg-status-critical"></span><span class="h-2 w-2 rounded-full bg-status-warning"></span><span class="h-2 w-2 rounded-full bg-status-normal"></span></span>
                 <span>{{ label }}</span>
             </div>
             <button type="button"
                     @click="copyCommand()"
-                    class="inline-flex min-h-7 items-center gap-1.5 rounded-md border border-white/15 bg-white/10 px-2 text-[10px] font-semibold text-brand-foreground transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                    class="inline-flex min-h-7 items-center gap-1.5 rounded-md border border-white/15 bg-white/10 px-2 text-xs font-semibold text-brand-foreground transition hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
                 <i data-lucide="copy" class="h-3 w-3" aria-hidden="true"></i>
                 <span x-text="copied ? 'Copied' : '{{ copy_label }}'">{{ copy_label }}</span>
             </button>

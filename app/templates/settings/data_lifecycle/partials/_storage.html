@@ -28,7 +28,7 @@
             <div class="mt-3 grid gap-3 md:grid-cols-4">
                 {% for step,title in [('1','Select immutable boundary'),('2','Write data + manifest'),('3','Verify checksums'),('4','Cleanup eligible rows')] %}
                     <div class="flex items-start gap-2">
-                        <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-kaori-primary text-[10px] font-bold text-white">{{ step }}</span>
+                        <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-kaori-primary text-xs font-bold text-white">{{ step }}</span>
                         <p class="text-xs leading-5 text-content-secondary">{{ title }}</p>
                     </div>
                 {% endfor %}

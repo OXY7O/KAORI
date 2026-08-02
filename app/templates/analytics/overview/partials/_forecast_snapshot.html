@@ -41,7 +41,7 @@
                 <span class="flex h-8 w-8 items-center justify-center rounded-lg {% if metric.label == 'Risk Resources' and risk_count > 0 %}bg-status-warning-soft text-status-warning{% else %}bg-kaori-soft text-kaori-primary{% endif %}">
                     <i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i>
                 </span>
-                <p class="mt-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ metric.label }}</p>
+                <p class="mt-3 text-xs font-semibold uppercase tracking-wider text-content-muted">{{ metric.label }}</p>
                 <p class="mt-1.5 break-words text-lg font-semibold text-content-primary">{{ metric.value }}</p>
             </article>
         {% endfor %}

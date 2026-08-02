@@ -1,11 +1,99 @@
+{% import "components/operational_callout.html" as operational_callout %}
+{% import "components/table_label.html" as table_label %}
 {% import "intelligence/components/_workspace.html" as intelligence_ui %}
-{% call intelligence_ui.section('Decision Review', 'Candidates, immutable decisions, and execution journals are separated into clear evidence collections.', 'clipboard-check', 'Reserved Plan', 'unknown') %}
-<div class="grid gap-4 p-4 xl:grid-cols-3 sm:p-5">
-<div class="xl:col-span-2"><h3 class="text-sm font-semibold text-content-primary">Candidates</h3><div class="mt-3 grid gap-3">{% for row in payload.candidate_rows %}{% call intelligence_ui.record(row.rule_key, row.public_id, icon='clipboard-clock', status_text=row.status|replace('_',' ')|title, status_tone='warning' if row.status == 'pending' else 'normal') %}<dl class="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{{ intelligence_ui.field('Runbook', row.runbook_key ~ ' · ' ~ row.runbook_version) }}{{ intelligence_ui.field('Action', row.action_key, true) }}{{ intelligence_ui.field('Scope', row.cluster ~ ' / ' ~ row.namespace) }}{{ intelligence_ui.field('Expires', row.expires_at) }}</dl><div class="mt-3">{{ intelligence_ui.reserved_plan('Candidate Outcome', 'Promotion and dismissal require an entered reason, validation preview, and confirmation.', compact=true) }}</div>{% endcall %}{% else %}<p class="rounded-lg border border-dashed border-outline-strong p-8 text-center text-sm text-content-muted">No decision candidates are available.</p>{% endfor %}</div></div>
-<fieldset disabled class="rounded-lg border border-outline-subtle bg-surface-hover p-4 opacity-80"><legend class="px-2 text-sm font-semibold text-content-primary">Review Reason</legend><label class="text-xs font-semibold text-content-secondary">Operational Reason<textarea rows="5" class="mt-1 w-full rounded-lg border border-outline-strong bg-surface-card px-3 py-2" placeholder="Required before approve, reject, promote, or dismiss."></textarea></label><button class="mt-4 inline-flex min-h-10 items-center gap-2 rounded-lg border border-outline-default bg-surface-subtle px-4 text-sm font-semibold text-content-disabled"><i data-lucide="lock-keyhole" class="h-4 w-4"></i>Reserved Plan</button></fieldset>
-</div>
+{% import "intelligence/components/_pagination.html" as intelligence_pagination %}
+
+{% call intelligence_ui.section(
+    'Decision Workflow',
+    'Candidates move through review, approval, dispatch, and execution evidence without collapsing governance stages into one action.',
+    'clipboard-check',
+    'Read-Only',
+    'unknown'
+) %}
+    {% set stages = [
+        ('1', 'Candidate', 'Evidence is proposed for operator review.', 'clipboard-clock'),
+        ('2', 'Policy Review', 'Scope, expiry, runbook, and safety posture are checked.', 'shield-check'),
+        ('3', 'Approval', 'An accountable outcome is persisted when required.', 'badge-check'),
+        ('4', 'Execution Journal', 'Authorization, lease, attempt, and result evidence are retained.', 'scroll-text')
+    ] %}
+    <ol class="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-4 sm:p-5">
+        {% for number, title, description, icon in stages %}
+            <li class="rounded-xl border border-outline-subtle bg-surface-card p-4">
+                <div class="flex items-center gap-3">
+                    <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-brand-outline bg-kaori-soft text-xs font-semibold text-kaori-primary">{{ number }}</span>
+                    <i data-lucide="{{ icon }}" class="h-4 w-4 text-kaori-primary" aria-hidden="true"></i>
+                    <h3 class="text-sm font-semibold leading-5 text-content-primary">{{ title }}</h3>
+                </div>
+                <p class="mt-3 text-xs leading-5 text-content-muted">{{ description }}</p>
+            </li>
+        {% endfor %}
+    </ol>
 {% endcall %}
+
+{% call intelligence_ui.section(
+    'Candidate Review Queue',
+    'Pending and reviewed candidates ordered by creation time. Promotion and dismissal require a reason and validation preview.',
+    'clipboard-clock'
+) %}
+    <div class="grid gap-3 p-4 sm:p-5">
+        {% for row in payload.candidate_rows %}
+            {% call intelligence_ui.record(row.rule_key, row.public_id, icon='clipboard-clock', status_text=row.status|replace('_',' ')|title, status_tone='warning' if row.status == 'pending' else 'normal') %}
+                <div class="mt-3 flex flex-wrap gap-2">
+                    {{ table_label.status_label(row.severity|title, 'critical' if row.severity == 'critical' else ('warning' if row.severity == 'warning' else 'info'), size='compact') }}
+                    {{ table_label.metadata_label(row.cluster, 'boxes') }}
+                    {{ table_label.metadata_label(row.namespace, 'folder') }}
+                </div>
+                <dl class="mt-4 grid gap-3 rounded-lg border border-outline-subtle bg-surface-hover p-3 sm:grid-cols-2 xl:grid-cols-4">
+                    {{ intelligence_ui.field('Runbook', row.runbook_key ~ ' · ' ~ row.runbook_version) }}
+                    {{ intelligence_ui.field('Action', row.action_key, true) }}
+                    {{ intelligence_ui.field('Created', row.created_at) }}
+                    {{ intelligence_ui.field('Expires', row.expires_at) }}
+                </dl>
+                <div class="mt-3">{{ intelligence_ui.reserved_plan('Candidate Outcome', 'Promotion and dismissal remain disabled until the review-reason and confirmation contracts are enabled.', action_label='', compact=true) }}</div>
+            {% endcall %}
+        {% else %}
+            {{ intelligence_ui.empty_state('No Decision Candidates Available', 'No recommendation or alert evidence is currently awaiting decision review.', 'clipboard-clock') }}
+        {% endfor %}
+    </div>
+    {% set query_params = {'workspace': 'decisions'} %}
+    {{ intelligence_pagination.render(payload, 'automation_control.index', query_params, resource_label='Candidates', per_page_options=payload.per_page_options) }}
+{% endcall %}
+
 <section class="grid gap-4 xl:grid-cols-2">
-{% call intelligence_ui.section('Persisted Decisions', 'Approval state remains bound to locked evidence.', 'badge-check') %}<div class="grid gap-3 p-4 sm:p-5">{% for row in payload.decision_rows %}{% call intelligence_ui.record(row.rule_key, row.action_key, icon='badge-check', status_text=row.status|replace('_',' ')|title, status_tone='normal' if row.status in ['approved','ready','dispatched'] else ('critical' if row.status == 'rejected' else 'warning')) %}<dl class="mt-3 grid gap-3 sm:grid-cols-2">{{ intelligence_ui.field('Scope', row.cluster ~ ' / ' ~ row.namespace) }}{{ intelligence_ui.field('Policy', row.policy|replace('_',' ')|title) }}{{ intelligence_ui.field('Runbook', row.runbook_key) }}</dl><div class="mt-3">{{ intelligence_ui.reserved_plan('Decision Outcome', 'Approve and reject controls remain disabled until validation and reason contracts are enabled.', compact=true) }}</div>{% endcall %}{% else %}<p class="py-8 text-center text-sm text-content-muted">No persisted decisions are available.</p>{% endfor %}</div>{% endcall %}
-{% call intelligence_ui.section('Execution Journals', 'Authorization, lease, retry, and result evidence remains separate from delivery.', 'scroll-text') %}<div class="grid gap-3 p-4 sm:p-5">{% for row in payload.journal_rows %}{% call intelligence_ui.record(row.action_key, row.public_id, icon='scroll-text', status_text=row.orchestration_status|replace('_',' ')|title, status_tone='critical' if row.orchestration_status == 'dead_letter' else ('warning' if row.orchestration_status in ['retry_wait','queued'] else 'normal')) %}<dl class="mt-3 grid gap-3 sm:grid-cols-2">{{ intelligence_ui.field('Scope', row.cluster ~ ' / ' ~ row.namespace) }}{{ intelligence_ui.field('Attempts', row.attempts) }}{{ intelligence_ui.field('Updated', row.updated_at) }}</dl>{% if row.error != '-' %}<p class="mt-3 rounded-lg border border-status-critical-border bg-status-critical-soft p-3 text-xs leading-5 text-status-critical-text">{{ row.error }}</p>{% endif %}{% endcall %}{% else %}<p class="py-8 text-center text-sm text-content-muted">No execution journals are available.</p>{% endfor %}</div>{% endcall %}
+    {% call intelligence_ui.section('Persisted Decisions', 'Approval state remains bound to immutable evidence and explicit expiry.', 'badge-check') %}
+        <div class="grid gap-3 p-4 sm:p-5">
+            {% for row in payload.decision_rows %}
+                {% call intelligence_ui.record(row.rule_key, row.action_key, icon='badge-check', status_text=row.status|replace('_',' ')|title, status_tone='normal' if row.status in ['approved','ready','dispatched'] else ('critical' if row.status == 'rejected' else 'warning')) %}
+                    <dl class="mt-3 grid gap-3 sm:grid-cols-2">
+                        {{ intelligence_ui.field('Scope', row.cluster ~ ' / ' ~ row.namespace) }}
+                        {{ intelligence_ui.field('Policy Outcome', row.policy|replace('_',' ')|title) }}
+                        {{ intelligence_ui.field('Runbook', row.runbook_key) }}
+                        {{ intelligence_ui.field('Expires', row.expires_at) }}
+                    </dl>
+                {% endcall %}
+            {% else %}
+                {{ intelligence_ui.empty_state('No Persisted Decisions', 'No approval or rejection evidence has been recorded.', 'badge-check') }}
+            {% endfor %}
+        </div>
+    {% endcall %}
+
+    {% call intelligence_ui.section('Execution Journals', 'Authorization, lease, retry, attempt, and result evidence remains separate from delivery.', 'scroll-text') %}
+        <div class="grid gap-3 p-4 sm:p-5">
+            {% for row in payload.journal_rows %}
+                {% call intelligence_ui.record(row.action_key, row.public_id, icon='scroll-text', status_text=row.orchestration_status|replace('_',' ')|title, status_tone='critical' if row.orchestration_status == 'dead_letter' else ('warning' if row.orchestration_status in ['retry_wait','queued'] else 'normal')) %}
+                    <dl class="mt-3 grid gap-3 sm:grid-cols-2">
+                        {{ intelligence_ui.field('Scope', row.cluster ~ ' / ' ~ row.namespace) }}
+                        {{ intelligence_ui.field('Attempts', row.attempts) }}
+                        {{ intelligence_ui.field('Result', row.status|replace('_',' ')|title) }}
+                        {{ intelligence_ui.field('Updated', row.updated_at) }}
+                    </dl>
+                    {% if row.error != '-' %}
+                        <div class="mt-3">{{ operational_callout.render('Execution Error', row.error, icon='triangle-alert', tone='critical', variant='semantic') }}</div>
+                    {% endif %}
+                {% endcall %}
+            {% else %}
+                {{ intelligence_ui.empty_state('No Execution Journals', 'No resolver execution evidence has been recorded.', 'scroll-text') }}
+            {% endfor %}
+        </div>
+    {% endcall %}
 </section>

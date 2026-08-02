@@ -37,7 +37,7 @@
             }.get(metric.tone, 'bg-kaori-soft text-kaori-primary') %}
             <article class="{{ overview_surface.metric_cell_classes() }}">
                 <span class="flex h-8 w-8 items-center justify-center rounded-lg {{ icon_class }}"><i data-lucide="{{ metric.icon }}" class="h-4 w-4"></i></span>
-                <p class="mt-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-content-muted">{{ metric.label }}</p>
+                <p class="mt-3 text-xs font-semibold uppercase tracking-wider text-content-muted">{{ metric.label }}</p>
                 <p class="mt-1.5 break-words text-lg font-semibold text-content-primary">{{ metric.value }}</p>
             </article>
         {% endfor %}

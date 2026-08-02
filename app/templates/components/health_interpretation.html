@@ -51,21 +51,21 @@
                 <div class="mt-4 grid grid-cols-3 gap-2" aria-label="Health score ranges">
                     <div class="rounded-lg border border-status-critical-border bg-status-critical-soft px-2.5 py-2 text-center {% if status_tone == 'critical' %}shadow-sm{% endif %}">
                         <p class="text-xs font-semibold text-status-critical-text">0–59</p>
-                        <p class="mt-0.5 text-[10px] font-semibold text-content-secondary">
+                        <p class="mt-0.5 text-xs font-semibold text-content-secondary">
                             Critical
                             {% if status_tone == 'critical' %}· Current{% endif %}
                         </p>
                     </div>
                     <div class="rounded-lg border border-status-warning-border bg-status-warning-soft px-2.5 py-2 text-center {% if status_tone == 'warning' %}shadow-sm{% endif %}">
                         <p class="text-xs font-semibold text-status-warning-text">60–84</p>
-                        <p class="mt-0.5 text-[10px] font-semibold text-content-secondary">
+                        <p class="mt-0.5 text-xs font-semibold text-content-secondary">
                             Attention
                             {% if status_tone == 'warning' %}· Current{% endif %}
                         </p>
                     </div>
                     <div class="rounded-lg border border-status-normal-border bg-status-normal-soft px-2.5 py-2 text-center {% if status_tone == 'normal' %}shadow-sm{% endif %}">
                         <p class="text-xs font-semibold text-status-normal-text">85–100</p>
-                        <p class="mt-0.5 text-[10px] font-semibold text-content-secondary">
+                        <p class="mt-0.5 text-xs font-semibold text-content-secondary">
                             Healthy
                             {% if status_tone == 'normal' %}· Current{% endif %}
                         </p>

@@ -43,47 +43,11 @@
     "app/templates/analytics/overview/index.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/analytics/overview/partials/_actionable_recommendation_summary.html": {
-      "arbitrary_text_sizes": 2,
-      "arbitrary_tracking": 2
-    },
-    "app/templates/analytics/overview/partials/_alerts_snapshot.html": {
-      "arbitrary_text_sizes": 3,
-      "arbitrary_tracking": 3
-    },
-    "app/templates/analytics/overview/partials/_capacity_snapshot.html": {
-      "arbitrary_text_sizes": 3,
-      "arbitrary_tracking": 3
-    },
-    "app/templates/analytics/overview/partials/_forecast_snapshot.html": {
-      "arbitrary_text_sizes": 3,
-      "arbitrary_tracking": 3
-    },
     "app/templates/analytics/overview/partials/_health_summary.html": {
-      "arbitrary_text_sizes": 4,
-      "arbitrary_tracking": 4,
       "copied_standard_surface_shells": 2
-    },
-    "app/templates/analytics/overview/partials/_hero_posture.html": {
-      "arbitrary_text_sizes": 2
-    },
-    "app/templates/analytics/overview/partials/_hero_posture_loading.html": {
-      "arbitrary_text_sizes": 2
     },
     "app/templates/analytics/overview/partials/_load_tracker.html": {
       "copied_standard_surface_shells": 1
-    },
-    "app/templates/analytics/overview/partials/_resource_snapshot.html": {
-      "arbitrary_text_sizes": 5,
-      "arbitrary_tracking": 4
-    },
-    "app/templates/analytics/overview/partials/_storage_snapshot.html": {
-      "arbitrary_text_sizes": 4,
-      "arbitrary_tracking": 4
-    },
-    "app/templates/analytics/overview/partials/_top_consumers_snapshot.html": {
-      "arbitrary_text_sizes": 2,
-      "arbitrary_tracking": 2
     },
     "app/templates/analytics/partials/_load_tracker.html": {
       "copied_standard_surface_shells": 1
@@ -98,7 +62,6 @@
       "semantic_border_utilities": 1
     },
     "app/templates/auth/partials/_brand_panel.html": {
-      "arbitrary_tracking": 1,
       "custom_hero_titles": 1,
       "font_extrabold_utilities": 2
     },
@@ -106,17 +69,13 @@
       "semantic_border_utilities": 2
     },
     "app/templates/auth/partials/_login_form.html": {
-      "arbitrary_tracking": 1,
       "font_extrabold_utilities": 3
     },
     "app/templates/auth/setup_required.html": {
-      "arbitrary_text_sizes": 1,
-      "arbitrary_tracking": 1,
       "custom_hero_titles": 1,
       "semantic_border_utilities": 3
     },
     "app/templates/cluster/index.html": {
-      "arbitrary_text_sizes": 2,
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 1
     },
@@ -139,80 +98,29 @@
     "app/templates/components/action_button.html": {
       "semantic_border_utilities": 2
     },
-    "app/templates/components/dependencies/_blocker.html": {
-      "arbitrary_text_sizes": 2
-    },
     "app/templates/components/detail_tip.html": {
       "semantic_border_utilities": 1
     },
     "app/templates/components/health_interpretation.html": {
-      "arbitrary_text_sizes": 3,
       "semantic_border_utilities": 6
-    },
-    "app/templates/components/integration_workspace_tabs.html": {
-      "arbitrary_text_sizes": 2
     },
     "app/templates/components/live_lookup_notice.html": {
       "semantic_border_utilities": 1
     },
-    "app/templates/components/navigation/_individual_sync_status.html": {
-      "arbitrary_text_sizes": 2
-    },
     "app/templates/components/navigation/_notification_center.html": {
-      "arbitrary_text_sizes": 12,
-      "page_local_compact_status_labels": 1
+      "page_local_compact_pill_labels": 2
     },
     "app/templates/components/navigation/_quick_sync_result.html": {
-      "arbitrary_text_sizes": 6,
-      "page_local_compact_status_labels": 1,
       "semantic_border_utilities": 2
     },
     "app/templates/components/navigation/_quick_sync_status.html": {
-      "arbitrary_text_sizes": 6,
       "raw_palette_utilities": 19
     },
-    "app/templates/components/navigation/access_management_menu.html": {
-      "arbitrary_text_sizes": 6
-    },
-    "app/templates/components/navigation/analytics_menu.html": {
-      "arbitrary_text_sizes": 10
-    },
-    "app/templates/components/navigation/dashboards_menu.html": {
-      "arbitrary_text_sizes": 2
-    },
-    "app/templates/components/navigation/governance_menu.html": {
-      "arbitrary_text_sizes": 3
-    },
-    "app/templates/components/navigation/integrations_menu.html": {
-      "arbitrary_text_sizes": 5
-    },
-    "app/templates/components/navigation/intelligence_menu.html": {
-      "arbitrary_text_sizes": 6
-    },
-    "app/templates/components/navigation/inventory_menu.html": {
-      "arbitrary_text_sizes": 12
-    },
-    "app/templates/components/navigation/kubernetes_operations_menu.html": {
-      "arbitrary_text_sizes": 3
-    },
     "app/templates/components/navigation/navbar.html": {
-      "arbitrary_text_sizes": 4,
-      "arbitrary_tracking": 1,
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 1
     },
-    "app/templates/components/navigation/platform_operations_menu.html": {
-      "arbitrary_text_sizes": 3
-    },
-    "app/templates/components/navigation/reports_menu.html": {
-      "arbitrary_text_sizes": 8
-    },
-    "app/templates/components/navigation/settings_menu.html": {
-      "arbitrary_text_sizes": 5
-    },
     "app/templates/components/navigation/sidebar.html": {
-      "arbitrary_text_sizes": 8,
-      "arbitrary_tracking": 7,
       "custom_hero_titles": 1,
       "font_extrabold_utilities": 7
     },
@@ -220,7 +128,6 @@
       "raw_palette_utilities": 11
     },
     "app/templates/components/operational_metric_card.html": {
-      "arbitrary_text_sizes": 1,
       "copied_standard_surface_shells": 1
     },
     "app/templates/components/operational_toggle.html": {
@@ -229,17 +136,8 @@
     "app/templates/components/operational_workflow_catalog.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/components/page_context_card.html": {
-      "arbitrary_text_sizes": 1,
-      "arbitrary_tracking": 1
-    },
     "app/templates/components/page_hero.html": {
-      "arbitrary_tracking": 4,
       "semantic_border_utilities": 5
-    },
-    "app/templates/components/related_page_card.html": {
-      "arbitrary_text_sizes": 1,
-      "arbitrary_tracking": 1
     },
     "app/templates/components/states/_blocked_state.html": {
       "copied_standard_surface_shells": 1
@@ -253,25 +151,11 @@
     "app/templates/components/technical_check.html": {
       "semantic_border_utilities": 1
     },
-    "app/templates/components/terminal_command.html": {
-      "arbitrary_text_sizes": 2,
-      "arbitrary_tracking": 1
-    },
     "app/templates/components/view_more_content.html": {
       "copied_standard_surface_shells": 1
     },
     "app/templates/dashboards/kubernetes/partials/_alerts_summary.html": {
       "semantic_border_utilities": 1
-    },
-    "app/templates/governance/tls_certificates/partials/_detail_content.html": {
-      "arbitrary_text_sizes": 4,
-      "arbitrary_tracking": 4
-    },
-    "app/templates/governance/tls_certificates/partials/_sync_live_state.html": {
-      "arbitrary_text_sizes": 1
-    },
-    "app/templates/governance/tls_certificates/partials/_sync_toast.html": {
-      "arbitrary_text_sizes": 2
     },
     "app/templates/integrations/bindings/partials/_workspace.html": {
       "semantic_border_utilities": 4
@@ -318,104 +202,42 @@
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 6
     },
-    "app/templates/intelligence/alert_intelligence.html": {
-      "arbitrary_tracking": 1
-    },
-    "app/templates/intelligence/partials/automation_control/_decisions.html": {
-      "arbitrary_text_sizes": 4,
-      "arbitrary_tracking": 3,
-      "copied_standard_surface_shells": 3
-    },
-    "app/templates/intelligence/partials/automation_control/_operations.html": {
-      "arbitrary_text_sizes": 4,
-      "arbitrary_tracking": 3,
-      "copied_standard_surface_shells": 3
-    },
-    "app/templates/intelligence/partials/automation_control/_overview.html": {
-      "arbitrary_text_sizes": 1,
-      "arbitrary_tracking": 1,
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/intelligence/partials/automation_control/_readiness.html": {
-      "arbitrary_text_sizes": 2,
-      "arbitrary_tracking": 1,
-      "copied_standard_surface_shells": 1
-    },
-    "app/templates/intelligence/partials/automation_control/_runbooks.html": {
-      "arbitrary_text_sizes": 3,
-      "arbitrary_tracking": 3,
-      "copied_standard_surface_shells": 3
-    },
-    "app/templates/intelligence/recommendations.html": {
-      "arbitrary_text_sizes": 3,
-      "arbitrary_tracking": 21,
-      "copied_standard_surface_shells": 1,
-      "raw_palette_utilities": 73
-    },
     "app/templates/inventory/components/_detail_macros.html": {
       "arbitrary_radii": 1,
       "page_local_compact_pill_labels": 3,
       "raw_palette_utilities": 266
     },
     "app/templates/inventory/components/_summary.html": {
-      "arbitrary_text_sizes": 4,
-      "arbitrary_tracking": 4,
       "semantic_border_utilities": 5
     },
     "app/templates/inventory/topology/partials/_workspace.html": {
       "semantic_border_utilities": 3
     },
     "app/templates/jobs/configuration/_execution_activity.html": {
-      "arbitrary_text_sizes": 7,
-      "arbitrary_tracking": 6,
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 2
     },
     "app/templates/jobs/configuration/_job_overview.html": {
-      "arbitrary_text_sizes": 2,
-      "arbitrary_tracking": 2,
       "copied_standard_surface_shells": 1
     },
-    "app/templates/jobs/configuration/_workspace.html": {
-      "arbitrary_text_sizes": 4,
-      "arbitrary_tracking": 1
-    },
     "app/templates/jobs/configuration/definitions/_materialization_job.html": {
-      "arbitrary_tracking": 1,
       "copied_standard_surface_shells": 1
     },
     "app/templates/jobs/configuration/definitions/inventory_sync.html": {
-      "arbitrary_tracking": 1,
       "copied_standard_surface_shells": 1
     },
     "app/templates/jobs/configuration/definitions/report_schedule.html": {
-      "arbitrary_tracking": 1,
       "copied_standard_surface_shells": 1
     },
     "app/templates/jobs/configuration/definitions/tls_certificate_sync.html": {
-      "arbitrary_tracking": 1,
       "copied_standard_surface_shells": 1
     },
     "app/templates/jobs/executions/_workspace.html": {
-      "arbitrary_text_sizes": 1,
       "copied_standard_surface_shells": 2,
       "page_local_workspace_tablists": 1
     },
-    "app/templates/jobs/executions/partials/_active_jobs.html": {
-      "arbitrary_text_sizes": 4,
-      "arbitrary_tracking": 1
-    },
     "app/templates/jobs/executions/partials/_queue_activity.html": {
-      "arbitrary_text_sizes": 2,
-      "arbitrary_tracking": 2,
       "copied_standard_surface_shells": 1
-    },
-    "app/templates/jobs/executions/partials/_registry.html": {
-      "arbitrary_text_sizes": 5,
-      "arbitrary_tracking": 2
-    },
-    "app/templates/jobs/executions/partials/_status_refresh.html": {
-      "arbitrary_text_sizes": 3
     },
     "app/templates/jobs/index.html": {
       "page_local_workspace_tablists": 1
@@ -474,27 +296,19 @@
       "copied_standard_surface_shells": 2
     },
     "app/templates/kubernetes_operations/secrets/tls_rotate.html": {
-      "arbitrary_text_sizes": 7,
-      "arbitrary_tracking": 7,
       "copied_standard_surface_shells": 2
     },
     "app/templates/kubernetes_operations/secrets/tls_rotation.html": {
       "copied_standard_surface_shells": 1,
       "semantic_border_utilities": 1
     },
-    "app/templates/notifications/activity.html": {
-      "arbitrary_text_sizes": 2
-    },
     "app/templates/notifications/partials/_activity_summary_cards.html": {
-      "arbitrary_tracking": 1,
       "semantic_border_utilities": 2
     },
     "app/templates/notifications/partials/_activity_table_card.html": {
       "raw_palette_utilities": 5
     },
     "app/templates/notifications/partials/_activity_table_content.html": {
-      "arbitrary_text_sizes": 36,
-      "arbitrary_tracking": 1,
       "font_extrabold_utilities": 16,
       "raw_palette_utilities": 191
     },
@@ -502,15 +316,10 @@
       "copied_standard_surface_shells": 1
     },
     "app/templates/platform_operations/kubernetes/_secret_reveal_workspace.html": {
-      "arbitrary_tracking": 4,
       "semantic_border_utilities": 1
     },
     "app/templates/platform_operations/kubernetes/_tabs.html": {
       "page_local_workspace_tablists": 1
-    },
-    "app/templates/platform_operations/kubernetes/index.html": {
-      "arbitrary_text_sizes": 1,
-      "arbitrary_tracking": 1
     },
     "app/templates/prometheus/instance_detail.html": {
       "page_local_workspace_tablists": 1
@@ -543,14 +352,7 @@
     "app/templates/reports/_unavailable.html": {
       "semantic_border_utilities": 1
     },
-    "app/templates/reports/components/_summary_strip.html": {
-      "arbitrary_text_sizes": 1,
-      "arbitrary_tracking": 1
-    },
     "app/templates/reports/generate/index.html": {
-      "arbitrary_text_sizes": 25,
-      "arbitrary_tracking": 7,
-      "page_local_compact_status_labels": 5,
       "raw_palette_utilities": 18,
       "semantic_border_utilities": 16
     },
@@ -560,29 +362,8 @@
       "semantic_border_utilities": 4
     },
     "app/templates/reports/generated/index.html": {
-      "arbitrary_text_sizes": 4,
       "raw_palette_utilities": 63,
       "semantic_border_utilities": 2
-    },
-    "app/templates/reports/overview/partials/_data_collection_status.html": {
-      "arbitrary_text_sizes": 2,
-      "arbitrary_tracking": 1
-    },
-    "app/templates/reports/overview/partials/_pipeline_status.html": {
-      "arbitrary_text_sizes": 3,
-      "arbitrary_tracking": 3
-    },
-    "app/templates/reports/overview/partials/_report_type_coverage.html": {
-      "arbitrary_text_sizes": 3,
-      "arbitrary_tracking": 3
-    },
-    "app/templates/reports/overview/partials/_reporting_context.html": {
-      "arbitrary_text_sizes": 1,
-      "arbitrary_tracking": 1
-    },
-    "app/templates/reports/overview/partials/_summary_cards.html": {
-      "arbitrary_text_sizes": 1,
-      "arbitrary_tracking": 1
     },
     "app/templates/reports/pdf/report.html": {
       "custom_hero_titles": 1,
@@ -592,7 +373,6 @@
       "raw_palette_utilities": 34
     },
     "app/templates/reports/schedules/index.html": {
-      "arbitrary_text_sizes": 2,
       "raw_palette_utilities": 36
     },
     "app/templates/reports/storage/index.html": {
@@ -624,53 +404,28 @@
       "page_local_workspace_tablists": 1
     },
     "app/templates/settings/data_lifecycle/index.html": {
-      "arbitrary_text_sizes": 5,
       "page_local_workspace_tablists": 1
     },
-    "app/templates/settings/data_lifecycle/partials/_storage.html": {
-      "arbitrary_text_sizes": 1
-    },
-    "app/templates/settings/general/partials/_compatibility_versions.html": {
-      "arbitrary_text_sizes": 2,
-      "arbitrary_tracking": 2
-    },
     "app/templates/settings/general/partials/_system_information.html": {
-      "arbitrary_text_sizes": 3,
-      "arbitrary_tracking": 3,
       "copied_standard_surface_shells": 1
     },
     "app/templates/settings/general/partials/_tabs.html": {
       "page_local_workspace_tablists": 1
     },
     "app/templates/settings/general/partials/_time_locale.html": {
-      "arbitrary_tracking": 1,
       "raw_palette_utilities": 3
     },
-    "app/templates/settings/permissions/index.html": {
-      "arbitrary_text_sizes": 3,
-      "arbitrary_tracking": 2
-    },
     "app/templates/settings/roles/form.html": {
-      "arbitrary_text_sizes": 12,
-      "arbitrary_tracking": 7,
-      "page_local_compact_status_labels": 3,
       "semantic_border_utilities": 5
     },
     "app/templates/settings/roles/index.html": {
-      "arbitrary_text_sizes": 4,
-      "arbitrary_tracking": 4,
-      "page_local_compact_status_labels": 2,
       "semantic_border_utilities": 1
     },
     "app/templates/users/external_identities.html": {
-      "arbitrary_text_sizes": 6,
-      "arbitrary_tracking": 5,
       "copied_standard_surface_shells": 2
     },
     "app/templates/users/form.html": {
-      "arbitrary_text_sizes": 10,
       "copied_standard_surface_shells": 5,
-      "page_local_compact_status_labels": 1,
       "semantic_border_utilities": 7
     },
     "app/templates/users/partials/_content.html": {
@@ -680,12 +435,9 @@
       "raw_palette_utilities": 14
     },
     "app/templates/users/partials/_summary_cards.html": {
-      "arbitrary_text_sizes": 4,
-      "arbitrary_tracking": 8,
       "raw_palette_utilities": 16
     },
     "app/templates/users/partials/_table.html": {
-      "arbitrary_text_sizes": 3,
       "font_extrabold_utilities": 3,
       "raw_palette_utilities": 52
     },
@@ -693,8 +445,6 @@
       "copied_standard_surface_shells": 1
     },
     "app/templates/users/providers/index.html": {
-      "arbitrary_text_sizes": 5,
-      "arbitrary_tracking": 5,
       "copied_standard_surface_shells": 3
     },
     "app/templates/users/providers/partials/_ldap_configuration.html": {
@@ -711,7 +461,6 @@
       "semantic_border_utilities": 1
     },
     "app/templates/users/reset_password.html": {
-      "arbitrary_text_sizes": 1,
       "copied_standard_surface_shells": 2,
       "semantic_border_utilities": 12
     }
