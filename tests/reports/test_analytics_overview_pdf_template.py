@@ -139,20 +139,20 @@ def _rendered_html() -> tuple[object, str, Path]:
     return document, rendered_html, project_root
 
 
-def test_analytics_overview_uses_reporting_standard_v26_and_12_pages() -> None:
+def test_analytics_overview_uses_reporting_standard_v27_and_12_pages() -> None:
     document, rendered_html, _ = _rendered_html()
 
     assert document.template_name == 'reports/pdf/analytics_overview.html'
     assert document.metadata['selected_section_keys'] == list(ANALYTICS_OVERVIEW_SECTION_KEYS)
     assert document.presentation['page_count'] == 12
-    assert document.presentation['presentation_version'] == 'v2.6-table-reference-layout-final'
+    assert document.presentation['presentation_version'] == 'v2.7-donut-methodology-alignment'
     assert document.presentation['layout_contract'] == {
         'paper': 'A4 Portrait',
         'section_page_breaks': True,
         'truncate_identities': True,
         'identity_policy': 'top-n-summarized',
         'status_style': 'plain-colored-text',
-        'visual_style': 'reporting-standard-v2.6-table-reference',
+        'visual_style': 'reporting-standard-v2.7-analytics-family',
     }
     assert rendered_html.count('<article class="page') == 12
 
@@ -251,7 +251,7 @@ def test_analytics_overview_css_locks_page_footer_and_table_overflow() -> None:
     assert 'text-overflow:ellipsis' not in compact
 
 
-def test_v26_layout_uses_distinct_cover_and_reference_components() -> None:
+def test_v27_layout_uses_distinct_cover_and_reference_components() -> None:
     _, rendered_html, _ = _rendered_html()
 
     assert 'class="page cover"' in rendered_html
@@ -271,7 +271,7 @@ def test_v26_layout_uses_distinct_cover_and_reference_components() -> None:
     assert 'Status Language' in rendered_html
 
 
-def test_v26_css_has_locked_canvas_and_reference_rhythm() -> None:
+def test_v27_css_has_locked_canvas_and_reference_rhythm() -> None:
     _, _, project_root = _rendered_html()
     stylesheet = (
         project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
@@ -301,7 +301,7 @@ def test_analytics_engine_isolates_approved_stylesheet() -> None:
     assert "else:\n        stylesheets = [CSS(filename=str(css_path)" in source
 
 
-def test_v26_template_uses_approved_content_budgets() -> None:
+def test_v27_template_uses_approved_content_budgets() -> None:
     _, rendered_html, project_root = _rendered_html()
     template_source = (
         project_root / 'app' / 'templates' / 'reports' / 'pdf' / 'analytics_overview.html'
@@ -317,7 +317,7 @@ def test_v26_template_uses_approved_content_budgets() -> None:
 
 
 
-def test_v26_table_reference_contract_keeps_description_out_of_registers() -> None:
+def test_v27_table_reference_contract_keeps_description_out_of_registers() -> None:
     document, rendered_html, project_root = _rendered_html()
     template_source = (
         project_root / 'app' / 'templates' / 'reports' / 'pdf' / 'analytics_overview.html'
@@ -336,7 +336,7 @@ def test_v26_table_reference_contract_keeps_description_out_of_registers() -> No
     assert 'class="axis-critical"' in rendered_html
 
 
-def test_v26_register_titles_are_compact_but_reference_titles_remain_complete() -> None:
+def test_v27_register_titles_are_compact_but_reference_titles_remain_complete() -> None:
     document, rendered_html, _ = _rendered_html()
     item = document.presentation['recommendations']['items'][0]
 
@@ -344,3 +344,18 @@ def test_v26_register_titles_are_compact_but_reference_titles_remain_complete() 
     assert item['register_title'] == 'Expand low-headroom persistent volumes with...'
     assert item['title'] in rendered_html
     assert item['register_title'] in rendered_html
+
+
+def test_v27_alert_profile_uses_donut_and_methodology_values_do_not_break_mid_phrase() -> None:
+    document, rendered_html, project_root = _rendered_html()
+    stylesheet = (
+        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
+    ).read_text()
+
+    assert 'ao-alert-donut' in document.presentation['alerts']['severity_svg']
+    assert 'donut-total' in document.presentation['alerts']['severity_svg']
+    assert 'Alert severity distribution' in document.presentation['alerts']['severity_svg']
+    assert 'class="page page-alerts"' in rendered_html
+    assert 'class="freshness-value"' in rendered_html
+    assert '.sources-compact .freshness-value' in stylesheet
+    assert 'white-space: nowrap' in stylesheet

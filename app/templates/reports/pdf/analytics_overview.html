@@ -136,7 +136,7 @@
   </div>{{ footer(6) }}
 </article>
 
-<article class="page">
+<article class="page page-alerts">
   {{ report_header() }}<div class="page-content">{{ page_title(6,'Alerts & Anomalies','Active conditions and unusual patterns requiring review.') }}
   {{ metric_strip(p.alerts.metrics) }}
   {% call section('Alert Profile','Severity and category distribution at the report cut-off.') %}<div class="two-chart-grid"><div class="severity-chart">{{ p.alerts.severity_svg|safe }}</div><div><h3>Alerts by Category</h3><div class="category-list">{% for item in p.alerts.category_mix %}<div><span>{{ item.label }}</span><strong>{{ item.value }}</strong></div>{% endfor %}</div></div></div>{% endcall %}
@@ -208,7 +208,7 @@
   <div class="methodology-register-layout">
     <div class="methodology-source-block">
       <h3>Data Sources and Coverage</h3>
-      <table class="report-table sources-compact"><thead><tr><th>Source</th><th>Freshness</th><th>Last Collected</th></tr></thead><tbody>{% for row in p.methodology.sources[:4] %}<tr><td>{{ row.source }}</td><td>{{ row.freshness }}</td><td>{{ row.last_successful }}</td></tr>{% endfor %}</tbody></table>
+      <table class="report-table sources-compact"><thead><tr><th>Source</th><th>Freshness</th><th>Last Collected</th></tr></thead><tbody>{% for row in p.methodology.sources[:4] %}<tr><td>{{ row.source }}</td><td class="freshness-value">{{ row.freshness }}</td><td class="collected-value">{{ row.last_successful }}</td></tr>{% endfor %}</tbody></table>
     </div>
     <div class="methodology-table-block">
       <h3>Methodology Register</h3>

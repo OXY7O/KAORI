@@ -84,14 +84,14 @@ def build_analytics_overview_presentation(
 
     common = {
         'page_count': len(_ANALYTICS_PAGE_TITLES),
-        'presentation_version': 'v2.6-table-reference-layout-final',
+        'presentation_version': 'v2.7-donut-methodology-alignment',
         'layout_contract': {
             'paper': 'A4 Portrait',
             'section_page_breaks': True,
             'truncate_identities': True,
             'identity_policy': 'top-n-summarized',
             'status_style': 'plain-colored-text',
-            'visual_style': 'reporting-standard-v2.6-table-reference',
+            'visual_style': 'reporting-standard-v2.7-analytics-family',
         },
         'report_id': report_id,
         'report_name': report_name,
@@ -1527,20 +1527,55 @@ def _alert_metrics(
 
 
 def _alert_severity_svg(alerts_snapshot: Mapping[str, Any], alert_detail: Mapping[str, Any]) -> str:
+    """Render an executive donut chart for critical, warning, and info alerts.
+
+    The chart keeps the distribution readable when one severity dominates and
+    still shows a neutral ring when no active alert is present.
+    """
     metrics = _alert_metrics(alerts_snapshot, alert_detail)
-    values = [_number(metric['value']) for metric in metrics[:3]]
-    max_value = max(values + [1.0])
-    points = []
-    for index, value in enumerate(values):
-        x = 8 + index * 42
-        height = (value / max_value) * 55
-        y = 78 - height
-        color = ('#dc2626', '#d97706', '#2563eb')[index]
-        points.append(f'<rect x="{x}" y="{y:.2f}" width="24" height="{height:.2f}" rx="3" fill="{color}" opacity="0.85"/>')
+    labels = ('Critical', 'Warning', 'Info')
+    colors = ('#DC2626', '#D97706', '#2563EB')
+    values = [max(0.0, _number(metric['value'])) for metric in metrics[:3]]
+    total = sum(values)
+
+    radius = 46.0
+    circumference = 2 * 3.141592653589793 * radius
+    cumulative = 0.0
+    segments: list[str] = []
+    if total > 0:
+        for value, color in zip(values, colors):
+            if value <= 0:
+                continue
+            length = circumference * (value / total)
+            offset = -circumference * (cumulative / total)
+            segments.append(
+                '<circle cx="108" cy="76" r="46" fill="none" '
+                f'stroke="{color}" stroke-width="18" stroke-linecap="butt" '
+                f'stroke-dasharray="{length:.3f} {circumference - length:.3f}" '
+                f'stroke-dashoffset="{offset:.3f}" transform="rotate(-90 108 76)"/>'
+            )
+            cumulative += value
+
+    legend = []
+    for index, (label, value, color) in enumerate(zip(labels, values, colors)):
+        y = 42 + index * 29
+        legend.append(
+            f'<rect x="204" y="{y - 8}" width="10" height="10" rx="2" fill="{color}"/>'
+            f'<text x="224" y="{y}" class="donut-legend-label">{label}</text>'
+            f'<text x="330" y="{y}" text-anchor="end" class="donut-legend-value">{int(value)}</text>'
+        )
+
+    centre_line_1 = 'Active' if total else 'No Active'
+    centre_line_2 = 'Alerts'
     return (
-        '<svg class="ao-chart-svg ao-alert-chart" viewBox="0 0 100 85" role="img" aria-label="Alert severity summary">'
-        '<line x1="3" y1="78" x2="97" y2="78" stroke="#e5e7eb"/>'
-        + ''.join(points)
+        '<svg class="ao-chart-svg ao-alert-donut" viewBox="0 0 350 155" role="img" '
+        'aria-label="Alert severity distribution">'
+        '<circle cx="108" cy="76" r="46" fill="none" stroke="#E5E7EB" stroke-width="18"/>'
+        + ''.join(segments)
+        + f'<text x="108" y="67" text-anchor="middle" class="donut-total">{int(total)}</text>'
+        + f'<text x="108" y="86" text-anchor="middle" class="donut-caption">{centre_line_1}</text>'
+        + f'<text x="108" y="98" text-anchor="middle" class="donut-caption">{centre_line_2}</text>'
+        + ''.join(legend)
         + '</svg>'
     )
 

@@ -1218,3 +1218,57 @@ html, body {
 .page-methodology .evidence-columns { margin-top: 2.6mm; gap: 8mm; }
 .page-methodology .evidence-columns h3 { margin-bottom: 1.5mm; }
 .page-methodology .evidence-columns ul { margin-top: 0; }
+
+/* V2.7 analytics-family refinements. */
+.page-alerts .two-chart-grid {
+  grid-template-columns: minmax(0, 1.02fr) minmax(0, .98fr);
+  gap: 10mm;
+  align-items: center;
+}
+.page-alerts .severity-chart {
+  height: 41mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.page-alerts .severity-chart svg {
+  width: 100%;
+  height: 100%;
+}
+.page-alerts .ao-alert-donut .donut-total {
+  font: 700 25px "Inter", "DejaVu Sans", Arial, sans-serif;
+  fill: #172033;
+}
+.page-alerts .ao-alert-donut .donut-caption {
+  font: 500 10px "Inter", "DejaVu Sans", Arial, sans-serif;
+  fill: #64748B;
+}
+.page-alerts .ao-alert-donut .donut-legend-label {
+  font: 500 11px "Inter", "DejaVu Sans", Arial, sans-serif;
+  fill: #475569;
+}
+.page-alerts .ao-alert-donut .donut-legend-value {
+  font: 700 11px "Inter", "DejaVu Sans", Arial, sans-serif;
+  fill: #172033;
+}
+.page-alerts .category-list {
+  margin-top: 4mm;
+  gap: 2.8mm;
+}
+.page-alerts .category-list div {
+  padding: 0 0 2.5mm;
+}
+
+.page-methodology .sources-compact th:nth-child(1) { width: 38%; }
+.page-methodology .sources-compact th:nth-child(2) { width: 26%; }
+.page-methodology .sources-compact th:nth-child(3) { width: 36%; }
+.page-methodology .sources-compact .freshness-value,
+.page-methodology .sources-compact .collected-value {
+  white-space: nowrap;
+}
+.page-methodology .sources-compact .freshness-value {
+  font-size: 6.1pt;
+}
+.page-methodology .sources-compact .collected-value {
+  font-size: 6.05pt;
+}
