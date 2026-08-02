@@ -1272,3 +1272,180 @@ html, body {
 .page-methodology .sources-compact .collected-value {
   font-size: 6.05pt;
 }
+
+/* V2.8 approved report-layout corrections. */
+.page-alerts .alert-profile-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(0, .98fr);
+  gap: 10mm;
+  align-items: start;
+}
+.page-alerts .alert-profile-panel { min-width: 0; }
+.page-alerts .alert-profile-panel > h3,
+.page-alerts .alert-profile-heading {
+  min-height: 5mm;
+  margin: 0 0 3.2mm;
+}
+.page-alerts .alert-profile-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 3mm;
+}
+.page-alerts .alert-profile-heading h3 { margin: 0; }
+.page-alerts .alert-profile-heading > span {
+  color: #64748B;
+  font-size: 6.25pt;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.page-alerts .severity-summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4mm;
+  align-items: center;
+  min-height: 14mm;
+}
+.page-alerts .severity-summary > strong {
+  color: #172033;
+  font-size: 20pt;
+  line-height: 1;
+  font-weight: 700;
+}
+.page-alerts .severity-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 1mm;
+  min-width: 0;
+}
+.page-alerts .severity-summary b {
+  color: #172033;
+  font-size: 8.2pt;
+  line-height: 1.15;
+  font-weight: 600;
+}
+.page-alerts .severity-summary .status {
+  font-size: 6.8pt;
+  line-height: 1.15;
+  font-weight: 600;
+}
+.page-alerts .severity-distribution-track {
+  display: flex;
+  width: 100%;
+  height: 3.2mm;
+  margin: 2mm 0 2.7mm;
+  overflow: hidden;
+  background: #E5E7EB;
+}
+.page-alerts .severity-distribution-track i { display: block; height: 100%; }
+.page-alerts .severity-distribution-track i.critical { background: #DC2626; }
+.page-alerts .severity-distribution-track i.warning { background: #D97706; }
+.page-alerts .severity-distribution-track i.info { background: #2563EB; }
+.page-alerts .severity-list {
+  border-top: .22mm solid #E2E8F0;
+}
+.page-alerts .severity-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 7.4mm;
+  padding: 1.5mm 0;
+  border-bottom: .22mm solid #E2E8F0;
+}
+.page-alerts .severity-list span {
+  display: inline-flex;
+  align-items: center;
+  gap: 2.4mm;
+  color: #172033;
+  font-size: 7.6pt;
+}
+.page-alerts .severity-list span > i {
+  width: 3mm;
+  height: 3mm;
+  flex: none;
+  border-radius: .55mm;
+}
+.page-alerts .severity-list span > i.critical { background: #DC2626; }
+.page-alerts .severity-list span > i.warning { background: #D97706; }
+.page-alerts .severity-list span > i.info { background: #2563EB; }
+.page-alerts .severity-list strong {
+  color: #172033;
+  font-size: 7.8pt;
+  font-weight: 700;
+}
+.page-alerts .category-empty {
+  margin: 4mm 0 0;
+  padding: 5mm 0;
+  border-top: .22mm solid #E2E8F0;
+  border-bottom: .22mm solid #E2E8F0;
+  color: #64748B;
+  font-size: 7.2pt;
+  line-height: 1.4;
+}
+.page-alerts .category-bars {
+  display: flex;
+  flex-direction: column;
+}
+.page-alerts .category-bar-row {
+  display: grid;
+  grid-template-columns: 31mm minmax(0, 1fr) 8mm;
+  gap: 3mm;
+  align-items: center;
+  min-height: 10.5mm;
+  border-bottom: .22mm solid #E2E8F0;
+}
+.page-alerts .category-bar-row > span {
+  color: #172033;
+  font-size: 7.5pt;
+  line-height: 1.2;
+}
+.page-alerts .category-track {
+  height: 2.6mm;
+  overflow: hidden;
+  background: #E5E7EB;
+}
+.page-alerts .category-track i {
+  display: block;
+  height: 100%;
+  background: #7C3AED;
+}
+.page-alerts .category-bar-row > strong {
+  color: #172033;
+  text-align: right;
+  font-size: 7.8pt;
+  font-weight: 700;
+}
+
+/* Both reporting overview columns now carry a subtitle, so their rules align. */
+.page-reporting .report-overview .section-subtitle {
+  min-height: 3.5mm;
+}
+
+/* Give source identities enough width to stay on one row while keeping the
+   methodology register compact and readable. */
+.page-methodology .methodology-register-layout {
+  grid-template-columns: minmax(0, 1.62fr) minmax(0, .98fr);
+  gap: 6mm;
+}
+.page-methodology .sources-compact { font-size: 6.05pt; }
+.page-methodology .sources-compact th:nth-child(1) { width: 50%; }
+.page-methodology .sources-compact th:nth-child(2) { width: 23%; }
+.page-methodology .sources-compact th:nth-child(3) { width: 27%; }
+.page-methodology .sources-compact td:first-child,
+.page-methodology .sources-compact .freshness-value,
+.page-methodology .sources-compact .collected-value {
+  white-space: nowrap;
+}
+.page-methodology .sources-compact .freshness-value,
+.page-methodology .sources-compact .collected-value {
+  font-size: 5.95pt;
+}
+.page-methodology .method-register { font-size: 5.75pt; }
+.page-methodology .method-register th:nth-child(1) { width: 15%; }
+.page-methodology .method-register th:nth-child(2) { width: 48%; }
+.page-methodology .method-register th:nth-child(3) { width: 37%; }
+.page-methodology .methodology-register-layout .method-register th,
+.page-methodology .methodology-register-layout .method-register td {
+  padding: 1.05mm 1.25mm;
+  line-height: 1.18;
+}

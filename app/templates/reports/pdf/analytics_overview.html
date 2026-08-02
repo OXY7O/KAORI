@@ -139,7 +139,32 @@
 <article class="page page-alerts">
   {{ report_header() }}<div class="page-content">{{ page_title(6,'Alerts & Anomalies','Active conditions and unusual patterns requiring review.') }}
   {{ metric_strip(p.alerts.metrics) }}
-  {% call section('Alert Profile','Severity and category distribution at the report cut-off.') %}<div class="two-chart-grid"><div class="severity-chart">{{ p.alerts.severity_svg|safe }}</div><div><h3>Alerts by Category</h3><div class="category-list">{% for item in p.alerts.category_mix %}<div><span>{{ item.label }}</span><strong>{{ item.value }}</strong></div>{% endfor %}</div></div></div>{% endcall %}
+  {% call section('Alert Profile','Severity and category distribution at the report cut-off.') %}
+  <div class="alert-profile-grid">
+    <div class="alert-profile-panel severity-profile">
+      <h3>Severity Distribution</h3>
+      <div class="severity-summary">
+        <strong>{{ p.alerts.profile.active_total }}</strong>
+        <div><b>Active alerts</b><span class="status {{ p.alerts.profile.tone }}">{{ p.alerts.profile.status }}</span></div>
+      </div>
+      <div class="severity-distribution-track" aria-label="Alert severity distribution">
+        {% for item in p.alerts.profile.severity %}{% if item.percent > 0 %}<i class="{{ item.tone }}" style="width:{{ item.percent }}%"></i>{% endif %}{% endfor %}
+      </div>
+      <div class="severity-list">
+        {% for item in p.alerts.profile.severity %}<div><span><i class="{{ item.tone }}"></i>{{ item.label }}</span><strong>{{ item.value }}</strong></div>{% endfor %}
+      </div>
+    </div>
+    <div class="alert-profile-panel category-profile">
+      <div class="alert-profile-heading"><h3>Category Distribution</h3><span>{{ p.alerts.profile.category_coverage_label }}</span></div>
+      {% if p.alerts.profile.categorized_total %}
+      <div class="category-bars">
+        {% for item in p.alerts.category_mix[:4] %}
+        <div class="category-bar-row"><span>{{ item.label }}</span><div class="category-track"><i style="width:{{ item.percent }}%"></i></div><strong>{{ item.value }}</strong></div>
+        {% endfor %}
+      </div>
+      {% else %}<p class="category-empty">No categorized alert detail was available at the report cut-off.</p>{% endif %}
+    </div>
+  </div>{% endcall %}
   {% call section('Top Active Alerts') %}<table class="report-table alert-table"><thead><tr><th>Ref.</th><th>Severity</th><th>Alert / Namespace</th><th>Since</th><th>State</th></tr></thead><tbody>{% for item in p.alerts.alerts[:3] %}<tr><td>A{{ loop.index }}</td><td>{{ status(item.severity,item.tone) }}</td><td><strong>{{ item.name }}</strong><small>{{ item.namespace }}</small></td><td>{{ item.since }}</td><td>{{ item.status }}</td></tr>{% endfor %}</tbody></table>{% endcall %}
   {% call section('Recent Anomalies') %}<table class="report-table"><thead><tr><th>Ref.</th><th>Anomaly</th><th>Namespace</th><th>Evidence</th></tr></thead><tbody>{% for item in p.alerts.anomalies[:2] %}<tr><td>{{ loop.index }}</td><td>{{ item.name }}</td><td>{{ item.namespace }}</td><td>{{ item.detected_at }}</td></tr>{% endfor %}</tbody></table>{% endcall %}
   {% call section('Alert Intelligence Summary') %}<p>{{ p.alerts.summary }}</p>{% endcall %}
@@ -151,7 +176,7 @@
   {{ metric_strip(p.reporting.metrics) }}
   <div class="two-chart-grid report-overview">
     {% call section('Figure 3 - Report Status Distribution','Status distribution for the latest generated-report records.') %}<div class="activity-bars">{% for item in p.reporting.activity %}<div class="activity-row"><span>{{ item.label }}</span><div class="activity-track"><i class="{{ item.tone }}" style="width:{{ item.percent }}%"></i></div><strong>{{ item.value }}</strong></div>{% endfor %}</div>{% endcall %}
-    {% call section('Storage Readiness') %}<div class="readiness-line"><strong>{{ p.reporting.storage.backend|upper }}</strong>{{ status(p.reporting.storage.status,p.reporting.storage.tone) }}</div><p>{{ p.reporting.storage.description }}</p>{% endcall %}
+    {% call section('Storage Readiness','Configured artifact backend and validation scope.') %}<div class="readiness-line"><strong>{{ p.reporting.storage.backend|upper }}</strong>{{ status(p.reporting.storage.status,p.reporting.storage.tone) }}</div><p>{{ p.reporting.storage.description }}</p>{% endcall %}
   </div>
   {% call section('Scheduled Reports') %}{% if p.reporting.schedules %}<table class="report-table"><thead><tr><th>Schedule</th><th>Frequency</th><th>Next Run</th><th>Status</th></tr></thead><tbody>{% for row in p.reporting.schedules[:4] %}<tr><td>{{ row.name }}</td><td>{{ row.frequency }}</td><td>{{ row.next_run }}</td><td>{{ status(row.status,row.tone) }}</td></tr>{% endfor %}</tbody></table>{% else %}<p class="empty-state">No active schedule record is included in this overview output.</p>{% endif %}{% endcall %}
   {% call section('Recent Generated Reports') %}<table class="report-table reports-table"><thead><tr><th>Report</th><th>Generated At</th><th>Size</th><th>Status</th></tr></thead><tbody>{% for row in p.reporting.recent_reports[:4] %}<tr><td>{{ row.name }}</td><td>{{ row.generated_at }}</td><td>{{ row.size }}</td><td>{{ status(row.status,row.tone) }}</td></tr>{% endfor %}</tbody></table>{% endcall %}

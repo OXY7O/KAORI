@@ -84,14 +84,14 @@ def build_analytics_overview_presentation(
 
     common = {
         'page_count': len(_ANALYTICS_PAGE_TITLES),
-        'presentation_version': 'v2.7-donut-methodology-alignment',
+        'presentation_version': 'v2.8-alert-profile-table-alignment',
         'layout_contract': {
             'paper': 'A4 Portrait',
             'section_page_breaks': True,
             'truncate_identities': True,
             'identity_policy': 'top-n-summarized',
             'status_style': 'plain-colored-text',
-            'visual_style': 'reporting-standard-v2.7-analytics-family',
+            'visual_style': 'reporting-standard-v2.8-analytics-family',
         },
         'report_id': report_id,
         'report_name': report_name,
@@ -258,10 +258,13 @@ def build_analytics_overview_presentation(
         'actions': decisions[:3],
     }
 
+    alert_metrics = _alert_metrics(alerts_snapshot, alert_detail)
+    alert_category_mix = _alert_category_mix(alert_items)
     alerts_page = {
-        'metrics': _alert_metrics(alerts_snapshot, alert_detail),
+        'metrics': alert_metrics,
+        'profile': _alert_profile(alert_metrics, alert_category_mix),
         'severity_svg': _alert_severity_svg(alerts_snapshot, alert_detail),
-        'category_mix': _alert_category_mix(alert_items),
+        'category_mix': alert_category_mix,
         'alerts': alert_items[:5],
         'anomalies': anomaly_items[:4],
         'summary': _alert_intelligence_summary(alerts_snapshot, alert_items),
@@ -1514,16 +1517,85 @@ def _alert_metrics(
     alert_detail: Mapping[str, Any],
 ) -> list[dict[str, Any]]:
     summary = _mapping(alert_detail.get('summary'))
-    critical = _integer(summary.get('critical') or summary.get('critical_alerts') or alerts_snapshot.get('critical_alerts'))
-    warning = _integer(summary.get('warning') or summary.get('warning_alerts') or alerts_snapshot.get('warning_alerts'))
-    info = _integer(summary.get('info') or summary.get('info_alerts'))
-    anomalies = _integer(summary.get('anomalies') or alerts_snapshot.get('recent_anomalies'))
+
+    def first_integer(*values: Any) -> int:
+        for value in values:
+            if value is not None and value != '':
+                return _integer(value)
+        return 0
+
+    critical = first_integer(
+        summary.get('critical'),
+        summary.get('critical_alerts'),
+        alerts_snapshot.get('critical_alerts'),
+        alerts_snapshot.get('critical'),
+    )
+    warning = first_integer(
+        summary.get('warning'),
+        summary.get('warning_alerts'),
+        alerts_snapshot.get('warning_alerts'),
+        alerts_snapshot.get('warning'),
+    )
+    info = first_integer(summary.get('info'), summary.get('info_alerts'), alerts_snapshot.get('info'))
+    anomalies = first_integer(
+        summary.get('anomalies'),
+        alerts_snapshot.get('recent_anomalies'),
+        alerts_snapshot.get('anomalies'),
+    )
     return [
         {'label': 'Critical Alerts', 'value': str(critical), 'status': 'Requires Immediate Action' if critical else 'Clear', 'tone': 'critical' if critical else 'normal'},
         {'label': 'Warning Alerts', 'value': str(warning), 'status': 'Requires Attention' if warning else 'Clear', 'tone': 'warning' if warning else 'normal'},
         {'label': 'Info Alerts', 'value': str(info), 'status': 'Informational', 'tone': 'info'},
         {'label': 'Anomalies Detected', 'value': str(anomalies), 'status': 'Unusual Patterns' if anomalies else 'None Detected', 'tone': 'info' if anomalies else 'normal'},
     ]
+
+
+def _alert_profile(
+    metrics: Sequence[Mapping[str, Any]],
+    category_mix: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    severity_rows: list[dict[str, Any]] = []
+    tones = ('critical', 'warning', 'info')
+    values = [max(0, _integer(metric.get('value'))) for metric in metrics[:3]]
+    active_total = sum(values)
+
+    for metric, tone, value in zip(metrics[:3], tones, values):
+        label = _text(metric.get('label'), 'Alert').removesuffix(' Alerts')
+        severity_rows.append(
+            {
+                'label': label,
+                'value': value,
+                'percent': (value / active_total * 100) if active_total else 0,
+                'tone': tone,
+            }
+        )
+
+    critical, warning, info = values
+    if critical:
+        status = 'Requires Immediate Action'
+        tone = 'critical'
+    elif warning:
+        status = 'Requires Attention'
+        tone = 'warning'
+    elif info:
+        status = 'Informational'
+        tone = 'info'
+    else:
+        status = 'Clear'
+        tone = 'normal'
+
+    categorized_total = sum(max(0, _integer(item.get('value'))) for item in category_mix)
+    category_coverage_label = (
+        f'{categorized_total} / {active_total} categorized' if active_total else 'No active alerts'
+    )
+    return {
+        'active_total': active_total,
+        'status': status,
+        'tone': tone,
+        'severity': severity_rows,
+        'categorized_total': categorized_total,
+        'category_coverage_label': category_coverage_label,
+    }
 
 
 def _alert_severity_svg(alerts_snapshot: Mapping[str, Any], alert_detail: Mapping[str, Any]) -> str:
