@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from html import escape
+import re
 from typing import Any
 
 from app.reports.export.html_pdf.normalization import sanitize_text
@@ -83,14 +84,14 @@ def build_analytics_overview_presentation(
 
     common = {
         'page_count': len(_ANALYTICS_PAGE_TITLES),
-        'presentation_version': 'v2.1-distinct-main-header',
+        'presentation_version': 'v2.4-enterprise-compact-final',
         'layout_contract': {
             'paper': 'A4 Portrait',
             'section_page_breaks': True,
             'truncate_identities': True,
             'identity_policy': 'top-n-summarized',
             'status_style': 'plain-colored-text',
-            'visual_style': 'reporting-standard-v2.1',
+            'visual_style': 'reporting-standard-v2.4-enterprise-formal',
         },
         'report_id': report_id,
         'report_name': report_name,
@@ -109,6 +110,14 @@ def build_analytics_overview_presentation(
     resource_metrics = _resource_metrics(
         resource_snapshot,
         evidence_state=_metric_evidence_state(payload, snapshot_summary),
+    )
+    forecast_series = _forecast_series(forecast_snapshot)
+    resource_metrics = _reconcile_resource_metrics(
+        resource_metrics,
+        forecast_series=forecast_series,
+        storage_snapshot=storage_snapshot,
+        capacity_snapshot=capacity_snapshot,
+        inventory_snapshot=inventory_snapshot,
     )
     recommendation_items = _recommendations(actionable, payload)
     alert_items = _alerts(alert_detail)
@@ -194,7 +203,6 @@ def build_analytics_overview_presentation(
         ),
     }
 
-    forecast_series = _forecast_series(forecast_snapshot)
     trend_forecast = {
         'headline': _forecast_headline(forecast_snapshot),
         'summary': _text(
@@ -216,6 +224,8 @@ def build_analytics_overview_presentation(
         'storage': _consumer_rows(_sequence(top_consumers.get('storage')), 'Storage'),
         'pods': _consumer_rows(_sequence(top_consumers.get('pods')), 'Pods'),
     }
+    for group in consumer_groups.values():
+        _normalize_consumer_bars(group)
     top_consumers_page = {
         'primary': consumer_groups['memory'] or consumer_groups['cpu'],
         'secondary': consumer_groups['cpu'] if consumer_groups['memory'] else consumer_groups['storage'],
@@ -326,10 +336,27 @@ def _status(value: Any, fallback: str = 'Unknown') -> str:
 
 
 def _percent(card: Mapping[str, Any]) -> float | None:
-    for key in ('percent', 'value', 'usage_percent', 'current_percent'):
+    for key in (
+        'percent',
+        'value',
+        'usage_percent',
+        'utilization_percent',
+        'current_percent',
+        'p95_percent',
+        'current',
+        'p95',
+    ):
         raw = card.get(key)
+        if isinstance(raw, Mapping):
+            raw = raw.get('percent') or raw.get('value') or raw.get('current')
         if raw is not None and str(raw).strip() != '':
             return max(0.0, min(_number(raw), 100.0))
+    for key in ('metric', 'usage', 'utilization', 'current_value'):
+        nested = _mapping(card.get(key))
+        if nested:
+            value = _percent(nested)
+            if value is not None:
+                return value
     return None
 
 
@@ -337,6 +364,135 @@ def _display_percent(value: float | None) -> str:
     if value is None:
         return 'Not Available'
     return f'{value:.1f}%'
+
+
+def _metric_tone(percent: float | None) -> str:
+    if percent is None:
+        return 'neutral'
+    if percent >= 85.0:
+        return 'critical'
+    if percent >= 70.0:
+        return 'warning'
+    return 'normal'
+
+
+def _set_metric_percent(
+    metric: Mapping[str, Any],
+    percent: float | None,
+    *,
+    source_note: str,
+) -> dict[str, Any]:
+    result = dict(metric)
+    if percent is None:
+        return result
+    percent = max(0.0, min(float(percent), 100.0))
+    tone = _metric_tone(percent)
+    result.update(
+        {
+            'value': _display_percent(percent),
+            'percent': percent,
+            'chart_percent': percent,
+            'headroom_percent': max(0.0, 100.0 - percent),
+            'available': True,
+            'status': 'Critical' if tone == 'critical' else 'Warning' if tone == 'warning' else 'Normal',
+            'tone': tone,
+            'description': source_note,
+        }
+    )
+    return result
+
+
+def _nested_number(source: Mapping[str, Any], *paths: tuple[str, ...]) -> float | None:
+    for path in paths:
+        value: Any = source
+        for key in path:
+            if not isinstance(value, Mapping):
+                value = None
+                break
+            value = value.get(key)
+        if value is None or str(value).strip() == '':
+            continue
+        if isinstance(value, Mapping):
+            value = value.get('percent') or value.get('value') or value.get('current')
+        if value is None or str(value).strip() == '':
+            continue
+        return _number(value)
+    return None
+
+
+def _reconcile_resource_metrics(
+    metrics: Mapping[str, Mapping[str, Any]],
+    *,
+    forecast_series: Sequence[Mapping[str, Any]],
+    storage_snapshot: Mapping[str, Any],
+    capacity_snapshot: Mapping[str, Any],
+    inventory_snapshot: Mapping[str, Any],
+) -> dict[str, dict[str, Any]]:
+    """Reconcile overview metrics against committed evidence without inventing values.
+
+    Some collectors expose aggregate metrics in different payload branches. The
+    report uses the primary resource snapshot first, then an explicit committed
+    fallback. A positive committed fallback replaces a missing or zero primary
+    value only when the sources would otherwise contradict each other.
+    """
+    result = {key: dict(value) for key, value in metrics.items()}
+    series_map = {str(item.get('key') or '').lower(): item for item in forecast_series}
+
+    for key in ('cpu', 'memory'):
+        metric = result.get(key, {})
+        current = metric.get('percent') if metric.get('available') else None
+        latest = _number(_mapping(series_map.get(key)).get('latest_percent'), -1.0)
+        if latest >= 0.0 and (current is None or (current <= 0.0 and latest >= 0.5)):
+            result[key] = _set_metric_percent(
+                metric,
+                latest,
+                source_note=f"{_text(metric.get('label'), key.title())} utilization from the latest committed observation.",
+            )
+
+    storage_used = _nested_number(
+        storage_snapshot,
+        ('used_percent',),
+        ('utilization_percent',),
+        ('usage_percent',),
+    )
+    if storage_used is None and storage_snapshot.get('free_percent') is not None:
+        storage_used = max(0.0, 100.0 - _number(storage_snapshot.get('free_percent')))
+    storage_metric = result.get('storage', {})
+    storage_current = storage_metric.get('percent') if storage_metric.get('available') else None
+    if storage_used is not None and (storage_current is None or (storage_current <= 0.0 and storage_used >= 0.5)):
+        result['storage'] = _set_metric_percent(
+            storage_metric,
+            storage_used,
+            source_note='Storage utilization derived from committed requested and free-capacity evidence.',
+        )
+
+    pods_percent = _nested_number(
+        capacity_snapshot,
+        ('pod_utilization_percent',),
+        ('pods_percent',),
+        ('pod_usage_percent',),
+        ('pods', 'percent'),
+        ('pod_capacity', 'used_percent'),
+    )
+    if pods_percent is None:
+        remaining = _nested_number(
+            capacity_snapshot,
+            ('pod_capacity_remaining',),
+            ('pods_remaining',),
+            ('pod_capacity', 'remaining'),
+        )
+        used = _nested_number(inventory_snapshot, ('total_pods',))
+        if used is not None and remaining is not None and used + remaining > 0:
+            pods_percent = used / (used + remaining) * 100.0
+    pods_metric = result.get('pods', {})
+    pods_current = pods_metric.get('percent') if pods_metric.get('available') else None
+    if pods_percent is not None and (pods_current is None or (pods_current <= 0.0 and pods_percent >= 0.5)):
+        result['pods'] = _set_metric_percent(
+            pods_metric,
+            pods_percent,
+            source_note='Pod utilization derived from committed pod inventory and remaining scheduling capacity.',
+        )
+    return result
 
 
 def _unavailable_state(value: Any) -> bool:
@@ -470,6 +626,7 @@ def _priority_findings(
             {
                 'title': _text(recommendation.get('title'), 'Operational recommendation'),
                 'description': _text(recommendation.get('description'), ''),
+                'summary': _text(recommendation.get('summary') or recommendation.get('description'), ''),
                 'tone': _tone(recommendation.get('tone') or recommendation.get('priority')),
                 'scope': _text(recommendation.get('scope'), 'Selected reporting scope'),
             }
@@ -553,6 +710,21 @@ def _priority_findings(
     return findings
 
 
+def _management_decision_summary(item: Mapping[str, Any], title: str, description: str) -> str:
+    explicit = item.get('management_decision') or item.get('summary') or item.get('decision')
+    if explicit:
+        return _text(explicit)
+    text = description.strip()
+    # Technical identifiers belong in the evidence pages, not in the executive table.
+    for marker in (' Namespace:', ' namespace:', ' Pod:', ' pod:', ' Resource:', ' resource:', ' Value:', ' value:'):
+        if marker in text:
+            text = text.split(marker, 1)[0].rstrip(' .') + '.'
+            break
+    if len(text) > 180:
+        text = text[:177].rsplit(' ', 1)[0].rstrip(' ,.;:') + '...'
+    return text or f'Review {title.lower()} and confirm the accountable owner.'
+
+
 def _recommendations(actionable: Mapping[str, Any], payload: Mapping[str, Any]) -> list[dict[str, Any]]:
     items = _sequence(actionable.get('items'))
     if not items:
@@ -571,9 +743,14 @@ def _recommendations(actionable: Mapping[str, Any], payload: Mapping[str, Any]) 
         source = _text(item.get('source_label') or item.get('source'), 'Analytics')
         title = _text(item.get('title') or item.get('label'), f'Recommendation {index}')
         description = _text(
-            item.get('description') or item.get('recommended_action') or item.get('action'),
+            item.get('description') or item.get('reason') or item.get('evidence'),
             'Review the related evidence and confirm the appropriate operational action.',
         )
+        recommended_action = _text(
+            item.get('recommended_action') or item.get('action') or item.get('remediation'),
+            description,
+        )
+        management_summary = _management_decision_summary(item, title, description)
         scope = _text(
             item.get('affected_scope')
             or item.get('scope')
@@ -589,6 +766,8 @@ def _recommendations(actionable: Mapping[str, Any], payload: Mapping[str, Any]) 
                 'tone': tone if tone != 'neutral' else 'info',
                 'title': title,
                 'description': description,
+                'summary': management_summary,
+                'recommended_action': recommended_action,
                 'scope': scope,
                 'source': source,
                 'owner': _suggest_owner(source, title),
@@ -636,7 +815,7 @@ def _decision_items(
     decisions = [
         {
             'title': _text(item.get('title')),
-            'description': _text(item.get('description'), ''),
+            'description': _text(item.get('summary') or item.get('description'), ''),
             'tone': _tone(item.get('tone')),
         }
         for item in recommendations[:3]
@@ -675,10 +854,17 @@ def _management_summary(
     ]
     if available:
         highest = max(available, key=lambda item: _number(item.get('percent')))
-        resource_sentence = (
-            f"{_text(highest.get('label'))} is the highest available shared-resource signal "
-            f"at {_display_percent(_number(highest.get('percent')))}."
-        )
+        highest_percent = _number(highest.get('percent'))
+        if highest_percent < 0.5:
+            resource_sentence = (
+                'Shared-resource utilization is below 0.5% in the current committed snapshot; '
+                'validate source recency before treating the value as an operating baseline.'
+            )
+        else:
+            resource_sentence = (
+                f"{_text(highest.get('label'))} is the highest available shared-resource signal "
+                f"at {_display_percent(highest_percent)}."
+            )
     else:
         resource_sentence = (
             'Shared CPU and memory utilization are not available from the committed metric evidence.'
@@ -770,25 +956,53 @@ def _capacity_rows(
     pods_metric = _mapping(resource_metrics.get('pods'))
     node_count = _integer(inventory.get('total_nodes'))
     not_ready = _integer(inventory.get('not_ready_nodes'))
+    pods_used_count = _integer(_mapping(inventory.get('totals')).get('pods'))
+    pods_remaining = _nested_number(
+        capacity_snapshot,
+        ('pod_capacity_remaining',),
+        ('pods_remaining',),
+        ('pod_capacity', 'remaining'),
+    )
+    pods_total = pods_used_count + int(round(pods_remaining or 0)) if pods_used_count and pods_remaining is not None else 0
+    pods_capacity_label = f'{pods_total} Total' if pods_total else _text(_mapping(capacity_snapshot.get('pod_capacity_remaining')).get('value'), 'Not Available')
+    pods_headroom_label = (
+        f'{int(round(pods_remaining))} Remaining ({_display_percent(pods_metric.get("headroom_percent"))})'
+        if pods_remaining is not None
+        else _display_percent(pods_metric.get('headroom_percent'))
+    )
+    storage_risks = _integer(storage_snapshot.get('pvc_risk_count'))
+    storage_tone = _tone(storage_snapshot.get('tone'))
+    if storage_tone == 'neutral':
+        storage_tone = 'warning' if storage_risks or storage_free < 30.0 else 'normal'
+    storage_status = _status(storage_snapshot.get('status'), '')
+    if not storage_status:
+        storage_status = 'Review' if storage_tone == 'warning' else 'Critical' if storage_tone == 'critical' else 'Normal'
+    storage_used_percent = max(0.0, min(100.0, 100.0 - storage_free))
     return [
         {
             'resource': 'Storage',
             'used': _text(storage_snapshot.get('pvc_used'), 'Not Available'),
             'capacity': _text(storage_snapshot.get('pvc_requested'), 'Not Available'),
             'headroom': _display_percent(storage_free),
+            'chart_percent': storage_used_percent,
+            'chart_value': f'{_display_percent(storage_used_percent)} used',
+            'chart_headroom': f'{_display_percent(storage_free)} headroom',
             'interpretation': (
-                f'{_integer(storage_snapshot.get("pvc_risk_count"))} local volume risk item(s) detected.'
-                if _integer(storage_snapshot.get('pvc_risk_count'))
+                f'{storage_risks} local volume risk item(s) detected.'
+                if storage_risks
                 else 'No local persistent volume risk item detected.'
             ),
-            'status': _status(storage_snapshot.get('status'), 'Unknown'),
-            'tone': _tone(storage_snapshot.get('tone')),
+            'status': storage_status,
+            'tone': storage_tone,
         },
         {
             'resource': 'Pods',
             'used': _text(pods_metric.get('value')),
-            'capacity': _text(_mapping(capacity_snapshot.get('pod_capacity_remaining')).get('value'), 'Not Available'),
-            'headroom': _display_percent(_number(pods_metric.get('headroom_percent'))),
+            'capacity': pods_capacity_label,
+            'headroom': pods_headroom_label,
+            'chart_percent': _number(pods_metric.get('percent')),
+            'chart_value': f"{_text(pods_metric.get('value'))} used",
+            'chart_headroom': f"{_display_percent(pods_metric.get('headroom_percent'))} headroom",
             'interpretation': 'Current pod utilization and remaining schedulable slots.',
             'status': _text(pods_metric.get('status')),
             'tone': _tone(pods_metric.get('tone')),
@@ -816,8 +1030,11 @@ def _resource_interpretation(
     not_ready = _integer(inventory.get('not_ready_nodes'))
     if highest:
         highest_label = _text(highest.get('label'), 'Resource')
-        highest_value = _display_percent(highest.get('percent'))
-        details = [f'{highest_label} is the highest available shared resource signal at {highest_value}.']
+        highest_percent = _number(highest.get('percent'))
+        if highest_percent < 0.5:
+            details = ['Shared-resource utilization is below 0.5%; source recency should be validated before operational use.']
+        else:
+            details = [f'{highest_label} is the highest available shared resource signal at {_display_percent(highest_percent)}.']
     else:
         details = ['Shared CPU and memory signals are not available from the committed metric evidence.']
     if pvc_risks:
@@ -828,22 +1045,65 @@ def _resource_interpretation(
 
 
 def _forecast_series(forecast_snapshot: Mapping[str, Any]) -> list[dict[str, Any]]:
-    result: list[dict[str, Any]] = []
-    for item in _sequence(forecast_snapshot.get('series')):
-        if not isinstance(item, Mapping):
-            continue
-        result.append(
-            {
-                'key': _text(item.get('key'), '').lower(),
-                'label': _text(item.get('label'), 'Resource'),
-                'historical_points': _text(item.get('historical_points'), ''),
-                'forecast_points': _text(item.get('forecast_points'), ''),
-                'latest_percent': _number(item.get('latest_percent')),
-                'projected_percent': _number(item.get('projected_percent')),
-                'trend': _text(item.get('trend'), 'Unknown'),
-            }
-        )
-    return result
+    raw_series = _sequence(forecast_snapshot.get('series'))
+    if not raw_series:
+        return []
+
+    # Preferred payload: one record per resource with precomputed chart points.
+    if any(isinstance(item, Mapping) and item.get('key') for item in raw_series):
+        result: list[dict[str, Any]] = []
+        for item in raw_series:
+            if not isinstance(item, Mapping):
+                continue
+            result.append(
+                {
+                    'key': _text(item.get('key'), '').lower(),
+                    'label': _text(item.get('label'), 'Resource'),
+                    'historical_points': _text(item.get('historical_points'), ''),
+                    'forecast_points': _text(item.get('forecast_points'), ''),
+                    'latest_percent': _number(item.get('latest_percent')),
+                    'projected_percent': _number(item.get('projected_percent')),
+                    'trend': _text(item.get('trend'), 'Unknown'),
+                }
+            )
+        return result
+
+    # Compatibility payload: a flat historical/forecast series, currently used
+    # for memory demand. Convert it into the canonical resource record.
+    points = [item for item in raw_series if isinstance(item, Mapping)]
+    if not points:
+        return []
+    historical_values = [_number(item.get('value')) for item in points if str(item.get('kind') or '').lower() == 'historical']
+    forecast_values = [_number(item.get('value')) for item in points if str(item.get('kind') or '').lower() == 'forecast']
+    all_values = historical_values + forecast_values
+    if not all_values:
+        return []
+
+    def chart_points(values: Sequence[float], start: float, end: float) -> str:
+        if not values:
+            return ''
+        if len(values) == 1:
+            xs = [start]
+        else:
+            step = (end - start) / (len(values) - 1)
+            xs = [start + index * step for index in range(len(values))]
+        return ' '.join(f'{x:.2f},{100.0 - max(0.0, min(value, 100.0)):.2f}' for x, value in zip(xs, values, strict=False))
+
+    historical_points = chart_points(historical_values, 0.0, 54.0)
+    forecast_points = chart_points(forecast_values, 54.0, 100.0)
+    latest = historical_values[-1] if historical_values else all_values[0]
+    projected = forecast_values[-1] if forecast_values else latest
+    return [
+        {
+            'key': 'memory',
+            'label': 'Memory',
+            'historical_points': historical_points,
+            'forecast_points': forecast_points,
+            'latest_percent': latest,
+            'projected_percent': projected,
+            'trend': 'Increasing' if projected > latest else 'Stable',
+        }
+    ]
 
 
 def _forecast_headline(forecast_snapshot: Mapping[str, Any]) -> str:
@@ -1001,6 +1261,14 @@ def _forecast_interpretation(forecast_snapshot: Mapping[str, Any]) -> str:
     )
 
 
+def _measurement_number(value: Any) -> float:
+    text = str(value or '')
+    match = re.search(r'-?\d+(?:[.,]\d+)?', text)
+    if not match:
+        return 0.0
+    return _number(match.group(0).replace(',', '.'))
+
+
 def _consumer_rows(items: Sequence[Any], resource_label: str) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
     for index, item in enumerate(items[:8], start=1):
@@ -1008,8 +1276,11 @@ def _consumer_rows(items: Sequence[Any], resource_label: str) -> list[dict[str, 
             continue
         name = _text(item.get('name') or item.get('workload') or item.get('pod'), 'Unnamed Resource')
         namespace = _text(item.get('namespace'), 'Cluster Scoped')
-        percent = max(0.0, min(_number(item.get('percent') or item.get('value')), 100.0))
-        display = _text(item.get('display_value'), _display_percent(percent))
+        display = _text(item.get('display_value') or item.get('value'), 'Not Available')
+        share_percent = None
+        if item.get('percent') is not None:
+            share_percent = max(0.0, min(_number(item.get('percent')), 100.0))
+        raw_value = _measurement_number(display)
         rows.append(
             {
                 'rank': index,
@@ -1018,12 +1289,26 @@ def _consumer_rows(items: Sequence[Any], resource_label: str) -> list[dict[str, 
                 'namespace': namespace,
                 'resource': resource_label,
                 'value': display,
-                'percent': percent,
-                'status': 'Warning' if percent >= 10 else 'Normal',
-                'tone': 'warning' if percent >= 10 else 'normal',
+                'raw_value': raw_value,
+                'percent': share_percent if share_percent is not None else 0.0,
+                'bar_percent': 0.0,
+                'status': 'Review' if share_percent is not None and share_percent >= 10 else 'Observed',
+                'tone': 'warning' if share_percent is not None and share_percent >= 10 else 'info',
             }
         )
     return rows
+
+
+def _normalize_consumer_bars(rows: Sequence[dict[str, Any]]) -> None:
+    maximum = max((_number(item.get('raw_value')) for item in rows), default=0.0)
+    if maximum <= 0:
+        maximum = max((_number(item.get('percent')) for item in rows), default=0.0)
+        source_key = 'percent'
+    else:
+        source_key = 'raw_value'
+    for item in rows:
+        value = _number(item.get(source_key))
+        item['bar_percent'] = max(4.0 if value > 0 else 0.0, min(100.0, value / maximum * 100.0 if maximum else 0.0))
 
 
 def _consumer_mix(items: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
@@ -1150,14 +1435,20 @@ def _capacity_interpretation(
     inventory: Mapping[str, Any],
 ) -> str:
     constrained = sorted(
-        resource_metrics.values(),
+        (item for item in resource_metrics.values() if item.get('available') and item.get('percent') is not None),
         key=lambda item: _number(item.get('percent')),
         reverse=True,
     )[:2]
-    names = ' and '.join(_text(item.get('label')) for item in constrained)
+    if constrained and _number(constrained[0].get('percent')) >= 0.5:
+        names = ' and '.join(_text(item.get('label')) for item in constrained)
+        base = f'{names} are the most constrained shared resources in the current committed snapshot.'
+    elif constrained:
+        base = 'Shared-resource utilization is below 0.5%; verify the current metric collection window before remediation.'
+    else:
+        base = 'Shared-resource utilization is not available from the committed metric evidence.'
     not_ready = _integer(inventory.get('not_ready_nodes'))
     suffix = f' {not_ready} node(s) are not ready.' if not_ready else ''
-    return f'{names} are the most constrained shared resources in the current committed snapshot.{suffix}'
+    return base + suffix
 
 
 def _alerts(alert_detail: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -1302,12 +1593,52 @@ def _alert_next_steps(
     ]
 
 
+def _report_activity(reports: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    counts = {'Ready': 0, 'Generating': 0, 'Failed': 0, 'Other': 0}
+    tones = {'Ready': 'normal', 'Generating': 'info', 'Failed': 'critical', 'Other': 'neutral'}
+    for report in reports:
+        status = _text(report.get('status'), 'Other').lower()
+        if 'ready' in status or 'complete' in status or 'available' in status:
+            counts['Ready'] += 1
+        elif 'generat' in status or 'running' in status or 'pending' in status:
+            counts['Generating'] += 1
+        elif 'fail' in status or 'error' in status:
+            counts['Failed'] += 1
+        else:
+            counts['Other'] += 1
+    maximum = max(counts.values(), default=0) or 1
+    return [
+        {
+            'label': label,
+            'value': value,
+            'percent': value / maximum * 100.0,
+            'tone': tones[label],
+        }
+        for label, value in counts.items()
+        if value or label in {'Ready', 'Generating', 'Failed'}
+    ]
+
+
+def _title_like(value: str) -> str:
+    text = _text(value)
+    if not text:
+        return text
+    specials = {'s3': 'S3', 'cpu': 'CPU', 'p95': 'P95', 'api': 'API', 'utc': 'UTC'}
+    words = []
+    for word in text.split():
+        key = word.lower()
+        words.append(specials.get(key, word if any(ch.isupper() for ch in word[1:]) else word.capitalize()))
+    return ' '.join(words)
+
+
 def _reporting(reporting_summary: Mapping[str, Any]) -> dict[str, Any]:
     counts = _mapping(reporting_summary.get('counts'))
     recent = _sequence(reporting_summary.get('recent_reports'))
     schedules = _sequence(reporting_summary.get('schedules'))
     storage = _mapping(reporting_summary.get('storage'))
     generated = _integer(counts.get('generated_this_month') or counts.get('total'))
+    normalized_recent = [_normalize_recent_report(item) for item in recent[:6]]
+    activity = _report_activity(normalized_recent)
     metrics = [
         {'label': 'Reports Generated', 'value': str(generated), 'note': 'Current reporting period', 'tone': 'info'},
         {'label': 'Scheduled Reports', 'value': str(_integer(counts.get('active_schedules'))), 'note': 'Active schedules', 'tone': 'normal'},
@@ -1316,11 +1647,12 @@ def _reporting(reporting_summary: Mapping[str, Any]) -> dict[str, Any]:
     ]
     return {
         'metrics': metrics,
-        'recent_reports': [_normalize_recent_report(item) for item in recent[:6]],
+        'recent_reports': normalized_recent,
+        'activity': activity,
         'schedules': [_normalize_schedule(item) for item in schedules[:6]],
         'storage': {
-            'backend': _text(storage.get('backend'), 'Not Available'),
-            'status': _text(storage.get('status'), 'Not Available'),
+            'backend': _title_like(_text(storage.get('backend'), 'Not Available')),
+            'status': _title_like(_text(storage.get('status'), 'Not Available')),
             'tone': _tone(storage.get('tone')),
             'description': _text(storage.get('description'), 'Storage utilization detail is not available.'),
         },
@@ -1378,6 +1710,8 @@ def _inventory(inventory_snapshot: Mapping[str, Any], selected_cluster_id: Any) 
                 'pods': _integer(counts.get('pods')),
                 'services': _integer(counts.get('services')),
                 'storage': _integer(counts.get('storage')),
+                'ready_nodes': _integer(counts.get('ready_nodes') or item.get('ready_nodes')),
+                'not_ready_nodes': _integer(counts.get('not_ready_nodes') or item.get('not_ready_nodes')),
                 'status': status,
                 'tone': _tone(item.get('sync_status_tone') or status),
                 'collected_at': _text(item.get('synced_at'), 'Not Available'),
@@ -1395,7 +1729,44 @@ def _inventory(inventory_snapshot: Mapping[str, Any], selected_cluster_id: Any) 
         'configuration': _integer(inventory_snapshot.get('total_configuration')),
     }
     health = _mapping(inventory_snapshot.get('health'))
-    not_ready = max(0, totals['nodes'] - _integer(health.get('healthy_clusters'), totals['nodes'])) if selected_cluster_id else 0
+    explicit_not_ready = next(
+        (
+            _integer(value)
+            for value in (
+                inventory_snapshot.get('not_ready_nodes'),
+                inventory_snapshot.get('nodes_not_ready'),
+                health.get('not_ready_nodes'),
+                health.get('nodes_not_ready'),
+            )
+            if value is not None and str(value).strip() != ''
+        ),
+        None,
+    )
+    explicit_ready = next(
+        (
+            _integer(value)
+            for value in (
+                inventory_snapshot.get('ready_nodes'),
+                inventory_snapshot.get('nodes_ready'),
+                health.get('ready_nodes'),
+                health.get('nodes_ready'),
+            )
+            if value is not None and str(value).strip() != ''
+        ),
+        None,
+    )
+    cluster_not_ready = sum(_integer(item.get('not_ready_nodes')) for item in clusters)
+    cluster_ready = sum(_integer(item.get('ready_nodes')) for item in clusters)
+    if explicit_not_ready is not None:
+        not_ready = max(0, min(totals['nodes'], explicit_not_ready))
+    elif explicit_ready is not None:
+        not_ready = max(0, totals['nodes'] - explicit_ready)
+    elif cluster_not_ready > 0 or cluster_ready > 0:
+        not_ready = cluster_not_ready if cluster_not_ready > 0 else max(0, totals['nodes'] - cluster_ready)
+    else:
+        # Cluster-health counts are not node-readiness counts. Do not infer node
+        # readiness from healthy_clusters.
+        not_ready = 0
     return {
         'metrics': [
             {'label': 'Clusters', 'value': str(totals['clusters']), 'tone': 'info'},
@@ -1416,7 +1787,7 @@ def _inventory(inventory_snapshot: Mapping[str, Any], selected_cluster_id: Any) 
             {'label': 'Configuration', 'value': totals['configuration']},
             {'label': 'Storage', 'value': totals['storage']},
         ],
-        'health_summary': _inventory_health_summary(inventory_snapshot, clusters),
+        'health_summary': ' '.join(_inventory_health_summary(inventory_snapshot, clusters)),
         'notes': (
             'Inventory values represent the latest committed generation for each asset type.',
             'This overview summarizes long resource identities; complete asset records remain available in Kubernetes Inventory.',
@@ -1564,7 +1935,7 @@ def _freshness_page(
             {'label': 'Data Quality Score', 'value': _display_percent((overall + completeness) / 2), 'status': 'Good' if (overall + completeness) / 2 >= 85 else 'Attention', 'tone': 'normal' if (overall + completeness) / 2 >= 85 else 'warning'},
         ],
         'sources': list(source_rows),
-        'freshness_svg': _freshness_svg(overall),
+        'freshness_svg': _freshness_svg(freshness),
         'reliability': [
             {'label': 'Completeness', 'value': _display_percent(completeness), 'tone': 'normal' if completeness >= 90 else 'warning'},
             {'label': 'Consistency', 'value': _display_percent(overall), 'tone': 'normal' if overall >= 85 else 'warning'},
@@ -1586,19 +1957,52 @@ def _freshness_page(
     }
 
 
-def _freshness_svg(overall: float) -> str:
-    values = [max(0.0, min(100.0, overall + delta)) for delta in (-4, -1, 1, -2, 3, 0, 2)]
+def _freshness_svg(freshness: Mapping[str, Any]) -> str:
+    raw_history = (
+        _sequence(freshness.get('history'))
+        or _sequence(freshness.get('freshness_history'))
+        or _sequence(freshness.get('trend'))
+    )
+    values: list[float] = []
+    labels: list[str] = []
+    for index, item in enumerate(raw_history[:12]):
+        row = _mapping(item)
+        raw_value = row.get('percent') or row.get('value') or row.get('freshness')
+        if raw_value is None:
+            continue
+        values.append(max(0.0, min(_number(raw_value), 100.0)))
+        labels.append(_text(row.get('label') or row.get('timestamp') or row.get('date'), f'T{index + 1}'))
+    if len(values) < 2:
+        return (
+            '<svg class="ao-chart-svg freshness-empty" viewBox="0 0 640 150" preserveAspectRatio="none" '
+            'role="img" aria-label="Freshness history not available">'
+            '<rect x="0" y="0" width="640" height="150" fill="#f8fafc"/>'
+            '<line x1="36" y1="112" x2="604" y2="112" stroke="#cbd5e1" stroke-width="1"/>'
+            '<text x="320" y="68" text-anchor="middle" font-size="13" font-family="Inter, Arial" fill="#475569">Historical freshness trend is not available</text>'
+            '<text x="320" y="91" text-anchor="middle" font-size="10" font-family="Inter, Arial" fill="#64748b">Current source freshness remains available in the table below.</text>'
+            '</svg>'
+        )
+
+    left, right, top, bottom = 42.0, 606.0, 18.0, 116.0
+    step = (right - left) / (len(values) - 1)
     points = []
     for index, value in enumerate(values):
-        x = 4 + index * 15.2
-        y = 96 - value * 0.78
-        points.append(f'{x:.2f},{y:.2f}')
+        x = left + index * step
+        y = bottom - (value / 100.0) * (bottom - top)
+        points.append((x, y))
+    point_text = ' '.join(f'{x:.2f},{y:.2f}' for x, y in points)
+    first_label = escape(labels[0])
+    last_label = escape(labels[-1])
     return (
-        '<svg class="ao-chart-svg" viewBox="0 0 100 100" role="img" aria-label="Freshness over time">'
-        '<g stroke="#e5e7eb" stroke-width="0.6"><line x1="0" y1="20" x2="100" y2="20"/>'
-        '<line x1="0" y1="40" x2="100" y2="40"/><line x1="0" y1="60" x2="100" y2="60"/>'
-        '<line x1="0" y1="80" x2="100" y2="80"/></g>'
-        f'<polyline points="{" ".join(points)}" fill="none" stroke="#7c3aed" stroke-width="2.2" vector-effect="non-scaling-stroke"/>'
+        '<svg class="ao-chart-svg" viewBox="0 0 640 150" preserveAspectRatio="none" role="img" aria-label="Freshness over time">'
+        '<rect x="0" y="0" width="640" height="150" fill="#ffffff"/>'
+        '<g stroke="#e5e7eb" stroke-width="1">'
+        '<line x1="42" y1="18" x2="606" y2="18"/><line x1="42" y1="67" x2="606" y2="67"/><line x1="42" y1="116" x2="606" y2="116"/>'
+        '</g>'
+        '<g fill="#64748b" font-size="9" font-family="Inter, Arial"><text x="12" y="21">100%</text><text x="18" y="70">50%</text><text x="24" y="119">0%</text></g>'
+        f'<polyline points="{point_text}" fill="none" stroke="#7c3aed" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'
+        f'<circle cx="{points[-1][0]:.2f}" cy="{points[-1][1]:.2f}" r="4" fill="#7c3aed"/>'
+        f'<g fill="#64748b" font-size="9" font-family="Inter, Arial"><text x="42" y="140">{first_label}</text><text x="606" y="140" text-anchor="end">{last_label}</text></g>'
         '</svg>'
     )
 

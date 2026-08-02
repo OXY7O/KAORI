@@ -14,7 +14,7 @@ from app.reports.export.html_pdf.builder import build_report_document
 @dataclass
 class AnalyticsOverviewReportStub:
     id: int = 115
-    name: str = 'Analytics Overview Reporting Standard V2.1 Validation'
+    name: str = 'Analytics Overview Reporting Standard V2.4 Validation'
     report_type: str = 'analytics_overview'
     report_domain: str = 'kubernetes'
     source_kind: str = 'kubernetes'
@@ -139,20 +139,20 @@ def _rendered_html() -> tuple[object, str, Path]:
     return document, rendered_html, project_root
 
 
-def test_analytics_overview_uses_reporting_standard_v21_and_12_pages() -> None:
+def test_analytics_overview_uses_reporting_standard_v24_and_12_pages() -> None:
     document, rendered_html, _ = _rendered_html()
 
     assert document.template_name == 'reports/pdf/analytics_overview.html'
     assert document.metadata['selected_section_keys'] == list(ANALYTICS_OVERVIEW_SECTION_KEYS)
     assert document.presentation['page_count'] == 12
-    assert document.presentation['presentation_version'] == 'v2.1-distinct-main-header'
+    assert document.presentation['presentation_version'] == 'v2.4-enterprise-compact-final'
     assert document.presentation['layout_contract'] == {
         'paper': 'A4 Portrait',
         'section_page_breaks': True,
         'truncate_identities': True,
         'identity_policy': 'top-n-summarized',
         'status_style': 'plain-colored-text',
-        'visual_style': 'reporting-standard-v2.1',
+        'visual_style': 'reporting-standard-v2.4-enterprise-formal',
     }
     assert rendered_html.count('<article class="page') == 12
 
@@ -175,8 +175,8 @@ def test_analytics_overview_title_case_and_section_title_contract() -> None:
         'What Management Should Know',
         'Figure 1 - Memory Demand Forecast',
         'Figure 2 - Leading Consumer Signals',
-        'Figure 3 - Report Generation Activity',
-        'Figure 5 - Freshness Over Time',
+        'Figure 3 - Report Status Distribution',
+        'Figure 4 - Freshness Over Time',
         'Data Sources and Coverage',
         'Known Limitations and Operational Use',
     ):
@@ -251,7 +251,7 @@ def test_analytics_overview_css_locks_page_footer_and_table_overflow() -> None:
     assert 'text-overflow:ellipsis' not in compact
 
 
-def test_v21_layout_uses_distinct_cover_and_shared_reporting_components() -> None:
+def test_v24_layout_uses_distinct_cover_and_shared_reporting_components() -> None:
     _, rendered_html, _ = _rendered_html()
 
     assert 'class="page cover"' in rendered_html
@@ -304,3 +304,14 @@ def test_v21_template_uses_approved_content_budgets() -> None:
     assert 'Observations by Recency' not in template_source
     assert 'Data Sources and Methodology' in rendered_html
     assert 'Limitations and Status Language' in rendered_html
+
+
+def test_analytics_overview_selected_recommendation_uses_distinct_evidence_and_action() -> None:
+    document, rendered_html, _ = _rendered_html()
+
+    primary = document.presentation['recommendations']['primary']
+    assert primary['description'] != primary['recommended_action']
+    assert primary['evidence'] in rendered_html
+    assert primary['recommended_action'] in rendered_html
+    assert 'class="axis-warning"' in rendered_html
+    assert 'class="axis-critical"' in rendered_html
