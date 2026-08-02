@@ -83,12 +83,14 @@ def build_analytics_overview_presentation(
 
     common = {
         'page_count': len(_ANALYTICS_PAGE_TITLES),
-        'presentation_version': 'v6-management-standard',
+        'presentation_version': 'v6.15-analytical-publication',
         'layout_contract': {
             'paper': 'A4 Portrait',
             'section_page_breaks': True,
-            'truncate_identities': False,
+            'truncate_identities': True,
+            'identity_policy': 'top-n-summarized',
             'status_style': 'plain-colored-text',
+            'visual_style': 'analytical-publication',
         },
         'report_id': report_id,
         'report_name': report_name,
@@ -159,6 +161,14 @@ def build_analytics_overview_presentation(
     executive = {
         'metrics': executive_metrics,
         'summary': _overall_assessment(health_summary, priority_findings),
+        'management_summary': _management_summary(
+            resource_metrics=resource_metrics,
+            storage_snapshot=storage_snapshot,
+            inventory=inventory,
+            alerts_snapshot=alerts_snapshot,
+            forecast_snapshot=forecast_snapshot,
+            priority_findings=priority_findings,
+        ),
         'findings': priority_findings[:3],
         'decisions': decisions[:3],
         'evidence': _evidence_summary(source_rows),
@@ -641,6 +651,65 @@ def _decision_items(
         }
         for item in findings[:3]
     ]
+
+
+def _management_summary(
+    *,
+    resource_metrics: Mapping[str, Mapping[str, Any]],
+    storage_snapshot: Mapping[str, Any],
+    inventory: Mapping[str, Any],
+    alerts_snapshot: Mapping[str, Any],
+    forecast_snapshot: Mapping[str, Any],
+    priority_findings: Sequence[Mapping[str, Any]],
+) -> str:
+    """Build a compact, management-oriented narrative for the overview page.
+
+    The narrative deliberately summarizes the committed evidence instead of
+    repeating the full detail register. Missing metrics are described as
+    unavailable rather than silently converted to zero.
+    """
+    available = [
+        item
+        for item in resource_metrics.values()
+        if _mapping(item).get('available') and _mapping(item).get('percent') is not None
+    ]
+    if available:
+        highest = max(available, key=lambda item: _number(item.get('percent')))
+        resource_sentence = (
+            f"{_text(highest.get('label'))} is the highest available shared-resource signal "
+            f"at {_display_percent(_number(highest.get('percent')))}."
+        )
+    else:
+        resource_sentence = (
+            'Shared CPU and memory utilization are not available from the committed metric evidence.'
+        )
+
+    concerns: list[str] = []
+    not_ready = _integer(inventory.get('not_ready_nodes'))
+    if not_ready:
+        concerns.append(f'{not_ready} not-ready node(s)')
+    storage_risks = _integer(storage_snapshot.get('pvc_risk_count'))
+    if storage_risks:
+        concerns.append(f'{storage_risks} local storage risk item(s)')
+    critical_alerts = _integer(alerts_snapshot.get('critical'))
+    warning_alerts = _integer(alerts_snapshot.get('warning'))
+    if critical_alerts or warning_alerts:
+        concerns.append(f'{critical_alerts} critical and {warning_alerts} warning alert(s)')
+
+    if concerns:
+        concern_sentence = 'The main review areas are ' + ', '.join(concerns) + '.'
+    elif priority_findings:
+        concern_sentence = 'The current overview contains findings that require operational follow-up.'
+    else:
+        concern_sentence = 'No immediate operational risk was identified in the committed overview evidence.'
+
+    forecast_note = _text(forecast_snapshot.get('risk_note'), '')
+    if forecast_note:
+        forecast_sentence = forecast_note.rstrip('.') + '.'
+    else:
+        forecast_sentence = 'Forecast conclusions remain limited to the committed historical observation window.'
+
+    return f'{resource_sentence} {concern_sentence} {forecast_sentence}'
 
 
 def _overall_assessment(
@@ -1345,7 +1414,7 @@ def _inventory(inventory_snapshot: Mapping[str, Any], selected_cluster_id: Any) 
         'health_summary': _inventory_health_summary(inventory_snapshot, clusters),
         'notes': (
             'Inventory values represent the latest committed generation for each asset type.',
-            'Long resource names are wrapped and preserved; no identifier is truncated in the PDF.',
+            'This overview summarizes long resource identities; complete asset records remain available in Kubernetes Inventory.',
         ),
     }
 
@@ -1654,7 +1723,7 @@ def _methodology_page(
         'limitations': (
             'Disconnected resources are excluded from active headroom calculations when evidence identifies them.',
             'Forecast results do not include planned deployments, infrastructure expansion, or workload migrations.',
-            'Top-consumer sections show leading contributors; every displayed long name remains complete and wraps when required.',
+            'Top-consumer sections show leading contributors only; complete rankings and full identities remain available in KAORI detail views.',
             'Data freshness may differ by source based on collection intervals and retention policies.',
         ),
         'status_language': (

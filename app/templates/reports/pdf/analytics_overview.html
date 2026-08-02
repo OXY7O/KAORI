@@ -1,233 +1,244 @@
 <!doctype html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>{{ document.report_name }}</title>
+  <meta charset="utf-8">
+  <title>{{ document.report_name }}</title>
 </head>
-<body class="ao-v6">
+<body class="ao-v615">
 {% set p = document.presentation %}
 
 {% macro status(label, tone='neutral') -%}
-<span class="status {{ 'good' if tone == 'normal' else tone }}">{{ label }}</span>
+<span class="status status-{{ 'normal' if tone == 'good' else tone }}">{{ label }}</span>
+{%- endmacro %}
+
+{% macro overview_text(value, limit=92) -%}
+{%- set raw = value|string -%}
+{{ raw if raw|length <= limit else raw[:limit]|trim ~ '...' }}
 {%- endmacro %}
 
 {% macro report_header() -%}
 <header class="report-header">
-    <div class="brand">
-        <img src="app/static/images/kaori-logo.svg" alt="KAORI">
-        <div>
-            <div class="brand-name">KAORI</div>
-            <div class="brand-tag">Knowledge, Automation, Operations, Resilience &amp; Intelligence</div>
-        </div>
+  <div class="report-brand">
+    <img src="app/static/images/kaori-logo.svg" alt="KAORI">
+    <div>
+      <strong>KAORI</strong>
+      <span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span>
     </div>
-    <div class="report-name">
-        <strong>Analytics Overview</strong>
-        <span>Kubernetes Operational Intelligence Report</span>
-    </div>
+  </div>
+  <div class="running-title">
+    <strong>Analytics Overview</strong>
+    <span>Kubernetes Operational Intelligence Report</span>
+  </div>
 </header>
 {%- endmacro %}
 
 {% macro section_head(number, title, subtitle) -%}
 <div class="section-head">
-    <div class="section-no">{{ number }}</div>
-    <div class="section-copy"><h1>{{ title }}</h1><p>{{ subtitle }}</p></div>
-    <div class="cutoff"><span>Data Cut-off</span><strong>{{ p.data_cutoff }}</strong></div>
+  <div class="section-badge"><span>{{ number }}</span></div>
+  <div class="section-title-copy">
+    <h1>{{ title }}</h1>
+    <p>{{ subtitle }}</p>
+  </div>
+  <div class="cutoff">
+    <span>Data Cut-off</span>
+    <strong>{{ p.data_cutoff }}</strong>
+  </div>
 </div>
 {%- endmacro %}
 
 {% macro footer(page_number) -%}
-<footer><span>Report ID: {{ p.report_id }} &nbsp;|&nbsp; {{ p.classification }}</span><span>Page {{ page_number }} of {{ p.page_count }}</span></footer>
+<footer class="page-footer">
+  <span>Report ID: {{ p.report_id }} &nbsp;|&nbsp; {{ p.classification }}</span>
+  <span>Page {{ page_number }} of {{ p.page_count }}</span>
+</footer>
 {%- endmacro %}
 
-{% macro metric(item) -%}
-<div class="metric">
-    <div class="metric-label">{{ item.label }}</div>
-    <div class="metric-value{% if item.value|string|length > 16 %} long{% endif %}">{{ item.value }}</div>
+{% macro metric_strip(items, mode='four') -%}
+<div class="metric-strip metric-strip-{{ mode }}">
+  {% for item in items %}
+  <div class="metric-item">
+    <span class="metric-label">{{ item.label }}</span>
+    <strong class="metric-value{% if item.value|string|length > 14 %} metric-value-long{% endif %}">{{ item.value }}</strong>
     {% if item.status %}{{ status(item.status, item.tone) }}{% endif %}
-    {% if item.note %}<div class="cell-sub">{{ item.note }}</div>{% endif %}
+  </div>
+  {% endfor %}
 </div>
 {%- endmacro %}
 
-{% macro empty(message) -%}<div class="empty-state">{{ message }}</div>{%- endmacro %}
+{% macro empty_note(message) -%}<p class="empty-note">{{ message }}</p>{%- endmacro %}
 
-<section class="page cover">
-    <header class="cover-header">
-        <div class="cover-header-inner">
-            <div class="cover-topline">
-                <div class="brand cover-brand">
-                    <img src="app/static/images/kaori-logo.svg" alt="KAORI">
-                    <div><div class="brand-name">KAORI</div><div class="brand-tag">Knowledge, Automation, Operations, Resilience &amp; Intelligence</div></div>
-                </div>
-                <div class="cover-meta"><span>MANAGEMENT REPORT</span><strong>{{ p.classification|upper }} · REPORT ID {{ p.report_id }}</strong></div>
-            </div>
-            <div class="cover-hero">
-                <div class="cover-hero-copy">
-                    <div class="cover-kicker">KUBERNETES OPERATIONAL INTELLIGENCE</div>
-                    <h1>Analytics Overview</h1>
-                    <p class="cover-subtitle">Executive view of cluster posture, capacity pressure, operational risk, resource concentration, and recommended actions.</p>
-                </div>
-                <div class="cover-boundary">
-                    <span>REPORTING BOUNDARY</span>
-                    <strong class="long-value{% if p.cluster_scope|length > 44 %} long-boundary{% endif %}">{{ p.cluster_scope }}</strong>
-                    <em class="long-value">{{ p.namespace_scope }} · {{ p.period_label }}</em>
-                </div>
-            </div>
-        </div>
-    </header>
-    <main class="cover-main">
-        <div class="posture {{ 'critical-block' if p.cover.overall_tone == 'critical' else 'warning-block' if p.cover.overall_tone == 'warning' else 'good-block' }}">
-            <div><span class="small-label">EXECUTIVE POSTURE</span><strong class="text-{{ p.cover.overall_tone }}">{{ p.cover.overall_posture }}</strong></div>
-            <p>{{ p.cover.assessment }} Primary concern: {{ p.cover.primary_concern }}.</p>
-        </div>
-        <div class="two-col cover-grid">
-            <div class="panel"><h2>Key Coverage</h2><dl class="coverage">
-                {% for title, description in p.cover.coverage %}<dt>{{ title }}</dt><dd>{{ description }}</dd>{% endfor %}
-            </dl></div>
-            <div class="panel"><h2>Report Context</h2>
-                <table class="data-table plain"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>
-                    <tr><td>Scope</td><td class="long-value">{{ p.cluster_scope }}</td></tr>
-                    <tr><td>Namespace</td><td class="long-value">{{ p.namespace_scope }}</td></tr>
-                    <tr><td>Reporting Period</td><td>{{ p.period_label }}</td></tr>
-                    <tr><td>Data Cut-off</td><td>{{ p.data_cutoff }}</td></tr>
-                    <tr><td>Report ID</td><td class="long-value">{{ p.report_id }}</td></tr>
-                    <tr><td>Classification</td><td>{{ p.classification }}</td></tr>
-                    <tr><td>Generated By</td><td class="long-value">{{ p.generated_by }}</td></tr>
-                </tbody></table>
-            </div>
-        </div>
-        <div class="note-block"><strong>How to Read This Report</strong><p>Begin with the Executive Brief, then follow resource posture, forecast, top consumers, capacity pressure, alerts, reporting, inventory, data quality, recommendations, and methodology.</p></div>
-    </main>
-    {{ footer(1) }}
+<section class="page cover-page">
+  <header class="cover-hero">
+    <div class="cover-decoration cover-ring-one"></div>
+    <div class="cover-decoration cover-ring-two"></div>
+    <div class="cover-top">
+      <div class="cover-brand report-brand">
+        <img src="app/static/images/kaori-logo.svg" alt="KAORI">
+        <div><strong>KAORI</strong><span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span></div>
+      </div>
+      <div class="cover-classification"><span>MANAGEMENT REPORT</span><strong>{{ p.classification|upper }} - REPORT ID {{ p.report_id }}</strong></div>
+    </div>
+    <div class="cover-boundary">
+      <span>REPORTING BOUNDARY</span>
+      <strong>{{ p.cluster_scope }}</strong>
+      <em>{{ p.namespace_scope }} - {{ p.period_label }}</em>
+    </div>
+    <div class="cover-title">
+      <span>KUBERNETES OPERATIONAL INTELLIGENCE</span>
+      <h1>Analytics Overview</h1>
+      <p>Executive view of cluster posture, capacity pressure, operational risk,<br>resource concentration, and recommended actions.</p>
+    </div>
+  </header>
+  <main class="cover-body">
+    <section class="cover-posture posture-{{ p.cover.overall_tone }}">
+      <div><span>Executive Posture</span><strong>{{ p.cover.overall_posture }}</strong></div>
+      <p>{{ p.cover.assessment }} Primary concern: {{ p.cover.primary_concern }}.</p>
+    </section>
+    <div class="cover-columns">
+      <section>
+        <h2>Key Coverage</h2>
+        <ul class="coverage-list">{% for title, description in p.cover.coverage %}<li><strong>{{ title }}</strong><span>{{ description }}</span></li>{% endfor %}</ul>
+      </section>
+      <section>
+        <h2>Report Context</h2>
+        <dl class="context-list">
+          <dt>Scope</dt><dd>{{ p.cluster_scope }}</dd>
+          <dt>Namespace</dt><dd>{{ p.namespace_scope }}</dd>
+          <dt>Reporting Period</dt><dd>{{ p.period_label }}</dd>
+          <dt>Data Cut-off</dt><dd>{{ p.data_cutoff }}</dd>
+          <dt>Generated By</dt><dd>{{ p.generated_by }}</dd>
+        </dl>
+      </section>
+    </div>
+    <section class="reading-guide"><h2>How to Read This Report</h2><p>Begin with the Executive Brief. Review resource posture, forecast, risks, top consumers, data quality, and reporting context before using the Recommendation Plan to prioritize follow-up.</p></section>
+  </main>
+  {{ footer(1) }}
 </section>
 
-<section class="page">
-    {{ report_header() }}{{ section_head(1, 'Executive Brief', 'Operational position at the report cut-off.') }}
-    <main>
-        <div class="metric-grid four">{% for item in p.executive.metrics %}{{ metric(item) }}{% endfor %}</div>
-        <div class="summary"><h2>Executive Summary</h2><p>{{ p.executive.summary }}</p></div>
-        <div class="two-col">
-            <div class="panel"><h2>Top Priority Findings</h2>{% if p.executive.findings %}<ol class="ranked">{% for item in p.executive.findings %}<li><strong class="long-value">{{ item.title }}</strong><span>{{ item.description }}</span></li>{% endfor %}</ol>{% else %}{{ empty('No priority finding was returned.') }}{% endif %}</div>
-            <div class="panel"><h2>Decisions Required</h2>{% if p.executive.decisions %}<ul class="checklist">{% for item in p.executive.decisions %}<li><strong class="long-value">{{ item.title }}</strong><span>{{ item.description }}</span></li>{% endfor %}</ul>{% else %}{{ empty('No management decision was requested.') }}{% endif %}</div>
-        </div>
-        <div class="panel compact"><h2>Evidence Scope</h2><table class="data-table"><colgroup><col style="width:22%"><col style="width:53%"><col style="width:25%"></colgroup><thead><tr><th>Source</th><th>Boundary</th><th>Status</th></tr></thead><tbody>{% for item in p.executive.evidence %}<tr><td>{{ item.label }}</td><td class="long-value">{{ item.source }}</td><td>{{ status(item.status, item.tone) }}</td></tr>{% endfor %}</tbody></table></div>
-        <div class="note-block"><strong>Note</strong><p>All metrics and findings use the committed observation boundary at the report cut-off. Live state after the cut-off is not included.</p></div>
-    </main>{{ footer(2) }}
+<section class="page page-executive">
+  {{ report_header() }}{{ section_head(1, 'Executive Brief', 'Operational position at the report cut-off.') }}
+  <main class="page-body">
+    {{ metric_strip(p.executive.metrics, 'four') }}
+    <div class="metric-definitions">
+      {% for item in p.executive.metrics %}<p><strong>{{ item.label }}</strong> {{ item.note }}</p>{% endfor %}
+    </div>
+    <section class="narrative-section compact-narrative"><h2>What Management Should Know</h2><p>{{ p.executive.management_summary or p.executive.summary }}</p></section>
+    <div class="split split-balanced executive-columns">
+      <section class="content-section"><h2>Top Priority Findings</h2>{% if p.executive.findings %}<ol class="ranked-list">{% for item in p.executive.findings[:3] %}<li><span class="rank">{{ loop.index }}</span><div><strong>{{ overview_text(item.title, 74) }}</strong><p>{{ overview_text(item.description, 180) }}</p></div></li>{% endfor %}</ol>{% else %}{{ empty_note('No priority finding was returned for the selected reporting boundary.') }}{% endif %}</section>
+      <section class="content-section"><h2>Decisions Required</h2>{% if p.executive.decisions %}<ul class="decision-list">{% for item in p.executive.decisions[:3] %}<li><strong>{{ overview_text(item.title, 74) }}</strong><p>{{ overview_text(item.description, 180) }}</p></li>{% endfor %}</ul>{% else %}{{ empty_note('No management decision was requested for the current reporting boundary.') }}{% endif %}</section>
+    </div>
+    <section class="content-section evidence-scope"><h2>Evidence Scope</h2><table class="report-table"><colgroup><col style="width:22%"><col style="width:53%"><col style="width:25%"></colgroup><thead><tr><th>Source</th><th>Boundary</th><th>Status</th></tr></thead><tbody>{% for item in p.executive.evidence %}<tr><td>{{ item.label }}</td><td>{{ overview_text(item.source, 78) }}</td><td>{{ status(item.status, item.tone) }}</td></tr>{% endfor %}</tbody></table></section>
+    <p class="source-note"><strong>Note.</strong> All metrics and findings use the committed observation boundary at the report cut-off. Live state after the cut-off is not included.</p>
+  </main>{{ footer(2) }}
 </section>
 
-<section class="page">
-    {{ report_header() }}{{ section_head(2, 'Resource Posture', 'Current utilization and committed capacity headroom.') }}
-    <main>
-        <div class="two-col">
-            {% for item in (p.resource_posture.cpu, p.resource_posture.memory) %}
-            <div class="panel posture-panel"><h2>{{ item.label }} Capacity</h2><p>{{ item.description }}</p><table class="data-table plain"><colgroup><col style="width:48%"><col style="width:52%"></colgroup><thead><tr><th>Measure</th><th>Value</th></tr></thead><tbody><tr><td>Current</td><td>{{ item.current }}</td></tr><tr><td>P95</td><td>{{ item.p95 }}</td></tr><tr><td>Headroom</td><td>{{ item.headroom }}</td></tr><tr><td>Status</td><td>{{ status(item.status, item.tone) }}</td></tr></tbody></table></div>
-            {% endfor %}
-        </div>
-        <div class="panel"><h2>Storage, Pod, and Node Capacity</h2><table class="data-table small"><colgroup><col style="width:12%"><col style="width:15%"><col style="width:14%"><col style="width:14%"><col style="width:30%"><col style="width:15%"></colgroup><thead><tr><th>Resource</th><th>Used / State</th><th>Capacity</th><th>Headroom</th><th>Interpretation</th><th>Status</th></tr></thead><tbody>{% for row in p.resource_posture.capacity_rows %}<tr><td><strong>{{ row.resource }}</strong></td><td>{{ row.used }}</td><td>{{ row.capacity }}</td><td>{{ row.headroom }}</td><td>{{ row.interpretation }}</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table></div>
-        <div class="summary"><h2>Interpretation</h2><p>{{ p.resource_posture.interpretation }}</p></div>
-        <div class="panel compact"><h2>Operational Thresholds</h2><table class="data-table"><colgroup><col style="width:20%"><col style="width:30%"><col style="width:50%"></colgroup><thead><tr><th>Band</th><th>Condition</th><th>Evaluation Basis</th></tr></thead><tbody>{% for item in p.resource_posture.thresholds %}<tr><td class="text-{{ item.tone }}"><strong>{{ item.label }}</strong></td><td>{{ item.condition }}</td><td>{{ 'P95 and local headroom' if item.label != 'Evaluation' else item.condition }}</td></tr>{% endfor %}</tbody></table></div>
-    </main>{{ footer(3) }}
+<section class="page page-resource">
+  {{ report_header() }}{{ section_head(2, 'Resource Posture', 'Current utilization and committed capacity headroom.') }}
+  <main class="page-body">
+    <div class="split split-balanced resource-summaries">
+      {% for item in (p.resource_posture.cpu, p.resource_posture.memory) %}
+      <section class="content-section resource-summary"><h2>{{ item.label }} Capacity</h2><p>{{ item.description }}</p><dl class="measure-list"><dt>Current</dt><dd>{{ item.current }}</dd><dt>P95</dt><dd>{{ item.p95 }}</dd><dt>Headroom</dt><dd>{{ item.headroom }}</dd><dt>Status</dt><dd>{{ status(item.status, item.tone) }}</dd></dl></section>
+      {% endfor %}
+    </div>
+    <section class="content-section"><h2>Storage, Pod, and Node Capacity</h2><table class="report-table compact-table"><colgroup><col style="width:12%"><col style="width:15%"><col style="width:14%"><col style="width:14%"><col style="width:30%"><col style="width:15%"></colgroup><thead><tr><th>Resource</th><th>Used / State</th><th>Capacity</th><th>Headroom</th><th>Interpretation</th><th>Status</th></tr></thead><tbody>{% for row in p.resource_posture.capacity_rows %}<tr><td><strong>{{ row.resource }}</strong></td><td>{{ row.used }}</td><td>{{ row.capacity }}</td><td>{{ row.headroom }}</td><td>{{ overview_text(row.interpretation, 120) }}</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table></section>
+    <section class="narrative-section"><h2>Interpretation</h2><p>{{ p.resource_posture.interpretation }}</p></section>
+    <section class="content-section"><h2>Operational Thresholds</h2><table class="report-table"><colgroup><col style="width:22%"><col style="width:28%"><col style="width:50%"></colgroup><thead><tr><th>Band</th><th>Condition</th><th>Evaluation Basis</th></tr></thead><tbody>{% for item in p.resource_posture.thresholds %}<tr><td>{{ status(item.label, item.tone) }}</td><td>{{ item.condition }}</td><td>P95 and local headroom</td></tr>{% endfor %}</tbody></table></section>
+  </main>{{ footer(3) }}
 </section>
 
-<section class="page">
-    {{ report_header() }}{{ section_head(3, 'Trend & Forecast', 'Historical behavior, projected pressure, and confidence of the available forecast.') }}
-    <main>
-        <div class="summary warning-summary"><h2>Forecast Signal</h2><p>{{ p.trend_forecast.headline }} {{ p.trend_forecast.summary }}</p></div>
-        <div class="panel chart-wrap"><h2>Memory Demand Forecast</h2><p class="muted">Historical memory P95 and projected demand across the configured planning window.</p>{{ p.trend_forecast.chart_svg|safe }}<div class="caption">Source: committed analytics forecast evidence. Missing observations are shown as gaps, not zero values.</div></div>
-        <div class="panel"><h2>Projected Capacity Pressure</h2><table class="data-table small forecast-table"><colgroup><col style="width:13%"><col style="width:18%"><col style="width:25%"><col style="width:13%"><col style="width:31%"></colgroup><thead><tr><th>Resource</th><th>Current Evidence</th><th>Projection</th><th>Confidence</th><th>Interpretation</th></tr></thead><tbody>{% for row in p.trend_forecast.resource_rows %}<tr><td><strong>{{ row.resource }}</strong></td><td>{{ row.current }}</td><td><span class="primary">{{ row.projected }}</span><span class="secondary">{{ row.eta if row.eta != 'Not projected' else 'No threshold breach projected' }}</span></td><td>{{ row.confidence }}</td><td>{{ row.assessment }}</td></tr>{% endfor %}</tbody></table></div>
-        <div class="note-block"><strong>Forecast Interpretation</strong><p>{{ p.trend_forecast.interpretation }} {{ p.trend_forecast.limitation }}</p></div>
-    </main>{{ footer(4) }}
+<section class="page page-forecast">
+  {{ report_header() }}{{ section_head(3, 'Trend & Forecast', 'Historical behavior, projected pressure, and confidence of the available forecast.') }}
+  <main class="page-body">
+    <section class="narrative-section forecast-signal"><h2>Forecast Signal</h2><p>{{ p.trend_forecast.headline }} {{ p.trend_forecast.summary }}</p></section>
+    <figure class="report-figure forecast-figure"><figcaption><strong>Figure 1 - Memory Demand Forecast</strong><span>Historical memory P95 and projected demand across the configured planning window.</span></figcaption><div class="chart-frame">{{ p.trend_forecast.chart_svg|safe }}</div><p class="source-note">Source: committed analytics forecast evidence. Missing observations are shown as gaps, not zero values.</p></figure>
+    <section class="content-section"><h2>Projected Capacity Pressure</h2><table class="report-table compact-table"><colgroup><col style="width:13%"><col style="width:18%"><col style="width:25%"><col style="width:13%"><col style="width:31%"></colgroup><thead><tr><th>Resource</th><th>Current Evidence</th><th>Projection</th><th>Confidence</th><th>Interpretation</th></tr></thead><tbody>{% for row in p.trend_forecast.resource_rows %}<tr><td><strong>{{ row.resource }}</strong></td><td>{{ row.current }}</td><td><strong>{{ row.projected }}</strong><span class="cell-note">{{ row.eta if row.eta != 'Not projected' else 'No threshold breach projected' }}</span></td><td>{{ row.confidence }}</td><td>{{ overview_text(row.assessment, 105) }}</td></tr>{% endfor %}</tbody></table></section>
+    <section class="narrative-section"><h2>Forecast Interpretation</h2><p>{{ p.trend_forecast.interpretation }} {{ p.trend_forecast.limitation }}</p></section>
+  </main>{{ footer(4) }}
 </section>
 
-<section class="page compact5">
-    {{ report_header() }}{{ section_head(5, 'Top Consumers', 'Highest resource utilization by namespace and resource identity.') }}
-    <main>
-        <div class="two-col consumer-tables">
-            <div class="panel"><h2>{{ p.top_consumers.primary_label }}</h2>{% if p.top_consumers.primary %}<table class="data-table small"><colgroup><col style="width:12%"><col style="width:38%"><col style="width:22%"><col style="width:28%"></colgroup><thead><tr><th>Ref.</th><th>Namespace</th><th>Value</th><th>Status</th></tr></thead><tbody>{% for row in p.top_consumers.primary[:4] %}<tr><td class="ref-code">M{{ loop.index }}</td><td class="long-value">{{ row.namespace }}</td><td>{{ row.value }}</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty('No memory consumer evidence was returned.') }}{% endif %}</div>
-            <div class="panel"><h2>{{ p.top_consumers.secondary_label }}</h2>{% if p.top_consumers.secondary %}<table class="data-table small"><colgroup><col style="width:12%"><col style="width:38%"><col style="width:22%"><col style="width:28%"></colgroup><thead><tr><th>Ref.</th><th>Namespace</th><th>Value</th><th>Status</th></tr></thead><tbody>{% for row in p.top_consumers.secondary[:4] %}<tr><td class="ref-code">C{{ loop.index }}</td><td class="long-value">{{ row.namespace }}</td><td>{{ row.value }}</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty('No CPU consumer evidence was returned.') }}{% endif %}</div>
-        </div>
-        <div class="panel consumer-identities"><h2>Full Resource Identities</h2><div class="two-col identity-columns"><div>{% for row in p.top_consumers.primary[:4] %}<div class="identity-row"><span class="ref-code">M{{ loop.index }}</span><span class="long-value"><strong>{{ row.name }}</strong><span class="cell-sub">Namespace: {{ row.namespace }}</span></span></div>{% endfor %}</div><div>{% for row in p.top_consumers.secondary[:4] %}<div class="identity-row"><span class="ref-code">C{{ loop.index }}</span><span class="long-value"><strong>{{ row.name }}</strong><span class="cell-sub">Namespace: {{ row.namespace }}</span></span></div>{% endfor %}</div></div></div>
-        <div class="two-col top-consumer-bottom"><div class="panel"><h2>Resource Mix</h2><div class="mix-bars">{% for item in p.top_consumers.mix.segments[:4] %}<div class="mix-row"><span>M{{ loop.index }}</span><span class="mix-track"><span style="width:{{ item.percent }}%"></span></span><span class="mix-value">{{ '%.1f'|format(item.percent) }}%</span></div>{% endfor %}</div></div><div class="panel"><h2>Observation Scope</h2><div class="summary-rows">{% for item in p.top_consumers.observation_scope %}<div class="summary-row"><span>{{ item.label }}</span><strong class="long-value">{{ item.value }}</strong></div>{% endfor %}</div></div></div>
-        <div class="note-block"><strong>Insight</strong><p>{{ p.top_consumers.insight }}</p></div>
-    </main>{{ footer(5) }}
-</section>
-<section class="page compact6">
-    {{ report_header() }}{{ section_head(6, 'Capacity Pressure', 'Current capacity headroom and risk of saturation.') }}
-    <main>
-        <div class="metric-grid four">{% for item in p.capacity_pressure.metrics %}{{ metric(item) }}{% endfor %}</div>
-        <div class="two-col capacity-layout">
-            <div class="panel"><h2>Capacity by Resource</h2><table class="data-table small"><colgroup><col style="width:15%"><col style="width:20%"><col style="width:20%"><col style="width:20%"><col style="width:25%"></colgroup><thead><tr><th>Resource</th><th>Used / State</th><th>Capacity</th><th>Headroom</th><th>Status</th></tr></thead><tbody>{% for row in p.capacity_pressure.rows %}<tr><td><strong>{{ row.resource }}</strong></td><td>{{ row.used }}</td><td>{{ row.capacity }}</td><td>{{ row.headroom }}</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table></div>
-            <div class="panel"><h2>Risk Highlights</h2><ol class="ranked">{% for item in p.capacity_pressure.risk_highlights %}<li><strong class="long-value">{{ item.title }}</strong><span>{{ item.description }}</span></li>{% endfor %}</ol></div>
-        </div>
-        <div class="two-col">
-            <div class="panel"><h2>Headroom Distribution</h2><div class="summary-rows">{% for item in p.capacity_pressure.distribution %}<div class="summary-row"><span>{{ item.label }}</span><strong class="text-{{ item.tone }}">{{ item.value }}</strong></div>{% endfor %}</div></div>
-            <div class="panel"><h2>Capacity Forecast</h2><table class="data-table small"><colgroup><col style="width:20%"><col style="width:35%"><col style="width:20%"><col style="width:25%"></colgroup><thead><tr><th>Resource</th><th>Projected Use</th><th>Pressure</th><th>Risk</th></tr></thead><tbody>{% for row in p.capacity_pressure.forecast %}<tr><td><strong>{{ row.resource }}</strong></td><td>{{ row.range }}</td><td>{{ status(row.pressure, row.tone) }}</td><td>{{ row.risk }}</td></tr>{% endfor %}</tbody></table></div>
-        </div>
-        <div class="two-col"><div class="note-block"><strong>Interpretation</strong><p>{{ p.capacity_pressure.interpretation }}</p></div><div class="note-block"><strong>Recommended Actions</strong><ul>{% for item in p.capacity_pressure.actions %}<li class="long-value">{{ item.title }}</li>{% endfor %}</ul></div></div>
-    </main>{{ footer(6) }}
+<section class="page page-consumers">
+  {{ report_header() }}{{ section_head(5, 'Top Consumers', 'Highest resource utilization by namespace and resource identity.') }}
+  <main class="page-body">
+    <figure class="report-figure consumers-figure"><figcaption><strong>Figure 2 - Leading Consumer Signals</strong><span>Top contributors only. Full rankings remain available in the KAORI detail view.</span></figcaption>
+      {% if p.top_consumers.primary or p.top_consumers.secondary %}<div class="split split-balanced consumer-bars">
+        <div><h3>{{ p.top_consumers.primary_label }}</h3>{% for row in p.top_consumers.primary[:4] %}<div class="bar-row"><span>{{ overview_text(row.name, 45) }}</span><i><b style="width:{{ row.percent }}%"></b></i><strong>{{ row.value }}</strong></div>{% endfor %}</div>
+        <div><h3>{{ p.top_consumers.secondary_label }}</h3>{% for row in p.top_consumers.secondary[:4] %}<div class="bar-row"><span>{{ overview_text(row.name, 45) }}</span><i><b style="width:{{ row.percent }}%"></b></i><strong>{{ row.value }}</strong></div>{% endfor %}</div>
+      </div>{% else %}{{ empty_note('Top-consumer evidence is not available for the selected reporting boundary.') }}{% endif %}
+    </figure>
+    <section class="content-section"><h2>Top Consumer Register</h2>{% if p.top_consumers.primary or p.top_consumers.secondary %}<table class="report-table consumer-table"><colgroup><col style="width:9%"><col style="width:43%"><col style="width:14%"><col style="width:17%"><col style="width:17%"></colgroup><thead><tr><th>Ref.</th><th>Resource / Namespace</th><th>Signal</th><th>Value</th><th>Status</th></tr></thead><tbody>{% for row in p.top_consumers.primary[:3] %}<tr><td>M{{ loop.index }}</td><td><strong>{{ overview_text(row.name, 68) }}</strong><span class="cell-note">{{ overview_text(row.namespace, 44) }}</span></td><td>{{ row.resource }}</td><td>{{ row.value }}</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}{% for row in p.top_consumers.secondary[:3] %}<tr><td>C{{ loop.index }}</td><td><strong>{{ overview_text(row.name, 68) }}</strong><span class="cell-note">{{ overview_text(row.namespace, 44) }}</span></td><td>{{ row.resource }}</td><td>{{ row.value }}</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty_note('No consumer rows are included because the selected evidence source returned no ranked consumer data.') }}{% endif %}</section>
+    <div class="split split-balanced consumer-bottom"><section class="content-section"><h2>Observation Scope</h2><dl class="summary-list">{% for item in p.top_consumers.observation_scope %}<dt>{{ item.label }}</dt><dd>{{ overview_text(item.value, 58) }}</dd>{% endfor %}</dl></section><section class="narrative-section"><h2>Insight</h2><p>{{ overview_text(p.top_consumers.insight, 260) }}</p></section></div>
+  </main>{{ footer(5) }}
 </section>
 
-<section class="page compact7">
-    {{ report_header() }}{{ section_head(7, 'Alerts & Anomalies', 'Active conditions and unusual patterns detected in the environment.') }}
-    <main>
-        <div class="metric-grid four">{% for item in p.alerts.metrics %}{{ metric(item) }}{% endfor %}</div>
-        <div class="two-col alerts-top"><div class="panel severity-chart"><h2>Alert Severity Summary</h2>{{ p.alerts.severity_svg|safe }}</div><div class="panel"><h2>Alerts by Category</h2><ul class="legend-list">{% for item in p.alerts.category_mix %}<li><span>{{ item.label }}</span><strong>{{ item.value }} ({{ '%.1f'|format(item.percent) }}%)</strong></li>{% endfor %}</ul></div></div>
-        <div class="two-col"><div class="panel"><h2>Top Active Alerts</h2>{% if p.alerts.alerts %}<table class="data-table tiny"><colgroup><col style="width:9%"><col style="width:18%"><col style="width:31%"><col style="width:16%"><col style="width:26%"></colgroup><thead><tr><th>Ref.</th><th>Severity</th><th>Alert</th><th>Since</th><th>Status</th></tr></thead><tbody>{% for row in p.alerts.alerts[:5] %}<tr><td class="ref-code">A{{ loop.index }}</td><td>{{ status(row.severity, row.tone) }}</td><td class="long-value">{{ row.name }}</td><td>{{ row.since }}</td><td>{{ row.status }}</td></tr>{% endfor %}</tbody></table><div class="identity-list"><strong>Full Affected Scope</strong>{% for row in p.alerts.alerts[:5] %}<div class="identity-row"><span class="ref-code">A{{ loop.index }}</span><span class="long-value">{{ row.resource }} · {{ row.namespace }}</span></div>{% endfor %}</div>{% else %}{{ empty('No active alert detail was returned.') }}{% endif %}</div>
-        <div class="panel"><h2>Recent Anomalies</h2>{% if p.alerts.anomalies %}<ol class="ranked">{% for row in p.alerts.anomalies[:4] %}<li><strong class="long-value">{{ row.name }}</strong><span class="long-value">Namespace: {{ row.namespace }}<br>{{ row.detected_at }}</span></li>{% endfor %}</ol>{% else %}{{ empty('No recent anomaly detail was returned.') }}{% endif %}</div></div>
-        <div class="note-block"><strong>Alert Intelligence Summary</strong><p>{{ p.alerts.summary }}</p>{% if p.alerts.next_steps %}<ul>{% for item in p.alerts.next_steps %}<li><strong class="long-value">{{ item.title }}</strong> - {{ item.description }}</li>{% endfor %}</ul>{% endif %}</div>
-    </main>{{ footer(7) }}
+<section class="page page-capacity">
+  {{ report_header() }}{{ section_head(6, 'Capacity Pressure', 'Current capacity headroom and risk of saturation.') }}
+  <main class="page-body">
+    {{ metric_strip(p.capacity_pressure.metrics, 'four') }}
+    <div class="metric-definitions">{% for item in p.capacity_pressure.metrics %}<p><strong>{{ item.label }}</strong> {{ item.note }}</p>{% endfor %}</div>
+    <div class="split capacity-primary"><section class="content-section"><h2>Capacity by Resource</h2><table class="report-table compact-table"><thead><tr><th>Resource</th><th>Current / State</th><th>Capacity</th><th>Headroom</th><th>Status</th></tr></thead><tbody>{% for row in p.capacity_pressure.rows %}<tr><td><strong>{{ row.resource }}</strong></td><td>{{ row.used }}</td><td>{{ row.capacity }}</td><td>{{ row.headroom }}</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table></section><section class="content-section risk-highlights"><h2>Risk Highlights</h2>{% if p.capacity_pressure.risk_highlights %}<ol class="ranked-list">{% for item in p.capacity_pressure.risk_highlights[:3] %}<li><span class="rank">{{ loop.index }}</span><div><strong>{{ overview_text(item.title, 58) }}</strong><p>{{ overview_text(item.description, 145) }}</p></div></li>{% endfor %}</ol>{% else %}{{ empty_note('No elevated capacity risk was returned.') }}{% endif %}</section></div>
+    <div class="split split-balanced capacity-secondary"><section class="content-section"><h2>Headroom Distribution</h2><dl class="summary-list">{% for item in p.capacity_pressure.distribution %}<dt>{{ item.label }}</dt><dd class="text-{{ item.tone }}">{{ item.value }}</dd>{% endfor %}</dl></section><section class="content-section"><h2>Capacity Forecast</h2><table class="report-table compact-table"><thead><tr><th>Resource</th><th>Current - Projected</th><th>Pressure</th><th>Risk</th></tr></thead><tbody>{% for row in p.capacity_pressure.forecast %}<tr><td><strong>{{ row.resource }}</strong></td><td>{{ row.range }}</td><td>{{ status(row.pressure, row.tone) }}</td><td>{{ row.risk }}</td></tr>{% endfor %}</tbody></table></section></div>
+    <div class="split split-balanced capacity-notes"><section class="narrative-section"><h2>Interpretation</h2><p>{{ p.capacity_pressure.interpretation }}</p></section><section class="narrative-section"><h2>Recommended Actions</h2>{% if p.capacity_pressure.actions %}<ul class="simple-list">{% for item in p.capacity_pressure.actions[:3] %}<li>{{ overview_text(item.title, 80) }}</li>{% endfor %}</ul>{% else %}{{ empty_note('Continue routine capacity monitoring.') }}{% endif %}</section></div>
+  </main>{{ footer(6) }}
 </section>
 
-<section class="page">
-    {{ report_header() }}{{ section_head(8, 'Reporting Summary', 'Report generation status, schedules, and storage readiness.') }}
-    <main>
-        <div class="metric-grid four">{% for item in p.reporting.metrics %}{{ metric(item) }}{% endfor %}</div>
-        <div class="two-col reporting-top"><div class="panel"><h2>Report Generation Activity</h2><div class="bar-series">{% for item in p.reporting.recent_reports %}<span style="height:{{ 20 + loop.index * 10 }}%"></span>{% else %}<span style="height:20%"></span>{% endfor %}</div><div class="caption">Recent generated-report records in descending generation order.</div></div><div class="panel"><h2>Storage Readiness</h2><h3 class="long-value">{{ p.reporting.storage.backend }}</h3>{{ status(p.reporting.storage.status, p.reporting.storage.tone) }}<p>{{ p.reporting.storage.description }}</p></div></div>
-        <div class="two-col"><div class="panel"><h2>Scheduled Reports</h2>{% if p.reporting.schedules %}<table class="data-table small"><thead><tr><th>Ref.</th><th>Frequency</th><th>Next Run</th><th>Status</th></tr></thead><tbody>{% for row in p.reporting.schedules[:6] %}<tr><td class="ref-code">S{{ loop.index }}</td><td>{{ row.frequency }}</td><td>{{ row.next_run }}</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table><div class="identity-list"><strong>Full Schedule Names</strong>{% for row in p.reporting.schedules[:6] %}<div class="identity-row"><span class="ref-code">S{{ loop.index }}</span><span class="long-value">{{ row.name }}</span></div>{% endfor %}</div>{% else %}{{ empty('No schedule record was available.') }}{% endif %}</div>
-        <div class="panel"><h2>Recent Generated Reports</h2>{% if p.reporting.recent_reports %}<table class="data-table small"><thead><tr><th>Ref.</th><th>Generated At</th><th>Size</th><th>Status</th></tr></thead><tbody>{% for row in p.reporting.recent_reports[:6] %}<tr><td class="ref-code">R{{ loop.index }}</td><td>{{ row.generated_at }}</td><td>{{ row.size }}</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table><div class="identity-list"><strong>Full Report Names</strong>{% for row in p.reporting.recent_reports[:6] %}<div class="identity-row"><span class="ref-code">R{{ loop.index }}</span><span class="long-value">{{ row.name }}</span></div>{% endfor %}</div>{% else %}{{ empty('No generated report record was available.') }}{% endif %}</div></div>
-        <div class="two-col"><div class="panel"><h2>Operational Notes</h2><ul class="checklist">{% for item in p.reporting.notes %}<li><span>{{ item }}</span></li>{% endfor %}</ul></div><div class="note-block"><strong>Key Takeaway</strong><p>{{ p.reporting.takeaway }}</p></div></div>
-    </main>{{ footer(8) }}
+<section class="page page-alerts">
+  {{ report_header() }}{{ section_head(7, 'Alerts & Anomalies', 'Active conditions and unusual patterns detected in the environment.') }}
+  <main class="page-body">
+    {{ metric_strip(p.alerts.metrics, 'four') }}
+    <figure class="report-figure alert-profile"><figcaption><strong>Alert Profile</strong><span>Severity and category distribution at the report cut-off.</span></figcaption><div class="split alert-profile-grid"><div class="alert-chart">{{ p.alerts.severity_svg|safe }}</div><div><h3>Alerts by Category</h3><dl class="summary-list">{% for item in p.alerts.category_mix %}<dt>{{ item.label }}</dt><dd>{{ item.value }} ({{ '%.1f'|format(item.percent) }}%)</dd>{% else %}<dt>No Category Detail</dt><dd>Not Available</dd>{% endfor %}</dl></div></div></figure>
+    <div class="split alert-detail"><section class="content-section"><h2>Top Active Alerts</h2>{% if p.alerts.alerts %}<table class="report-table tiny-table"><colgroup><col style="width:10%"><col style="width:20%"><col style="width:36%"><col style="width:22%"><col style="width:12%"></colgroup><thead><tr><th>Ref.</th><th>Severity</th><th>Alert</th><th>Since</th><th>State</th></tr></thead><tbody>{% for row in p.alerts.alerts[:4] %}<tr><td>A{{ loop.index }}</td><td>{{ status(row.severity, row.tone) }}</td><td><strong>{{ overview_text(row.name, 52) }}</strong><span class="cell-note">{{ overview_text(row.namespace, 36) }}</span></td><td>{{ row.since }}</td><td>{{ row.status }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty_note('No active alert detail was returned.') }}{% endif %}</section><section class="content-section"><h2>Recent Anomalies</h2>{% if p.alerts.anomalies %}<ol class="ranked-list anomaly-list">{% for row in p.alerts.anomalies[:3] %}<li><span class="rank">{{ loop.index }}</span><div><strong>{{ overview_text(row.name, 58) }}</strong><p>{{ overview_text(row.namespace, 48) }}<br>{{ row.detected_at }}</p></div></li>{% endfor %}</ol>{% else %}{{ empty_note('No recent anomaly detail was returned.') }}{% endif %}</section></div>
+    <section class="narrative-section"><h2>Alert Intelligence Summary</h2><p>{{ p.alerts.summary }}{% if p.alerts.next_steps %} {{ overview_text(p.alerts.next_steps[0].description, 190) }}{% endif %}</p></section>
+  </main>{{ footer(7) }}
 </section>
 
-<section class="page">
-    {{ report_header() }}{{ section_head(9, 'Inventory Snapshot', 'Overview of clusters, nodes, workloads, and core Kubernetes resources.') }}
-    <main>
-        <div class="metric-grid six">{% for item in p.inventory.metrics %}{{ metric(item) }}{% endfor %}</div>
-        <div class="two-col inventory-main"><div class="panel"><h2>Resources by Cluster</h2>{% if p.inventory.clusters %}<table class="data-table small"><thead><tr><th>Ref.</th><th>Nodes</th><th>Namespaces</th><th>Workloads</th><th>Pods</th><th>Status</th></tr></thead><tbody>{% for row in p.inventory.clusters[:6] %}<tr><td class="ref-code">C{{ loop.index }}</td><td>{{ row.nodes }}</td><td>{{ row.namespaces }}</td><td>{{ row.workloads }}</td><td>{{ row.pods }}</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table><div class="identity-list"><strong>Full Cluster Identities</strong>{% for row in p.inventory.clusters[:6] %}<div class="identity-row"><span class="ref-code">C{{ loop.index }}</span><span class="long-value"><strong>{{ row.name }}</strong>{% if row.environment %}<span class="cell-sub">{{ row.environment }}</span>{% endif %}</span></div>{% endfor %}</div>{% else %}{{ empty('No committed cluster inventory row was available.') }}{% endif %}</div>
-        <div class="panel"><h2>Resource Distribution</h2><div class="mix-bars">{% for row in p.inventory.resource_distribution[:6] %}<div class="mix-row"><span class="ref-code">C{{ loop.index }}</span><span class="mix-track"><span style="width:{{ row.percent }}%"></span></span><span class="mix-value">{{ row.value }}</span></div>{% endfor %}</div></div></div>
-        <div class="two-col"><div class="panel"><h2>Node Overview</h2><div class="four-stat"><div><strong>{{ p.inventory.total_nodes }}</strong><span>Total Nodes</span></div><div><strong>{{ p.inventory.total_nodes - p.inventory.not_ready_nodes }}</strong><span>Ready</span></div><div><strong>{{ p.inventory.not_ready_nodes }}</strong><span>Not Ready</span></div><div><strong>{{ '%.0f'|format(((p.inventory.total_nodes - p.inventory.not_ready_nodes) / p.inventory.total_nodes * 100) if p.inventory.total_nodes else 0) }}%</strong><span>Readiness</span></div></div></div><div class="panel"><h2>Top Resource Counts</h2><div class="summary-rows">{% for row in p.inventory.top_counts %}<div class="summary-row"><span>{{ row.label }}</span><strong>{{ row.value }}</strong></div>{% endfor %}</div></div></div>
-        <div class="two-col"><div class="note-block"><strong>Inventory Health Summary</strong><ul>{% for item in p.inventory.health_summary %}<li>{{ item }}</li>{% endfor %}</ul></div><div class="panel"><h2>Notes</h2><ul class="checklist">{% for item in p.inventory.notes %}<li><span>{{ item }}</span></li>{% endfor %}</ul></div></div>
-    </main>{{ footer(9) }}
+<section class="page page-reporting">
+  {{ report_header() }}{{ section_head(8, 'Reporting Summary', 'Report generation status, schedules, and storage readiness.') }}
+  <main class="page-body">
+    {{ metric_strip(p.reporting.metrics, 'four') }}
+    <div class="split reporting-visual"><figure class="report-figure"><figcaption><strong>Figure 3 - Report Generation Activity</strong><span>Recent generated-report records in chronological order.</span></figcaption><div class="bar-series">{% for item in p.reporting.recent_reports[:6] %}<div><b style="height:{{ 28 + loop.index * 10 }}%"></b><span>R-{{ 6-loop.index if loop.index < 6 else 'Latest' }}</span></div>{% else %}<p class="empty-note">No generated report history was returned.</p>{% endfor %}</div></figure><section class="content-section storage-readiness"><h2>Storage Readiness</h2><h3>{{ p.reporting.storage.backend }}</h3>{{ status(p.reporting.storage.status, p.reporting.storage.tone) }}<p>{{ overview_text(p.reporting.storage.description, 300) }}</p></section></div>
+    <div class="split reporting-registers"><section class="content-section"><h2>Scheduled Reports</h2>{% if p.reporting.schedules %}<table class="report-table compact-table"><thead><tr><th>Schedule</th><th>Frequency</th><th>Next Run</th><th>Status</th></tr></thead><tbody>{% for row in p.reporting.schedules[:4] %}<tr><td>{{ overview_text(row.name, 58) }}</td><td>{{ row.frequency }}</td><td>{{ row.next_run }}</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty_note('No active schedule record is included in this overview output.') }}{% endif %}</section><section class="content-section"><h2>Recent Generated Reports</h2>{% if p.reporting.recent_reports %}<table class="report-table compact-table"><colgroup><col style="width:42%"><col style="width:25%"><col style="width:15%"><col style="width:18%"></colgroup><thead><tr><th>Report</th><th>Generated At</th><th>Size</th><th>Status</th></tr></thead><tbody>{% for row in p.reporting.recent_reports[:5] %}<tr><td>{{ overview_text(row.name, 62) }}</td><td>{{ row.generated_at }}</td><td>{{ row.size }}</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty_note('No generated report record was available.') }}{% endif %}</section></div>
+    <div class="split split-balanced reporting-notes"><section class="narrative-section"><h2>Operational Notes</h2><p>{{ overview_text(p.reporting.notes|join(' '), 270) }}</p></section><section class="narrative-section"><h2>Key Takeaway</h2><p>{{ p.reporting.takeaway }}</p></section></div>
+  </main>{{ footer(8) }}
 </section>
 
-<section class="page dense10">
-    {{ report_header() }}{{ section_head(10, 'Data Freshness & Reliability', 'Observation recency, completeness, and data-quality overview.') }}
-    <main>
-        <div class="metric-grid five">{% for item in p.freshness.metrics %}{{ metric(item) }}{% endfor %}</div>
-        <div class="two-col"><div class="panel"><h2>Data Freshness by Source</h2><table class="data-table small"><colgroup><col style="width:39%"><col style="width:25%"><col style="width:16%"><col style="width:20%"></colgroup><thead><tr><th>Source / Type</th><th>Last Collected</th><th>Freshness</th><th>Status</th></tr></thead><tbody>{% for row in p.freshness.sources %}<tr><td class="long-value">{{ row.source }}<div class="cell-sub">{{ row.type }}</div></td><td>{{ row.last_successful }}</td><td>{{ row.freshness }}</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table></div><div class="panel freshness-chart"><h2>Freshness Over Time</h2>{{ p.freshness.freshness_svg|safe }}</div></div>
-        <div class="panel compact"><h2>Data Reliability Summary</h2><div class="metric-grid five">{% for item in p.freshness.reliability %}<div class="metric"><div class="metric-label">{{ item.label }}</div><div class="metric-value long">{{ item.value }}</div></div>{% endfor %}</div></div>
-        <div class="two-col"><div class="panel"><h2>Observations by Recency</h2><div class="summary-rows">{% for item in p.freshness.recency %}<div class="summary-row"><span>{{ item.label }}</span><strong>{{ item.value }} ({{ '%.1f'|format(item.percent) }}%)</strong></div>{% endfor %}</div></div><div class="panel"><h2>Data Quality Issues</h2><table class="data-table tiny"><thead><tr><th>Issue Type</th><th>Affected Source</th><th>Count</th><th>Impact</th><th>Status</th></tr></thead><tbody>{% for row in p.freshness.issues[:6] %}<tr><td class="long-value">{{ row.issue_type }}</td><td class="long-value">{{ row.source }}</td><td>{{ row.count }}</td><td>{{ status(row.impact, row.impact_tone) }}</td><td>{{ status(row.status, row.status_tone) }}</td></tr>{% endfor %}</tbody></table></div></div>
-        <div class="two-col"><div class="note-block"><strong>What This Means</strong><ul>{% for item in p.freshness.meaning %}<li>{{ item }}</li>{% endfor %}</ul></div><div class="note-block"><strong>Recommended Actions</strong><ul>{% for item in p.freshness.actions %}<li>{{ item }}</li>{% endfor %}</ul></div></div>
-    </main>{{ footer(10) }}
+<section class="page page-inventory">
+  {{ report_header() }}{{ section_head(9, 'Inventory Snapshot', 'Overview of clusters, nodes, workloads, and core Kubernetes resources.') }}
+  <main class="page-body">
+    {{ metric_strip(p.inventory.metrics, 'six') }}
+    <div class="split inventory-primary"><section class="content-section"><h2>Resources by Cluster</h2>{% if p.inventory.clusters %}<table class="report-table compact-table"><colgroup><col style="width:40%"><col style="width:10%"><col style="width:14%"><col style="width:14%"><col style="width:10%"><col style="width:12%"></colgroup><thead><tr><th>Cluster / Environment</th><th>Nodes</th><th>Namespaces</th><th>Workloads</th><th>Pods</th><th>Status</th></tr></thead><tbody>{% for row in p.inventory.clusters[:4] %}<tr><td><strong>{{ overview_text(row.name, 45) }}</strong>{% if row.environment %} - {{ overview_text(row.environment, 24) }}{% endif %}</td><td>{{ row.nodes }}</td><td>{{ row.namespaces }}</td><td>{{ row.workloads }}</td><td>{{ row.pods }}</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty_note('No committed cluster inventory row was available.') }}{% endif %}</section><section class="content-section"><h2>Resource Distribution</h2>{% for row in p.inventory.resource_distribution[:4] %}<div class="bar-row distribution-row"><span>{{ overview_text(row.name, 34) }}</span><i><b style="width:{{ row.percent }}%"></b></i><strong>{{ row.value }}</strong></div>{% endfor %}</section></div>
+    <div class="split split-balanced inventory-secondary"><section class="content-section"><h2>Node Overview</h2><div class="stat-line"><span><strong>{{ p.inventory.total_nodes }}</strong>Total Nodes</span><span><strong>{{ p.inventory.total_nodes - p.inventory.not_ready_nodes }}</strong>Ready</span><span><strong>{{ p.inventory.not_ready_nodes }}</strong>Not Ready</span><span><strong>{{ '%.0f'|format(((p.inventory.total_nodes - p.inventory.not_ready_nodes) / p.inventory.total_nodes * 100) if p.inventory.total_nodes else 0) }}%</strong>Readiness</span></div></section><section class="content-section"><h2>Top Resource Counts</h2><dl class="summary-list">{% for row in p.inventory.top_counts %}<dt>{{ row.label }}</dt><dd>{{ row.value }}</dd>{% endfor %}</dl></section></div>
+    <div class="split split-balanced inventory-notes"><section class="narrative-section"><h2>Inventory Health Summary</h2><p>{{ p.inventory.health_summary|join(' ') }}</p></section><section class="narrative-section"><h2>Notes</h2><p>Values represent the latest committed inventory cut. Detailed asset identities remain available in the Kubernetes Inventory pages.</p></section></div>
+  </main>{{ footer(9) }}
 </section>
 
-<section class="page dense11">
-    {{ report_header() }}{{ section_head(11, 'Recommendation Plan', 'Prioritized actions, owners, and validation criteria for the current reporting boundary.') }}
-    <main>
-        <div class="metric-grid four">{% for item in p.recommendations.metrics %}{{ metric(item) }}{% endfor %}</div>
-        <div class="panel recommendation-register"><h2>Priority Recommendations</h2><table class="data-table small"><colgroup><col style="width:10%"><col style="width:46%"><col style="width:29%"><col style="width:15%"></colgroup><thead><tr><th>Priority</th><th>Recommendation / Scope</th><th>Owner / Target Window</th><th>Status</th></tr></thead><tbody>{% for row in p.recommendations['items'][:8] %}<tr><td>{{ status(row.priority, row.tone) }}</td><td class="long-value"><strong>{{ row.title }}</strong><div class="cell-sub">Affected area: {{ row.scope }}</div></td><td class="long-value"><strong>{{ row.owner }}</strong><div class="cell-sub">{{ row.target }}</div></td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table></div>
-        <div class="two-col recommendation-detail"><div class="panel"><h2>Selected Recommendation Detail</h2><h3 class="long-value">{{ p.recommendations.primary.priority }} - {{ p.recommendations.primary.title }}</h3><dl class="detail-list"><dt>Why This Matters</dt><dd>{{ p.recommendations.primary.description }}</dd><dt>Evidence</dt><dd>{{ p.recommendations.primary.evidence }}</dd><dt>Recommended Action</dt><dd>{{ p.recommendations.primary.description }}</dd></dl></div><div class="panel"><h2>Validation, Ownership &amp; Execution</h2><dl class="detail-list"><dt>Validation Criteria</dt><dd>{{ p.recommendations.primary.validation }}</dd><dt>Operational Impact</dt><dd>Validate ownership, maintenance window, and rollback readiness before execution.</dd><dt>Assigned Owners</dt><dd>{% for item in p.recommendations.owners %}{{ item.owner }}: {{ item.count }} action{% if item.count != 1 %}s{% endif %}{% if not loop.last %}<br>{% endif %}{% endfor %}</dd><dt>Execution Guidance</dt><dd>{{ p.recommendations.guidance }}</dd></dl></div></div>
-    </main>{{ footer(11) }}
+<section class="page page-freshness">
+  {{ report_header() }}{{ section_head(10, 'Data Freshness & Reliability', 'Observation recency, completeness, and data-quality overview.') }}
+  <main class="page-body">
+    <div class="metric-strip metric-strip-four">{% for item in p.freshness.metrics %}{% if item.label != 'Failed Datasets' %}<div class="metric-item"><span class="metric-label">{{ item.label }}</span><strong class="metric-value">{{ item.value }}</strong>{% if item.status %}{{ status(item.status, item.tone) }}{% endif %}</div>{% endif %}{% endfor %}</div>
+    <div class="split freshness-visual"><figure class="report-figure"><figcaption><strong>Figure 4 - Freshness Over Time</strong><span>Committed source freshness trend for the selected reporting boundary.</span></figcaption><div class="freshness-chart">{{ p.freshness.freshness_svg|safe }}</div></figure><section class="content-section"><h2>Reliability Summary</h2><dl class="summary-list">{% for item in p.freshness.reliability %}<dt>{{ item.label }}</dt><dd>{{ item.value }}</dd>{% endfor %}</dl></section></div>
+    <section class="content-section"><h2>Data Freshness by Source</h2><table class="report-table compact-table"><colgroup><col style="width:37%"><col style="width:24%"><col style="width:18%"><col style="width:21%"></colgroup><thead><tr><th>Source / Type</th><th>Last Collected</th><th>Freshness</th><th>Status</th></tr></thead><tbody>{% for row in p.freshness.sources[:4] %}<tr><td><strong>{{ overview_text(row.source, 58) }}</strong><span class="cell-note">{{ row.type }}</span></td><td>{{ row.last_successful }}</td><td>{{ row.freshness }}</td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table></section>
+    <div class="split split-balanced freshness-detail"><section class="content-section"><h2>Observations by Recency</h2><dl class="summary-list">{% for item in p.freshness.recency %}<dt>{{ item.label }}</dt><dd>{{ item.value }} ({{ '%.1f'|format(item.percent) }}%)</dd>{% endfor %}</dl></section><section class="content-section"><h2>Data Quality Issues</h2>{% if p.freshness.issues %}<table class="report-table tiny-table"><thead><tr><th>Issue</th><th>Count</th><th>Impact</th><th>Status</th></tr></thead><tbody>{% for row in p.freshness.issues[:3] %}<tr><td>{{ overview_text(row.issue_type, 50) }}</td><td>{{ row.count }}</td><td>{{ status(row.impact, row.impact_tone) }}</td><td>{{ status(row.status, row.status_tone) }}</td></tr>{% endfor %}</tbody></table>{% else %}{{ empty_note('No open data-quality issue was recorded.') }}{% endif %}</section></div>
+    <div class="split split-balanced freshness-notes"><section class="narrative-section"><h2>What This Means</h2><p>{{ overview_text(p.freshness.meaning|join(' '), 300) }}</p></section><section class="narrative-section"><h2>Recommended Actions</h2><p>{{ overview_text(p.freshness.actions|join(' '), 300) }}</p></section></div>
+  </main>{{ footer(10) }}
 </section>
 
-<section class="page dense12">
-    {{ report_header() }}{{ section_head(12, 'Methodology & Evidence Boundary', 'Data sources, reporting rules, coverage, and interpretation controls.') }}
-    <main>
-        <div class="metric-grid four">{% for item in p.methodology.metrics %}{{ metric(item) }}{% endfor %}</div>
-        <div class="two-col methodology-top"><div class="panel"><h2>Data Sources &amp; Coverage</h2><table class="data-table tiny"><colgroup><col style="width:34%"><col style="width:20%"><col style="width:17%"><col style="width:29%"></colgroup><thead><tr><th>Source</th><th>Type</th><th>Freshness</th><th>Last Collected</th></tr></thead><tbody>{% for row in p.methodology.sources %}<tr><td class="long-value">{{ row.source }}</td><td>{{ row.type }}</td><td>{{ row.freshness }}</td><td>{{ row.last_successful }}</td></tr>{% endfor %}</tbody></table></div><div class="panel"><h2>Methodology Summary</h2><table class="data-table tiny"><colgroup><col style="width:32%"><col style="width:68%"></colgroup><thead><tr><th>Rule</th><th>Definition</th></tr></thead><tbody>{% for row in p.methodology.methodology %}<tr><td>{{ row.label }}</td><td class="long-value">{{ row.value }}</td></tr>{% endfor %}</tbody></table></div></div>
-        <div class="panel"><h2>Evidence Boundary</h2><p>This report is built strictly within the committed observation boundary defined by the data cut-off.</p><div class="two-col evidence-cols"><div class="evidence included"><h3>Included in This Report</h3><ul>{% for item in p.methodology.included %}<li>{{ item }}</li>{% endfor %}</ul></div><div class="evidence excluded"><h3>Not Included in This Report</h3><ul>{% for item in p.methodology.excluded %}<li>{{ item }}</li>{% endfor %}</ul></div></div></div>
-        <div class="two-col methodology-bottom"><div class="panel"><h2>Known Limitations</h2><ol class="number-list">{% for item in p.methodology.limitations %}<li>{{ item }}</li>{% endfor %}</ol></div><div class="panel"><h2>Status Language</h2><table class="data-table tiny"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><thead><tr><th>Status</th><th>Meaning</th></tr></thead><tbody>{% for item in p.methodology.status_language %}<tr><td>{{ item.label }}</td><td>{{ item.description }}</td></tr>{% endfor %}</tbody></table></div></div>
-        <div class="note-block"><strong>Operational Use Guidance</strong><p>{{ p.methodology.guidance }}</p></div>
-    </main>{{ footer(12) }}
+<section class="page page-recommendations">
+  {{ report_header() }}{{ section_head(11, 'Recommendation Plan', 'Prioritized actions, owners, and validation criteria for the current reporting boundary.') }}
+  <main class="page-body">
+    {{ metric_strip(p.recommendations.metrics, 'four') }}
+    <section class="content-section recommendation-register"><h2>Priority Recommendations</h2><table class="report-table compact-table"><colgroup><col style="width:10%"><col style="width:46%"><col style="width:29%"><col style="width:15%"></colgroup><thead><tr><th>Priority</th><th>Recommendation / Scope</th><th>Owner / Target</th><th>Status</th></tr></thead><tbody>{% for row in p.recommendations['items'][:5] %}<tr><td>{{ status(row.priority, row.tone) }}</td><td><strong>{{ overview_text(row.title, 78) }}</strong><span class="cell-note">Scope: {{ overview_text(row.scope, 46) }}</span></td><td><strong>{{ overview_text(row.owner, 42) }}</strong><span class="cell-note">{{ row.target }}</span></td><td>{{ status(row.status, row.tone) }}</td></tr>{% endfor %}</tbody></table><p class="source-note">This overview shows the highest-priority actions only. The complete recommendation register remains available in KAORI.</p></section>
+    <div class="split split-balanced recommendation-detail"><section class="content-section"><h2>Selected Recommendation</h2><h3>{{ p.recommendations.primary.priority }} - {{ overview_text(p.recommendations.primary.title, 85) }}</h3><dl class="detail-list"><dt>Why This Matters</dt><dd>{{ overview_text(p.recommendations.primary.description, 210) }}</dd><dt>Evidence</dt><dd>{{ overview_text(p.recommendations.primary.evidence, 210) }}</dd><dt>Recommended Action</dt><dd>{{ overview_text(p.recommendations.primary.description, 210) }}</dd></dl></section><section class="content-section"><h2>Validation, Ownership &amp; Execution</h2><dl class="detail-list"><dt>Validation Criteria</dt><dd>{{ overview_text(p.recommendations.primary.validation, 105) }}</dd><dt>Assigned Owners</dt><dd>{% for item in p.recommendations.owners %}{{ item.owner }}: {{ item.count }}{% if not loop.last %}<br>{% endif %}{% endfor %}</dd><dt>Execution Guidance</dt><dd>{{ overview_text(p.recommendations.guidance, 125) }}</dd></dl></section></div>
+  </main>{{ footer(11) }}
+</section>
+
+<section class="page page-methodology">
+  {{ report_header() }}{{ section_head(12, 'Methodology & Evidence Boundary', 'Data sources, reporting rules, coverage, and interpretation controls.') }}
+  <main class="page-body">
+    {{ metric_strip(p.methodology.metrics, 'four') }}
+    <div class="split methodology-primary"><section class="content-section"><h2>Data Sources and Coverage</h2><table class="report-table tiny-table"><thead><tr><th>Source</th><th>Type</th><th>Freshness</th><th>Last Collected</th></tr></thead><tbody>{% for row in p.methodology.sources[:4] %}<tr><td>{{ overview_text(row.source, 55) }}</td><td>{{ row.type }}</td><td>{{ row.freshness }}</td><td>{{ row.last_successful }}</td></tr>{% endfor %}</tbody></table></section><section class="content-section"><h2>Methodology Summary</h2><table class="report-table tiny-table"><colgroup><col style="width:34%"><col style="width:66%"></colgroup><thead><tr><th>Rule</th><th>Definition</th></tr></thead><tbody>{% for row in p.methodology.methodology[:6] %}<tr><td>{{ row.label }}</td><td>{{ overview_text(row.value, 72) }}</td></tr>{% endfor %}</tbody></table></section></div>
+    <section class="narrative-section evidence-boundary"><h2>Evidence Boundary</h2><p>This report is built strictly within the committed observation boundary defined by the data cut-off.</p><div class="split split-balanced boundary-lists"><div><h3>Included in This Report</h3><ul class="simple-list">{% for item in p.methodology.included[:5] %}<li>{{ overview_text(item, 100) }}</li>{% endfor %}</ul></div><div><h3>Not Included in This Report</h3><ul class="simple-list">{% for item in p.methodology.excluded[:4] %}<li>{{ overview_text(item, 100) }}</li>{% endfor %}</ul></div></div></section>
+    <div class="split methodology-secondary"><section class="content-section"><h2>Known Limitations and Operational Use</h2><ol class="numbered-list">{% for item in p.methodology.limitations[:4] %}<li>{{ overview_text(item, 130) }}</li>{% endfor %}</ol><p>{{ overview_text(p.methodology.guidance, 220) }}</p></section><section class="content-section"><h2>Status Language</h2><table class="report-table tiny-table"><colgroup><col style="width:35%"><col style="width:65%"></colgroup><thead><tr><th>Status</th><th>Meaning</th></tr></thead><tbody>{% for item in p.methodology.status_language[:4] %}<tr><td>{{ item.label }}</td><td>{{ overview_text(item.description, 70) }}</td></tr>{% endfor %}</tbody></table></section></div>
+  </main>{{ footer(12) }}
 </section>
 </body>
 </html>

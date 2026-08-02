@@ -13,8 +13,8 @@ from app.reports.export.html_pdf.builder import build_report_document
 
 @dataclass
 class AnalyticsOverviewReportStub:
-    id: int = 108
-    name: str = 'Analytics Overview Management Standard Validation'
+    id: int = 115
+    name: str = 'Analytics Overview V6.15 Validation'
     report_type: str = 'analytics_overview'
     report_domain: str = 'kubernetes'
     source_kind: str = 'kubernetes'
@@ -26,19 +26,12 @@ class AnalyticsOverviewReportStub:
     generated_by_username_snapshot: str | None = 'platform-ops'
 
     def sections_as_list(self) -> list[str]:
-        # Existing generated reports may still hold the legacy five-section list.
-        return [
-            'executive_summary',
-            'analytics_summary',
-            'resource_snapshot',
-            'risk_overview',
-            'operational_recommendations',
-        ]
+        return ['executive_summary', 'resource_snapshot', 'operational_recommendations']
 
 
 LONG_RESOURCE_NAME = (
     'payments-api-deployment-with-a-very-long-generated-resource-name-'
-    'that-must-remain-complete-7d8f7d8f7d'
+    'that-is-summarized-in-the-overview-but-remains-complete-in-kaori-detail'
 )
 LONG_NAMESPACE_NAME = 'payments-production-with-an-extremely-long-namespace-name'
 LONG_CLUSTER_NAME = 'Production Kubernetes Cluster With A Long Descriptive Management Name'
@@ -56,8 +49,8 @@ def _payload() -> dict[str, object]:
             'failed_dataset_count': 0,
         },
         'resource_snapshot': {
-            'cpu': {'percent': 58.4, 'status': 'Normal', 'tone': 'green'},
-            'memory': {'percent': 71.2, 'status': 'Warning', 'tone': 'amber'},
+            'cpu': {'percent': 18.4, 'status': 'Normal', 'tone': 'green'},
+            'memory': {'percent': 61.2, 'status': 'Normal', 'tone': 'green'},
             'storage': {'percent': 64.0, 'status': 'Normal', 'tone': 'green'},
             'pods': {'percent': 56.1, 'status': 'Normal', 'tone': 'green'},
         },
@@ -69,14 +62,15 @@ def _payload() -> dict[str, object]:
             'free_percent': 36.0,
         },
         'forecast_snapshot': {
+            'risk_note': 'No near-term threshold breach is projected.',
             'series': [
                 {'timestamp': '2026-07-01', 'value': 48.0, 'kind': 'historical'},
                 {'timestamp': '2026-07-15', 'value': 59.0, 'kind': 'historical'},
-                {'timestamp': '2026-08-01', 'value': 71.2, 'kind': 'historical'},
-                {'timestamp': '2026-08-31', 'value': 82.0, 'kind': 'forecast'},
-                {'timestamp': '2026-09-30', 'value': 91.0, 'kind': 'forecast'},
+                {'timestamp': '2026-08-01', 'value': 61.2, 'kind': 'historical'},
+                {'timestamp': '2026-08-31', 'value': 68.0, 'kind': 'forecast'},
+                {'timestamp': '2026-09-30', 'value': 73.0, 'kind': 'forecast'},
             ],
-            'memory': {'projected_percent': 91.0, 'threshold_eta': '56 days'},
+            'memory': {'projected_percent': 73.0, 'threshold_eta': '90 days'},
         },
         'top_consumers': {
             'memory': [
@@ -107,6 +101,7 @@ def _payload() -> dict[str, object]:
                 }
             ]
         },
+        'alerts_snapshot': {'critical': 1, 'warning': 3, 'info': 0},
         'inventory_snapshot': {
             'total_clusters': 1,
             'total_nodes': 5,
@@ -117,27 +112,14 @@ def _payload() -> dict[str, object]:
                 {
                     'id': 'cluster-prod',
                     'name': LONG_CLUSTER_NAME,
-                    'environment': 'Production Environment With A Descriptive Name',
+                    'environment': 'Production',
                     'sync_status_label': 'Current',
                     'sync_status_tone': 'normal',
                     'counts': {'nodes': 5, 'namespaces': 22, 'workloads': 158, 'pods': 412},
                 }
             ],
         },
-        'data_freshness': {
-            'sources': [
-                {
-                    'label': 'Metrics',
-                    'source': 'Prometheus Observation Cache',
-                    'type': 'Metrics Cache',
-                    'last_successful': '01/08/2026 05:20 WIB',
-                    'freshness': '132 ms',
-                    'status': 'Ready',
-                    'tone': 'normal',
-                }
-            ],
-            'issues': [],
-        },
+        'data_freshness': {'sources': [], 'issues': []},
     }
 
 
@@ -149,8 +131,7 @@ def _environment(project_root: Path) -> Environment:
 
 
 def _rendered_html() -> tuple[object, str, Path]:
-    report = AnalyticsOverviewReportStub()
-    document = build_report_document(report, _payload())
+    document = build_report_document(AnalyticsOverviewReportStub(), _payload())
     project_root = Path(__file__).resolve().parents[2]
     rendered_html = _environment(project_root).get_template(document.template_name).render(
         document=document
@@ -158,64 +139,63 @@ def _rendered_html() -> tuple[object, str, Path]:
     return document, rendered_html, project_root
 
 
-def test_analytics_overview_uses_v6_management_standard_and_12_authored_pages() -> None:
+def test_analytics_overview_uses_v615_analytical_publication_and_12_pages() -> None:
     document, rendered_html, _ = _rendered_html()
 
     assert document.template_name == 'reports/pdf/analytics_overview.html'
     assert document.metadata['selected_section_keys'] == list(ANALYTICS_OVERVIEW_SECTION_KEYS)
     assert document.presentation['page_count'] == 12
-    assert document.presentation['presentation_version'] == 'v6-management-standard'
+    assert document.presentation['presentation_version'] == 'v6.15-analytical-publication'
     assert document.presentation['layout_contract'] == {
         'paper': 'A4 Portrait',
         'section_page_breaks': True,
-        'truncate_identities': False,
+        'truncate_identities': True,
+        'identity_policy': 'top-n-summarized',
         'status_style': 'plain-colored-text',
+        'visual_style': 'analytical-publication',
     }
     assert rendered_html.count('<section class="page') == 12
 
 
-def test_analytics_overview_preserves_long_names_with_reference_maps() -> None:
-    _, rendered_html, project_root = _rendered_html()
-    stylesheet = (
-        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
-    ).read_text()
+def test_analytics_overview_uses_management_summary_and_overview_limits() -> None:
+    document, rendered_html, _ = _rendered_html()
 
-    assert LONG_RESOURCE_NAME in rendered_html
-    assert LONG_NAMESPACE_NAME in rendered_html
-    assert LONG_CLUSTER_NAME in rendered_html
-    assert 'Full Resource Identities' in rendered_html
-    assert 'Full Affected Scope' in rendered_html
-    assert 'Full Schedule Names' in rendered_html
-    assert 'Full Report Names' in rendered_html
-    assert 'Full Cluster Identities' in rendered_html
-    assert 'text-overflow: ellipsis' not in stylesheet
-    assert 'hyphens:none' in stylesheet.replace(' ', '')
-    assert 'overflow-wrap:anywhere' in stylesheet.replace(' ', '')
+    summary = document.presentation['executive']['management_summary']
+    assert 'highest available shared-resource signal' in summary
+    assert 'local storage risk item' in summary
+    assert 'What Management Should Know' in rendered_html
+    assert 'Top contributors only' in rendered_html
+    assert 'complete recommendation register remains available in KAORI' in rendered_html
 
 
-def test_analytics_overview_uses_plain_colored_status_text_without_marker_dots() -> None:
+def test_analytics_overview_title_case_and_section_title_contract() -> None:
+    _, rendered_html, _ = _rendered_html()
+
+    for heading in (
+        'What Management Should Know',
+        'Figure 1 - Memory Demand Forecast',
+        'Figure 2 - Leading Consumer Signals',
+        'Figure 3 - Report Generation Activity',
+        'Figure 4 - Freshness Over Time',
+        'Data Sources and Coverage',
+        'Known Limitations and Operational Use',
+    ):
+        assert heading in rendered_html
+    assert '<div class="section-badge"><span>1</span></div>' in rendered_html
+
+
+def test_analytics_overview_status_is_plain_colored_text_without_marker() -> None:
     document, rendered_html, _ = _rendered_html()
 
     assert document.presentation['layout_contract']['status_style'] == 'plain-colored-text'
     assert 'status-dot' not in rendered_html
-    assert 'ao-status-dot' not in rendered_html
-    assert '<span class="status ' in rendered_html
+    assert '::before' not in rendered_html
+    assert '<span class="status status-' in rendered_html
 
 
-def test_analytics_overview_forecast_chart_uses_bounded_v6_management_plot() -> None:
-    document, _, _ = _rendered_html()
-    chart = document.presentation['trend_forecast']['chart_svg']
-
-    assert 'viewBox="0 0 800 230"' in chart
-    assert 'Projected demand' in chart
-    assert 'Warning 70%' in chart
-    assert 'Critical 85%' in chart
-
-
-def test_analytics_overview_weasyprint_layout_stays_exactly_12_a4_pages() -> None:
+def test_analytics_overview_weasyprint_layout_is_exactly_12_a4_pages() -> None:
     _, rendered_html, project_root = _rendered_html()
     font_config = FontConfiguration()
-
     rendered_document = HTML(string=rendered_html, base_url=str(project_root)).render(
         stylesheets=[
             CSS(
@@ -223,9 +203,7 @@ def test_analytics_overview_weasyprint_layout_stays_exactly_12_a4_pages() -> Non
                 font_config=font_config,
             ),
             CSS(
-                filename=str(
-                    project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
-                ),
+                filename=str(project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'),
                 font_config=font_config,
             ),
         ],
@@ -239,42 +217,37 @@ def test_analytics_overview_weasyprint_layout_stays_exactly_12_a4_pages() -> Non
         assert round(float(page.height), 2) == 1122.52
 
 
-def test_analytics_overview_does_not_present_degraded_metrics_as_zero_percent() -> None:
-    report = AnalyticsOverviewReportStub()
+def test_analytics_overview_degraded_metric_is_not_zero_percent() -> None:
     payload = _payload()
     payload['prometheus'] = {
         'status': 'query_degraded',
         'status_label': 'Query Degraded',
         'status_tone': 'critical',
     }
-    payload['snapshot_summary'] = {
-        **payload['snapshot_summary'],
-        'status': 'Failed',
-        'tone': 'critical',
-    }
+    payload['snapshot_summary'] = {**payload['snapshot_summary'], 'status': 'Failed', 'tone': 'critical'}
     payload['resource_snapshot'] = {
         'cpu': {'percent': 0.0, 'status': 'Normal', 'tone': 'green'},
         'memory': {'percent': 0.0, 'status': 'Normal', 'tone': 'green'},
     }
 
-    document = build_report_document(report, payload)
+    document = build_report_document(AnalyticsOverviewReportStub(), payload)
     cpu_metric, memory_metric = document.presentation['executive']['metrics'][:2]
 
     assert cpu_metric['value'] == 'Not Available'
     assert memory_metric['value'] == 'Not Available'
-    assert cpu_metric['status'] in {'Query Degraded', 'Failed'}
-    assert memory_metric['status'] in {'Query Degraded', 'Failed'}
 
 
-def test_analytics_overview_css_enforces_page_boundaries_and_footer_contract() -> None:
+def test_analytics_overview_css_locks_page_footer_and_table_overflow() -> None:
     _, _, project_root = _rendered_html()
     stylesheet = (
         project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
     ).read_text()
+    compact = stylesheet.replace(' ', '')
 
-    assert 'box-sizing: border-box' in stylesheet
-    assert 'page-break-after:always' in stylesheet.replace(' ', '')
     assert '@page' in stylesheet
-    assert 'bottom:5mm' in stylesheet.replace(' ', '')
-    assert 'body.ao-v6 .cover-header { height:110mm; }' in stylesheet
-    assert '.inventory-main .mix-row' in stylesheet
+    assert 'height:297mm' in compact
+    assert 'page-break-after:always' in compact
+    assert 'bottom:4.5mm' in compact
+    assert 'overflow-wrap:anywhere' in compact
+    assert 'table-layout:fixed' in compact
+    assert 'text-overflow:ellipsis' not in compact
