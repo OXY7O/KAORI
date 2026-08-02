@@ -54,6 +54,13 @@
 </section>
 {%- endmacro %}
 
+{% macro reference_item(code, title, description, label='Decision') -%}
+<div class="reference-item">
+  <span class="reference-code">{{ code }}</span>
+  <div class="reference-copy"><strong>{{ title }}</strong><p><b>{{ label }}.</b> {{ description }}</p></div>
+</div>
+{%- endmacro %}
+
 <article class="page cover">
   <div class="cover-band">
     <div class="cover-brand"><img src="app/static/images/kaori-logo.svg" alt="KAORI"><div><strong>KAORI</strong><span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span></div></div>
@@ -75,11 +82,12 @@
   {{ report_header() }}<div class="page-content">{{ page_title(1,'Executive Brief','Management position at the report cut-off.') }}
   {{ metric_strip(p.executive.metrics) }}
   {% call section('What Management Should Know') %}<p class="lead-paragraph">{{ p.executive.management_summary or p.executive.summary }}</p>{% endcall %}
-  {% call section('Priority Findings and Decisions') %}
-  <table class="report-table priority-table"><thead><tr><th>Priority</th><th>Finding</th><th>Management Decision</th><th>Owner</th></tr></thead><tbody>
-  {% for item in p.executive.findings[:3] %}{% set dec = p.executive.decisions[loop.index0] if p.executive.decisions|length > loop.index0 else {} %}
-  <tr><td>{{ item.priority|default('Review') }}</td><td>{{ item.title }}</td><td>{{ dec.description|default(item.description) }}</td><td>{{ (p.recommendations['items'][loop.index0].owner if p.recommendations['items']|length > loop.index0 else 'Platform Operations') }}</td></tr>{% endfor %}
-  </tbody></table>{% endcall %}
+  {% call section('Priority Findings and Decisions','The register stays concise; full decisions are listed in the reference notes below.') %}
+  <table class="report-table priority-table priority-register"><thead><tr><th>Ref.</th><th>Priority</th><th>Finding</th><th>Owner</th><th>Status</th></tr></thead><tbody>
+  {% for item in p.executive.findings[:3] %}
+  <tr><td><strong>F{{ loop.index }}</strong></td><td>{{ item.priority|default('Review') }}</td><td>{{ item.title }}</td><td>{{ (p.recommendations['items'][loop.index0].owner if p.recommendations['items']|length > loop.index0 else 'Platform Operations') }}</td><td>{{ status('Review', item.tone|default('warning')) }}</td></tr>{% endfor %}
+  </tbody></table>
+  <div class="reference-notes"><h3>Finding References</h3>{% for item in p.executive.findings[:3] %}{% set dec = p.executive.decisions[loop.index0] if p.executive.decisions|length > loop.index0 else {} %}{{ reference_item('F' ~ loop.index, item.title, dec.description|default(item.description), 'Management Decision') }}{% endfor %}</div>{% endcall %}
   {% call section('Evidence Boundary','All metrics and findings are evaluated at the report cut-off; live state after the cut-off is excluded.') %}
   <table class="report-table compact-table"><thead><tr><th>Source</th><th>Committed Boundary</th><th>Status</th></tr></thead><tbody>{% for item in p.executive.evidence %}<tr><td>{{ item.label }}</td><td>{{ item.source }}</td><td>{{ status(item.status,item.tone) }}</td></tr>{% endfor %}</tbody></table>{% endcall %}
   </div>{{ footer(2) }}
@@ -93,16 +101,16 @@
     {% for row in p.resource_posture.capacity_rows[:2] %}<div class="util-row"><strong>{{ row.resource }}</strong><div class="util-track"><i style="width:{{ row.chart_percent }}%"></i><b class="warn-line"></b><b class="crit-line"></b></div><span>{{ row.chart_value }}</span><em>{{ row.chart_headroom }}</em></div>{% endfor %}
     <div class="util-axis"><span class="axis-start">0%</span><span class="axis-warning">70%</span><span class="axis-critical">85%</span><span class="axis-end">100%</span></div>
   </div>{% endcall %}
-  {% call section('Storage, Pod, and Node Capacity') %}<table class="report-table capacity-table"><thead><tr><th>Resource</th><th>Used / State</th><th>Capacity</th><th>Headroom</th><th>Interpretation</th><th>Status</th></tr></thead><tbody>{% for row in p.resource_posture.capacity_rows %}<tr><td><strong>{{ row.resource }}</strong></td><td>{{ row.used }}</td><td>{{ row.capacity }}</td><td>{{ row.headroom }}</td><td>{{ row.interpretation }}</td><td>{{ status(row.status,row.tone) }}</td></tr>{% endfor %}</tbody></table>{% endcall %}
+  {% call section('Storage, Pod, and Node Capacity','Interpretation is separated from the comparison table to keep every row visually consistent.') %}<table class="report-table capacity-table capacity-register"><thead><tr><th>Ref.</th><th>Resource</th><th>Used / State</th><th>Capacity</th><th>Headroom</th><th>Status</th></tr></thead><tbody>{% for row in p.resource_posture.capacity_rows %}<tr><td><strong>C{{ loop.index }}</strong></td><td><strong>{{ row.resource }}</strong></td><td>{{ row.used }}</td><td>{{ row.capacity }}</td><td>{{ row.headroom }}</td><td>{{ status(row.status,row.tone) }}</td></tr>{% endfor %}</tbody></table><div class="reference-notes"><h3>Capacity References</h3>{% for row in p.resource_posture.capacity_rows %}{{ reference_item('C' ~ loop.index, row.resource, row.interpretation, 'Interpretation') }}{% endfor %}</div>{% endcall %}
   {% call section('Management Interpretation') %}<p>{{ p.resource_posture.interpretation }}</p>{% endcall %}
   </div>{{ footer(3) }}
 </article>
 
-<article class="page">
+<article class="page page-trend">
   {{ report_header() }}<div class="page-content">{{ page_title(3,'Trend & Forecast','Historical direction and projected threshold pressure.') }}
   {% call section('Forecast Signal') %}<p class="lead-paragraph">{{ p.trend_forecast.headline }} {{ p.trend_forecast.summary }}</p>{% endcall %}
   {% call section('Figure 1 - Memory Demand Forecast','Historical memory P95 and projected demand across the configured planning window.') %}<div class="chart-frame">{{ p.trend_forecast.chart_svg|safe }}</div><p class="source-note">Source: committed analytics forecast evidence. Missing observations are shown as gaps, not zero values.</p>{% endcall %}
-  {% call section('Projected Capacity Pressure') %}<table class="report-table"><thead><tr><th>Resource</th><th>Current</th><th>Projection</th><th>Confidence</th><th>Interpretation</th></tr></thead><tbody>{% for row in p.trend_forecast.resource_rows %}<tr><td><strong>{{ row.resource }}</strong></td><td>{{ row.current }}</td><td>{{ row.projected }}{% if row.eta %}<small>{{ row.eta }}</small>{% endif %}</td><td>{{ row.confidence }}</td><td>{{ row.assessment }}</td></tr>{% endfor %}</tbody></table>{% endcall %}
+  {% call section('Projected Capacity Pressure','Projection values remain comparable; resource-level interpretation is listed by reference.') %}<table class="report-table forecast-register"><thead><tr><th>Ref.</th><th>Resource</th><th>Current</th><th>Projection</th><th>Confidence</th></tr></thead><tbody>{% for row in p.trend_forecast.resource_rows %}<tr><td><strong>P{{ loop.index }}</strong></td><td><strong>{{ row.resource }}</strong></td><td>{{ row.current }}</td><td>{{ row.projected }}{% if row.eta %}<small>{{ row.eta }}</small>{% endif %}</td><td>{{ row.confidence }}</td></tr>{% endfor %}</tbody></table><div class="reference-notes forecast-references"><h3>Forecast References</h3>{% for row in p.trend_forecast.resource_rows %}{{ reference_item('P' ~ loop.index, row.resource, row.assessment, 'Assessment') }}{% endfor %}</div>{% endcall %}
   {% call section('Forecast Interpretation') %}<p>{{ p.trend_forecast.interpretation }} {{ p.trend_forecast.limitation }}</p>{% endcall %}
   </div>{{ footer(4) }}
 </article>
@@ -119,11 +127,11 @@
   </div>{{ footer(5) }}
 </article>
 
-<article class="page">
+<article class="page page-capacity-pressure">
   {{ report_header() }}<div class="page-content">{{ page_title(5,'Capacity Pressure','Headroom, saturation risk, and operational response.') }}
   {{ metric_strip(p.capacity_pressure.metrics) }}
   {% call section('Capacity by Resource') %}<table class="report-table capacity-table"><thead><tr><th>Resource</th><th>Current / State</th><th>Capacity</th><th>Headroom</th><th>Status</th></tr></thead><tbody>{% for row in p.capacity_pressure.rows %}<tr><td><strong>{{ row.resource }}</strong></td><td>{{ row.used }}</td><td>{{ row.capacity }}</td><td>{{ row.headroom }}</td><td>{{ status(row.status,row.tone) }}</td></tr>{% endfor %}</tbody></table>{% endcall %}
-  {% call section('Risk Highlights') %}<table class="report-table risk-table"><thead><tr><th>Ref.</th><th>Review Item</th><th>Operational Focus</th></tr></thead><tbody>{% for item in p.capacity_pressure.risk_highlights[:3] %}<tr><td>{{ loop.index }}</td><td>{{ item.title }}</td><td>{{ item.summary|default(item.description) }}</td></tr>{% endfor %}</tbody></table>{% endcall %}
+  {% call section('Risk Highlights','The risk register is fixed-width; operational focus is maintained in the reference notes.') %}<table class="report-table risk-table risk-register"><thead><tr><th>Ref.</th><th>Review Item</th><th>Priority</th><th>Status</th></tr></thead><tbody>{% for item in p.capacity_pressure.risk_highlights[:3] %}<tr><td><strong>R{{ loop.index }}</strong></td><td>{{ item.title }}</td><td>{{ item.priority|default('Review') }}</td><td>{{ status('Open', item.tone|default('warning')) }}</td></tr>{% endfor %}</tbody></table><div class="reference-notes"><h3>Risk References</h3>{% for item in p.capacity_pressure.risk_highlights[:3] %}{{ reference_item('R' ~ loop.index, item.title, item.summary|default(item.description), 'Operational Focus') }}{% endfor %}</div>{% endcall %}
   {% call section('Operational Interpretation and Actions') %}<p>{{ p.capacity_pressure.interpretation }}</p><ul class="action-list">{% for item in p.capacity_pressure.actions[:3] %}<li>{{ item.title }}</li>{% endfor %}</ul>{% endcall %}
   </div>{{ footer(6) }}
 </article>
@@ -174,9 +182,22 @@
 <article class="page page-recommendations">
   {{ report_header() }}<div class="page-content">{{ page_title(10,'Recommendation Plan','Prioritized actions, owners, and validation gates.') }}
   {{ metric_strip(p.recommendations.metrics) }}
-  {% call section('Priority Recommendations') %}<table class="report-table recommendation-table"><thead><tr><th>Priority</th><th>Recommendation</th><th>Scope</th><th>Owner</th><th>Target</th><th>Status</th></tr></thead><tbody>{% for row in p.recommendations['items'][:5] %}<tr><td>{{ row.priority }}</td><td>{{ row.title }}</td><td>{{ row.scope }}</td><td>{{ row.owner }}</td><td>{{ row.target }}</td><td>{{ status(row.status,row.tone) }}</td></tr>{% endfor %}</tbody></table>{% endcall %}
-  {% call section('Selected Recommendation') %}<h3>{{ p.recommendations.primary.priority }} - {{ p.recommendations.primary.title }}</h3><div class="detail-flow"><div><strong>Why This Matters</strong><p>{{ p.recommendations.primary.description }}</p></div><div><strong>Evidence</strong><p>{{ p.recommendations.primary.evidence }}</p></div><div><strong>Recommended Action</strong><p>{{ p.recommendations.primary.recommended_action }}</p></div></div>{% endcall %}
-  {% call section('Validation, Ownership & Execution') %}<div class="detail-flow"><div><strong>Validation Criteria</strong><p>{{ p.recommendations.primary.validation }}</p></div><div><strong>Assigned Owners</strong><p>{% for owner in p.recommendations.owners %}{{ owner.owner }}: {{ owner.count }} action(s){% if not loop.last %}; {% endif %}{% endfor %}</p></div><div><strong>Execution Guidance</strong><p>{{ p.recommendations.guidance }}</p></div></div>{% endcall %}
+  {% call section('Priority Recommendations','The register contains only fixed decision fields. Full context remains in the reference notes below.') %}
+  <table class="report-table recommendation-table recommendation-register">
+    <thead><tr><th>Ref.</th><th>Priority</th><th>Recommendation</th><th>Owner</th><th>Target</th><th>Status</th></tr></thead>
+    <tbody>{% for row in p.recommendations['items'][:5] %}
+      <tr>
+        <td><strong class="register-ref">R{{ loop.index }}</strong></td>
+        <td><strong class="priority-code">{{ row.priority }}</strong></td>
+        <td><strong class="register-title">{{ row.register_title|default(row.title) }}</strong></td>
+        <td>{{ row.owner }}</td>
+        <td>{{ row.target }}</td>
+        <td>{{ status(row.status,row.tone) }}</td>
+      </tr>
+    {% endfor %}</tbody>
+  </table>{% endcall %}
+  {% call section('Recommendation References','Descriptions expand below the register without changing table row heights.') %}<div class="reference-notes reference-grid recommendation-references">{% for row in p.recommendations['items'][:5] %}{{ reference_item('R' ~ loop.index, row.title, row.description, 'Why It Matters') }}{% endfor %}</div>{% endcall %}
+  {% call section('Execution Governance') %}<div class="detail-flow"><div><strong>Primary Action</strong><p>{{ p.recommendations.primary.recommended_action }}</p></div><div><strong>Validation Criteria</strong><p>{{ p.recommendations.primary.validation }}</p></div><div><strong>Assigned Owners</strong><p>{% for owner in p.recommendations.owners %}{{ owner.owner }}: {{ owner.count }} action(s){% if not loop.last %}; {% endif %}{% endfor %}</p></div><div><strong>Execution Guidance</strong><p>{{ p.recommendations.guidance }}</p></div></div>{% endcall %}
   </div>{{ footer(11) }}
 </article>
 
@@ -184,12 +205,23 @@
   {{ report_header() }}<div class="page-content">{{ page_title(11,'Methodology & Evidence Boundary','Data sources, reporting rules, and evidence limits.') }}
   {{ metric_strip(p.methodology.metrics) }}
   {% call section('Data Sources and Methodology') %}
-  <div class="methodology-grid">
-    <div><h3>Data Sources and Coverage</h3><table class="report-table sources-compact"><thead><tr><th>Source</th><th>Freshness</th><th>Last Collected</th></tr></thead><tbody>{% for row in p.methodology.sources[:4] %}<tr><td>{{ row.source }}</td><td>{{ row.freshness }}</td><td>{{ row.last_successful }}</td></tr>{% endfor %}</tbody></table></div>
-    <div><h3>Methodology Summary</h3><table class="report-table method-summary"><thead><tr><th>Rule</th><th>Definition</th></tr></thead><tbody>{% for row in p.methodology.methodology[:5] %}<tr><td>{{ row.label }}</td><td>{{ row.value }}</td></tr>{% endfor %}</tbody></table></div>
-  </div>{% endcall %}
+  <div class="methodology-register-layout">
+    <div class="methodology-source-block">
+      <h3>Data Sources and Coverage</h3>
+      <table class="report-table sources-compact"><thead><tr><th>Source</th><th>Freshness</th><th>Last Collected</th></tr></thead><tbody>{% for row in p.methodology.sources[:4] %}<tr><td>{{ row.source }}</td><td>{{ row.freshness }}</td><td>{{ row.last_successful }}</td></tr>{% endfor %}</tbody></table>
+    </div>
+    <div class="methodology-table-block">
+      <h3>Methodology Register</h3>
+      <table class="report-table method-summary method-register"><thead><tr><th>Ref.</th><th>Rule</th><th>Setting</th></tr></thead><tbody>{% for row in p.methodology.methodology[:5] %}<tr><td><strong class="register-ref">M{{ loop.index }}</strong></td><td>{{ row.label }}</td><td>{% if loop.index <= 2 %}{{ row.value }}{% elif loop.index == 3 %}Holt-Winters{% else %}See Reference{% endif %}</td></tr>{% endfor %}</tbody></table>
+    </div>
+  </div>
+  <div class="reference-notes methodology-references"><h3>Methodology References</h3><div class="methodology-reference-grid">{% for row in p.methodology.methodology[2:5] %}{{ reference_item('M' ~ (loop.index + 2), row.label, row.value, 'Definition') }}{% endfor %}</div></div>{% endcall %}
   {% call section('Evidence Boundary') %}<p>This report is built strictly within the committed observation boundary defined by the data cut-off.</p><div class="evidence-columns"><div><h3>Included in This Report</h3><ul>{% for item in p.methodology.included[:2] %}<li>{{ item }}</li>{% endfor %}</ul></div><div><h3>Not Included in This Report</h3><ul>{% for item in p.methodology.excluded[:2] %}<li>{{ item }}</li>{% endfor %}</ul></div></div>{% endcall %}
-  {% call section('Limitations and Status Language') %}<div class="methodology-grid limitations-grid"><div><h3>Known Limitations and Operational Use</h3><ul>{% for item in p.methodology.limitations[:2] %}<li>{{ item }}</li>{% endfor %}</ul><p>{{ p.methodology.guidance }}</p></div><div><h3>Status Language</h3><table class="report-table status-table"><thead><tr><th>Status</th><th>Meaning</th></tr></thead><tbody>{% for row in p.methodology.status_language[:4] %}<tr><td>{{ row.label }}</td><td>{{ row.description }}</td></tr>{% endfor %}</tbody></table></div></div>{% endcall %}
+  {% call section('Limitations and Status Language') %}
+  <div class="limitations-status-layout">
+    <div class="limitations-copy"><h3>Known Limitations and Operational Use</h3><ul>{% for item in p.methodology.limitations[:2] %}<li>{{ item }}</li>{% endfor %}</ul><p>{{ p.methodology.guidance }}</p></div>
+    <div class="status-language-block"><h3>Status Language</h3><div class="status-legend-grid">{% for row in p.methodology.status_language[:4] %}<div class="status-legend-item"><span class="reference-code">S{{ loop.index }}</span><div><strong>{{ row.label }}</strong><p>{{ row.description }}</p></div></div>{% endfor %}</div></div>
+  </div>{% endcall %}
   </div>{{ footer(12) }}
 </article>
 </body>

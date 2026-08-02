@@ -84,14 +84,14 @@ def build_analytics_overview_presentation(
 
     common = {
         'page_count': len(_ANALYTICS_PAGE_TITLES),
-        'presentation_version': 'v2.4-enterprise-compact-final',
+        'presentation_version': 'v2.6-table-reference-layout-final',
         'layout_contract': {
             'paper': 'A4 Portrait',
             'section_page_breaks': True,
             'truncate_identities': True,
             'identity_policy': 'top-n-summarized',
             'status_style': 'plain-colored-text',
-            'visual_style': 'reporting-standard-v2.4-enterprise-formal',
+            'visual_style': 'reporting-standard-v2.6-table-reference',
         },
         'report_id': report_id,
         'report_name': report_name,
@@ -725,6 +725,18 @@ def _management_decision_summary(item: Mapping[str, Any], title: str, descriptio
     return text or f'Review {title.lower()} and confirm the accountable owner.'
 
 
+
+def _register_title(title: str) -> str:
+    """Return a concise table label while preserving the full title in reference notes."""
+    value = _text(title, 'Recommendation')
+    for prefix in ('Review ', 'Validate ', 'Investigate ', 'Assess '):
+        if value.lower().startswith(prefix.lower()):
+            value = value[len(prefix):].strip()
+            break
+    if len(value) > 48:
+        value = value[:45].rsplit(' ', 1)[0].rstrip(' ,.;:') + '...'
+    return value or _text(title, 'Recommendation')
+
 def _recommendations(actionable: Mapping[str, Any], payload: Mapping[str, Any]) -> list[dict[str, Any]]:
     items = _sequence(actionable.get('items'))
     if not items:
@@ -765,14 +777,15 @@ def _recommendations(actionable: Mapping[str, Any], payload: Mapping[str, Any]) 
                 'priority_label': priority,
                 'tone': tone if tone != 'neutral' else 'info',
                 'title': title,
+                'register_title': _register_title(title),
                 'description': description,
                 'summary': management_summary,
                 'recommended_action': recommended_action,
                 'scope': scope,
                 'source': source,
-                'owner': _suggest_owner(source, title),
-                'target': _target_window(tone),
-                'status': 'Open' if tone in {'critical', 'warning'} else 'Planned',
+                'owner': _text(item.get('owner'), _suggest_owner(source, title)),
+                'target': _text(item.get('target') or item.get('due'), _target_window(tone)),
+                'status': _text(item.get('status'), 'Open' if tone in {'critical', 'warning'} else 'Planned'),
                 'evidence': _text(item.get('evidence') or item.get('reason'), description),
                 'validation': _validation_text(source, title),
             }
@@ -2049,7 +2062,9 @@ def _recommendation_page(recommendations: Sequence[Mapping[str, Any]]) -> dict[s
                 'priority_label': 'Info',
                 'tone': 'info',
                 'title': 'Maintain current operational posture',
+                'register_title': 'Maintain Current Posture',
                 'description': 'No actionable recommendation was returned for the current reporting boundary.',
+                'recommended_action': 'Continue monitoring committed evidence and validate the next reporting cut-off.',
                 'scope': 'Selected reporting scope',
                 'source': 'Analytics Overview',
                 'owner': 'Platform Operations',
