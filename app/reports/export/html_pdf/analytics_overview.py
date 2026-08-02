@@ -83,14 +83,14 @@ def build_analytics_overview_presentation(
 
     common = {
         'page_count': len(_ANALYTICS_PAGE_TITLES),
-        'presentation_version': 'v6.17-spacing-rhythm-audit',
+        'presentation_version': 'v6.18-publication-flow-audit',
         'layout_contract': {
             'paper': 'A4 Portrait',
             'section_page_breaks': True,
             'truncate_identities': True,
             'identity_policy': 'top-n-summarized',
             'status_style': 'plain-colored-text',
-            'visual_style': 'analytical-publication-v6.16',
+            'visual_style': 'analytical-publication-v6.18',
         },
         'report_id': report_id,
         'report_name': report_name,

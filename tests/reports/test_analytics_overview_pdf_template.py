@@ -139,20 +139,20 @@ def _rendered_html() -> tuple[object, str, Path]:
     return document, rendered_html, project_root
 
 
-def test_analytics_overview_uses_v616_layout_audit_and_12_pages() -> None:
+def test_analytics_overview_uses_v618_publication_flow_and_12_pages() -> None:
     document, rendered_html, _ = _rendered_html()
 
     assert document.template_name == 'reports/pdf/analytics_overview.html'
     assert document.metadata['selected_section_keys'] == list(ANALYTICS_OVERVIEW_SECTION_KEYS)
     assert document.presentation['page_count'] == 12
-    assert document.presentation['presentation_version'] == 'v6.17-spacing-rhythm-audit'
+    assert document.presentation['presentation_version'] == 'v6.18-publication-flow-audit'
     assert document.presentation['layout_contract'] == {
         'paper': 'A4 Portrait',
         'section_page_breaks': True,
         'truncate_identities': True,
         'identity_policy': 'top-n-summarized',
         'status_style': 'plain-colored-text',
-        'visual_style': 'analytical-publication-v6.16',
+        'visual_style': 'analytical-publication-v6.18',
     }
     assert rendered_html.count('<section class="page') == 12
 
@@ -255,25 +255,26 @@ def test_analytics_overview_css_locks_page_footer_and_table_overflow() -> None:
     assert 'text-overflow:ellipsis' not in compact
 
 
-def test_v617_overview_layout_uses_stacked_long_form_sections() -> None:
+def test_v618_overview_layout_uses_readable_full_width_sections() -> None:
     _, rendered_html, _ = _rendered_html()
 
     assert 'consumer-bars-stacked' in rendered_html
-    assert 'Resource Mix in Scope' in rendered_html
-    assert 'Share of in-scope pods represented by each cluster' in rendered_html
-    assert 'stacked-sections freshness-notes' in rendered_html
+    assert 'Scope Composition' in rendered_html
+    assert 'Resource coverage within the committed reporting boundary.' in rendered_html
+    assert 'Data Reliability Guidance' in rendered_html
     assert 'stacked-sections recommendation-detail' in rendered_html
-    assert 'stacked-sections methodology-secondary' in rendered_html
+    assert 'detail-list detail-list-stacked' in rendered_html
+    assert 'anomaly-table' in rendered_html
 
 
-def test_v617_css_has_consistent_vertical_rhythm_and_safe_fractional_grids() -> None:
+def test_v618_css_has_consistent_vertical_rhythm_and_readable_flow() -> None:
     _, _, project_root = _rendered_html()
     stylesheet = (
         project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
     ).read_text()
 
-    assert 'margin:0 0 5mm' in stylesheet
+    assert 'margin:0 0 6mm' in stylesheet
     assert 'consumer-bars-stacked' in stylesheet
-    assert 'minmax(0,.44fr)' in stylesheet
-    assert 'minmax(0,.56fr)' in stylesheet
-    assert 'grid-template-columns:44% 56%' not in stylesheet
+    assert 'grid-template-columns:minmax(0,52%) minmax(28mm,30%) minmax(24mm,18%)' in stylesheet
+    assert 'detail-list-stacked' in stylesheet
+    assert 'resource-count-strip' in stylesheet

@@ -15,7 +15,7 @@
 }
 
 html, body { margin:0; padding:0; }
-body.ao-v617 {
+body.ao-v618 {
   font-family:"Inter", "DejaVu Sans", Arial, sans-serif;
   font-size:8.35pt;
   line-height:1.38;
@@ -23,13 +23,13 @@ body.ao-v617 {
   background:#fff;
   font-variant-numeric:tabular-nums;
 }
-body.ao-v617 *, body.ao-v617 *::before, body.ao-v617 *::after { box-sizing:border-box; }
-body.ao-v617 h1, body.ao-v617 h2, body.ao-v617 h3, body.ao-v617 p,
-body.ao-v617 dl, body.ao-v617 dd, body.ao-v617 ol, body.ao-v617 ul,
-body.ao-v617 figure, body.ao-v617 table { margin:0; }
-body.ao-v617 { font-weight:400; }
-body.ao-v617 h1 { font-weight:700; }
-body.ao-v617 h2, body.ao-v617 h3, body.ao-v617 strong { font-weight:600; }
+body.ao-v618 *, body.ao-v618 *::before, body.ao-v618 *::after { box-sizing:border-box; }
+body.ao-v618 h1, body.ao-v618 h2, body.ao-v618 h3, body.ao-v618 p,
+body.ao-v618 dl, body.ao-v618 dd, body.ao-v618 ol, body.ao-v618 ul,
+body.ao-v618 figure, body.ao-v618 table { margin:0; }
+body.ao-v618 { font-weight:400; }
+body.ao-v618 h1 { font-weight:700; }
+body.ao-v618 h2, body.ao-v618 h3, body.ao-v618 strong { font-weight:600; }
 
 .page {
   position:relative;
@@ -160,7 +160,7 @@ body.ao-v617 h2, body.ao-v617 h3, body.ao-v617 strong { font-weight:600; }
 .cover-boundary strong { display:block; margin-top:2.2mm; font-size:11.4pt; line-height:1.25; }
 .cover-boundary em { display:block; margin-top:1.5mm; color:#ede9fe; font-size:7.1pt; font-style:normal; }
 .cover-title { position:absolute; z-index:2; left:16mm; bottom:16mm; right:16mm; }
-.cover-title h1 { margin-top:3mm; font-size:27pt; line-height:1.05; letter-spacing:-.025em; }
+.cover-title h1 { margin-top:3.5mm; font-size:27pt; line-height:1.05; letter-spacing:-.025em; }
 .cover-title p { margin-top:3.2mm; max-width:150mm; color:#f5f3ff; font-size:9.2pt; line-height:1.45; }
 .cover-body { position:absolute; top:140mm; left:16mm; right:16mm; bottom:15mm; overflow:hidden; }
 .cover-posture { display:grid; grid-template-columns:34mm 1fr; gap:7mm; padding-left:4mm; border-left:1.2mm solid #7c3aed; }
@@ -183,13 +183,13 @@ body.ao-v617 h2, body.ao-v617 h3, body.ao-v617 strong { font-weight:600; }
 
 /* Shared hierarchy and vertical rhythm */
 .content-section, .narrative-section, .report-figure {
-  margin-bottom:7.5mm;
+  margin-bottom:8.5mm;
   min-width:0;
 }
 .content-section h2, .narrative-section h2 {
   display:block;
-  margin:0 0 5mm;
-  padding:0 0 2.3mm;
+  margin:0 0 6mm;
+  padding:0 0 2.6mm;
   border-bottom:.3mm solid #d7dee8;
   font-size:10.5pt;
   line-height:1.22;
@@ -197,12 +197,12 @@ body.ao-v617 h2, body.ao-v617 h3, body.ao-v617 strong { font-weight:600; }
 }
 .report-figure figcaption {
   display:block;
-  margin:0 0 5mm;
+  margin:0 0 6mm;
 }
 .report-figure figcaption strong {
   display:block;
   margin:0;
-  padding:0 0 2.3mm;
+  padding:0 0 2.6mm;
   border-bottom:.3mm solid #d7dee8;
   font-size:10.5pt;
   line-height:1.22;
@@ -210,7 +210,7 @@ body.ao-v617 h2, body.ao-v617 h3, body.ao-v617 strong { font-weight:600; }
 }
 .report-figure figcaption span {
   display:block;
-  margin-top:3mm;
+  margin-top:3.5mm;
   color:#64748b;
   font-size:7.2pt;
   line-height:1.42;
@@ -227,7 +227,7 @@ body.ao-v617 h2, body.ao-v617 h3, body.ao-v617 strong { font-weight:600; }
   line-height:1.55;
 }
 .compact-narrative { margin-bottom:6mm; }
-.report-figure .source-note { margin-top:3mm; }
+.report-figure .source-note { margin-top:3.5mm; }
 .section-description {
   margin:0 0 4mm;
   color:#64748b;
@@ -297,19 +297,19 @@ body.ao-v617 h2, body.ao-v617 h3, body.ao-v617 strong { font-weight:600; }
 .detail-list { display:grid; grid-template-columns:31% 69%; gap:2.2mm 3.5mm; }
 .detail-list dt { color:#6d28d9; font-weight:700; }
 .detail-list dd { margin:0; overflow-wrap:anywhere; }
-.stat-line { display:grid; grid-template-columns:repeat(4,1fr); margin-top:3mm; }
+.stat-line { display:grid; grid-template-columns:repeat(4,1fr); margin-top:3.5mm; }
 .stat-line span { padding:0 3mm; border-left:.3mm solid #d7dee8; font-size:6.6pt; color:#64748b; }
 .stat-line span:first-child { border-left:0; padding-left:0; }
 .stat-line strong { display:block; margin-bottom:1mm; color:#172033; font-size:13pt; }
 
 /* Figures and charts */
-.chart-frame { height:47mm; margin-top:4mm; overflow:hidden; }
+.chart-frame { height:47mm; margin-top:4.5mm; overflow:hidden; }
 .chart-frame svg { width:100%!important; height:100%!important; display:block; }
-.freshness-chart { height:39mm; margin-top:4mm; }
+.freshness-chart { height:39mm; margin-top:4.5mm; }
 .freshness-chart svg { width:100%!important; height:100%!important; display:block; }
 .alert-chart { height:43mm; }
 .alert-chart svg { width:100%!important; height:100%!important; display:block; }
-.consumer-bars { margin-top:4mm; }
+.consumer-bars { margin-top:4.5mm; }
 .consumer-bars-stacked { display:grid; grid-template-columns:1fr; gap:5.5mm; }
 .consumer-series { min-width:0; }
 .bar-row { display:grid; grid-template-columns:minmax(0,40%) minmax(0,1fr) 18%; gap:2mm; align-items:center; margin-bottom:2mm; font-size:6.7pt; }
@@ -333,35 +333,35 @@ body.ao-v617 h2, body.ao-v617 h3, body.ao-v617 strong { font-weight:600; }
 .page-forecast .content-section { margin-bottom:4mm; }
 .consumers-figure { margin-bottom:4mm; }
 .consumer-table td { padding-top:1.5mm; padding-bottom:1.5mm; }
-.consumer-bottom { margin-top:4mm; }
-.capacity-primary { grid-template-columns:minmax(0,1.35fr) minmax(0,.65fr); gap:7mm; margin-top:4mm; }
+.consumer-bottom { margin-top:4.5mm; }
+.capacity-primary { grid-template-columns:minmax(0,1.35fr) minmax(0,.65fr); gap:7mm; margin-top:4.5mm; }
 .capacity-secondary { margin-top:1mm; }
 .capacity-notes { margin-top:2mm; }
 .risk-highlights .ranked-list li { margin-bottom:2mm; }
-.alert-profile { margin-top:4mm; margin-bottom:4mm; }
-.alert-profile-grid { grid-template-columns:minmax(0,.44fr) minmax(0,.56fr); margin-top:4mm; }
+.alert-profile { margin-top:4.5mm; margin-bottom:4mm; }
+.alert-profile-grid { grid-template-columns:minmax(0,.44fr) minmax(0,.56fr); margin-top:4.5mm; }
 .alert-detail { grid-template-columns:58% 42%; gap:7mm; }
 .anomaly-list li { margin-bottom:2.2mm; }
-.reporting-visual { grid-template-columns:minmax(0,.56fr) minmax(0,.44fr); margin-top:4mm; }
-.storage-readiness h3 { margin-top:3mm; margin-bottom:2mm; font-size:9.2pt; }
-.storage-readiness p { margin-top:3mm; font-size:7.2pt; line-height:1.45; }
+.reporting-visual { grid-template-columns:minmax(0,.56fr) minmax(0,.44fr); margin-top:4.5mm; }
+.storage-readiness h3 { margin-top:3.5mm; margin-bottom:2mm; font-size:9.2pt; }
+.storage-readiness p { margin-top:3.5mm; font-size:7.2pt; line-height:1.45; }
 .reporting-registers { grid-template-columns:minmax(0,.42fr) minmax(0,.58fr); gap:7mm; }
 .reporting-notes { margin-top:2mm; }
 .inventory-primary { grid-template-columns:minmax(0,.68fr) minmax(0,.32fr); gap:7mm; margin-top:5mm; }
-.inventory-secondary { margin-top:3mm; }
-.inventory-notes { margin-top:3mm; }
+.inventory-secondary { margin-top:3.5mm; }
+.inventory-notes { margin-top:3.5mm; }
 .distribution-row { grid-template-columns:42% 1fr 14%; }
-.freshness-visual { grid-template-columns:minmax(0,.54fr) minmax(0,.46fr); margin-top:4mm; }
-.freshness-detail { margin-top:3mm; }
+.freshness-visual { grid-template-columns:minmax(0,.54fr) minmax(0,.46fr); margin-top:4.5mm; }
+.freshness-detail { margin-top:3.5mm; }
 .freshness-notes { margin-top:2mm; }
-.page-recommendations .recommendation-register { margin-top:4mm; margin-bottom:5mm; }
+.page-recommendations .recommendation-register { margin-top:4.5mm; margin-bottom:5mm; }
 .recommendation-detail { gap:9mm; }
-.recommendation-detail h3 { margin-top:3mm; font-size:8.4pt; }
-.methodology-primary { grid-template-columns:minmax(0,.52fr) minmax(0,.48fr); gap:7mm; margin-top:4mm; }
+.recommendation-detail h3 { margin-top:3.5mm; font-size:8.4pt; }
+.methodology-primary { grid-template-columns:minmax(0,.52fr) minmax(0,.48fr); gap:7mm; margin-top:4.5mm; }
 .evidence-boundary { margin-top:1mm; }
-.boundary-lists { margin-top:3mm; }
+.boundary-lists { margin-top:3.5mm; }
 .boundary-lists h3 { padding-bottom:1.5mm; border-bottom:.3mm solid #d7dee8; }
-.methodology-secondary { display:block; margin-top:4mm; }
+.methodology-secondary { display:block; margin-top:4.5mm; }
 
 /* Dense pages: keep typography readable while reserving footer space */
 .page-alerts .page-body, .page-reporting .page-body, .page-freshness .page-body, .page-methodology .page-body { font-size:7.9pt; }
@@ -401,7 +401,7 @@ body.ao-v617 h2, body.ao-v617 h3, body.ao-v617 strong { font-weight:600; }
 .page-reporting .reporting-notes,
 .page-freshness .freshness-notes,
 .page-recommendations .recommendation-detail,
-.page-methodology .methodology-secondary { margin-top:3mm; }
+.page-methodology .methodology-secondary { margin-top:3.5mm; }
 .page-reporting .reporting-notes .narrative-section,
 .page-freshness .freshness-notes .narrative-section,
 .page-recommendations .recommendation-detail .content-section,
@@ -409,7 +409,7 @@ body.ao-v617 h2, body.ao-v617 h3, body.ao-v617 strong { font-weight:600; }
 .resource-mix .bar-row { margin-top:2.6mm; }
 .cluster-identity { white-space:normal; }
 .page-inventory .inventory-primary .report-table td:first-child { font-size:6.6pt; }
-.page-alerts .alert-profile-grid .summary-list { margin-top:3mm; }
+.page-alerts .alert-profile-grid .summary-list { margin-top:3.5mm; }
 .page-alerts .alert-profile-grid .summary-list dd { min-width:28mm; }
 .page-methodology .methodology-secondary .numbered-list { margin-top:0; }
 .page-methodology .methodology-secondary p { margin-top:2.5mm; line-height:1.45; }
@@ -440,3 +440,490 @@ body.ao-v617 h2, body.ao-v617 h3, body.ao-v617 strong { font-weight:600; }
 .page-recommendations .recommendation-detail .content-section,
 .page-reporting .reporting-notes .narrative-section,
 .page-freshness .freshness-notes .narrative-section { margin-bottom:7mm; }
+
+
+/* V6.18 publication-layout audit
+   Prefer readable text width over oversized bars or forced two-column blocks. */
+
+body.ao-v618 {
+  font-size:8.45pt;
+  line-height:1.5;
+}
+
+body.ao-v618 .content-section,
+body.ao-v618 .narrative-section,
+body.ao-v618 .report-figure {
+  margin-bottom:8.5mm;
+}
+
+body.ao-v618 .content-section h2,
+body.ao-v618 .narrative-section h2 {
+  margin-bottom:6mm;
+  padding-bottom:2.6mm;
+}
+
+body.ao-v618 .report-figure figcaption {
+  margin-bottom:6mm;
+}
+
+body.ao-v618 .report-figure figcaption strong {
+  padding-bottom:2.6mm;
+}
+
+body.ao-v618 .report-figure figcaption span {
+  margin-top:3.5mm;
+}
+
+body.ao-v618 .report-table th {
+  padding:2.5mm 2.2mm;
+}
+
+body.ao-v618 .report-table td {
+  padding:2.4mm 2.2mm;
+  line-height:1.38;
+}
+
+body.ao-v618 .compact-table th,
+body.ao-v618 .compact-table td {
+  padding-top:2mm;
+  padding-bottom:2mm;
+}
+
+body.ao-v618 .ranked-list li,
+body.ao-v618 .decision-list li {
+  margin-bottom:4mm;
+}
+
+body.ao-v618 .ranked-list p,
+body.ao-v618 .decision-list p {
+  margin-top:1.2mm;
+  line-height:1.5;
+}
+
+/* Keep the resource name readable; the bar is an aid, not the primary content. */
+body.ao-v618 .consumer-bars-stacked {
+  gap:7mm;
+}
+
+body.ao-v618 .consumer-series h3 {
+  margin-top:0;
+  margin-bottom:4mm;
+}
+
+body.ao-v618 .bar-row {
+  grid-template-columns:minmax(0,52%) minmax(28mm,30%) minmax(24mm,18%);
+  gap:3mm;
+  align-items:center;
+  min-height:8.5mm;
+  margin-bottom:2.6mm;
+  font-size:7.15pt;
+}
+
+body.ao-v618 .bar-row > span {
+  padding-right:1mm;
+  line-height:1.35;
+}
+
+body.ao-v618 .bar-row i {
+  height:2.8mm;
+}
+
+body.ao-v618 .bar-row > strong {
+  font-size:7.1pt;
+  white-space:nowrap;
+}
+
+/* Full-width capacity sections prevent text from being squeezed. */
+body.ao-v618 .capacity-primary {
+  display:block;
+  margin-top:4mm;
+}
+
+body.ao-v618 .risk-highlights {
+  margin-top:0;
+}
+
+body.ao-v618 .ranked-list-wide li {
+  grid-template-columns:7mm minmax(0,1fr);
+  gap:3mm;
+  padding-bottom:3mm;
+  border-bottom:.25mm solid #e5e7eb;
+}
+
+body.ao-v618 .ranked-list-wide li:last-child {
+  border-bottom:0;
+  padding-bottom:0;
+}
+
+body.ao-v618 .ranked-list-wide strong {
+  font-size:7.6pt;
+}
+
+body.ao-v618 .ranked-list-wide p {
+  font-size:7pt;
+}
+
+body.ao-v618 .capacity-secondary {
+  margin-top:0;
+  gap:10mm;
+}
+
+body.ao-v618 .capacity-notes {
+  margin-top:0;
+}
+
+body.ao-v618 .capacity-notes .narrative-section,
+body.ao-v618 .capacity-notes .content-section {
+  margin-bottom:7mm;
+}
+
+/* Alert details are stacked to protect long names and evidence text. */
+body.ao-v618 .alert-category {
+  margin-bottom:0;
+}
+
+body.ao-v618 .alert-category h2 {
+  margin-bottom:4.5mm;
+}
+
+body.ao-v618 .anomaly-table td:first-child {
+  color:#6d28d9;
+  font-weight:700;
+}
+
+/* Reporting records use full width. Empty schedule state no longer wastes a column. */
+body.ao-v618 .reporting-registers {
+  display:block;
+}
+
+body.ao-v618 .storage-readiness h3 {
+  margin-top:4.5mm;
+  margin-bottom:2.5mm;
+  font-size:10pt;
+}
+
+body.ao-v618 .storage-readiness p {
+  margin-top:3.5mm;
+  line-height:1.55;
+}
+
+/* Inventory is a linear report, not a dashboard mosaic. */
+body.ao-v618 .scope-composition .summary-list {
+  grid-template-columns:minmax(0,1fr) auto;
+  row-gap:3mm;
+}
+
+body.ao-v618 .scope-composition .summary-list dd {
+  max-width:none;
+  white-space:nowrap;
+}
+
+body.ao-v618 .resource-count-strip,
+body.ao-v618 .recency-strip {
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:0;
+  margin-top:1mm;
+}
+
+body.ao-v618 .recency-strip {
+  grid-template-columns:repeat(3,minmax(0,1fr));
+}
+
+body.ao-v618 .resource-count-strip > div,
+body.ao-v618 .recency-strip > div {
+  min-width:0;
+  padding:1.5mm 4mm 1.5mm;
+  border-left:.3mm solid #d7dee8;
+}
+
+body.ao-v618 .resource-count-strip > div:first-child,
+body.ao-v618 .recency-strip > div:first-child {
+  border-left:0;
+  padding-left:0;
+}
+
+body.ao-v618 .resource-count-strip span,
+body.ao-v618 .recency-strip span {
+  display:block;
+  color:#64748b;
+  font-size:7pt;
+}
+
+body.ao-v618 .resource-count-strip strong,
+body.ao-v618 .recency-strip strong {
+  display:block;
+  margin-top:1.5mm;
+  font-size:12pt;
+  line-height:1;
+}
+
+/* Long recommendation prose uses labels above the value instead of a squeezed two-column DL. */
+body.ao-v618 .detail-list-stacked {
+  display:block;
+}
+
+body.ao-v618 .detail-list-stacked dt {
+  margin-top:4mm;
+  color:#6d28d9;
+  font-size:7.6pt;
+  font-weight:700;
+}
+
+body.ao-v618 .detail-list-stacked dt:first-child {
+  margin-top:0;
+}
+
+body.ao-v618 .detail-list-stacked dd {
+  margin-top:1.5mm;
+  padding-right:0;
+  font-size:7.8pt;
+  line-height:1.5;
+  overflow-wrap:anywhere;
+}
+
+body.ao-v618 .recommendation-detail h3 {
+  margin-top:0;
+  margin-bottom:4mm;
+  font-size:8.6pt;
+}
+
+/* Methodology tables use the full page width to preserve complete definitions. */
+body.ao-v618 .page-methodology .content-section {
+  margin-bottom:6.5mm;
+}
+
+body.ao-v618 .page-methodology .report-table th,
+body.ao-v618 .page-methodology .report-table td {
+  font-size:6.5pt;
+  line-height:1.35;
+}
+
+body.ao-v618 .operational-guidance {
+  margin-top:4mm;
+  line-height:1.5;
+}
+
+/* Remove obsolete forced dashboard grids on the revised pages. */
+body.ao-v618 .page-inventory .inventory-primary,
+body.ao-v618 .page-inventory .inventory-secondary,
+body.ao-v618 .page-inventory .inventory-notes,
+body.ao-v618 .page-freshness .freshness-detail,
+body.ao-v618 .page-recommendations .recommendation-detail,
+body.ao-v618 .page-methodology .methodology-primary {
+  display:block;
+}
+
+/* Dense pages get more compact section gaps, never tighter heading-to-content gaps. */
+body.ao-v618 .page-reporting .content-section,
+body.ao-v618 .page-inventory .content-section,
+body.ao-v618 .page-freshness .content-section,
+body.ao-v618 .page-recommendations .content-section,
+body.ao-v618 .page-methodology .content-section {
+  margin-bottom:6.5mm;
+}
+
+body.ao-v618 .page-reporting .narrative-section,
+body.ao-v618 .page-inventory .narrative-section,
+body.ao-v618 .page-freshness .narrative-section,
+body.ao-v618 .page-recommendations .narrative-section,
+body.ao-v618 .page-methodology .narrative-section {
+  margin-bottom:6.5mm;
+}
+
+/* Title Case is controlled in the template; preserve technical identifiers. */
+
+
+/* V6.18.1 fit audit after full-width content conversion. */
+body.ao-v618 .page-consumers .consumers-figure {
+  margin-bottom:5.5mm;
+}
+body.ao-v618 .page-consumers .consumer-bars-stacked {
+  gap:5mm;
+}
+body.ao-v618 .page-consumers .bar-row {
+  min-height:7.4mm;
+  margin-bottom:1.8mm;
+}
+body.ao-v618 .page-consumers .consumer-table th,
+body.ao-v618 .page-consumers .consumer-table td {
+  padding-top:1.55mm;
+  padding-bottom:1.55mm;
+}
+body.ao-v618 .page-consumers .consumer-bottom {
+  margin-top:4.5mm;
+  gap:8mm;
+}
+body.ao-v618 .page-consumers .consumer-bottom .content-section,
+body.ao-v618 .page-consumers .consumer-bottom .narrative-section {
+  margin-bottom:0;
+}
+body.ao-v618 .page-consumers .summary-list {
+  row-gap:1.8mm;
+}
+
+body.ao-v618 .page-capacity .content-section {
+  margin-bottom:5.5mm;
+}
+body.ao-v618 .page-capacity .risk-table th,
+body.ao-v618 .page-capacity .risk-table td {
+  padding-top:1.45mm;
+  padding-bottom:1.45mm;
+  font-size:6.75pt;
+}
+body.ao-v618 .page-capacity .capacity-secondary {
+  margin-bottom:4.5mm;
+}
+body.ao-v618 .page-capacity .capacity-secondary .content-section {
+  margin-bottom:0;
+}
+body.ao-v618 .capacity-guidance {
+  margin-bottom:0;
+}
+body.ao-v618 .capacity-guidance p {
+  line-height:1.48;
+}
+body.ao-v618 .capacity-guidance .simple-list {
+  margin-top:3mm;
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:4mm;
+  padding-left:0;
+  list-style:none;
+}
+body.ao-v618 .capacity-guidance .simple-list li {
+  margin:0;
+  padding-left:3.5mm;
+  position:relative;
+}
+body.ao-v618 .capacity-guidance .simple-list li::before {
+  content:"";
+  position:absolute;
+  left:0;
+  top:1.5mm;
+  width:1.2mm;
+  height:1.2mm;
+  border-radius:50%;
+  background:#7c3aed;
+}
+
+body.ao-v618 .page-alerts .alert-profile {
+  margin-bottom:4.5mm;
+}
+body.ao-v618 .page-alerts .alert-profile-grid {
+  margin-top:2mm;
+}
+body.ao-v618 .page-alerts .alert-chart {
+  height:25mm;
+}
+body.ao-v618 .page-alerts .content-section {
+  margin-bottom:5mm;
+}
+body.ao-v618 .page-alerts .compact-table th,
+body.ao-v618 .page-alerts .compact-table td {
+  padding-top:1.45mm;
+  padding-bottom:1.45mm;
+}
+body.ao-v618 .page-alerts .narrative-section {
+  margin-bottom:0;
+}
+
+body.ao-v618 .page-reporting .bar-series {
+  height:38mm;
+}
+body.ao-v618 .page-reporting .reporting-visual {
+  margin-bottom:5mm;
+}
+body.ao-v618 .page-reporting .content-section {
+  margin-bottom:5mm;
+}
+body.ao-v618 .page-reporting .compact-table th,
+body.ao-v618 .page-reporting .compact-table td {
+  padding-top:1.45mm;
+  padding-bottom:1.45mm;
+}
+body.ao-v618 .follow-up-paragraph {
+  margin-top:3.5mm!important;
+}
+body.ao-v618 .page-reporting .reporting-notes,
+body.ao-v618 .page-freshness .freshness-notes {
+  margin-bottom:0;
+}
+
+body.ao-v618 .page-freshness .freshness-visual {
+  margin-top:3mm;
+  margin-bottom:4.5mm;
+  align-items:start;
+}
+body.ao-v618 .page-freshness .freshness-chart {
+  height:25mm;
+  margin-top:2mm;
+}
+body.ao-v618 .page-freshness .freshness-visual .report-figure,
+body.ao-v618 .page-freshness .freshness-visual .content-section {
+  margin-bottom:0;
+}
+body.ao-v618 .page-freshness .content-section {
+  margin-bottom:4.5mm;
+}
+body.ao-v618 .page-freshness .content-section h2,
+body.ao-v618 .page-freshness .narrative-section h2 {
+  margin-bottom:4.5mm;
+}
+body.ao-v618 .page-freshness .compact-table th,
+body.ao-v618 .page-freshness .compact-table td {
+  padding-top:1.25mm;
+  padding-bottom:1.25mm;
+  font-size:6.45pt;
+}
+body.ao-v618 .page-freshness .recency-strip > div {
+  padding-top:1mm;
+  padding-bottom:1mm;
+}
+body.ao-v618 .page-freshness .recency-strip strong {
+  font-size:10.5pt;
+}
+body.ao-v618 .page-freshness .freshness-notes p {
+  font-size:7.5pt;
+  line-height:1.42;
+}
+
+body.ao-v618 .page-methodology {
+  font-size:7.45pt;
+}
+body.ao-v618 .page-methodology .content-section,
+body.ao-v618 .page-methodology .narrative-section {
+  margin-bottom:4.2mm;
+}
+body.ao-v618 .page-methodology .content-section h2,
+body.ao-v618 .page-methodology .narrative-section h2 {
+  margin-bottom:4mm;
+  padding-bottom:2mm;
+}
+body.ao-v618 .page-methodology .compact-table th,
+body.ao-v618 .page-methodology .compact-table td {
+  padding-top:1.15mm;
+  padding-bottom:1.15mm;
+  font-size:6.15pt;
+  line-height:1.25;
+}
+body.ao-v618 .page-methodology .evidence-boundary p {
+  font-size:7.1pt;
+}
+body.ao-v618 .page-methodology .boundary-lists {
+  margin-top:2mm;
+}
+body.ao-v618 .page-methodology .boundary-lists h3 {
+  margin-top:1mm;
+  margin-bottom:2mm;
+}
+body.ao-v618 .page-methodology .simple-list li,
+body.ao-v618 .page-methodology .numbered-list li {
+  margin-bottom:1.1mm;
+  font-size:6.45pt;
+  line-height:1.3;
+}
+body.ao-v618 .page-methodology .operational-guidance {
+  margin-top:2.5mm;
+  font-size:6.6pt;
+}
