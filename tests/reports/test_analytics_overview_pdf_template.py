@@ -14,7 +14,7 @@ from app.reports.export.html_pdf.builder import build_report_document
 @dataclass
 class AnalyticsOverviewReportStub:
     id: int = 115
-    name: str = 'Analytics Overview Reporting Standard v1 Validation'
+    name: str = 'Analytics Overview Reporting Standard V2.1 Validation'
     report_type: str = 'analytics_overview'
     report_domain: str = 'kubernetes'
     source_kind: str = 'kubernetes'
@@ -139,22 +139,22 @@ def _rendered_html() -> tuple[object, str, Path]:
     return document, rendered_html, project_root
 
 
-def test_analytics_overview_uses_reporting_standard_v1_and_12_pages() -> None:
+def test_analytics_overview_uses_reporting_standard_v21_and_12_pages() -> None:
     document, rendered_html, _ = _rendered_html()
 
     assert document.template_name == 'reports/pdf/analytics_overview.html'
     assert document.metadata['selected_section_keys'] == list(ANALYTICS_OVERVIEW_SECTION_KEYS)
     assert document.presentation['page_count'] == 12
-    assert document.presentation['presentation_version'] == 'kaori-reporting-standard-v1'
+    assert document.presentation['presentation_version'] == 'v2.1-distinct-main-header'
     assert document.presentation['layout_contract'] == {
         'paper': 'A4 Portrait',
         'section_page_breaks': True,
         'truncate_identities': True,
         'identity_policy': 'top-n-summarized',
         'status_style': 'plain-colored-text',
-        'visual_style': 'kaori-reporting-standard-v1',
+        'visual_style': 'reporting-standard-v2.1',
     }
-    assert rendered_html.count('<section class="page') == 12
+    assert rendered_html.count('<article class="page') == 12
 
 
 def test_analytics_overview_uses_management_summary_and_overview_limits() -> None:
@@ -176,12 +176,12 @@ def test_analytics_overview_title_case_and_section_title_contract() -> None:
         'Figure 1 - Memory Demand Forecast',
         'Figure 2 - Leading Consumer Signals',
         'Figure 3 - Report Generation Activity',
-        'Figure 4 - Freshness Over Time',
+        'Figure 5 - Freshness Over Time',
         'Data Sources and Coverage',
         'Known Limitations and Operational Use',
     ):
         assert heading in rendered_html
-    assert '<div class="rs-section-number"><span>1</span></div>' in rendered_html
+    assert '<div class="section-index">1</div>' in rendered_html
 
 
 def test_analytics_overview_status_is_plain_colored_text_without_marker() -> None:
@@ -190,7 +190,7 @@ def test_analytics_overview_status_is_plain_colored_text_without_marker() -> Non
     assert document.presentation['layout_contract']['status_style'] == 'plain-colored-text'
     assert 'status-dot' not in rendered_html
     assert '::before' not in rendered_html
-    assert '<span class="rs-status rs-status-' in rendered_html
+    assert 'class="status ' in rendered_html
 
 
 def test_analytics_overview_weasyprint_layout_is_exactly_12_a4_pages() -> None:
@@ -198,14 +198,6 @@ def test_analytics_overview_weasyprint_layout_is_exactly_12_a4_pages() -> None:
     font_config = FontConfiguration()
     rendered_document = HTML(string=rendered_html, base_url=str(project_root)).render(
         stylesheets=[
-            CSS(
-                filename=str(project_root / 'app' / 'static' / 'reports' / 'pdf' / 'report.css'),
-                font_config=font_config,
-            ),
-            CSS(
-                filename=str(project_root / 'app' / 'static' / 'reports' / 'pdf' / 'reporting_standard.css'),
-                font_config=font_config,
-            ),
             CSS(
                 filename=str(project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'),
                 font_config=font_config,
@@ -241,75 +233,74 @@ def test_analytics_overview_degraded_metric_is_not_zero_percent() -> None:
     assert memory_metric['value'] == 'Not Available'
 
 
-def test_reporting_standard_v1_locks_title_metric_and_footer_contract() -> None:
-    _, rendered_html, project_root = _rendered_html()
-    standard_css = (
-        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'reporting_standard.css'
-    ).read_text()
-    analytics_css = (
-        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
-    ).read_text()
-    compact = standard_css.replace(' ', '')
-
-    assert 'rs-section-head' in rendered_html
-    assert 'rs-metric-strip' in rendered_html
-    assert 'rs-page-footer' in rendered_html
-    assert 'grid-template-columns:13mmminmax(0,1fr)44mm' in compact
-    assert 'white-space:nowrap' in compact
-    assert 'rs-metric-value-long' in standard_css
-    assert 'font-size:9.4pt' in compact
-    assert 'bottom:4.5mm' in compact
-    assert 'height:297mm' in analytics_css.replace(' ', '')
-    assert 'table-layout:fixed' in analytics_css.replace(' ', '')
-
-
-def test_reporting_standard_v1_uses_short_single_line_page_descriptions() -> None:
-    _, rendered_html, _ = _rendered_html()
-
-    for description in (
-        'Management position at the report cut-off.',
-        'Current utilization and committed headroom.',
-        'Historical direction and projected threshold pressure.',
-        'Leading resource demand within the selected scope.',
-        'Data sources, reporting rules, and evidence limits.',
-    ):
-        assert description in rendered_html
-
-    assert 'Historical behavior, projected pressure, and confidence of the available forecast.' not in rendered_html
-    assert 'Data sources, reporting rules, coverage, and interpretation controls.' not in rendered_html
-
-
-def test_methodology_metric_strip_uses_adaptive_values_and_status_labels() -> None:
-    document, rendered_html, _ = _rendered_html()
-    metrics = document.presentation['methodology']['metrics']
-
-    assert metrics[0]['status'] == 'Committed'
-    assert metrics[1]['status'] == 'Current Scope'
-    assert metrics[2]['status'] == 'Planning Horizon'
-    assert metrics[3]['status'] == 'Controlled'
-    assert 'rs-metric-value-long' in rendered_html
-
-
-def test_reporting_standard_v1_overview_layout_uses_readable_full_width_sections() -> None:
-    _, rendered_html, _ = _rendered_html()
-
-    assert 'consumer-bars-stacked' in rendered_html
-    assert 'Scope Composition' in rendered_html
-    assert 'Resource coverage within the committed reporting boundary.' in rendered_html
-    assert 'Data Reliability Guidance' in rendered_html
-    assert 'stacked-sections recommendation-detail' in rendered_html
-    assert 'detail-list detail-list-stacked' in rendered_html
-    assert 'anomaly-table' in rendered_html
-
-
-def test_reporting_standard_v1_css_has_consistent_vertical_rhythm_and_readable_flow() -> None:
+def test_analytics_overview_css_locks_page_footer_and_table_overflow() -> None:
     _, _, project_root = _rendered_html()
     stylesheet = (
         project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
     ).read_text()
+    compact = stylesheet.replace(' ', '')
 
-    assert 'margin:0 0 6mm' in stylesheet
-    assert 'consumer-bars-stacked' in stylesheet
-    assert 'grid-template-columns:minmax(0,52%) minmax(28mm,30%) minmax(24mm,18%)' in stylesheet
-    assert 'detail-list-stacked' in stylesheet
-    assert 'resource-count-strip' in stylesheet
+    assert '@page' in stylesheet
+    assert 'height:297mm' in compact
+    assert 'page-break-after:always' in compact
+    assert 'width:210mm' in compact
+    assert '.report-header' in stylesheet
+    assert 'bottom:5mm' in compact
+    assert 'overflow-wrap:anywhere' in compact
+    assert 'table-layout:fixed' in compact
+    assert 'text-overflow:ellipsis' not in compact
+
+
+def test_v21_layout_uses_distinct_cover_and_shared_reporting_components() -> None:
+    _, rendered_html, _ = _rendered_html()
+
+    assert 'class="page cover"' in rendered_html
+    assert 'class="cover-band"' in rendered_html
+    assert 'class="report-header"' in rendered_html
+    assert 'Priority Findings and Decisions' in rendered_html
+    assert 'Resource Key' in rendered_html
+    assert 'Data Reliability Guidance' in rendered_html
+    assert 'Methodology &amp; Evidence Boundary' in rendered_html
+
+
+def test_v21_css_has_locked_canvas_and_consistent_vertical_rhythm() -> None:
+    _, _, project_root = _rendered_html()
+    stylesheet = (
+        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
+    ).read_text()
+    compact = stylesheet.replace(' ', '')
+
+    assert '.cover-band' in stylesheet
+    assert '.page-title-row' in stylesheet
+    assert '.section-body' in stylesheet
+    assert 'margin-top:4.6mm' in compact
+    assert 'inset:0' not in compact
+    assert 'width:210mm' in compact
+    assert '.consumer-chart' in stylesheet
+    assert '.page-methodology' in stylesheet
+    assert '.page-freshness' in stylesheet
+
+
+def test_analytics_engine_isolates_approved_stylesheet() -> None:
+    project_root = Path(__file__).resolve().parents[2]
+    source = (
+        project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'engine.py'
+    ).read_text()
+
+    assert "document.template_name == 'reports/pdf/analytics_overview.html'" in source
+    assert "stylesheets = [CSS(filename=str(analytics_css_path)" in source
+    assert "else:\n        stylesheets = [CSS(filename=str(css_path)" in source
+
+
+def test_v21_template_uses_approved_content_budgets() -> None:
+    _, rendered_html, project_root = _rendered_html()
+    template_source = (
+        project_root / 'app' / 'templates' / 'reports' / 'pdf' / 'analytics_overview.html'
+    ).read_text()
+
+    assert rendered_html.count('<article class="page') == 12
+    assert 'p.alerts.alerts[:3]' in template_source
+    assert 'p.alerts.anomalies[:2]' in template_source
+    assert 'Observations by Recency' not in template_source
+    assert 'Data Sources and Methodology' in rendered_html
+    assert 'Limitations and Status Language' in rendered_html

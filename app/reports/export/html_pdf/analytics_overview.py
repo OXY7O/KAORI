@@ -83,14 +83,14 @@ def build_analytics_overview_presentation(
 
     common = {
         'page_count': len(_ANALYTICS_PAGE_TITLES),
-        'presentation_version': 'kaori-reporting-standard-v1',
+        'presentation_version': 'v2.1-distinct-main-header',
         'layout_contract': {
             'paper': 'A4 Portrait',
             'section_page_breaks': True,
             'truncate_identities': True,
             'identity_policy': 'top-n-summarized',
             'status_style': 'plain-colored-text',
-            'visual_style': 'kaori-reporting-standard-v1',
+            'visual_style': 'reporting-standard-v2.1',
         },
         'report_id': report_id,
         'report_name': report_name,
@@ -1314,23 +1314,12 @@ def _reporting(reporting_summary: Mapping[str, Any]) -> dict[str, Any]:
         {'label': 'Ready Reports', 'value': str(_integer(counts.get('ready'))), 'note': 'Available for download', 'tone': 'info'},
         {'label': 'Failed Reports', 'value': str(_integer(counts.get('failed'))), 'note': 'Requires review', 'tone': 'critical' if _integer(counts.get('failed')) else 'normal'},
     ]
-    backend_value = _text(storage.get('backend'), 'Not Available')
-    backend_key = backend_value.strip().lower()
-    backend_label = {
-        's3': 'S3',
-        's3-compatible': 'S3-Compatible Storage',
-        's3 compatible': 'S3-Compatible Storage',
-        'minio': 'MinIO',
-        'local': 'Local Storage',
-        'filesystem': 'Local Filesystem',
-    }.get(backend_key, backend_value)
-
     return {
         'metrics': metrics,
         'recent_reports': [_normalize_recent_report(item) for item in recent[:6]],
         'schedules': [_normalize_schedule(item) for item in schedules[:6]],
         'storage': {
-            'backend': backend_label,
+            'backend': _text(storage.get('backend'), 'Not Available'),
             'status': _text(storage.get('status'), 'Not Available'),
             'tone': _tone(storage.get('tone')),
             'description': _text(storage.get('description'), 'Storage utilization detail is not available.'),
@@ -1709,30 +1698,10 @@ def _methodology_page(
     coverage = f"{_integer(totals.get('nodes'))} Nodes / {_integer(totals.get('namespaces'))} Namespaces"
     return {
         'metrics': [
-            {
-                'label': 'Data Sources',
-                'value': str(len(source_rows)),
-                'status': 'Committed',
-                'tone': 'info',
-            },
-            {
-                'label': 'Coverage',
-                'value': coverage,
-                'status': 'Current Scope',
-                'tone': 'normal',
-            },
-            {
-                'label': 'Forecast Window',
-                'value': _text(forecast_snapshot.get('forecast_horizon'), 'Not Available'),
-                'status': 'Planning Horizon',
-                'tone': 'info',
-            },
-            {
-                'label': 'Observation Boundary',
-                'value': 'Committed Snapshot',
-                'status': 'Controlled',
-                'tone': 'info',
-            },
+            {'label': 'Data Sources', 'value': str(len(source_rows)), 'tone': 'info'},
+            {'label': 'Coverage', 'value': coverage, 'tone': 'info'},
+            {'label': 'Forecast Window', 'value': _text(forecast_snapshot.get('forecast_horizon'), 'Not Available'), 'tone': 'info'},
+            {'label': 'Observation Boundary', 'value': 'Committed Snapshot', 'tone': 'info'},
         ],
         'sources': list(source_rows),
         'methodology': [

@@ -23,15 +23,14 @@ def render_document_pdf(
     rendered_html = template.render(document=document)
     font_config = FontConfiguration()
 
-    stylesheets = [CSS(filename=str(css_path), font_config=font_config)]
-
-    reporting_standard_css = css_path.with_name('reporting_standard.css')
-    if reporting_standard_css.exists():
-        stylesheets.append(CSS(filename=str(reporting_standard_css), font_config=font_config))
-
     if document.template_name == 'reports/pdf/analytics_overview.html':
+        # Analytics Overview is a fixed publication layout. Loading report.css here
+        # contaminates its page, header, table, and margin-box rules. Keep the
+        # renderer isolated so the system result matches the approved baseline.
         analytics_css_path = css_path.with_name('analytics_overview.css')
-        stylesheets.append(CSS(filename=str(analytics_css_path), font_config=font_config))
+        stylesheets = [CSS(filename=str(analytics_css_path), font_config=font_config)]
+    else:
+        stylesheets = [CSS(filename=str(css_path), font_config=font_config)]
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     HTML(
