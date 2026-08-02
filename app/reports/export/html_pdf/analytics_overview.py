@@ -83,6 +83,13 @@ def build_analytics_overview_presentation(
 
     common = {
         'page_count': len(_ANALYTICS_PAGE_TITLES),
+        'presentation_version': 'v6-management-standard',
+        'layout_contract': {
+            'paper': 'A4 Portrait',
+            'section_page_breaks': True,
+            'truncate_identities': False,
+            'status_style': 'plain-colored-text',
+        },
         'report_id': report_id,
         'report_name': report_name,
         'report_title': 'Analytics Overview',
@@ -97,7 +104,10 @@ def build_analytics_overview_presentation(
         'page_titles': _ANALYTICS_PAGE_TITLES,
     }
 
-    resource_metrics = _resource_metrics(resource_snapshot)
+    resource_metrics = _resource_metrics(
+        resource_snapshot,
+        evidence_state=_metric_evidence_state(payload, snapshot_summary),
+    )
     recommendation_items = _recommendations(actionable, payload)
     alert_items = _alerts(alert_detail)
     anomaly_items = _anomalies(alert_detail)
@@ -305,20 +315,65 @@ def _status(value: Any, fallback: str = 'Unknown') -> str:
     return _text(value, fallback)
 
 
-def _percent(card: Mapping[str, Any]) -> float:
+def _percent(card: Mapping[str, Any]) -> float | None:
     for key in ('percent', 'value', 'usage_percent', 'current_percent'):
         raw = card.get(key)
-        if raw is not None:
+        if raw is not None and str(raw).strip() != '':
             return max(0.0, min(_number(raw), 100.0))
-    return 0.0
+    return None
 
 
-def _display_percent(value: float) -> str:
+def _display_percent(value: float | None) -> str:
+    if value is None:
+        return 'Not Available'
     return f'{value:.1f}%'
 
 
-def _resource_metrics(resource_snapshot: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
+def _unavailable_state(value: Any) -> bool:
+    normalized = _status(value, '').strip().lower()
+    return any(
+        token in normalized
+        for token in (
+            'not available',
+            'unavailable',
+            'not collected',
+            'failed',
+            'degraded',
+            'error',
+            'insufficient',
+            'unknown',
+        )
+    )
+
+
+def _metric_evidence_state(
+    payload: Mapping[str, Any],
+    snapshot_summary: Mapping[str, Any],
+) -> dict[str, Any]:
+    prometheus = _mapping(payload.get('prometheus'))
+    candidates = (
+        prometheus.get('status_label'),
+        prometheus.get('status'),
+        snapshot_summary.get('status'),
+    )
+    first_problem = next((value for value in candidates if _unavailable_state(value)), None)
+    if first_problem is not None:
+        return {
+            'available': False,
+            'status': _status(first_problem, 'Source Unavailable'),
+            'tone': _tone(first_problem),
+        }
+    return {'available': True, 'status': 'Current', 'tone': 'normal'}
+
+
+def _resource_metrics(
+    resource_snapshot: Mapping[str, Any],
+    *,
+    evidence_state: Mapping[str, Any] | None = None,
+) -> dict[str, dict[str, Any]]:
     result: dict[str, dict[str, Any]] = {}
+    evidence_state = _mapping(evidence_state)
+    evidence_available = evidence_state.get('available') is not False
     for key, label in (
         ('cpu', 'CPU'),
         ('memory', 'Memory'),
@@ -327,17 +382,32 @@ def _resource_metrics(resource_snapshot: Mapping[str, Any]) -> dict[str, dict[st
     ):
         card = _mapping(resource_snapshot.get(key))
         percent = _percent(card)
-        tone = _tone(card.get('tone') or card.get('status'))
-        status = _status(card.get('status'), 'Unknown')
+        card_status = _status(card.get('status'), '')
+        available = bool(card) and percent is not None and evidence_available and not _unavailable_state(card_status)
+        if available:
+            tone = _tone(card.get('tone') or card.get('status'))
+            status = card_status or 'Current'
+            description = _text(card.get('description'), f'{label} utilization at the report cut-off.')
+            headroom = max(0.0, 100.0 - percent)
+        else:
+            percent = None
+            headroom = None
+            status = _status(evidence_state.get('status'), card_status or 'Not Available')
+            tone = _tone(evidence_state.get('tone') or status)
+            description = (
+                f'{label} utilization is not available because the committed metric evidence is {status.lower()}.'
+            )
         result[key] = {
             'key': key,
             'label': label,
             'value': _display_percent(percent),
             'percent': percent,
-            'headroom_percent': max(0.0, 100.0 - percent),
+            'chart_percent': percent if percent is not None else 0.0,
+            'headroom_percent': headroom,
+            'available': available,
             'status': status,
             'tone': tone,
-            'description': _text(card.get('description'), f'{label} utilization evidence is not available.'),
+            'description': description,
         }
     return result
 
@@ -354,15 +424,22 @@ def _executive_metric(metrics: Mapping[str, Mapping[str, Any]], key: str, label:
 
 
 def _storage_headroom_metric(storage: Mapping[str, Any]) -> dict[str, Any]:
-    free = _number(storage.get('free_percent'))
-    if free <= 0 and storage.get('used_percent') is not None:
+    free = None
+    if storage.get('free_percent') is not None:
+        free = max(0.0, min(_number(storage.get('free_percent')), 100.0))
+    elif storage.get('used_percent') is not None:
         free = max(0.0, 100.0 - _number(storage.get('used_percent')))
     risks = _integer(storage.get('pvc_risk_count'))
-    tone = 'critical' if free and free < 10 else 'warning' if risks or (free and free < 30) else 'normal'
+    if free is None:
+        tone = 'warning' if risks else 'neutral'
+        status = 'Review' if risks else 'Not Available'
+    else:
+        tone = 'critical' if free < 10 else 'warning' if risks or free < 30 else 'normal'
+        status = 'Critical' if tone == 'critical' else 'Review' if tone == 'warning' else 'Normal'
     return {
         'label': 'Storage Headroom',
         'value': _display_percent(free),
-        'status': 'Critical' if tone == 'critical' else 'Review' if tone == 'warning' else 'Normal',
+        'status': status,
         'tone': tone,
         'note': f'{risks} local storage risk item(s).' if risks else 'Aggregate free capacity at the report cut-off.',
     }
@@ -601,12 +678,13 @@ def _evidence_summary(source_rows: Sequence[Mapping[str, Any]]) -> list[dict[str
 
 def _resource_posture_card(metrics: Mapping[str, Mapping[str, Any]], key: str) -> dict[str, Any]:
     metric = _mapping(metrics.get(key))
-    current = _number(metric.get('percent'))
+    current = metric.get('percent') if metric.get('available') else None
     return {
         **metric,
         'current': _display_percent(current),
         'p95': _display_percent(current),
-        'headroom': _display_percent(max(0.0, 100.0 - current)),
+        'headroom': _display_percent(max(0.0, 100.0 - current) if current is not None else None),
+        'chart_percent': current if current is not None else 0.0,
         'warning_threshold': 70,
         'critical_threshold': 85,
     }
@@ -663,12 +741,16 @@ def _resource_interpretation(
     storage_snapshot: Mapping[str, Any],
     inventory: Mapping[str, Any],
 ) -> str:
-    highest = max(resource_metrics.values(), key=lambda item: _number(item.get('percent')), default={})
-    highest_label = _text(highest.get('label'), 'Resource')
-    highest_value = _display_percent(_number(highest.get('percent')))
+    available_metrics = [item for item in resource_metrics.values() if item.get('available')]
+    highest = max(available_metrics, key=lambda item: _number(item.get('percent')), default={})
     pvc_risks = _integer(storage_snapshot.get('pvc_risk_count'))
     not_ready = _integer(inventory.get('not_ready_nodes'))
-    details = [f'{highest_label} is the highest shared resource signal at {highest_value}.']
+    if highest:
+        highest_label = _text(highest.get('label'), 'Resource')
+        highest_value = _display_percent(highest.get('percent'))
+        details = [f'{highest_label} is the highest available shared resource signal at {highest_value}.']
+    else:
+        details = ['Shared CPU and memory signals are not available from the committed metric evidence.']
     if pvc_risks:
         details.append(f'{pvc_risks} local storage item(s) require separate review.')
     if not_ready:
@@ -713,33 +795,79 @@ def _forecast_svg(series: Sequence[Mapping[str, Any]]) -> str:
     if selected is None:
         return _empty_chart_svg('Forecast series is not available')
 
-    historical = _text(selected.get('historical_points'), '')
-    forecast = _text(selected.get('forecast_points'), '')
     label = escape(_text(selected.get('label'), 'Resource'))
+    historical = _scaled_chart_points(_text(selected.get('historical_points'), ''))
+    forecast = _scaled_chart_points(_text(selected.get('forecast_points'), ''))
+    projected = max(0.0, min(_number(selected.get('projected_percent')), 100.0))
+    latest = max(0.0, min(_number(selected.get('latest_percent')), 100.0))
+    forecast_start_x = 430.0
+    if forecast:
+        try:
+            forecast_start_x = float(forecast.split()[0].split(',')[0])
+        except (IndexError, TypeError, ValueError):
+            forecast_start_x = 430.0
+
     historical_line = (
-        f'<polyline points="{escape(historical)}" fill="none" stroke="#7c3aed" stroke-width="2.2" '
-        'vector-effect="non-scaling-stroke"/>'
-        if historical
-        else ''
+        f'<polyline points="{escape(historical)}" fill="none" stroke="#7c3aed" '
+        'stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>'
+        if historical else ''
     )
     forecast_line = (
-        f'<polyline points="{escape(forecast)}" fill="none" stroke="#8b5cf6" stroke-width="2.2" '
-        'stroke-dasharray="5 4" vector-effect="non-scaling-stroke"/>'
-        if forecast
-        else ''
+        f'<polyline points="{escape(forecast)}" fill="none" stroke="#8b5cf6" '
+        'stroke-width="3" stroke-dasharray="8 6" stroke-linecap="round" stroke-linejoin="round"/>'
+        if forecast else ''
     )
-    return f'''<svg class="ao-chart-svg" viewBox="0 0 100 100" role="img" aria-label="{label} forecast">
-        <g stroke="#e5e7eb" stroke-width="0.6">
-            <line x1="0" y1="15" x2="100" y2="15"/><line x1="0" y1="30" x2="100" y2="30"/>
-            <line x1="0" y1="45" x2="100" y2="45"/><line x1="0" y1="60" x2="100" y2="60"/>
-            <line x1="0" y1="75" x2="100" y2="75"/>
+    projected_y = _chart_y(projected)
+    latest_y = _chart_y(latest)
+    projected_label_y = max(12.0, projected_y - 8.0)
+
+    return f'''<svg class="ao-chart-svg chart" viewBox="0 0 800 230" role="img" aria-label="{label} demand forecast">
+        <rect x="{forecast_start_x:.1f}" y="18" width="{748-forecast_start_x:.1f}" height="164" fill="#faf7ff"/>
+        <text x="{forecast_start_x + 12:.1f}" y="32" fill="#6d28d9" font-size="10" font-weight="700">FORECAST</text>
+        <g stroke="#e5e7eb" stroke-width="1">
+            <line x1="68" x2="748" y1="182" y2="182"/><line x1="68" x2="748" y1="143" y2="143"/>
+            <line x1="68" x2="748" y1="104" y2="104"/><line x1="68" x2="748" y1="65" y2="65"/>
+            <line x1="68" x2="748" y1="39" y2="39"/>
         </g>
-        <line x1="0" y1="30" x2="100" y2="30" stroke="#d97706" stroke-width="0.8" stroke-dasharray="3 2"/>
-        <line x1="0" y1="15" x2="100" y2="15" stroke="#dc2626" stroke-width="0.8" stroke-dasharray="3 2"/>
+        <line x1="68" x2="748" y1="65" y2="65" stroke="#d97706" stroke-width="1.3" stroke-dasharray="6 5"/>
+        <line x1="68" x2="748" y1="39" y2="39" stroke="#dc2626" stroke-width="1.3" stroke-dasharray="6 5"/>
+        <line x1="{forecast_start_x:.1f}" x2="{forecast_start_x:.1f}" y1="18" y2="182" stroke="#a78bfa" stroke-width="1.1" stroke-dasharray="4 4"/>
+        <g fill="#64748b" font-size="10"><text x="24" y="186">0%</text><text x="24" y="147">25%</text>
+            <text x="24" y="108">50%</text><text x="24" y="69">70%</text><text x="24" y="43">85%</text></g>
+        <text x="738" y="60" text-anchor="end" fill="#b45309" font-size="9.5">Warning 70%</text>
+        <text x="738" y="34" text-anchor="end" fill="#b91c1c" font-size="9.5">Critical 85%</text>
         {historical_line}{forecast_line}
-        <text x="99" y="28" text-anchor="end" font-size="3.2" fill="#d97706">Warning 70%</text>
-        <text x="99" y="13" text-anchor="end" font-size="3.2" fill="#dc2626">Critical 85%</text>
+        <circle cx="{forecast_start_x:.1f}" cy="{latest_y:.1f}" r="3.4" fill="#7c3aed"/>
+        <circle cx="742" cy="{projected_y:.1f}" r="3.6" fill="#8b5cf6"/>
+        <text x="716" y="{projected_label_y:.1f}" text-anchor="end" fill="#5b21b6" font-size="10.5" font-weight="700">{projected:.1f}%</text>
+        <g fill="#64748b" font-size="9.2" text-anchor="middle"><text x="68" y="207">Start</text>
+            <text x="284" y="207">Historical</text><text x="536" y="207">Near-term</text><text x="742" y="207">Horizon</text></g>
+        <line x1="80" x2="108" y1="223" y2="223" stroke="#7c3aed" stroke-width="2.5"/>
+        <text x="114" y="227" fill="#64748b" font-size="8.8">Historical P95</text>
+        <line x1="238" x2="266" y1="223" y2="223" stroke="#8b5cf6" stroke-width="2.5" stroke-dasharray="7 5"/>
+        <text x="272" y="227" fill="#64748b" font-size="8.8">Projected demand</text>
+        <line x1="420" x2="448" y1="223" y2="223" stroke="#d97706" stroke-width="1.4" stroke-dasharray="6 5"/>
+        <text x="454" y="227" fill="#64748b" font-size="8.8">Threshold</text>
     </svg>'''
+
+
+def _scaled_chart_points(points: str) -> str:
+    if not points:
+        return ''
+    scaled: list[str] = []
+    for token in points.split():
+        try:
+            raw_x, raw_y = token.split(',', 1)
+            x = 68.0 + (float(raw_x) / 100.0) * 674.0
+            y = 18.0 + (float(raw_y) / 100.0) * 164.0
+        except (TypeError, ValueError):
+            continue
+        scaled.append(f'{x:.2f},{y:.2f}')
+    return ' '.join(scaled)
+
+
+def _chart_y(percent: float) -> float:
+    return 182.0 - (max(0.0, min(percent, 100.0)) / 100.0) * 164.0
 
 
 def _empty_chart_svg(message: str) -> str:
@@ -763,13 +891,14 @@ def _forecast_rows(
     nearest_label = _text(nearest_critical.get('label') or nearest_warning.get('label'), 'Not projected')
     rows: list[dict[str, Any]] = []
     for key, label in (('cpu', 'CPU'), ('memory', 'Memory'), ('storage', 'Storage'), ('pods', 'Pods')):
-        current = _number(_mapping(resource_metrics.get(key)).get('percent'))
+        metric = _mapping(resource_metrics.get(key))
+        current = metric.get('percent') if metric.get('available') else None
         item = _mapping(item_map.get(key))
-        projected = _number(item.get('projected_percent'), current)
+        projected = _number(item.get('projected_percent'), current or 0.0) if item else None
         trend = _text(item.get('trend'), _text(forecast_snapshot.get(f'{key}_trend'), 'Unknown'))
         eta = nearest_label if key == nearest_resource else 'Not projected'
         confidence = 'High' if item else 'Not Available'
-        tone = 'critical' if projected >= 85 else 'warning' if projected >= 70 else 'normal'
+        tone = 'neutral' if projected is None else 'critical' if projected >= 85 else 'warning' if projected >= 70 else 'normal'
         rows.append(
             {
                 'resource': label,
@@ -781,10 +910,10 @@ def _forecast_rows(
                 'tone': tone,
                 'assessment': (
                     'Projected to enter the critical band.'
-                    if tone == 'critical'
+                    if projected is not None and tone == 'critical'
                     else 'Projected to enter or remain in the warning band.'
-                    if tone == 'warning'
-                    else 'Stable within the current operating window.'
+                    if projected is not None and tone == 'warning'
+                    else 'Not available from the committed forecast evidence.' if projected is None else 'Stable within the current operating window.'
                 ),
             }
         )
@@ -879,17 +1008,18 @@ def _capacity_pressure_rows(
     rows = []
     for key, label in (('cpu', 'CPU'), ('memory', 'Memory'), ('storage', 'Storage'), ('pods', 'Pods')):
         metric = _mapping(resource_metrics.get(key))
-        percent = _number(metric.get('percent'))
-        headroom = _display_percent(max(0.0, 100.0 - percent))
-        if key == 'storage' and storage_snapshot:
+        available = bool(metric.get('available'))
+        percent = metric.get('percent') if available else None
+        headroom = _display_percent(max(0.0, 100.0 - percent) if percent is not None else None)
+        if key == 'storage' and storage_snapshot.get('free_percent') is not None:
             headroom = _display_percent(_number(storage_snapshot.get('free_percent')))
         rows.append(
             {
                 'resource': label,
                 'used': _display_percent(percent),
-                'capacity': '100% reference',
+                'capacity': '100% reference' if available else 'Not Available',
                 'headroom': headroom,
-                'percent': percent,
+                'percent': percent if percent is not None else 0.0,
                 'status': _text(metric.get('status')),
                 'tone': _tone(metric.get('tone')),
             }

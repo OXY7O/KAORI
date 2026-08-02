@@ -14,7 +14,7 @@ from app.reports.export.html_pdf.builder import build_report_document
 @dataclass
 class AnalyticsOverviewReportStub:
     id: int = 108
-    name: str = 'Analytics Overview Long Name Validation'
+    name: str = 'Analytics Overview Management Standard Validation'
     report_type: str = 'analytics_overview'
     report_domain: str = 'kubernetes'
     source_kind: str = 'kubernetes'
@@ -41,14 +41,12 @@ LONG_RESOURCE_NAME = (
     'that-must-remain-complete-7d8f7d8f7d'
 )
 LONG_NAMESPACE_NAME = 'payments-production-with-an-extremely-long-namespace-name'
+LONG_CLUSTER_NAME = 'Production Kubernetes Cluster With A Long Descriptive Management Name'
 
 
 def _payload() -> dict[str, object]:
     return {
-        'selected_cluster': {
-            'id': 'cluster-prod',
-            'name': 'Production Kubernetes Cluster With A Long Descriptive Name',
-        },
+        'selected_cluster': {'id': 'cluster-prod', 'name': LONG_CLUSTER_NAME},
         'snapshot_summary': {
             'status': 'Current',
             'tone': 'normal',
@@ -69,6 +67,16 @@ def _payload() -> dict[str, object]:
             'pvc_risk_count': 2,
             'used_percent': 64.0,
             'free_percent': 36.0,
+        },
+        'forecast_snapshot': {
+            'series': [
+                {'timestamp': '2026-07-01', 'value': 48.0, 'kind': 'historical'},
+                {'timestamp': '2026-07-15', 'value': 59.0, 'kind': 'historical'},
+                {'timestamp': '2026-08-01', 'value': 71.2, 'kind': 'historical'},
+                {'timestamp': '2026-08-31', 'value': 82.0, 'kind': 'forecast'},
+                {'timestamp': '2026-09-30', 'value': 91.0, 'kind': 'forecast'},
+            ],
+            'memory': {'projected_percent': 91.0, 'threshold_eta': '56 days'},
         },
         'top_consumers': {
             'memory': [
@@ -108,15 +116,11 @@ def _payload() -> dict[str, object]:
             'clusters': [
                 {
                     'id': 'cluster-prod',
-                    'name': 'Production Kubernetes Cluster With A Long Descriptive Name',
+                    'name': LONG_CLUSTER_NAME,
+                    'environment': 'Production Environment With A Descriptive Name',
                     'sync_status_label': 'Current',
                     'sync_status_tone': 'normal',
-                    'counts': {
-                        'nodes': 5,
-                        'namespaces': 22,
-                        'workloads': 158,
-                        'pods': 412,
-                    },
+                    'counts': {'nodes': 5, 'namespaces': 22, 'workloads': 158, 'pods': 412},
                 }
             ],
         },
@@ -144,28 +148,72 @@ def _environment(project_root: Path) -> Environment:
     )
 
 
-def test_analytics_overview_uses_canonical_12_page_template_and_preserves_long_names() -> None:
+def _rendered_html() -> tuple[object, str, Path]:
     report = AnalyticsOverviewReportStub()
     document = build_report_document(report, _payload())
     project_root = Path(__file__).resolve().parents[2]
-    rendered_html = _environment(project_root).get_template(document.template_name).render(document=document)
+    rendered_html = _environment(project_root).get_template(document.template_name).render(
+        document=document
+    )
+    return document, rendered_html, project_root
+
+
+def test_analytics_overview_uses_v6_management_standard_and_12_authored_pages() -> None:
+    document, rendered_html, _ = _rendered_html()
 
     assert document.template_name == 'reports/pdf/analytics_overview.html'
     assert document.metadata['selected_section_keys'] == list(ANALYTICS_OVERVIEW_SECTION_KEYS)
     assert document.presentation['page_count'] == 12
-    assert rendered_html.count('<section class="ao-page') == 12
-    assert LONG_RESOURCE_NAME in rendered_html
-    assert LONG_NAMESPACE_NAME in rendered_html
-    assert 'text-overflow: ellipsis' not in (
+    assert document.presentation['presentation_version'] == 'v6-management-standard'
+    assert document.presentation['layout_contract'] == {
+        'paper': 'A4 Portrait',
+        'section_page_breaks': True,
+        'truncate_identities': False,
+        'status_style': 'plain-colored-text',
+    }
+    assert rendered_html.count('<section class="page') == 12
+
+
+def test_analytics_overview_preserves_long_names_with_reference_maps() -> None:
+    _, rendered_html, project_root = _rendered_html()
+    stylesheet = (
         project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
     ).read_text()
 
+    assert LONG_RESOURCE_NAME in rendered_html
+    assert LONG_NAMESPACE_NAME in rendered_html
+    assert LONG_CLUSTER_NAME in rendered_html
+    assert 'Full Resource Identities' in rendered_html
+    assert 'Full Affected Scope' in rendered_html
+    assert 'Full Schedule Names' in rendered_html
+    assert 'Full Report Names' in rendered_html
+    assert 'Full Cluster Identities' in rendered_html
+    assert 'text-overflow: ellipsis' not in stylesheet
+    assert 'hyphens:none' in stylesheet.replace(' ', '')
+    assert 'overflow-wrap:anywhere' in stylesheet.replace(' ', '')
 
-def test_analytics_overview_weasyprint_layout_stays_exactly_12_pages() -> None:
-    report = AnalyticsOverviewReportStub()
-    document = build_report_document(report, _payload())
-    project_root = Path(__file__).resolve().parents[2]
-    rendered_html = _environment(project_root).get_template(document.template_name).render(document=document)
+
+def test_analytics_overview_uses_plain_colored_status_text_without_marker_dots() -> None:
+    document, rendered_html, _ = _rendered_html()
+
+    assert document.presentation['layout_contract']['status_style'] == 'plain-colored-text'
+    assert 'status-dot' not in rendered_html
+    assert 'ao-status-dot' not in rendered_html
+    assert '<span class="status ' in rendered_html
+
+
+def test_analytics_overview_forecast_chart_uses_bounded_v6_management_plot() -> None:
+    document, _, _ = _rendered_html()
+    chart = document.presentation['trend_forecast']['chart_svg']
+
+    assert 'viewBox="0 0 800 230"' in chart
+    assert 'Projected demand' in chart
+    assert 'Warning 70%' in chart
+    assert 'Critical 85%' in chart
+
+
+def test_analytics_overview_weasyprint_layout_stays_exactly_12_a4_pages() -> None:
+    _, rendered_html, project_root = _rendered_html()
     font_config = FontConfiguration()
 
     rendered_document = HTML(string=rendered_html, base_url=str(project_root)).render(
@@ -186,3 +234,47 @@ def test_analytics_overview_weasyprint_layout_stays_exactly_12_pages() -> None:
     )
 
     assert len(rendered_document.pages) == 12
+    for page in rendered_document.pages:
+        assert round(float(page.width), 2) == 793.70
+        assert round(float(page.height), 2) == 1122.52
+
+
+def test_analytics_overview_does_not_present_degraded_metrics_as_zero_percent() -> None:
+    report = AnalyticsOverviewReportStub()
+    payload = _payload()
+    payload['prometheus'] = {
+        'status': 'query_degraded',
+        'status_label': 'Query Degraded',
+        'status_tone': 'critical',
+    }
+    payload['snapshot_summary'] = {
+        **payload['snapshot_summary'],
+        'status': 'Failed',
+        'tone': 'critical',
+    }
+    payload['resource_snapshot'] = {
+        'cpu': {'percent': 0.0, 'status': 'Normal', 'tone': 'green'},
+        'memory': {'percent': 0.0, 'status': 'Normal', 'tone': 'green'},
+    }
+
+    document = build_report_document(report, payload)
+    cpu_metric, memory_metric = document.presentation['executive']['metrics'][:2]
+
+    assert cpu_metric['value'] == 'Not Available'
+    assert memory_metric['value'] == 'Not Available'
+    assert cpu_metric['status'] in {'Query Degraded', 'Failed'}
+    assert memory_metric['status'] in {'Query Degraded', 'Failed'}
+
+
+def test_analytics_overview_css_enforces_page_boundaries_and_footer_contract() -> None:
+    _, _, project_root = _rendered_html()
+    stylesheet = (
+        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
+    ).read_text()
+
+    assert 'box-sizing: border-box' in stylesheet
+    assert 'page-break-after:always' in stylesheet.replace(' ', '')
+    assert '@page' in stylesheet
+    assert 'bottom:5mm' in stylesheet.replace(' ', '')
+    assert 'body.ao-v6 .cover-header { height:110mm; }' in stylesheet
+    assert '.inventory-main .mix-row' in stylesheet
