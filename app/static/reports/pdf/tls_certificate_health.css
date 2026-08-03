@@ -1,0 +1,302 @@
+@font-face {
+  font-family: "Inter KAORI";
+  src: url("../../fonts/inter/inter-latin-wght-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+}
+
+@page { size: A4 portrait; margin: 0; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; font-family: "Inter KAORI", Inter, Arial, sans-serif; color: #0F172A; }
+body { font-size: 7pt; line-height: 1.35; background: #fff; }
+.page {
+  position: relative;
+  width: 210mm;
+  height: 297mm;
+  overflow: hidden;
+  page-break-after: always;
+  break-after: page;
+  background: #fff;
+}
+.page:last-child { page-break-after: auto; break-after: auto; }
+
+.report-header {
+  height: 17mm;
+  padding: 4.2mm 15mm 3.5mm;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #5B21B6;
+  color: #fff;
+}
+.brand, .cover-brand { display: flex; align-items: center; gap: 3mm; }
+.brand img, .cover-brand img { width: 9mm; height: 9mm; }
+.brand strong, .cover-brand strong { display: block; font-size: 8.2pt; line-height: 1; }
+.brand span, .cover-brand span { display: block; margin-top: 1mm; font-size: 4.35pt; opacity: .88; }
+.report-name { text-align: right; }
+.report-name strong { display: block; font-size: 7.1pt; }
+.report-name span { display: block; margin-top: .8mm; font-size: 4.5pt; opacity: .88; }
+
+.page-content { padding: 8mm 15mm 15mm; }
+.page-title-row {
+  display: grid;
+  grid-template-columns: 12mm minmax(0, 1fr) 45mm;
+  gap: 5mm;
+  align-items: start;
+  min-height: 18mm;
+  padding-bottom: 4mm;
+  border-bottom: .3mm solid #CBD5E1;
+}
+.section-index {
+  width: 11mm;
+  height: 11mm;
+  border-radius: 2mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #7C3AED;
+  color: #fff;
+  font-size: 8.5pt;
+  font-weight: 750;
+}
+.page-title-copy h1 { margin: 0; font-size: 15.5pt; line-height: 1.05; letter-spacing: -.02em; }
+.page-title-copy p { margin: 1.6mm 0 0; color: #64748B; font-size: 6.25pt; line-height: 1.35; }
+.cutoff { text-align: right; }
+.cutoff span { display: block; color: #64748B; font-size: 5.3pt; }
+.cutoff strong { display: block; margin-top: 1mm; font-size: 5.7pt; }
+
+.metric-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 5mm 0 6mm;
+  border-top: .3mm solid #CBD5E1;
+  border-bottom: .3mm solid #CBD5E1;
+}
+.metric { min-width: 0; min-height: 22mm; padding: 4mm; border-right: .3mm solid #CBD5E1; }
+.metric:last-child { border-right: 0; }
+.metric > span { display: block; color: #64748B; font-size: 5.1pt; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.metric > strong { display: block; margin-top: 2mm; font-size: 13.5pt; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.metric > strong.metric-medium { font-size: 10pt; }
+.metric > strong.metric-long { font-size: 7.2pt; line-height: 1.15; }
+.metric > em { display: block; margin-top: 1.8mm; font-size: 5.35pt; font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status.normal { color: #15803D; }.status.warning { color: #D97706; }.status.critical { color: #DC2626; }.status.info { color: #2563EB; }.status.muted { color: #64748B; }
+
+.content-section { margin-top: 5mm; break-inside: avoid; }
+.content-section h2 { margin: 0; font-size: 9.5pt; line-height: 1.15; }
+.section-subtitle { min-height: 7mm; margin: 1.4mm 0 0; color: #64748B; font-size: 5.9pt; line-height: 1.35; }
+.section-rule { height: .4mm; margin-top: 1.4mm; background: linear-gradient(to right, #7C3AED 0 25mm, #CBD5E1 25mm 100%); }
+.section-body { margin-top: 3.2mm; }
+.two-column { display: grid; grid-template-columns: minmax(0, 1.24fr) minmax(0, .76fr); gap: 7mm; align-items: start; }
+.paired-sections > .content-section { margin-top: 0; }
+.paired-sections > .content-section > .section-subtitle { min-height: 8mm; }
+
+.interpretation-card {
+  min-height: 47mm;
+  padding: 5mm;
+  border-left: 1.2mm solid #7C3AED;
+  background: #F8FAFC;
+}
+.interpretation-card.warning-card { border-left-color: #D97706; }
+.interpretation-card strong { display: block; font-size: 7.3pt; line-height: 1.35; }
+.interpretation-card p { margin: 4mm 0 0; font-size: 6.2pt; line-height: 1.5; }
+.interpretation-card small { display: block; margin-top: 5mm; color: #64748B; font-size: 5.3pt; line-height: 1.4; }
+
+.report-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 5.55pt; }
+.report-table thead { display: table-header-group; }
+.report-table th { padding: 2.1mm 2mm; background: #EEF2F7; color: #475569; text-align: left; font-size: 5.35pt; line-height: 1.2; }
+.report-table td { padding: 2mm; border-bottom: .22mm solid #E2E8F0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; vertical-align: middle; }
+.report-table tbody tr:nth-child(even) td { background: #F8FAFC; }
+.report-table .ref, .report-table .ref-or-primary { color: #7C3AED; font-weight: 700; }
+.report-table .empty-row { padding: 6mm; color: #64748B; text-align: center; }
+.executive-register td, .detail-register td { padding-top: 1.8mm; padding-bottom: 1.8mm; }
+.full-register { font-size: 5.35pt; }
+.full-register td { padding-top: 1.8mm; padding-bottom: 1.8mm; }
+.recommendation-register th:nth-child(1) { width: 8%; }
+.recommendation-register th:nth-child(2) { width: 9%; }
+.recommendation-register th:nth-child(3) { width: 36%; }
+.recommendation-register th:nth-child(4) { width: 22%; }
+.recommendation-register th:nth-child(5) { width: 15%; }
+.recommendation-register th:nth-child(6) { width: 10%; }
+.governance-register th { width: 27%; background: #F8FAFC; color: #475569; }
+.governance-register td { white-space: normal; line-height: 1.35; }
+
+.page-detail .detail-split { min-height: 65mm; }
+.page-detail .detail-split .report-table { font-size: 5.15pt; }
+.page-detail .detail-split .report-table th { font-size: 5pt; }
+.page-detail .detail-split .report-table td { padding: 1.55mm 1.4mm; }
+.page-detail .content-section:last-child { margin-top: 6mm; }
+
+.methodology-grid { display: grid; grid-template-columns: minmax(0, 1.42fr) minmax(0, .78fr); gap: 6mm; align-items: start; }
+.methodology-grid h3 { margin: 0 0 2.4mm; font-size: 6.8pt; }
+.source-register, .methodology-register { font-size: 5.2pt; }
+.source-register td, .methodology-register td { padding: 1.6mm; }
+.boundary-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 14mm; align-items: start; break-inside: avoid; }
+.boundary-columns > div { min-width: 0; }
+.boundary-columns h3, .limitations-grid h3 { margin: 0 0 2.2mm; font-size: 6.7pt; }
+.boundary-columns ul, .limitations-grid ul { margin: 0; padding-left: 4.5mm; font-size: 5.65pt; line-height: 1.45; }
+.boundary-columns li, .limitations-grid li { margin: .8mm 0; }
+.limitations-grid { display: grid; grid-template-columns: .92fr 1.08fr; gap: 7mm; align-items: start; }
+.status-language-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm 4mm; }
+.reference-item { display: grid; grid-template-columns: 9mm minmax(0, 1fr); gap: 2mm; align-items: start; }
+.reference-code { display: inline-flex; align-items: center; justify-content: center; min-height: 6mm; border-radius: 1mm; background: #EDE9FE; color: #7C3AED; font-size: 5.2pt; font-weight: 800; }
+.reference-item strong { display: block; font-size: 5.7pt; }
+.reference-item p { margin: .8mm 0 0; color: #64748B; font-size: 4.8pt; line-height: 1.25; }
+
+.cover-band { position: relative; height: 84mm; padding: 12mm 15mm 10mm; overflow: hidden; background: #4C1D95; color: #fff; }
+.cover-band::after { content: ""; position: absolute; right: -28mm; top: -40mm; width: 105mm; height: 105mm; border: 1mm solid rgba(255,255,255,.12); border-radius: 50%; box-shadow: 0 0 0 13mm rgba(255,255,255,.035), 0 0 0 27mm rgba(255,255,255,.025); }
+.cover-masthead { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; }
+.cover-class { text-align: right; font-size: 5.7pt; font-weight: 700; line-height: 1.5; letter-spacing: .08em; }
+.cover-copy { position: relative; z-index: 2; margin-top: 12mm; }
+.cover-eyebrow { font-size: 6pt; letter-spacing: .17em; text-transform: uppercase; opacity: .8; }
+.cover-copy h1 { margin: 3mm 0 0; font-size: 24pt; line-height: 1.02; }
+.cover-copy p { width: 150mm; margin: 3mm 0 0; font-size: 8.3pt; line-height: 1.45; opacity: .93; }
+.cover-main { padding: 13mm 15mm 18mm; }
+.cover-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10mm; }
+.cover-grid h2 { margin: 0 0 4mm; font-size: 10.5pt; }
+.context-list { display: grid; grid-template-columns: 38mm 1fr; margin: 0; row-gap: 2.2mm; font-size: 7.2pt; }
+.context-list dt { color: #64748B; }.context-list dd { margin: 0; font-weight: 650; }
+.cover-grid p { margin: 0; font-size: 7.2pt; line-height: 1.5; }
+.cover-context { margin-top: 8mm; border-left: 1.2mm solid #7C3AED; padding: 1mm 0 1mm 5mm; }
+.cover-context strong { display: block; font-size: 8pt; }
+.cover-context p { margin: 1.5mm 0 0; color: #475569; font-size: 6.8pt; line-height: 1.45; }
+.cover-contents { margin-top: 8mm; padding-top: 5mm; border-top: .3mm solid #CBD5E1; display: grid; grid-template-columns: 1fr 1fr; gap: 2.3mm 12mm; color: #475569; font-size: 6.6pt; }
+
+.page-footer { position: absolute; left: 15mm; right: 15mm; bottom: 6mm; display: flex; justify-content: space-between; padding-top: 2.4mm; border-top: .45mm solid #7C3AED; color: #64748B; font-size: 5.2pt; }
+
+/* TLS Certificate Health & Expiry publication v1.0 */
+.kaori-tls-certificate-report .cover-band { background: #4C1D95; }
+.kaori-tls-certificate-report .paired-sections > .content-section {
+  display: flex;
+  flex-direction: column;
+  align-self: start;
+  margin-top: 0;
+}
+.kaori-tls-certificate-report .paired-sections > .content-section > .section-subtitle {
+  min-height: 8mm;
+  margin-bottom: 0;
+}
+.kaori-tls-certificate-report .paired-sections > .content-section > .section-rule { margin-top: 0; }
+.kaori-tls-certificate-report .executive-split { grid-template-columns: minmax(0, 1.12fr) minmax(0, .88fr); }
+.kaori-tls-certificate-report .expiry-split,
+.kaori-tls-certificate-report .validation-split { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+
+.kaori-tls-certificate-report .interpretation-card.normal-card { border-left-color: #15803D; }
+.kaori-tls-certificate-report .interpretation-card.critical-card { border-left-color: #DC2626; }
+.kaori-tls-certificate-report .interpretation-card.muted-card { border-left-color: #64748B; }
+
+.kaori-tls-certificate-report .posture-register th:nth-child(1) { width: 10%; }
+.kaori-tls-certificate-report .posture-register th:nth-child(2) { width: 52%; }
+.kaori-tls-certificate-report .posture-register th:nth-child(3) { width: 14%; }
+.kaori-tls-certificate-report .posture-register th:nth-child(4) { width: 24%; }
+
+.kaori-tls-certificate-report .validity-register { font-size: 4.75pt; }
+.kaori-tls-certificate-report .validity-register th,
+.kaori-tls-certificate-report .validity-register td { padding: 1.55mm 1.3mm; }
+.kaori-tls-certificate-report .validity-register th:nth-child(1) { width: 6%; }
+.kaori-tls-certificate-report .validity-register th:nth-child(2) { width: 10%; }
+.kaori-tls-certificate-report .validity-register th:nth-child(3) { width: 11%; }
+.kaori-tls-certificate-report .validity-register th:nth-child(4) { width: 12%; }
+.kaori-tls-certificate-report .validity-register th:nth-child(5) { width: 18%; }
+.kaori-tls-certificate-report .validity-register th:nth-child(6) { width: 12%; }
+.kaori-tls-certificate-report .validity-register th:nth-child(7) { width: 9%; }
+.kaori-tls-certificate-report .validity-register th:nth-child(8) { width: 10%; }
+.kaori-tls-certificate-report .validity-register th:nth-child(9) { width: 12%; }
+
+.kaori-tls-certificate-report .definition-register th:nth-child(1) { width: 8%; }
+.kaori-tls-certificate-report .definition-register th:nth-child(2) { width: 23%; }
+.kaori-tls-certificate-report .definition-register th:nth-child(3) { width: 51%; }
+.kaori-tls-certificate-report .definition-register th:nth-child(4) { width: 18%; }
+
+.kaori-tls-certificate-report .expiry-register { font-size: 5pt; }
+.kaori-tls-certificate-report .expiry-register th,
+.kaori-tls-certificate-report .expiry-register td { padding: 1.7mm 1.4mm; }
+.kaori-tls-certificate-report .expiry-register th:nth-child(1) { width: 6%; }
+.kaori-tls-certificate-report .expiry-register th:nth-child(2) { width: 8%; }
+.kaori-tls-certificate-report .expiry-register th:nth-child(3) { width: 19%; }
+.kaori-tls-certificate-report .expiry-register th:nth-child(4) { width: 20%; }
+.kaori-tls-certificate-report .expiry-register th:nth-child(5) { width: 12%; }
+.kaori-tls-certificate-report .expiry-register th:nth-child(6) { width: 10%; }
+.kaori-tls-certificate-report .expiry-register th:nth-child(7) { width: 11%; }
+.kaori-tls-certificate-report .expiry-register th:nth-child(8) { width: 14%; }
+
+.kaori-tls-certificate-report .timing-register th:nth-child(1) { width: 20%; }
+.kaori-tls-certificate-report .timing-register th:nth-child(2) { width: 47%; }
+.kaori-tls-certificate-report .timing-register th:nth-child(3) { width: 33%; }
+
+.kaori-tls-certificate-report .usage-register { font-size: 5.05pt; }
+.kaori-tls-certificate-report .usage-register th,
+.kaori-tls-certificate-report .usage-register td { padding: 1.7mm 1.4mm; }
+.kaori-tls-certificate-report .usage-register th:nth-child(1) { width: 6%; }
+.kaori-tls-certificate-report .usage-register th:nth-child(2) { width: 12%; }
+.kaori-tls-certificate-report .usage-register th:nth-child(3) { width: 20%; }
+.kaori-tls-certificate-report .usage-register th:nth-child(4) { width: 7%; }
+.kaori-tls-certificate-report .usage-register th:nth-child(5) { width: 27%; }
+.kaori-tls-certificate-report .usage-register th:nth-child(6) { width: 13%; }
+.kaori-tls-certificate-report .usage-register th:nth-child(7) { width: 15%; }
+
+.kaori-tls-certificate-report .collection-register th:nth-child(1) { width: 23%; }
+.kaori-tls-certificate-report .collection-register th:nth-child(2) { width: 18%; }
+.kaori-tls-certificate-report .collection-register th:nth-child(3) { width: 19%; }
+.kaori-tls-certificate-report .collection-register th:nth-child(4) { width: 19%; }
+.kaori-tls-certificate-report .collection-register th:nth-child(5) { width: 21%; }
+
+.kaori-tls-certificate-report .validation-register { font-size: 5pt; }
+.kaori-tls-certificate-report .validation-register th,
+.kaori-tls-certificate-report .validation-register td { padding: 1.65mm 1.35mm; }
+.kaori-tls-certificate-report .validation-register th:nth-child(1) { width: 6%; }
+.kaori-tls-certificate-report .validation-register th:nth-child(2) { width: 23%; }
+.kaori-tls-certificate-report .validation-register th:nth-child(3) { width: 11%; }
+.kaori-tls-certificate-report .validation-register th:nth-child(4) { width: 8%; }
+.kaori-tls-certificate-report .validation-register th:nth-child(5) { width: 9%; }
+.kaori-tls-certificate-report .validation-register th:nth-child(6) { width: 16%; }
+.kaori-tls-certificate-report .validation-register th:nth-child(7) { width: 13%; }
+.kaori-tls-certificate-report .validation-register th:nth-child(8) { width: 14%; }
+
+.kaori-tls-certificate-report .requirement-register th:nth-child(1) { width: 12%; }
+.kaori-tls-certificate-report .requirement-register th:nth-child(2) { width: 52%; }
+.kaori-tls-certificate-report .requirement-register th:nth-child(3) { width: 36%; }
+
+.kaori-tls-certificate-report .risk-register { font-size: 5pt; }
+.kaori-tls-certificate-report .risk-register th,
+.kaori-tls-certificate-report .risk-register td { padding: 1.7mm 1.4mm; }
+.kaori-tls-certificate-report .risk-register th:nth-child(1) { width: 10%; }
+.kaori-tls-certificate-report .risk-register th:nth-child(2) { width: 30%; }
+.kaori-tls-certificate-report .risk-register th:nth-child(3) { width: 17%; }
+.kaori-tls-certificate-report .risk-register th:nth-child(4) { width: 10%; }
+.kaori-tls-certificate-report .risk-register th:nth-child(5) { width: 21%; }
+.kaori-tls-certificate-report .risk-register th:nth-child(6) { width: 12%; }
+
+.kaori-tls-certificate-report .ownership-register th:nth-child(1) { width: 8%; }
+.kaori-tls-certificate-report .ownership-register th:nth-child(2) { width: 20%; }
+.kaori-tls-certificate-report .ownership-register th:nth-child(3) { width: 47%; }
+.kaori-tls-certificate-report .ownership-register th:nth-child(4) { width: 15%; }
+.kaori-tls-certificate-report .ownership-register th:nth-child(5) { width: 10%; }
+
+.kaori-tls-certificate-report .recommendation-register { font-size: 5.05pt; }
+.kaori-tls-certificate-report .recommendation-register th,
+.kaori-tls-certificate-report .recommendation-register td { padding: 1.65mm 1.35mm; }
+.kaori-tls-certificate-report .recommendation-register th:nth-child(1) { width: 7%; }
+.kaori-tls-certificate-report .recommendation-register th:nth-child(2) { width: 9%; }
+.kaori-tls-certificate-report .recommendation-register th:nth-child(3) { width: 37%; }
+.kaori-tls-certificate-report .recommendation-register th:nth-child(4) { width: 22%; }
+.kaori-tls-certificate-report .recommendation-register th:nth-child(5) { width: 15%; }
+.kaori-tls-certificate-report .recommendation-register th:nth-child(6) { width: 10%; }
+
+.kaori-tls-certificate-report .page-tls-executive .content-section,
+.kaori-tls-certificate-report .page-tls-validity .content-section,
+.kaori-tls-certificate-report .page-tls-expiry .content-section,
+.kaori-tls-certificate-report .page-tls-usage .content-section,
+.kaori-tls-certificate-report .page-tls-validation .content-section,
+.kaori-tls-certificate-report .page-tls-risk .content-section,
+.kaori-tls-certificate-report .page-tls-recommendations .content-section,
+.kaori-tls-certificate-report .page-tls-methodology .content-section { margin-top: 4.2mm; }
+
+.kaori-tls-certificate-report .page-tls-validity .metric-strip,
+.kaori-tls-certificate-report .page-tls-usage .metric-strip,
+.kaori-tls-certificate-report .page-tls-validation .metric-strip,
+.kaori-tls-certificate-report .page-tls-risk .metric-strip,
+.kaori-tls-certificate-report .page-tls-methodology .metric-strip { margin-bottom: 4.5mm; }
+
+.kaori-tls-certificate-report .page-tls-methodology .content-section { margin-top: 3.3mm; }
+.kaori-tls-certificate-report .page-tls-methodology .section-body { margin-top: 2.2mm; }
+.kaori-tls-certificate-report .page-tls-methodology .boundary-columns { column-gap: 14mm; }

@@ -904,3 +904,225 @@
 .page-methodology .status-legend-item strong {
   margin-bottom: .65mm;
 }
+
+
+/* V2.9 - separator-free rhythm and precision alignment. */
+.page-consumers .consumer-chart {
+  align-items: start;
+}
+.page-consumers .consumer-chart > div {
+  min-width: 0;
+}
+.page-consumers .consumer-chart h3 {
+  min-height: 4.6mm;
+  margin: 0 0 6.8mm;
+  padding: 0;
+  font-size: 8.6pt;
+  line-height: 1.18;
+}
+.page-consumers .consumer-row {
+  min-height: 6mm;
+  margin-bottom: 4mm;
+  align-items: center;
+}
+
+.page-alerts .severity-chart {
+  height: 35mm;
+  justify-content: flex-start;
+}
+.page-alerts .ao-alert-donut {
+  overflow: visible;
+}
+.page-alerts .ao-alert-donut .donut-total {
+  font: 700 15px "Inter", "DejaVu Sans", Arial, sans-serif;
+  dominant-baseline: middle;
+}
+.page-alerts .ao-alert-donut .donut-caption {
+  font: 600 7.2px "Inter", "DejaVu Sans", Arial, sans-serif;
+  dominant-baseline: middle;
+  letter-spacing: 0;
+}
+.page-alerts .ao-alert-donut .donut-legend-label {
+  font: 500 7.8px "Inter", "DejaVu Sans", Arial, sans-serif;
+  dominant-baseline: middle;
+}
+.page-alerts .ao-alert-donut .donut-legend-value {
+  font: 700 8px "Inter", "DejaVu Sans", Arial, sans-serif;
+  dominant-baseline: middle;
+}
+
+.page-reporting .report-overview {
+  align-items: start;
+}
+.page-reporting .report-overview > .content-section {
+  display: block;
+}
+.page-reporting .report-overview > .content-section > .section-subtitle {
+  min-height: 0;
+  margin-top: 1.8mm;
+}
+.page-reporting .report-overview > .content-section > .section-body {
+  margin-top: 4mm;
+}
+.page-reporting .report-schedules-section {
+  margin-top: 7mm;
+}
+
+.page-methodology .methodology-register-layout {
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr);
+  gap: 6.5mm;
+  align-items: start;
+}
+.page-methodology .methodology-register-layout h3 {
+  margin: 0 0 2.8mm;
+}
+.page-methodology .method-register {
+  font-size: 5.75pt;
+}
+.page-methodology .method-register th:nth-child(1) { width: 12%; }
+.page-methodology .method-register th:nth-child(2) { width: 43%; }
+.page-methodology .method-register th:nth-child(3) { width: 45%; }
+.page-methodology .method-register th,
+.page-methodology .method-register td {
+  padding: 1.15mm 1.25mm;
+  line-height: 1.15;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.page-methodology .methodology-register-layout .report-table thead tr {
+  height: 6.8mm;
+}
+.page-methodology .methodology-register-layout .report-table tbody tr {
+  height: 7.2mm;
+}
+.page-methodology .sources-compact th:nth-child(1) { width: 43%; }
+.page-methodology .sources-compact th:nth-child(2) { width: 21%; }
+.page-methodology .sources-compact th:nth-child(3) { width: 36%; }
+
+.page-methodology .evidence-columns {
+  margin-top: 4.6mm;
+  gap: 11mm;
+}
+.page-methodology .evidence-columns h3 {
+  margin: 0 0 3.4mm;
+  line-height: 1.2;
+}
+.page-methodology .evidence-columns li {
+  margin-bottom: 1.7mm;
+  line-height: 1.42;
+}
+.page-methodology .limitations-status-layout {
+  gap: 9mm;
+}
+.page-methodology .limitations-status-layout h3 {
+  margin: 0 0 3.4mm;
+  line-height: 1.2;
+}
+.page-methodology .limitations-copy ul {
+  margin: 0 0 3.5mm;
+}
+.page-methodology .limitations-copy li {
+  margin-bottom: 1.7mm;
+  line-height: 1.42;
+}
+.page-methodology .limitations-copy p {
+  margin: 1mm 0 0;
+  line-height: 1.48;
+}
+.page-methodology .status-legend-grid {
+  margin-top: 0;
+  border-top: none;
+}
+.page-methodology .methodology-references {
+  padding-top: 0;
+  border-top: none;
+}
+.page-methodology .status-legend-item {
+  grid-template-columns: 8mm minmax(0, 1fr);
+  gap: 2.8mm;
+  padding: 2mm 0;
+  align-items: center;
+}
+.page-methodology .status-legend-item strong {
+  margin-bottom: .8mm;
+  line-height: 1.16;
+}
+.page-methodology .status-legend-item p {
+  line-height: 1.28;
+}
+
+
+/* V2.9.1 - refine consumer spacing and move donut caption below the ring. */
+.page-consumers .consumer-chart h3 {
+  min-height: 5.2mm;
+  margin: 0 0 8.2mm;
+  line-height: 1.2;
+}
+.page-consumers .consumer-group {
+  padding-top: .6mm;
+}
+.page-consumers .consumer-row {
+  min-height: 6.4mm;
+  margin-bottom: 4.4mm;
+}
+.page-consumers .consumer-row:first-of-type {
+  margin-top: .8mm;
+}
+.page-consumers .consumer-row > b {
+  line-height: 1.2;
+}
+
+.page-alerts .severity-chart {
+  height: 39mm;
+  align-items: flex-start;
+}
+.page-alerts .ao-alert-donut .donut-total {
+  font: 700 14px "Inter", "DejaVu Sans", Arial, sans-serif;
+}
+.page-alerts .ao-alert-donut .donut-caption {
+  font: 600 7.0px "Inter", "DejaVu Sans", Arial, sans-serif;
+}
+.page-alerts .ao-alert-donut .donut-caption-below {
+  fill: #475569;
+}
+
+
+/* V2.9.2 - page rhythm, consumer spacing, reporting compactness, and methodology readability. */
+.page-consumers .consumer-chart { gap: 10mm; align-items: start; }
+.page-consumers .consumer-chart h3 { min-height: 0; margin: 0 0 7.6mm; font-size: 8.65pt; line-height: 1.18; }
+.page-consumers .consumer-group { padding-top: 1.2mm; }
+.page-consumers .consumer-row { min-height: 6.6mm; margin-bottom: 4.6mm; align-items: center; }
+.page-consumers .consumer-row:first-of-type { margin-top: 1mm; }
+.page-consumers .consumer-row > b { padding-top: .2mm; }
+.page-alerts .two-chart-grid { gap: 11mm; align-items: start; }
+.page-alerts .severity-chart { height: 42mm; padding-top: 1.2mm; align-items: flex-start; justify-content: flex-start; }
+.page-alerts .ao-alert-donut .donut-total { font: 700 13px "Inter", "DejaVu Sans", Arial, sans-serif; }
+.page-alerts .ao-alert-donut .donut-caption { font: 600 6.8px "Inter", "DejaVu Sans", Arial, sans-serif; }
+.page-alerts .ao-alert-donut .donut-caption-below { fill: #172033; }
+.page-alerts .category-list { margin-top: 3.2mm; gap: 3.2mm; }
+.page-alerts .category-list div { padding: 0 0 2.7mm; }
+.page-reporting .report-overview > .content-section > .section-subtitle { margin-top: 1.4mm; }
+.page-reporting .report-overview > .content-section > .section-body { margin-top: 3.2mm; }
+.page-reporting .report-schedules-section { margin-top: 5.4mm; max-width: 100mm; }
+.page-reporting .report-schedules-section > .section-body { margin-top: 2.4mm; }
+.page-reporting .report-schedules-section p { max-width: 96mm; line-height: 1.42; }
+.page-methodology .methodology-register-layout { gap: 7.2mm; align-items: start; }
+.page-methodology .methodology-register-layout h3 { margin: 0 0 3.2mm; font-size: 8.55pt; line-height: 1.18; }
+.page-methodology .sources-compact th, .page-methodology .sources-compact td, .page-methodology .method-register th, .page-methodology .method-register td { padding: 1.45mm 1.45mm; vertical-align: middle; }
+.page-methodology .sources-compact tbody tr, .page-methodology .method-register tbody tr { height: 7.4mm; }
+.page-methodology .method-register th:nth-child(1) { width: 12%; }
+.page-methodology .method-register th:nth-child(2) { width: 41%; }
+.page-methodology .method-register th:nth-child(3) { width: 47%; }
+.page-methodology .evidence-columns { margin-top: 5mm; gap: 12mm; }
+.page-methodology .evidence-columns h3 { margin: 0 0 3.1mm; }
+.page-methodology .evidence-columns li { margin-bottom: 1.8mm; line-height: 1.42; }
+.page-methodology .limitations-status-layout { grid-template-columns: minmax(0, .92fr) minmax(0, 1.08fr); gap: 10mm; }
+.page-methodology .limitations-copy { padding-right: 4mm; }
+.page-methodology .limitations-copy ul { margin: .4mm 0 4mm; padding-left: 5.1mm; }
+.page-methodology .limitations-copy li { margin-bottom: 1.8mm; line-height: 1.42; }
+.page-methodology .limitations-copy p { margin: 1.4mm 0 0; max-width: 82mm; line-height: 1.48; }
+.page-methodology .status-language-block h3 { margin: 0 0 3.2mm; }
+.page-methodology .status-legend-grid { gap: 1.2mm 5mm; }
+.page-methodology .status-legend-item { padding: 1.8mm 0 2.2mm; }
+.page-methodology .status-legend-item strong { margin: 0 0 .6mm; }
+.page-methodology .status-legend-item p { max-width: 42mm; line-height: 1.28; }
