@@ -36,6 +36,9 @@ from app.reports.export.html_pdf.normalization import (
     tables_from_value,
     tone_from_value,
 )
+from app.reports.export.html_pdf.resource_utilization import (
+    build_resource_utilization_presentation,
+)
 
 _SECTION_SOURCE_PATHS: dict[str, tuple[str, ...]] = {
     'analytics_summary': ('health_summary', 'summary'),
@@ -175,6 +178,21 @@ def build_report_document(
             classification=classification,
             overall_posture=overall_posture,
             overall_tone=overall_tone,
+        )
+    elif report.report_type == 'resource_utilization' and not payload.get('_error'):
+        template_name = 'reports/pdf/resource_utilization.html'
+        presentation = build_resource_utilization_presentation(
+            report,
+            payload,
+            report_id=report_id,
+            report_name=report_name,
+            cluster_scope=cluster_scope,
+            namespace_scope=namespace_scope,
+            period_label=period_label,
+            data_cutoff=data_cutoff,
+            generated_at=generated_at_label,
+            generated_by=generated_by_label,
+            classification=classification,
         )
 
     return ReportDocument(

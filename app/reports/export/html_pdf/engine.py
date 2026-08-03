@@ -23,12 +23,16 @@ def render_document_pdf(
     rendered_html = template.render(document=document)
     font_config = FontConfiguration()
 
-    if document.template_name == 'reports/pdf/analytics_overview.html':
-        # Analytics Overview is a fixed publication layout. Loading report.css here
-        # contaminates its page, header, table, and margin-box rules. Keep the
-        # renderer isolated so the system result matches the approved baseline.
-        analytics_css_path = css_path.with_name('analytics_overview.css')
-        stylesheets = [CSS(filename=str(analytics_css_path), font_config=font_config)]
+    specialized_stylesheets = {
+        'reports/pdf/analytics_overview.html': 'analytics_overview.css',
+        'reports/pdf/resource_utilization.html': 'resource_utilization.css',
+    }
+    specialized_stylesheet = specialized_stylesheets.get(document.template_name)
+    if specialized_stylesheet:
+        # Fixed publication templates are isolated from report.css so generic page,
+        # table, and margin-box rules cannot contaminate an approved layout.
+        publication_css_path = css_path.with_name(specialized_stylesheet)
+        stylesheets = [CSS(filename=str(publication_css_path), font_config=font_config)]
     else:
         stylesheets = [CSS(filename=str(css_path), font_config=font_config)]
 
