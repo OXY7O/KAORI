@@ -278,6 +278,20 @@ def test_capacity_analysis_renders_available_storage_without_false_gap() -> None
     assert 'Storage evidence is available for review.' in rendered_html
 
 
+def test_storage_capacity_section_dividers_stay_aligned_when_subtitle_wraps() -> None:
+    _, rendered_html, project_root = _rendered_html(storage_available=True)
+    stylesheet = (
+        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'capacity_analysis.css'
+    ).read_text()
+    compact = ''.join(stylesheet.split())
+
+    assert 'class="two-column storage-split"' in rendered_html
+    assert 'Missing evidence remains explicit and is not interpreted as zero.' in rendered_html
+    assert 'What may and may not be concluded from the available evidence.' in rendered_html
+    assert '.storage-split>.content-section>.section-subtitle{min-height:8mm;}' in compact
+    assert '.storage-split>.content-section>.section-rule{margin-top:0;}' in compact
+
+
 def test_capacity_analysis_methodology_tables_are_separate_and_single_line() -> None:
     _, rendered_html, project_root = _rendered_html()
     stylesheet = (

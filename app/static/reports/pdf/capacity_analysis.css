@@ -396,6 +396,10 @@ body.kaori-capacity-analysis-report { width: 210mm; }
 .worker-key { background: #2563EB; }
 
 .storage-split { grid-template-columns: 1.24fr .76fr; }
+/* Keep the Storage Evidence State and Decision Boundary dividers aligned
+   even when one section subtitle wraps to a second line. */
+.storage-split > .content-section > .section-subtitle { min-height: 8mm; }
+.storage-split > .content-section > .section-rule { margin-top: 0; }
 .storage-ready { min-height: 52mm; border: .3mm solid #E2E8F0; padding: 5mm; }
 .storage-values { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3mm; margin-top: 7mm; }
 .storage-values span { display: flex; flex-direction: column; gap: 1.2mm; padding: 3mm; background: #F8FAFC; color: #64748B; font-size: 5.9pt; }
