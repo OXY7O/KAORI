@@ -609,15 +609,41 @@ body.kaori-workload-analysis-report { width: 210mm; }
 
 /* Workload Analysis publication v1.0 */
 /* Workload Analysis publication v1.0.1 layout refinement */
-.workload-executive-split > .content-section > .section-subtitle,
-.workload-quota-split > .content-section > .section-subtitle,
-.workload-governance-split > .content-section > .section-subtitle {
-  min-height: 8mm;
+.workload-page-overview .workload-executive-split,
+.workload-page-quota .workload-quota-split,
+.workload-page-governance .workload-governance-split {
+  align-items: start;
 }
-.workload-executive-split > .content-section > .section-rule,
-.workload-quota-split > .content-section > .section-rule,
-.workload-governance-split > .content-section > .section-rule {
+
+.workload-page-overview .workload-executive-split > .content-section,
+.workload-page-quota .workload-quota-split > .content-section,
+.workload-page-governance .workload-governance-split > .content-section {
+  display: flex;
+  flex-direction: column;
+  align-self: start;
   margin-top: 0;
+  padding-top: 0;
+}
+
+.workload-page-overview .workload-executive-split > .content-section > .section-title,
+.workload-page-quota .workload-quota-split > .content-section > .section-title,
+.workload-page-governance .workload-governance-split > .content-section > .section-title {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.workload-page-overview .workload-executive-split > .content-section > .section-subtitle,
+.workload-page-quota .workload-quota-split > .content-section > .section-subtitle,
+.workload-page-governance .workload-governance-split > .content-section > .section-subtitle {
+  min-height: 8mm;
+  margin-top: 1.5mm;
+  margin-bottom: 0;
+}
+
+.workload-page-overview .workload-executive-split > .content-section > .section-rule,
+.workload-page-quota .workload-quota-split > .content-section > .section-rule,
+.workload-page-governance .workload-governance-split > .content-section > .section-rule {
+  margin-top: 1.5mm;
 }
 
 .workload-executive-split { grid-template-columns: 1.08fr .92fr; }

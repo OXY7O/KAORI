@@ -298,12 +298,19 @@ def test_workload_analysis_split_headers_keep_dividers_aligned() -> None:
     _, _, project_root = _rendered_html()
     css = (project_root / 'app' / 'static' / 'reports' / 'pdf' / 'workload_analysis.css').read_text()
 
-    assert '.workload-executive-split > .content-section > .section-subtitle' in css
-    assert '.workload-quota-split > .content-section > .section-subtitle' in css
-    assert '.workload-governance-split > .content-section > .section-subtitle' in css
+    assert '.workload-page-overview .workload-executive-split' in css
+    assert '.workload-page-quota .workload-quota-split' in css
+    assert '.workload-page-governance .workload-governance-split' in css
+    assert '.workload-page-overview .workload-executive-split > .content-section' in css
+    assert '.workload-page-overview .workload-executive-split > .content-section > .section-title' in css
+    assert '.workload-page-overview .workload-executive-split > .content-section > .section-subtitle' in css
+    assert '.workload-page-overview .workload-executive-split > .content-section > .section-rule' in css
+    assert 'align-items: start;' in css
+    assert 'display: flex;' in css
+    assert 'flex-direction: column;' in css
+    assert 'align-self: start;' in css
     assert 'min-height: 8mm;' in css
-    assert '.workload-quota-split > .content-section > .section-rule' in css
-    assert 'margin-top: 0;' in css
+    assert 'margin-top: 1.5mm;' in css
 
 
 def test_workload_analysis_quota_summary_is_compact() -> None:
