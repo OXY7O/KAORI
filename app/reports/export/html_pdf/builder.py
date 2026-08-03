@@ -20,6 +20,7 @@ from app.reports.export.formatting import format_period
 from app.reports.export.html_pdf.analytics_overview import build_analytics_overview_presentation
 from app.reports.export.html_pdf.capacity_analysis import build_capacity_analysis_presentation
 from app.reports.export.html_pdf.charts import build_alert_severity_chart, build_forecast_chart
+from app.reports.export.html_pdf.forecast_analysis import build_forecast_analysis_presentation
 from app.reports.export.html_pdf.document import (
     ReportDocument,
     ReportFinding,
@@ -215,6 +216,21 @@ def build_report_document(
     elif report.report_type == 'storage_analysis' and not payload.get('_error'):
         template_name = 'reports/pdf/storage_analysis.html'
         presentation = build_storage_analysis_presentation(
+            report,
+            payload,
+            report_id=report_id,
+            report_name=report_name,
+            cluster_scope=cluster_scope,
+            namespace_scope=namespace_scope,
+            period_label=period_label,
+            data_cutoff=data_cutoff,
+            generated_at=generated_at_label,
+            generated_by=generated_by_label,
+            classification=classification,
+        )
+    elif report.report_type == 'resource_forecast' and not payload.get('_error'):
+        template_name = 'reports/pdf/forecast_analysis.html'
+        presentation = build_forecast_analysis_presentation(
             report,
             payload,
             report_id=report_id,

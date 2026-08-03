@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ document.report_name }}</title>
+</head>
+<body class="kaori-forecast-analysis-report">
+{% set p = document.presentation %}
+
+{% macro report_header() -%}
+<div class="report-header">
+  <div class="brand">
+    <img src="app/static/images/kaori-logo.svg" alt="KAORI">
+    <div><strong>KAORI</strong><span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span></div>
+  </div>
+  <div class="report-name"><strong>Forecast Analysis</strong><span>Kubernetes Operational Intelligence Report</span></div>
+</div>
+{%- endmacro %}
+
+{% macro page_title(number, title, subtitle) -%}
+<div class="page-title-row">
+  <div class="section-index">{{ number }}</div>
+  <div class="page-title-copy"><h1>{{ title }}</h1><p>{{ subtitle }}</p></div>
+  <div class="cutoff"><span>Data Cut-off</span><strong>{{ p.data_cutoff }}</strong></div>
+</div>
+{%- endmacro %}
+
+{% macro footer(page_number) -%}
+<div class="page-footer">
+  <span>Report ID: {{ p.report_id }} &nbsp; | &nbsp; {{ p.classification }}</span>
+  <span>Page {{ page_number }} of {{ p.page_count }}</span>
+</div>
+{%- endmacro %}
+
+{% macro metric_strip(items) -%}
+<div class="metric-strip">
+  {% for item in items %}
+  <div class="metric">
+    <span>{{ item.label }}</span>
+    <strong class="{% if item.value|string|length > 18 %}metric-long{% elif item.value|string|length > 11 %}metric-medium{% endif %}">{{ item.value }}</strong>
+    <em class="status {{ item.tone|default('muted') }}">{{ item.status }}</em>
+  </div>
+  {% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro section(title, subtitle='', extra_class='') -%}
+<section class="content-section {{ extra_class }}">
+  <h2>{{ title }}</h2>
+  {% if subtitle %}<p class="section-subtitle">{{ subtitle }}</p>{% endif %}
+  <div class="section-rule"></div>
+  <div class="section-body">{{ caller() }}</div>
+</section>
+{%- endmacro %}
+
+{% macro reference_item(item) -%}
+<div class="reference-item">
+  <span class="reference-code">{{ item.ref }}</span>
+  <div><strong>{{ item.title }}</strong><p>{{ item.description }}</p></div>
+</div>
+{%- endmacro %}
+
+{% macro resource_bar(item) -%}
+<div class="forecast-bar-row">
+  <strong>{{ item.label }}</strong>
+  <div class="forecast-track {% if not item.available %}unavailable{% endif %}">
+    {% if item.available %}<i style="width: {{ item.projected_percent }}%; background: {{ item.color }}"></i><b class="warning-marker"></b><b class="critical-marker"></b>{% endif %}
+  </div>
+  <span>{{ item.current_display }} &rarr; {{ item.projected_display }}</span>
+</div>
+{%- endmacro %}
+
+<article class="page cover-page">
+  <div class="cover-band">
+    <div class="cover-masthead">
+      <div class="cover-brand">
+        <img src="app/static/images/kaori-logo.svg" alt="KAORI">
+        <div><strong>KAORI</strong><span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span></div>
+      </div>
+      <div class="cover-class">ANALYTICS REPORT<br><b>{{ p.classification|upper }} - REPORT ID {{ p.report_id }}</b></div>
+    </div>
+    <div class="cover-copy">
+      <div class="cover-eyebrow">Kubernetes Operational Intelligence</div>
+      <h1>Forecast Analysis</h1>
+      <p>A focused planning view of committed historical direction, projected resource pressure, threshold exposure, evidence confidence, and accountable forecast actions.</p>
+    </div>
+  </div>
+  <div class="cover-main">
+    <div class="cover-grid">
+      <section>
+        <h2>Reporting Boundary</h2>
+        <dl class="context-list">
+          <dt>Cluster</dt><dd>{{ p.cluster_scope }}</dd>
+          <dt>Environment</dt><dd>{{ p.cover.environment }}</dd>
+          <dt>Namespace</dt><dd>{{ p.namespace_scope }}</dd>
+          <dt>Reporting Period</dt><dd>{{ p.period_label }}</dd>
+          <dt>Data Cut-off</dt><dd>{{ p.data_cutoff }}</dd>
+        </dl>
+      </section>
+      <section><h2>Report Purpose</h2><p>{{ p.cover.purpose }}</p></section>
+    </div>
+    <div class="cover-context"><strong>Evidence Context</strong><p>{{ p.cover.context }}</p></div>
+    <div class="cover-contents">
+      <span>01 Executive Forecast Brief</span><span>02 Forecast Portfolio</span>
+      <span>03 CPU Forecast</span><span>04 Memory Forecast</span>
+      <span>05 Pod &amp; Storage Forecast</span><span>06 Threshold Exposure &amp; Confidence</span>
+      <span>07 Recommendation Plan</span><span>08 Methodology and Evidence Boundary</span>
+    </div>
+  </div>
+  {{ footer(1) }}
+</article>
+
+<article class="page page-forecast-executive">
+  {{ report_header() }}
+  <div class="page-content">
+    {{ page_title(1, 'Executive Forecast Brief', 'Management position for forecast evidence at the report cut-off.') }}
+    {{ metric_strip(p.executive.metrics) }}
+    <div class="two-column forecast-executive-split">
+      {% call section('Figure 1 - Forecast Portfolio', 'Current and projected signals against KAORI warning and critical operating bands.') %}
+      <div class="forecast-bars">{% for item in p.executive.resources %}{{ resource_bar(item) }}{% endfor %}</div>
+      {% endcall %}
+      {% call section('Management Interpretation', 'The principal planning signal and the decision required.') %}
+      <div class="interpretation-card executive-callout {{ p.executive.tone }}-card">
+        <strong>{{ p.executive.interpretation_title }}</strong>
+        <p>{{ p.executive.interpretation_body }}</p>
+        <small>{{ p.executive.interpretation_note }}</small>
+      </div>
+      {% endcall %}
+    </div>
+    {% call section('Forecast Decision Register', 'Fixed decision fields remain concise; detailed interpretation is maintained by reference.') %}
+    <table class="report-table decision-register">
+      <thead><tr><th>Ref.</th><th>Priority</th><th>Decision</th><th>Owner</th><th>Status</th></tr></thead>
+      <tbody>{% for item in p.executive.decisions %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.priority }}</td><td>{{ item.title }}</td><td>{{ item.owner }}</td><td class="status {{ item.tone }}">{{ item.status }}</td></tr>{% else %}<tr><td colspan="5" class="empty-row">No forecast decision is available.</td></tr>{% endfor %}</tbody>
+    </table>
+    <div class="reference-grid decision-references">{% for item in p.executive.decisions %}{{ reference_item(item) }}{% endfor %}</div>
+    {% endcall %}
+  </div>
+  {{ footer(2) }}
+</article>
+
+<article class="page page-forecast-portfolio">
+  {{ report_header() }}
+  <div class="page-content">
+    {{ page_title(2, 'Forecast Portfolio', 'Resource-level direction, projected position, threshold timing, and confidence.') }}
+    {{ metric_strip(p.portfolio.metrics) }}
+    {% call section('Figure 2 - Resource Forecast Outlook', 'Committed current and projected endpoints; missing resource evidence remains explicit.') %}
+    <div class="chart-frame portfolio-chart">{{ p.portfolio.chart_svg|safe }}</div>
+    {% endcall %}
+    {% call section('Projected Resource Register', 'Threshold timing is separated from projected value and confidence.') %}
+    <table class="report-table portfolio-register">
+      <thead><tr><th>Ref.</th><th>Resource</th><th>Current</th><th>Projection</th><th>Warning ETA</th><th>Confidence</th><th>Assessment</th></tr></thead>
+      <tbody>{% for item in p.portfolio.rows %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.resource }}</td><td>{{ item.current }}</td><td>{{ item.projection }}</td><td>{{ item.warning_eta }}</td><td>{{ item.confidence }}</td><td class="status {{ item.tone }}">{{ item.assessment }}</td></tr>{% endfor %}</tbody>
+    </table>
+    {% endcall %}
+    {% call section('Management Interpretation', 'The portfolio view remains bounded by committed forecast coverage.') %}<p>{{ p.portfolio.interpretation }}</p>{% endcall %}
+  </div>
+  {{ footer(3) }}
+</article>
+
+<article class="page page-forecast-cpu">
+  {{ report_header() }}
+  <div class="page-content">
+    {{ page_title(3, 'CPU Forecast', 'Committed CPU direction, headroom, and workload-specific planning boundary.') }}
+    {{ metric_strip(p.cpu.metrics) }}
+    <div class="two-column resource-forecast-split">
+      {% call section('Figure 3 - CPU Direction', 'Committed historical direction and projected endpoint.') %}<div class="chart-frame resource-chart">{{ p.cpu.resource.chart_svg|safe }}</div>{% endcall %}
+      {% call section('CPU Forecast Assessment', 'Planning interpretation remains separate from consumer evidence.') %}
+      <div class="interpretation-card {{ p.cpu.resource.tone }}-card"><strong>{{ p.cpu.assessment_title }}</strong><p>{{ p.cpu.assessment_body }}</p><small>{{ p.cpu.assessment_note }}</small></div>
+      {% endcall %}
+    </div>
+    {% call section('CPU Forecast Register', 'Current, projection, threshold timing, confidence, and decision boundary.') %}
+    <table class="report-table resource-register"><thead><tr><th>Ref.</th><th>Dimension</th><th>Value</th><th>Evidence</th><th>Status</th></tr></thead><tbody>{% for item in p.cpu.register %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.dimension }}</td><td>{{ item.value }}</td><td>{{ item.evidence }}</td><td class="status {{ item.tone }}">{{ item.status }}</td></tr>{% endfor %}</tbody></table>
+    {% endcall %}
+    {% call section('Management Decision', 'Keep aggregate forecast posture separate from workload-specific spikes.') %}<p>Maintain CPU history and projection coverage. Validate top-consumer behavior independently before considering any aggregate expansion action.</p>{% endcall %}
+  </div>
+  {{ footer(4) }}
+</article>
+
+<article class="page page-forecast-memory">
+  {{ report_header() }}
+  <div class="page-content">
+    {{ page_title(4, 'Memory Forecast', 'Committed memory direction, threshold timing, and long-range planning implications.') }}
+    {{ metric_strip(p.memory.metrics) }}
+    <div class="two-column resource-forecast-split">
+      {% call section('Figure 4 - Memory Direction and Projection', 'Current endpoint and projected position across the configured horizon.') %}<div class="chart-frame resource-chart">{{ p.memory.resource.chart_svg|safe }}</div>{% endcall %}
+      {% call section('Memory Forecast Assessment', 'The primary long-range planning signal.') %}
+      <div class="interpretation-card {{ p.memory.resource.tone }}-card"><strong>{{ p.memory.assessment_title }}</strong><p>{{ p.memory.assessment_body }}</p><small>{{ p.memory.assessment_note }}</small></div>
+      {% endcall %}
+    </div>
+    {% call section('Memory Forecast Register', 'Current posture, projected headroom, threshold ETA, and required review.') %}
+    <table class="report-table resource-register"><thead><tr><th>Ref.</th><th>Dimension</th><th>Value</th><th>Evidence</th><th>Status</th></tr></thead><tbody>{% for item in p.memory.register %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.dimension }}</td><td>{{ item.value }}</td><td>{{ item.evidence }}</td><td class="status {{ item.tone }}">{{ item.status }}</td></tr>{% endfor %}</tbody></table>
+    {% endcall %}
+    {% call section('Management Decision', 'Use threshold timing as planning evidence, not as an autonomous change trigger.') %}<p>Validate memory growth assumptions and retain the warning ETA in the next capacity planning gate. Confirm live state before remediation.</p>{% endcall %}
+  </div>
+  {{ footer(5) }}
+</article>
+
+<article class="page page-forecast-pod-storage">
+  {{ report_header() }}
+  <div class="page-content">
+    {{ page_title(5, 'Pod & Storage Forecast', 'Scheduling projection and explicit storage forecast availability state.') }}
+    {{ metric_strip(p.pod_storage.metrics) }}
+    <div class="two-column pod-storage-split">
+      {% call section('Pod Scheduling Forecast', 'Committed pod direction and projected schedulable pressure.') %}<div class="chart-frame resource-chart">{{ p.pod_storage.pods.resource.chart_svg|safe }}</div>{% endcall %}
+      {% call section('Storage Forecast Evidence', 'Missing evidence remains explicit and is never converted to zero.') %}
+      <div class="interpretation-card {{ p.pod_storage.storage.resource.tone }}-card"><strong>{{ p.pod_storage.storage.assessment_title }}</strong><p>{{ p.pod_storage.storage.assessment_body }}</p><small>{{ p.pod_storage.storage.assessment_note }}</small></div>
+      {% endcall %}
+    </div>
+    {% call section('Scheduling and Storage Forecast Register', 'Available scheduling evidence remains separate from the storage evidence gap.') %}
+    <table class="report-table pod-storage-register"><thead><tr><th>Ref.</th><th>Dimension</th><th>Current</th><th>Projection</th><th>Evidence</th><th>Status</th></tr></thead><tbody>{% for item in p.pod_storage.rows %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.dimension }}</td><td>{{ item.current }}</td><td>{{ item.projection }}</td><td>{{ item.evidence }}</td><td class="status {{ item.tone }}">{{ item.status }}</td></tr>{% endfor %}</tbody></table>
+    {% endcall %}
+    {% call section('Management Decision', 'Scheduling and storage remain separate planning boundaries.') %}<p>Maintain committed pod forecast coverage. Restore storage history, capacity, projection, threshold ETA, and confidence before assigning storage forecast posture.</p>{% endcall %}
+  </div>
+  {{ footer(6) }}
+</article>
+
+<article class="page page-forecast-exposure">
+  {{ report_header() }}
+  <div class="page-content">
+    {{ page_title(6, 'Threshold Exposure & Confidence', 'Operating-band exposure, forecast confidence, and evidence quality.') }}
+    {{ metric_strip(p.exposure.metrics) }}
+    {% call section('Threshold Exposure Register', 'Threshold state is derived only from available committed forecast evidence.') %}
+    <table class="report-table exposure-register"><thead><tr><th>Ref.</th><th>Resource</th><th>Projection</th><th>Warning</th><th>Critical</th><th>Exposure</th><th>Confidence</th></tr></thead><tbody>{% for item in p.exposure.rows %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.resource }}</td><td>{{ item.projection }}</td><td>{{ item.warning }}</td><td>{{ item.critical }}</td><td class="status {{ item.tone }}">{{ item.exposure }}</td><td>{{ item.confidence }}</td></tr>{% endfor %}</tbody></table>
+    {% endcall %}
+    <div class="two-column exposure-split">
+      {% call section('Confidence Interpretation', 'How committed forecast status should be read.') %}<div class="interpretation-card"><strong>{{ p.exposure.confidence_title }}</strong><p>{{ p.exposure.confidence_body }}</p><small>Confidence must be reviewed together with freshness, historical coverage, and missing observations.</small></div>{% endcall %}
+      {% call section('Evidence Boundary', 'What the forecast does and does not represent.') %}<div class="interpretation-card"><strong>{{ p.exposure.boundary_title }}</strong><p>{{ p.exposure.boundary_body }}</p><small>{{ p.exposure.boundary_note }}</small></div>{% endcall %}
+    </div>
+    {% call section('Management Interpretation', 'Exposure and confidence must remain visible as separate decision dimensions.') %}<p>Forecast values support planning only. Confirm source freshness, accountable ownership, and live state before approving capacity or workload changes.</p>{% endcall %}
+  </div>
+  {{ footer(7) }}
+</article>
+
+<article class="page page-forecast-recommendations">
+  {{ report_header() }}
+  <div class="page-content">
+    {{ page_title(7, 'Recommendation Plan', 'Prioritized forecast actions, accountable owners, target windows, and validation gates.') }}
+    {{ metric_strip(p.recommendations.metrics) }}
+    {% call section('Priority Recommendations', 'The register contains fixed decision fields. Full context remains in the reference notes.') %}
+    <table class="report-table recommendation-register"><thead><tr><th>Ref.</th><th>Priority</th><th>Recommendation</th><th>Owner</th><th>Target</th><th>Status</th></tr></thead><tbody>{% for item in p.recommendations.rows %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.priority }}</td><td>{{ item.title }}</td><td>{{ item.owner }}</td><td>{{ item.target }}</td><td class="status {{ item.tone }}">{{ item.status }}</td></tr>{% endfor %}</tbody></table>
+    {% endcall %}
+    {% call section('Recommendation References', 'Descriptions expand below the register without changing table row heights.') %}<div class="reference-grid recommendation-references">{% for item in p.recommendations.rows %}{{ reference_item(item) }}{% endfor %}</div>{% endcall %}
+    {% call section('Execution Governance', 'Forecast recommendations remain subject to live-state validation and approved change controls.') %}
+    <table class="report-table governance-register"><tbody><tr><th>Primary Action</th><td>{{ p.recommendations.primary_action }}</td></tr><tr><th>Validation Criteria</th><td>{{ p.recommendations.validation_criteria }}</td></tr><tr><th>Assigned Owners</th><td>{{ p.recommendations.assigned_owners }}</td></tr><tr><th>Change Control</th><td>{{ p.recommendations.change_control }}</td></tr></tbody></table>
+    {% endcall %}
+  </div>
+  {{ footer(8) }}
+</article>
+
+<article class="page page-forecast-methodology">
+  {{ report_header() }}
+  <div class="page-content">
+    {{ page_title(8, 'Methodology and Evidence Boundary', 'Forecast sources, model rules, freshness, and explicit limitations.') }}
+    {{ metric_strip(p.methodology.metrics) }}
+    {% call section('Data Sources and Methodology', 'Source names, timestamps, and model rules remain explicit and separate.') %}
+    <div class="methodology-tables">
+      <div><h3>Data Sources and Coverage</h3><table class="report-table source-table"><thead><tr><th>Source</th><th>Freshness</th><th>Last Collected</th></tr></thead><tbody>{% for item in p.methodology.sources %}<tr><td>{{ item.source }}</td><td>{{ item.freshness }}</td><td>{{ item.last_collected }}</td></tr>{% endfor %}</tbody></table></div>
+      <div><h3>Methodology Register</h3><table class="report-table methodology-register"><thead><tr><th>Ref.</th><th>Rule</th><th>Setting</th></tr></thead><tbody>{% for item in p.methodology.rules %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.rule }}</td><td>{{ item.setting }}</td></tr>{% endfor %}</tbody></table></div>
+    </div>
+    {% endcall %}
+    {% call section('Methodology References') %}<div class="reference-grid methodology-references">{% for item in p.methodology.references %}{{ reference_item(item) }}{% endfor %}</div>{% endcall %}
+    {% call section('Evidence Boundary', 'This report is built strictly within the committed observation boundary defined by the data cut-off.') %}
+    <div class="boundary-columns">
+      <div><h3>Included in This Report</h3><ul>{% for item in p.methodology.included %}<li>{{ item }}</li>{% endfor %}</ul></div>
+      <div><h3>Not Included in This Report</h3><ul>{% for item in p.methodology.excluded %}<li>{{ item }}</li>{% endfor %}</ul></div>
+    </div>
+    {% endcall %}
+    {% call section('Limitations and Status Language') %}
+    <div class="limitations-grid"><div><h3>Known Limitations and Operational Use</h3><ul>{% for item in p.methodology.limitations %}<li>{{ item }}</li>{% endfor %}</ul></div><div><h3>Status Language</h3><div class="status-language-grid">{% for item in p.methodology.status_language %}{{ reference_item(item) }}{% endfor %}</div></div></div>
+    {% endcall %}
+  </div>
+  {{ footer(9) }}
+</article>
+</body>
+</html>
