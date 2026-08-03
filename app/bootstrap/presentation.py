@@ -45,11 +45,20 @@ def _navigation_notifications() -> dict[str, Any]:
     if not current_user.is_authenticated:
         return {
             'items': [],
+            'history_items': [],
+            'attention_items': [],
+            'active_jobs': [],
+            'active_count': 0,
+            'attention_count': 0,
             'unread_count': 0,
             'total_count': 0,
             'display_limit': 8,
+            'job_display_limit': 6,
         }
-    return get_navigation_notification_context(user_id=current_user.id)
+    return get_navigation_notification_context(
+        user_id=current_user.id,
+        include_all_jobs=current_user.has_permission('jobs.view'),
+    )
 
 
 def _quick_action_feedback() -> Any:

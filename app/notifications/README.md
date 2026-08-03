@@ -70,3 +70,56 @@ operation state visible without making the toast look like a single fused block.
 
 Personal preference saves do not generate operational toasts. They create personal
 Notification Center records and trigger the canonical notification refresh event.
+
+## Activity Center standard
+
+KAORI uses one synchronized **Activity & Notifications** source across:
+
+- the top-bar Activity trigger;
+- the top-bar notification bell;
+- the right-side Activity Center drawer; and
+- `/notifications/`, the full personal notification page.
+
+The Activity trigger represents work currently being performed by KAORI. Its count
+comes from canonical `JobExecution` rows visible to the authenticated user, including
+jobs requested by the user and shared jobs where the user is a subscriber. Active
+states are `queued`, `running`, `retrying`, and `cancel_requested`.
+
+The bell represents persistent information the user has not reviewed. Its badge is
+always the unread count from `Notification`; it must never be reused as a running-job
+counter. Opening the drawer does not mark records as read. Records become read only
+through an explicit item action or **Mark all read**.
+
+Both top-bar triggers open the same right-side drawer:
+
+- **Running** shows canonical jobs and short-lived in-browser HTMX operations.
+- **Attention** shows warning and error notifications.
+- **History** shows the latest persistent notifications.
+
+The drawer polls the canonical panel endpoint and also refreshes immediately after
+`kaori:notifications-changed`. Do not create a second bell, duplicate drawer, or
+feature-local notification list.
+
+## Toast delivery policy
+
+Background progress and normal background completion must use the Activity Center,
+not stacked toast cards. `record_operational_activity()` automatically routes events
+with job references or background-event semantics to `activity_center` delivery.
+
+Toast remains appropriate for immediate interruption feedback:
+
+- validation failures;
+- permission denial;
+- destructive-action outcomes;
+- session/security issues; and
+- foreground warning or error conditions that affect the action the user is currently taking.
+
+Warning or error outcomes tied to a background job still use Activity Center delivery;
+they raise the bell/Attention count instead of creating stacked toasts. Callers may set
+`metadata.feedback_delivery` to `toast` only when a background outcome must interrupt
+the current screen.
+
+`queue_transient_feedback()` always remains toast-based because it is non-persistent
+and represents immediate request feedback. Background events still persist a
+`Notification` row and dispatch `kaori:notifications-changed`, even when no toast is
+rendered.

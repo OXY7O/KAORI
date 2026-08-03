@@ -1,164 +1,192 @@
+{% import "notifications/components/_activity_center_items.html" as center_item %}
+{% set center = activity_center|default({}) %}
+{% set active_jobs = center.get('active_jobs', []) %}
+{% set attention_items = center.get('attention_items', []) %}
+{% set history_items = center.get('history_items', center.get('items', [])) %}
+{% set active_count = center.get('active_count', 0) %}
+{% set attention_count = center.get('attention_count', 0) %}
+{% set unread_count = center.get('unread_count', 0) %}
 <div id="notification-center"
-     class="relative"
+     class="contents"
+     data-activity-center-root
+     data-server-active-count="{{ active_count }}"
      hx-get="{{ url_for('notifications.panel') }}"
-     hx-trigger="kaori:notifications-changed from:body"
+     hx-trigger="kaori:notifications-changed from:body, every 15s"
      hx-target="this"
      hx-swap="outerHTML"
      hx-history="false">
-    <button @click="notificationOpen = !notificationOpen; quickOpen = false; userOpen = false"
+    <button @click="activityCenterTab = 'running'; activityCenterOpen = true; quickOpen = false; userOpen = false"
             type="button"
             class="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary"
-            aria-label="Open notification center"
-            :aria-expanded="notificationOpen.toString()"
+            aria-label="Open running activity"
+            aria-controls="activity-notification-drawer"
+            :aria-expanded="(activityCenterOpen && activityCenterTab === 'running').toString()"
+            title="Running activity">
+        <i data-lucide="activity" data-activity-trigger-icon class="h-5 w-5 {% if active_count %}animate-pulse{% endif %}"></i>
+        <span data-activity-count-badge
+              class="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-kaori-primary px-1 text-xs font-semibold text-white ring-2 ring-surface-card {% if active_count == 0 %}hidden{% endif %}">
+            {{ '9+' if active_count > 9 else active_count }}
+        </span>
+    </button>
+
+    <button @click="activityCenterTab = {{ "'attention'" if unread_count else "'history'" }}; activityCenterOpen = true; quickOpen = false; userOpen = false"
+            type="button"
+            class="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary"
+            aria-label="Open notifications"
+            aria-controls="activity-notification-drawer"
+            :aria-expanded="(activityCenterOpen && activityCenterTab !== 'running').toString()"
             title="Notifications">
         <i data-lucide="bell" class="h-5 w-5"></i>
-        {% if navigation_unread_count|default(0) > 0 %}
-            <span class="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-kaori-primary px-1 text-xs font-semibold text-white ring-2 ring-surface-card">
-                {{ '9+' if navigation_unread_count > 9 else navigation_unread_count }}
+        {% if unread_count > 0 %}
+            <span class="absolute -right-1 -top-1 inline-flex min-h-5 min-w-5 items-center justify-center rounded-full bg-status-critical px-1 text-xs font-semibold text-white ring-2 ring-surface-card">
+                {{ '9+' if unread_count > 9 else unread_count }}
             </span>
         {% endif %}
     </button>
+
     <div x-cloak
-         x-show="notificationOpen"
-         @click.outside="notificationOpen = false"
-         x-transition.origin.top.right
-         class="absolute right-0 mt-3 w-[min(26rem,calc(100vw-2rem))] overflow-hidden rounded-xl border border-outline-default bg-surface-elevated shadow-2xl shadow-black/15">
-        <div class="border-b border-outline-subtle px-4 py-3 ">
-            <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                    <div class="flex items-center gap-2">
-                        <p class="text-sm font-semibold text-content-primary">Notifications</p>
-                        {% if navigation_unread_count|default(0) > 0 %}
-                            <span class="rounded-full bg-kaori-soft px-2 py-0.5 text-xs font-semibold text-kaori-primary">
-                                {{ navigation_unread_count }} unread
-                            </span>
-                        {% endif %}
+         x-show="activityCenterOpen"
+         class="fixed inset-0 z-50"
+         role="dialog"
+         aria-modal="true"
+         aria-label="Activity and notifications">
+        <button type="button"
+                class="absolute inset-0 bg-surface-overlay backdrop-blur-sm"
+                @click="activityCenterOpen = false"
+                aria-label="Close activity center"></button>
+        <aside id="activity-notification-drawer"
+               class="absolute bottom-2 right-2 top-2 flex w-[min(28rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-outline-default bg-surface-elevated shadow-2xl shadow-black/20"
+               x-transition:enter="transition ease-out duration-200"
+               x-transition:enter-start="translate-x-8 opacity-0"
+               x-transition:enter-end="translate-x-0 opacity-100"
+               x-transition:leave="transition ease-in duration-150"
+               x-transition:leave-start="translate-x-0 opacity-100"
+               x-transition:leave-end="translate-x-8 opacity-0">
+            <header class="border-b border-outline-subtle px-4 py-4">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-kaori-primary text-white">
+                            <i data-lucide="panel-right-open" class="h-5 w-5"></i>
+                        </span>
+                        <div class="min-w-0">
+                            <h2 class="text-sm font-semibold text-content-primary">Activity & Notifications</h2>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Running work, attention items, and notification history from one synchronized source.</p>
+                        </div>
                     </div>
-                    <p class="mt-1 text-xs leading-4 text-content-muted">Operational activity and completed actions for your account.</p>
+                    <button type="button"
+                            @click="activityCenterOpen = false"
+                            class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-content-muted transition hover:bg-surface-hover hover:text-content-primary"
+                            aria-label="Close activity center">
+                        <i data-lucide="x" class="h-4 w-4"></i>
+                    </button>
                 </div>
-                {% if navigation_unread_count|default(0) > 0 %}
-                    <form method="POST" action="{{ url_for('notifications.mark_all_read') }}">
-                        {% if csrf_token is defined %}
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        {% endif %}
-                        <button type="submit"
-                                hx-post="{{ url_for('notifications.mark_all_read') }}"
-                                hx-target="#notification-center"
-                                hx-swap="outerHTML"
-                                class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft cursor-pointer disabled:cursor-not-allowed">
-                            <i data-lucide="check-check" class="h-3 w-3"></i>
-                            Mark All Read
-                        </button>
-                    </form>
-                {% endif %}
+            </header>
+
+            <div class="grid grid-cols-3 gap-1 border-b border-outline-subtle bg-surface-subtle p-2">
+                <button type="button"
+                        @click="activityCenterTab = 'running'"
+                        :class="activityCenterTab === 'running' ? 'border-kaori-primary bg-kaori-soft text-kaori-primary' : 'border-transparent text-content-muted hover:bg-surface-card hover:text-content-primary'"
+                        class="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border px-2 text-xs font-semibold transition">
+                    <i data-lucide="activity" class="h-3.5 w-3.5"></i>
+                    Running
+                    <span data-activity-count-label class="rounded-md bg-surface-card px-1.5 py-0.5 text-xs">{{ active_count }}</span>
+                </button>
+                <button type="button"
+                        @click="activityCenterTab = 'attention'"
+                        :class="activityCenterTab === 'attention' ? 'border-kaori-primary bg-kaori-soft text-kaori-primary' : 'border-transparent text-content-muted hover:bg-surface-card hover:text-content-primary'"
+                        class="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border px-2 text-xs font-semibold transition">
+                    <i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i>
+                    Attention
+                    <span class="rounded-md bg-surface-card px-1.5 py-0.5 text-xs">{{ attention_count }}</span>
+                </button>
+                <button type="button"
+                        @click="activityCenterTab = 'history'"
+                        :class="activityCenterTab === 'history' ? 'border-kaori-primary bg-kaori-soft text-kaori-primary' : 'border-transparent text-content-muted hover:bg-surface-card hover:text-content-primary'"
+                        class="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border px-2 text-xs font-semibold transition">
+                    <i data-lucide="history" class="h-3.5 w-3.5"></i>
+                    History
+                    <span class="rounded-md bg-surface-card px-1.5 py-0.5 text-xs">{{ unread_count }}</span>
+                </button>
             </div>
-        </div>
-        <div class="max-h-[28rem] overflow-y-auto p-2">
-            {% if navigation_notifications %}
-                <div class="space-y-1.5">
-                    {% for notification in navigation_notifications %}
-                        {% set is_success = notification.status == 'success' %}
-                        {% set is_warning = notification.status == 'warning' %}
-                        {% set is_error = notification.status == 'error' %}
-                        <article class="rounded-xl border p-3 transition {% if not notification.is_read %}border-kaori-primary/15 bg-kaori-soft{% else %}border-transparent bg-surface-hover{% endif %}">
-                            <div class="flex items-start gap-3">
-                                <span class="mt-0.5 flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl {% if is_success %}bg-status-normal-soft text-status-normal-text{% elif is_warning %}bg-status-warning-soft text-status-warning-text{% elif is_error %}bg-status-critical-soft text-status-critical-text{% else %}bg-status-info-soft text-status-info-text{% endif %}">
-                                    {% if is_success %}
-                                        <i data-lucide="check-circle-2" class="h-4 w-4"></i>
-                                    {% elif is_warning %}
-                                        <i data-lucide="alert-triangle" class="h-4 w-4"></i>
-                                    {% elif is_error %}
-                                        <i data-lucide="x-circle" class="h-4 w-4"></i>
-                                    {% else %}
-                                        <i data-lucide="info" class="h-4 w-4"></i>
-                                    {% endif %}
-                                </span>
-                                <div class="min-w-0 flex-1">
-                                    <div class="flex items-start justify-between gap-3">
-                                        <div class="min-w-0">
-                                            <div class="flex items-center gap-2">
-                                                <p class="truncate text-xs font-semibold text-content-primary">{{ notification.title }}</p>
-                                                {% if not notification.is_read %}
-                                                    <span class="h-2 w-2 flex-shrink-0 rounded-full bg-kaori-primary"></span>
-                                                {% endif %}
-                                            </div>
-                                            <p class="mt-1 text-xs leading-4 text-content-secondary">{{ notification.message }}</p>
-                                        </div>
-                                        <span class="whitespace-nowrap text-xs font-medium text-content-muted">{{ notification.created_label }}</span>
-                                    </div>
-                                    {% if notification.synced_count is not none and notification.total_count is not none %}
-                                        <div class="mt-2 flex flex-wrap gap-1.5">
-                                            <span class="rounded-lg bg-surface-card px-2 py-1 text-xs font-semibold text-content-secondary shadow-sm">
-                                                {{ notification.synced_count }}/{{ notification.total_count }} synced
-                                            </span>
-                                            {% if notification.failed_count %}
-                                                <span class="rounded-lg bg-status-critical-soft px-2 py-1 text-xs font-semibold text-status-critical-text">
-                                                    {{ notification.failed_count }} failed
-                                                </span>
-                                            {% endif %}
-                                            {% if notification.duration_seconds is not none %}
-                                                <span class="rounded-lg bg-surface-card px-2 py-1 text-xs font-semibold text-content-muted shadow-sm">
-                                                    {{ notification.duration_seconds }}s
-                                                </span>
-                                            {% endif %}
-                                        </div>
-                                    {% endif %}
-                                    <div class="mt-2 flex items-center gap-2">
-                                        {% if notification.action_url %}
-                                            <a href="{{ notification.action_url }}"
-                                               class="inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:text-kaori-primary-hover">
-                                                View details
-                                                <i data-lucide="arrow-up-right" class="h-3 w-3"></i>
-                                            </a>
-                                        {% endif %}
-                                        {% if not notification.is_read %}
-                                            <form method="POST"
-                                                  action="{{ url_for('notifications.mark_read', notification_id=notification.id) }}">
-                                                {% if csrf_token is defined %}
-                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                                {% endif %}
-                                                <button type="submit"
-                                                        hx-post="{{ url_for('notifications.mark_read', notification_id=notification.id) }}"
-                                                        hx-target="#notification-center"
-                                                        hx-swap="outerHTML"
-                                                        class="inline-flex items-center gap-1 text-xs font-semibold text-content-muted hover:text-content-primary cursor-pointer disabled:cursor-not-allowed">
-                                                    <i data-lucide="check" class="h-3 w-3"></i>
-                                                    Mark Read
-                                                </button>
-                                            </form>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        </article>
+
+            <div class="min-h-0 flex-1 overflow-y-auto bg-surface-page p-3 [scrollbar-gutter:stable]">
+                <section x-show="activityCenterTab === 'running'" class="space-y-2">
+                    <div data-local-activity-list class="space-y-2"></div>
+                    {% if current_user.has_permission('clusters.sync') and cluster_onboarding.has_clusters %}
+                        <div id="individual-sync-feedback"
+                             class="space-y-2"
+                             hx-get="{{ url_for('cluster.active_individual_sync_statuses') }}"
+                             hx-trigger="load, every 5s"
+                             hx-swap="innerHTML"></div>
+                        <div id="quick-sync-feedback"
+                             class="space-y-2"
+                             hx-get="{{ url_for('cluster.active_sync_all_status') }}"
+                             hx-trigger="load, every 5s"
+                             hx-swap="innerHTML"></div>
+                    {% endif %}
+                    {% for job in active_jobs %}
+                        {% if job.operation not in ['inventory_sync_all', 'inventory_sync_cluster'] %}
+                            {{ center_item.job_item(job, compact=true) }}
+                        {% endif %}
                     {% endfor %}
+                    <div data-running-empty class="rounded-xl border border-dashed border-outline-default bg-surface-card px-4 py-8 text-center {% if active_jobs %}hidden{% endif %}">
+                        <span class="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="circle-check" class="h-5 w-5"></i></span>
+                        <p class="mt-3 text-xs font-semibold text-content-primary">No process is running</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">New background jobs and in-page operations will appear here automatically.</p>
+                    </div>
+                </section>
+
+                <section x-show="activityCenterTab === 'attention'" class="space-y-2">
+                    {% if attention_items %}
+                        {% for notification in attention_items %}
+                            {{ center_item.notification_item(notification, surface='panel', target='#notification-center', compact=true) }}
+                        {% endfor %}
+                    {% else %}
+                        <div class="rounded-xl border border-dashed border-outline-default bg-surface-card px-4 py-8 text-center">
+                            <span class="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-status-normal-soft text-status-normal-text"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
+                            <p class="mt-3 text-xs font-semibold text-content-primary">Nothing needs attention</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Warnings and failed operations will be collected here.</p>
+                        </div>
+                    {% endif %}
+                </section>
+
+                <section x-show="activityCenterTab === 'history'" class="space-y-2">
+                    {% if history_items %}
+                        {% for notification in history_items %}
+                            {{ center_item.notification_item(notification, surface='panel', target='#notification-center', compact=true) }}
+                        {% endfor %}
+                    {% else %}
+                        <div class="rounded-xl border border-dashed border-outline-default bg-surface-card px-4 py-8 text-center">
+                            <span class="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="bell-off" class="h-5 w-5"></i></span>
+                            <p class="mt-3 text-xs font-semibold text-content-primary">No notifications yet</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">Completed operations and account notifications will appear here.</p>
+                        </div>
+                    {% endif %}
+                </section>
+            </div>
+
+            <footer class="flex items-center justify-between gap-3 border-t border-outline-subtle bg-surface-card px-4 py-3">
+                <div class="min-w-0 text-xs text-content-muted">
+                    <span data-activity-count-label>{{ active_count }}</span> running · {{ unread_count }} unread
                 </div>
-            {% else %}
-                <div class="flex min-h-52 flex-col items-center justify-center px-6 text-center">
-                    <span class="flex h-12 w-12 items-center justify-center rounded-lg bg-surface-hover text-content-muted">
-                        <i data-lucide="bell-off" class="h-5 w-5"></i>
-                    </span>
-                    <p class="mt-3 text-xs font-semibold text-content-primary">No notifications yet</p>
-                    <p class="mt-1 max-w-64 text-xs leading-5 text-content-muted">
-                        Completed sync actions and other operational activity will appear here.
-                    </p>
+                <div class="flex items-center gap-3">
+                    {% if unread_count %}
+                        <form method="POST" action="{{ url_for('notifications.mark_all_read', surface='panel') }}">
+                            {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
+                            <button type="submit"
+                                    hx-post="{{ url_for('notifications.mark_all_read', surface='panel') }}"
+                                    hx-target="#notification-center"
+                                    hx-swap="outerHTML"
+                                    class="text-xs font-semibold text-content-muted hover:text-content-primary">Mark all read</button>
+                        </form>
+                    {% endif %}
+                    <a href="{{ url_for('notifications.center') }}"
+                       @click="activityCenterOpen = false"
+                       class="inline-flex items-center gap-1 text-xs font-semibold text-kaori-primary hover:text-kaori-primary-hover">
+                        View all <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
+                    </a>
                 </div>
-            {% endif %}
-        </div>
-        <div class="flex items-center justify-between gap-3 border-t border-outline-subtle bg-surface-hover px-4 py-3  ">
-            <p class="text-xs font-medium text-content-muted">
-                Latest {{ navigation_notifications|length }} of {{ navigation_total_count|default(navigation_notifications|length) }} activities
-            </p>
-            {% if current_user.has_permission('settings.view_operational_activity') %}
-                <a href="{{ url_for('notifications.activity_log') }}"
-                   @click="notificationOpen = false"
-                   class="inline-flex items-center gap-1.5 text-xs font-semibold text-kaori-primary hover:text-kaori-primary-hover">
-                    View audit log
-                    <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
-                </a>
-            {% else %}
-                <span class="inline-flex items-center gap-1 text-xs font-semibold text-content-muted">Personal notifications</span>
-            {% endif %}
-        </div>
+            </footer>
+        </aside>
     </div>
 </div>

@@ -9,6 +9,7 @@
         action_icon=operation_feedback.action_icon,
         notification_saved=operation_feedback.notification_saved,
         notification_context=operation_feedback.notification_context,
+        delivery=operation_feedback.delivery|default('toast'),
         toast_oob=true
         %}
         {% include "components/navigation/_quick_sync_result.html" %}

@@ -18,6 +18,7 @@ def build_quick_action_feedback(
     action_icon: str = 'arrow-up-right',
     completed_label: str = 'Completed just now',
     notification_saved: bool = True,
+    delivery: str = 'toast',
 ) -> dict[str, Any]:
     """Build the shared top-right operational result payload."""
     return {
@@ -30,6 +31,7 @@ def build_quick_action_feedback(
         'action_icon': action_icon,
         'completed_label': completed_label,
         'notification_saved': notification_saved,
+        'delivery': delivery if delivery in {'toast', 'activity_center'} else 'toast',
     }
 
 

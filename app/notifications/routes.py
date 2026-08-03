@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from flask import Blueprint, render_template, request
+from flask import Blueprint, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user, login_required
 
+from app.notifications.constants import ACTIVITY_CENTER_PAGE_LIMIT
 from app.notifications.service import (
+    get_activity_center_context,
     get_navigation_notification_context,
     get_notification_activity_context,
     mark_all_notifications_read,
@@ -18,6 +20,8 @@ notifications_bp = Blueprint(
     url_prefix='/notifications',
 )
 
+_ALLOWED_CENTER_VIEWS = frozenset({'running', 'attention', 'history'})
+
 
 def _request_int(
     name: str,
@@ -29,17 +33,71 @@ def _request_int(
         return default
 
 
+def _center_view() -> str:
+    requested_view = request.args.get('view', 'running').strip().lower()
+    return requested_view if requested_view in _ALLOWED_CENTER_VIEWS else 'running'
+
+
 def _render_notification_center() -> str:
     context = get_navigation_notification_context(
         user_id=current_user.id,
+        include_all_jobs=current_user.has_permission('jobs.view'),
     )
 
     return render_template(
         'components/navigation/_notification_center.html',
-        navigation_notifications=context['items'],
-        navigation_unread_count=context['unread_count'],
-        navigation_total_count=context['total_count'],
-        navigation_display_limit=context['display_limit'],
+        activity_center=context,
+    )
+
+
+def _render_center_page_content() -> str:
+    context = get_activity_center_context(
+        user_id=current_user.id,
+        job_limit=ACTIVITY_CENTER_PAGE_LIMIT,
+        notification_limit=ACTIVITY_CENTER_PAGE_LIMIT,
+        include_all_jobs=current_user.has_permission('jobs.view'),
+    )
+    return render_template(
+        'notifications/partials/_center_page_content.html',
+        activity_center=context,
+        selected_view=_center_view(),
+    )
+
+
+def _render_mutation_response() -> ResponseReturnValue:
+    surface = request.args.get('surface', 'panel').strip().lower()
+    if request.headers.get('HX-Request') == 'true':
+        if surface == 'page':
+            response = make_response(_render_center_page_content())
+            response.headers['HX-Trigger-After-Swap'] = 'kaori:notifications-changed'
+            return response
+        return _render_notification_center()
+
+    next_url = (request.form.get('next') or request.referrer or '').strip()
+    if not next_url.startswith('/') or next_url.startswith('//'):
+        next_url = url_for('notifications.center')
+    return redirect(next_url)
+
+
+@notifications_bp.get('/')
+@login_required
+def center() -> ResponseReturnValue:
+    context = get_activity_center_context(
+        user_id=current_user.id,
+        job_limit=ACTIVITY_CENTER_PAGE_LIMIT,
+        notification_limit=ACTIVITY_CENTER_PAGE_LIMIT,
+        include_all_jobs=current_user.has_permission('jobs.view'),
+    )
+    if request.headers.get('HX-Request') == 'true':
+        return render_template(
+            'notifications/partials/_center_page_content.html',
+            activity_center=context,
+            selected_view=_center_view(),
+        )
+    return render_template(
+        'notifications/index.html',
+        activity_center=context,
+        selected_view=_center_view(),
     )
 
 
@@ -81,8 +139,7 @@ def mark_read(notification_id: int) -> ResponseReturnValue:
         notification_id=notification_id,
         user_id=current_user.id,
     )
-
-    return _render_notification_center()
+    return _render_mutation_response()
 
 
 @notifications_bp.post('/read-all')
@@ -91,5 +148,4 @@ def mark_all_read() -> ResponseReturnValue:
     mark_all_notifications_read(
         user_id=current_user.id,
     )
-
-    return _render_notification_center()
+    return _render_mutation_response()

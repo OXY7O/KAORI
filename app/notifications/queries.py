@@ -4,11 +4,22 @@ from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import or_
+from sqlalchemy.orm import joinedload
 
 from app.extensions.db import db
+from app.jobs.presentation import present_job_execution
+from app.models.job import JobExecution, JobExecutionSubscriber
 from app.models.notification import Notification
 from app.models.user import User
-from app.notifications.constants import ACTIVITY_PER_PAGE_OPTIONS, ALLOWED_STATUSES, NAVIGATION_NOTIFICATION_LIMIT
+from app.notifications.constants import (
+    ACTIVITY_CENTER_ACTIVE_JOB_STATUSES,
+    ACTIVITY_CENTER_ATTENTION_STATUSES,
+    ACTIVITY_CENTER_JOB_LIMIT,
+    ACTIVITY_CENTER_NOTIFICATION_LIMIT,
+    ACTIVITY_PER_PAGE_OPTIONS,
+    ALLOWED_STATUSES,
+    NAVIGATION_NOTIFICATION_LIMIT,
+)
 from app.notifications.event_catalog import event_label
 from app.notifications.presentation import _serialize_notification, _user_label
 
@@ -17,37 +28,119 @@ def get_navigation_notification_context(
     *,
     user_id: int,
     limit: int = NAVIGATION_NOTIFICATION_LIMIT,
+    include_all_jobs: bool = False,
 ) -> dict[str, Any]:
-    normalized_limit = max(1, min(limit, NAVIGATION_NOTIFICATION_LIMIT))
-    base_query = Notification.query.filter(
+    return get_activity_center_context(
+        user_id=user_id,
+        job_limit=ACTIVITY_CENTER_JOB_LIMIT,
+        notification_limit=limit,
+        include_all_jobs=include_all_jobs,
+    )
+
+
+def _user_notification_query(user_id: int):
+    return Notification.query.filter(
         Notification.user_id == user_id,
         Notification.event_type != 'authentication',
     )
+
+
+def _user_job_query(user_id: int):
+    return JobExecution.query.filter(
+        or_(
+            JobExecution.requested_by_user_id == user_id,
+            JobExecution.subscribers.any(
+                JobExecutionSubscriber.user_id == user_id,
+            ),
+        )
+    )
+
+
+def get_activity_center_context(
+    *,
+    user_id: int,
+    job_limit: int = ACTIVITY_CENTER_JOB_LIMIT,
+    notification_limit: int = ACTIVITY_CENTER_NOTIFICATION_LIMIT,
+    include_all_jobs: bool = False,
+) -> dict[str, Any]:
+    """Return one synchronized source for the top drawer and notification page."""
+
+    normalized_job_limit = max(1, min(job_limit, 50))
+    normalized_notification_limit = max(
+        1,
+        min(notification_limit, 50),
+    )
+    base_query = _user_notification_query(user_id)
     unread_count = base_query.filter(
         Notification.read_at.is_(None),
     ).count()
     total_count = base_query.count()
 
-    notifications = (
+    history_notifications = (
         base_query.order_by(
             Notification.created_at.desc(),
             Notification.id.desc(),
         )
-        .limit(normalized_limit)
+        .limit(normalized_notification_limit)
         .all()
     )
 
+    attention_query = base_query.filter(
+        Notification.status.in_(ACTIVITY_CENTER_ATTENTION_STATUSES),
+        Notification.read_at.is_(None),
+    )
+    attention_count = attention_query.count()
+    attention_notifications = (
+        attention_query.order_by(
+            Notification.created_at.desc(),
+            Notification.id.desc(),
+        )
+        .limit(normalized_notification_limit)
+        .all()
+    )
+
+    active_query = (
+        JobExecution.query if include_all_jobs else _user_job_query(user_id)
+    ).filter(
+        JobExecution.status.in_(ACTIVITY_CENTER_ACTIVE_JOB_STATUSES),
+    )
+    active_count = active_query.count()
+    active_jobs = (
+        active_query.options(joinedload(JobExecution.requested_by))
+        .order_by(
+            JobExecution.updated_at.desc(),
+            JobExecution.id.desc(),
+        )
+        .limit(normalized_job_limit)
+        .all()
+    )
+
+    history_items = [
+        _serialize_notification(
+            notification,
+            include_metadata=False,
+        )
+        for notification in history_notifications
+    ]
+    attention_items = [
+        _serialize_notification(
+            notification,
+            include_metadata=False,
+        )
+        for notification in attention_notifications
+    ]
+
     return {
-        'items': [
-            _serialize_notification(
-                notification,
-                include_metadata=False,
-            )
-            for notification in notifications
-        ],
+        'items': history_items,
+        'history_items': history_items,
+        'attention_items': attention_items,
+        'active_jobs': [present_job_execution(job) for job in active_jobs],
+        'active_count': active_count,
+        'attention_count': attention_count,
         'unread_count': unread_count,
         'total_count': total_count,
-        'display_limit': normalized_limit,
+        'display_limit': normalized_notification_limit,
+        'job_display_limit': normalized_job_limit,
     }
 
 

@@ -62,19 +62,12 @@
                         action_label=queued_quick_action_feedback.action_label,
                         action_icon=queued_quick_action_feedback.action_icon,
                         completed_label=queued_quick_action_feedback.completed_label,
-                        notification_saved=queued_quick_action_feedback.notification_saved
+                        notification_saved=queued_quick_action_feedback.notification_saved,
+                        delivery=queued_quick_action_feedback.delivery|default('toast')
                         %}
                         {% include "components/navigation/_quick_sync_result.html" %}
                     {% endwith %}
                 {% endif %}
-            </div>
-            <div id="individual-sync-feedback"
-                 class="flex w-full flex-col gap-3"
-                 {% if current_user.is_authenticated and current_user.has_permission('clusters.sync') and cluster_onboarding.has_clusters %} hx-get="{{ url_for('cluster.active_individual_sync_statuses') }}" hx-trigger="load" hx-swap="innerHTML" {% endif %}>
-            </div>
-            <div id="quick-sync-feedback"
-                 class="w-full"
-                 {% if current_user.is_authenticated and current_user.has_permission('clusters.sync') and cluster_onboarding.has_clusters %} hx-get="{{ url_for('cluster.active_sync_all_status') }}" hx-trigger="load" hx-swap="innerHTML" {% endif %}>
             </div>
         </div>
         {% if current_user.is_authenticated %}
@@ -137,6 +130,7 @@
 
             document.addEventListener('DOMContentLoaded', () => {
                 window.renderKaoriIcons()
+                window.renderLocalOperationalActivities?.()
             })
 
             document.body.addEventListener('htmx:afterSwap', (event) => {
@@ -145,6 +139,7 @@
                 }
 
                 window.renderKaoriIcons()
+                window.renderLocalOperationalActivities?.()
             })
 
             window.prepareInventoryDetail = (kind, id, button) => {
@@ -199,85 +194,99 @@
                 return true
             }
 
-            window.showOperationalProgressToast = (title, message) => {
-                const container = document.getElementById('operational-action-feedback')
+            const localOperationalActivities = new Map()
+            const operationalActivityByRequest = new WeakMap()
+            const operationalRefreshInFlight = new Map()
 
-                if (!container) {
-                    return null
-                }
-
-                const toastId = `operational-progress-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
-                const toast = document.createElement('div')
-                toast.id = toastId
-                toast.setAttribute('data-quick-action-toast', '')
-                toast.setAttribute('data-operational-progress-toast', '')
-                toast.setAttribute('role', 'status')
-                toast.setAttribute('aria-live', 'polite')
-                toast.className = 'quick-action-toast pointer-events-auto w-full'
-
+            const buildLocalActivityNode = (activity) => {
                 const card = document.createElement('article')
-                card.className = 'relative isolate overflow-hidden rounded-2xl border border-outline-default bg-surface-elevated shadow-xl shadow-black/10'
-
-                const content = document.createElement('div')
-                content.className = 'p-4'
+                card.className = 'rounded-xl border border-kaori-primary/20 bg-kaori-soft p-3 shadow-sm'
+                card.setAttribute('data-local-activity-id', activity.id)
 
                 const row = document.createElement('div')
                 row.className = 'flex items-start gap-3'
 
-                const iconWrap = document.createElement('span')
-                iconWrap.className = 'mt-0.5 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary'
-                iconWrap.innerHTML = '<i data-lucide="loader-circle" class="h-5 w-5 animate-spin"></i>'
+                const icon = document.createElement('span')
+                icon.className = 'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-primary text-white'
+                icon.innerHTML = '<i data-lucide="loader-circle" class="h-4 w-4 animate-spin"></i>'
 
                 const copy = document.createElement('div')
-                copy.className = 'min-w-0 flex-1 pr-8'
+                copy.className = 'min-w-0 flex-1'
 
-                const heading = document.createElement('p')
-                heading.className = 'text-sm font-semibold text-content-primary'
-                heading.textContent = title || 'Operation in progress'
+                const header = document.createElement('div')
+                header.className = 'flex items-start justify-between gap-3'
 
-                const description = document.createElement('p')
-                description.className = 'mt-1 text-xs font-semibold leading-5 text-content-secondary'
-                description.textContent = message || 'KAORI is processing the requested operation.'
+                const title = document.createElement('p')
+                title.className = 'truncate text-xs font-semibold text-content-primary'
+                title.textContent = activity.title
 
-                const closeButton = document.createElement('button')
-                closeButton.type = 'button'
-                closeButton.setAttribute('data-quick-action-toast-close', '')
-                closeButton.setAttribute('aria-label', 'Close operational progress')
-                closeButton.className = 'absolute right-3 top-3 z-20 rounded-lg p-1 text-content-muted transition hover:bg-kaori-soft hover:text-kaori-primary'
-                closeButton.innerHTML = '<i data-lucide="x" class="h-4 w-4"></i>'
+                const state = document.createElement('span')
+                state.className = 'inline-flex min-h-6 shrink-0 items-center rounded-md bg-surface-card px-2 py-1 text-xs font-semibold text-kaori-primary'
+                state.textContent = 'In progress'
 
-                const progressTrack = document.createElement('div')
-                progressTrack.className = 'mt-4 h-1.5 overflow-hidden rounded-full bg-kaori-soft/70'
-                progressTrack.innerHTML = '<div class="notification-progress-indeterminate h-full rounded-full bg-kaori-primary"></div>'
+                const message = document.createElement('p')
+                message.className = 'mt-1 text-xs leading-5 text-content-secondary'
+                message.textContent = activity.message
 
-                copy.append(heading, description)
-                row.append(iconWrap, copy)
-                content.append(row, progressTrack)
-                card.append(content, closeButton)
-                toast.append(card)
-                container.append(toast)
+                const progress = document.createElement('div')
+                progress.className = 'mt-3 h-1.5 overflow-hidden rounded-full bg-surface-card'
+                progress.innerHTML = '<div class="notification-progress-indeterminate h-full rounded-full bg-kaori-primary"></div>'
 
-                if (window.lucide) {
-                    window.lucide.createIcons()
-                }
-
-                return toastId
+                header.append(title, state)
+                copy.append(header, message, progress)
+                row.append(icon, copy)
+                card.append(row)
+                return card
             }
 
-            window.dismissOperationalProgressToast = (toastId) => {
-                if (!toastId) {
+            window.renderLocalOperationalActivities = () => {
+                const centerRoot = document.querySelector('[data-activity-center-root]')
+                const serverCount = Number.parseInt(centerRoot?.dataset.serverActiveCount || '0', 10) || 0
+                const localCount = localOperationalActivities.size
+                const totalCount = serverCount + localCount
+
+                document.querySelectorAll('[data-local-activity-list]').forEach((list) => {
+                    list.replaceChildren(...Array.from(localOperationalActivities.values(), buildLocalActivityNode))
+                })
+
+                document.querySelectorAll('[data-activity-count-badge]').forEach((badge) => {
+                    badge.textContent = totalCount > 9 ? '9+' : String(totalCount)
+                    badge.classList.toggle('hidden', totalCount === 0)
+                })
+
+                document.querySelectorAll('[data-activity-count-label]').forEach((label) => {
+                    label.textContent = String(totalCount)
+                })
+
+                document.querySelectorAll('[data-running-empty]').forEach((emptyState) => {
+                    emptyState.classList.toggle('hidden', totalCount > 0)
+                })
+
+                document.querySelectorAll('[data-activity-trigger-icon]').forEach((icon) => {
+                    icon.classList.toggle('animate-pulse', totalCount > 0)
+                })
+
+                window.renderKaoriIcons?.()
+            }
+
+            window.startOperationalActivity = (title, message) => {
+                const activityId = `local-activity-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+                localOperationalActivities.set(activityId, {
+                    id: activityId,
+                    title: title || 'Operation in progress',
+                    message: message || 'KAORI is processing the requested operation.',
+                })
+                window.renderLocalOperationalActivities()
+                return activityId
+            }
+
+            window.finishOperationalActivity = (activityId) => {
+                if (!activityId) {
                     return
                 }
-
-                const toast = document.getElementById(toastId)
-
-                if (toast?.matches('[data-operational-progress-toast]')) {
-                    toast.remove()
-                }
+                localOperationalActivities.delete(activityId)
+                window.renderLocalOperationalActivities()
             }
-
-            const operationalProgressToastByRequest = new WeakMap()
-            const operationalRefreshInFlight = new Map()
 
             window.refreshOperationalTable = async (url) => {
                 if (!url) {
@@ -346,42 +355,37 @@
                     return
                 }
 
-                const existingToastId = operationalProgressToastByRequest.get(request)
-                if (existingToastId) {
-                    window.dismissOperationalProgressToast(existingToastId)
+                const existingActivityId = operationalActivityByRequest.get(request)
+                if (existingActivityId) {
+                    window.finishOperationalActivity(existingActivityId)
                 }
 
-                const toastId = window.showOperationalProgressToast(
+                const activityId = window.startOperationalActivity(
                     progressOwner.dataset.operationalProgressTitle,
                     progressOwner.dataset.operationalProgressMessage,
                 )
-
-                if (toastId) {
-                    operationalProgressToastByRequest.set(request, toastId)
-                    request.__kaoriOperationalProgressToastId = toastId
-                    progressOwner.dataset.operationalProgressToastId = toastId
-                }
+                operationalActivityByRequest.set(request, activityId)
+                request.__kaoriOperationalActivityId = activityId
+                progressOwner.dataset.operationalActivityId = activityId
             })
 
             const finishOperationalProgressRequest = (event) => {
                 const request = event.detail?.xhr
                 const requestElement = event.detail?.elt
                 const progressOwner = requestElement?.closest?.('[data-operational-progress-title]')
-                const toastId = request
-                    ? operationalProgressToastByRequest.get(request) || request.__kaoriOperationalProgressToastId
-                    : progressOwner?.dataset.operationalProgressToastId
+                const activityId = request
+                    ? operationalActivityByRequest.get(request) || request.__kaoriOperationalActivityId
+                    : progressOwner?.dataset.operationalActivityId
 
-                if (toastId) {
-                    window.dismissOperationalProgressToast(toastId)
-                }
+                window.finishOperationalActivity(activityId)
 
                 if (request) {
-                    operationalProgressToastByRequest.delete(request)
-                    delete request.__kaoriOperationalProgressToastId
+                    operationalActivityByRequest.delete(request)
+                    delete request.__kaoriOperationalActivityId
                 }
 
                 if (progressOwner) {
-                    delete progressOwner.dataset.operationalProgressToastId
+                    delete progressOwner.dataset.operationalActivityId
                 }
             }
 

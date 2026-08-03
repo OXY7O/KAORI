@@ -2,13 +2,12 @@
      hx-get="{{ url_for('cluster.individual_sync_status', task_id=sync.task_id) }}"
      hx-trigger="load delay:2s"
      hx-swap="outerHTML"
-     data-quick-action-toast
      role="status"
      aria-live="polite"
-     class="quick-action-toast pointer-events-auto relative overflow-hidden rounded-2xl border border-outline-default bg-surface-elevated shadow-xl shadow-black/10">
+     class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
     <div class="p-4">
         <div class="flex items-start gap-3">
-            <span class="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary">
+            <span class="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
                 <i data-lucide="refresh-cw" class="h-5 w-5 animate-spin"></i>
             </span>
             <div class="min-w-0 flex-1">

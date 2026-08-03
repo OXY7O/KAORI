@@ -1,6 +1,8 @@
 {% set is_success = status == 'success' %}
 {% set is_warning = status == 'warning' %}
 {% set is_error = status == 'error' %}
+{% set suppress_toast = delivery|default('toast') == 'activity_center' and notification_saved|default(true) %}
+{% if not suppress_toast %}
 {% if toast_oob|default(false) %}
     <div hx-swap-oob="beforeend:#operational-action-feedback">
     {% endif %}
@@ -122,6 +124,7 @@
     {% if toast_oob|default(false) %}
     </div>
 {% endif %}
-{% if notification_context is defined %}
+{% endif %}
+{% if notification_context is defined or notification_saved|default(false) %}
     <script>document.body.dispatchEvent(new CustomEvent('kaori:notifications-changed'));</script>
 {% endif %}

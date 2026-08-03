@@ -5,7 +5,12 @@ from typing import Any
 
 from app.extensions.db import db
 from app.models.notification import Notification
-from app.notifications.constants import ALLOWED_STATUSES, NAVIGATION_NOTIFICATION_LIMIT
+from app.notifications.constants import (
+    ACTIVITY_CENTER_JOB_LIMIT,
+    ACTIVITY_CENTER_NOTIFICATION_LIMIT,
+    ALLOWED_STATUSES,
+    NAVIGATION_NOTIFICATION_LIMIT,
+)
 from app.notifications.feedback import (
     build_quick_action_feedback,
 )
@@ -16,6 +21,9 @@ from app.notifications.feedback import (
     queue_quick_action_feedback as _queue_quick_action_feedback,
 )
 from app.notifications.normalization import standardize_activity_text
+from app.notifications.queries import (
+    get_activity_center_context as _get_activity_center_context,
+)
 from app.notifications.queries import (
     get_navigation_notification_context as _get_navigation_notification_context,
 )
@@ -31,6 +39,53 @@ from app.notifications.queries import (
 from app.notifications.writer import persist_notification
 
 logger = logging.getLogger(__name__)
+
+_BACKGROUND_EVENT_HINTS = (
+    'queued',
+    'already_running',
+    'sync',
+    'materializ',
+    'runtime_refresh',
+    'validation',
+    'schedule',
+    'report_generation',
+    'archive',
+    'cleanup',
+)
+
+
+def _feedback_delivery(
+    *,
+    event_type: str,
+    status: str,
+    metadata: dict[str, Any] | None,
+) -> str:
+    """Keep background progress in the Activity Center instead of toast stacks."""
+
+    normalized_event = event_type.strip().lower()
+    event_metadata = metadata or {}
+    explicit_delivery = str(
+        event_metadata.get('feedback_delivery') or ''
+    ).strip().lower()
+    if explicit_delivery in {'toast', 'activity_center'}:
+        return explicit_delivery
+
+    has_job_reference = any(
+        event_metadata.get(key)
+        for key in (
+            'task_id',
+            'job_id',
+            'job_execution_id',
+            'celery_task_id',
+        )
+    )
+    is_background_event = has_job_reference or any(
+        hint in normalized_event for hint in _BACKGROUND_EVENT_HINTS
+    )
+    if is_background_event:
+        return 'activity_center'
+
+    return 'toast'
 
 
 def _normalize_notification_content(
@@ -172,6 +227,11 @@ def record_operational_activity(
         action_label=action_label,
         action_icon=action_icon,
         notification_saved=notification_saved,
+        delivery=_feedback_delivery(
+            event_type=event_type,
+            status=normalized_status,
+            metadata=metadata,
+        ),
     )
 
     if queue_feedback:
@@ -212,6 +272,7 @@ def queue_transient_feedback(
         action_label=action_label,
         action_icon=action_icon,
         notification_saved=False,
+        delivery='toast',
     )
     _queue_quick_action_feedback(feedback)
     return feedback
@@ -221,9 +282,31 @@ def get_navigation_notification_context(
     *,
     user_id: int,
     limit: int = NAVIGATION_NOTIFICATION_LIMIT,
+    include_all_jobs: bool = False,
 ) -> dict[str, Any]:
     """Build the notification-center context for one user."""
-    return _get_navigation_notification_context(user_id=user_id, limit=limit)
+    return _get_navigation_notification_context(
+        user_id=user_id,
+        limit=limit,
+        include_all_jobs=include_all_jobs,
+    )
+
+
+def get_activity_center_context(
+    *,
+    user_id: int,
+    job_limit: int = ACTIVITY_CENTER_JOB_LIMIT,
+    notification_limit: int = ACTIVITY_CENTER_NOTIFICATION_LIMIT,
+    include_all_jobs: bool = False,
+) -> dict[str, Any]:
+    """Build the shared Activity Center context for drawer and full page."""
+
+    return _get_activity_center_context(
+        user_id=user_id,
+        job_limit=job_limit,
+        notification_limit=notification_limit,
+        include_all_jobs=include_all_jobs,
+    )
 
 
 def get_notification_activity_context(
