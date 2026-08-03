@@ -6,6 +6,7 @@ ROOT = Path(__file__).resolve().parents[3]
 OVERVIEW = ROOT / 'app' / 'templates' / 'reports' / 'overview' / 'partials'
 OVERVIEW_SERVICE = ROOT / 'app' / 'reports' / 'overview' / 'service.py'
 GENERATED_SERVICE = ROOT / 'app' / 'reports' / 'generated' / 'service.py'
+STORAGE_SERVICE = ROOT / 'app' / 'reports' / 'storage' / 'service.py'
 GENERATED_DETAIL = ROOT / 'app' / 'templates' / 'reports' / 'generated' / 'detail.html'
 EXPORT_SERVICE = ROOT / 'app' / 'reports' / 'export' / 'service.py'
 
@@ -29,17 +30,20 @@ def test_recent_report_names_and_reporting_capability_have_visible_icons() -> No
 
 
 def test_report_detail_storage_probe_is_failure_tolerant() -> None:
-    service = read(GENERATED_SERVICE)
+    generated_service = read(GENERATED_SERVICE)
+    storage_service = read(STORAGE_SERVICE)
 
-    assert 'def _probe_report_file(' in service
-    assert 'parse_report_storage_uri(' in service
-    assert 'except Exception:' in service
-    assert "'reachable': False" in service
-    assert "'state': 'unavailable'" in service
-    assert 'current_app.logger.warning(' in service
-    assert 'def get_report_artifact_access_notice(' in service
-    assert 'Artifact Storage Is Temporarily Unavailable' in service
-    assert 'Download is paused to avoid a failed request.' in service
+    assert 'def _probe_report_file(' in generated_service
+    assert 'return probe_report_artifact(file_path)' in generated_service
+    assert 'def probe_report_artifact(' in storage_service
+    assert 'parse_report_storage_uri(' in storage_service
+    assert 'except Exception:' in storage_service
+    assert "'reachable': False" in storage_service
+    assert "'state': 'unavailable'" in storage_service
+    assert 'current_app.logger.warning(' in storage_service
+    assert 'def get_report_artifact_access_notice(' in generated_service
+    assert 'Artifact Storage Is Temporarily Unavailable' in generated_service
+    assert 'Download is paused to avoid a failed request.' in generated_service
 
 
 def test_report_detail_renders_friendly_storage_notice_instead_of_raw_error() -> None:

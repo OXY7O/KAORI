@@ -10,6 +10,7 @@ from app.rbac.decorators import permission_required
 from app.reports.web import render_reports_unavailable
 from app.reports.storage.service import (
     build_report_cleanup_dry_run,
+    clear_report_storage_status_cache,
     get_report_storage_payload,
     scan_report_storage_integrity,
     verify_active_report_storage,
@@ -23,7 +24,8 @@ def storage() -> ResponseReturnValue:
     if request.args.get('cleanup_dry_run') == '1':
         try:
             payload = get_report_storage_payload()
-            payload['cleanup_dry_run_result'] = build_report_cleanup_dry_run()
+            if payload['storage_actions_enabled']:
+                payload['cleanup_dry_run_result'] = build_report_cleanup_dry_run()
         except Exception:
             logger.exception('Report storage cleanup preview failed.')
             return render_reports_unavailable(
@@ -37,7 +39,8 @@ def storage() -> ResponseReturnValue:
     if request.args.get('integrity') == '1':
         try:
             payload = get_report_storage_payload()
-            payload['integrity_result'] = scan_report_storage_integrity()
+            if payload['storage_actions_enabled']:
+                payload['integrity_result'] = scan_report_storage_integrity()
         except Exception:
             logger.exception('Report storage integrity scan failed.')
             return render_reports_unavailable(
@@ -56,8 +59,9 @@ def storage() -> ResponseReturnValue:
         metadata: dict[str, object] = {'outcome': 'failed'}
 
         try:
+            clear_report_storage_status_cache()
             result = verify_active_report_storage()
-        except Exception as exc:
+        except Exception:
             logger.exception('Report storage verification failed.')
             detail = 'The active report storage backend did not respond. Review its endpoint, credentials, and network connectivity.'
         else:

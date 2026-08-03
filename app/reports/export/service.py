@@ -13,6 +13,8 @@ from app.reports.export.formatting import slugify
 from app.reports.storage.naming import build_report_object_key
 from app.reports.storage.service import (
     build_report_download_path,
+    get_report_storage_backend_status,
+    probe_report_artifact,
     report_file_exists,
     save_report_file,
 )
@@ -27,10 +29,18 @@ def generate_report_artifact(
     if report is None:
         return False, 'Report not found.'
 
+    backend_status = get_report_storage_backend_status()
+    if not bool(backend_status.get('write_available', False)):
+        return (
+            False,
+            'Report storage is temporarily unavailable. The report request remains unchanged; restore storage connectivity and retry generation.',
+        )
+
     previous_status = report.status
     previous_file_path = report.file_path
     previous_file_size_bytes = report.file_size_bytes
-    previous_artifact_available = bool(previous_file_path) and report_file_exists(previous_file_path)
+    previous_artifact_access = probe_report_artifact(previous_file_path)
+    previous_artifact_available = bool(previous_artifact_access.get('exists', False))
 
     staging_path: Path | None = None
     artifact_format = None

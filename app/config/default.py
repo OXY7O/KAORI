@@ -770,6 +770,33 @@ class Config:
         False,
     )
 
+    # Fail fast when S3/MinIO is disconnected so report pages degrade gracefully
+    # instead of waiting for long botocore retry chains.
+    REPORT_S3_CONNECT_TIMEOUT_SECONDS = _bounded_env_int(
+        'REPORT_S3_CONNECT_TIMEOUT_SECONDS',
+        2,
+        1,
+        30,
+    )
+    REPORT_S3_READ_TIMEOUT_SECONDS = _bounded_env_int(
+        'REPORT_S3_READ_TIMEOUT_SECONDS',
+        3,
+        1,
+        60,
+    )
+    REPORT_S3_MAX_ATTEMPTS = _bounded_env_int(
+        'REPORT_S3_MAX_ATTEMPTS',
+        1,
+        1,
+        5,
+    )
+    REPORT_STORAGE_STATUS_CACHE_SECONDS = _bounded_env_int(
+        'REPORT_STORAGE_STATUS_CACHE_SECONDS',
+        15,
+        0,
+        300,
+    )
+
     # Report artifact retention and cleanup policy. MVP2 defines the policy and
     # exposes dry-run visibility in the UI; destructive deletion remains guarded
     # unless REPORT_DESTRUCTIVE_CLEANUP_ENABLED is explicitly enabled later.

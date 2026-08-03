@@ -22,7 +22,10 @@ from app.reports.storage.health import (
     build_local_storage_health,
     build_s3_storage_health,
 )
-from app.reports.storage.service import get_configured_storage_backend_name
+from app.reports.storage.service import (
+    get_configured_storage_backend_name,
+    get_report_storage_backend_status,
+)
 
 PENDING_REPORT_STATUSES = [
     'requested',
@@ -353,12 +356,14 @@ def get_storage_context() -> dict[str, Any]:
     backend_name = get_configured_storage_backend_name()
     local_health = build_local_storage_health()
     s3_health = build_s3_storage_health()
+    backend_status = get_report_storage_backend_status(backend_name)
 
     if backend_name == 's3':
-        status = 'selected'
-        display_status = 'S3-Compatible Storage'
-        tone = 'green'
-        description = 'S3-compatible object storage is selected as the report artifact backend. Detailed bucket, endpoint, credential, and datastore validation is handled on the Storage page.'
+        is_available = bool(backend_status.get('available', False))
+        status = 'selected' if is_available else 'unavailable'
+        display_status = 'S3 Storage Connected' if is_available else 'S3 Storage Disconnected'
+        tone = str(backend_status.get('tone', 'amber'))
+        description = str(backend_status.get('description') or '')
         active_detail = 'S3-compatible object storage'
     else:
         root_writable = bool(local_health.get('root_writable', False))
@@ -382,6 +387,7 @@ def get_storage_context() -> dict[str, Any]:
         'active_detail': active_detail,
         'local': local_health,
         's3': s3_health,
+        'backend_status': backend_status,
     }
 
 

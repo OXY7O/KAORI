@@ -21,6 +21,9 @@ class S3ArtifactStorage:
         secret_access_key: str | None = None,
         prefix: str | None = None,
         force_path_style: bool = False,
+        connect_timeout_seconds: int = 2,
+        read_timeout_seconds: int = 3,
+        max_attempts: int = 1,
     ) -> None:
         if not bucket:
             raise RuntimeError('An S3 bucket is required for S3-compatible artifact storage.')
@@ -48,8 +51,17 @@ class S3ArtifactStorage:
             client_kwargs['aws_access_key_id'] = normalized_access_key
             client_kwargs['aws_secret_access_key'] = normalized_secret_key
 
+        config_kwargs: dict[str, Any] = {
+            'connect_timeout': max(int(connect_timeout_seconds), 1),
+            'read_timeout': max(int(read_timeout_seconds), 1),
+            'retries': {
+                'total_max_attempts': max(int(max_attempts), 1),
+                'mode': 'standard',
+            },
+        }
         if force_path_style:
-            client_kwargs['config'] = BotoCoreConfig(s3={'addressing_style': 'path'})
+            config_kwargs['s3'] = {'addressing_style': 'path'}
+        client_kwargs['config'] = BotoCoreConfig(**config_kwargs)
 
         self.client = boto3.client('s3', **client_kwargs)
         self._client_error = ClientError

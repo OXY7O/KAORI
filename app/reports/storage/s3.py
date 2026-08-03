@@ -20,6 +20,9 @@ class S3ReportStorage(S3ArtifactStorage):
         secret_access_key: str | None = None,
         prefix: str | None = None,
         force_path_style: bool = False,
+        connect_timeout_seconds: int = 2,
+        read_timeout_seconds: int = 3,
+        max_attempts: int = 1,
     ) -> None:
         super().__init__(
             bucket=bucket,
@@ -30,6 +33,9 @@ class S3ReportStorage(S3ArtifactStorage):
             secret_access_key=secret_access_key,
             prefix=prefix,
             force_path_style=force_path_style,
+            connect_timeout_seconds=connect_timeout_seconds,
+            read_timeout_seconds=read_timeout_seconds,
+            max_attempts=max_attempts,
         )
 
     def save_file(
@@ -76,6 +82,9 @@ def build_s3_report_storage() -> S3ReportStorage:
         secret_access_key=current_app.config.get('REPORT_S3_SECRET_ACCESS_KEY'),
         prefix=current_app.config.get('REPORT_S3_PREFIX', ''),
         force_path_style=parse_bool_config(current_app.config.get('REPORT_S3_FORCE_PATH_STYLE', False)),
+        connect_timeout_seconds=int(current_app.config.get('REPORT_S3_CONNECT_TIMEOUT_SECONDS', 2) or 2),
+        read_timeout_seconds=int(current_app.config.get('REPORT_S3_READ_TIMEOUT_SECONDS', 3) or 3),
+        max_attempts=int(current_app.config.get('REPORT_S3_MAX_ATTEMPTS', 1) or 1),
     )
 
 

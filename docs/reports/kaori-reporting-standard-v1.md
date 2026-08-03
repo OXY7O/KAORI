@@ -207,3 +207,28 @@ Before merge:
 - no removed route, renderer, template, stylesheet, report type, or compatibility alias remains;
 - generated PDF/XLSX/CSV opens successfully and matches the selected cluster;
 - `git diff --check` is clean.
+
+## 14. Storage connectivity and graceful degradation
+
+Report storage is an external dependency and must never become a page-level availability dependency.
+
+Mandatory behavior when the configured Local or S3-compatible backend cannot be reached:
+
+- Reports Overview, Generate, Generated Reports, Report Detail, Schedules, and Reports Storage remain renderable from database metadata.
+- The UI shows one sanitized storage state: `Connected`, `Disconnected`, or `Needs Review`; raw SDK exceptions, endpoint details, access keys, stack traces, and provider error payloads are never rendered.
+- Existing report records, filters, pagination, templates, schedules, archive metadata, and non-storage navigation remain usable.
+- Generation stops before PDF/XLSX/CSV rendering when the active backend is not writable, preventing wasted CPU and temporary files.
+- Download and restore actions are paused only for artifacts whose backend cannot be reached. Mixed Local/S3 history remains backend-aware.
+- Artifact probes are centralized in `app/reports/storage/service.py` and cached; templates and feature services must not instantiate S3 clients directly.
+- Integrity and cleanup checks must report a sanitized backend-unavailable state rather than failing the whole page.
+- S3/MinIO clients use bounded connect/read timeouts and retry attempts so disconnection is detected quickly.
+- The Storage page provides a clear `Retry Connection` action and explains that report registry metadata remains protected.
+
+Default resilience configuration:
+
+- `REPORT_S3_CONNECT_TIMEOUT_SECONDS=2`
+- `REPORT_S3_READ_TIMEOUT_SECONDS=3`
+- `REPORT_S3_MAX_ATTEMPTS=1`
+- `REPORT_STORAGE_STATUS_CACHE_SECONDS=15`
+
+Any new report page or worker path that reads or writes artifacts must use `get_report_storage_backend_status()` and `probe_report_artifact()` instead of calling storage SDK methods from presentation code.

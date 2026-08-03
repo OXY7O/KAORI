@@ -3,9 +3,11 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from threading import Lock
+from time import monotonic
 from typing import Any
 
-from flask import current_app
+from flask import current_app, g
 from sqlalchemy import select
 
 from app.extensions.db import db
@@ -25,6 +27,337 @@ SUPPORTED_REPORT_STORAGE_BACKENDS = {
     'local',
     's3',
 }
+
+_STORAGE_STATUS_CACHE_KEY = '_kaori_report_storage_status'
+_PROCESS_STORAGE_STATUS_CACHE: dict[tuple[object, ...], tuple[float, dict[str, Any]]] = {}
+_PROCESS_STORAGE_STATUS_CACHE_LOCK = Lock()
+
+
+class ReportStorageUnavailable(RuntimeError):
+    """Raised when a configured artifact backend cannot be reached safely."""
+
+
+def _format_storage_backend_label(backend_name: str) -> str:
+    normalized = str(backend_name or '').lower().strip()
+    if normalized == 's3':
+        return 'S3-compatible storage'
+    if normalized == 'local':
+        return 'Local filesystem'
+    return 'Report storage'
+
+
+def _get_storage_status_cache_ttl_seconds() -> int:
+    try:
+        value = int(current_app.config.get('REPORT_STORAGE_STATUS_CACHE_SECONDS', 15) or 15)
+    except (TypeError, ValueError):
+        value = 15
+    return max(0, min(value, 300))
+
+
+def _get_process_storage_status_cache_key(backend_name: str) -> tuple[object, ...]:
+    app = current_app._get_current_object()
+    if backend_name == 's3':
+        return (
+            id(app),
+            backend_name,
+            str(current_app.config.get('REPORT_S3_BUCKET', '') or ''),
+            str(current_app.config.get('REPORT_S3_ENDPOINT_URL', '') or ''),
+            str(current_app.config.get('REPORT_S3_REGION', '') or ''),
+            str(current_app.config.get('REPORT_S3_PREFIX', '') or ''),
+        )
+    return (
+        id(app),
+        backend_name,
+        str(current_app.config.get('REPORT_LOCAL_STORAGE_DIR', '') or ''),
+    )
+
+
+def _get_process_cached_storage_status(backend_name: str) -> dict[str, Any] | None:
+    ttl_seconds = _get_storage_status_cache_ttl_seconds()
+    if ttl_seconds <= 0:
+        return None
+    cache_key = _get_process_storage_status_cache_key(backend_name)
+    with _PROCESS_STORAGE_STATUS_CACHE_LOCK:
+        cached = _PROCESS_STORAGE_STATUS_CACHE.get(cache_key)
+        if cached is None:
+            return None
+        expires_at, status = cached
+        if expires_at <= monotonic():
+            _PROCESS_STORAGE_STATUS_CACHE.pop(cache_key, None)
+            return None
+        return dict(status)
+
+
+def _set_process_cached_storage_status(backend_name: str, status: dict[str, Any]) -> None:
+    ttl_seconds = _get_storage_status_cache_ttl_seconds()
+    if ttl_seconds <= 0:
+        return
+    cache_key = _get_process_storage_status_cache_key(backend_name)
+    with _PROCESS_STORAGE_STATUS_CACHE_LOCK:
+        _PROCESS_STORAGE_STATUS_CACHE[cache_key] = (monotonic() + ttl_seconds, dict(status))
+
+
+def _clear_process_storage_status_cache() -> None:
+    app_id = id(current_app._get_current_object())
+    with _PROCESS_STORAGE_STATUS_CACHE_LOCK:
+        for cache_key in list(_PROCESS_STORAGE_STATUS_CACHE):
+            if cache_key and cache_key[0] == app_id:
+                _PROCESS_STORAGE_STATUS_CACHE.pop(cache_key, None)
+
+
+def _get_storage_status_cache() -> dict[str, dict[str, Any]]:
+    cache = getattr(g, _STORAGE_STATUS_CACHE_KEY, None)
+    if cache is None:
+        cache = {}
+        setattr(g, _STORAGE_STATUS_CACHE_KEY, cache)
+    return cache
+
+
+def clear_report_storage_status_cache() -> None:
+    """Clear request-scoped storage probes before an explicit retry."""
+
+    setattr(g, _STORAGE_STATUS_CACHE_KEY, {})
+    _clear_process_storage_status_cache()
+
+
+def _cache_storage_status(backend_name: str, status: dict[str, Any]) -> dict[str, Any]:
+    _get_storage_status_cache()[backend_name] = status
+    _set_process_cached_storage_status(backend_name, status)
+    return status
+
+
+def get_report_storage_backend_status(
+    backend_name: str | None = None,
+    *,
+    force: bool = False,
+) -> dict[str, Any]:
+    """Return a sanitized, request-cached readiness state for one backend.
+
+    External connection errors are logged but never exposed to templates. The
+    result is reusable by overview, generate, schedules, storage, and generated
+    report pages so they all degrade in the same way.
+    """
+
+    normalized_backend = str(backend_name or get_configured_storage_backend_name()).lower().strip()
+    if normalized_backend not in SUPPORTED_REPORT_STORAGE_BACKENDS:
+        return {
+            'backend': normalized_backend or 'unknown',
+            'label': _format_storage_backend_label(normalized_backend),
+            'configured': False,
+            'reachable': False,
+            'available': False,
+            'read_available': False,
+            'write_available': False,
+            'state': 'unsupported',
+            'status': 'Needs Review',
+            'tone': 'amber',
+            'icon': 'circle-alert',
+            'title': 'Storage Configuration Needs Review',
+            'description': 'The configured report storage backend is not supported.',
+            'action_label': 'Review Storage',
+        }
+
+    cache = _get_storage_status_cache()
+    if not force and normalized_backend in cache:
+        return cache[normalized_backend]
+    if not force:
+        process_cached = _get_process_cached_storage_status(normalized_backend)
+        if process_cached is not None:
+            cache[normalized_backend] = process_cached
+            return process_cached
+
+    if normalized_backend == 'local':
+        health = build_local_storage_health()
+        readable = bool(health.get('root_exists', False))
+        writable = bool(health.get('root_writable', False))
+        available = readable and writable
+        return _cache_storage_status(
+            normalized_backend,
+            {
+                'backend': 'local',
+                'label': 'Local filesystem',
+                'configured': True,
+                'reachable': readable,
+                'available': available,
+                'read_available': readable,
+                'write_available': writable,
+                'state': 'ready' if available else 'unavailable',
+                'status': 'Connected' if available else 'Needs Review',
+                'tone': 'green' if available else 'amber',
+                'icon': 'hard-drive' if available else 'circle-alert',
+                'title': 'Local Report Storage Is Ready' if available else 'Local Report Storage Needs Review',
+                'description': (
+                    'The local report storage path is writable.'
+                    if available
+                    else 'KAORI cannot write to the configured local report storage path. Existing report records remain available.'
+                ),
+                'action_label': 'Review Storage',
+            },
+        )
+
+    health = build_s3_storage_health()
+    configured = bool(health.get('configuration_complete', False))
+    if not configured:
+        return _cache_storage_status(
+            normalized_backend,
+            {
+                'backend': 's3',
+                'label': 'S3-compatible storage',
+                'configured': False,
+                'reachable': False,
+                'available': False,
+                'read_available': False,
+                'write_available': False,
+                'state': 'misconfigured',
+                'status': 'Needs Review',
+                'tone': 'amber',
+                'icon': 'cloud-off',
+                'title': 'S3 Storage Configuration Is Incomplete',
+                'description': (
+                    'KAORI will keep report pages available, but generation and download actions remain paused until the bucket and S3 dependency are configured.'
+                ),
+                'action_label': 'Review Storage',
+            },
+        )
+
+    try:
+        backend = build_report_storage_backend('s3')
+        test_connection = getattr(backend, 'test_connection', None)
+        if callable(test_connection):
+            test_connection()
+    except Exception:
+        current_app.logger.warning(
+            'S3-compatible report storage is configured but unreachable.',
+            exc_info=True,
+        )
+        return _cache_storage_status(
+            normalized_backend,
+            {
+                'backend': 's3',
+                'label': 'S3-compatible storage',
+                'configured': True,
+                'reachable': False,
+                'available': False,
+                'read_available': False,
+                'write_available': False,
+                'state': 'unavailable',
+                'status': 'Disconnected',
+                'tone': 'amber',
+                'icon': 'cloud-off',
+                'title': 'S3 Report Storage Is Temporarily Unavailable',
+                'description': (
+                    'KAORI could not reach the configured S3 or MinIO endpoint. Report pages and database records remain available; S3-dependent generation, verification, and downloads are paused until connectivity returns. Artifacts on other reachable backends remain usable.'
+                ),
+                'action_label': 'Retry Connection',
+            },
+        )
+
+    return _cache_storage_status(
+        normalized_backend,
+        {
+            'backend': 's3',
+            'label': 'S3-compatible storage',
+            'configured': True,
+            'reachable': True,
+            'available': True,
+            'read_available': True,
+            'write_available': True,
+            'state': 'ready',
+            'status': 'Connected',
+            'tone': 'green',
+            'icon': 'cloud-check',
+            'title': 'S3 Report Storage Is Connected',
+            'description': 'KAORI can reach the configured S3 or MinIO bucket for report artifacts.',
+            'action_label': 'Test Storage',
+        },
+    )
+
+
+def mark_report_storage_backend_unavailable(backend_name: str) -> dict[str, Any]:
+    """Cache a sanitized unavailable state after an artifact operation fails."""
+
+    normalized_backend = str(backend_name or 'unknown').lower().strip()
+    return _cache_storage_status(
+        normalized_backend,
+        {
+            'backend': normalized_backend,
+            'label': _format_storage_backend_label(normalized_backend),
+            'configured': True,
+            'reachable': False,
+            'available': False,
+            'read_available': False,
+            'write_available': False,
+            'state': 'unavailable',
+            'status': 'Disconnected',
+            'tone': 'amber',
+            'icon': 'cloud-off' if normalized_backend == 's3' else 'circle-alert',
+            'title': 'Report Storage Is Temporarily Unavailable',
+            'description': (
+                'KAORI could not reach the artifact storage backend. Report pages and database records remain available while storage-dependent actions are paused.'
+            ),
+            'action_label': 'Retry Connection',
+        },
+    )
+
+
+def probe_report_artifact(stored_path: str | None) -> dict[str, Any]:
+    """Probe one artifact without allowing storage failures to break a page."""
+
+    if not stored_path:
+        return {
+            'exists': False,
+            'reachable': True,
+            'backend': 'none',
+            'backend_label': 'Report storage',
+            'state': 'not_generated',
+        }
+
+    try:
+        backend_name, object_key = parse_report_storage_uri(stored_path)
+    except (TypeError, ValueError):
+        return {
+            'exists': False,
+            'reachable': True,
+            'backend': 'invalid',
+            'backend_label': 'Invalid storage reference',
+            'state': 'invalid',
+        }
+
+    backend_status = get_report_storage_backend_status(backend_name)
+    if not bool(backend_status.get('reachable', False)):
+        return {
+            'exists': False,
+            'reachable': False,
+            'backend': backend_name,
+            'backend_label': _format_storage_backend_label(backend_name),
+            'state': 'unavailable',
+        }
+
+    try:
+        backend = build_report_storage_backend(backend_name)
+        exists = backend.exists(object_key)
+    except Exception:
+        current_app.logger.warning(
+            'Unable to verify report artifact in %s storage.',
+            backend_name,
+            exc_info=True,
+        )
+        mark_report_storage_backend_unavailable(backend_name)
+        return {
+            'exists': False,
+            'reachable': False,
+            'backend': backend_name,
+            'backend_label': _format_storage_backend_label(backend_name),
+            'state': 'unavailable',
+        }
+
+    return {
+        'exists': bool(exists),
+        'reachable': True,
+        'backend': backend_name,
+        'backend_label': _format_storage_backend_label(backend_name),
+        'state': 'available' if exists else 'missing',
+    }
 
 
 def get_configured_storage_backend_name() -> str:
@@ -118,17 +451,12 @@ def build_report_download_path(
 def report_file_exists(
     stored_path: str,
 ) -> bool:
-    backend_name, object_key = parse_report_storage_uri(
-        stored_path,
-    )
-
-    backend = build_report_storage_backend(
-        backend_name,
-    )
-
-    return backend.exists(
-        object_key,
-    )
+    probe = probe_report_artifact(stored_path)
+    if not bool(probe.get('reachable', True)):
+        raise ReportStorageUnavailable(
+            f"{probe.get('backend_label', 'Report storage')} is temporarily unavailable."
+        )
+    return bool(probe.get('exists', False))
 
 
 def parse_report_storage_uri(
@@ -170,21 +498,32 @@ def get_report_storage_payload() -> dict[str, Any]:
     s3_health = build_s3_storage_health()
     artifact_summary = build_storage_artifact_summary()
     retention_policy = build_storage_retention_policy()
+    backend_status = get_report_storage_backend_status(backend_name)
+    summary_cards = build_storage_summary_cards(backend_name)
+    if summary_cards:
+        summary_cards[0] = {
+            **summary_cards[0],
+            'value': str(backend_status['status']),
+            'caption': str(backend_status['label']),
+            'icon': str(backend_status['icon']),
+            'tone': str(backend_status['tone']),
+        }
     lifecycle_summary = build_storage_lifecycle_summary(
         backend_name=backend_name,
         local_health=local_health,
         s3_health=s3_health,
         artifact_summary=artifact_summary,
         retention_policy=retention_policy,
+        backend_status=backend_status,
     )
 
     return {
         'page_title': 'Reports Storage',
         'page_subtitle': 'Review report artifact storage, integrity, and retention readiness.',
         'active_backend': backend_name,
-        'summary_cards': build_storage_summary_cards(
-            backend_name,
-        ),
+        'backend_status': backend_status,
+        'storage_actions_enabled': bool(backend_status.get('reachable', False)),
+        'summary_cards': summary_cards,
         'supported_backends': [
             {
                 'value': 'local',
@@ -260,37 +599,24 @@ def build_storage_lifecycle_summary(
     s3_health: dict[str, Any],
     artifact_summary: dict[str, Any],
     retention_policy: dict[str, Any],
+    backend_status: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    backend_ready = False
-    backend_label = 'Storage backend needs review'
-    backend_description = 'The active storage backend is configured but needs verification.'
+    resolved_backend_status = dict(backend_status or {})
+    backend_ready = bool(resolved_backend_status.get('available', False))
+    backend_label = str(
+        resolved_backend_status.get('title')
+        or 'Storage backend needs review'
+    )
+    backend_description = str(
+        resolved_backend_status.get('description')
+        or 'The active storage backend is configured but needs verification.'
+    )
 
-    if backend_name == 'local':
-        backend_ready = bool(
-            local_health.get(
-                'root_writable',
-                False,
-            )
-        )
-        backend_label = 'Local storage ready' if backend_ready else 'Local storage needs review'
-        backend_description = (
-            'Local filesystem storage is writable and ready for generated report artifacts.'
-            if backend_ready
-            else 'Local filesystem storage is not writable. Review REPORT_LOCAL_STORAGE_DIR or filesystem permissions.'
-        )
-    elif backend_name == 's3':
-        backend_ready = bool(
-            s3_health.get(
-                'configuration_complete',
-                False,
-            )
-        )
-        backend_label = 'S3 storage configured' if backend_ready else 'S3 storage incomplete'
-        backend_description = (
-            'S3-compatible storage has the minimum required bucket and dependency configuration.'
-            if backend_ready
-            else 'S3-compatible storage requires bucket configuration and boto3 availability before it can be trusted.'
-        )
+    if not resolved_backend_status:
+        if backend_name == 'local':
+            backend_ready = bool(local_health.get('root_writable', False))
+        elif backend_name == 's3':
+            backend_ready = bool(s3_health.get('configuration_complete', False))
 
     reports_with_files = int(
         artifact_summary.get(
@@ -570,9 +896,7 @@ def scan_report_storage_integrity(
                         'name': report.name,
                         'file_path': stored_path,
                         'backend': backend_name,
-                        'error': str(
-                            exc,
-                        ),
+                        'error': 'Storage backend was unavailable during this integrity check.',
                     }
                 )
 
@@ -736,9 +1060,7 @@ def build_report_cleanup_dry_run(
                         report,
                         stored_path,
                         backend_name,
-                        error=str(
-                            exc,
-                        ),
+                        error='Storage backend was unavailable during this cleanup preview.',
                     )
                 )
 

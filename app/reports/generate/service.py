@@ -21,8 +21,11 @@ from app.reports.catalog import (
     normalize_report_type as normalize_catalog_report_type,
 )
 from app.reports.export.constants import DEFAULT_REPORT_DOMAIN, DEFAULT_REPORT_SOURCE_KIND
-from app.reports.storage.health import build_local_storage_health, build_s3_storage_health
-from app.reports.storage.service import get_configured_storage_backend_name
+from app.reports.storage.health import build_local_storage_health
+from app.reports.storage.service import (
+    get_configured_storage_backend_name,
+    get_report_storage_backend_status,
+)
 
 PERIOD_OPTIONS: list[dict[str, str]] = [
     {
@@ -634,23 +637,17 @@ def _get_storage_generation_context() -> dict[str, Any]:
         backend_name = get_configured_storage_backend_name()
 
         if backend_name == 's3':
-            s3_health = build_s3_storage_health()
-            is_ready = bool(
-                s3_health.get(
-                    'configuration_complete',
-                    False,
-                )
-            )
+            backend_status = get_report_storage_backend_status('s3')
+            is_ready = bool(backend_status.get('available', False))
 
             return {
                 'backend': backend_name,
                 'label': 'S3-compatible storage',
-                'status': 'Ready' if is_ready else 'Needs Review',
-                'tone': 'blue' if is_ready else 'amber',
-                'description': 'Generated report artifacts will be stored with s3: object references.'
-                if is_ready
-                else 'S3 storage is selected but bucket/dependency configuration needs review.',
+                'status': str(backend_status.get('status', 'Needs Review')),
+                'tone': str(backend_status.get('tone', 'amber')),
+                'description': str(backend_status.get('description') or ''),
                 'ready': is_ready,
+                'state': str(backend_status.get('state', 'unknown')),
             }
 
         local_health = build_local_storage_health()
@@ -677,7 +674,7 @@ def _get_storage_generation_context() -> dict[str, Any]:
             'label': 'Storage backend',
             'status': 'Needs Review',
             'tone': 'amber',
-            'description': f'Storage readiness could not be evaluated: {exc}',
+            'description': 'Storage readiness could not be evaluated. Review Reports Storage and server logs.',
             'ready': False,
         }
 

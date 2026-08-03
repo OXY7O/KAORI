@@ -28,8 +28,11 @@ from app.reports.generate.service import (
     validate_form_state,
 )
 from app.reports.catalog import get_report_type_label
-from app.reports.storage.health import build_local_storage_health, build_s3_storage_health
-from app.reports.storage.service import get_configured_storage_backend_name
+from app.reports.storage.health import build_local_storage_health
+from app.reports.storage.service import (
+    get_configured_storage_backend_name,
+    get_report_storage_backend_status,
+)
 
 CADENCE_OPTIONS: list[dict[str, str]] = [
     {
@@ -712,15 +715,15 @@ def _get_storage_context() -> dict[str, Any]:
     try:
         backend_name = get_configured_storage_backend_name()
         if backend_name == 's3':
-            health = build_s3_storage_health()
-            ready = bool(health.get('configuration_complete', False))
+            backend_status = get_report_storage_backend_status('s3')
+            ready = bool(backend_status.get('available', False))
             return {
                 'backend': 's3',
-                'status': 'Ready' if ready else 'Needs Review',
-                'tone': 'blue' if ready else 'amber',
-                'description': 'S3-compatible storage is configured for scheduled report artifacts.'
-                if ready
-                else 'S3-compatible storage requires bucket/dependency configuration review.',
+                'status': str(backend_status.get('status', 'Needs Review')),
+                'tone': str(backend_status.get('tone', 'amber')),
+                'description': str(backend_status.get('description') or ''),
+                'ready': ready,
+                'state': str(backend_status.get('state', 'unknown')),
             }
 
         health = build_local_storage_health()
@@ -738,7 +741,7 @@ def _get_storage_context() -> dict[str, Any]:
             'backend': 'unknown',
             'status': 'Needs Review',
             'tone': 'amber',
-            'description': f'Storage readiness could not be evaluated: {exc}',
+            'description': 'Storage readiness could not be evaluated. Review Reports Storage and server logs.',
         }
 
 

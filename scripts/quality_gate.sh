@@ -11,6 +11,7 @@ run_static() {
     python scripts/verify_python_syntax.py
     python scripts/verify_single_pdf_engine.py
     python scripts/verify_report_runtime_imports.py
+    python scripts/verify_report_storage_resilience.py
     python -m ruff check app migrations tests scripts
     python -m ruff format --check app migrations tests scripts
     python -m djlint app/templates --check

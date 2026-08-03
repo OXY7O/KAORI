@@ -25,7 +25,7 @@
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Artifact Registry</p>
                                 <h2 class="{{ page_hero.context_panel_title_classes() }}">Report Artifacts</h2>
                             </div>
-                            {{ page_hero.context_status_badge('Ready', 'normal') }}
+                            {{ page_hero.context_status_badge(payload.backend_status.status, 'normal' if payload.backend_status.available else 'warning') }}
                         </div>
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
                             {{ page_hero.context_metric('files', 'Total Reports', payload.summary_cards[0].value, 'Tracked report records') }}
@@ -46,7 +46,7 @@
                     <div class="flex items-start gap-3">
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-surface-card text-status-warning-text"><i data-lucide="wifi-off" class="h-4 w-4"></i></span>
                         <div>
-                            <h2 class="text-sm font-semibold text-status-warning-text">Artifact Storage Needs Review</h2>
+                            <h2 class="text-sm font-semibold text-status-warning-text">{{ payload.backend_status.title if not payload.backend_status.available else 'Artifact Storage Needs Review' }}</h2>
                             <p class="mt-1 text-xs leading-5 text-status-warning-text">{{ payload.storage_notice }}</p>
                         </div>
                     </div>
