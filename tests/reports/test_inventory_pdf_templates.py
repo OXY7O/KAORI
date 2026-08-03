@@ -281,6 +281,23 @@ def test_inventory_methodology_keeps_included_and_excluded_side_by_side() -> Non
     assert 'column-gap: 14mm' in css
 
 
+@pytest.mark.parametrize('report_type', REPORT_TYPES)
+def test_inventory_section_separator_uses_weasyprint_safe_layers(report_type: str) -> None:
+    rendered_html = _rendered_html(report_type)
+    css = (PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf' / 'inventory_publications.css').read_text(
+        encoding='utf-8'
+    )
+
+    assert rendered_html.count('class="section-rule"') >= 20
+    assert rendered_html.count('<span></span>') >= 20
+    assert 'linear-gradient(to right' not in css
+    assert '.section-rule > span' in css
+    assert 'background: #CBD5E1' in css
+    assert 'width: 25mm' in css
+    assert 'height: .6mm' in css
+    assert 'background: #7C3AED' in css
+
+
 def test_missing_inventory_fields_remain_not_available() -> None:
     presentation = _presentation('service_inventory')
     evidence_rows = presentation['detail_pages'][3]['left']['rows']

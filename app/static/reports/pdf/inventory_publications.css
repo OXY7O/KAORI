@@ -84,7 +84,18 @@ body { font-size: 7pt; line-height: 1.35; background: #fff; }
 .content-section { margin-top: 5mm; break-inside: avoid; }
 .content-section h2 { margin: 0; font-size: 9.5pt; line-height: 1.15; }
 .section-subtitle { min-height: 7mm; margin: 1.4mm 0 0; color: #64748B; font-size: 5.9pt; line-height: 1.35; }
-.section-rule { height: .4mm; margin-top: 1.4mm; background: linear-gradient(to right, #7C3AED 0 25mm, #CBD5E1 25mm 100%); }
+.section-rule {
+  height: .6mm;
+  margin-top: 1.4mm;
+  overflow: hidden;
+  background: #CBD5E1;
+}
+.section-rule > span {
+  display: block;
+  width: 25mm;
+  height: 100%;
+  background: #7C3AED;
+}
 .section-body { margin-top: 3.2mm; }
 .two-column { display: grid; grid-template-columns: minmax(0, 1.24fr) minmax(0, .76fr); gap: 7mm; align-items: start; }
 .paired-sections > .content-section { margin-top: 0; }

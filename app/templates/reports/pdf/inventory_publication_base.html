@@ -48,7 +48,7 @@
 <section class="content-section {{ extra_class }}">
     <h2>{{ title }}</h2>
     {% if subtitle %}<p class="section-subtitle">{{ subtitle }}</p>{% endif %}
-    <div class="section-rule"></div>
+    <div class="section-rule" aria-hidden="true"><span></span></div>
     <div class="section-body">{{ caller() }}</div>
 </section>
 {%- endmacro %}
