@@ -270,23 +270,20 @@
     <div class="two-column distribution-split">
       {% call section('Figure 4 - Displayed Memory Concentration', 'Distribution across the top three displayed memory consumers.') %}
       <div class="memory-concentration-card">
-        <div class="donut-wrap">
-          {{ p.distribution.memory_donut_svg|safe }}
-          <div class="donut-center"><strong>{{ '%.2f'|format(p.distribution.memory_total) }}</strong><span>GiB displayed</span></div>
-        </div>
+        <div class="donut-wrap">{{ p.distribution.memory_donut_svg|safe }}</div>
         <div class="donut-legend">
           {% for item in p.distribution.memory_consumers %}<div><i class="donut-key key-{{ loop.index }}"></i><span>M{{ loop.index }}</span><strong>{{ item.value }}</strong></div>{% else %}<div class="empty-inline">No memory consumer evidence</div>{% endfor %}
         </div>
       </div>
       {% endcall %}
 
-      {% call section('Figure 5 - Displayed CPU Concentration', 'Relative contribution across the top three displayed CPU consumers.') %}
+      {% call section('Figure 5 - Displayed CPU Concentration', 'Share within the three displayed CPU consumer records.') %}
       <div class="cpu-concentration-bars">
         {% for item in p.distribution.cpu_consumers %}
-        <div class="concentration-row"><strong>{{ item.namespace }}</strong><div class="concentration-track"><i style="width:{{ item.share_percent }}%"></i><b class="warning-marker"></b><b class="critical-marker"></b></div><span>{{ '%.1f'|format(item.share_percent) }}%</span></div>
+        <div class="concentration-row"><strong>{{ item.namespace }}</strong><div class="concentration-track"><i style="width:{{ item.share_percent }}%"></i></div><span>{{ '%.1f'|format(item.share_percent) }}%</span></div>
         {% else %}<div class="empty-inline">No CPU consumer evidence</div>{% endfor %}
       </div>
-      <div class="interpretation-card distribution-note"><strong>Distribution is limited to the displayed top-consumer set.</strong><p>It must not be interpreted as a complete namespace utilization allocation.</p><small>The production report retains denominator and ranking scope beside every distribution chart.</small></div>
+      <div class="interpretation-card distribution-note"><strong>Distribution is limited to the displayed top-consumer set.</strong><p>It must not be interpreted as a complete namespace utilization allocation.</p><small>CPU percentages are normalized across the three displayed records and sum to 100%.</small></div>
       {% endcall %}
     </div>
 

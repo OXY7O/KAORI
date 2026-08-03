@@ -63,8 +63,10 @@ def build_resource_utilization_presentation(
         _sequence(payload.get('top_memory_consumers')),
         resource='Memory',
     )
-    _normalize_consumer_bars(cpu_consumers)
-    _normalize_consumer_bars(memory_consumers)
+    displayed_cpu_consumers = cpu_consumers[:3]
+    displayed_memory_consumers = memory_consumers[:3]
+    _normalize_consumer_bars(displayed_cpu_consumers)
+    _normalize_consumer_bars(displayed_memory_consumers)
 
     forecast_items = {
         str(item.get('key') or '').lower(): item
@@ -200,14 +202,14 @@ def build_resource_utilization_presentation(
 
     return {
         'page_count': len(_RESOURCE_UTILIZATION_PAGE_TITLES),
-        'presentation_version': 'v1.0-resource-utilization-publication',
+        'presentation_version': 'v1.1-resource-utilization-unit-normalization',
         'layout_contract': {
             'paper': 'A4 Portrait',
             'page_count': 9,
             'fixed_page_canvas': True,
             'status_style': 'plain-colored-text',
             'table_policy': 'single-line-technical-registers',
-            'visual_style': 'kaori-resource-utilization-v1',
+            'visual_style': 'kaori-resource-utilization-v1.1',
         },
         'report_id': report_id,
         'report_name': report_name,
@@ -286,7 +288,7 @@ def build_resource_utilization_presentation(
             ),
             'chart_svg': cpu_chart,
             'chart_available': bool(cpu_history),
-            'consumers': cpu_consumers[:3],
+            'consumers': displayed_cpu_consumers,
             'assessment_title': (
                 'CPU pressure is not currently a capacity constraint.'
                 if cpu['percent'] < 70
@@ -326,7 +328,7 @@ def build_resource_utilization_presentation(
             'chart_svg': memory_chart,
             'chart_available': bool(memory_history),
             'projection_available': memory_projection is not None,
-            'consumers': memory_consumers[:3],
+            'consumers': displayed_memory_consumers,
             'assessment_title': _memory_assessment_title(memory, memory_projection),
             'assessment_body': _memory_assessment_body(memory, memory_projection),
             'assessment_note': (
@@ -363,7 +365,11 @@ def build_resource_utilization_presentation(
             'not_ready_nodes': not_ready_nodes,
             'total_nodes': total_nodes,
             'participation': node_participation,
-            'node_donut_svg': _participation_donut_svg(node_participation, ready_nodes),
+            'node_donut_svg': _participation_donut_svg(
+                node_participation,
+                ready_nodes,
+                total_nodes,
+            ),
             'register': (
                 {
                     'ref': 'P1',
@@ -402,11 +408,14 @@ def build_resource_utilization_presentation(
             ),
         },
         'distribution': {
-            'memory_total': sum(item['raw_value'] for item in memory_consumers[:3]),
-            'memory_donut_svg': _donut_svg(memory_consumers[:3]),
-            'memory_consumers': memory_consumers[:3],
-            'cpu_consumers': cpu_consumers[:3],
-            'register': _consumer_register(memory_consumers[:3], cpu_consumers[:3]),
+            'memory_total': sum(item['raw_value'] for item in displayed_memory_consumers),
+            'memory_donut_svg': _donut_svg(displayed_memory_consumers),
+            'memory_consumers': displayed_memory_consumers,
+            'cpu_consumers': displayed_cpu_consumers,
+            'register': _consumer_register(
+                displayed_memory_consumers,
+                displayed_cpu_consumers,
+            ),
             'interpretation': _distribution_interpretation(memory_consumers, cpu_consumers),
         },
         'trend': {
@@ -540,7 +549,11 @@ def _consumer_rows(items: list[Any], *, resource: str) -> list[dict[str, Any]]:
     for item in items:
         if not isinstance(item, Mapping):
             continue
-        raw_value = max(0.0, _float(item.get('value')))
+        raw_value = (
+            _memory_consumer_gib(item)
+            if resource == 'Memory'
+            else max(0.0, _float(item.get('value')))
+        )
         result.append(
             {
                 'name': sanitize_text(item.get('pod') or item.get('name'), fallback='Unknown Resource'),
@@ -553,6 +566,24 @@ def _consumer_rows(items: list[Any], *, resource: str) -> list[dict[str, Any]]:
             }
         )
     return result
+
+
+def _memory_consumer_gib(item: Mapping[str, Any]) -> float:
+    explicit_gib = item.get('value_gib')
+    if explicit_gib is not None:
+        return max(0.0, _float(explicit_gib))
+
+    raw_value = max(0.0, _float(item.get('value')))
+    unit = sanitize_text(item.get('unit'), fallback='').strip().lower()
+    if unit in {'byte', 'bytes', 'b'}:
+        return raw_value / (1024**3)
+    if unit in {'gib', 'gb'}:
+        return raw_value
+
+    # Compatibility for payloads generated before value_gib was added.
+    # Live Prometheus values are bytes, while old test fixtures may already
+    # contain GiB-sized values.
+    return raw_value / (1024**3) if raw_value >= 1024**2 else raw_value
 
 
 def _normalize_consumer_bars(items: list[dict[str, Any]]) -> None:
@@ -780,27 +811,32 @@ def _empty_chart_svg(message: str, aria_label: str) -> str:
 </svg>'''
 
 
-def _participation_donut_svg(percent: float, ready_nodes: int) -> str:
+def _participation_donut_svg(
+    percent: float,
+    ready_nodes: int,
+    total_nodes: int,
+) -> str:
     value = max(0.0, min(_float(percent), 100.0))
     circumference = 2 * 3.141592653589793 * 52
     if value <= 0:
         progress = ''
     elif value >= 100:
-        progress = '<circle cx="78" cy="78" r="52" fill="none" stroke="#15803D" stroke-width="20"/>'
+        progress = '<circle cx="78" cy="78" r="52" fill="none" stroke="#15803D" stroke-width="18"/>'
     else:
         length = value / 100 * circumference
         progress = (
             f'<circle cx="78" cy="78" r="52" fill="none" stroke="#15803D" '
-            f'stroke-width="20" stroke-linecap="butt" '
+            f'stroke-width="18" stroke-linecap="butt" '
             f'stroke-dasharray="{length:.2f} {circumference - length:.2f}" '
             'transform="rotate(-90 78 78)"/>'
         )
+    count_label = f'{ready_nodes} / {total_nodes}' if total_nodes else str(ready_nodes)
     return f'''<svg viewBox="0 0 156 156" role="img" aria-label="Node participation {value:.0f} percent">
-<circle cx="78" cy="78" r="52" fill="none" stroke="#E2E8F0" stroke-width="20"/>{progress}
-<text x="78" y="76" text-anchor="middle" font-family="Inter, sans-serif"
- font-size="28" font-weight="700" fill="#1E293B">{ready_nodes}</text>
-<text x="78" y="96" text-anchor="middle" font-family="Inter, sans-serif"
- font-size="12" fill="#475569">Ready Nodes</text></svg>'''
+<circle cx="78" cy="78" r="52" fill="none" stroke="#E2E8F0" stroke-width="18"/>{progress}
+<text x="78" y="75" text-anchor="middle" font-family="Inter, sans-serif"
+ font-size="22" font-weight="700" fill="#1E293B">{escape(count_label)}</text>
+<text x="78" y="94" text-anchor="middle" font-family="Inter, sans-serif"
+ font-size="10" fill="#475569">Ready Nodes</text></svg>'''
 
 
 def _donut_svg(items: list[dict[str, Any]]) -> str:
@@ -819,8 +855,12 @@ def _donut_svg(items: list[dict[str, Any]]) -> str:
             f'stroke-dashoffset="{-offset:.2f}" transform="rotate(-90 78 78)"/>'
         )
         offset += length
-    return f'''<svg viewBox="0 0 156 156" role="img" aria-label="Displayed memory concentration">
-<circle cx="78" cy="78" r="52" fill="none" stroke="#E2E8F0" stroke-width="20"/>{''.join(circles)}</svg>'''
+    return f'''<svg viewBox="0 0 156 156" role="img" aria-label="Displayed memory concentration {total:.2f} GiB">
+<circle cx="78" cy="78" r="52" fill="none" stroke="#E2E8F0" stroke-width="20"/>{''.join(circles)}
+<text x="78" y="76" text-anchor="middle" font-family="Inter, sans-serif"
+ font-size="18" font-weight="700" fill="#1E293B">{total:.2f}</text>
+<text x="78" y="94" text-anchor="middle" font-family="Inter, sans-serif"
+ font-size="9" fill="#475569">GiB displayed</text></svg>'''
 
 
 def _empty_donut_svg() -> str:

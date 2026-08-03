@@ -44,7 +44,9 @@ def get_report_resource_utilization_payload(
             summary,
         )
         top_cpu_consumers = service.get_top_cpu_consumers()
-        top_memory_consumers = service.get_top_memory_consumers()
+        top_memory_consumers = _normalize_memory_consumers(
+            service.get_top_memory_consumers()
+        )
 
         trend_hours, trend_step = _resolve_trend_window(report.period or '24h')
         trends = _collect_trends(
@@ -114,6 +116,30 @@ def get_report_resource_utilization_payload(
                 exc,
             ),
         }
+
+
+_BYTES_PER_GIB = 1024**3
+
+
+def _normalize_memory_consumers(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Add an explicit GiB value while preserving the Prometheus byte evidence."""
+    normalized: list[dict[str, Any]] = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+
+        row = dict(item)
+        try:
+            value_bytes = max(0.0, float(item.get('value') or 0.0))
+        except (TypeError, ValueError):
+            value_bytes = 0.0
+
+        row['value_bytes'] = value_bytes
+        row['value_gib'] = value_bytes / _BYTES_PER_GIB
+        row['unit'] = 'GiB'
+        normalized.append(row)
+
+    return normalized
 
 
 def _collect_trends(

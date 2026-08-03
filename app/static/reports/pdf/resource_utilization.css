@@ -202,6 +202,7 @@ body.kaori-resource-utilization-report { width: 210mm; }
 .distribution-register th:nth-child(3) { width: 24%; }
 .distribution-register th:nth-child(4) { width: 13%; }
 .distribution-register th:nth-child(5) { width: 13%; }
+.consumer-table td:nth-child(4), .distribution-register td:nth-child(5) { white-space: nowrap; }
 .trend-register { font-size: 6.1pt; }
 .trend-register th:nth-child(1) { width: 12%; }
 .trend-register th:nth-child(2) { width: 24%; }
@@ -262,7 +263,7 @@ body.kaori-resource-utilization-report { width: 210mm; }
 .summary-box small { display: block; margin-top: 1.5mm; color: #64748B; font-size: 6.1pt; }
 .source-note { margin-top: 4mm !important; color: #64748B; font-size: 6.2pt; line-height: 1.4; }
 .node-card { min-height: 72mm; border: .3mm solid #E2E8F0; display: grid; grid-template-columns: 1fr 1.12fr; align-items: center; padding: 7mm 5mm; }
-.node-donut { width: 42mm; height: 42mm; margin: auto; }
+.node-donut { width: 38mm; height: 38mm; margin: auto; }
 .node-donut svg { display: block; width: 100%; height: 100%; }
 .node-legend > div { display: grid; grid-template-columns: 4mm 1fr 12mm; gap: 2mm; align-items: center; margin: 4mm 0; font-size: 7pt; }
 .node-legend i { width: 3mm; height: 3mm; }
@@ -274,9 +275,6 @@ body.kaori-resource-utilization-report { width: 210mm; }
 .memory-concentration-card { min-height: 76mm; border: .3mm solid #E2E8F0; display: grid; grid-template-columns: 1fr 1fr; align-items: center; padding: 6mm; }
 .donut-wrap { position: relative; width: 43mm; height: 43mm; margin: auto; }
 .donut-wrap svg { width: 100%; height: 100%; display: block; }
-.donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-.donut-center strong { font-size: 14pt; line-height: 1; }
-.donut-center span { margin-top: 1mm; color: #475569; font-size: 6.2pt; }
 .donut-legend > div { display: grid; grid-template-columns: 4mm 8mm 1fr; gap: 2mm; align-items: center; margin: 4mm 0; font-size: 6.8pt; }
 .donut-legend strong { text-align: right; white-space: nowrap; }
 .donut-key { width: 3mm; height: 3mm; }
