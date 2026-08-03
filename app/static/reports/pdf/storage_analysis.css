@@ -303,6 +303,21 @@ body.kaori-storage-analysis-report { width: 210mm; }
 .boundary-columns h3, .limitations-status-grid h3 { margin-bottom: 2mm; }
 .boundary-columns ul, .limitations-status-grid ul { margin: 0; padding-left: 4.5mm; font-size: 6.05pt; line-height: 1.4; }
 .boundary-columns li, .limitations-status-grid li { margin: .8mm 0; }
+
+/* Storage Analysis Evidence Boundary: precise side-by-side columns. */
+.storage-boundary-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 14mm;
+  row-gap: 0;
+  align-items: start;
+  break-inside: avoid;
+  margin-top: 0;
+}
+.storage-boundary-columns > .boundary-column { min-width: 0; }
+.storage-boundary-columns h3 { margin: 0 0 2.5mm; }
+.storage-boundary-columns ul { margin: 0; padding-left: 4.5mm; }
+.storage-boundary-columns li { margin: 0 0 1.4mm; }
 .limitations-status-grid { display: grid; grid-template-columns: .93fr 1.07fr; gap: 7mm; align-items: start; }
 .status-language-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3.2mm 5mm; }
 .status-language { display: grid; grid-template-columns: 9mm minmax(0, 1fr); gap: 2.5mm; align-items: start; }
