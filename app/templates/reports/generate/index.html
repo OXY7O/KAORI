@@ -214,6 +214,7 @@
                                         </option>
                                     {% endfor %}
                                 </select>
+                                <span class="mt-1 block text-[11px] leading-4 text-content-muted">Auto-selected by report family: Analytics uses PDF; Inventory uses Excel.</span>
                             </label>
                         </div>
                     </section>
@@ -482,7 +483,7 @@
                                     </p>
                                     <p id="preview-next-step-description" class="mt-1 text-xs leading-5 text-content-muted">
                                         {% if initial_request_ready %}
-                                            The request will be saved as Requested, then the PDF can be rendered from Generated Reports.
+                                            The request will be saved as Requested, then its configured artifact can be rendered from Generated Reports.
                                         {% else %}
                                             Resolve the cluster scope or section selection before creating the request.
                                         {% endif %}
@@ -506,7 +507,7 @@
                                             Requested
                                         </span>
                                     </div>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">KAORI records the selected contract first. PDF rendering starts separately from Generated Reports.</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">KAORI records the selected contract first. PDF or Excel artifact generation starts separately from Generated Reports.</p>
                                 </div>
                             </div>
                         </div>
@@ -537,7 +538,7 @@
                     'Follow the governed request-to-artifact flow.',
                     payload.generation_flow,
                     icon='route',
-                    note='Creating a request records the contract first. PDF rendering starts from Generated Reports.',
+                    note='Creating a request records the contract first. PDF or Excel generation starts from Generated Reports.',
                     note_icon='file-clock',
                     open_by_default=true
                 ) }}
@@ -549,7 +550,7 @@
                     'Open Reports Storage',
                     icon='hard-drive',
                     eyebrow='Storage Context',
-                    boundary='Status: ' ~ payload.storage_context.status ~ '. Generated PDFs are saved to this backend.'
+                    boundary='Status: ' ~ payload.storage_context.status ~ '. Generated report artifacts are saved to this backend.'
                 ) }}
 
                 {% set request_ready = payload.readiness[0].tone == 'blue' and payload.readiness[1].tone == 'blue' %}
@@ -791,7 +792,7 @@
 
                     if (previewNextStepDescription) {
                         previewNextStepDescription.textContent = isReady
-                            ? 'The request will be saved as Requested, then the PDF can be rendered from Generated Reports.'
+                            ? 'The request will be saved as Requested, then its configured artifact can be rendered from Generated Reports.'
                             : 'Resolve the cluster scope or section selection before creating the request.';
                     }
                 }
@@ -878,6 +879,11 @@
                 }
 
                 function renderSectionList() {
+                    const reportType = getReportTypeOption();
+                    const inventoryContractLocked = reportType && reportType.family === 'inventory';
+                    if (inventoryContractLocked) {
+                        setSelectedSections((defaultSectionsByReportType[reportTypeSelect.value] || []).slice());
+                    }
                     const selectedSections = new Set(getSelectedSections());
                     const selectedOptions = sectionOptionsByReportType[reportTypeSelect.value] || [];
 
@@ -885,14 +891,17 @@
 
                     selectedOptions.forEach(function (section) {
                         const label = document.createElement('label');
-                        label.className = 'flex cursor-pointer items-start gap-3 rounded-xl border border-kaori-primary/20 bg-kaori-soft/60 p-3 transition hover:border-kaori-primary/40 hover:bg-kaori-soft';
+                        label.className = inventoryContractLocked
+                            ? 'flex cursor-default items-start gap-3 rounded-xl border border-kaori-primary/20 bg-kaori-soft/60 p-3'
+                            : 'flex cursor-pointer items-start gap-3 rounded-xl border border-kaori-primary/20 bg-kaori-soft/60 p-3 transition hover:border-kaori-primary/40 hover:bg-kaori-soft';
 
                         const input = document.createElement('input');
                         input.type = 'checkbox';
                         input.name = 'sections';
                         input.value = section.value;
-                        input.checked = selectedSections.has(section.value);
-                        input.className = 'mt-1 h-4 w-4 rounded border-outline-default bg-surface-card text-kaori-primary focus:ring-kaori-primary/20';
+                        input.checked = inventoryContractLocked || selectedSections.has(section.value);
+                        input.disabled = inventoryContractLocked;
+                        input.className = 'mt-1 h-4 w-4 rounded border-outline-default bg-surface-card text-kaori-primary focus:ring-kaori-primary/20 disabled:cursor-not-allowed disabled:opacity-70';
                         input.addEventListener('change', function () {
                             updateSelectedSectionFromCheckbox(input);
                         });
@@ -921,6 +930,26 @@
                     }
 
                     element.classList.toggle('hidden', !isVisible);
+                }
+
+                function syncOutputFormatMode() {
+                    if (!outputFormatSelect) {
+                        return;
+                    }
+
+                    const reportType = getReportTypeOption();
+                    const primaryFormat = reportType && reportType.primary_format
+                        ? reportType.primary_format
+                        : 'pdf';
+
+                    outputFormatSelect.value = primaryFormat;
+                    Array.from(outputFormatSelect.options).forEach(function (option) {
+                        option.disabled = option.value !== primaryFormat;
+                    });
+
+                    if (previewOutputFormat && outputFormatSelect.options[outputFormatSelect.selectedIndex]) {
+                        previewOutputFormat.textContent = outputFormatSelect.options[outputFormatSelect.selectedIndex].text.trim();
+                    }
                 }
 
                 function syncPeriodMode() {
@@ -1122,6 +1151,7 @@
                 }
 
                 function syncForm() {
+                    syncOutputFormatMode();
                     syncPeriodMode();
                     syncReportTypeSummary();
                     renderSectionList();
@@ -1140,14 +1170,6 @@
                             previewPeriod.textContent = periodSelect.options[periodSelect.selectedIndex].text.trim();
                         }
                         syncPreviewReportName();
-                    });
-                }
-
-                if (outputFormatSelect) {
-                    outputFormatSelect.addEventListener('change', function () {
-                        if (previewOutputFormat) {
-                            previewOutputFormat.textContent = outputFormatSelect.options[outputFormatSelect.selectedIndex].text.trim();
-                        }
                     });
                 }
 

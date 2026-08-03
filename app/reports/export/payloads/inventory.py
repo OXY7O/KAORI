@@ -22,7 +22,7 @@ from app.models import (
 )
 from app.models.report import Report
 
-InventoryRowBuilder = Callable[[Any, str], dict[str, Any]]
+InventoryRowBuilder = Callable[[Any, str, str], dict[str, Any]]
 InventoryStatusBuilder = Callable[[Any], str]
 InventoryTypeBuilder = Callable[[Any], str]
 
@@ -36,6 +36,11 @@ def _bool_label(value: bool | None, *, true_label: str = 'Yes', false_label: str
     if value is None:
         return 'Not Available'
     return true_label if value else false_label
+
+
+def _formatted_size(value: Any) -> str | None:
+    rendered = format_kubernetes_size(value)
+    return None if rendered == '-' else rendered
 
 
 def _count_json(value: Any) -> int:
@@ -59,20 +64,27 @@ def _join_json(value: Any, fallback: str = 'Not Available', limit: int = 3) -> s
     return rendered
 
 
-def _node_row(item: NodeInventory, cluster_name: str) -> dict[str, Any]:
+def _node_row(item: NodeInventory, cluster_name: str, environment: str) -> dict[str, Any]:
     status = 'Not Ready' if item.status == 'NotReady' else _text(item.status, 'Unknown')
     return {
         'status': status,
         'cluster': cluster_name,
+        'environment': _text(environment, 'Not Available'),
         'name': item.node_name,
         'node': item.node_name,
         'resource_type': _text(item.role, 'Worker'),
         'role': _text(item.role, 'Worker'),
         'ready': status,
+        'inventory_status': 'Current',
+        'scheduling_state': _bool_label(
+            item.unschedulable,
+            true_label='Unschedulable',
+            false_label='Schedulable',
+        ),
         'unschedulable': _bool_label(item.unschedulable, true_label='Unschedulable', false_label='Schedulable'),
-        'cpu': item.cpu or 0,
-        'memory': format_kubernetes_size(item.memory),
-        'ephemeral_storage': format_kubernetes_size(item.ephemeral_storage),
+        'cpu': item.cpu,
+        'memory': _formatted_size(item.memory),
+        'ephemeral_storage': _formatted_size(item.ephemeral_storage),
         'internal_ip': _text(item.internal_ip, 'Not Available'),
         'external_ip': _text(item.external_ip, 'Not Available'),
         'kubelet_version': _text(item.kubelet_version, 'Not Available'),
@@ -89,49 +101,52 @@ def _node_row(item: NodeInventory, cluster_name: str) -> dict[str, Any]:
     }
 
 
-def _namespace_row(item: NamespaceInventory, cluster_name: str) -> dict[str, Any]:
+def _namespace_row(item: NamespaceInventory, cluster_name: str, environment: str) -> dict[str, Any]:
     return {
         'status': _text(item.status, 'Unknown'),
         'cluster': cluster_name,
+        'environment': _text(environment, 'Not Available'),
         'name': item.namespace,
         'namespace': item.namespace,
         'resource_type': 'Namespace',
         'uid': _text(item.uid, 'Not Available'),
         'labels': _count_json(item.labels),
         'annotations': _count_json(item.annotations),
-        'limit_ranges': item.limit_range_count or 0,
-        'network_policies': item.network_policy_count or 0,
-        'service_accounts': item.service_account_count or 0,
+        'limit_ranges': item.limit_range_count,
+        'network_policies': item.network_policy_count,
+        'service_accounts': item.service_account_count,
         'default_service_account': _bool_label(item.default_service_account_present),
         'created_at': item.created_at,
         'collected_at': item.collected_at,
     }
 
 
-def _workload_row(item: WorkloadInventory, cluster_name: str) -> dict[str, Any]:
+def _workload_row(item: WorkloadInventory, cluster_name: str, environment: str) -> dict[str, Any]:
     details = item.details or {}
     return {
         'status': _text(item.status, 'Unknown'),
         'cluster': cluster_name,
+        'environment': _text(environment, 'Not Available'),
         'namespace': item.namespace,
         'name': item.name,
         'resource_type': item.workload_type,
         'ready': _text(item.ready, 'Not Reported'),
         'update_strategy': _text(details.get('update_strategy') or details.get('strategy'), 'Not Available'),
-        'desired_replicas': _text(details.get('desired_replicas') or details.get('replicas'), 'Not Available'),
-        'available_replicas': _text(details.get('available_replicas'), 'Not Available'),
-        'updated_replicas': _text(details.get('updated_replicas'), 'Not Available'),
-        'unavailable_replicas': _text(details.get('unavailable_replicas'), 'Not Available'),
+        'desired_replicas': details.get('desired_replicas') if details.get('desired_replicas') is not None else details.get('replicas'),
+        'available_replicas': details.get('available_replicas'),
+        'updated_replicas': details.get('updated_replicas'),
+        'unavailable_replicas': details.get('unavailable_replicas'),
         'created_at': item.created_at,
         'collected_at': item.collected_at,
     }
 
 
-def _pod_row(item: PodInventory, cluster_name: str) -> dict[str, Any]:
+def _pod_row(item: PodInventory, cluster_name: str, environment: str) -> dict[str, Any]:
     details = item.details or {}
     return {
         'status': _text(item.phase, 'Unknown'),
         'cluster': cluster_name,
+        'environment': _text(environment, 'Not Available'),
         'namespace': item.namespace,
         'name': item.pod_name,
         'pod': item.pod_name,
@@ -140,7 +155,7 @@ def _pod_row(item: PodInventory, cluster_name: str) -> dict[str, Any]:
         'node': _text(item.node_name, 'Unscheduled'),
         'pod_ip': _text(item.pod_ip, 'Not Available'),
         'ready': _text(item.ready, 'Not Reported'),
-        'restarts': item.restart_count or 0,
+        'restarts': item.restart_count,
         'container_count': len(item.container_names or []),
         'image_count': item.image_count or len(item.container_images or []),
         'configuration_references': len(item.configuration_references or []),
@@ -151,11 +166,12 @@ def _pod_row(item: PodInventory, cluster_name: str) -> dict[str, Any]:
     }
 
 
-def _service_row(item: ServiceInventory, cluster_name: str) -> dict[str, Any]:
+def _service_row(item: ServiceInventory, cluster_name: str, environment: str) -> dict[str, Any]:
     details = item.details or {}
     return {
         'status': 'Discovered',
         'cluster': cluster_name,
+        'environment': _text(environment, 'Not Available'),
         'namespace': item.namespace,
         'name': item.service_name,
         'resource_type': _text(item.service_type, 'Unknown'),
@@ -170,11 +186,12 @@ def _service_row(item: ServiceInventory, cluster_name: str) -> dict[str, Any]:
     }
 
 
-def _ingress_row(item: IngressInventory, cluster_name: str) -> dict[str, Any]:
+def _ingress_row(item: IngressInventory, cluster_name: str, environment: str) -> dict[str, Any]:
     details = item.details or {}
     return {
         'status': 'TLS Enabled' if item.tls_enabled else 'TLS Disabled',
         'cluster': cluster_name,
+        'environment': _text(environment, 'Not Available'),
         'namespace': item.namespace,
         'name': item.ingress_name,
         'resource_type': _text(item.ingress_class, 'Default Class'),
@@ -190,22 +207,45 @@ def _ingress_row(item: IngressInventory, cluster_name: str) -> dict[str, Any]:
     }
 
 
-def _storage_row(item: StorageInventory, cluster_name: str) -> dict[str, Any]:
+def _storage_row(item: StorageInventory, cluster_name: str, environment: str) -> dict[str, Any]:
     namespace = item.namespace or 'Cluster-Wide'
     details = item.details or {}
     return {
         'status': _text(item.status, 'Unknown'),
         'cluster': cluster_name,
+        'environment': _text(environment, 'Not Available'),
         'namespace': namespace,
         'name': item.name,
         'resource_type': item.storage_type,
         'storage_class': _text(item.storage_class, 'Not Available'),
-        'capacity': format_kubernetes_size(item.capacity),
+        'capacity': _formatted_size(item.capacity),
         'access_modes': _join_json(details.get('access_modes')),
         'reclaim_policy': _text(details.get('reclaim_policy'), 'Not Available'),
         'volume_mode': _text(details.get('volume_mode'), 'Not Available'),
         'claim_name': _text(details.get('claim_name') or details.get('claim'), 'Not Available'),
         'provisioner': _text(details.get('provisioner'), 'Not Available'),
+        'created_at': item.created_at,
+        'collected_at': item.collected_at,
+    }
+
+
+def _configuration_row(
+    item: ConfigurationInventory,
+    cluster_name: str,
+    environment: str,
+) -> dict[str, Any]:
+    return {
+        'status': 'Current',
+        'cluster': cluster_name,
+        'environment': _text(environment, 'Not Available'),
+        'namespace': item.namespace,
+        'name': item.name,
+        'resource_type': _text(item.object_type, 'Unknown'),
+        'secret_type': _text(item.secret_type, 'Not Available'),
+        'key_count': item.key_count,
+        'key_names': item.key_names or [],
+        'immutable': item.immutable,
+        'payload_size_bytes': item.payload_size_bytes,
         'created_at': item.created_at,
         'collected_at': item.collected_at,
     }
@@ -253,6 +293,13 @@ _INVENTORY_REPORT_CONFIG: dict[str, dict[str, Any]] = {
         'row_builder': _ingress_row,
         'status_builder': lambda item: 'TLS Enabled' if item.tls_enabled else 'TLS Disabled',
         'type_builder': lambda item: _text(item.ingress_class, 'Default Class'),
+    },
+    'configuration_inventory': {
+        'model': ConfigurationInventory,
+        'asset_label': 'Configuration Assets',
+        'row_builder': _configuration_row,
+        'status_builder': lambda _item: 'Current',
+        'type_builder': lambda item: _text(item.object_type, 'Unknown'),
     },
     'storage_inventory': {
         'model': StorageInventory,
@@ -320,14 +367,40 @@ def _collect_overview_payload(report: Report) -> dict[str, Any]:
     collected_values: list[datetime] = []
     by_cluster: Counter[str] = Counter()
 
-    for key, model, _label in _OVERVIEW_MODELS:
-        query = db.session.query(model, Cluster.name.label('cluster_name')).join(Cluster, Cluster.id == model.cluster_id)
+    overview_rows: list[dict[str, Any]] = []
+    for key, model, label in _OVERVIEW_MODELS:
+        query = db.session.query(
+            model,
+            Cluster.name.label('cluster_name'),
+            Cluster.environment.label('cluster_environment'),
+        ).join(Cluster, Cluster.id == model.cluster_id)
         query = _apply_scope(query, model, report)
         results = query.all()
         counts[key] = len(results)
-        by_cluster.update(cluster_name for _item, cluster_name in results)
+        cluster_names = {cluster_name for _item, cluster_name, _environment in results}
+        namespace_names = {
+            str(getattr(item, 'namespace', '') or '').strip()
+            for item, _cluster_name, _environment in results
+            if str(getattr(item, 'namespace', '') or '').strip()
+        }
+        category_collected_at = _latest_collected_at(
+            item for item, _cluster_name, _environment in results
+        )
+        by_cluster.update(cluster_name for _item, cluster_name, _environment in results)
         collected_values.extend(
-            item.collected_at for item, _cluster_name in results if getattr(item, 'collected_at', None) is not None
+            item.collected_at
+            for item, _cluster_name, _environment in results
+            if getattr(item, 'collected_at', None) is not None
+        )
+        overview_rows.append(
+            {
+                'resource_type': label,
+                'assets': len(results),
+                'status': 'Current' if results else 'No Data',
+                'cluster_scope': len(cluster_names),
+                'namespace_scope': len(namespace_names),
+                'collected_at': category_collected_at,
+            }
         )
 
     node_query = db.session.query(NodeInventory)
@@ -336,11 +409,7 @@ def _collect_overview_payload(report: Report) -> dict[str, Any]:
     ready_nodes = sum(1 for item in node_rows if _text(item.status).lower() == 'ready')
     not_ready_nodes = sum(1 for item in node_rows if _text(item.status).lower() in {'notready', 'not ready'})
 
-    aggregate_rows = [
-        {'resource_type': label, 'assets': counts.get(key, 0), 'status': 'Current'}
-        for key, _model, label in _OVERVIEW_MODELS
-        if key != 'resource_quotas'
-    ]
+    aggregate_rows = overview_rows
     collected_at = max(collected_values) if collected_values else None
 
     return {
@@ -446,7 +515,11 @@ def get_report_kubernetes_inventory_payload(report: Report) -> dict[str, Any]:
 
     try:
         model = config['model']
-        query = db.session.query(model, Cluster.name.label('cluster_name')).join(Cluster, Cluster.id == model.cluster_id)
+        query = db.session.query(
+            model,
+            Cluster.name.label('cluster_name'),
+            Cluster.environment.label('cluster_environment'),
+        ).join(Cluster, Cluster.id == model.cluster_id)
         query = _apply_scope(query, model, report)
 
         order_columns = [Cluster.name.asc(), *_order_columns(model)]
@@ -455,18 +528,21 @@ def get_report_kubernetes_inventory_payload(report: Report) -> dict[str, Any]:
         status_builder: InventoryStatusBuilder = config['status_builder']
         type_builder: InventoryTypeBuilder = config['type_builder']
 
-        rows = [row_builder(item, cluster_name) for item, cluster_name in results]
-        status_counts = Counter(status_builder(item) for item, _cluster_name in results)
-        type_counts = Counter(type_builder(item) for item, _cluster_name in results)
-        cluster_counts = Counter(cluster_name for _item, cluster_name in results)
+        rows = [
+            row_builder(item, cluster_name, cluster_environment)
+            for item, cluster_name, cluster_environment in results
+        ]
+        status_counts = Counter(status_builder(item) for item, _cluster_name, _environment in results)
+        type_counts = Counter(type_builder(item) for item, _cluster_name, _environment in results)
+        cluster_counts = Counter(cluster_name for _item, cluster_name, _environment in results)
         namespace_count = len(
             {
                 str(getattr(item, 'namespace', '') or '')
-                for item, _cluster_name in results
+                for item, _cluster_name, _environment in results
                 if str(getattr(item, 'namespace', '') or '').strip()
             }
         )
-        collected_at = _latest_collected_at(item for item, _cluster_name in results)
+        collected_at = _latest_collected_at(item for item, _cluster_name, _environment in results)
         selected_cluster = _selected_cluster(report)
         asset_label = str(config['asset_label'])
 

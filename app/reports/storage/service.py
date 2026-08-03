@@ -87,12 +87,15 @@ def build_report_storage_backend(
 def save_report_file(
     source_path: Path,
     object_key: str,
+    *,
+    content_type: str = 'application/pdf',
 ) -> StoredArtifact:
     backend = get_active_report_storage_backend()
 
     return backend.save_file(
         source_path=source_path,
         object_key=object_key,
+        content_type=content_type,
     )
 
 
@@ -186,14 +189,14 @@ def get_report_storage_payload() -> dict[str, Any]:
             {
                 'value': 'local',
                 'label': 'Local filesystem',
-                'description': 'Store generated report PDFs in the application filesystem.',
+                'description': 'Store generated report PDF and Excel artifacts in the application filesystem.',
                 'is_active': backend_name == 'local',
                 'tone': 'green' if backend_name == 'local' else 'slate',
             },
             {
                 'value': 's3',
                 'label': 'S3-compatible storage',
-                'description': 'Store generated report PDFs in AWS S3, MinIO, or another S3-compatible backend.',
+                'description': 'Store generated report PDF and Excel artifacts in AWS S3, MinIO, or another S3-compatible backend.',
                 'is_active': backend_name == 's3',
                 'tone': 'green' if backend_name == 's3' else 'slate',
             },
@@ -207,7 +210,7 @@ def get_report_storage_payload() -> dict[str, Any]:
         'is_mutable_from_ui': False,
         'object_key_format': (
             'reports/YYYY/MM/<cluster_slug>/<report_type_slug>/'
-            'report-<id>-<type>-<cluster>-<namespace>-<period>-<timestamp>-<uuid>.pdf'
+            'report-<id>-<type>-<cluster>-<namespace>-<period>-<timestamp>-<uuid>.<ext>'
         ),
         'verification': {
             'mode': 'Manual verification',

@@ -444,7 +444,7 @@ def get_pipeline_status(
     return [
         {
             'name': 'Configure Report',
-            'summary': 'Choose the report type, scope, period, sections, and PDF output.',
+            'summary': 'Choose the report type, scope, period, sections, and canonical output format.',
             'description': (
                 'The Generate Report form validates the selected report contract, required cluster scope, '
                 'section selection, and active artifact storage before a request is created.'
@@ -466,9 +466,9 @@ def get_pipeline_status(
         },
         {
             'name': 'Start Generation',
-            'summary': 'A manual action or the Reports worker starts PDF generation.',
+            'summary': 'A manual action or the Reports worker starts artifact generation.',
             'description': (
-                'Manual requests are started with Generate PDF from Generated Reports. Scheduled requests are '
+                'Manual requests are started from Generated Reports. Scheduled requests are '
                 'started by the dedicated Reports worker through the canonical job execution flow.'
             ),
             'status': 'Ready',
@@ -476,11 +476,11 @@ def get_pipeline_status(
             'icon': 'play-circle',
         },
         {
-            'name': 'Collect Data & Render PDF',
-            'summary': 'Connected evidence is collected and rendered by the canonical PDF engine.',
+            'name': 'Collect Data & Render Artifact',
+            'summary': 'Connected evidence is collected and rendered by the canonical Analytics PDF or Inventory Excel engine.',
             'description': (
                 'KAORI collects the selected report payloads from validated integrations, builds the chosen '
-                'sections, and renders one standalone PDF artifact.'
+                'sections, and renders one standalone report artifact.'
             ),
             'status': 'Ready',
             'tone': 'normal',
@@ -488,7 +488,7 @@ def get_pipeline_status(
         },
         {
             'name': 'Store Artifact',
-            'summary': 'The PDF is saved to the active Local or S3-compatible backend.',
+            'summary': 'The report artifact is saved to the active Local or S3-compatible backend.',
             'description': str(storage_context.get('description', 'Report storage backend status is unavailable.')),
             'status': str(storage_context.get('display_status', 'Storage Review')),
             'tone': storage_tone,
@@ -554,7 +554,7 @@ def get_reporting_context(
         {
             'title': 'Governed Artifact Lifecycle',
             'description': (
-                f'Generated PDFs use the active {storage_context["active_detail"]} backend with '
+                f'Generated report artifacts use the active {storage_context["active_detail"]} backend with '
                 'repeatable naming, ownership, archive, and retention boundaries.'
             ),
             'icon': 'archive',
@@ -591,7 +591,7 @@ def get_current_status(
         {
             'label': 'Report Engine',
             'value': 'Ready',
-            'description': 'Manual generation and PDF export contracts are available.',
+            'description': 'Manual generation and PDF/Excel export contracts are available.',
             'tone': 'normal',
             'icon': 'file-check-2',
         },
@@ -690,7 +690,7 @@ def get_reporting_operating_model(
                 'label': 'Store as Artifacts',
                 'value': str(storage_context.get('label', 'Storage')),
                 'description': (
-                    'Generated PDFs follow one naming, archive, and retention contract across '
+                    'Generated report artifacts follow one naming, archive, and retention contract across '
                     'supported storage backends.'
                 ),
                 'icon': 'archive',

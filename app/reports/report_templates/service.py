@@ -20,7 +20,11 @@ from app.reports.export.constants import (
     REPORT_DOMAIN_LABELS,
     SOURCE_KIND_LABELS,
 )
-from app.reports.generate.service import REPORT_TYPE_OPTIONS, SECTION_OPTIONS
+from app.reports.generate.service import (
+    REPORT_TYPE_OPTIONS,
+    SECTION_OPTIONS,
+    get_report_primary_output_format,
+)
 
 SYSTEM_TEMPLATE_ITEMS: list[dict[str, Any]] = [
     {
@@ -184,6 +188,8 @@ SYSTEM_TEMPLATE_ITEMS: list[dict[str, Any]] = [
         ],
     },
 
+
+
 ]
 
 SYSTEM_TEMPLATE_ITEMS.extend(
@@ -197,7 +203,7 @@ SYSTEM_TEMPLATE_ITEMS.extend(
             'status': 'system',
             'report_domain': DEFAULT_REPORT_DOMAIN,
             'source_kind': DEFAULT_REPORT_SOURCE_KIND,
-            'output_format': 'PDF',
+            'output_format': str(option.get('primary_format') or 'pdf').upper(),
             'icon': str(option['icon']),
             'sections': list(option['default_sections']),
         }
@@ -442,7 +448,7 @@ def duplicate_system_template(template_id: str, user_id: int | None) -> tuple[bo
     template.report_domain = str(source.get('report_domain') or DEFAULT_REPORT_DOMAIN)
     template.source_kind = str(source.get('source_kind') or DEFAULT_REPORT_SOURCE_KIND)
     template.status = 'draft'
-    template.output_format = 'pdf'
+    template.output_format = get_report_primary_output_format(template.report_type)
     template.sections = list(source['sections'])
     template.source_template_key = f'system:{template_id}'
     apply_template_owner_snapshot(template, user_id)
@@ -486,7 +492,7 @@ def get_template_form_state(
         'report_type': report_type,
         'status': normalize_template_status(form.get('status', 'draft')),
         'sections': sections,
-        'output_format': 'pdf',
+        'output_format': get_report_primary_output_format(report_type),
     }
 
 
@@ -514,7 +520,7 @@ def apply_template_state(template: ReportTemplate, form_state: dict[str, Any]) -
     template.report_domain = DEFAULT_REPORT_DOMAIN
     template.source_kind = DEFAULT_REPORT_SOURCE_KIND
     template.status = form_state['status']
-    template.output_format = 'pdf'
+    template.output_format = get_report_primary_output_format(template.report_type)
     template.sections = form_state['sections']
 
 
@@ -546,9 +552,9 @@ def get_summary_cards(templates: list[dict[str, Any]]) -> list[dict[str, str]]:
             'tone': 'blue',
         },
         {
-            'label': 'PDF Ready',
+            'label': 'Renderer Ready',
             'value': str(ready_templates),
-            'caption': 'Templates mapped to the WeasyPrint HTML/PDF renderer',
+            'caption': 'Templates mapped to canonical PDF or Excel renderers',
             'icon': 'file-check-2',
             'tone': 'green',
         },
@@ -661,8 +667,8 @@ def get_template_context() -> list[str]:
     return [
         'System templates provide protected defaults for repeatable infrastructure reports and cannot be modified directly.',  # noqa: E501
         'Custom templates store a report type, selected sections, owner snapshot, status, and source template reference.',  # noqa: E501
-        'Templates pre-fill Generate Report so users can create consistent PDF artifacts without rebuilding the section checklist every time.',  # noqa: E501
-        'Template sections are validated against each report type so the PDF renderer receives a supported output contract.',  # noqa: E501
+        'Templates pre-fill Generate Report so users can create consistent PDF or Excel artifacts without rebuilding the section checklist every time.',  # noqa: E501
+        'Template sections are validated against each report type so the configured renderer receives a supported output contract.',  # noqa: E501
     ]
 
 
@@ -683,8 +689,8 @@ def get_renderer_readiness() -> list[dict[str, str]]:
             'icon': 'pencil-ruler',
         },
         {
-            'label': 'PDF output mapping',
-            'description': 'Template sections are mapped to the HTML/PDF document model and existing report payload builders.',  # noqa: E501
+            'label': 'Output renderer mapping',
+            'description': 'Templates are mapped to the canonical Analytics PDF or Inventory Excel renderer and existing payload builders.',  # noqa: E501
             'status': 'Ready',
             'tone': 'green',
             'icon': 'file-check-2',
@@ -719,9 +725,11 @@ def get_default_sections(report_type: str) -> list[str]:
 
 
 def sanitize_sections(report_type: str, sections: list[str]) -> list[str]:
-    allowed_sections = set(get_default_sections(report_type))
-    sanitized = [section for section in sections if section in allowed_sections]
-    return sanitized
+    default_sections = get_default_sections(report_type)
+    if get_report_primary_output_format(report_type) == 'xlsx':
+        return default_sections
+    allowed_sections = set(default_sections)
+    return [section for section in sections if section in allowed_sections]
 
 
 def get_section_labels(sections: list[str]) -> list[str]:

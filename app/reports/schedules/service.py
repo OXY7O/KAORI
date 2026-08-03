@@ -16,13 +16,14 @@ from app.models.report import Report, ReportSchedule, ReportScheduleRun
 from app.models.user import User
 from app.reports.export.constants import DEFAULT_REPORT_DOMAIN, DEFAULT_REPORT_SOURCE_KIND
 from app.reports.delivery import deliver_generated_report, get_delivery_channel_catalog
-from app.reports.export.service import generate_pdf_for_report
+from app.reports.export.service import generate_report_artifact
 from app.reports.generate.service import (
     OUTPUT_FORMAT_OPTIONS,
     PERIOD_OPTIONS,
     REPORT_TYPE_OPTIONS,
     SECTION_OPTIONS,
     get_form_state_from_form,
+    get_report_primary_output_format,
     validate_form_state,
 )
 from app.reports.generated.service import REPORT_TYPE_LABELS
@@ -156,7 +157,7 @@ def build_default_schedule_form_state() -> dict[str, Any]:
         'namespace': '',
         'report_type': report_type,
         'period': '30d',
-        'output_format': 'pdf',
+        'output_format': get_report_primary_output_format(report_type),
         'sections': _get_default_sections(report_type),
         'cadence': 'weekly',
         'run_time': '08:00',
@@ -354,7 +355,7 @@ def execute_schedule(
     schedule.last_report_id = report.id
     db.session.commit()
 
-    success, message = generate_pdf_for_report(report.id)
+    success, message = generate_report_artifact(report.id)
     delivery_result: dict[str, Any] | None = None
     if success:
         refreshed_report = db.session.get(Report, report.id)
@@ -509,7 +510,7 @@ def _apply_form_state_to_schedule(schedule: ReportSchedule, form_state: dict[str
     schedule.cluster_id = form_state['cluster_id'] or None
     schedule.namespace = form_state['namespace'] or None
     schedule.period = form_state['period']
-    schedule.output_format = form_state['output_format']
+    schedule.output_format = get_report_primary_output_format(form_state['report_type'])
     schedule.sections = list(form_state['sections'])
     schedule.notification_channels = list(form_state.get('notification_channels') or [])
     schedule.cadence = form_state['cadence']
@@ -544,7 +545,7 @@ def _create_report_from_schedule(schedule: ReportSchedule) -> Report:
     report.cluster_id = schedule.cluster_id
     report.namespace = schedule.namespace
     report.period = schedule.period
-    report.output_format = schedule.output_format
+    report.output_format = get_report_primary_output_format(schedule.report_type)
     report.status = 'requested'
     report.sections = schedule.sections_as_list()
     report.generated_by_id = schedule.created_by_id
@@ -592,7 +593,7 @@ def _serialize_schedule(schedule: ReportSchedule, cluster_map: dict[str, str]) -
         ),
         'namespace': schedule.namespace or 'All Namespaces',
         'period': schedule.period,
-        'output_format': schedule.output_format.upper(),
+        'output_format': get_report_primary_output_format(schedule.report_type).upper(),
         'sections': schedule.sections_as_list(),
         'sections_count': len(schedule.sections_as_list()),
         'notification_channels': schedule.notification_channels_as_list(),
@@ -642,7 +643,7 @@ def _schedule_edit_state(schedule: ReportSchedule) -> dict[str, Any]:
         'namespace': schedule.namespace or '',
         'report_type': schedule.report_type,
         'period': schedule.period,
-        'output_format': schedule.output_format,
+        'output_format': get_report_primary_output_format(schedule.report_type),
         'sections': schedule.sections_as_list(),
         'cadence': schedule.cadence,
         'run_time': schedule.run_time,

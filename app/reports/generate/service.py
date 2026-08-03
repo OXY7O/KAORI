@@ -137,87 +137,104 @@ REPORT_TYPE_OPTIONS: list[dict[str, Any]] = [
 
 for report_type_option in REPORT_TYPE_OPTIONS:
     report_type_option['family'] = 'analytics'
+    report_type_option['primary_format'] = 'pdf'
 
 _INVENTORY_REPORT_SECTIONS = [
-    'executive_summary',
-    'inventory_summary',
-    'inventory_distribution',
     'inventory_assets',
-    'operational_recommendations',
+    'inventory_metadata',
+    'inventory_field_dictionary',
 ]
 
 REPORT_TYPE_OPTIONS.extend(
     [
         {
             'value': 'inventory_overview',
-            'label': 'Inventory Overview Report',
-            'description': 'Committed cluster, node, namespace, workload, pod, network, configuration, and storage totals.',
+            'label': 'Inventory Overview',
+            'description': 'Committed Kubernetes asset totals by inventory category.',
             'icon': 'layout-dashboard',
             'family': 'inventory',
+            'primary_format': 'xlsx',
             'default_sections': list(_INVENTORY_REPORT_SECTIONS),
         },
         {
             'value': 'node_inventory',
-            'label': 'Node Inventory Report',
-            'description': 'Node asset register covering role, readiness, platform capacity, and addresses.',
+            'label': 'Nodes Inventory',
+            'description': 'Node identities, readiness, platform, capacity, addressing, and collection evidence.',
             'icon': 'server-cog',
             'family': 'inventory',
+            'primary_format': 'xlsx',
             'default_sections': list(_INVENTORY_REPORT_SECTIONS),
         },
         {
             'value': 'namespace_inventory',
-            'label': 'Namespace Inventory Report',
-            'description': 'Namespace asset register covering status, controls, and service account posture.',
+            'label': 'Namespaces Inventory',
+            'description': 'Namespace identities, lifecycle state, controls, and service-account posture.',
             'icon': 'folder-tree',
             'family': 'inventory',
+            'primary_format': 'xlsx',
             'default_sections': list(_INVENTORY_REPORT_SECTIONS),
         },
         {
             'value': 'workload_inventory',
-            'label': 'Workload Inventory Report',
-            'description': 'Workload asset register covering kind, readiness, runtime status, and update strategy.',
+            'label': 'Workloads Inventory',
+            'description': 'Workload identities, readiness, replica state, runtime status, and update strategy.',
             'icon': 'boxes',
             'family': 'inventory',
+            'primary_format': 'xlsx',
             'default_sections': list(_INVENTORY_REPORT_SECTIONS),
         },
         {
             'value': 'pod_inventory',
-            'label': 'Pod Inventory Report',
-            'description': 'Pod asset register covering phase, readiness, placement, and restart count.',
+            'label': 'Pods Inventory',
+            'description': 'Pod identities, ownership, phase, readiness, placement, restarts, and attached evidence.',
             'icon': 'box',
             'family': 'inventory',
+            'primary_format': 'xlsx',
             'default_sections': list(_INVENTORY_REPORT_SECTIONS),
         },
         {
             'value': 'service_inventory',
-            'label': 'Service Inventory Report',
-            'description': 'Service asset register covering type, network exposure, ports, and addresses.',
+            'label': 'Services Inventory',
+            'description': 'Service identities, types, addresses, ports, selectors, and exposure fields.',
             'icon': 'waypoints',
             'family': 'inventory',
+            'primary_format': 'xlsx',
             'default_sections': list(_INVENTORY_REPORT_SECTIONS),
         },
         {
             'value': 'ingress_inventory',
-            'label': 'Ingress Inventory Report',
-            'description': 'Ingress asset register covering class, host, address, and TLS exposure.',
+            'label': 'Ingresses Inventory',
+            'description': 'Ingress identities, class, hosts, addresses, backend counts, and TLS references.',
             'icon': 'route',
             'family': 'inventory',
+            'primary_format': 'xlsx',
+            'default_sections': list(_INVENTORY_REPORT_SECTIONS),
+        },
+        {
+            'value': 'configuration_inventory',
+            'label': 'Configuration Inventory',
+            'description': 'ConfigMap and Secret metadata, key names, immutability, and payload size without values.',
+            'icon': 'file-key-2',
+            'family': 'inventory',
+            'primary_format': 'xlsx',
             'default_sections': list(_INVENTORY_REPORT_SECTIONS),
         },
         {
             'value': 'storage_inventory',
-            'label': 'Storage Inventory Report',
-            'description': 'Storage asset register covering StorageClasses, PVs, PVCs, capacity, and binding state.',
+            'label': 'Storage Inventory',
+            'description': 'StorageClass, persistent-volume, and persistent-volume-claim identities and lifecycle fields.',
             'icon': 'database-zap',
             'family': 'inventory',
+            'primary_format': 'xlsx',
             'default_sections': list(_INVENTORY_REPORT_SECTIONS),
         },
         {
-            'value': 'topology_inventory',
-            'label': 'Kubernetes Topology Report',
-            'description': 'Committed resource composition and relationship edges across Kubernetes inventory domains.',
-            'icon': 'network',
+            'value': 'tls_inventory',
+            'label': 'TLS Certificate Inventory',
+            'description': 'Certificate validity, usage references, hostname coverage, and collection evidence without private keys.',
+            'icon': 'shield-check',
             'family': 'inventory',
+            'primary_format': 'xlsx',
             'default_sections': list(_INVENTORY_REPORT_SECTIONS),
         },
     ]
@@ -254,6 +271,10 @@ OUTPUT_FORMAT_OPTIONS: list[dict[str, str]] = [
     {
         'value': 'pdf',
         'label': 'PDF',
+    },
+    {
+        'value': 'xlsx',
+        'label': 'Excel Workbook (.xlsx)',
     },
 ]
 
@@ -432,6 +453,31 @@ SECTION_OPTIONS: list[dict[str, str]] = [
         'description': 'Detected workload governance gaps, severity, and remediation filters.',
     },
     {
+        'value': 'tls_validity_inventory',
+        'label': 'TLS Certificate Validity Inventory',
+        'description': 'Certificate identity, issuer, validity window, usage, and lifecycle status.',
+    },
+    {
+        'value': 'tls_expiry_exposure',
+        'label': 'TLS Expiry Exposure',
+        'description': 'Expired, invalid, critical-window, and renewal-window certificates prioritized by usage.',
+    },
+    {
+        'value': 'tls_usage_mapping',
+        'label': 'TLS Usage & Reference Mapping',
+        'description': 'Committed Ingress references, unused Secrets, unknown usage, and mapping evidence.',
+    },
+    {
+        'value': 'tls_validation_evidence',
+        'label': 'TLS Validation Evidence',
+        'description': 'Certificate parsing, declared-host coverage, and sensitive-data validation boundaries.',
+    },
+    {
+        'value': 'tls_governance_risk',
+        'label': 'TLS Governance Risk',
+        'description': 'TLS lifecycle, hostname coverage, collection, ownership, and renewal risks.',
+    },
+    {
         'value': 'forecast_summary',
         'label': 'Forecast Summary',
         'description': 'Resource growth forecast overview.',
@@ -568,8 +614,18 @@ SECTION_OPTIONS: list[dict[str, str]] = [
     },
     {
         'value': 'inventory_assets',
-        'label': 'Asset Inventory',
-        'description': 'Asset-level records from the latest committed Kubernetes inventory snapshot.',
+        'label': 'Inventory Data',
+        'description': 'Primary Excel table containing committed asset identities and fields.',
+    },
+    {
+        'value': 'inventory_metadata',
+        'label': 'Workbook Metadata',
+        'description': 'Export scope, source, data cut-off, ownership, and workbook-standard metadata.',
+    },
+    {
+        'value': 'inventory_field_dictionary',
+        'label': 'Field Dictionary',
+        'description': 'Column definitions, data types, sources, and missing-value rules.',
     },
     {
         'value': 'operational_recommendations',
@@ -779,11 +835,19 @@ def build_default_form_state(
         'namespace': '',
         'report_type': normalized_report_type,
         'period': _get_default_period(normalized_report_type),
-        'output_format': 'pdf',
+        'output_format': get_report_primary_output_format(normalized_report_type),
         'sections': _get_default_sections(
             normalized_report_type,
         ),
     }
+
+
+def get_report_primary_output_format(report_type: str) -> str:
+    normalized_report_type = normalize_report_type(report_type)
+    for item in REPORT_TYPE_OPTIONS:
+        if item['value'] == normalized_report_type:
+            return str(item.get('primary_format') or 'pdf')
+    return 'pdf'
 
 
 def normalize_report_type(
@@ -815,6 +879,8 @@ def _get_report_type_context(
                 'section_count': len(
                     item['default_sections'],
                 ),
+                'family': str(item.get('family') or 'analytics'),
+                'primary_format': str(item.get('primary_format') or 'pdf'),
                 'requires_cluster': report_requires_specific_cluster(
                     item['value'],
                 ),
@@ -835,6 +901,8 @@ def _get_report_type_context(
         'section_count': len(
             fallback['default_sections'],
         ),
+        'family': str(fallback.get('family') or 'analytics'),
+        'primary_format': str(fallback.get('primary_format') or 'pdf'),
         'requires_cluster': report_requires_specific_cluster(
             fallback['value'],
         ),
@@ -864,7 +932,7 @@ def _get_storage_generation_context() -> dict[str, Any]:
                 'label': 'S3-compatible storage',
                 'status': 'Ready' if is_ready else 'Needs Review',
                 'tone': 'blue' if is_ready else 'amber',
-                'description': 'Generated PDFs will be stored with s3: object references.'
+                'description': 'Generated report artifacts will be stored with s3: object references.'
                 if is_ready
                 else 'S3 storage is selected but bucket/dependency configuration needs review.',
                 'ready': is_ready,
@@ -883,7 +951,7 @@ def _get_storage_generation_context() -> dict[str, Any]:
             'label': 'Local filesystem',
             'status': 'Ready' if is_ready else 'Needs Review',
             'tone': 'blue' if is_ready else 'amber',
-            'description': 'Generated PDFs will be stored with local: object references.'
+            'description': 'Generated report artifacts will be stored with local: object references.'
             if is_ready
             else 'Local storage is selected but the report storage root needs write permission review.',
             'ready': is_ready,
@@ -924,7 +992,10 @@ def get_form_state_from_form(
 
     sections = [section for section in sections if section in allowed_sections_for_report]
 
-    if not sections:
+    report_context = _get_report_type_context(report_type)
+    if report_context.get('family') == 'inventory':
+        sections = list(_INVENTORY_REPORT_SECTIONS)
+    elif not sections:
         sections = _get_default_sections(
             report_type,
         )
@@ -956,10 +1027,7 @@ def get_form_state_from_form(
         ),
         'report_type': report_type,
         'period': period,
-        'output_format': form.get(
-            'output_format',
-            'pdf',
-        ),
+        'output_format': get_report_primary_output_format(report_type),
         'sections': sections,
     }
 
@@ -1012,6 +1080,12 @@ def validate_form_state(
     if form_state['output_format'] not in allowed_output_formats:
         errors.append(
             'Please select a valid output format.',
+        )
+
+    expected_output_format = get_report_primary_output_format(form_state['report_type'])
+    if form_state['output_format'] != expected_output_format:
+        errors.append(
+            f'This report type requires {expected_output_format.upper()} output.',
         )
 
     if not form_state['sections']:
@@ -1078,7 +1152,7 @@ def validate_form_state(
 
 def _get_default_period(report_type: str) -> str:
     for item in REPORT_TYPE_OPTIONS:
-        if item['value'] == report_type and item.get('family') == 'inventory':
+        if item['value'] == report_type and item.get('family') in {'inventory', 'governance'}:
             return 'snapshot'
     return '30d'
 
@@ -1272,9 +1346,9 @@ def _get_generation_readiness(
             'icon': 'list-checks',
         },
         {
-            'key': 'pdf',
-            'label': 'PDF Generation',
-            'description': 'Create the request first, then render the PDF from Generated Reports.',
+            'key': 'artifact',
+            'label': 'Artifact Generation',
+            'description': 'Create the request first, then generate the canonical PDF or Excel artifact from Generated Reports.',
             'status': 'Ready',
             'tone': 'blue',
             'icon': 'file-text',
@@ -1316,8 +1390,8 @@ def _get_generation_flow() -> list[tuple[str, str]]:
             'KAORI saves a governed report record with Requested status.',
         ),
         (
-            'Generate PDF',
-            'Open Generated Reports and start PDF rendering for the request.',
+            'Generate Artifact',
+            'Open Generated Reports and generate the canonical PDF or Excel artifact for the request.',
         ),
         (
             'Store and Download',
@@ -1386,6 +1460,12 @@ def _get_report_type_guide_groups() -> list[dict[str, Any]]:
             'items': guide_items('analytics'),
         },
         {
+            'key': 'kubernetes_governance',
+            'label': 'Kubernetes Governance',
+            'description': 'Snapshot reports for certificate lifecycle, policy evidence, and accountable governance actions.',
+            'items': guide_items('governance'),
+        },
+        {
             'key': 'kubernetes_inventory',
             'label': 'Kubernetes Inventory',
             'description': 'Snapshot reports focused on one Kubernetes asset type at a time.',
@@ -1414,7 +1494,7 @@ def _get_recommended_actions() -> list[dict[str, str]]:
         },
         {
             'label': 'Review generated records',
-            'description': 'After submit, open Generated Reports to render PDF, download, archive, or restore report artifacts.',
+            'description': 'After submit, open Generated Reports to generate, download, archive, or restore report artifacts.',
             'href': '/reports/generated',
         },
         {

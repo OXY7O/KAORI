@@ -11,6 +11,7 @@ from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.report import Report
 from app.models.user import User
+from app.reports.export.artifacts import get_report_artifact_format
 from app.reports.export.constants import REPORT_TYPE_LABELS as CANONICAL_REPORT_TYPE_LABELS
 from app.reports.generate.service import REPORT_TYPE_OPTIONS
 from app.reports.storage.service import (
@@ -188,7 +189,7 @@ def get_hero_posture() -> list[dict[str, str]]:
         {
             'label': 'Downloadable Artifacts',
             'value': str(ready_reports),
-            'caption': 'Ready PDF artifacts',
+            'caption': 'Ready report artifacts',
             'icon': 'download',
             'tone': 'green',
         },
@@ -549,21 +550,21 @@ def get_lifecycle_status() -> list[dict[str, str]]:
     return [
         {
             'name': 'Requested',
-            'description': 'Report request has been stored and is ready to be rendered into a readable PDF artifact.',
+            'description': 'Report request has been stored and is ready to be rendered into a downloadable report artifact.',
             'status': 'Queued',
             'tone': 'blue',
             'icon': 'send',
         },
         {
             'name': 'Generating',
-            'description': 'The export engine is building the PDF and writing the artifact to the configured storage backend.',
+            'description': 'The export engine is building the configured artifact and writing it to the configured storage backend.',
             'status': 'Rendering',
             'tone': 'purple',
             'icon': 'loader-circle',
         },
         {
             'name': 'Ready',
-            'description': 'PDF artifact is available for download and can be archived or regenerated when needed.',
+            'description': 'The generated report artifact is available for download and can be archived or regenerated when needed.',
             'status': 'Downloadable',
             'tone': 'green',
             'icon': 'check-circle-2',
@@ -671,8 +672,8 @@ def get_recommended_actions() -> list[dict[str, str]]:
             'href': '#reports-table',
         },
         {
-            'label': 'Generate pending PDFs',
-            'description': 'Run Generate PDF directly from the list or open a report detail for deeper review.',
+            'label': 'Generate pending artifacts',
+            'description': 'Generate the configured report artifact directly from the list or open a report detail for deeper review.',
             'href': '#reports-table',
         },
         {
@@ -867,6 +868,13 @@ def _serialize_report(
     storage_location = _parse_storage_location(
         report.file_path,
     )
+    artifact_format = get_report_artifact_format(report.output_format)
+    can_generate_artifact = report.status in ['requested', 'failed', 'ready']
+    can_download_artifact = (
+        report.status in ['ready', 'archived']
+        and bool(report.file_path)
+        and file_exists
+    )
 
     return {
         'id': report.id,
@@ -893,7 +901,11 @@ def _serialize_report(
             report.period,
         ),
         'raw_period': report.period,
-        'output_format': report.output_format.upper(),
+        'output_format': artifact_format.label,
+        'raw_output_format': artifact_format.value,
+        'artifact_label': artifact_format.label,
+        'artifact_extension': artifact_format.extension,
+        'artifact_mimetype': artifact_format.mimetype,
         'status': status_meta['label'],
         'raw_status': report.status,
         'status_meta': status_meta,
@@ -928,13 +940,18 @@ def _serialize_report(
         'storage_backend_label': storage_location['backend_label'],
         'storage_object_key': storage_location['object_key'],
         'storage_uri_display': storage_location['display'],
-        'can_generate_pdf': report.status
-        in [
-            'requested',
-            'failed',
-            'ready',
-        ],
-        'generate_pdf_label': 'Regenerate PDF' if report.status == 'ready' else 'Generate PDF',
+        'can_generate_artifact': can_generate_artifact,
+        'can_generate_pdf': can_generate_artifact,
+        'generate_artifact_label': (
+            f'Regenerate {artifact_format.label}'
+            if report.status == 'ready'
+            else f'Generate {artifact_format.label}'
+        ),
+        'generate_pdf_label': (
+            f'Regenerate {artifact_format.label}'
+            if report.status == 'ready'
+            else f'Generate {artifact_format.label}'
+        ),
         'can_archive_report': report.status
         in [
             'requested',
@@ -942,15 +959,8 @@ def _serialize_report(
             'ready',
         ],
         'can_restore_report': report.status == 'archived',
-        'can_download_pdf': report.status
-        in [
-            'ready',
-            'archived',
-        ]
-        and bool(
-            report.file_path,
-        )
-        and file_exists,
+        'can_download_artifact': can_download_artifact,
+        'can_download_pdf': can_download_artifact,
     }
 
 
@@ -1012,12 +1022,8 @@ def _serialize_report_detail(
         'updated_at': _format_datetime(
             report.updated_at,
         ),
-        'can_generate_pdf': report.status
-        in [
-            'requested',
-            'failed',
-            'ready',
-        ],
+        'can_generate_artifact': report_item['can_generate_artifact'],
+        'can_generate_pdf': report_item['can_generate_artifact'],
         'can_archive_report': report.status
         in [
             'requested',
@@ -1025,15 +1031,8 @@ def _serialize_report_detail(
             'ready',
         ],
         'can_restore_report': report.status == 'archived',
-        'can_download_pdf': report.status
-        in [
-            'ready',
-            'archived',
-        ]
-        and bool(
-            report.file_path,
-        )
-        and file_exists,
+        'can_download_artifact': report_item['can_download_artifact'],
+        'can_download_pdf': report_item['can_download_artifact'],
     }
 
 
@@ -1050,15 +1049,15 @@ def get_report_detail_status_context(
                 'icon': 'check-circle-2',
             },
             {
-                'label': 'PDF generation available',
-                'description': 'Use Generate PDF to render this request into a downloadable PDF artifact.',
+                'label': 'Artifact generation available',
+                'description': 'Generate the configured PDF or Excel artifact for this request.',
                 'status': 'Ready to run',
                 'tone': 'blue',
                 'icon': 'file-text',
             },
             {
                 'label': 'Download availability',
-                'description': 'Download becomes active after PDF generation completes successfully.',
+                'description': 'Download becomes active after artifact generation completes successfully.',
                 'status': 'Waiting',
                 'tone': 'amber',
                 'icon': 'download',
@@ -1067,7 +1066,7 @@ def get_report_detail_status_context(
         'generating': [
             {
                 'label': 'Generation running',
-                'description': 'The configured PDF renderer is composing the selected template sections into a PDF artifact.',
+                'description': 'The configured artifact renderer is composing the requested output.',
                 'status': 'Ready',
                 'tone': 'purple',
                 'icon': 'loader-circle',
@@ -1097,7 +1096,7 @@ def get_report_detail_status_context(
             },
             {
                 'label': 'Download validation',
-                'description': 'Download is active only when the generated PDF file still exists in configured storage.',  # noqa: E501
+                'description': 'Download is active only when the generated artifact still exists in configured storage.',  # noqa: E501
                 'status': 'Validated by file check',
                 'tone': 'blue',
                 'icon': 'search-check',
@@ -1111,7 +1110,7 @@ def get_report_detail_status_context(
             },
             {
                 'label': 'Regeneration supported',
-                'description': 'Regenerate PDF can be used to recreate the file from the same report request.',
+                'description': 'Regenerate Artifact can recreate the file from the same report request.',
                 'status': 'Available',
                 'tone': 'blue',
                 'icon': 'refresh-cw',
@@ -1120,7 +1119,7 @@ def get_report_detail_status_context(
         'failed': [
             {
                 'label': 'Generation failed',
-                'description': 'The PDF generation process failed and the recorded error should be reviewed.',
+                'description': 'Artifact generation failed and the recorded error should be reviewed.',
                 'status': 'Failed',
                 'tone': 'red',
                 'icon': 'triangle-alert',
@@ -1134,7 +1133,7 @@ def get_report_detail_status_context(
             },
             {
                 'label': 'Regeneration available',
-                'description': 'After reviewing the error, use Generate PDF to retry the export workflow.',
+                'description': 'After reviewing the error, retry artifact generation.',
                 'status': 'Ready to retry',
                 'tone': 'blue',
                 'icon': 'refresh-cw',
@@ -1175,6 +1174,7 @@ def get_report_detail_export_readiness(
     report: Report,
     artifact_access: Mapping[str, Any] | None = None,
 ) -> list[dict[str, str]]:
+    artifact_format = get_report_artifact_format(report.output_format)
     access = dict(artifact_access or _probe_report_file(report.file_path))
     file_exists = bool(access.get('exists'))
     storage_reachable = bool(access.get('reachable', True))
@@ -1245,8 +1245,16 @@ def get_report_detail_export_readiness(
             'tone': 'blue',
         },
         {
-            'label': 'HTML/PDF renderer',
-            'description': 'The WeasyPrint HTML/PDF workflow can render this report request into a styled PDF file.',
+            'label': (
+                'HTML/PDF renderer'
+                if artifact_format.value == 'pdf'
+                else 'Inventory Excel renderer'
+            ),
+            'description': (
+                'The canonical WeasyPrint workflow renders the Analytics publication into PDF.'
+                if artifact_format.value == 'pdf'
+                else 'The reusable Inventory workbook builder renders Inventory, Metadata, and Field Dictionary sheets into XLSX.'
+            ),
             'status': renderer_status,
             'tone': renderer_tone,
         },
@@ -1273,6 +1281,7 @@ def get_report_detail_recommended_actions(
     generated_href = '/reports/generated'
     generate_href = f'/reports/generate?report_type={report.report_type}'
 
+    artifact_format = get_report_artifact_format(report.output_format)
     access = dict(artifact_access or _probe_report_file(report.file_path))
     file_exists = bool(access.get('exists'))
     storage_reachable = bool(access.get('reachable', True))
@@ -1286,7 +1295,7 @@ def get_report_detail_recommended_actions(
             },
             {
                 'label': 'Regenerate from current request',
-                'description': 'Use the Regenerate PDF button in the action bar if the rendered artifact needs to be refreshed.',  # noqa: E501
+                'description': 'Use Regenerate Artifact in the action bar when the stored artifact needs to be refreshed.',  # noqa: E501
                 'href': '#report-actions',
             },
             {
@@ -1311,9 +1320,9 @@ def get_report_detail_recommended_actions(
             actions.insert(
                 0,
                 {
-                    'label': 'Download PDF',
-                    'description': 'Download the verified PDF artifact from configured storage.',
-                    'href': f'/reports/generated/{report.id}/download',
+                    'label': f'Download {artifact_format.label}',
+                    'description': 'Download the verified report artifact from configured storage.',
+                    'href': f'/reports/generated/{report.id}/download-artifact',
                 },
             )
         elif not file_exists:
@@ -1321,7 +1330,7 @@ def get_report_detail_recommended_actions(
                 0,
                 {
                     'label': 'Recreate missing artifact',
-                    'description': 'This Ready report no longer has a reachable artifact. Regenerate PDF before downloading.',  # noqa: E501
+                    'description': 'This Ready report no longer has a reachable artifact. Regenerate it before downloading.',  # noqa: E501
                     'href': '#report-actions',
                 },
             )
@@ -1332,12 +1341,12 @@ def get_report_detail_recommended_actions(
         return [
             {
                 'label': 'Review failure reason',
-                'description': 'Check the recorded error message before retrying PDF generation.',
+                'description': 'Check the recorded error message before retrying artifact generation.',
                 'href': '#status',
             },
             {
-                'label': 'Retry PDF generation',
-                'description': 'Use Generate PDF again after fixing the cause of the failure.',
+                'label': f'Retry {artifact_format.label} generation',
+                'description': 'Generate the artifact again after fixing the cause of the failure.',
                 'href': '#report-actions',
             },
             {
@@ -1376,7 +1385,7 @@ def get_report_detail_recommended_actions(
             {
                 'label': 'Download archived artifact',
                 'description': 'Download remains available when the archived report artifact exists in configured storage.',  # noqa: E501
-                'href': f'/reports/generated/{report.id}/download' if file_exists else '#file-output',
+                'href': f'/reports/generated/{report.id}/download-artifact' if file_exists else '#file-output',
             },
             {
                 'label': 'Restore report if needed',
@@ -1400,7 +1409,7 @@ def get_report_detail_recommended_actions(
                 0,
                 {
                     'label': 'Archived artifact missing',
-                    'description': 'Restore is blocked until the PDF is regenerated or the missing artifact is recovered.',  # noqa: E501
+                    'description': 'Restore is blocked until the artifact is regenerated or recovered.',  # noqa: E501
                     'href': '#file-output',
                 },
             )
@@ -1409,8 +1418,8 @@ def get_report_detail_recommended_actions(
 
     return [
         {
-            'label': 'Generate PDF',
-            'description': 'Render this stored report request into a downloadable PDF artifact.',
+            'label': 'Generate Artifact',
+            'description': 'Render this stored report request into its configured downloadable artifact.',
             'href': '#report-actions',
         },
         {
@@ -1469,12 +1478,12 @@ def restore_archived_report_record(
         return False, 'Only archived reports can be restored.'
 
     if not report.file_path:
-        return False, 'Archived report has no storage metadata. Regenerate the PDF instead.'
+        return False, 'Archived report has no storage metadata. Regenerate the artifact instead.'
 
     if not _report_file_exists(
         report.file_path,
     ):
-        return False, 'Archived report artifact is missing in configured storage. Regenerate the PDF instead.'
+        return False, 'Archived report artifact is missing in configured storage. Regenerate the artifact instead.'
 
     report.status = 'ready'
     db.session.commit()
@@ -1932,7 +1941,7 @@ def _get_file_state(
     if report.status == 'generating':
         return {
             'label': 'Generating',
-            'description': 'PDF artifact is being generated.',
+            'description': 'Report artifact is being generated.',
             'tone': 'purple',
             'icon': 'loader-circle',
         }

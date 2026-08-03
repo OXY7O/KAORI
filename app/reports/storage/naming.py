@@ -177,9 +177,11 @@ def build_report_object_key(
     )
     short_uuid = uuid4().hex[:8]
 
+    output_format = str(getattr(report, 'output_format', 'pdf') or 'pdf').strip().lower()
+    extension = '.xlsx' if output_format == 'xlsx' else '.pdf'
     filename = (
         f'report-{report.id}-{report_type_slug}-{cluster_slug}-'
-        f'{namespace_slug}-{period_slug}-{timestamp}-{short_uuid}.pdf'
+        f'{namespace_slug}-{period_slug}-{timestamp}-{short_uuid}{extension}'
     )
 
     return '/'.join(

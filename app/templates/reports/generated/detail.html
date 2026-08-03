@@ -28,17 +28,17 @@
                         <div class="{{ page_hero.context_actions_classes() }}">
                             <a href="{{ url_for('reports.generated_reports') }}"
                                class="{{ page_hero.context_action_classes() }}"><i data-lucide="arrow-left" class="h-4 w-4"></i>Back</a>
-                            {% if payload.report.can_download_pdf %}
-                                <a href="{{ url_for('reports.download_report_pdf', report_id=payload.report.id) }}"
-                                   class="{{ page_hero.context_action_classes() }}"><i data-lucide="download" class="h-4 w-4"></i>Download PDF</a>
+                            {% if payload.report.can_download_artifact %}
+                                <a href="{{ url_for('reports.download_report_artifact', report_id=payload.report.id) }}"
+                                   class="{{ page_hero.context_action_classes() }}"><i data-lucide="download" class="h-4 w-4"></i>Download {{ payload.report.artifact_label }}</a>
                             {% elif payload.artifact_access_notice %}
                                 <a href="{{ payload.artifact_access_notice.action_href }}"
                                    class="{{ page_hero.context_action_classes() }}"><i data-lucide="hard-drive" class="h-4 w-4"></i>Review Storage</a>
-                            {% elif payload.report.can_generate_pdf %}
+                            {% elif payload.report.can_generate_artifact %}
                                 <form method="POST"
-                                      action="{{ url_for('reports.generate_report_pdf', report_id=payload.report.id) }}">
+                                      action="{{ url_for('reports.generate_report_output', report_id=payload.report.id) }}">
                                     {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
-                                    <button type="submit" class="w-full {{ page_hero.context_action_classes() }}"><i data-lucide="file-text" class="h-4 w-4"></i>Generate PDF</button>
+                                    <button type="submit" class="w-full {{ page_hero.context_action_classes() }}"><i data-lucide="file-text" class="h-4 w-4"></i>{{ payload.report.generate_artifact_label }}</button>
                                 </form>
                             {% else %}
                                 <button type="button"
@@ -50,7 +50,7 @@
                 </aside>
             </div>
         </section>
-        {% if (payload.report.can_download_pdf and payload.report.can_generate_pdf) or payload.report.can_archive_report or payload.report.can_restore_report %}
+        {% if (payload.report.can_download_artifact and payload.report.can_generate_artifact) or payload.report.can_archive_report or payload.report.can_restore_report %}
             <section id="report-actions"
                      class="overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm"
                      aria-labelledby="report-actions-title">
@@ -61,12 +61,12 @@
                         <p class="mt-1 text-xs leading-5 text-content-muted">Regenerate, archive, or restore the stored report artifact without expanding the hero action surface.</p>
                     </div>
                     <div class="flex flex-wrap gap-2 sm:justify-end">
-                        {% if payload.report.can_download_pdf and payload.report.can_generate_pdf %}
+                        {% if payload.report.can_download_artifact and payload.report.can_generate_artifact %}
                             <form method="POST"
-                                  action="{{ url_for('reports.generate_report_pdf', report_id=payload.report.id) }}">
+                                  action="{{ url_for('reports.generate_report_output', report_id=payload.report.id) }}">
                                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                 <button type="submit"
-                                        class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-kaori-primary/25 bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-primary/15"><i data-lucide="refresh-cw" class="h-4 w-4"></i>Regenerate PDF</button>
+                                        class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-kaori-primary/25 bg-kaori-soft px-4 text-sm font-semibold text-kaori-primary transition hover:bg-kaori-primary/15"><i data-lucide="refresh-cw" class="h-4 w-4"></i>{{ payload.report.generate_artifact_label }}</button>
                             </form>
                         {% endif %}
                         {% if payload.report.can_archive_report %}
@@ -267,7 +267,7 @@
                                 </div>
                                 {% if payload.report.raw_status == 'ready' and payload.report.file_path and not payload.report.file_exists %}
                                     <div class="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
-                                        Regenerate PDF required
+                                        Regenerate artifact required
                                     </div>
                                 {% endif %}
                             </div>
@@ -368,7 +368,7 @@
                             </div>
                             <div>
                                 <h2 class="text-base font-semibold text-content-primary">Export Readiness</h2>
-                                <p class="text-xs text-content-muted dark:text-content-muted">PDF renderer, artifact, and download readiness.</p>
+                                <p class="text-xs text-content-muted dark:text-content-muted">Renderer, artifact, and download readiness.</p>
                             </div>
                         </div>
                     </div>

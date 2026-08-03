@@ -12,7 +12,7 @@
                         <h1 class="{{ page_hero.title_classes() }}">{{ payload.page_title }}</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">{{ payload.page_subtitle }}</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('file-check-2', 'PDF Artifacts') }}
+                            {{ page_hero.meta_label('file-check-2', 'Report Artifacts') }}
                             {{ page_hero.meta_label('workflow', 'Governed Lifecycle') }}
                             {{ page_hero.meta_label('hard-drive', payload.hero_posture[2].value) }}
                         </div>
@@ -362,21 +362,21 @@
                                                     <i data-lucide="arrow-up-right" class="h-3.5 w-3.5"></i>
                                                     View detail
                                                 </a>
-                                                {% if report.can_generate_pdf %}
+                                                {% if report.can_generate_artifact %}
                                                     <form method="POST"
-                                                          action="{{ url_for('reports.generate_report_pdf', report_id=report.id) }}">
+                                                          action="{{ url_for('reports.generate_report_output', report_id=report.id) }}">
                                                         {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                                         <input type="hidden" name="next" value="{{ request.full_path }}">
                                                         <button type="submit"
                                                                 class="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-emerald-700 transition hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950/40 cursor-pointer disabled:cursor-not-allowed">
                                                             <i data-lucide="{{ 'refresh-cw' if report.raw_status == 'ready' else 'file-plus-2' }}"
                                                                class="h-3.5 w-3.5"></i>
-                                                            {{ report.generate_pdf_label }}
+                                                            {{ report.generate_artifact_label }}
                                                         </button>
                                                     </form>
                                                 {% endif %}
-                                                {% if report.can_download_pdf %}
-                                                    <a href="{{ url_for('reports.download_report_pdf', report_id=report.id) }}"
+                                                {% if report.can_download_artifact %}
+                                                    <a href="{{ url_for('reports.download_report_artifact', report_id=report.id) }}"
                                                        class="flex items-center gap-2 px-3 py-2 text-xs font-semibold text-kaori-primary transition hover:bg-kaori-soft dark:text-kaori-primary hover:bg-kaori-soft">
                                                         <i data-lucide="download" class="h-3.5 w-3.5"></i>
                                                         Download
@@ -442,7 +442,7 @@
                                                 </span>
                                                 <p class="mt-2 truncate text-xs text-content-muted dark:text-content-muted">{{ report.storage_backend_label }} • {{ report.file_size }}</p>
                                                 {% if report.raw_status in ['ready', 'archived'] and report.file_path and not report.file_exists %}
-                                                    <p class="mt-1 text-xs font-semibold text-rose-600 dark:text-rose-300">Regenerate PDF required</p>
+                                                    <p class="mt-1 text-xs font-semibold text-rose-600 dark:text-rose-300">Regenerate artifact required</p>
                                                 {% endif %}
                                             </div>
                                         </div>

@@ -7,7 +7,7 @@ from typing import Any
 from app.reports.export.constants import (
     ANALYTICS_OVERVIEW_SECTION_KEYS,
     DEFAULT_RECOMMENDATIONS,
-    KUBERNETES_INVENTORY_REPORT_TYPES,
+    LEGACY_INVENTORY_PDF_REPORT_TYPES,
     REPORT_DOMAIN_LABELS,
     REPORT_TYPE_DESCRIPTIONS,
     REPORT_TYPE_LABELS,
@@ -48,6 +48,7 @@ from app.reports.export.html_pdf.resource_utilization import (
 )
 from app.reports.export.html_pdf.storage_analysis import build_storage_analysis_presentation
 from app.reports.export.html_pdf.top_consumers_analysis import build_top_consumers_analysis_presentation
+from app.reports.export.html_pdf.tls_certificate_health import build_tls_certificate_health_presentation
 from app.reports.export.html_pdf.workload_analysis import build_workload_analysis_presentation
 
 _SECTION_SOURCE_PATHS: dict[str, tuple[str, ...]] = {
@@ -93,6 +94,11 @@ _SECTION_SOURCE_PATHS: dict[str, tuple[str, ...]] = {
     'incident_readiness': ('incident_readiness',),
     'anomaly_context': ('anomalies',),
     'affected_resources': ('alerts', 'anomalies'),
+    'tls_validity_inventory': ('records', 'summary'),
+    'tls_expiry_exposure': ('records', 'summary'),
+    'tls_usage_mapping': ('records', 'collection_states', 'summary'),
+    'tls_validation_evidence': ('records', 'sensitive_data_policy'),
+    'tls_governance_risk': ('records', 'summary', 'schema_readiness'),
     'inventory_summary': ('inventory_summary', 'summary'),
     'inventory_distribution': ('inventory_distribution',),
     'inventory_assets': ('inventory_assets',),
@@ -108,6 +114,11 @@ _SECTION_DESCRIPTIONS: dict[str, str] = {
     'forecast_summary': 'Projected resource growth, threshold exposure, and historical signal quality for the selected horizon.',
     'alert_severity_summary': 'Distribution of active alert signals by operational severity.',
     'source_health': 'Connectivity and readiness posture of the alert and analytics source integrations.',
+    'tls_validity_inventory': 'Committed certificate validity, lifecycle, and usage evidence.',
+    'tls_expiry_exposure': 'Expired, invalid, critical-window, and renewal-window certificate exposure.',
+    'tls_usage_mapping': 'Committed Ingress references, unused Secrets, unknown usage, and collection state.',
+    'tls_validation_evidence': 'Certificate parse, hostname coverage, and explicit validation boundaries.',
+    'tls_governance_risk': 'TLS lifecycle, usage, collection, hostname coverage, and ownership risk.',
     'inventory_summary': 'Current asset totals, selected scope, status coverage, and committed snapshot time.',
     'inventory_distribution': 'Distribution of the selected asset type across clusters, statuses, and Kubernetes classifications.',
     'inventory_assets': 'Asset-level records from the latest committed Kubernetes inventory snapshot.',
@@ -294,7 +305,22 @@ def build_report_document(
             generated_by=generated_by_label,
             classification=classification,
         )
-    elif report.report_type in KUBERNETES_INVENTORY_REPORT_TYPES and not payload.get('_error'):
+    elif report.report_type == 'tls_certificate_health' and not payload.get('_error'):
+        template_name = 'reports/pdf/tls_certificate_health.html'
+        presentation = build_tls_certificate_health_presentation(
+            report,
+            payload,
+            report_id=report_id,
+            report_name=report_name,
+            cluster_scope=cluster_scope,
+            namespace_scope=namespace_scope,
+            period_label=period_label,
+            data_cutoff=data_cutoff,
+            generated_at=generated_at_label,
+            generated_by=generated_by_label,
+            classification=classification,
+        )
+    elif report.report_type in LEGACY_INVENTORY_PDF_REPORT_TYPES and not payload.get('_error'):
         template_name = inventory_template_for_report_type(report.report_type)
         presentation = build_inventory_publication_presentation(
             report,
@@ -535,7 +561,7 @@ def _build_error_section(payload: Mapping[str, Any], *, number: int) -> ReportSe
 
 
 def _report_period_label(report: Any) -> str:
-    if getattr(report, 'report_type', '') in KUBERNETES_INVENTORY_REPORT_TYPES:
+    if getattr(report, 'report_type', '') in LEGACY_INVENTORY_PDF_REPORT_TYPES:
         return 'Current Inventory Snapshot'
     return format_period(getattr(report, 'period', '30d'))
 
