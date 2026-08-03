@@ -25,6 +25,7 @@ _PAYLOAD_COLLECTORS: dict[str, PayloadCollector] = {
     'resource_forecast': get_report_resource_forecast_payload,
     'top_consumers': get_report_top_consumers_payload,
     'alerts_anomalies': get_report_alerts_anomalies_payload,
+    'inventory_overview': get_report_kubernetes_inventory_payload,
     'node_inventory': get_report_kubernetes_inventory_payload,
     'namespace_inventory': get_report_kubernetes_inventory_payload,
     'workload_inventory': get_report_kubernetes_inventory_payload,
@@ -32,6 +33,7 @@ _PAYLOAD_COLLECTORS: dict[str, PayloadCollector] = {
     'service_inventory': get_report_kubernetes_inventory_payload,
     'ingress_inventory': get_report_kubernetes_inventory_payload,
     'storage_inventory': get_report_kubernetes_inventory_payload,
+    'topology_inventory': get_report_kubernetes_inventory_payload,
 }
 
 

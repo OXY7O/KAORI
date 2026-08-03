@@ -149,6 +149,14 @@ _INVENTORY_REPORT_SECTIONS = [
 REPORT_TYPE_OPTIONS.extend(
     [
         {
+            'value': 'inventory_overview',
+            'label': 'Inventory Overview Report',
+            'description': 'Committed cluster, node, namespace, workload, pod, network, configuration, and storage totals.',
+            'icon': 'layout-dashboard',
+            'family': 'inventory',
+            'default_sections': list(_INVENTORY_REPORT_SECTIONS),
+        },
+        {
             'value': 'node_inventory',
             'label': 'Node Inventory Report',
             'description': 'Node asset register covering role, readiness, platform capacity, and addresses.',
@@ -201,6 +209,14 @@ REPORT_TYPE_OPTIONS.extend(
             'label': 'Storage Inventory Report',
             'description': 'Storage asset register covering StorageClasses, PVs, PVCs, capacity, and binding state.',
             'icon': 'database-zap',
+            'family': 'inventory',
+            'default_sections': list(_INVENTORY_REPORT_SECTIONS),
+        },
+        {
+            'value': 'topology_inventory',
+            'label': 'Kubernetes Topology Report',
+            'description': 'Committed resource composition and relationship edges across Kubernetes inventory domains.',
+            'icon': 'network',
             'family': 'inventory',
             'default_sections': list(_INVENTORY_REPORT_SECTIONS),
         },

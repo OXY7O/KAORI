@@ -32,6 +32,15 @@ def render_document_pdf(
         'reports/pdf/forecast_analysis.html': 'forecast_analysis.css',
         'reports/pdf/top_consumers_analysis.html': 'top_consumers_analysis.css',
         'reports/pdf/alerts_anomalies.html': 'alerts_anomalies.css',
+        'reports/pdf/inventory_overview.html': 'inventory_publications.css',
+        'reports/pdf/nodes_inventory.html': 'inventory_publications.css',
+        'reports/pdf/namespaces_inventory.html': 'inventory_publications.css',
+        'reports/pdf/workloads_inventory.html': 'inventory_publications.css',
+        'reports/pdf/pods_inventory.html': 'inventory_publications.css',
+        'reports/pdf/services_inventory.html': 'inventory_publications.css',
+        'reports/pdf/ingresses_inventory.html': 'inventory_publications.css',
+        'reports/pdf/storage_inventory.html': 'inventory_publications.css',
+        'reports/pdf/topology_inventory.html': 'inventory_publications.css',
     }
     specialized_stylesheet = specialized_stylesheets.get(document.template_name)
     if specialized_stylesheet:

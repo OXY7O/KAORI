@@ -46,6 +46,7 @@ REPORT_TYPE_LABELS = {
     'resource_forecast': 'Resource Forecast',
     'top_consumers': 'Top Consumers',
     'alerts_anomalies': 'Alerts & Anomalies',
+    'inventory_overview': 'Inventory Overview',
     'node_inventory': 'Node Inventory',
     'namespace_inventory': 'Namespace Inventory',
     'workload_inventory': 'Workload Inventory',
@@ -53,6 +54,7 @@ REPORT_TYPE_LABELS = {
     'service_inventory': 'Service Inventory',
     'ingress_inventory': 'Ingress Inventory',
     'storage_inventory': 'Storage Inventory',
+    'topology_inventory': 'Kubernetes Topology',
 }
 
 REPORT_TYPE_DESCRIPTIONS = {
@@ -84,6 +86,10 @@ REPORT_TYPE_DESCRIPTIONS = {
         'Alert and anomaly report focused on active alert state, severity distribution, '
         'affected resources, and operational response context.'
     ),
+    'inventory_overview': (
+        'Current Kubernetes inventory overview covering cluster, node, namespace, workload, pod, network, '
+        'configuration, and storage asset counts.'
+    ),
     'node_inventory': (
         'Current Kubernetes node asset register covering role, readiness, platform capacity, runtime, and addressing.'
     ),
@@ -104,6 +110,10 @@ REPORT_TYPE_DESCRIPTIONS = {
     ),
     'storage_inventory': (
         'Current Kubernetes storage asset register covering StorageClasses, persistent volumes, claims, capacity, and state.'
+    ),
+    'topology_inventory': (
+        'Current Kubernetes topology report covering committed resource composition and relationship edges across '
+        'clusters, namespaces, workloads, pods, network, configuration, and storage.'
     ),
 }
 
@@ -317,6 +327,11 @@ REPORT_TYPE_RECOMMENDATIONS = {
         'Review repeated anomalies for recurring platform or application issues.',
         'Confirm runbook, contact point, and escalation ownership for critical alerts.',
     ],
+    'inventory_overview': [
+        'Maintain committed inventory freshness and complete asset-type coverage.',
+        'Use dedicated inventory reports to review identities, lifecycle state, and relationships.',
+        'Validate operational actions against live Kubernetes state before execution.',
+    ],
     'node_inventory': [
         'Review Not Ready or cordoned nodes before scheduling additional workloads.',
         'Validate node role, runtime, operating system, and address metadata against the intended platform baseline.',
@@ -352,6 +367,11 @@ REPORT_TYPE_RECOMMENDATIONS = {
         'Validate StorageClass, capacity, reclaim policy, and binding relationships before lifecycle changes.',
         'Use the storage asset register to support capacity and data protection reviews.',
     ],
+    'topology_inventory': [
+        'Maintain committed resource identity and relationship coverage.',
+        'Review missing network, configuration, storage, and placement edges before dependency decisions.',
+        'Validate topology findings against live Kubernetes state and application ownership.',
+    ],
 }
 
 DEFAULT_RECOMMENDATIONS = [
@@ -361,6 +381,7 @@ DEFAULT_RECOMMENDATIONS = [
 ]
 
 KUBERNETES_INVENTORY_REPORT_TYPES = {
+    'inventory_overview',
     'node_inventory',
     'namespace_inventory',
     'workload_inventory',
@@ -368,6 +389,7 @@ KUBERNETES_INVENTORY_REPORT_TYPES = {
     'service_inventory',
     'ingress_inventory',
     'storage_inventory',
+    'topology_inventory',
 }
 
 
@@ -465,6 +487,13 @@ REAL_DATA_SECTION_MAP = {
         'affected_resources',
         'operational_recommendations',
     },
+    'inventory_overview': {
+        'executive_summary',
+        'inventory_summary',
+        'inventory_distribution',
+        'inventory_assets',
+        'operational_recommendations',
+    },
     'node_inventory': {
         'executive_summary',
         'inventory_summary',
@@ -508,6 +537,13 @@ REAL_DATA_SECTION_MAP = {
         'operational_recommendations',
     },
     'storage_inventory': {
+        'executive_summary',
+        'inventory_summary',
+        'inventory_distribution',
+        'inventory_assets',
+        'operational_recommendations',
+    },
+    'topology_inventory': {
         'executive_summary',
         'inventory_summary',
         'inventory_distribution',

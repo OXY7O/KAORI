@@ -22,6 +22,10 @@ from app.reports.export.html_pdf.alerts_anomalies import build_alerts_anomalies_
 from app.reports.export.html_pdf.capacity_analysis import build_capacity_analysis_presentation
 from app.reports.export.html_pdf.charts import build_alert_severity_chart, build_forecast_chart
 from app.reports.export.html_pdf.forecast_analysis import build_forecast_analysis_presentation
+from app.reports.export.html_pdf.inventory_publications import (
+    build_inventory_publication_presentation,
+    inventory_template_for_report_type,
+)
 from app.reports.export.html_pdf.document import (
     ReportDocument,
     ReportFinding,
@@ -278,6 +282,21 @@ def build_report_document(
     elif report.report_type == 'alerts_anomalies' and not payload.get('_error'):
         template_name = 'reports/pdf/alerts_anomalies.html'
         presentation = build_alerts_anomalies_presentation(
+            report,
+            payload,
+            report_id=report_id,
+            report_name=report_name,
+            cluster_scope=cluster_scope,
+            namespace_scope=namespace_scope,
+            period_label=period_label,
+            data_cutoff=data_cutoff,
+            generated_at=generated_at_label,
+            generated_by=generated_by_label,
+            classification=classification,
+        )
+    elif report.report_type in KUBERNETES_INVENTORY_REPORT_TYPES and not payload.get('_error'):
+        template_name = inventory_template_for_report_type(report.report_type)
+        presentation = build_inventory_publication_presentation(
             report,
             payload,
             report_id=report_id,

@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>{{ document.report_name }}</title>
+</head>
+<body class="kaori-inventory-publication">
+{% set p = document.presentation %}
+
+{% macro report_header() -%}
+<div class="report-header">
+    <div class="brand">
+        <img src="app/static/images/kaori-logo.svg" alt="KAORI">
+        <div><strong>KAORI</strong><span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span></div>
+    </div>
+    <div class="report-name"><strong>{{ p.report_title }}</strong><span>Kubernetes Operational Intelligence Report</span></div>
+</div>
+{%- endmacro %}
+
+{% macro page_title(number, title, subtitle) -%}
+<div class="page-title-row">
+    <div class="section-index">{{ number }}</div>
+    <div class="page-title-copy"><h1>{{ title }}</h1><p>{{ subtitle }}</p></div>
+    <div class="cutoff"><span>Data Cut-off</span><strong>{{ p.data_cutoff }}</strong></div>
+</div>
+{%- endmacro %}
+
+{% macro footer(page_number) -%}
+<div class="page-footer">
+    <span>Report ID: {{ p.report_id }} &nbsp; | &nbsp; {{ p.classification }}</span>
+    <span>Page {{ page_number }} of {{ p.page_count }}</span>
+</div>
+{%- endmacro %}
+
+{% macro metric_strip(items) -%}
+<div class="metric-strip">
+    {% for item in items %}
+    <div class="metric">
+        <span>{{ item.label }}</span>
+        <strong class="{% if item.value|string|length > 18 %}metric-long{% elif item.value|string|length > 11 %}metric-medium{% endif %}">{{ item.value }}</strong>
+        <em class="status {{ item.tone }}">{{ item.note }}</em>
+    </div>
+    {% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro section(title, subtitle='', extra_class='') -%}
+<section class="content-section {{ extra_class }}">
+    <h2>{{ title }}</h2>
+    {% if subtitle %}<p class="section-subtitle">{{ subtitle }}</p>{% endif %}
+    <div class="section-rule"></div>
+    <div class="section-body">{{ caller() }}</div>
+</section>
+{%- endmacro %}
+
+{% macro technical_table(columns, rows, extra_class='') -%}
+<table class="report-table {{ extra_class }}">
+    <thead><tr>{% for column in columns %}<th>{{ column }}</th>{% endfor %}</tr></thead>
+    <tbody>
+        {% for row in rows %}
+        <tr>{% for value in row %}<td{% if loop.first %} class="ref-or-primary"{% endif %}>{{ value }}</td>{% endfor %}</tr>
+        {% else %}
+        <tr><td colspan="{{ columns|length }}" class="empty-row">No committed evidence is available.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{%- endmacro %}
+
+{% macro recommendation_table(rows) -%}
+<table class="report-table recommendation-register">
+    <thead><tr><th>Ref.</th><th>Priority</th><th>Recommendation</th><th>Owner</th><th>Target</th><th>Status</th></tr></thead>
+    <tbody>
+        {% for item in rows %}
+        <tr><td class="ref">{{ item.ref }}</td><td>{{ item.priority }}</td><td>{{ item.title }}</td><td>{{ item.owner }}</td><td>{{ item.target }}</td><td>{{ item.status }}</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{%- endmacro %}
+
+<article class="page cover-page">
+    <div class="cover-band">
+        <div class="cover-masthead">
+            <div class="cover-brand"><img src="app/static/images/kaori-logo.svg" alt="KAORI"><div><strong>KAORI</strong><span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span></div></div>
+            <div class="cover-class">INVENTORY REPORT<br><b>{{ p.classification|upper }} - REPORT ID {{ p.report_id }}</b></div>
+        </div>
+        <div class="cover-copy">
+            <div class="cover-eyebrow">Kubernetes Operational Intelligence</div>
+            <h1>{{ p.report_title }}</h1>
+            <p>{{ p.cover.purpose }}</p>
+        </div>
+    </div>
+    <div class="cover-main">
+        <div class="cover-grid">
+            <section><h2>Reporting Boundary</h2><dl class="context-list"><dt>Cluster</dt><dd>{{ p.cluster_scope }}</dd><dt>Environment</dt><dd>{{ p.cover.environment }}</dd><dt>Namespace</dt><dd>{{ p.namespace_scope }}</dd><dt>Reporting Period</dt><dd>{{ p.period_label }}</dd><dt>Data Cut-off</dt><dd>{{ p.data_cutoff }}</dd></dl></section>
+            <section><h2>Report Purpose</h2><p>{{ p.cover.purpose }}</p></section>
+        </div>
+        <div class="cover-context"><strong>Evidence Context</strong><p>{{ p.cover.context }}</p></div>
+        <div class="cover-contents">
+            <span>01 {{ p.executive.title }}</span>
+            {% for page_data in p.detail_pages %}<span>{{ "%02d"|format(loop.index + 1) }} {{ page_data.title }}</span>{% endfor %}
+            <span>07 Recommendation Plan</span>
+            <span>08 Methodology and Evidence Boundary</span>
+        </div>
+    </div>
+    {{ footer(1) }}
+</article>
+
+<article class="page page-executive">
+    {{ report_header() }}
+    <div class="page-content">
+        {{ page_title(1, p.executive.title, p.executive.subtitle) }}
+        {{ metric_strip(p.executive.metrics) }}
+        <div class="two-column paired-sections executive-split">
+            {% call section(p.executive.table_title, p.executive.table_subtitle) %}
+                {{ technical_table(p.executive.columns, p.executive.rows, 'executive-register') }}
+            {% endcall %}
+            {% call section('Management Interpretation', 'The principal inventory signal and the decision required.') %}
+                <div class="interpretation-card warning-card">
+                    <strong>{{ p.executive.interpretation_title }}</strong>
+                    <p>{{ p.executive.interpretation_body }}</p>
+                    <small>{{ p.executive.interpretation_note }}</small>
+                </div>
+            {% endcall %}
+        </div>
+        {% call section('Priority Inventory Findings', 'Decision fields remain concise; supporting interpretation is maintained by reference.') %}
+            {{ recommendation_table(p.executive.decisions) }}
+        {% endcall %}
+    </div>
+    {{ footer(2) }}
+</article>
+
+{% for page_data in p.detail_pages %}
+<article class="page page-detail page-detail-{{ loop.index }}">
+    {{ report_header() }}
+    <div class="page-content">
+        {{ page_title(loop.index + 1, page_data.title, page_data.subtitle) }}
+        {{ metric_strip(page_data.metrics) }}
+        <div class="two-column paired-sections detail-split">
+            {% call section(page_data.left.title, page_data.left.subtitle) %}
+                {{ technical_table(page_data.left.columns, page_data.left.rows, 'detail-register') }}
+            {% endcall %}
+            {% call section(page_data.right.title, page_data.right.subtitle) %}
+                <div class="interpretation-card warning-card">
+                    <strong>{{ page_data.right.callout_title }}</strong>
+                    <p>{{ page_data.right.callout_body }}</p>
+                    <small>{{ page_data.right.callout_note }}</small>
+                </div>
+            {% endcall %}
+        </div>
+        {% call section(page_data.register.title, page_data.register.subtitle) %}
+            {{ technical_table(page_data.register.columns, page_data.register.rows, 'full-register') }}
+        {% endcall %}
+    </div>
+    {{ footer(loop.index + 2) }}
+</article>
+{% endfor %}
+
+<article class="page page-recommendations">
+    {{ report_header() }}
+    <div class="page-content">
+        {{ page_title(7, 'Recommendation Plan', 'Prioritized inventory actions, accountable owners, target windows, and validation gates.') }}
+        {{ metric_strip(p.recommendations.metrics) }}
+        {% call section('Priority Recommendations', 'The register contains fixed decision fields. Full context remains in the evidence and governance sections.') %}
+            {{ recommendation_table(p.recommendations.rows) }}
+        {% endcall %}
+        {% call section('Execution Governance', 'Inventory actions remain subject to live-state validation and approved change controls.') %}
+            <table class="report-table governance-register"><tbody>{% for item in p.recommendations.governance %}<tr><th>{{ item.field }}</th><td>{{ item.requirement }}</td></tr>{% endfor %}</tbody></table>
+        {% endcall %}
+    </div>
+    {{ footer(8) }}
+</article>
+
+<article class="page page-methodology">
+    {{ report_header() }}
+    <div class="page-content">
+        {{ page_title(8, 'Methodology and Evidence Boundary', 'Inventory sources, scope rules, freshness, and explicit limitations.') }}
+        {{ metric_strip(p.methodology.metrics) }}
+        {% call section('Data Sources and Methodology', 'Source identity, inventory scope, and publication rules remain explicit.') %}
+            <div class="methodology-grid">
+                <div><h3>Data Sources and Coverage</h3><table class="report-table source-register"><thead><tr><th>Source</th><th>Freshness</th><th>Collected</th></tr></thead><tbody>{% for item in p.methodology.sources %}<tr><td>{{ item.source }}</td><td>{{ item.freshness }}</td><td>{{ item.collected }}</td></tr>{% endfor %}</tbody></table></div>
+                <div><h3>Methodology Register</h3><table class="report-table methodology-register"><thead><tr><th>Ref.</th><th>Rule</th><th>Setting</th></tr></thead><tbody>{% for item in p.methodology.rules %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.rule }}</td><td>{{ item.setting }}</td></tr>{% endfor %}</tbody></table></div>
+            </div>
+        {% endcall %}
+        {% call section('Evidence Boundary', 'Included and excluded evidence remain separated by the committed inventory cut-off.') %}
+            <div class="boundary-columns"><div><h3>Included in This Report</h3><ul>{% for item in p.methodology.included %}<li>{{ item }}</li>{% endfor %}</ul></div><div><h3>Not Included in This Report</h3><ul>{% for item in p.methodology.excluded %}<li>{{ item }}</li>{% endfor %}</ul></div></div>
+        {% endcall %}
+        {% call section('Limitations and Status Language') %}
+            <div class="limitations-grid">
+                <div><h3>Known Limitations and Operational Use</h3><ul>{% for item in p.methodology.limitations %}<li>{{ item }}</li>{% endfor %}</ul></div>
+                <div><h3>Status Language</h3><div class="status-language-grid">{% for item in p.methodology.status_language %}<div class="reference-item"><span class="reference-code">{{ item.ref }}</span><div><strong>{{ item.title }}</strong><p>{{ item.description }}</p></div></div>{% endfor %}</div></div>
+            </div>
+        {% endcall %}
+    </div>
+    {{ footer(9) }}
+</article>
+</body>
+</html>
