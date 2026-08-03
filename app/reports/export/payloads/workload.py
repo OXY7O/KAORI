@@ -78,6 +78,45 @@ def get_report_workload_analysis_payload(
             }
         )
 
+        namespace_names = {
+            str(row.get('namespace') or '').strip()
+            for row in [*tenant_quota_rows, *workload_mapping_rows]
+            if str(row.get('namespace') or '').strip()
+        }
+        pod_count = sum(
+            _safe_non_negative_int(row.get('replicas'))
+            for row in workload_mapping_rows
+            if isinstance(row, dict)
+        )
+        response_time_ms = prometheus_status.get('response_time_ms')
+        response_time_display = (
+            f'{float(response_time_ms):.0f} ms'
+            if isinstance(response_time_ms, (int, float))
+            else str(prometheus_status.get('response_time_display') or 'Committed')
+        )
+        source_evidence = [
+            {
+                'source': 'Prometheus Workload Evidence',
+                'freshness': response_time_display,
+                'last_collected': 'At report cut-off',
+            },
+            {
+                'source': 'Tenant Quota Analysis',
+                'freshness': 'Committed' if tenant_quota_rows else 'Not Available',
+                'last_collected': 'At report cut-off',
+            },
+            {
+                'source': 'Workload Resource Mapping',
+                'freshness': 'Committed' if workload_mapping_rows else 'Not Available',
+                'last_collected': 'At report cut-off',
+            },
+            {
+                'source': 'Governance Recommendation Evidence',
+                'freshness': 'Committed',
+                'last_collected': 'At report cut-off',
+            },
+        ]
+
         return {
             'cluster': {
                 'id': str(
@@ -114,6 +153,12 @@ def get_report_workload_analysis_payload(
             'workload_mapping_rows': workload_mapping_rows,
             'governance_findings': governance_findings,
             'actionable_recommendations': actionable_recommendations,
+            'inventory_summary': {
+                'workload_count': len(workload_mapping_rows),
+                'pod_count': pod_count,
+                'namespace_count': len(namespace_names),
+            },
+            'source_evidence': source_evidence,
         }
 
     except Exception as exc:
@@ -122,3 +167,10 @@ def get_report_workload_analysis_payload(
                 exc,
             ),
         }
+
+
+def _safe_non_negative_int(value: Any) -> int:
+    try:
+        return max(int(float(value or 0)), 0)
+    except (TypeError, ValueError):
+        return 0

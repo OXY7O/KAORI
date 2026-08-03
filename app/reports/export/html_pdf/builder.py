@@ -41,6 +41,7 @@ from app.reports.export.html_pdf.resource_utilization import (
     build_resource_utilization_presentation,
 )
 from app.reports.export.html_pdf.storage_analysis import build_storage_analysis_presentation
+from app.reports.export.html_pdf.workload_analysis import build_workload_analysis_presentation
 
 _SECTION_SOURCE_PATHS: dict[str, tuple[str, ...]] = {
     'analytics_summary': ('health_summary', 'summary'),
@@ -214,6 +215,21 @@ def build_report_document(
     elif report.report_type == 'storage_analysis' and not payload.get('_error'):
         template_name = 'reports/pdf/storage_analysis.html'
         presentation = build_storage_analysis_presentation(
+            report,
+            payload,
+            report_id=report_id,
+            report_name=report_name,
+            cluster_scope=cluster_scope,
+            namespace_scope=namespace_scope,
+            period_label=period_label,
+            data_cutoff=data_cutoff,
+            generated_at=generated_at_label,
+            generated_by=generated_by_label,
+            classification=classification,
+        )
+    elif report.report_type == 'workload_analysis' and not payload.get('_error'):
+        template_name = 'reports/pdf/workload_analysis.html'
+        presentation = build_workload_analysis_presentation(
             report,
             payload,
             report_id=report_id,
