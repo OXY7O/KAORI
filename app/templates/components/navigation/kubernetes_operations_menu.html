@@ -14,7 +14,7 @@ or current_user.has_permission('kubernetes_secrets.bulk_rotate_tls') %}
 {% if secret_operations_visible or configmap_operations_visible %}
     <details class="sidebar-menu space-y-1"
              {% if operations_active %}open{% endif %}>
-        <summary class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if operations_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2"
+        <summary class="{{ 'bg-kaori-primary text-white shadow-lg shadow-kaori-primary/20 ring-1 ring-white/10' if operations_active else 'text-brand-foreground-muted hover:bg-white/[0.07] hover:text-white' }} sidebar-parent-link group flex cursor-pointer select-none items-center justify-between min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6 transition [.sidebar-collapsed_&]:justify-center [.sidebar-collapsed_&]:px-2"
                  title="K8s Operations"
                  aria-label="K8s Operations"
                  @click="if (!sidebarExpanded) { $event.preventDefault(); toggleSidebar(); $el.parentElement.open = true }">
