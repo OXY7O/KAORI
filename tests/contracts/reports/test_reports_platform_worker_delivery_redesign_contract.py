@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -225,3 +226,39 @@ def test_generate_report_uses_the_canonical_family_format_and_scope_contract() -
     assert 'allowed_formats' in generate_template
     assert 'Generated report artifacts are saved to this backend.' in generate_template
     assert "get_report_type_spec(report_type).family == REPORT_FAMILY_INVENTORY" in template_service
+
+
+def test_report_export_packages_keep_renderer_imports_lazy() -> None:
+    package_contracts = (
+        (
+            ROOT / 'app' / 'reports' / 'export' / 'xlsx' / '__init__.py',
+            'app.reports.export.xlsx.renderer',
+            'render_inventory_xlsx',
+        ),
+        (
+            ROOT / 'app' / 'reports' / 'export' / 'csv' / '__init__.py',
+            'app.reports.export.csv.renderer',
+            'render_report_csv',
+        ),
+    )
+
+    for path, renderer_module, public_function in package_contracts:
+        module = ast.parse(path.read_text())
+        eager_imports = {
+            node.module
+            for node in module.body
+            if isinstance(node, ast.ImportFrom)
+        }
+        assert renderer_module not in eager_imports
+
+        wrapper = next(
+            node
+            for node in module.body
+            if isinstance(node, ast.FunctionDef) and node.name == public_function
+        )
+        lazy_imports = {
+            node.module
+            for node in ast.walk(wrapper)
+            if isinstance(node, ast.ImportFrom)
+        }
+        assert renderer_module in lazy_imports

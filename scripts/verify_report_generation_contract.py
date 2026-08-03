@@ -147,6 +147,25 @@ def _check_renderer_coverage(
         if mapping not in artifact_source:
             errors.append(f'Artifact registry is missing canonical mapping: {mapping}.')
 
+    package_renderer_imports = (
+        (
+            ROOT / 'app' / 'reports' / 'export' / 'xlsx' / '__init__.py',
+            'from app.reports.export.xlsx.renderer import render_inventory_xlsx\n',
+            'XLSX',
+        ),
+        (
+            ROOT / 'app' / 'reports' / 'export' / 'csv' / '__init__.py',
+            'from app.reports.export.csv.renderer import render_report_csv\n',
+            'CSV',
+        ),
+    )
+    for package_init_path, eager_renderer_import, label in package_renderer_imports:
+        if eager_renderer_import in _read(package_init_path):
+            errors.append(
+                f'The {label} package initializer eagerly imports its renderer; renderer '
+                'modules must remain behind a lazy package boundary to prevent circular imports.'
+            )
+
 
 def _check_selected_cluster_and_legacy(errors: list[str]) -> None:
     model_source = _read(MODEL_PATH)
