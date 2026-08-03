@@ -27,18 +27,8 @@
 
 <article class="page cover-page">
   <div class="cover-band">
-    <div class="cover-masthead">
-      <div class="cover-brand">
-        <img src="app/static/images/kaori-logo.svg" alt="KAORI">
-        <div><strong>KAORI</strong><span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span></div>
-      </div>
-      <div class="cover-class">ANALYTICS REPORT<br><b>{{ p.classification|upper }} - REPORT ID {{ p.report_id }}</b></div>
-    </div>
-    <div class="cover-copy">
-      <div class="cover-eyebrow">Kubernetes Operational Intelligence</div>
-      <h1>Resource Utilization</h1>
-      <p>A focused operational view of CPU, memory, pod, and node utilization across the selected reporting boundary.</p>
-    </div>
+    {{ ui.cover_brand(p.report_id, p.classification, 'ANALYTICS REPORT') }}
+    {{ ui.cover_title('Resource Utilization', 'A focused operational view of CPU, memory, pod, and node utilization across the selected reporting boundary.') }}
   </div>
   <div class="cover-main">
     <div class="cover-grid">
@@ -58,12 +48,7 @@
       </section>
     </div>
     <div class="cover-context"><strong>Evidence Context</strong><p>{{ p.cover.context }}</p></div>
-    <div class="cover-contents">
-      <span>01 Executive Brief</span><span>02 CPU Utilization</span>
-      <span>03 Memory Utilization</span><span>04 Pod and Node Utilization</span>
-      <span>05 Utilization Distribution</span><span>06 Trend Evidence</span>
-      <span>07 Recommendation Plan</span><span>08 Methodology and Evidence Boundary</span>
-    </div>
+    {{ ui.cover_contents(['01 Executive Brief', '02 CPU Utilization', '03 Memory Utilization', '04 Pod and Node Utilization', '05 Utilization Distribution', '06 Trend Evidence', '07 Recommendation Plan', '08 Methodology and Evidence Boundary']) }}
   </div>
   {{ footer(1) }}
 </article>
@@ -329,38 +314,23 @@
     {{ metric_strip(p.methodology.metrics) }}
 
     {% call ui.section('Data Sources and Methodology', 'The source table is wider so technical source names and timestamps remain on one line.') %}
-    <div class="methodology-tables">
-      <div class="data-source-table"><h3>Data Sources and Coverage</h3>
-        <table class="report-table compact-register"><thead><tr><th>Source</th><th>Freshness</th><th>Last Collected</th></tr></thead><tbody>{% for row in p.methodology.sources %}<tr><td>{{ row.source }}</td><td>{{ row.freshness }}</td><td>{{ row.last_collected }}</td></tr>{% endfor %}</tbody></table>
-      </div>
-      <div class="methodology-register"><h3>Methodology Register</h3>
-        <table class="report-table compact-register"><thead><tr><th>Ref.</th><th>Rule</th><th>Setting</th></tr></thead><tbody>{% for row in p.methodology.rules %}<tr><td class="ref">{{ row.ref }}</td><td>{{ row.rule }}</td><td>{{ row.setting }}</td></tr>{% endfor %}</tbody></table>
-      </div>
-    </div>
-    {% endcall %}
+    {{ ui.methodology_register(p.methodology.sources, p.methodology.rules, 'data-source-table compact-register', 'compact-register') }}
+{% endcall %}
 
     {% call ui.section('Methodology References') %}
     <div class="reference-grid methodology-reference-grid">{% for item in p.methodology.references %}{{ reference_item(item) }}{% endfor %}</div>
     {% endcall %}
 
     {% call ui.section('Evidence Boundary', 'This report is built strictly within the committed observation boundary defined by the data cut-off.') %}
-    <div class="two-column boundary-columns">
-      <div><h3>Included in This Report</h3><ul><li>Committed cluster-scoped utilization observations.</li><li>Committed CPU, memory, pod, and node participation evidence.</li><li>Top-consumer and forecast evidence when available.</li></ul></div>
-      <div><h3>Not Included in This Report</h3><ul><li>Live cluster state after the data cut-off.</li><li>Unapproved change windows and in-flight maintenance.</li><li>Planned deployments not represented by committed evidence.</li></ul></div>
-    </div>
-    {% endcall %}
+    {{ ui.evidence_boundary(p.methodology.included, p.methodology.excluded) }}
+{% endcall %}
 
     {% call ui.section('Limitations and Status Language') %}
-    <div class="limitations-status-grid">
-      <div><h3>Known Limitations and Operational Use</h3><ul><li>Distribution charts describe displayed top-consumer records unless a complete denominator is available.</li><li>Unavailable observations remain explicit and are not interpreted as zero.</li><li>Validate all recommendations against live cluster state before remediation.</li></ul></div>
-      <div><h3>Status Language</h3><div class="status-language-grid">
-        <div class="status-language"><span>S1</span><div><strong>Not Available</strong><p>No evidence exists for the requested dimension.</p></div></div>
-        <div class="status-language"><span>S2</span><div><strong>Not Collected</strong><p>Collection was prevented by configuration or failure.</p></div></div>
-        <div class="status-language"><span>S3</span><div><strong>Partial Coverage</strong><p>Evidence exists but does not cover the full requested scope.</p></div></div>
-        <div class="status-language"><span>S4</span><div><strong>Source Unavailable</strong><p>The source was unreachable or not providing data at the cut-off.</p></div></div>
-      </div></div>
+    <div class="limitations-grid">
+      <div class="limitations-copy"><h3>Known Limitations and Operational Use</h3><ul>{% for item in p.methodology.limitations %}<li>{{ item }}</li>{% endfor %}</ul></div>
+      <div class="status-language-block"><h3>Status Language</h3>{{ ui.status_language(p.methodology.status_language) }}</div>
     </div>
-    {% endcall %}
+{% endcall %}
   </div>
   {{ footer(9) }}
 </article>

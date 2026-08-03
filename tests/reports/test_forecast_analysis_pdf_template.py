@@ -164,17 +164,19 @@ def test_forecast_analysis_uses_approved_nine_page_publication() -> None:
 
     assert document.template_name == 'reports/pdf/forecast_analysis.html'
     assert document.presentation['page_count'] == 9
-    assert document.presentation['presentation_version'] == 'v1.0-forecast-analysis-publication'
-    assert document.presentation['layout_contract'] == {
-        'paper': 'A4 Portrait',
-        'page_count': 9,
-        'fixed_page_canvas': True,
-        'status_style': 'plain-colored-text',
-        'table_policy': 'single-line-technical-registers',
-        'missing_evidence_policy': 'explicit-not-available',
-        'forecast_policy': 'committed-materialized-evidence-only',
-        'visual_style': 'kaori-forecast-analysis-v1.0',
-    }
+    assert document.presentation['presentation_version'] == 'v1.1-forecast-analysis-publication'
+    contract = document.presentation['layout_contract']
+    assert contract['paper'] == 'A4 Portrait'
+    assert contract['page_count'] == 9
+    assert contract['fixed_page_canvas'] is True
+    assert contract['table_policy'] == 'single-line-technical-registers'
+    assert contract['missing_evidence_policy'] == 'explicit-not-available'
+    assert contract['forecast_policy'] == 'committed-materialized-evidence-only'
+    assert contract['cover_header_policy'] == 'symmetric-two-sided'
+    assert contract['section_separator_policy'] == 'none'
+    assert contract['table_alignment'] == 'left-middle'
+    assert contract['methodology_layout'] == 'parallel-registers'
+    assert contract['visual_style'] == 'reporting-standard-v2.9.2-analytics-family'
     assert rendered_html.count('<article class="page') == 9
 
 
@@ -201,16 +203,15 @@ def test_forecast_analysis_derives_memory_projection_and_long_range_eta() -> Non
 
 def test_forecast_analysis_methodology_uses_side_by_side_boundary_columns() -> None:
     _, rendered_html, project_root = _rendered_html()
-    css = (project_root / 'app' / 'static' / 'reports' / 'pdf' / 'forecast_analysis.css').read_text(
+    shared = (project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css').read_text(
         encoding='utf-8'
     )
 
     assert 'class="boundary-columns"' in rendered_html
     assert 'Included in This Report' in rendered_html
     assert 'Not Included in This Report' in rendered_html
-    assert 'grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)' in css
-    assert 'column-gap: 14mm' in css
-
+    assert 'grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)' in shared
+    assert 'column-gap: 12mm' in shared
 
 def test_forecast_analysis_uses_committed_materialized_collector() -> None:
     project_root = Path(__file__).resolve().parents[2]
@@ -226,12 +227,15 @@ def test_forecast_analysis_uses_committed_materialized_collector() -> None:
 
 def test_forecast_analysis_stylesheet_is_isolated() -> None:
     project_root = Path(__file__).resolve().parents[2]
-    engine_source = (project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'engine.py').read_text(
+    registry = (
+        project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'analytics_publication_standard.py'
+    ).read_text(encoding='utf-8')
+    engine = (project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'engine.py').read_text(
         encoding='utf-8'
     )
 
-    assert "'reports/pdf/forecast_analysis.html': 'forecast_analysis.css'" in engine_source
-
+    assert "'reports/pdf/forecast_analysis.html': 'forecast_analysis.css'" in registry
+    assert 'ANALYTICS_TEMPLATE_STYLESHEETS' in engine
 
 def test_forecast_analysis_weasyprint_layout_is_exactly_nine_a4_pages(tmp_path: Path) -> None:
     document, rendered_html, project_root = _rendered_html()

@@ -298,16 +298,18 @@ def test_storage_analysis_uses_approved_nine_page_publication() -> None:
 
     assert document.template_name == 'reports/pdf/storage_analysis.html'
     assert document.presentation['page_count'] == 9
-    assert document.presentation['presentation_version'] == 'v1.0-storage-analysis-publication'
-    assert document.presentation['layout_contract'] == {
-        'paper': 'A4 Portrait',
-        'page_count': 9,
-        'fixed_page_canvas': True,
-        'status_style': 'plain-colored-text',
-        'table_policy': 'single-line-technical-registers',
-        'missing_evidence_policy': 'explicit-not-available',
-        'visual_style': 'kaori-storage-analysis-v1.0',
-    }
+    assert document.presentation['presentation_version'] == 'v1.1-storage-analysis-publication'
+    contract = document.presentation['layout_contract']
+    assert contract['paper'] == 'A4 Portrait'
+    assert contract['page_count'] == 9
+    assert contract['fixed_page_canvas'] is True
+    assert contract['table_policy'] == 'single-line-technical-registers'
+    assert contract['missing_evidence_policy'] == 'explicit-not-available'
+    assert contract['cover_header_policy'] == 'symmetric-two-sided'
+    assert contract['section_separator_policy'] == 'none'
+    assert contract['table_alignment'] == 'left-middle'
+    assert contract['methodology_layout'] == 'parallel-registers'
+    assert contract['visual_style'] == 'reporting-standard-v2.9.2-analytics-family'
     assert rendered_html.count('<article class="page') == 9
 
 
@@ -357,14 +359,16 @@ def test_storage_analysis_does_not_synthesize_missing_trend() -> None:
 
 def test_storage_analysis_methodology_tables_remain_separate_and_single_line() -> None:
     _, rendered_html, project_root = _rendered_html()
-    css = (project_root / 'app' / 'static' / 'reports' / 'pdf' / 'storage_analysis.css').read_text()
+    shared = (project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css').read_text()
+    compact = shared.replace(' ', '')
 
-    assert 'class="two-column methodology-tables"' in rendered_html
+    assert 'class="methodology-grid"' in rendered_html
+    assert 'source-register data-source-table compact-register' in rendered_html
+    assert 'methodology-register compact-register' in rendered_html
     assert 'Data Sources and Coverage' in rendered_html
     assert 'Methodology Register' in rendered_html
-    assert '.methodology-tables .compact-register td { white-space: nowrap;' in css
-    assert 'grid-template-columns: minmax(0, 1.55fr) minmax(0, .72fr);' in css
-
+    assert 'grid-template-columns:minmax(0,1.08fr)minmax(0,.92fr)' in compact
+    assert 'white-space:nowrap' in compact
 
 def test_storage_analysis_weasyprint_layout_is_exactly_nine_a4_pages(tmp_path: Path) -> None:
     document, rendered_html, project_root = _rendered_html()
@@ -390,13 +394,13 @@ def test_storage_analysis_weasyprint_layout_is_exactly_nine_a4_pages(tmp_path: P
 
 
 def test_storage_analysis_stylesheet_is_isolated_from_generic_report_css() -> None:
-    engine_source = (
-        Path(__file__).resolve().parents[2]
-        / 'app'
-        / 'reports'
-        / 'export'
-        / 'html_pdf'
-        / 'engine.py'
+    project_root = Path(__file__).resolve().parents[2]
+    registry = (
+        project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'analytics_publication_standard.py'
+    ).read_text()
+    engine = (
+        project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'engine.py'
     ).read_text()
 
-    assert "'reports/pdf/storage_analysis.html': 'storage_analysis.css'" in engine_source
+    assert "'reports/pdf/storage_analysis.html': 'storage_analysis.css'" in registry
+    assert 'ANALYTICS_TEMPLATE_STYLESHEETS' in engine

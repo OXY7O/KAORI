@@ -9,6 +9,7 @@ from app.reports.export.html_pdf.analytics_publication_standard import (
     ANALYTICS_CANONICAL_REFERENCE,
     ANALYTICS_PUBLICATION_FAMILY,
     ANALYTICS_PUBLICATION_STANDARD,
+    analytics_layout_contract,
 )
 
 
@@ -97,20 +98,16 @@ def build_storage_analysis_presentation(
     )
 
     return {
-        'presentation_version': 'v1.0-storage-analysis-publication',
+        'presentation_version': 'v1.1-storage-analysis-publication',
         'publication_family': ANALYTICS_PUBLICATION_FAMILY,
         'publication_standard': ANALYTICS_PUBLICATION_STANDARD,
         'canonical_reference': ANALYTICS_CANONICAL_REFERENCE,
         'page_count': 9,
-        'layout_contract': {
-            'paper': 'A4 Portrait',
-            'page_count': 9,
-            'fixed_page_canvas': True,
-            'status_style': 'plain-colored-text',
-            'table_policy': 'single-line-technical-registers',
-            'missing_evidence_policy': 'explicit-not-available',
-            'visual_style': 'kaori-storage-analysis-v1.0',
-        },
+        'layout_contract': analytics_layout_contract(
+            page_count=9,
+            table_policy='single-line-technical-registers',
+            missing_evidence_policy='explicit-not-available',
+        ),
         'report_id': report_id,
         'report_name': report_name,
         'cluster_scope': cluster_scope,

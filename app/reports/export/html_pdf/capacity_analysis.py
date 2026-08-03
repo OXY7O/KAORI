@@ -9,6 +9,7 @@ from app.reports.export.html_pdf.analytics_publication_standard import (
     ANALYTICS_CANONICAL_REFERENCE,
     ANALYTICS_PUBLICATION_FAMILY,
     ANALYTICS_PUBLICATION_STANDARD,
+    analytics_layout_contract,
 )
 from app.reports.export.html_pdf.normalization import sanitize_text
 
@@ -147,19 +148,15 @@ def build_capacity_analysis_presentation(
 
     return {
         'page_count': len(_CAPACITY_PAGE_TITLES),
-        'presentation_version': 'v1.0-capacity-analysis-publication',
+        'presentation_version': 'v1.1-capacity-analysis-publication',
         'publication_family': ANALYTICS_PUBLICATION_FAMILY,
         'publication_standard': ANALYTICS_PUBLICATION_STANDARD,
         'canonical_reference': ANALYTICS_CANONICAL_REFERENCE,
-        'layout_contract': {
-            'paper': 'A4 Portrait',
-            'page_count': 9,
-            'fixed_page_canvas': True,
-            'status_style': 'plain-colored-text',
-            'table_policy': 'single-line-technical-registers',
-            'missing_evidence_policy': 'explicit-not-available',
-            'visual_style': 'kaori-capacity-analysis-v1.0',
-        },
+        'layout_contract': analytics_layout_contract(
+            page_count=9,
+            table_policy='single-line-technical-registers',
+            missing_evidence_policy='explicit-not-available',
+        ),
         'report_id': report_id,
         'report_name': report_name,
         'report_title': 'Capacity Analysis',
@@ -452,6 +449,26 @@ def build_capacity_analysis_presentation(
                     'title': 'Missing Evidence',
                     'description': 'Unavailable capacity evidence remains explicit and is never converted to zero.',
                 },
+            ),            'included': (
+                'Committed CPU, memory, pod, node, and available storage capacity evidence.',
+                'Committed allocation and headroom evidence.',
+                'Committed forecast endpoints when available.',
+            ),
+            'excluded': (
+                'Live cluster state after the data cut-off.',
+                'Unapproved change windows and in-flight maintenance.',
+                'Unavailable capacity values not present in committed evidence.',
+            ),
+            'limitations': (
+                'Capacity conclusions depend on matching units, scope, and cut-off.',
+                'Forecast results exclude planned deployments and infrastructure expansion.',
+                'Validate recommendations against live cluster state before remediation.',
+            ),
+            'status_language': (
+                {'ref': 'S1', 'title': 'Not Available', 'description': 'No evidence exists for the requested dimension.'},
+                {'ref': 'S2', 'title': 'Not Collected', 'description': 'Collection was prevented by configuration or failure.'},
+                {'ref': 'S3', 'title': 'Partial Coverage', 'description': 'Evidence exists but does not cover the full requested scope.'},
+                {'ref': 'S4', 'title': 'Source Unavailable', 'description': 'The source was unreachable or not providing data at the cut-off.'},
             ),
         },
     }

@@ -9,6 +9,7 @@ from app.reports.export.html_pdf.analytics_publication_standard import (
     ANALYTICS_CANONICAL_REFERENCE,
     ANALYTICS_PUBLICATION_FAMILY,
     ANALYTICS_PUBLICATION_STANDARD,
+    analytics_layout_contract,
 )
 from app.reports.export.html_pdf.normalization import sanitize_text
 
@@ -93,21 +94,17 @@ def build_forecast_analysis_presentation(
     forecast_tone = _executive_tone(warning_count, critical_count, coverage_count)
 
     return {
-        'presentation_version': 'v1.0-forecast-analysis-publication',
+        'presentation_version': 'v1.1-forecast-analysis-publication',
         'publication_family': ANALYTICS_PUBLICATION_FAMILY,
         'publication_standard': ANALYTICS_PUBLICATION_STANDARD,
         'canonical_reference': ANALYTICS_CANONICAL_REFERENCE,
         'page_count': len(_FORECAST_PAGE_TITLES),
-        'layout_contract': {
-            'paper': 'A4 Portrait',
-            'page_count': 9,
-            'fixed_page_canvas': True,
-            'status_style': 'plain-colored-text',
-            'table_policy': 'single-line-technical-registers',
-            'missing_evidence_policy': 'explicit-not-available',
-            'forecast_policy': 'committed-materialized-evidence-only',
-            'visual_style': 'kaori-forecast-analysis-v1.0',
-        },
+        'layout_contract': analytics_layout_contract(
+            page_count=9,
+            table_policy='single-line-technical-registers',
+            missing_evidence_policy='explicit-not-available',
+            forecast_policy='committed-materialized-evidence-only',
+        ),
         'report_id': report_id,
         'report_name': report_name,
         'report_title': 'Forecast Analysis',

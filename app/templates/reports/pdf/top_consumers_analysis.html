@@ -13,8 +13,11 @@
 {% macro consumer_bar(item, color='#7C3AED') -%}<div class="consumer-bar-row"><strong>{{ item.identity }}</strong><div class="consumer-track"><i style="width: {{ item.displayed_share_bar }}%; background: {{ color }}"></i></div><span>{{ item.displayed_share_label }}</span></div>{%- endmacro %}
 
 <article class="page cover-page">
-  <div class="cover-band"><div class="cover-masthead"><div class="cover-brand"><img src="app/static/images/kaori-logo.svg" alt="KAORI"><div><strong>KAORI</strong><span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span></div></div><div class="cover-class">ANALYTICS REPORT<br><b>{{ p.classification|upper }} - REPORT ID {{ p.report_id }}</b></div></div><div class="cover-copy"><div class="cover-eyebrow">Kubernetes Operational Intelligence</div><h1>Top Consumers</h1><p>A focused operational view of leading CPU and memory contributors, displayed concentration, namespace distribution, ownership boundaries, and accountable validation actions.</p></div></div>
-  <div class="cover-main"><div class="cover-grid"><section><h2>Reporting Boundary</h2><dl class="context-list"><dt>Cluster</dt><dd>{{ p.cluster_scope }}</dd><dt>Environment</dt><dd>{{ p.cover.environment }}</dd><dt>Namespace</dt><dd>{{ p.namespace_scope }}</dd><dt>Reporting Period</dt><dd>{{ p.period_label }}</dd><dt>Data Cut-off</dt><dd>{{ p.data_cutoff }}</dd></dl></section><section><h2>Report Purpose</h2><p>{{ p.cover.purpose }}</p></section></div><div class="cover-context"><strong>Evidence Context</strong><p>{{ p.cover.context }}</p></div><div class="cover-contents"><span>01 Executive Consumer Brief</span><span>02 CPU Consumers</span><span>03 Memory Consumers</span><span>04 Namespace Concentration</span><span>05 Consumer Comparison</span><span>06 Evidence &amp; Risk Register</span><span>07 Recommendation Plan</span><span>08 Methodology and Evidence Boundary</span></div></div>
+  <div class="cover-band">
+    {{ ui.cover_brand(p.report_id, p.classification, 'ANALYTICS REPORT') }}
+    {{ ui.cover_title('Top Consumers', 'A focused operational view of leading CPU and memory contributors, displayed concentration, namespace distribution, ownership boundaries, and accountable validation actions.') }}
+  </div>
+  <div class="cover-main"><div class="cover-grid"><section><h2>Reporting Boundary</h2><dl class="context-list"><dt>Cluster</dt><dd>{{ p.cluster_scope }}</dd><dt>Environment</dt><dd>{{ p.cover.environment }}</dd><dt>Namespace</dt><dd>{{ p.namespace_scope }}</dd><dt>Reporting Period</dt><dd>{{ p.period_label }}</dd><dt>Data Cut-off</dt><dd>{{ p.data_cutoff }}</dd></dl></section><section><h2>Report Purpose</h2><p>{{ p.cover.purpose }}</p></section></div><div class="cover-context"><strong>Evidence Context</strong><p>{{ p.cover.context }}</p></div>{{ ui.cover_contents(['01 Executive Consumer Brief', '02 CPU Consumers', '03 Memory Consumers', '04 Namespace Concentration', '05 Consumer Comparison', '06 Evidence & Risk Register', '07 Recommendation Plan', '08 Methodology and Evidence Boundary']) }}</div>
   {{ footer(1) }}
 </article>
 
@@ -57,8 +60,17 @@
 </div>{{ footer(8) }}</article>
 
 <article class="page page-consumer-methodology">{{ report_header() }}<div class="page-content">{{ page_title(8, 'Methodology and Evidence Boundary', 'Source rules, unit normalization, ranking scope, and explicit limitations.') }}{{ metric_strip(p.methodology.metrics) }}
-{% call ui.section('Data Sources and Methodology', 'Source names, unit rules, and ranking boundaries remain explicit.') %}<div class="methodology-grid"><div><h3>Data Sources and Coverage</h3><table class="report-table source-register"><thead><tr><th>Source</th><th>Freshness</th><th>Last Collected</th></tr></thead><tbody>{% for item in p.methodology.sources %}<tr><td>{{ item.source }}</td><td>{{ item.freshness }}</td><td>{{ item.last_collected }}</td></tr>{% endfor %}</tbody></table></div><div><h3>Methodology Register</h3><table class="report-table methodology-register"><thead><tr><th>Ref.</th><th>Rule</th><th>Setting</th></tr></thead><tbody>{% for item in p.methodology.rules %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.rule }}</td><td>{{ item.setting }}</td></tr>{% endfor %}</tbody></table></div></div>{% endcall %}
-{% call ui.section('Evidence Boundary', 'Included and excluded evidence remain separated by the committed report cut-off.') %}<div class="boundary-columns"><div><h3>Included in This Report</h3><ul>{% for item in p.methodology.included %}<li>{{ item }}</li>{% endfor %}</ul></div><div><h3>Not Included in This Report</h3><ul>{% for item in p.methodology.excluded %}<li>{{ item }}</li>{% endfor %}</ul></div></div>{% endcall %}
-{% call ui.section('Limitations and Status Language') %}<div class="two-column limitations-grid"><div><h3>Known Limitations and Operational Use</h3><ul><li>Top-consumer ranking describes displayed records only.</li><li>Different resource units are not combined into a single score.</li><li>Validate all recommendations against live state before remediation.</li></ul></div><div><h3>Status Language</h3><div class="status-grid"><div><b>S1</b><strong>Not Available</strong><span>No committed evidence exists.</span></div><div><b>S2</b><strong>Partial Coverage</strong><span>Only part of the requested scope is represented.</span></div><div><b>S3</b><strong>Current Only</strong><span>A cut-off value exists without historical direction.</span></div><div><b>S4</b><strong>Source Unavailable</strong><span>The source was unreachable at the cut-off.</span></div></div></div></div>{% endcall %}
+{% call ui.section('Data Sources and Methodology', 'Source names, unit rules, and ranking boundaries remain explicit.') %}
+    {{ ui.methodology_register(p.methodology.sources, p.methodology.rules) }}
+{% endcall %}
+{% call ui.section('Evidence Boundary', 'Included and excluded evidence remain separated by the committed report cut-off.') %}
+    {{ ui.evidence_boundary(p.methodology.included, p.methodology.excluded) }}
+{% endcall %}
+{% call ui.section('Limitations and Status Language') %}
+    <div class="limitations-grid">
+      <div class="limitations-copy"><h3>Known Limitations and Operational Use</h3><ul>{% for item in p.methodology.limitations %}<li>{{ item }}</li>{% endfor %}</ul></div>
+      <div class="status-language-block"><h3>Status Language</h3>{{ ui.status_language(p.methodology.status_language) }}</div>
+    </div>
+{% endcall %}
 </div>{{ footer(9) }}</article>
 </body></html>

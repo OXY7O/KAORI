@@ -46,15 +46,17 @@
 </div>
 {%- endmacro %}
 
-{% macro cover_brand(report_id, classification, report_class='MANAGEMENT REPORT') -%}
-<div class="cover-brand">
-  <img src="app/static/images/kaori-logo.svg" alt="KAORI">
-  <div>
-    <strong>KAORI</strong>
-    <span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span>
+{% macro cover_brand(report_id, classification, report_class='ANALYTICS REPORT') -%}
+<div class="cover-masthead">
+  <div class="cover-brand">
+    <img src="app/static/images/kaori-logo.svg" alt="KAORI">
+    <div>
+      <strong>KAORI</strong>
+      <span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span>
+    </div>
   </div>
+  <div class="cover-class"><span>{{ report_class }}</span><b>{{ classification|upper }} - REPORT ID {{ report_id }}</b></div>
 </div>
-<div class="cover-class">{{ report_class }}<br><b>{{ classification|upper }} - REPORT ID {{ report_id }}</b></div>
 {%- endmacro %}
 
 {% macro cover_title(title, purpose, eyebrow='Kubernetes Operational Intelligence') -%}
@@ -62,6 +64,31 @@
   <div class="cover-eyebrow">{{ eyebrow }}</div>
   <h1>{{ title }}</h1>
   <p>{{ purpose }}</p>
+</div>
+{%- endmacro %}
+
+{% macro cover_contents(items) -%}
+<div class="cover-contents">
+  {% for item in items %}<span>{{ item }}</span>{% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro methodology_register(sources, rules, source_class='', rule_class='') -%}
+<div class="methodology-grid">
+  <div class="methodology-source-block">
+    <h3>Data Sources and Coverage</h3>
+    <table class="report-table source-register {{ source_class }}">
+      <thead><tr><th>Source</th><th>Freshness</th><th>Last Collected</th></tr></thead>
+      <tbody>{% for item in sources %}<tr><td>{{ item.source }}</td><td>{{ item.freshness }}</td><td>{{ item.last_collected }}</td></tr>{% endfor %}</tbody>
+    </table>
+  </div>
+  <div class="methodology-rule-block">
+    <h3>Methodology Register</h3>
+    <table class="report-table methodology-register {{ rule_class }}">
+      <thead><tr><th>Ref.</th><th>Rule</th><th>Setting</th></tr></thead>
+      <tbody>{% for item in rules %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.rule }}</td><td>{{ item.setting }}</td></tr>{% endfor %}</tbody>
+    </table>
+  </div>
 </div>
 {%- endmacro %}
 
@@ -166,8 +193,8 @@
 <div class="status-language-grid">
   {% for item in items %}
   <div class="status-language-item">
-    <span class="reference-code">S{{ loop.index }}</span>
-    <div><strong>{{ item.label }}</strong><p>{{ item.description }}</p></div>
+    <span class="reference-code">{{ item.ref|default('S' ~ loop.index) }}</span>
+    <div><strong>{{ item.label|default(item.title|default(item.status|default('Not Available'))) }}</strong><p>{{ item.description|default(item.definition|default('No supporting definition is available.')) }}</p></div>
   </div>
   {% endfor %}
 </div>

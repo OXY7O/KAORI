@@ -79,7 +79,7 @@ def _rendered_html() -> str:
 def test_alerts_anomalies_presentation_uses_nine_page_contract() -> None:
     presentation = _presentation()
 
-    assert presentation['presentation_version'] == 'v1.0-alerts-anomalies-publication'
+    assert presentation['presentation_version'] == 'v1.1-alerts-anomalies-publication'
     assert presentation['page_count'] == 9
     assert presentation['layout_contract']['correlation_policy'] == 'review-lead-not-causality'
 
@@ -103,22 +103,22 @@ def test_alerts_anomalies_derives_category_coverage_without_forced_labels() -> N
 
 def test_alerts_anomalies_methodology_uses_side_by_side_boundary_columns() -> None:
     rendered_html = _rendered_html()
-    css = (PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf' / 'alerts_anomalies.css').read_text(encoding='utf-8')
+    shared = (PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css').read_text(encoding='utf-8')
 
     assert 'class="boundary-columns"' in rendered_html
     assert 'Included in This Report' in rendered_html
     assert 'Not Included in This Report' in rendered_html
-    assert 'grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)' in css
-    assert 'column-gap: 14mm' in css
-
+    assert 'grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)' in shared
+    assert 'column-gap: 12mm' in shared
 
 def test_alerts_anomalies_renderer_registration_is_present() -> None:
     builder = (PROJECT_ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'builder.py').read_text(encoding='utf-8')
+    registry = (PROJECT_ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'analytics_publication_standard.py').read_text(encoding='utf-8')
     engine = (PROJECT_ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'engine.py').read_text(encoding='utf-8')
 
     assert "report.report_type == 'alerts_anomalies'" in builder
-    assert "'reports/pdf/alerts_anomalies.html': 'alerts_anomalies.css'" in engine
-
+    assert "'reports/pdf/alerts_anomalies.html': 'alerts_anomalies.css'" in registry
+    assert 'ANALYTICS_TEMPLATE_STYLESHEETS' in engine
 
 def test_alerts_anomalies_weasyprint_layout_is_exactly_nine_a4_pages(tmp_path: Path) -> None:
     output_path = tmp_path / 'alerts-anomalies-validation.pdf'

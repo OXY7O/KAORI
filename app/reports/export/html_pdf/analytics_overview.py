@@ -9,6 +9,7 @@ from app.reports.export.html_pdf.analytics_publication_standard import (
     ANALYTICS_CANONICAL_REFERENCE,
     ANALYTICS_PUBLICATION_FAMILY,
     ANALYTICS_PUBLICATION_STANDARD,
+    analytics_layout_contract,
 )
 from app.reports.export.html_pdf.normalization import sanitize_text
 
@@ -89,18 +90,17 @@ def build_analytics_overview_presentation(
 
     common = {
         'page_count': len(_ANALYTICS_PAGE_TITLES),
-        'presentation_version': 'v2.8-typography-spacing-alignment',
+        'presentation_version': 'v2.9.2-analytics-family-standard',
         'publication_family': ANALYTICS_PUBLICATION_FAMILY,
         'publication_standard': ANALYTICS_PUBLICATION_STANDARD,
         'canonical_reference': ANALYTICS_CANONICAL_REFERENCE,
-        'layout_contract': {
-            'paper': 'A4 Portrait',
-            'section_page_breaks': True,
-            'truncate_identities': True,
-            'identity_policy': 'top-n-summarized',
-            'status_style': 'plain-colored-text',
-            'visual_style': 'reporting-standard-v2.8-analytics-family',
-        },
+        'layout_contract': analytics_layout_contract(
+            page_count=len(_ANALYTICS_PAGE_TITLES),
+            table_policy='concise-decision-registers',
+            section_page_breaks=True,
+            truncate_identities=True,
+            identity_policy='top-n-summarized',
+        ),
         'report_id': report_id,
         'report_name': report_name,
         'report_title': 'Analytics Overview',
@@ -1566,23 +1566,21 @@ def _alert_severity_svg(alerts_snapshot: Mapping[str, Any], alert_detail: Mappin
 
     legend = []
     for index, (label, value, color) in enumerate(zip(labels, values, colors)):
-        y = 42 + index * 29
+        y = 43 + index * 29
         legend.append(
-            f'<rect x="204" y="{y - 8}" width="10" height="10" rx="2" fill="{color}"/>'
+            f'<rect x="204" y="{y - 5}" width="10" height="10" rx="2" fill="{color}"/>'
             f'<text x="224" y="{y}" class="donut-legend-label">{label}</text>'
             f'<text x="330" y="{y}" text-anchor="end" class="donut-legend-value">{int(value)}</text>'
         )
 
-    centre_line_1 = 'Active' if total else 'No Active'
-    centre_line_2 = 'Alerts'
+    centre_caption = 'Active Alerts' if total else 'No Active Alerts'
     return (
         '<svg class="ao-chart-svg ao-alert-donut" viewBox="0 0 350 155" role="img" '
         'aria-label="Alert severity distribution">'
         '<circle cx="108" cy="76" r="46" fill="none" stroke="#E5E7EB" stroke-width="18"/>'
         + ''.join(segments)
-        + f'<text x="108" y="67" text-anchor="middle" class="donut-total">{int(total)}</text>'
-        + f'<text x="108" y="86" text-anchor="middle" class="donut-caption">{centre_line_1}</text>'
-        + f'<text x="108" y="98" text-anchor="middle" class="donut-caption">{centre_line_2}</text>'
+        + f'<text x="108" y="74" text-anchor="middle" class="donut-total">{int(total)}</text>'
+        + f'<text x="108" y="146" text-anchor="middle" class="donut-caption donut-caption-below">{centre_caption}</text>'
         + ''.join(legend)
         + '</svg>'
     )

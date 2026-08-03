@@ -37,18 +37,8 @@
 
 <article class="page cover-page">
   <div class="cover-band">
-    <div class="cover-masthead">
-      <div class="cover-brand">
-        <img src="app/static/images/kaori-logo.svg" alt="KAORI">
-        <div><strong>KAORI</strong><span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span></div>
-      </div>
-      <div class="cover-class">ANALYTICS REPORT<br><b>{{ p.classification|upper }} - REPORT ID {{ p.report_id }}</b></div>
-    </div>
-    <div class="cover-copy">
-      <div class="cover-eyebrow">Kubernetes Operational Intelligence</div>
-      <h1>Forecast Analysis</h1>
-      <p>A focused planning view of committed historical direction, projected resource pressure, threshold exposure, evidence confidence, and accountable forecast actions.</p>
-    </div>
+    {{ ui.cover_brand(p.report_id, p.classification, 'ANALYTICS REPORT') }}
+    {{ ui.cover_title('Forecast Analysis', 'A focused planning view of committed historical direction, projected resource pressure, threshold exposure, evidence confidence, and accountable forecast actions.') }}
   </div>
   <div class="cover-main">
     <div class="cover-grid">
@@ -65,12 +55,7 @@
       <section><h2>Report Purpose</h2><p>{{ p.cover.purpose }}</p></section>
     </div>
     <div class="cover-context"><strong>Evidence Context</strong><p>{{ p.cover.context }}</p></div>
-    <div class="cover-contents">
-      <span>01 Executive Forecast Brief</span><span>02 Forecast Portfolio</span>
-      <span>03 CPU Forecast</span><span>04 Memory Forecast</span>
-      <span>05 Pod &amp; Storage Forecast</span><span>06 Threshold Exposure &amp; Confidence</span>
-      <span>07 Recommendation Plan</span><span>08 Methodology and Evidence Boundary</span>
-    </div>
+    {{ ui.cover_contents(['01 Executive Forecast Brief', '02 Forecast Portfolio', '03 CPU Forecast', '04 Memory Forecast', '05 Pod & Storage Forecast', '06 Threshold Exposure & Confidence', '07 Recommendation Plan', '08 Methodology and Evidence Boundary']) }}
   </div>
   {{ footer(1) }}
 </article>
@@ -218,21 +203,18 @@
     {{ page_title(8, 'Methodology and Evidence Boundary', 'Forecast sources, model rules, freshness, and explicit limitations.') }}
     {{ metric_strip(p.methodology.metrics) }}
     {% call ui.section('Data Sources and Methodology', 'Source names, timestamps, and model rules remain explicit and separate.') %}
-    <div class="methodology-tables">
-      <div><h3>Data Sources and Coverage</h3><table class="report-table source-table"><thead><tr><th>Source</th><th>Freshness</th><th>Last Collected</th></tr></thead><tbody>{% for item in p.methodology.sources %}<tr><td>{{ item.source }}</td><td>{{ item.freshness }}</td><td>{{ item.last_collected }}</td></tr>{% endfor %}</tbody></table></div>
-      <div><h3>Methodology Register</h3><table class="report-table methodology-register"><thead><tr><th>Ref.</th><th>Rule</th><th>Setting</th></tr></thead><tbody>{% for item in p.methodology.rules %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.rule }}</td><td>{{ item.setting }}</td></tr>{% endfor %}</tbody></table></div>
-    </div>
-    {% endcall %}
+    {{ ui.methodology_register(p.methodology.sources, p.methodology.rules, 'source-table', '') }}
+{% endcall %}
     {% call ui.section('Methodology References') %}<div class="reference-grid methodology-references">{% for item in p.methodology.references %}{{ reference_item(item) }}{% endfor %}</div>{% endcall %}
     {% call ui.section('Evidence Boundary', 'This report is built strictly within the committed observation boundary defined by the data cut-off.') %}
-    <div class="boundary-columns">
-      <div><h3>Included in This Report</h3><ul>{% for item in p.methodology.included %}<li>{{ item }}</li>{% endfor %}</ul></div>
-      <div><h3>Not Included in This Report</h3><ul>{% for item in p.methodology.excluded %}<li>{{ item }}</li>{% endfor %}</ul></div>
-    </div>
-    {% endcall %}
+    {{ ui.evidence_boundary(p.methodology.included, p.methodology.excluded) }}
+{% endcall %}
     {% call ui.section('Limitations and Status Language') %}
-    <div class="limitations-grid"><div><h3>Known Limitations and Operational Use</h3><ul>{% for item in p.methodology.limitations %}<li>{{ item }}</li>{% endfor %}</ul></div><div><h3>Status Language</h3><div class="status-language-grid">{% for item in p.methodology.status_language %}{{ reference_item(item) }}{% endfor %}</div></div></div>
-    {% endcall %}
+    <div class="limitations-grid">
+      <div class="limitations-copy"><h3>Known Limitations and Operational Use</h3><ul>{% for item in p.methodology.limitations %}<li>{{ item }}</li>{% endfor %}</ul></div>
+      <div class="status-language-block"><h3>Status Language</h3>{{ ui.status_language(p.methodology.status_language) }}</div>
+    </div>
+{% endcall %}
   </div>
   {{ footer(9) }}
 </article>

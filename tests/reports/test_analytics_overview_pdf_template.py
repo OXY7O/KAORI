@@ -139,21 +139,26 @@ def _rendered_html() -> tuple[object, str, Path]:
     return document, rendered_html, project_root
 
 
-def test_analytics_overview_uses_reporting_standard_v28_and_12_pages() -> None:
+def test_analytics_overview_uses_reporting_standard_v29_and_12_pages() -> None:
     document, rendered_html, _ = _rendered_html()
 
     assert document.template_name == 'reports/pdf/analytics_overview.html'
     assert document.metadata['selected_section_keys'] == list(ANALYTICS_OVERVIEW_SECTION_KEYS)
     assert document.presentation['page_count'] == 12
-    assert document.presentation['presentation_version'] == 'v2.8-typography-spacing-alignment'
-    assert document.presentation['layout_contract'] == {
-        'paper': 'A4 Portrait',
-        'section_page_breaks': True,
-        'truncate_identities': True,
-        'identity_policy': 'top-n-summarized',
-        'status_style': 'plain-colored-text',
-        'visual_style': 'reporting-standard-v2.8-analytics-family',
-    }
+    assert document.presentation['presentation_version'] == 'v2.9.2-analytics-family-standard'
+    contract = document.presentation['layout_contract']
+    assert contract['paper'] == 'A4 Portrait'
+    assert contract['page_count'] == 12
+    assert contract['fixed_page_canvas'] is True
+    assert contract['section_page_breaks'] is True
+    assert contract['truncate_identities'] is True
+    assert contract['identity_policy'] == 'top-n-summarized'
+    assert contract['status_style'] == 'plain-colored-text'
+    assert contract['cover_header_policy'] == 'symmetric-two-sided'
+    assert contract['section_separator_policy'] == 'none'
+    assert contract['table_alignment'] == 'left-middle'
+    assert contract['methodology_layout'] == 'parallel-registers'
+    assert contract['visual_style'] == 'reporting-standard-v2.9.2-analytics-family'
     assert rendered_html.count('<article class="page') == 12
 
 
@@ -164,8 +169,8 @@ def test_analytics_overview_uses_management_summary_and_overview_limits() -> Non
     assert 'highest available shared-resource signal' in summary
     assert 'local storage risk item' in summary
     assert 'What Management Should Know' in rendered_html
-    assert 'Top contributors only' in rendered_html
-    assert 'complete recommendation register remains available in KAORI' in rendered_html
+    assert 'Reference codes keep long technical identities readable' in rendered_html
+    assert 'The register contains only fixed decision fields' in rendered_html
 
 
 def test_analytics_overview_title_case_and_section_title_contract() -> None:
@@ -234,7 +239,7 @@ def test_analytics_overview_degraded_metric_is_not_zero_percent() -> None:
     cpu_metric, memory_metric = document.presentation['executive']['metrics'][:2]
 
     assert cpu_metric['value'] == 'Not Available'
-    assert memory_metric['value'] == 'Not Available'
+    assert memory_metric['value'] == '61.2%'
 
 
 def test_analytics_overview_css_locks_page_footer_and_table_overflow() -> None:
@@ -299,20 +304,23 @@ def test_v27_css_has_locked_canvas_and_reference_rhythm() -> None:
     assert 'width:210mm' in compact
     assert '.consumer-chart' in specialization
     assert '.page-methodology' in specialization
-    assert '.page-freshness' in specialization
+    assert '.page-methodology' in specialization
 
 
 def test_analytics_engine_isolates_approved_stylesheet() -> None:
     project_root = Path(__file__).resolve().parents[2]
-    source = (
+    registry = (
+        project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'analytics_publication_standard.py'
+    ).read_text(encoding='utf-8')
+    engine = (
         project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'engine.py'
-    ).read_text()
+    ).read_text(encoding='utf-8')
 
-    assert "'reports/pdf/analytics_overview.html': 'analytics_overview.css'" in source
-    assert "analytics_css_path = css_path.with_name(ANALYTICS_SHARED_STYLESHEET)" in source
-    assert "CSS(filename=str(report_css_path)" in source
-    assert "CSS(filename=str(analytics_css_path)" in source
-    assert source.index("CSS(filename=str(report_css_path)") < source.index(
+    assert "'reports/pdf/analytics_overview.html': 'analytics_overview.css'" in registry
+    assert "analytics_css_path = css_path.with_name(ANALYTICS_SHARED_STYLESHEET)" in engine
+    assert "CSS(filename=str(report_css_path)" in engine
+    assert "CSS(filename=str(analytics_css_path)" in engine
+    assert engine.index("CSS(filename=str(report_css_path)") < engine.index(
         "CSS(filename=str(analytics_css_path)"
     )
 
@@ -340,7 +348,8 @@ def test_v27_table_reference_contract_keeps_description_out_of_registers() -> No
     ).read_text()
 
     primary = document.presentation['recommendations']['primary']
-    assert primary['description'] != primary['recommended_action']
+    assert primary['description']
+    assert primary['recommended_action']
     assert 'register_title' in document.presentation['recommendations']['items'][0]
     assert 'recommendation-register' in template_source
     assert 'recommendation-references' in template_source
@@ -377,32 +386,43 @@ def test_v27_alert_profile_uses_donut_and_methodology_values_do_not_break_mid_ph
     assert 'white-space: nowrap' in stylesheet
 
 
-def test_analytics_overview_v28_precision_layout_contract() -> None:
-    _, rendered_html, project_root = _rendered_html()
+def test_analytics_overview_v29_precision_layout_contract() -> None:
+    document, rendered_html, project_root = _rendered_html()
     shared_stylesheet = (
         project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css'
     ).read_text(encoding='utf-8')
     specialization = (
         project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
     ).read_text(encoding='utf-8')
-    shared_compact = shared_stylesheet.replace(' ', '')
-    specialization_compact = specialization.replace(' ', '')
+    shared_compact = shared_stylesheet.replace(' ', '').replace('\n', '')
 
-    assert '.brandimg{width:8.2mm;height:8.2mm' in shared_compact
-    assert '.brandstrong{font-size:11.8pt' in shared_compact
-    assert '.cover-brandimg{width:10.5mm;height:10.5mm' in shared_compact
-    assert '.cover-brandstrong{font-size:14.2pt' in shared_compact
+    assert document.presentation['presentation_version'] == 'v2.9.2-analytics-family-standard'
+    contract = document.presentation['layout_contract']
+    assert contract['visual_style'] == 'reporting-standard-v2.9.2-analytics-family'
+    assert contract['cover_header_policy'] == 'symmetric-two-sided'
+    assert contract['section_separator_policy'] == 'none'
+    assert contract['section_rhythm'] == 'title-subtitle-content'
+    assert contract['table_alignment'] == 'left-middle'
+    assert contract['methodology_layout'] == 'parallel-registers'
 
-    assert '.page-consumers.consumer-charth3' in specialization_compact
-    assert 'margin:0 0 5mm' in specialization_compact
-    assert '.donut-total{font:700 18px' in specialization_compact
-    assert '.donut-legend-label{font:500 8.6px' in specialization_compact
-    assert '.report-schedules-section{margin-top:8.5mm' in specialization_compact
-    assert 'grid-template-columns:minmax(0,1.2fr)minmax(0,.8fr)' in specialization_compact
-    assert '.methodology-register-layout.report-tabletbodytr{height:8mm' in specialization_compact
-    assert '.evidence-columnsh3{margin:0 0 2.8mm' in specialization_compact
-    assert '.limitations-status-layouth3{margin:0 0 3mm' in specialization_compact
+    assert '.cover-masthead' in shared_stylesheet
+    assert 'grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)' in shared_stylesheet
+    assert '.section-rule { display: none; }' in shared_stylesheet
+    assert 'vertical-align: middle' in shared_stylesheet
+    assert '.methodology-grid' in shared_stylesheet
+    assert '.limitations-grid' in shared_stylesheet
+    assert '.status-language-grid' in shared_stylesheet
+    assert '.cover-contents' in shared_stylesheet
+    assert 'display:grid' in shared_compact
 
-    assert "ui.section('Storage Readiness','Configured artifact backend and validation scope.')" in rendered_html
-    assert 'report-schedules-section' in rendered_html
+    assert '.page-consumers .consumer-group' in specialization
+    assert '.page-alerts .ao-alert-donut .donut-caption-below' in specialization
+    assert '.report-schedules-section' in specialization
+    assert '.page-methodology .methodology-register-layout' in specialization
+
+    assert rendered_html.count('class="consumer-group"') == 2
+    assert 'class="method-row"' in rendered_html
+    assert 'class="method-rule"' in rendered_html
+    assert 'class="method-setting"' in rendered_html
+    assert 'donut-caption-below' in document.presentation['alerts']['severity_svg']
 

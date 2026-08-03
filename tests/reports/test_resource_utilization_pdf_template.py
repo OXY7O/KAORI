@@ -208,15 +208,17 @@ def test_resource_utilization_uses_approved_nine_page_publication() -> None:
 
     assert document.template_name == 'reports/pdf/resource_utilization.html'
     assert document.presentation['page_count'] == 9
-    assert document.presentation['presentation_version'] == 'v1.0-resource-utilization-publication'
-    assert document.presentation['layout_contract'] == {
-        'paper': 'A4 Portrait',
-        'page_count': 9,
-        'fixed_page_canvas': True,
-        'status_style': 'plain-colored-text',
-        'table_policy': 'single-line-technical-registers',
-        'visual_style': 'kaori-resource-utilization-v1',
-    }
+    assert document.presentation['presentation_version'] == 'v1.1-resource-utilization-publication'
+    contract = document.presentation['layout_contract']
+    assert contract['paper'] == 'A4 Portrait'
+    assert contract['page_count'] == 9
+    assert contract['fixed_page_canvas'] is True
+    assert contract['table_policy'] == 'single-line-technical-registers'
+    assert contract['cover_header_policy'] == 'symmetric-two-sided'
+    assert contract['section_separator_policy'] == 'none'
+    assert contract['table_alignment'] == 'left-middle'
+    assert contract['methodology_layout'] == 'parallel-registers'
+    assert contract['visual_style'] == 'reporting-standard-v2.9.2-analytics-family'
     assert rendered_html.count('<article class="page') == 9
 
 
@@ -232,20 +234,19 @@ def test_resource_utilization_template_has_no_duplicate_section_copy() -> None:
 
 def test_resource_utilization_methodology_tables_are_separate_and_single_line() -> None:
     _, rendered_html, project_root = _rendered_html()
-    stylesheet = (
-        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'resource_utilization.css'
+    shared = (
+        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css'
     ).read_text()
-    compact = stylesheet.replace(' ', '')
+    compact = shared.replace(' ', '')
 
-    assert 'class="methodology-tables"' in rendered_html
-    assert 'class="data-source-table"' in rendered_html
-    assert 'class="methodology-register"' in rendered_html
+    assert 'class="methodology-grid"' in rendered_html
+    assert 'source-register data-source-table compact-register' in rendered_html
+    assert 'methodology-register compact-register' in rendered_html
     assert 'Prometheus Observation Cache' in rendered_html
-    assert '2026-08-02 15:14 UTC' in rendered_html
-    assert 'grid-template-columns:minmax(0,1.44fr)minmax(0,.76fr)' in compact
+    assert '02 Aug 2026 15:14 UTC' in rendered_html
+    assert 'grid-template-columns:minmax(0,1.08fr)minmax(0,.92fr)' in compact
     assert 'white-space:nowrap' in compact
-    assert '.data-source-table.compact-register' not in compact
-
+    assert 'vertical-align:middle' in compact
 
 def test_resource_utilization_node_participation_uses_svg_for_weasyprint() -> None:
     _, rendered_html, project_root = _rendered_html()
@@ -307,14 +308,16 @@ def test_resource_utilization_renders_explicit_forecast_unavailable_state() -> N
 
 def test_resource_utilization_engine_uses_isolated_stylesheet() -> None:
     project_root = Path(__file__).resolve().parents[2]
-    source = (
+    registry = (
+        project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'analytics_publication_standard.py'
+    ).read_text()
+    engine = (
         project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'engine.py'
     ).read_text()
 
-    assert "'reports/pdf/resource_utilization.html': 'resource_utilization.css'" in source
-    assert 'specialized_stylesheets' in source
-    assert 'publication_css_path' in source
-
+    assert "'reports/pdf/resource_utilization.html': 'resource_utilization.css'" in registry
+    assert 'ANALYTICS_TEMPLATE_STYLESHEETS' in engine
+    assert 'ANALYTICS_SHARED_STYLESHEET' in engine
 
 def test_resource_utilization_payload_uses_committed_forecast_snapshot() -> None:
     project_root = Path(__file__).resolve().parents[2]

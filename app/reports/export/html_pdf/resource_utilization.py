@@ -9,6 +9,7 @@ from app.reports.export.html_pdf.analytics_publication_standard import (
     ANALYTICS_CANONICAL_REFERENCE,
     ANALYTICS_PUBLICATION_FAMILY,
     ANALYTICS_PUBLICATION_STANDARD,
+    analytics_layout_contract,
 )
 from app.reports.export.html_pdf.normalization import sanitize_text
 
@@ -201,22 +202,39 @@ def build_resource_utilization_presentation(
                 ),
             },
         ),
+        'included': (
+            'Committed cluster-scoped utilization observations.',
+            'Committed CPU, memory, pod, and node participation evidence.',
+            'Top-consumer and forecast evidence when available.',
+        ),
+        'excluded': (
+            'Live cluster state after the data cut-off.',
+            'Unapproved change windows and in-flight maintenance.',
+            'Planned deployments not represented by committed evidence.',
+        ),
+        'limitations': (
+            'Distribution charts describe displayed top-consumer records unless a complete denominator is available.',
+            'Unavailable observations remain explicit and are not interpreted as zero.',
+            'Validate all recommendations against live cluster state before remediation.',
+        ),
+        'status_language': (
+            {'ref': 'S1', 'title': 'Not Available', 'description': 'No evidence exists for the requested dimension.'},
+            {'ref': 'S2', 'title': 'Not Collected', 'description': 'Collection was prevented by configuration or failure.'},
+            {'ref': 'S3', 'title': 'Partial Coverage', 'description': 'Evidence exists but does not cover the full requested scope.'},
+            {'ref': 'S4', 'title': 'Source Unavailable', 'description': 'The source was unreachable or not providing data at the cut-off.'},
+        ),
     }
 
     return {
         'page_count': len(_RESOURCE_UTILIZATION_PAGE_TITLES),
-        'presentation_version': 'v1.0-resource-utilization-publication',
+        'presentation_version': 'v1.1-resource-utilization-publication',
         'publication_family': ANALYTICS_PUBLICATION_FAMILY,
         'publication_standard': ANALYTICS_PUBLICATION_STANDARD,
         'canonical_reference': ANALYTICS_CANONICAL_REFERENCE,
-        'layout_contract': {
-            'paper': 'A4 Portrait',
-            'page_count': 9,
-            'fixed_page_canvas': True,
-            'status_style': 'plain-colored-text',
-            'table_policy': 'single-line-technical-registers',
-            'visual_style': 'kaori-resource-utilization-v1',
-        },
+        'layout_contract': analytics_layout_contract(
+            page_count=9,
+            table_policy='single-line-technical-registers',
+        ),
         'report_id': report_id,
         'report_name': report_name,
         'report_title': 'Resource Utilization',

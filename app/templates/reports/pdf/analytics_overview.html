@@ -31,9 +31,8 @@
 
 <article class="page cover">
   <div class="cover-band">
-    <div class="cover-brand"><img src="app/static/images/kaori-logo.svg" alt="KAORI"><div><strong>KAORI</strong><span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span></div></div>
-    <div class="cover-class">MANAGEMENT REPORT<br><b>{{ p.classification|upper }} - REPORT ID {{ p.report_id }}</b></div>
-    <div class="cover-hero-copy"><div class="cover-eyebrow">Kubernetes Operational Intelligence</div><h1>Analytics Overview</h1><p>A concise management view of cluster posture, capacity pressure, operational risk, data reliability, and recommended action.</p></div>
+    {{ ui.cover_brand(p.report_id, p.classification, 'MANAGEMENT REPORT') }}
+    {{ ui.cover_title('Analytics Overview', 'A concise management view of cluster posture, capacity pressure, operational risk, data reliability, and recommended action.') }}
   </div>
   <div class="cover-main">
     <div class="cover-grid">
@@ -41,7 +40,7 @@
       <div><h2>Executive Posture</h2><div class="posture-line"><strong class="status {{ p.cover.overall_tone }}">{{ p.cover.overall_posture }}</strong><span>Operational review status</span></div><p>{{ p.cover.assessment }} Primary concern: {{ p.cover.primary_concern }}.</p></div>
     </div>
     <div class="cover-message"><strong>How to Use This Report</strong><p>Start with the Executive Brief, then review the evidence pages in sequence. Use the Recommendation Plan to assign ownership and confirm validation gates before remediation.</p></div>
-    <div class="cover-contents"><span>01 Executive Brief</span><span>02 Resource Posture</span><span>03 Trend &amp; Forecast</span><span>04 Top Consumers</span><span>05 Capacity Pressure</span><span>06 Alerts &amp; Anomalies</span><span>07 Reporting Summary</span><span>08 Inventory Snapshot</span><span>09 Data Freshness</span><span>10 Recommendation Plan</span><span>11 Methodology</span></div>
+    {{ ui.cover_contents(['01 Executive Brief', '02 Resource Posture', '03 Trend & Forecast', '04 Top Consumers', '05 Capacity Pressure', '06 Alerts & Anomalies', '07 Reporting Summary', '08 Inventory Snapshot', '09 Data Freshness', '10 Recommendation Plan', '11 Methodology']) }}
   </div>
   {{ footer(1) }}
 </article>
@@ -87,8 +86,8 @@
   {{ report_header() }}<div class="page-content">{{ page_title(4,'Top Consumers','Leading resource contributors in the committed observation window.') }}
   {% call ui.section('Figure 2 - Leading Consumer Signals','Reference codes keep long technical identities readable; complete names are listed below.') %}
   <div class="consumer-chart">
-    <div><h3>{{ p.top_consumers.primary_label }}</h3>{% for item in p.top_consumers.primary[:3] %}<div class="consumer-row"><b>M{{ loop.index }}</b><div class="consumer-track"><i style="width:{{ item.bar_percent }}%"></i></div><strong>{{ item.value }}</strong></div>{% endfor %}</div>
-    <div><h3>{{ p.top_consumers.secondary_label }}</h3>{% for item in p.top_consumers.secondary[:3] %}<div class="consumer-row"><b>C{{ loop.index }}</b><div class="consumer-track"><i style="width:{{ item.bar_percent }}%"></i></div><strong>{{ item.value }}</strong></div>{% endfor %}</div>
+    <div class="consumer-group"><h3>{{ p.top_consumers.primary_label }}</h3>{% for item in p.top_consumers.primary[:3] %}<div class="consumer-row"><b>M{{ loop.index }}</b><div class="consumer-track"><i style="width:{{ item.bar_percent }}%"></i></div><strong>{{ item.value }}</strong></div>{% endfor %}</div>
+    <div class="consumer-group"><h3>{{ p.top_consumers.secondary_label }}</h3>{% for item in p.top_consumers.secondary[:3] %}<div class="consumer-row"><b>C{{ loop.index }}</b><div class="consumer-track"><i style="width:{{ item.bar_percent }}%"></i></div><strong>{{ item.value }}</strong></div>{% endfor %}</div>
   </div>{% endcall %}
   {% call ui.section('Resource Key') %}<table class="report-table resource-key"><thead><tr><th>Ref.</th><th>Resource Identity</th><th>Namespace</th><th>Signal</th><th>Value</th></tr></thead><tbody>{% for item in p.top_consumers.primary[:3] %}<tr><td>M{{ loop.index }}</td><td>{{ item.name }}</td><td>{{ item.namespace }}</td><td>{{ item.resource }}</td><td>{{ item.value }}</td></tr>{% endfor %}{% for item in p.top_consumers.secondary[:3] %}<tr><td>C{{ loop.index }}</td><td>{{ item.name }}</td><td>{{ item.namespace }}</td><td>{{ item.resource }}</td><td>{{ item.value }}</td></tr>{% endfor %}</tbody></table>{% endcall %}
   {% call ui.section('Management Interpretation') %}<p>{{ p.top_consumers.insight }}</p>{% endcall %}
@@ -119,9 +118,9 @@
   {{ metric_strip(p.reporting.metrics) }}
   <div class="two-chart-grid report-overview">
     {% call ui.section('Figure 3 - Report Status Distribution','Status distribution for the latest generated-report records.') %}<div class="activity-bars">{% for item in p.reporting.activity %}<div class="activity-row"><span>{{ item.label }}</span><div class="activity-track"><i class="{{ item.tone }}" style="width:{{ item.percent }}%"></i></div><strong>{{ item.value }}</strong></div>{% endfor %}</div>{% endcall %}
-    {% call ui.section('Storage Readiness','Configured artifact backend and validation scope.') %}<div class="readiness-line"><strong>{{ p.reporting.storage.backend|upper }}</strong>{{ status(p.reporting.storage.status,p.reporting.storage.tone) }}</div><p>{{ p.reporting.storage.description }}</p>{% endcall %}
+    {% call ui.section('Storage Readiness') %}<div class="readiness-line"><strong>{{ p.reporting.storage.backend|upper }}</strong>{{ status(p.reporting.storage.status,p.reporting.storage.tone) }}</div><p>{{ p.reporting.storage.description }}</p>{% endcall %}
   </div>
-  {% call ui.section('Scheduled Reports','','report-schedules-section') %}{% if p.reporting.schedules %}<table class="report-table"><thead><tr><th>Schedule</th><th>Frequency</th><th>Next Run</th><th>Status</th></tr></thead><tbody>{% for row in p.reporting.schedules[:4] %}<tr><td>{{ row.name }}</td><td>{{ row.frequency }}</td><td>{{ row.next_run }}</td><td>{{ status(row.status,row.tone) }}</td></tr>{% endfor %}</tbody></table>{% else %}<p class="empty-state">No active schedule record is included in this overview output.</p>{% endif %}{% endcall %}
+  {% call ui.section('Scheduled Reports') %}{% if p.reporting.schedules %}<table class="report-table"><thead><tr><th>Schedule</th><th>Frequency</th><th>Next Run</th><th>Status</th></tr></thead><tbody>{% for row in p.reporting.schedules[:4] %}<tr><td>{{ row.name }}</td><td>{{ row.frequency }}</td><td>{{ row.next_run }}</td><td>{{ status(row.status,row.tone) }}</td></tr>{% endfor %}</tbody></table>{% else %}<p class="empty-state">No active schedule record is included in this overview output.</p>{% endif %}{% endcall %}
   {% call ui.section('Recent Generated Reports') %}<table class="report-table reports-table"><thead><tr><th>Report</th><th>Generated At</th><th>Size</th><th>Status</th></tr></thead><tbody>{% for row in p.reporting.recent_reports[:4] %}<tr><td>{{ row.name }}</td><td>{{ row.generated_at }}</td><td>{{ row.size }}</td><td>{{ status(row.status,row.tone) }}</td></tr>{% endfor %}</tbody></table>{% endcall %}
   {% call ui.section('Reporting Assessment') %}<p><strong>Operational Notes.</strong> {{ p.reporting.notes|join(' ') }}</p><p class="spaced"><strong>Key Takeaway.</strong> {{ p.reporting.takeaway }}</p>{% endcall %}
   </div>{{ footer(8) }}
@@ -180,7 +179,7 @@
     </div>
     <div class="methodology-table-block">
       <h3>Methodology Register</h3>
-      <table class="report-table method-summary method-register"><thead><tr><th>Ref.</th><th>Rule</th><th>Setting</th></tr></thead><tbody>{% for row in p.methodology.methodology[:5] %}<tr><td><strong class="register-ref">M{{ loop.index }}</strong></td><td>{{ row.label }}</td><td>{% if loop.index <= 2 %}{{ row.value }}{% elif loop.index == 3 %}Holt-Winters{% else %}See Reference{% endif %}</td></tr>{% endfor %}</tbody></table>
+      <table class="report-table method-summary method-register"><thead><tr><th>Ref.</th><th>Rule</th><th>Setting</th></tr></thead><tbody>{% for row in p.methodology.methodology[:5] %}<tr class="method-row"><td><strong class="register-ref">M{{ loop.index }}</strong></td><td class="method-rule">{{ row.label }}</td><td class="method-setting">{% if loop.index <= 2 %}{{ row.value }}{% elif loop.index == 3 %}Holt-Winters{% else %}See Reference{% endif %}</td></tr>{% endfor %}</tbody></table>
     </div>
   </div>
   <div class="reference-notes methodology-references"><h3>Methodology References</h3><div class="methodology-reference-grid">{% for row in p.methodology.methodology[2:5] %}{{ reference_item('M' ~ (loop.index + 2), row.label, row.value, 'Definition') }}{% endfor %}</div></div>{% endcall %}

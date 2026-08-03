@@ -45,6 +45,8 @@ def test_analytics_publication_component_contract_is_parseable() -> None:
         'footer',
         'cover_brand',
         'cover_title',
+        'cover_contents',
+        'methodology_register',
         'metric_strip',
         'section',
         'technical_table',
@@ -72,13 +74,16 @@ def test_all_analytics_templates_use_the_isolated_analytics_contract() -> None:
         assert 'ui.footer' in source, filename
         assert 'ui.metric_strip' in source, filename
         assert 'ui.section' in source, filename
+        assert 'ui.cover_brand' in source, filename
+        assert 'ui.cover_title' in source, filename
+        assert 'ui.cover_contents' in source, filename
 
 
 def test_analytics_css_owns_the_canonical_visual_and_table_contract() -> None:
     css = (CSS_DIR / 'analytics_publication.css').read_text(encoding='utf-8')
     compact = css.replace(' ', '')
 
-    assert 'KAORI Analytics PDF Publication Standard v1.0' in css
+    assert 'KAORI Analytics PDF Publication Standard v1.1' in css
     assert '--analytics-primary:#7C3AED' in compact
     assert '--analytics-primary-dark:#4C1D95' in compact
     assert '@page{size:A4portrait;margin:0;}' in compact
@@ -86,11 +91,15 @@ def test_analytics_css_owns_the_canonical_visual_and_table_contract() -> None:
     assert '.report-header' in css
     assert '.page-title-row' in css
     assert '.metric-strip' in css
-    assert '.section-rule>span' in compact
-    assert 'width:13mm' in compact
+    assert '.section-rule{display:none;}' in compact
+    assert '.cover-masthead' in css
+    assert '.cover-contents' in css
+    assert 'width:100%' in compact
     assert '.reference-notes' in css
     assert '.methodology-grid' in css
     assert '.boundary-columns' in css
+    assert '.limitations-grid' in css
+    assert '.status-language-grid' in css
     assert 'vertical-align:middle' in compact
     assert 'table-layout:fixed' in compact
     assert 'text-overflow:ellipsis' not in compact
@@ -137,6 +146,24 @@ def test_all_analytics_presentations_declare_the_canonical_reference() -> None:
         assert 'ANALYTICS_PUBLICATION_FAMILY' in source, filename
         assert 'ANALYTICS_PUBLICATION_STANDARD' in source, filename
         assert 'ANALYTICS_CANONICAL_REFERENCE' in source, filename
+        assert 'analytics_layout_contract' in source, filename
         assert "'publication_family': ANALYTICS_PUBLICATION_FAMILY" in source, filename
         assert "'publication_standard': ANALYTICS_PUBLICATION_STANDARD" in source, filename
         assert "'canonical_reference': ANALYTICS_CANONICAL_REFERENCE" in source, filename
+        assert "'layout_contract': analytics_layout_contract(" in source, filename
+
+
+def test_analytics_standard_centralizes_shared_layout_policy() -> None:
+    source = (HTML_PDF_DIR / 'analytics_publication_standard.py').read_text(encoding='utf-8')
+
+    assert "ANALYTICS_PUBLICATION_STANDARD = 'kaori-analytics-pdf-v1.1'" in source
+    assert "ANALYTICS_VISUAL_STYLE = 'reporting-standard-v2.9.2-analytics-family'" in source
+    assert 'def analytics_layout_contract(' in source
+    for value in (
+        "'cover_header_policy': 'symmetric-two-sided'",
+        "'section_separator_policy': 'none'",
+        "'section_rhythm': 'title-subtitle-content'",
+        "'table_alignment': 'left-middle'",
+        "'methodology_layout': 'parallel-registers'",
+    ):
+        assert value in source

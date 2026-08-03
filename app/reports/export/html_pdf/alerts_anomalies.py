@@ -9,6 +9,7 @@ from app.reports.export.html_pdf.analytics_publication_standard import (
     ANALYTICS_CANONICAL_REFERENCE,
     ANALYTICS_PUBLICATION_FAMILY,
     ANALYTICS_PUBLICATION_STANDARD,
+    analytics_layout_contract,
 )
 from app.reports.export.html_pdf.normalization import sanitize_text
 
@@ -81,20 +82,17 @@ def build_alerts_anomalies_presentation(
     )
 
     return {
-        'presentation_version': 'v1.0-alerts-anomalies-publication',
+        'presentation_version': 'v1.1-alerts-anomalies-publication',
         'publication_family': ANALYTICS_PUBLICATION_FAMILY,
         'publication_standard': ANALYTICS_PUBLICATION_STANDARD,
         'canonical_reference': ANALYTICS_CANONICAL_REFERENCE,
         'page_count': _PAGE_COUNT,
-        'layout_contract': {
-            'paper': 'A4 Portrait',
-            'page_count': 9,
-            'fixed_page_canvas': True,
-            'table_policy': 'single-line-operational-registers',
-            'correlation_policy': 'review-lead-not-causality',
-            'missing_evidence_policy': 'explicit-not-available',
-            'visual_style': 'kaori-alerts-anomalies-v1.0',
-        },
+        'layout_contract': analytics_layout_contract(
+            page_count=9,
+            table_policy='single-line-operational-registers',
+            correlation_policy='review-lead-not-causality',
+            missing_evidence_policy='explicit-not-available',
+        ),
         'report_id': report_id,
         'report_name': report_name,
         'report_title': 'Alerts and Anomalies',
@@ -213,6 +211,17 @@ def build_alerts_anomalies_presentation(
                 'Live alert state after the report cut-off.',
                 'Uncommitted root cause, causal correlation, and business impact.',
                 'Missing anomaly metric, event, and comparison evidence.',
+            ],
+            'limitations': [
+                'Alert severity does not establish business impact.',
+                'Category coverage and anomaly support may be partial.',
+                'Validate all actions against live state before remediation.',
+            ],
+            'status_language': [
+                {'ref': 'S1', 'title': 'Not Available', 'description': 'No supporting evidence exists.'},
+                {'ref': 'S2', 'title': 'Partial Coverage', 'description': 'Only part of the active set is categorized or evidenced.'},
+                {'ref': 'S3', 'title': 'Firing', 'description': 'The alert was active at the committed cut-off.'},
+                {'ref': 'S4', 'title': 'Unconfirmed', 'description': 'A relationship is a review lead, not causality.'},
             ],
         },
     }
