@@ -26,6 +26,7 @@ def render_document_pdf(
     specialized_stylesheets = {
         'reports/pdf/analytics_overview.html': 'analytics_overview.css',
         'reports/pdf/resource_utilization.html': 'resource_utilization.css',
+        'reports/pdf/capacity_analysis.html': 'capacity_analysis.css',
     }
     specialized_stylesheet = specialized_stylesheets.get(document.template_name)
     if specialized_stylesheet:
