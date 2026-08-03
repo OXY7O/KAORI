@@ -9,14 +9,6 @@ TEMPLATE_DIR = PROJECT_ROOT / 'app' / 'templates' / 'reports' / 'pdf'
 CSS_DIR = PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf'
 
 STANDARD_TEMPLATES = (
-    'analytics_overview.html',
-    'resource_utilization.html',
-    'capacity_analysis.html',
-    'storage_analysis.html',
-    'workload_analysis.html',
-    'forecast_analysis.html',
-    'top_consumers_analysis.html',
-    'alerts_anomalies.html',
     'tls_certificate_health.html',
     'inventory_publication_base.html',
 )

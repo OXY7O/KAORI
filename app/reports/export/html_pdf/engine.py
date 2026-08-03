@@ -7,6 +7,10 @@ from jinja2 import Environment
 from weasyprint import CSS, HTML
 from weasyprint.text.fonts import FontConfiguration
 
+from app.reports.export.html_pdf.analytics_publication_standard import (
+    ANALYTICS_SHARED_STYLESHEET,
+    ANALYTICS_TEMPLATE_STYLESHEETS,
+)
 from app.reports.export.html_pdf.document import ReportDocument
 
 
@@ -23,15 +27,7 @@ def render_document_pdf(
     rendered_html = template.render(document=document)
     font_config = FontConfiguration()
 
-    specialized_stylesheets = {
-        'reports/pdf/analytics_overview.html': 'analytics_overview.css',
-        'reports/pdf/resource_utilization.html': 'resource_utilization.css',
-        'reports/pdf/capacity_analysis.html': 'capacity_analysis.css',
-        'reports/pdf/storage_analysis.html': 'storage_analysis.css',
-        'reports/pdf/workload_analysis.html': 'workload_analysis.css',
-        'reports/pdf/forecast_analysis.html': 'forecast_analysis.css',
-        'reports/pdf/top_consumers_analysis.html': 'top_consumers_analysis.css',
-        'reports/pdf/alerts_anomalies.html': 'alerts_anomalies.css',
+    fixed_publication_stylesheets = {
         'reports/pdf/tls_certificate_health.html': 'tls_certificate_health.css',
         'reports/pdf/inventory_overview.html': 'inventory_publications.css',
         'reports/pdf/nodes_inventory.html': 'inventory_publications.css',
@@ -43,17 +39,28 @@ def render_document_pdf(
         'reports/pdf/storage_inventory.html': 'inventory_publications.css',
         'reports/pdf/topology_inventory.html': 'inventory_publications.css',
     }
-    specialized_stylesheet = specialized_stylesheets.get(document.template_name)
-    if specialized_stylesheet:
-        # Fixed publications use a two-layer contract:
-        # 1. report-specific layout and visualizations;
-        # 2. the reusable KAORI publication standard, loaded last so typography,
-        #    section hierarchy, tables, and separators stay consistent.
-        publication_css_path = css_path.with_name(specialized_stylesheet)
-        shared_publication_css_path = css_path.with_name('kaori_publication.css')
+
+    analytics_stylesheet = ANALYTICS_TEMPLATE_STYLESHEETS.get(document.template_name)
+    fixed_stylesheet = fixed_publication_stylesheets.get(document.template_name)
+
+    if analytics_stylesheet:
+        # Analytics reports use one canonical publication grammar derived from
+        # Analytics Overview Report ID 34. Report-specific CSS is loaded first;
+        # the Analytics standard is loaded last and owns reusable primitives.
+        report_css_path = css_path.with_name(analytics_stylesheet)
+        analytics_css_path = css_path.with_name(ANALYTICS_SHARED_STYLESHEET)
         stylesheets = [
-            CSS(filename=str(publication_css_path), font_config=font_config),
-            CSS(filename=str(shared_publication_css_path), font_config=font_config),
+            CSS(filename=str(report_css_path), font_config=font_config),
+            CSS(filename=str(analytics_css_path), font_config=font_config),
+        ]
+    elif fixed_stylesheet:
+        # Existing non-Analytics fixed publications remain isolated from the
+        # Analytics contract until their own output family is implemented.
+        report_css_path = css_path.with_name(fixed_stylesheet)
+        shared_css_path = css_path.with_name('kaori_publication.css')
+        stylesheets = [
+            CSS(filename=str(report_css_path), font_config=font_config),
+            CSS(filename=str(shared_css_path), font_config=font_config),
         ]
     else:
         stylesheets = [CSS(filename=str(css_path), font_config=font_config)]

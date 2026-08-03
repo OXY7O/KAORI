@@ -282,7 +282,7 @@ def test_workload_analysis_weasyprint_layout_is_exactly_nine_a4_pages() -> None:
         font_config=font_config,
     )
     shared_stylesheet = CSS(
-        filename=str(project_root / 'app' / 'static' / 'reports' / 'pdf' / 'kaori_publication.css'),
+        filename=str(project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css'),
         font_config=font_config,
     )
 

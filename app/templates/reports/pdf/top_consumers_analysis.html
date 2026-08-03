@@ -1,9 +1,9 @@
 <!doctype html>
 <html lang="en">
 <head><meta charset="utf-8"><title>{{ document.report_name }}</title></head>
-<body class="kaori-publication-standard kaori-top-consumers-report">
+<body class="kaori-analytics-publication kaori-top-consumers-report">
 {% set p = document.presentation %}
-{% import 'reports/pdf/components/kaori_publication.html' as ui %}
+{% import 'reports/pdf/components/analytics_publication.html' as ui %}
 {% macro report_header() -%}{{ ui.report_header('Top Consumers') }}{%- endmacro %}
 {% macro page_title(number, title, subtitle) -%}{{ ui.page_title(number, title, subtitle, p.data_cutoff) }}{%- endmacro %}
 {% macro footer(page_number) -%}{{ ui.footer(p.report_id, p.classification, page_number, p.page_count) }}{%- endmacro %}

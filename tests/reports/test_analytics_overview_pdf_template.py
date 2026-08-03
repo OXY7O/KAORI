@@ -203,7 +203,7 @@ def test_analytics_overview_weasyprint_layout_is_exactly_12_a4_pages() -> None:
                 font_config=font_config,
             ),
             CSS(
-                filename=str(project_root / 'app' / 'static' / 'reports' / 'pdf' / 'kaori_publication.css'),
+                filename=str(project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css'),
                 font_config=font_config,
             ),
         ],
@@ -239,20 +239,25 @@ def test_analytics_overview_degraded_metric_is_not_zero_percent() -> None:
 
 def test_analytics_overview_css_locks_page_footer_and_table_overflow() -> None:
     _, _, project_root = _rendered_html()
-    stylesheet = (
+    shared_stylesheet = (
+        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css'
+    ).read_text()
+    specialization = (
         project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
     ).read_text()
-    compact = stylesheet.replace(' ', '')
+    compact = shared_stylesheet.replace(' ', '')
 
-    assert '@page' in stylesheet
+    assert '@page' in shared_stylesheet
     assert 'height:297mm' in compact
     assert 'page-break-after:always' in compact
     assert 'width:210mm' in compact
-    assert '.report-header' in stylesheet
-    assert 'bottom:5mm' in compact
+    assert '.report-header' in shared_stylesheet
+    assert 'bottom:4.5mm' in compact
     assert 'overflow-wrap:anywhere' in compact
     assert 'table-layout:fixed' in compact
+    assert 'vertical-align:middle' in compact
     assert 'text-overflow:ellipsis' not in compact
+    assert '@page' not in specialization
 
 
 def test_v27_layout_uses_distinct_cover_and_reference_components() -> None:
@@ -277,21 +282,24 @@ def test_v27_layout_uses_distinct_cover_and_reference_components() -> None:
 
 def test_v27_css_has_locked_canvas_and_reference_rhythm() -> None:
     _, _, project_root = _rendered_html()
-    stylesheet = (
+    shared_stylesheet = (
+        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css'
+    ).read_text()
+    specialization = (
         project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
     ).read_text()
-    compact = stylesheet.replace(' ', '')
+    compact = shared_stylesheet.replace(' ', '')
 
-    assert '.cover-band' in stylesheet
-    assert '.page-title-row' in stylesheet
-    assert '.section-body' in stylesheet
-    assert '.reference-notes' in stylesheet
-    assert '.reference-item' in stylesheet
+    assert '.cover-band' in shared_stylesheet
+    assert '.page-title-row' in shared_stylesheet
+    assert '.section-body' in shared_stylesheet
+    assert '.reference-notes' in shared_stylesheet
+    assert '.reference-item' in shared_stylesheet
     assert 'inset:0' not in compact
     assert 'width:210mm' in compact
-    assert '.consumer-chart' in stylesheet
-    assert '.page-methodology' in stylesheet
-    assert '.page-freshness' in stylesheet
+    assert '.consumer-chart' in specialization
+    assert '.page-methodology' in specialization
+    assert '.page-freshness' in specialization
 
 
 def test_analytics_engine_isolates_approved_stylesheet() -> None:
@@ -301,11 +309,11 @@ def test_analytics_engine_isolates_approved_stylesheet() -> None:
     ).read_text()
 
     assert "'reports/pdf/analytics_overview.html': 'analytics_overview.css'" in source
-    assert "shared_publication_css_path = css_path.with_name('kaori_publication.css')" in source
-    assert "CSS(filename=str(publication_css_path)" in source
-    assert "CSS(filename=str(shared_publication_css_path)" in source
-    assert source.index("CSS(filename=str(publication_css_path)") < source.index(
-        "CSS(filename=str(shared_publication_css_path)"
+    assert "analytics_css_path = css_path.with_name(ANALYTICS_SHARED_STYLESHEET)" in source
+    assert "CSS(filename=str(report_css_path)" in source
+    assert "CSS(filename=str(analytics_css_path)" in source
+    assert source.index("CSS(filename=str(report_css_path)") < source.index(
+        "CSS(filename=str(analytics_css_path)"
     )
 
 

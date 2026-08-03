@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <title>{{ document.report_name }}</title>
 </head>
-<body class="kaori-publication-standard kaori-forecast-analysis-report">
+<body class="kaori-analytics-publication kaori-forecast-analysis-report">
 {% set p = document.presentation %}
-{% import 'reports/pdf/components/kaori_publication.html' as ui %}
+{% import 'reports/pdf/components/analytics_publication.html' as ui %}
 
 {% macro report_header() -%}{{ ui.report_header('Forecast Analysis') }}{%- endmacro %}
 

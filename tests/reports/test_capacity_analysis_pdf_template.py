@@ -329,7 +329,7 @@ def test_capacity_analysis_weasyprint_layout_is_exactly_nine_a4_pages() -> None:
             ),
             CSS(
                 filename=str(
-                    project_root / 'app' / 'static' / 'reports' / 'pdf' / 'kaori_publication.css'
+                    project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css'
                 ),
                 font_config=font_config,
             ),

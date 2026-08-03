@@ -4,6 +4,12 @@ from collections.abc import Mapping, Sequence
 from datetime import date, datetime
 from typing import Any
 
+from app.reports.export.html_pdf.analytics_publication_standard import (
+    ANALYTICS_CANONICAL_REFERENCE,
+    ANALYTICS_PUBLICATION_FAMILY,
+    ANALYTICS_PUBLICATION_STANDARD,
+)
+
 
 def build_workload_analysis_presentation(
     report: Any,
@@ -45,6 +51,9 @@ def build_workload_analysis_presentation(
 
     return {
         'presentation_version': 'v1.0-workload-analysis-publication',
+        'publication_family': ANALYTICS_PUBLICATION_FAMILY,
+        'publication_standard': ANALYTICS_PUBLICATION_STANDARD,
+        'canonical_reference': ANALYTICS_CANONICAL_REFERENCE,
         'page_count': 9,
         'layout_contract': {
             'paper': 'A4 Portrait',

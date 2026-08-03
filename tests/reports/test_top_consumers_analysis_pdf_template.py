@@ -164,7 +164,7 @@ def test_top_consumers_weasyprint_layout_is_exactly_nine_a4_pages(tmp_path: Path
                 font_config=font_config,
             ),
             CSS(
-                filename=str(PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf' / 'kaori_publication.css'),
+                filename=str(PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css'),
                 font_config=font_config,
             ),
         ],

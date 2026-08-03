@@ -246,7 +246,7 @@ def test_forecast_analysis_weasyprint_layout_is_exactly_nine_a4_pages(tmp_path: 
                 font_config=font_config,
             ),
             CSS(
-                filename=str(project_root / 'app' / 'static' / 'reports' / 'pdf' / 'kaori_publication.css'),
+                filename=str(project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css'),
                 font_config=font_config,
             ),
         ],

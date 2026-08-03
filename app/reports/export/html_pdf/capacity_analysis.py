@@ -5,6 +5,11 @@ from datetime import UTC, datetime
 from html import escape
 from typing import Any
 
+from app.reports.export.html_pdf.analytics_publication_standard import (
+    ANALYTICS_CANONICAL_REFERENCE,
+    ANALYTICS_PUBLICATION_FAMILY,
+    ANALYTICS_PUBLICATION_STANDARD,
+)
 from app.reports.export.html_pdf.normalization import sanitize_text
 
 _CAPACITY_PAGE_TITLES = (
@@ -143,6 +148,9 @@ def build_capacity_analysis_presentation(
     return {
         'page_count': len(_CAPACITY_PAGE_TITLES),
         'presentation_version': 'v1.0-capacity-analysis-publication',
+        'publication_family': ANALYTICS_PUBLICATION_FAMILY,
+        'publication_standard': ANALYTICS_PUBLICATION_STANDARD,
+        'canonical_reference': ANALYTICS_CANONICAL_REFERENCE,
         'layout_contract': {
             'paper': 'A4 Portrait',
             'page_count': 9,

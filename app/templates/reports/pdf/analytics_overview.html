@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <title>{{ document.report_name }}</title>
 </head>
-<body class="kaori-publication-standard kaori-reporting-v24">
+<body class="kaori-analytics-publication kaori-reporting-v24">
 {% set p = document.presentation %}
-{% import 'reports/pdf/components/kaori_publication.html' as ui %}
+{% import 'reports/pdf/components/analytics_publication.html' as ui %}
 
 {% macro status(label, tone='muted') -%}
 <span class="status {{ 'normal' if tone in ['good','normal'] else tone }}">{{ label }}</span>

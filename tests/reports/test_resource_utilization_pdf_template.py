@@ -281,7 +281,7 @@ def test_resource_utilization_weasyprint_layout_is_exactly_nine_a4_pages() -> No
                     / 'static'
                     / 'reports'
                     / 'pdf'
-                    / 'kaori_publication.css'
+                    / 'analytics_publication.css'
                 ),
                 font_config=font_config,
             ),

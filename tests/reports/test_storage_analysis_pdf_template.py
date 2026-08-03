@@ -370,7 +370,7 @@ def test_storage_analysis_weasyprint_layout_is_exactly_nine_a4_pages(tmp_path: P
     document, rendered_html, project_root = _rendered_html()
     font_config = FontConfiguration()
     stylesheet = project_root / 'app' / 'static' / 'reports' / 'pdf' / 'storage_analysis.css'
-    shared_stylesheet = project_root / 'app' / 'static' / 'reports' / 'pdf' / 'kaori_publication.css'
+    shared_stylesheet = project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css'
     output = tmp_path / 'storage-analysis.pdf'
 
     rendered = HTML(string=rendered_html, base_url=str(project_root)).render(
