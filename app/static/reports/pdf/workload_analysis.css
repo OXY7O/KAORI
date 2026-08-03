@@ -300,6 +300,13 @@ body.kaori-workload-analysis-report { width: 210mm; }
 .methodology-register .compact-register th:nth-child(1) { width: 15%; }
 .methodology-register .compact-register th:nth-child(2) { width: 37%; }
 .methodology-register .compact-register th:nth-child(3) { width: 48%; }
+.boundary-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 14mm;
+  align-items: start;
+}
+.boundary-columns > div { min-width: 0; }
 .boundary-columns h3, .limitations-status-grid h3 { margin-bottom: 2mm; }
 .boundary-columns ul, .limitations-status-grid ul { margin: 0; padding-left: 4.5mm; font-size: 6.05pt; line-height: 1.4; }
 .boundary-columns li, .limitations-status-grid li { margin: .8mm 0; }
@@ -601,6 +608,18 @@ body.kaori-workload-analysis-report { width: 210mm; }
 .page-methodology .compact-register th, .page-methodology .compact-register td { padding: 1.45mm 1.6mm; }
 
 /* Workload Analysis publication v1.0 */
+/* Workload Analysis publication v1.0.1 layout refinement */
+.workload-executive-split > .content-section > .section-subtitle,
+.workload-quota-split > .content-section > .section-subtitle,
+.workload-governance-split > .content-section > .section-subtitle {
+  min-height: 8mm;
+}
+.workload-executive-split > .content-section > .section-rule,
+.workload-quota-split > .content-section > .section-rule,
+.workload-governance-split > .content-section > .section-rule {
+  margin-top: 0;
+}
+
 .workload-executive-split { grid-template-columns: 1.08fr .92fr; }
 .workload-inventory-split { grid-template-columns: 1fr 1fr; }
 .workload-quota-split { grid-template-columns: 1.22fr .78fr; }
@@ -645,11 +664,12 @@ body.kaori-workload-analysis-report { width: 210mm; }
 .inventory-register td { padding-top: 2.2mm; padding-bottom: 2.2mm; }
 .page-workload-inventory .management-decision { margin-top: 9mm; }
 
-.quota-summary-card { min-height: 50mm; border: .3mm solid #E2E8F0; padding: 5mm; }
-.quota-number-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 4mm; margin-top: 4mm; }
-.quota-number { padding: 4mm; background: #F8FAFC; }
+.quota-summary-card { min-height: 43mm; border: .3mm solid #E2E8F0; padding: 4mm; }
+.quota-summary-card .governance-row { margin-top: 1mm; margin-bottom: 2.5mm; }
+.quota-number-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 3mm; margin-top: 2.5mm; }
+.quota-number { min-height: 17mm; padding: 3mm; background: #F8FAFC; }
 .quota-number span { display: block; color: #64748B; font-size: 5.9pt; }
-.quota-number strong { display: block; margin-top: 1.5mm; font-size: 12pt; }
+.quota-number strong { display: block; margin-top: 1mm; font-size: 12pt; }
 .quota-register th:nth-child(1) { width: 8%; }
 .quota-register th:nth-child(2) { width: 31%; }
 .quota-register th:nth-child(3) { width: 22%; }
