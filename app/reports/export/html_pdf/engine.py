@@ -30,6 +30,8 @@ def render_document_pdf(
         'reports/pdf/storage_analysis.html': 'storage_analysis.css',
         'reports/pdf/workload_analysis.html': 'workload_analysis.css',
         'reports/pdf/forecast_analysis.html': 'forecast_analysis.css',
+        'reports/pdf/top_consumers_analysis.html': 'top_consumers_analysis.css',
+        'reports/pdf/alerts_anomalies.html': 'alerts_anomalies.css',
     }
     specialized_stylesheet = specialized_stylesheets.get(document.template_name)
     if specialized_stylesheet:

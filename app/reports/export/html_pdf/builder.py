@@ -18,6 +18,7 @@ from app.reports.export.constants import (
 )
 from app.reports.export.formatting import format_period
 from app.reports.export.html_pdf.analytics_overview import build_analytics_overview_presentation
+from app.reports.export.html_pdf.alerts_anomalies import build_alerts_anomalies_presentation
 from app.reports.export.html_pdf.capacity_analysis import build_capacity_analysis_presentation
 from app.reports.export.html_pdf.charts import build_alert_severity_chart, build_forecast_chart
 from app.reports.export.html_pdf.forecast_analysis import build_forecast_analysis_presentation
@@ -42,6 +43,7 @@ from app.reports.export.html_pdf.resource_utilization import (
     build_resource_utilization_presentation,
 )
 from app.reports.export.html_pdf.storage_analysis import build_storage_analysis_presentation
+from app.reports.export.html_pdf.top_consumers_analysis import build_top_consumers_analysis_presentation
 from app.reports.export.html_pdf.workload_analysis import build_workload_analysis_presentation
 
 _SECTION_SOURCE_PATHS: dict[str, tuple[str, ...]] = {
@@ -246,6 +248,36 @@ def build_report_document(
     elif report.report_type == 'workload_analysis' and not payload.get('_error'):
         template_name = 'reports/pdf/workload_analysis.html'
         presentation = build_workload_analysis_presentation(
+            report,
+            payload,
+            report_id=report_id,
+            report_name=report_name,
+            cluster_scope=cluster_scope,
+            namespace_scope=namespace_scope,
+            period_label=period_label,
+            data_cutoff=data_cutoff,
+            generated_at=generated_at_label,
+            generated_by=generated_by_label,
+            classification=classification,
+        )
+    elif report.report_type == 'top_consumers' and not payload.get('_error'):
+        template_name = 'reports/pdf/top_consumers_analysis.html'
+        presentation = build_top_consumers_analysis_presentation(
+            report,
+            payload,
+            report_id=report_id,
+            report_name=report_name,
+            cluster_scope=cluster_scope,
+            namespace_scope=namespace_scope,
+            period_label=period_label,
+            data_cutoff=data_cutoff,
+            generated_at=generated_at_label,
+            generated_by=generated_by_label,
+            classification=classification,
+        )
+    elif report.report_type == 'alerts_anomalies' and not payload.get('_error'):
+        template_name = 'reports/pdf/alerts_anomalies.html'
+        presentation = build_alerts_anomalies_presentation(
             report,
             payload,
             report_id=report_id,
