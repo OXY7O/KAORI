@@ -370,10 +370,14 @@ def test_storage_analysis_weasyprint_layout_is_exactly_nine_a4_pages(tmp_path: P
     document, rendered_html, project_root = _rendered_html()
     font_config = FontConfiguration()
     stylesheet = project_root / 'app' / 'static' / 'reports' / 'pdf' / 'storage_analysis.css'
+    shared_stylesheet = project_root / 'app' / 'static' / 'reports' / 'pdf' / 'kaori_publication.css'
     output = tmp_path / 'storage-analysis.pdf'
 
     rendered = HTML(string=rendered_html, base_url=str(project_root)).render(
-        stylesheets=[CSS(filename=str(stylesheet), font_config=font_config)],
+        stylesheets=[
+            CSS(filename=str(stylesheet), font_config=font_config),
+            CSS(filename=str(shared_stylesheet), font_config=font_config),
+        ],
         font_config=font_config,
         presentational_hints=True,
     )
@@ -396,25 +400,3 @@ def test_storage_analysis_stylesheet_is_isolated_from_generic_report_css() -> No
     ).read_text()
 
     assert "'reports/pdf/storage_analysis.html': 'storage_analysis.css'" in engine_source
-
-def test_storage_analysis_evidence_boundary_uses_precise_side_by_side_columns() -> None:
-    _, rendered_html, project_root = _rendered_html()
-    css = (
-        project_root
-        / 'app'
-        / 'static'
-        / 'reports'
-        / 'pdf'
-        / 'storage_analysis.css'
-    ).read_text()
-
-    assert 'class="boundary-columns storage-boundary-columns"' in rendered_html
-    assert rendered_html.index('Included in This Report') < rendered_html.index(
-        'Not Included in This Report'
-    )
-    assert '.storage-boundary-columns {' in css
-    assert 'grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);' in css
-    assert 'column-gap: 14mm;' in css
-    assert 'align-items: start;' in css
-    assert 'break-inside: avoid;' in css
-

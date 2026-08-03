@@ -4,78 +4,23 @@
     <meta charset="utf-8">
     <title>{{ document.report_name }}</title>
 </head>
-<body class="kaori-inventory-publication">
+<body class="kaori-publication-standard kaori-inventory-publication">
 {% set p = document.presentation %}
+{% import 'reports/pdf/components/kaori_publication.html' as ui %}
 
-{% macro report_header() -%}
-<div class="report-header">
-    <div class="brand">
-        <img src="app/static/images/kaori-logo.svg" alt="KAORI">
-        <div><strong>KAORI</strong><span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span></div>
-    </div>
-    <div class="report-name"><strong>{{ p.report_title }}</strong><span>Kubernetes Operational Intelligence Report</span></div>
-</div>
-{%- endmacro %}
+{% macro report_header() -%}{{ ui.report_header(p.report_title) }}{%- endmacro %}
 
-{% macro page_title(number, title, subtitle) -%}
-<div class="page-title-row">
-    <div class="section-index">{{ number }}</div>
-    <div class="page-title-copy"><h1>{{ title }}</h1><p>{{ subtitle }}</p></div>
-    <div class="cutoff"><span>Data Cut-off</span><strong>{{ p.data_cutoff }}</strong></div>
-</div>
-{%- endmacro %}
+{% macro page_title(number, title, subtitle) -%}{{ ui.page_title(number, title, subtitle, p.data_cutoff) }}{%- endmacro %}
 
-{% macro footer(page_number) -%}
-<div class="page-footer">
-    <span>Report ID: {{ p.report_id }} &nbsp; | &nbsp; {{ p.classification }}</span>
-    <span>Page {{ page_number }} of {{ p.page_count }}</span>
-</div>
-{%- endmacro %}
+{% macro footer(page_number) -%}{{ ui.footer(p.report_id, p.classification, page_number, p.page_count) }}{%- endmacro %}
 
-{% macro metric_strip(items) -%}
-<div class="metric-strip">
-    {% for item in items %}
-    <div class="metric">
-        <span>{{ item.label }}</span>
-        <strong class="{% if item.value|string|length > 18 %}metric-long{% elif item.value|string|length > 11 %}metric-medium{% endif %}">{{ item.value }}</strong>
-        <em class="status {{ item.tone }}">{{ item.note }}</em>
-    </div>
-    {% endfor %}
-</div>
-{%- endmacro %}
+{% macro metric_strip(items, limit=4) -%}{{ ui.metric_strip(items, limit) }}{%- endmacro %}
 
-{% macro section(title, subtitle='', extra_class='') -%}
-<section class="content-section {{ extra_class }}">
-    <h2>{{ title }}</h2>
-    {% if subtitle %}<p class="section-subtitle">{{ subtitle }}</p>{% endif %}
-    <div class="section-rule" aria-hidden="true"><span></span></div>
-    <div class="section-body">{{ caller() }}</div>
-</section>
-{%- endmacro %}
+{% macro section(title, subtitle='', extra_class='') -%}{% call ui.section(title, subtitle, extra_class) %}{{ caller() }}{% endcall %}{%- endmacro %}
 
-{% macro technical_table(columns, rows, extra_class='') -%}
-<table class="report-table {{ extra_class }}">
-    <thead><tr>{% for column in columns %}<th>{{ column }}</th>{% endfor %}</tr></thead>
-    <tbody>
-        {% for row in rows %}
-        <tr>{% for value in row %}<td{% if loop.first %} class="ref-or-primary"{% endif %}>{{ value }}</td>{% endfor %}</tr>
-        {% else %}
-        <tr><td colspan="{{ columns|length }}" class="empty-row">No committed evidence is available.</td></tr>
-        {% endfor %}
-    </tbody>
-</table>
-{%- endmacro %}
+{% macro technical_table(columns, rows, extra_class='') -%}{{ ui.technical_table(columns, rows, extra_class) }}{%- endmacro %}
 
-{% macro recommendation_table(rows) -%}
-<table class="report-table recommendation-register">
-    <thead><tr><th>Ref.</th><th>Priority</th><th>Recommendation</th><th>Owner</th><th>Target</th><th>Status</th></tr></thead>
-    <tbody>
-        {% for item in rows %}
-        <tr><td class="ref">{{ item.ref }}</td><td>{{ item.priority }}</td><td>{{ item.title }}</td><td>{{ item.owner }}</td><td>{{ item.target }}</td><td>{{ item.status }}</td></tr>
-        {% endfor %}
-    </tbody>
-</table>
-{%- endmacro %}
+{% macro recommendation_table(rows) -%}{{ ui.recommendation_table(rows) }}{%- endmacro %}
 
 <article class="page cover-page">
     <div class="cover-band">
@@ -111,19 +56,21 @@
         {{ page_title(1, p.executive.title, p.executive.subtitle) }}
         {{ metric_strip(p.executive.metrics) }}
         <div class="two-column paired-sections executive-split">
-            {% call section(p.executive.table_title, p.executive.table_subtitle) %}
+            {% call ui.section(p.executive.table_title, p.executive.table_subtitle) %}
                 {{ technical_table(p.executive.columns, p.executive.rows, 'executive-register') }}
             {% endcall %}
-            {% call section('Management Interpretation', 'The principal inventory signal and the decision required.') %}
-                <div class="interpretation-card warning-card">
-                    <strong>{{ p.executive.interpretation_title }}</strong>
-                    <p>{{ p.executive.interpretation_body }}</p>
-                    <small>{{ p.executive.interpretation_note }}</small>
-                </div>
+            {% call ui.section('Management Interpretation', 'The principal inventory signal and the decision required.') %}
+                {{ ui.interpretation_card(p.executive.interpretation_title, p.executive.interpretation_body, p.executive.interpretation_note, p.executive.interpretation_tone|default('normal')) }}
             {% endcall %}
         </div>
-        {% call section('Priority Inventory Findings', 'Decision fields remain concise; supporting interpretation is maintained by reference.') %}
+        {% call ui.section('Priority Inventory Findings', 'Decision fields remain concise; supporting interpretation is maintained by reference.') %}
             {{ recommendation_table(p.executive.decisions) }}
+            <div class="reference-notes inventory-reference-notes">
+                <h3>Finding References</h3>
+                {% for item in p.executive.decisions %}
+                    {{ ui.reference_item(item.ref, item.title, item.description, 'Validation Decision') }}
+                {% endfor %}
+            </div>
         {% endcall %}
     </div>
     {{ footer(2) }}
@@ -136,18 +83,14 @@
         {{ page_title(loop.index + 1, page_data.title, page_data.subtitle) }}
         {{ metric_strip(page_data.metrics) }}
         <div class="two-column paired-sections detail-split">
-            {% call section(page_data.left.title, page_data.left.subtitle) %}
+            {% call ui.section(page_data.left.title, page_data.left.subtitle) %}
                 {{ technical_table(page_data.left.columns, page_data.left.rows, 'detail-register') }}
             {% endcall %}
-            {% call section(page_data.right.title, page_data.right.subtitle) %}
-                <div class="interpretation-card warning-card">
-                    <strong>{{ page_data.right.callout_title }}</strong>
-                    <p>{{ page_data.right.callout_body }}</p>
-                    <small>{{ page_data.right.callout_note }}</small>
-                </div>
+            {% call ui.section(page_data.right.title, page_data.right.subtitle) %}
+                {{ ui.interpretation_card(page_data.right.callout_title, page_data.right.callout_body, page_data.right.callout_note, page_data.right.tone|default('normal')) }}
             {% endcall %}
         </div>
-        {% call section(page_data.register.title, page_data.register.subtitle) %}
+        {% call ui.section(page_data.register.title, page_data.register.subtitle) %}
             {{ technical_table(page_data.register.columns, page_data.register.rows, 'full-register') }}
         {% endcall %}
     </div>
@@ -160,10 +103,10 @@
     <div class="page-content">
         {{ page_title(7, 'Recommendation Plan', 'Prioritized inventory actions, accountable owners, target windows, and validation gates.') }}
         {{ metric_strip(p.recommendations.metrics) }}
-        {% call section('Priority Recommendations', 'The register contains fixed decision fields. Full context remains in the evidence and governance sections.') %}
+        {% call ui.section('Priority Recommendations', 'The register contains fixed decision fields. Full context remains in the evidence and governance sections.') %}
             {{ recommendation_table(p.recommendations.rows) }}
         {% endcall %}
-        {% call section('Execution Governance', 'Inventory actions remain subject to live-state validation and approved change controls.') %}
+        {% call ui.section('Execution Governance', 'Inventory actions remain subject to live-state validation and approved change controls.') %}
             <table class="report-table governance-register"><tbody>{% for item in p.recommendations.governance %}<tr><th>{{ item.field }}</th><td>{{ item.requirement }}</td></tr>{% endfor %}</tbody></table>
         {% endcall %}
     </div>
@@ -175,16 +118,16 @@
     <div class="page-content">
         {{ page_title(8, 'Methodology and Evidence Boundary', 'Inventory sources, scope rules, freshness, and explicit limitations.') }}
         {{ metric_strip(p.methodology.metrics) }}
-        {% call section('Data Sources and Methodology', 'Source identity, inventory scope, and publication rules remain explicit.') %}
+        {% call ui.section('Data Sources and Methodology', 'Source identity, inventory scope, and publication rules remain explicit.') %}
             <div class="methodology-grid">
                 <div><h3>Data Sources and Coverage</h3><table class="report-table source-register"><thead><tr><th>Source</th><th>Freshness</th><th>Collected</th></tr></thead><tbody>{% for item in p.methodology.sources %}<tr><td>{{ item.source }}</td><td>{{ item.freshness }}</td><td>{{ item.collected }}</td></tr>{% endfor %}</tbody></table></div>
                 <div><h3>Methodology Register</h3><table class="report-table methodology-register"><thead><tr><th>Ref.</th><th>Rule</th><th>Setting</th></tr></thead><tbody>{% for item in p.methodology.rules %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.rule }}</td><td>{{ item.setting }}</td></tr>{% endfor %}</tbody></table></div>
             </div>
         {% endcall %}
-        {% call section('Evidence Boundary', 'Included and excluded evidence remain separated by the committed inventory cut-off.') %}
+        {% call ui.section('Evidence Boundary', 'Included and excluded evidence remain separated by the committed inventory cut-off.') %}
             <div class="boundary-columns"><div><h3>Included in This Report</h3><ul>{% for item in p.methodology.included %}<li>{{ item }}</li>{% endfor %}</ul></div><div><h3>Not Included in This Report</h3><ul>{% for item in p.methodology.excluded %}<li>{{ item }}</li>{% endfor %}</ul></div></div>
         {% endcall %}
-        {% call section('Limitations and Status Language') %}
+        {% call ui.section('Limitations and Status Language') %}
             <div class="limitations-grid">
                 <div><h3>Known Limitations and Operational Use</h3><ul>{% for item in p.methodology.limitations %}<li>{{ item }}</li>{% endfor %}</ul></div>
                 <div><h3>Status Language</h3><div class="status-language-grid">{% for item in p.methodology.status_language %}<div class="reference-item"><span class="reference-code">{{ item.ref }}</span><div><strong>{{ item.title }}</strong><p>{{ item.description }}</p></div></div>{% endfor %}</div></div>

@@ -1,0 +1,272 @@
+@font-face {
+  font-family: "Inter KAORI";
+  src: local("Inter"), url("../../fonts/inter/inter-latin-wght-normal.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+}
+
+@page { size: A4 portrait; margin: 0; }
+
+body.kaori-publication-standard {
+  --kaori-primary: #7C3AED;
+  --kaori-primary-dark: #4C1D95;
+  --kaori-primary-soft: #EDE9FE;
+  --kaori-text: #172033;
+  --kaori-muted: #64748B;
+  --kaori-border: #CBD5E1;
+  --kaori-border-soft: #E2E8F0;
+  --kaori-surface: #F8FAFC;
+  --kaori-table-head: #F3F4F6;
+  width: 210mm;
+  margin: 0;
+  padding: 0;
+  background: #fff;
+  color: var(--kaori-text);
+  font-family: "Inter KAORI", "DejaVu Sans", Arial, sans-serif;
+  font-size: 8pt;
+  line-height: 1.5;
+  font-synthesis: none;
+}
+
+body.kaori-publication-standard *,
+body.kaori-publication-standard *::before,
+body.kaori-publication-standard *::after { box-sizing: border-box; }
+
+body.kaori-publication-standard .page {
+  position: relative;
+  display: block;
+  width: 210mm;
+  height: 297mm;
+  min-height: 297mm;
+  max-height: 297mm;
+  overflow: hidden;
+  page-break-after: always;
+  break-after: page;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  background: #fff;
+}
+body.kaori-publication-standard .page:last-child { page-break-after: auto; break-after: auto; }
+
+body.kaori-publication-standard .report-header {
+  width: 210mm;
+  height: 18mm;
+  min-height: 18mm;
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 15mm;
+  background: var(--kaori-primary-dark);
+  color: #fff;
+  border-bottom: 1.4mm solid var(--kaori-primary);
+}
+body.kaori-publication-standard .brand,
+body.kaori-publication-standard .cover-brand { display: flex; align-items: center; gap: 4mm; min-width: 0; }
+body.kaori-publication-standard .brand img { width: 8mm; height: 8mm; flex: none; }
+body.kaori-publication-standard .brand div,
+body.kaori-publication-standard .cover-brand div { display: flex; flex-direction: column; min-width: 0; }
+body.kaori-publication-standard .brand strong,
+body.kaori-publication-standard .cover-brand strong { font-size: 11pt; line-height: 1.05; font-weight: 700; }
+body.kaori-publication-standard .brand span,
+body.kaori-publication-standard .cover-brand span { margin-top: 1mm; font-size: 5.5pt; line-height: 1.2; opacity: .88; white-space: nowrap; }
+body.kaori-publication-standard .report-name { display: flex; flex-direction: column; min-width: 0; text-align: right; }
+body.kaori-publication-standard .report-name strong { font-size: 9pt; line-height: 1.1; font-weight: 700; }
+body.kaori-publication-standard .report-name span { margin-top: 1mm; font-size: 5.7pt; line-height: 1.2; opacity: .86; white-space: nowrap; }
+
+body.kaori-publication-standard .page-content { width: 210mm; padding: 8mm 15mm 15mm; }
+body.kaori-publication-standard .page-title-row {
+  display: grid;
+  grid-template-columns: 12mm minmax(0, 1fr) 42mm;
+  column-gap: 5.5mm;
+  align-items: center;
+  min-height: 18mm;
+  margin-bottom: 7mm;
+  padding-bottom: 4.5mm;
+  border-bottom: .35mm solid var(--kaori-border);
+}
+body.kaori-publication-standard .section-index {
+  width: 12mm;
+  height: 12mm;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2.6mm;
+  background: var(--kaori-primary);
+  color: #fff;
+  font-size: 11.5pt;
+  line-height: 1;
+  font-weight: 700;
+}
+body.kaori-publication-standard .page-title-copy { min-width: 0; }
+body.kaori-publication-standard .page-title-copy h1 {
+  margin: 0;
+  font-size: 16.6pt;
+  line-height: 1.04;
+  font-weight: 700;
+  letter-spacing: -.02em;
+  white-space: nowrap;
+}
+body.kaori-publication-standard .page-title-copy p {
+  margin: 1.1mm 0 0;
+  color: var(--kaori-muted);
+  font-size: 7.1pt;
+  line-height: 1.18;
+  white-space: nowrap;
+}
+body.kaori-publication-standard .cutoff { display: flex; flex-direction: column; justify-content: center; text-align: right; }
+body.kaori-publication-standard .cutoff span { color: var(--kaori-muted); font-size: 6.3pt; line-height: 1.1; }
+body.kaori-publication-standard .cutoff strong { margin-top: 1.1mm; font-size: 7.1pt; line-height: 1.18; font-weight: 600; white-space: nowrap; }
+
+body.kaori-publication-standard .metric-strip {
+  display: grid;
+  grid-template-columns: repeat(var(--metric-cols, 4), minmax(0, 1fr));
+  margin: 0 0 7mm;
+  border-top: .3mm solid var(--kaori-border);
+  border-bottom: .3mm solid var(--kaori-border);
+}
+body.kaori-publication-standard .metric {
+  min-width: 0;
+  min-height: 24mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4mm 4mm 3.5mm;
+  border-right: .3mm solid var(--kaori-border);
+}
+body.kaori-publication-standard .metric:last-child { border-right: none; }
+body.kaori-publication-standard .metric > span { color: #526581; font-size: 6.4pt; line-height: 1.15; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+body.kaori-publication-standard .metric > strong { margin-top: 2mm; font-size: 14.2pt; line-height: 1.05; font-weight: 700; overflow-wrap: anywhere; }
+body.kaori-publication-standard .metric > strong.metric-medium { font-size: 10.8pt; line-height: 1.08; }
+body.kaori-publication-standard .metric > strong.metric-long { font-size: 8.9pt; line-height: 1.14; }
+body.kaori-publication-standard .metric > em { margin-top: 1.4mm; font-size: 7pt; line-height: 1.15; font-style: normal; font-weight: 600; }
+body.kaori-publication-standard .status.normal { color: #15803D; }
+body.kaori-publication-standard .status.warning { color: #B45309; }
+body.kaori-publication-standard .status.critical { color: #B91C1C; }
+body.kaori-publication-standard .status.info { color: #2563EB; }
+body.kaori-publication-standard .status.muted,
+body.kaori-publication-standard .status.neutral { color: var(--kaori-muted); }
+
+body.kaori-publication-standard .content-section { margin-top: 7.6mm; break-inside: avoid; page-break-inside: avoid; }
+body.kaori-publication-standard .content-section:first-of-type { margin-top: 0; }
+body.kaori-publication-standard .content-section h2 { margin: 0; font-size: 11.4pt; line-height: 1.22; font-weight: 700; letter-spacing: -.01em; }
+body.kaori-publication-standard .content-section h3 { margin: 0; font-size: 9.1pt; line-height: 1.28; font-weight: 600; }
+body.kaori-publication-standard .section-subtitle { min-height: 7mm; margin: 1.4mm 0 0; color: var(--kaori-muted); font-size: 7.05pt; line-height: 1.42; }
+body.kaori-publication-standard .section-rule { height: .6mm; margin-top: 2.2mm; overflow: hidden; background: var(--kaori-border); }
+body.kaori-publication-standard .section-rule > span { display: block; width: 25mm; height: 100%; background: var(--kaori-primary); }
+body.kaori-publication-standard .section-body { margin-top: 4.5mm; font-size: 8pt; line-height: 1.5; }
+body.kaori-publication-standard .section-body p { margin: 0; }
+body.kaori-publication-standard .section-body p + p { margin-top: 2.4mm; }
+
+body.kaori-publication-standard .two-column { display: grid; grid-template-columns: minmax(0, 1.24fr) minmax(0, .76fr); gap: 7mm; align-items: start; }
+body.kaori-publication-standard .paired-sections > .content-section { margin-top: 0; }
+body.kaori-publication-standard .paired-sections > .content-section > .section-subtitle { min-height: 8mm; }
+
+body.kaori-publication-standard .interpretation-card {
+  min-height: 47mm;
+  padding: 5mm;
+  border-left: 1.2mm solid var(--kaori-primary);
+  background: var(--kaori-surface);
+}
+body.kaori-publication-standard .interpretation-card.warning-card { border-left-color: #D97706; }
+body.kaori-publication-standard .interpretation-card.critical-card { border-left-color: #DC2626; }
+body.kaori-publication-standard .interpretation-card.info-card { border-left-color: #2563EB; }
+body.kaori-publication-standard .interpretation-card strong { display: block; font-size: 8.2pt; line-height: 1.35; }
+body.kaori-publication-standard .interpretation-card p { margin: 4mm 0 0; font-size: 7.1pt; line-height: 1.5; }
+body.kaori-publication-standard .interpretation-card small { display: block; margin-top: 5mm; color: var(--kaori-muted); font-size: 6.1pt; line-height: 1.4; }
+
+body.kaori-publication-standard .report-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 7.15pt; }
+body.kaori-publication-standard .report-table thead { display: table-header-group; }
+body.kaori-publication-standard .report-table tr { break-inside: avoid; page-break-inside: avoid; }
+body.kaori-publication-standard .report-table thead th,
+body.kaori-publication-standard .report-table th {
+  padding: 2.3mm 2.5mm;
+  border-top: .3mm solid var(--kaori-border);
+  border-bottom: .3mm solid var(--kaori-border);
+  background: var(--kaori-table-head);
+  color: #334155;
+  text-align: left;
+  font-weight: 600;
+  line-height: 1.25;
+}
+body.kaori-publication-standard .report-table td {
+  padding: 2.5mm;
+  vertical-align: top;
+  border-bottom: .25mm solid #D9E0EA;
+  line-height: 1.38;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: none;
+}
+body.kaori-publication-standard .report-table tbody tr:nth-child(even) td { background: var(--kaori-surface); }
+body.kaori-publication-standard .report-table tr:last-child td { border-bottom: .3mm solid var(--kaori-border); }
+body.kaori-publication-standard .report-table .ref,
+body.kaori-publication-standard .report-table .ref-or-primary { color: var(--kaori-primary); font-weight: 700; }
+body.kaori-publication-standard .report-table .empty-row { padding: 6mm; color: var(--kaori-muted); text-align: center; }
+
+body.kaori-publication-standard .reference-notes { margin-top: 5mm; padding-top: 4mm; border-top: .3mm solid var(--kaori-border); }
+body.kaori-publication-standard .reference-notes h3 { margin: 0 0 3mm; font-size: 8.6pt; }
+body.kaori-publication-standard .reference-item { display: grid; grid-template-columns: 10mm minmax(0, 1fr); gap: 3mm; align-items: start; margin-top: 2.6mm; }
+body.kaori-publication-standard .reference-item:first-of-type { margin-top: 0; }
+body.kaori-publication-standard .reference-code { display: flex; align-items: center; justify-content: center; min-height: 7mm; border-radius: 1.2mm; background: var(--kaori-primary-soft); color: var(--kaori-primary); font-size: 6.2pt; font-weight: 800; }
+body.kaori-publication-standard .reference-copy strong,
+body.kaori-publication-standard .reference-item strong { display: block; font-size: 7pt; line-height: 1.3; }
+body.kaori-publication-standard .reference-copy p,
+body.kaori-publication-standard .reference-item p { margin: .8mm 0 0; color: var(--kaori-muted); font-size: 6.2pt; line-height: 1.38; }
+
+body.kaori-publication-standard .methodology-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 7mm; align-items: start; }
+body.kaori-publication-standard .methodology-grid h3 { margin: 0 0 2.8mm; font-size: 7.5pt; }
+body.kaori-publication-standard .source-register,
+body.kaori-publication-standard .methodology-register { font-size: 6.2pt; }
+body.kaori-publication-standard .source-register td,
+body.kaori-publication-standard .methodology-register td,
+body.kaori-publication-standard .source-register th,
+body.kaori-publication-standard .methodology-register th { padding: 1.8mm 2mm; white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+body.kaori-publication-standard .boundary-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 14mm; align-items: start; break-inside: avoid; }
+body.kaori-publication-standard .boundary-columns > div { min-width: 0; }
+body.kaori-publication-standard .boundary-columns h3,
+body.kaori-publication-standard .limitations-grid h3 { margin: 0 0 2.2mm; font-size: 7.2pt; }
+body.kaori-publication-standard .boundary-columns ul,
+body.kaori-publication-standard .limitations-grid ul { margin: 0; padding-left: 4.5mm; font-size: 6.2pt; line-height: 1.45; }
+body.kaori-publication-standard .boundary-columns li,
+body.kaori-publication-standard .limitations-grid li { margin: .8mm 0; }
+body.kaori-publication-standard .limitations-grid { display: grid; grid-template-columns: .92fr 1.08fr; gap: 7mm; align-items: start; }
+body.kaori-publication-standard .status-language-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm 4mm; }
+
+body.kaori-publication-standard .cover-band {
+  position: relative;
+  height: 84mm;
+  padding: 12mm 15mm 10mm;
+  overflow: hidden;
+  background: var(--kaori-primary-dark);
+  color: #fff;
+}
+body.kaori-publication-standard .cover-band::after { content: ""; position: absolute; right: -28mm; top: -40mm; width: 105mm; height: 105mm; border: 1mm solid rgba(255,255,255,.12); border-radius: 50%; box-shadow: 0 0 0 13mm rgba(255,255,255,.035), 0 0 0 27mm rgba(255,255,255,.025); }
+body.kaori-publication-standard .cover-masthead { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; }
+body.kaori-publication-standard .cover-band > .cover-brand { position: relative; z-index: 2; }
+body.kaori-publication-standard .cover-brand img { width: 9mm; height: 9mm; }
+body.kaori-publication-standard .cover-class { position: relative; z-index: 2; text-align: right; font-size: 5.7pt; font-weight: 700; line-height: 1.5; letter-spacing: .08em; }
+body.kaori-publication-standard .cover-band > .cover-class { position: absolute; top: 12mm; right: 15mm; }
+body.kaori-publication-standard .cover-copy,
+body.kaori-publication-standard .cover-hero-copy { position: relative; z-index: 2; margin-top: 12mm; }
+body.kaori-publication-standard .cover-eyebrow { font-size: 6pt; letter-spacing: .17em; text-transform: uppercase; opacity: .8; }
+body.kaori-publication-standard .cover-copy h1,
+body.kaori-publication-standard .cover-hero-copy h1 { margin: 3mm 0 0; font-size: 24pt; line-height: 1.02; }
+body.kaori-publication-standard .cover-copy p,
+body.kaori-publication-standard .cover-hero-copy p { width: 150mm; margin: 3mm 0 0; font-size: 8.3pt; line-height: 1.45; opacity: .93; }
+body.kaori-publication-standard .cover-main { padding: 13mm 15mm 18mm; }
+body.kaori-publication-standard .cover-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10mm; }
+body.kaori-publication-standard .cover-grid h2 { margin: 0 0 4mm; font-size: 10.5pt; }
+body.kaori-publication-standard .context-list { display: grid; grid-template-columns: 38mm 1fr; margin: 0; row-gap: 2.2mm; font-size: 7.2pt; }
+body.kaori-publication-standard .context-list dt { color: var(--kaori-muted); }
+body.kaori-publication-standard .context-list dd { margin: 0; font-weight: 650; }
+body.kaori-publication-standard .cover-grid p { margin: 0; font-size: 7.2pt; line-height: 1.5; }
+body.kaori-publication-standard .cover-context,
+body.kaori-publication-standard .cover-message { margin-top: 8mm; border-left: 1.2mm solid var(--kaori-primary); padding: 1mm 0 1mm 5mm; }
+body.kaori-publication-standard .cover-context strong,
+body.kaori-publication-standard .cover-message strong { display: block; font-size: 8pt; }
+body.kaori-publication-standard .cover-context p,
+body.kaori-publication-standard .cover-message p { margin: 1.5mm 0 0; color: #475569; font-size: 6.8pt; line-height: 1.45; }
+body.kaori-publication-standard .cover-contents { margin-top: 8mm; padding-top: 5mm; border-top: .3mm solid var(--kaori-border); display: grid; grid-template-columns: 1fr 1fr; gap: 2.3mm 12mm; color: #475569; font-size: 6.6pt; }
+
+body.kaori-publication-standard .page-footer { position: absolute; left: 15mm; right: 15mm; bottom: 5mm; height: 6mm; display: flex; align-items: flex-end; justify-content: space-between; padding-top: 2mm; border-top: .4mm solid var(--kaori-primary); color: var(--kaori-muted); font-size: 6.2pt; line-height: 1; }

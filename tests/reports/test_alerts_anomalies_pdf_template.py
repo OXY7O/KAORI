@@ -125,7 +125,16 @@ def test_alerts_anomalies_weasyprint_layout_is_exactly_nine_a4_pages(tmp_path: P
     font_config = FontConfiguration()
     HTML(string=_rendered_html(), base_url=str(PROJECT_ROOT)).write_pdf(
         target=str(output_path),
-        stylesheets=[CSS(filename=str(PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf' / 'alerts_anomalies.css'), font_config=font_config)],
+        stylesheets=[
+            CSS(
+                filename=str(PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf' / 'alerts_anomalies.css'),
+                font_config=font_config,
+            ),
+            CSS(
+                filename=str(PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf' / 'kaori_publication.css'),
+                font_config=font_config,
+            ),
+        ],
         font_config=font_config,
         presentational_hints=True,
     )

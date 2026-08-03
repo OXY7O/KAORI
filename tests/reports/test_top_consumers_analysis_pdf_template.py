@@ -158,7 +158,16 @@ def test_top_consumers_weasyprint_layout_is_exactly_nine_a4_pages(tmp_path: Path
     font_config = FontConfiguration()
     HTML(string=_rendered_html(), base_url=str(PROJECT_ROOT)).write_pdf(
         target=str(output_path),
-        stylesheets=[CSS(filename=str(PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf' / 'top_consumers_analysis.css'), font_config=font_config)],
+        stylesheets=[
+            CSS(
+                filename=str(PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf' / 'top_consumers_analysis.css'),
+                font_config=font_config,
+            ),
+            CSS(
+                filename=str(PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf' / 'kaori_publication.css'),
+                font_config=font_config,
+            ),
+        ],
         font_config=font_config,
         presentational_hints=True,
     )

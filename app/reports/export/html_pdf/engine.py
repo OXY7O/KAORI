@@ -32,6 +32,7 @@ def render_document_pdf(
         'reports/pdf/forecast_analysis.html': 'forecast_analysis.css',
         'reports/pdf/top_consumers_analysis.html': 'top_consumers_analysis.css',
         'reports/pdf/alerts_anomalies.html': 'alerts_anomalies.css',
+        'reports/pdf/tls_certificate_health.html': 'tls_certificate_health.css',
         'reports/pdf/inventory_overview.html': 'inventory_publications.css',
         'reports/pdf/nodes_inventory.html': 'inventory_publications.css',
         'reports/pdf/namespaces_inventory.html': 'inventory_publications.css',
@@ -44,10 +45,16 @@ def render_document_pdf(
     }
     specialized_stylesheet = specialized_stylesheets.get(document.template_name)
     if specialized_stylesheet:
-        # Fixed publication templates are isolated from report.css so generic page,
-        # table, and margin-box rules cannot contaminate an approved layout.
+        # Fixed publications use a two-layer contract:
+        # 1. report-specific layout and visualizations;
+        # 2. the reusable KAORI publication standard, loaded last so typography,
+        #    section hierarchy, tables, and separators stay consistent.
         publication_css_path = css_path.with_name(specialized_stylesheet)
-        stylesheets = [CSS(filename=str(publication_css_path), font_config=font_config)]
+        shared_publication_css_path = css_path.with_name('kaori_publication.css')
+        stylesheets = [
+            CSS(filename=str(publication_css_path), font_config=font_config),
+            CSS(filename=str(shared_publication_css_path), font_config=font_config),
+        ]
     else:
         stylesheets = [CSS(filename=str(css_path), font_config=font_config)]
 

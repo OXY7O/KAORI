@@ -4,54 +4,19 @@
   <meta charset="utf-8">
   <title>{{ document.report_name }}</title>
 </head>
-<body class="kaori-resource-utilization-report">
+<body class="kaori-publication-standard kaori-resource-utilization-report">
 {% set p = document.presentation %}
+{% import 'reports/pdf/components/kaori_publication.html' as ui %}
 
-{% macro report_header() -%}
-<div class="report-header">
-  <div class="brand">
-    <img src="app/static/images/kaori-logo.svg" alt="KAORI">
-    <div><strong>KAORI</strong><span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span></div>
-  </div>
-  <div class="report-name"><strong>Resource Utilization</strong><span>Kubernetes Operational Intelligence Report</span></div>
-</div>
-{%- endmacro %}
+{% macro report_header() -%}{{ ui.report_header('Resource Utilization') }}{%- endmacro %}
 
-{% macro page_title(number, title, subtitle) -%}
-<div class="page-title-row">
-  <div class="section-index">{{ number }}</div>
-  <div class="page-title-copy"><h1>{{ title }}</h1><p>{{ subtitle }}</p></div>
-  <div class="cutoff"><span>Data Cut-off</span><strong>{{ p.data_cutoff }}</strong></div>
-</div>
-{%- endmacro %}
+{% macro page_title(number, title, subtitle) -%}{{ ui.page_title(number, title, subtitle, p.data_cutoff) }}{%- endmacro %}
 
-{% macro footer(page_number) -%}
-<div class="page-footer">
-  <span>Report ID: {{ p.report_id }} &nbsp; | &nbsp; {{ p.classification }}</span>
-  <span>Page {{ page_number }} of {{ p.page_count }}</span>
-</div>
-{%- endmacro %}
+{% macro footer(page_number) -%}{{ ui.footer(p.report_id, p.classification, page_number, p.page_count) }}{%- endmacro %}
 
-{% macro metric_strip(items) -%}
-<div class="metric-strip">
-  {% for item in items %}
-  <div class="metric">
-    <span>{{ item.label }}</span>
-    <strong class="{% if item.value|string|length > 18 %}metric-long{% elif item.value|string|length > 11 %}metric-medium{% endif %}">{{ item.value }}</strong>
-    <em class="status {{ item.tone|default('muted') }}">{{ item.status }}</em>
-  </div>
-  {% endfor %}
-</div>
-{%- endmacro %}
+{% macro metric_strip(items, limit=4) -%}{{ ui.metric_strip(items, limit) }}{%- endmacro %}
 
-{% macro section(title, subtitle='') -%}
-<section class="content-section">
-  <h2>{{ title }}</h2>
-  {% if subtitle %}<p class="section-subtitle">{{ subtitle }}</p>{% endif %}
-  <div class="section-rule"></div>
-  <div class="section-body">{{ caller() }}</div>
-</section>
-{%- endmacro %}
+{% macro section(title, subtitle='', extra_class='') -%}{% call ui.section(title, subtitle, extra_class) %}{{ caller() }}{% endcall %}{%- endmacro %}
 
 {% macro reference_item(item) -%}
 <div class="reference-item">
@@ -110,7 +75,7 @@
     {{ metric_strip(p.executive.metrics) }}
 
     <div class="two-column primary-split">
-      {% call section('Figure 1 - Shared Resource Utilization', 'Current committed utilization against KAORI warning and critical operating bands.') %}
+      {% call ui.section('Figure 1 - Shared Resource Utilization', 'Current committed utilization against KAORI warning and critical operating bands.') %}
       <div class="utilization-bars">
         {% for item in p.executive.resources %}
         <div class="utilization-row">
@@ -125,7 +90,7 @@
       </div>
       {% endcall %}
 
-      {% call section('Management Interpretation', 'The principal operating signal and the decision required.') %}
+      {% call ui.section('Management Interpretation', 'The principal operating signal and the decision required.') %}
       <div class="interpretation-card">
         <strong>{{ p.executive.leading_title }}</strong>
         <p>{{ p.executive.leading_body }}</p>
@@ -134,7 +99,7 @@
       {% endcall %}
     </div>
 
-    {% call section('Priority Findings Register', 'The register contains fixed decision fields; supporting explanations are maintained by reference.') %}
+    {% call ui.section('Priority Findings Register', 'The register contains fixed decision fields; supporting explanations are maintained by reference.') %}
     <table class="report-table findings-register">
       <thead><tr><th>Ref.</th><th>Priority</th><th>Finding</th><th>Owner</th><th>Status</th></tr></thead>
       <tbody>{% for item in p.executive.findings %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.priority }}</td><td>{{ item.title }}</td><td>{{ item.owner }}</td><td class="status {{ item.tone }}">{{ item.status }}</td></tr>{% endfor %}</tbody>
@@ -156,12 +121,12 @@
     {{ metric_strip(p.cpu.metrics) }}
 
     <div class="two-column chart-assessment-split">
-      {% call section('Figure 2 - CPU Direction', 'Committed historical utilization for the selected reporting period.') %}
+      {% call ui.section('Figure 2 - CPU Direction', 'Committed historical utilization for the selected reporting period.') %}
       <div class="chart-frame">{{ p.cpu.chart_svg|safe }}</div>
       <div class="chart-legend"><span class="legend-cpu">Committed CPU signal</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
       {% endcall %}
 
-      {% call section('CPU Operating Assessment', 'Interpretation remains separate from the comparison register.') %}
+      {% call ui.section('CPU Operating Assessment', 'Interpretation remains separate from the comparison register.') %}
       <div class="interpretation-card tall-card">
         <strong>{{ p.cpu.assessment_title }}</strong>
         <p>{{ p.cpu.assessment_body }}</p>
@@ -170,7 +135,7 @@
       {% endcall %}
     </div>
 
-    {% call section('Leading CPU Consumers', 'Top displayed CPU resource identities from the committed evidence.') %}
+    {% call ui.section('Leading CPU Consumers', 'Top displayed CPU resource identities from the committed evidence.') %}
     <table class="report-table consumer-table">
       <thead><tr><th>Ref.</th><th>Resource Identity</th><th>Namespace</th><th>Value</th><th>Status</th></tr></thead>
       <tbody>
@@ -179,7 +144,7 @@
     </table>
     {% endcall %}
 
-    {% call section('Management Decision', p.cpu.decision) %}{% endcall %}
+    {% call ui.section('Management Decision', p.cpu.decision) %}{% endcall %}
   </div>
   {{ footer(3) }}
 </article>
@@ -191,12 +156,12 @@
     {{ metric_strip(p.memory.metrics) }}
 
     <div class="two-column chart-assessment-split">
-      {% call section('Figure 3 - Memory Direction and Projection', 'Committed endpoint and projected warning-band entry across the planning horizon.') %}
+      {% call ui.section('Figure 3 - Memory Direction and Projection', 'Committed endpoint and projected warning-band entry across the planning horizon.') %}
       <div class="chart-frame">{{ p.memory.chart_svg|safe }}</div>
       <div class="chart-legend"><span class="legend-memory">Historical / projected memory</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
       {% endcall %}
 
-      {% call section('Memory Operating Assessment', 'Current posture and planning implication.') %}
+      {% call ui.section('Memory Operating Assessment', 'Current posture and planning implication.') %}
       <div class="interpretation-card tall-card">
         <strong>{{ p.memory.assessment_title }}</strong>
         <p>{{ p.memory.assessment_body }}</p>
@@ -205,7 +170,7 @@
       {% endcall %}
     </div>
 
-    {% call section('Leading Memory Consumers', 'Top displayed memory resource identities from the committed evidence.') %}
+    {% call ui.section('Leading Memory Consumers', 'Top displayed memory resource identities from the committed evidence.') %}
     <table class="report-table consumer-table">
       <thead><tr><th>Ref.</th><th>Resource Identity</th><th>Namespace</th><th>Value</th><th>Status</th></tr></thead>
       <tbody>
@@ -214,7 +179,7 @@
     </table>
     {% endcall %}
 
-    {% call section('Management Decision', p.memory.decision) %}{% endcall %}
+    {% call ui.section('Management Decision', p.memory.decision) %}{% endcall %}
   </div>
   {{ footer(4) }}
 </article>
@@ -226,7 +191,7 @@
     {{ metric_strip(p.pod_node.metrics) }}
 
     <div class="two-column pod-node-split">
-      {% call section('Pod Scheduling Position', 'Committed utilization and remaining scheduling capacity.') %}
+      {% call ui.section('Pod Scheduling Position', 'Committed utilization and remaining scheduling capacity.') %}
       <div class="pod-bars">
         <div class="pod-row"><strong>Pods Used</strong><div class="pod-track"><i style="width:{{ p.pod_node.pods_used }}%"></i><b class="warning-marker"></b><b class="critical-marker"></b></div><span>{{ '%.1f'|format(p.pod_node.pods_used) }}%</span></div>
         <div class="pod-row"><strong>Remaining</strong><div class="pod-track"><i class="remaining-fill" style="width:{{ p.pod_node.pods_headroom }}%"></i><b class="warning-marker"></b><b class="critical-marker"></b></div><span>{{ '%.1f'|format(p.pod_node.pods_headroom) }}%</span></div>
@@ -238,7 +203,7 @@
       <p class="source-note">The percentage signal and reported count values retain the source scope returned by the committed payload.</p>
       {% endcall %}
 
-      {% call section('Node Participation', 'Ready nodes participating in current capacity assumptions.') %}
+      {% call ui.section('Node Participation', 'Ready nodes participating in current capacity assumptions.') %}
       <div class="node-card">
         <div class="node-donut">{{ p.pod_node.node_donut_svg|safe }}</div>
         <div class="node-legend">
@@ -250,14 +215,14 @@
       {% endcall %}
     </div>
 
-    {% call section('Utilization Register', 'Fixed comparison fields remain in the table; operational interpretation is maintained below.') %}
+    {% call ui.section('Utilization Register', 'Fixed comparison fields remain in the table; operational interpretation is maintained below.') %}
     <table class="report-table utilization-register">
       <thead><tr><th>Ref.</th><th>Resource</th><th>Used / State</th><th>Capacity</th><th>Headroom</th><th>Status</th></tr></thead>
       <tbody>{% for row in p.pod_node.register %}<tr><td class="ref">{{ row.ref }}</td><td>{{ row.resource }}</td><td>{{ row.used }}</td><td>{{ row.capacity }}</td><td>{{ row.headroom }}</td><td class="status {{ row.tone }}">{{ row.status }}</td></tr>{% endfor %}</tbody>
     </table>
     {% endcall %}
 
-    {% call section('Operational Interpretation', p.pod_node.interpretation) %}{% endcall %}
+    {% call ui.section('Operational Interpretation', p.pod_node.interpretation) %}{% endcall %}
   </div>
   {{ footer(5) }}
 </article>
@@ -268,33 +233,36 @@
     {{ page_title(5, 'Utilization Distribution', 'Concentration of displayed resource signals by namespace and resource identity.') }}
 
     <div class="two-column distribution-split">
-      {% call section('Figure 4 - Displayed Memory Concentration', 'Distribution across the top three displayed memory consumers.') %}
+      {% call ui.section('Figure 4 - Displayed Memory Concentration', 'Distribution across the top three displayed memory consumers.') %}
       <div class="memory-concentration-card">
-        <div class="donut-wrap">{{ p.distribution.memory_donut_svg|safe }}</div>
+        <div class="donut-wrap">
+          {{ p.distribution.memory_donut_svg|safe }}
+          <div class="donut-center"><strong>{{ '%.2f'|format(p.distribution.memory_total) }}</strong><span>GiB displayed</span></div>
+        </div>
         <div class="donut-legend">
           {% for item in p.distribution.memory_consumers %}<div><i class="donut-key key-{{ loop.index }}"></i><span>M{{ loop.index }}</span><strong>{{ item.value }}</strong></div>{% else %}<div class="empty-inline">No memory consumer evidence</div>{% endfor %}
         </div>
       </div>
       {% endcall %}
 
-      {% call section('Figure 5 - Displayed CPU Concentration', 'Share within the three displayed CPU consumer records.') %}
+      {% call ui.section('Figure 5 - Displayed CPU Concentration', 'Relative contribution across the top three displayed CPU consumers.') %}
       <div class="cpu-concentration-bars">
         {% for item in p.distribution.cpu_consumers %}
-        <div class="concentration-row"><strong>{{ item.namespace }}</strong><div class="concentration-track"><i style="width:{{ item.share_percent }}%"></i></div><span>{{ '%.1f'|format(item.share_percent) }}%</span></div>
+        <div class="concentration-row"><strong>{{ item.namespace }}</strong><div class="concentration-track"><i style="width:{{ item.share_percent }}%"></i><b class="warning-marker"></b><b class="critical-marker"></b></div><span>{{ '%.1f'|format(item.share_percent) }}%</span></div>
         {% else %}<div class="empty-inline">No CPU consumer evidence</div>{% endfor %}
       </div>
-      <div class="interpretation-card distribution-note"><strong>Distribution is limited to the displayed top-consumer set.</strong><p>It must not be interpreted as a complete namespace utilization allocation.</p><small>CPU percentages are normalized across the three displayed records and sum to 100%.</small></div>
+      <div class="interpretation-card distribution-note"><strong>Distribution is limited to the displayed top-consumer set.</strong><p>It must not be interpreted as a complete namespace utilization allocation.</p><small>The production report retains denominator and ranking scope beside every distribution chart.</small></div>
       {% endcall %}
     </div>
 
-    {% call section('Consumer Reference Register', 'Complete technical identities are retained in the register so chart labels remain readable.') %}
+    {% call ui.section('Consumer Reference Register', 'Complete technical identities are retained in the register so chart labels remain readable.') %}
     <table class="report-table distribution-register">
       <thead><tr><th>Ref.</th><th>Resource Identity</th><th>Namespace</th><th>Signal</th><th>Value</th></tr></thead>
       <tbody>{% for row in p.distribution.register %}<tr><td class="ref">{{ row.ref }}</td><td>{{ row.name }}</td><td>{{ row.namespace }}</td><td>{{ row.resource }}</td><td>{{ row.value }}</td></tr>{% else %}<tr><td colspan="5" class="empty-row">Consumer reference evidence was not available.</td></tr>{% endfor %}</tbody>
     </table>
     {% endcall %}
 
-    {% call section('Management Interpretation', p.distribution.interpretation) %}{% endcall %}
+    {% call ui.section('Management Interpretation', p.distribution.interpretation) %}{% endcall %}
   </div>
   {{ footer(6) }}
 </article>
@@ -305,22 +273,22 @@
     {{ page_title(6, 'Trend Evidence', 'Committed historical direction and planning signals across the selected period.') }}
     {{ metric_strip(p.trend.metrics) }}
 
-    {% call section('Figure 6 - Resource Trend Outlook', 'Historical and projected endpoints remain within the committed report evidence boundary.') %}
+    {% call ui.section('Figure 6 - Resource Trend Outlook', 'Historical and projected endpoints remain within the committed report evidence boundary.') %}
     <div class="trend-chart-frame">{{ p.trend.chart_svg|safe }}</div>
     <div class="chart-legend"><span class="legend-memory">Memory</span><span class="legend-pods">Pods</span><span class="legend-cpu">CPU</span><span class="legend-warning">Warning 70%</span><span class="legend-critical">Critical 85%</span></div>
     {% endcall %}
 
     <div class="two-column trend-interpretation-split">
-      {% call section('Trend Interpretation', 'Resource-level direction remains explicit.') %}
+      {% call ui.section('Trend Interpretation', 'Resource-level direction remains explicit.') %}
       <table class="report-table trend-register"><thead><tr><th>Ref.</th><th>Resource</th><th>Current</th><th>Projection</th><th>Assessment</th></tr></thead><tbody>{% for row in p.trend.rows %}<tr><td class="ref">{{ row.ref }}</td><td>{{ row.resource }}</td><td>{{ row.current }}</td><td>{{ row.projection }}</td><td class="status {{ row.tone }}">{{ row.assessment }}</td></tr>{% endfor %}</tbody></table>
       {% endcall %}
 
-      {% call section('Evidence Boundary', 'What the trend does and does not represent.') %}
+      {% call ui.section('Evidence Boundary', 'What the trend does and does not represent.') %}
       <div class="interpretation-card evidence-card"><strong>Committed observations define the report boundary.</strong><p>{{ p.trend.evidence }}</p><small>Missing observations remain visible as gaps and must not be converted to zero.</small></div>
       {% endcall %}
     </div>
 
-    {% call section('Management Interpretation', p.trend.interpretation) %}{% endcall %}
+    {% call ui.section('Management Interpretation', p.trend.interpretation) %}{% endcall %}
   </div>
   {{ footer(7) }}
 </article>
@@ -331,18 +299,18 @@
     {{ page_title(7, 'Recommendation Plan', 'Prioritized actions, accountable owners, target windows, and validation gates.') }}
     {{ metric_strip(p.recommendations.metrics) }}
 
-    {% call section('Priority Recommendations', 'The register contains fixed decision fields. Full context remains in the reference notes below.') %}
+    {% call ui.section('Priority Recommendations', 'The register contains fixed decision fields. Full context remains in the reference notes below.') %}
     <table class="report-table recommendation-register">
       <thead><tr><th>Ref.</th><th>Priority</th><th>Recommendation</th><th>Owner</th><th>Target</th><th>Status</th></tr></thead>
       <tbody>{% for item in p.recommendations['items'] %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.priority }}</td><td>{{ item.title }}</td><td>{{ item.owner }}</td><td>{{ item.target }}</td><td class="status {{ item.tone }}">{{ item.status }}</td></tr>{% endfor %}</tbody>
     </table>
     {% endcall %}
 
-    {% call section('Recommendation References', 'Descriptions expand below the register without changing table row heights.') %}
+    {% call ui.section('Recommendation References', 'Descriptions expand below the register without changing table row heights.') %}
     <div class="reference-grid recommendations-grid">{% for item in p.recommendations['items'] %}{{ reference_item(item) }}{% endfor %}</div>
     {% endcall %}
 
-    {% call section('Execution Governance', 'Remediation must be validated against live state, ownership, maintenance windows, and approved change controls.') %}
+    {% call ui.section('Execution Governance', 'Remediation must be validated against live state, ownership, maintenance windows, and approved change controls.') %}
     <table class="report-table governance-table"><tbody>
       <tr><th>Primary Action</th><td>{{ p.recommendations.primary_action }}</td></tr>
       <tr><th>Validation Criteria</th><td>{{ p.recommendations.validation_criteria }}</td></tr>
@@ -360,7 +328,7 @@
     {{ page_title(8, 'Methodology and Evidence Boundary', 'Data sources, utilization rules, freshness, and explicit limitations.') }}
     {{ metric_strip(p.methodology.metrics) }}
 
-    {% call section('Data Sources and Methodology', 'The source table is wider so technical source names and timestamps remain on one line.') %}
+    {% call ui.section('Data Sources and Methodology', 'The source table is wider so technical source names and timestamps remain on one line.') %}
     <div class="methodology-tables">
       <div class="data-source-table"><h3>Data Sources and Coverage</h3>
         <table class="report-table compact-register"><thead><tr><th>Source</th><th>Freshness</th><th>Last Collected</th></tr></thead><tbody>{% for row in p.methodology.sources %}<tr><td>{{ row.source }}</td><td>{{ row.freshness }}</td><td>{{ row.last_collected }}</td></tr>{% endfor %}</tbody></table>
@@ -371,18 +339,18 @@
     </div>
     {% endcall %}
 
-    {% call section('Methodology References') %}
+    {% call ui.section('Methodology References') %}
     <div class="reference-grid methodology-reference-grid">{% for item in p.methodology.references %}{{ reference_item(item) }}{% endfor %}</div>
     {% endcall %}
 
-    {% call section('Evidence Boundary', 'This report is built strictly within the committed observation boundary defined by the data cut-off.') %}
+    {% call ui.section('Evidence Boundary', 'This report is built strictly within the committed observation boundary defined by the data cut-off.') %}
     <div class="two-column boundary-columns">
       <div><h3>Included in This Report</h3><ul><li>Committed cluster-scoped utilization observations.</li><li>Committed CPU, memory, pod, and node participation evidence.</li><li>Top-consumer and forecast evidence when available.</li></ul></div>
       <div><h3>Not Included in This Report</h3><ul><li>Live cluster state after the data cut-off.</li><li>Unapproved change windows and in-flight maintenance.</li><li>Planned deployments not represented by committed evidence.</li></ul></div>
     </div>
     {% endcall %}
 
-    {% call section('Limitations and Status Language') %}
+    {% call ui.section('Limitations and Status Language') %}
     <div class="limitations-status-grid">
       <div><h3>Known Limitations and Operational Use</h3><ul><li>Distribution charts describe displayed top-consumer records unless a complete denominator is available.</li><li>Unavailable observations remain explicit and are not interpreted as zero.</li><li>Validate all recommendations against live cluster state before remediation.</li></ul></div>
       <div><h3>Status Language</h3><div class="status-language-grid">

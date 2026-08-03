@@ -270,21 +270,24 @@ def test_inventory_publication_uses_fixed_nine_page_contract(report_type: str) -
 
 def test_inventory_methodology_keeps_included_and_excluded_side_by_side() -> None:
     rendered_html = _rendered_html('storage_inventory')
-    css = (PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf' / 'inventory_publications.css').read_text(
+    shared_css = (PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf' / 'kaori_publication.css').read_text(
+        encoding='utf-8'
+    )
+    inventory_css = (PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf' / 'inventory_publications.css').read_text(
         encoding='utf-8'
     )
 
     assert 'class="boundary-columns"' in rendered_html
     assert 'Included in This Report' in rendered_html
     assert 'Not Included in This Report' in rendered_html
-    assert 'grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)' in css
-    assert 'column-gap: 14mm' in css
+    assert 'grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)' in shared_css
+    assert 'column-gap: 14mm' in inventory_css
 
 
 @pytest.mark.parametrize('report_type', REPORT_TYPES)
 def test_inventory_section_separator_uses_weasyprint_safe_layers(report_type: str) -> None:
     rendered_html = _rendered_html(report_type)
-    css = (PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf' / 'inventory_publications.css').read_text(
+    css = (PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf' / 'kaori_publication.css').read_text(
         encoding='utf-8'
     )
 
@@ -292,10 +295,10 @@ def test_inventory_section_separator_uses_weasyprint_safe_layers(report_type: st
     assert rendered_html.count('<span></span>') >= 20
     assert 'linear-gradient(to right' not in css
     assert '.section-rule > span' in css
-    assert 'background: #CBD5E1' in css
+    assert 'background: var(--kaori-border)' in css
     assert 'width: 25mm' in css
     assert 'height: .6mm' in css
-    assert 'background: #7C3AED' in css
+    assert 'background: var(--kaori-primary)' in css
 
 
 def test_missing_inventory_fields_remain_not_available() -> None:
@@ -329,7 +332,11 @@ def test_inventory_publications_render_exactly_nine_a4_pages(tmp_path: Path, rep
             CSS(
                 filename=str(PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf' / 'inventory_publications.css'),
                 font_config=font_config,
-            )
+            ),
+            CSS(
+                filename=str(PROJECT_ROOT / 'app' / 'static' / 'reports' / 'pdf' / 'kaori_publication.css'),
+                font_config=font_config,
+            ),
         ],
         font_config=font_config,
         presentational_hints=True,
@@ -340,3 +347,46 @@ def test_inventory_publications_render_exactly_nine_a4_pages(tmp_path: Path, rep
     for page in reader.pages:
         assert 594 <= float(page.mediabox.width) <= 596
         assert 841 <= float(page.mediabox.height) <= 843
+
+
+def test_inventory_uses_shared_publication_design_contract() -> None:
+    rendered_html = _rendered_html('inventory_overview')
+    presentation = _presentation('inventory_overview')
+
+    assert 'kaori-publication-standard kaori-inventory-publication' in rendered_html
+    assert 'Finding References' in rendered_html
+    assert 'Validation Decision' in rendered_html
+    assert presentation['presentation_version'].startswith('v1.1-')
+    assert presentation['layout_contract']['visual_style'] == 'kaori-publication-standard-v1.0'
+
+
+def test_topology_page_profiles_match_their_titles() -> None:
+    presentation = _presentation('topology_inventory')
+    pages = presentation['detail_pages']
+
+    assert pages[0]['title'] == 'Cluster Topology'
+    assert pages[0]['left']['title'] == 'Cluster Composition'
+
+    assert pages[1]['title'] == 'Namespace Topology'
+    assert pages[1]['left']['title'] == 'Namespace Composition'
+    assert pages[1]['register']['title'] == 'Namespace Topology Register'
+    assert all('Node Readiness' not in value for value in (
+        pages[1]['left']['title'],
+        pages[1]['right']['title'],
+        pages[1]['register']['title'],
+    ))
+
+    assert pages[2]['title'] == 'Workload and Pod Topology'
+    assert pages[2]['register']['title'] == 'Workload and Pod Topology Register'
+
+    assert pages[3]['title'] == 'Network and Storage Topology'
+    assert pages[3]['register']['title'] == 'Network and Storage Topology Register'
+
+
+def test_inventory_engine_loads_shared_standard_after_specialized_css() -> None:
+    engine = (PROJECT_ROOT / 'app' / 'reports' / 'export' / 'html_pdf' / 'engine.py').read_text(encoding='utf-8')
+
+    specialized_position = engine.index("CSS(filename=str(publication_css_path)")
+    shared_position = engine.index("CSS(filename=str(shared_publication_css_path)")
+    assert specialized_position < shared_position
+    assert "with_name('kaori_publication.css')" in engine

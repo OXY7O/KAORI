@@ -4,54 +4,19 @@
   <meta charset="utf-8">
   <title>{{ document.report_name }}</title>
 </head>
-<body class="kaori-workload-analysis-report">
+<body class="kaori-publication-standard kaori-workload-analysis-report">
 {% set p = document.presentation %}
+{% import 'reports/pdf/components/kaori_publication.html' as ui %}
 
-{% macro report_header() -%}
-<div class="report-header">
-  <div class="brand">
-    <img src="app/static/images/kaori-logo.svg" alt="KAORI">
-    <div><strong>KAORI</strong><span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span></div>
-  </div>
-  <div class="report-name"><strong>Workload Analysis</strong><span>Kubernetes Operational Intelligence Report</span></div>
-</div>
-{%- endmacro %}
+{% macro report_header() -%}{{ ui.report_header('Workload Analysis') }}{%- endmacro %}
 
-{% macro page_title(number, title, subtitle) -%}
-<div class="page-title-row">
-  <div class="section-index">{{ number }}</div>
-  <div class="page-title-copy"><h1>{{ title }}</h1><p>{{ subtitle }}</p></div>
-  <div class="cutoff"><span>Data Cut-off</span><strong>{{ p.data_cutoff }}</strong></div>
-</div>
-{%- endmacro %}
+{% macro page_title(number, title, subtitle) -%}{{ ui.page_title(number, title, subtitle, p.data_cutoff) }}{%- endmacro %}
 
-{% macro footer(page_number) -%}
-<div class="page-footer">
-  <span>Report ID: {{ p.report_id }} &nbsp; | &nbsp; {{ p.classification }}</span>
-  <span>Page {{ page_number }} of {{ p.page_count }}</span>
-</div>
-{%- endmacro %}
+{% macro footer(page_number) -%}{{ ui.footer(p.report_id, p.classification, page_number, p.page_count) }}{%- endmacro %}
 
-{% macro metric_strip(items) -%}
-<div class="metric-strip">
-  {% for item in items %}
-  <div class="metric">
-    <span>{{ item.label }}</span>
-    <strong class="{% if item.value|string|length > 18 %}metric-long{% elif item.value|string|length > 11 %}metric-medium{% endif %}">{{ item.value }}</strong>
-    <em class="status {{ item.tone|default('muted') }}">{{ item.status }}</em>
-  </div>
-  {% endfor %}
-</div>
-{%- endmacro %}
+{% macro metric_strip(items, limit=4) -%}{{ ui.metric_strip(items, limit) }}{%- endmacro %}
 
-{% macro section(title, subtitle='', extra_class='') -%}
-<section class="content-section {{ extra_class }}">
-  <h2>{{ title }}</h2>
-  {% if subtitle %}<p class="section-subtitle">{{ subtitle }}</p>{% endif %}
-  <div class="section-rule"></div>
-  <div class="section-body">{{ caller() }}</div>
-</section>
-{%- endmacro %}
+{% macro section(title, subtitle='', extra_class='') -%}{% call ui.section(title, subtitle, extra_class) %}{{ caller() }}{% endcall %}{%- endmacro %}
 
 {% macro governance_bar(item) -%}
 <div class="governance-row">
@@ -114,7 +79,7 @@
     {{ page_title(1, 'Executive Brief', 'Management position for workload governance at the report cut-off.') }}
     {{ metric_strip(p.executive.metrics) }}
     <div class="two-column workload-executive-split">
-      {% call section('Figure 1 - Workload Governance Posture', 'Evidence coverage across the main workload governance dimensions.') %}
+      {% call ui.section('Figure 1 - Workload Governance Posture', 'Evidence coverage across the main workload governance dimensions.') %}
       <div class="governance-bars">
         {{ governance_bar({'label': 'Inventory', 'value': p.executive.inventory.coverage, 'display': p.executive.inventory.coverage_display, 'available': p.executive.inventory.available}) }}
         {{ governance_bar({'label': 'Quota Evidence', 'value': p.executive.quota.coverage or 0, 'display': p.executive.quota.coverage_display, 'available': p.executive.quota.available}) }}
@@ -122,7 +87,7 @@
         {{ governance_bar({'label': 'Metrics Coverage', 'value': p.executive.configuration.metrics_coverage or 0, 'display': (p.executive.configuration.metrics_coverage ~ '%') if p.executive.configuration.metrics_coverage is not none else 'Not Available', 'available': p.executive.configuration.available}) }}
       </div>
       {% endcall %}
-      {% call section('Management Interpretation', 'The principal workload signal and the decision required.') %}
+      {% call ui.section('Management Interpretation', 'The principal workload signal and the decision required.') %}
       <div class="interpretation-card executive-callout {% if p.executive.findings and p.executive.findings[0].tone == 'critical' %}critical-card{% endif %}">
         <strong>{{ p.executive.interpretation_title }}</strong>
         <p>{{ p.executive.interpretation_body }}</p>
@@ -130,7 +95,7 @@
       </div>
       {% endcall %}
     </div>
-    {% call section('Priority Findings Register', 'Fixed decision fields remain concise; supporting interpretation is listed below.') %}
+    {% call ui.section('Priority Findings Register', 'Fixed decision fields remain concise; supporting interpretation is listed below.') %}
     <table class="report-table findings-register">
       <thead><tr><th>Ref.</th><th>Priority</th><th>Finding</th><th>Owner</th><th>Status</th></tr></thead>
       <tbody>{% for item in p.executive.findings %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.priority }}</td><td>{{ item.title }}</td><td>{{ item.owner }}</td><td class="status {{ item.tone }}">{{ item.status }}</td></tr>{% endfor %}</tbody>
@@ -147,7 +112,7 @@
     {{ page_title(2, 'Workload Inventory & Health', 'Committed workload scope, pod participation, and governance review signals.') }}
     {{ metric_strip(p.inventory.metrics) }}
     <div class="two-column workload-inventory-split">
-      {% call section('Inventory Scope', 'Committed inventory volume by workload boundary.') %}
+      {% call ui.section('Inventory Scope', 'Committed inventory volume by workload boundary.') %}
       <div class="inventory-card-grid">
         <div class="inventory-card"><span>Workloads</span><strong>{{ p.inventory.summary.workload_display }}</strong><small>Workload mapping rows</small></div>
         <div class="inventory-card"><span>Pods</span><strong>{{ p.inventory.summary.pod_display }}</strong><small>Replica participation</small></div>
@@ -155,7 +120,7 @@
         <div class="inventory-card"><span>Clusters</span><strong>{{ p.inventory.summary.cluster_count }}</strong><small>Selected cluster scope</small></div>
       </div>
       {% endcall %}
-      {% call section('Governance Review Signals', 'Committed findings requiring ownership and validation.') %}
+      {% call ui.section('Governance Review Signals', 'Committed findings requiring ownership and validation.') %}
       <table class="report-table signal-table">
         <thead><tr><th>Ref.</th><th>Signal</th><th>Scope</th><th>State</th></tr></thead>
         <tbody>{% for item in p.inventory.signals %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.signal }}</td><td>{{ item.namespace }}</td><td class="status {{ item.tone }}">{{ item.state }}</td></tr>{% else %}<tr><td colspan="4" class="empty-row">No committed governance signal is available.</td></tr>{% endfor %}</tbody>
@@ -163,13 +128,13 @@
       <div class="interpretation-card"><strong>Runtime health is not equivalent to governance compliance.</strong><p>Operational signals identify review areas, but they do not replace quota, requests, limits, QoS, metrics, or right-sizing evidence.</p></div>
       {% endcall %}
     </div>
-    {% call section('Inventory and Runtime Register', 'Complete workload identities remain in the production register; the review keeps decision fields compact.') %}
+    {% call ui.section('Inventory and Runtime Register', 'Complete workload identities remain in the production register; the review keeps decision fields compact.') %}
     <table class="report-table inventory-register">
       <thead><tr><th>Ref.</th><th>Dimension</th><th>Committed Scope</th><th>Evidence</th><th>Status</th></tr></thead>
       <tbody>{% for item in p.inventory.register %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.dimension }}</td><td>{{ item.scope }}</td><td>{{ item.evidence }}</td><td class="status {{ item.tone }}">{{ item.status }}</td></tr>{% endfor %}</tbody>
     </table>
     {% endcall %}
-    {% call section('Management Decision', 'Use committed signals to prioritize review, not to infer configuration compliance.', 'management-decision') %}<p>{{ p.inventory.decision }}</p>{% endcall %}
+    {% call ui.section('Management Decision', 'Use committed signals to prioritize review, not to infer configuration compliance.', 'management-decision') %}<p>{{ p.inventory.decision }}</p>{% endcall %}
   </div>
   {{ footer(3) }}
 </article>
@@ -180,7 +145,7 @@
     {{ page_title(3, 'Tenant Quota Analysis', 'Namespace quota coverage, pressure evidence, and explicit collection boundaries.') }}
     {{ metric_strip(p.quota.metrics) }}
     <div class="two-column workload-quota-split">
-      {% call section('Quota Evidence State', 'Committed namespace quota coverage and pressure posture.') %}
+      {% call ui.section('Quota Evidence State', 'Committed namespace quota coverage and pressure posture.') %}
       <div class="quota-summary-card">
         <div class="governance-bars">
           {{ governance_bar({'label': 'Coverage', 'value': p.quota.coverage or 0, 'display': p.quota.coverage_display, 'available': p.quota.available}) }}
@@ -193,7 +158,7 @@
         </div>
       </div>
       {% endcall %}
-      {% call section('Decision Boundary', 'What may and may not be concluded from the available quota evidence.') %}
+      {% call ui.section('Decision Boundary', 'What may and may not be concluded from the available quota evidence.') %}
       <div class="interpretation-card {% if not p.quota.available or p.quota.missing %}warning-card{% endif %}">
         <strong>{% if p.quota.available %}Quota evidence is available for review.{% else %}Quota posture cannot be assigned.{% endif %}</strong>
         <p>{{ p.quota.decision }}</p>
@@ -201,13 +166,13 @@
       </div>
       {% endcall %}
     </div>
-    {% call section('Tenant Quota Register', 'Up to five committed namespace quota records remain compact and comparable.') %}
+    {% call ui.section('Tenant Quota Register', 'Up to five committed namespace quota records remain compact and comparable.') %}
     <table class="report-table quota-register">
       <thead><tr><th>Ref.</th><th>Namespace</th><th>Coverage</th><th>Pressure</th><th>Risk</th></tr></thead>
       <tbody>{% for item in p.quota.records %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.namespace }}</td><td>{{ item.coverage }}</td><td>{{ item.pressure }}</td><td class="status {{ item.tone }}">{{ item.risk }}</td></tr>{% else %}<tr><td colspan="5" class="empty-row">No committed tenant quota rows are available.</td></tr>{% endfor %}</tbody>
     </table>
     {% endcall %}
-    {% call section('Quota Evidence Requirements', 'Minimum fields required before tenant governance posture is complete.') %}
+    {% call ui.section('Quota Evidence Requirements', 'Minimum fields required before tenant governance posture is complete.') %}
     <table class="report-table quota-requirements">
       <thead><tr><th>Ref.</th><th>Evidence</th><th>Definition</th><th>Status</th><th>Action</th></tr></thead>
       <tbody>{% for item in p.quota.requirements %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.evidence }}</td><td>{{ item.definition }}</td><td>{{ item.status }}</td><td>{{ item.action }}</td></tr>{% endfor %}</tbody>
@@ -222,21 +187,21 @@
   <div class="page-content">
     {{ page_title(4, 'Workload Resource Mapping', 'Workload-to-pod scope, resource evidence, and owner-mapping limitations.') }}
     {{ metric_strip(p.mapping.metrics) }}
-    {% call section('Workload Resource Mapping Register', 'Technical identifiers remain compact; application ownership remains explicit when unavailable.') %}
+    {% call ui.section('Workload Resource Mapping Register', 'Technical identifiers remain compact; application ownership remains explicit when unavailable.') %}
     <table class="report-table mapping-register">
       <thead><tr><th>Ref.</th><th>Workload</th><th>Type</th><th>Namespace</th><th>Mapping</th><th>Status</th></tr></thead>
       <tbody>{% for item in p.mapping.records %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.workload }}</td><td>{{ item.type }}</td><td>{{ item.namespace }}</td><td>{{ item.mapping }}</td><td class="status {{ item.tone }}">{{ item.status }}</td></tr>{% else %}<tr><td colspan="6" class="empty-row">No committed workload mapping rows are available.</td></tr>{% endfor %}</tbody>
     </table>
     {% endcall %}
     <div class="two-column workload-mapping-split">
-      {% call section('Mapping Coverage', 'Available and missing relationship evidence.') %}
+      {% call ui.section('Mapping Coverage', 'Available and missing relationship evidence.') %}
       <div class="governance-bars">{% for item in p.mapping.coverage %}{{ governance_bar(item) }}{% endfor %}</div>
       {% endcall %}
-      {% call section('Operational Interpretation', 'How the mapping should guide review.') %}
+      {% call ui.section('Operational Interpretation', 'How the mapping should guide review.') %}
       <div class="interpretation-card"><strong>{{ p.mapping.interpretation_title }}</strong><p>{{ p.mapping.interpretation_body }}</p><small>Use short references in charts and retain complete technical identifiers in registers.</small></div>
       {% endcall %}
     </div>
-    {% call section('Management Decision', 'Restore ownership and configuration mapping before bulk remediation.') %}<p>{{ p.mapping.decision }}</p>{% endcall %}
+    {% call ui.section('Management Decision', 'Restore ownership and configuration mapping before bulk remediation.') %}<p>{{ p.mapping.decision }}</p>{% endcall %}
   </div>
   {{ footer(5) }}
 </article>
@@ -247,20 +212,20 @@
     {{ page_title(5, 'Requests, Limits & QoS', 'Resource configuration coverage, QoS classification, metrics, and right-sizing evidence.') }}
     {{ metric_strip(p.configuration.metrics) }}
     <div class="two-column workload-config-split">
-      {% call section('Configuration Coverage', 'Coverage is calculated only from committed workload rows.') %}
+      {% call ui.section('Configuration Coverage', 'Coverage is calculated only from committed workload rows.') %}
       <div class="governance-bars">{% for item in p.configuration.coverage_rows %}{{ governance_bar(item) }}{% endfor %}</div>
       {% endcall %}
-      {% call section('Configuration Decision Boundary', 'Resource configuration and observed demand remain separate evidence.') %}
+      {% call ui.section('Configuration Decision Boundary', 'Resource configuration and observed demand remain separate evidence.') %}
       <div class="interpretation-card {% if not p.configuration.available %}warning-card{% endif %}"><strong>{% if p.configuration.available %}Configuration evidence is available for review.{% else %}Configuration posture cannot be assigned.{% endif %}</strong><p>{{ p.configuration.decision }}</p><small>Do not right-size from requests or limits alone without metrics coverage and service objectives.</small></div>
       {% endcall %}
     </div>
-    {% call section('Workload Configuration Register', 'Up to five committed rows keep requests, limits, QoS, and risk comparable.') %}
+    {% call ui.section('Workload Configuration Register', 'Up to five committed rows keep requests, limits, QoS, and risk comparable.') %}
     <table class="report-table configuration-register">
       <thead><tr><th>Ref.</th><th>Workload</th><th>Namespace</th><th>Requests</th><th>Limits</th><th>QoS</th><th>Risk</th></tr></thead>
       <tbody>{% for item in p.configuration.records %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.workload }}</td><td>{{ item.namespace }}</td><td>{{ item.requests }}</td><td>{{ item.limits }}</td><td>{{ item.qos }}</td><td class="status {{ item.tone }}">{{ item.risk }}</td></tr>{% else %}<tr><td colspan="7" class="empty-row">No committed workload configuration rows are available.</td></tr>{% endfor %}</tbody>
     </table>
     {% endcall %}
-    {% call section('Management Decision', 'Review incomplete resource governance before changing capacity or autoscaling.') %}<p>{{ p.configuration.decision }}</p>{% endcall %}
+    {% call ui.section('Management Decision', 'Review incomplete resource governance before changing capacity or autoscaling.') %}<p>{{ p.configuration.decision }}</p>{% endcall %}
   </div>
   {{ footer(6) }}
 </article>
@@ -270,17 +235,17 @@
   <div class="page-content">
     {{ page_title(6, 'Right-Sizing & Governance Risk', 'Governance findings, workload risk, ownership, and remediation safeguards.') }}
     {{ metric_strip(p.governance.metrics) }}
-    {% call section('Governance Risk Register', 'Risk status distinguishes confirmed findings from missing or partial evidence.') %}
+    {% call ui.section('Governance Risk Register', 'Risk status distinguishes confirmed findings from missing or partial evidence.') %}
     <table class="report-table risk-register">
       <thead><tr><th>Ref.</th><th>Risk</th><th>Priority</th><th>Impact</th><th>Owner</th><th>Status</th></tr></thead>
       <tbody>{% for item in p.governance['items'] %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.title }}</td><td>{{ item.priority }}</td><td>{{ item.impact }}</td><td>{{ item.owner }}</td><td class="status {{ item.tone }}">{{ item.status }}</td></tr>{% endfor %}</tbody>
     </table>
     {% endcall %}
-    {% call section('Governance References', 'Operational meaning and validation criteria remain outside the fixed register.') %}
+    {% call ui.section('Governance References', 'Operational meaning and validation criteria remain outside the fixed register.') %}
     <div class="reference-grid risk-reference-grid">{% for item in p.governance['items'] %}{{ reference_item(item) }}{% endfor %}</div>
     {% endcall %}
     <div class="two-column workload-governance-split">
-      {% call section('Right-Sizing Evidence', 'Recommendations require configuration and metrics coverage.') %}
+      {% call ui.section('Right-Sizing Evidence', 'Recommendations require configuration and metrics coverage.') %}
       <div class="inventory-card-grid">
         <div class="inventory-card"><span>Missing Requests</span><strong>{{ p.configuration.missing_requests }}</strong><small>Missing or partial request coverage</small></div>
         <div class="inventory-card"><span>Limit Review</span><strong>{{ p.configuration.limit_review }}</strong><small>Rows without complete limit coverage</small></div>
@@ -288,7 +253,7 @@
         <div class="inventory-card"><span>Right-Sizing</span><strong>{{ p.configuration.right_size }}</strong><small>Recommendation text indicates change</small></div>
       </div>
       {% endcall %}
-      {% call section('Operational Boundary', 'Workload changes remain subject to ownership and approved change control.') %}
+      {% call ui.section('Operational Boundary', 'Workload changes remain subject to ownership and approved change control.') %}
       <div class="interpretation-card"><strong>Governance evidence supports review, not autonomous remediation.</strong><p>{{ p.governance.interpretation }}</p><small>Validate service objectives, deployment intent, maintenance window, rollout strategy, and rollback readiness.</small></div>
       {% endcall %}
     </div>
@@ -301,16 +266,16 @@
   <div class="page-content">
     {{ page_title(7, 'Recommendation Plan', 'Prioritized actions, accountable owners, target windows, and validation gates.') }}
     {{ metric_strip(p.recommendations.metrics) }}
-    {% call section('Priority Recommendations', 'The register contains fixed decision fields. Full context remains in the reference notes.') %}
+    {% call ui.section('Priority Recommendations', 'The register contains fixed decision fields. Full context remains in the reference notes.') %}
     <table class="report-table recommendation-register">
       <thead><tr><th>Ref.</th><th>Priority</th><th>Recommendation</th><th>Owner</th><th>Target</th><th>Status</th></tr></thead>
       <tbody>{% for item in p.recommendations['items'] %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.priority }}</td><td>{{ item.title }}</td><td>{{ item.owner }}</td><td>{{ item.target }}</td><td class="status {{ item.tone }}">{{ item.status }}</td></tr>{% endfor %}</tbody>
     </table>
     {% endcall %}
-    {% call section('Recommendation References', 'Descriptions expand below the register without changing table row heights.') %}
+    {% call ui.section('Recommendation References', 'Descriptions expand below the register without changing table row heights.') %}
     <div class="reference-grid recommendations-grid">{% for item in p.recommendations['items'] %}{{ reference_item(item) }}{% endfor %}</div>
     {% endcall %}
-    {% call section('Execution Governance', 'Remediation must be validated against live state and approved change controls.') %}
+    {% call ui.section('Execution Governance', 'Remediation must be validated against live state and approved change controls.') %}
     <table class="report-table governance-table"><tbody>{% for item in p.recommendations.governance %}<tr><th>{{ item.field }}</th><td>{{ item.requirement }}</td></tr>{% endfor %}</tbody></table>
     {% endcall %}
   </div>
@@ -322,17 +287,17 @@
   <div class="page-content">
     {{ page_title(8, 'Methodology and Evidence Boundary', 'Data sources, workload rules, freshness, and explicit limitations.') }}
     {{ metric_strip(p.methodology.metrics) }}
-    {% call section('Data Sources and Methodology', 'Source names, timestamps, and rules remain explicit and are not merged across boundaries.') %}
+    {% call ui.section('Data Sources and Methodology', 'Source names, timestamps, and rules remain explicit and are not merged across boundaries.') %}
     <div class="two-column methodology-tables">
       <div class="data-source-table"><h3>Data Sources and Coverage</h3><table class="report-table compact-register"><thead><tr><th>Source</th><th>Freshness</th><th>Last Collected</th></tr></thead><tbody>{% for item in p.methodology.sources %}<tr><td>{{ item.source }}</td><td>{{ item.freshness }}</td><td>{{ item.last_collected }}</td></tr>{% endfor %}</tbody></table></div>
       <div class="methodology-register"><h3>Methodology Register</h3><table class="report-table compact-register"><thead><tr><th>Ref.</th><th>Rule</th><th>Setting</th></tr></thead><tbody>{% for item in p.methodology.rules %}<tr><td class="ref">{{ item.ref }}</td><td>{{ item.rule }}</td><td>{{ item.setting }}</td></tr>{% endfor %}</tbody></table></div>
     </div>
     {% endcall %}
-    {% call section('Methodology References') %}<div class="reference-grid methodology-reference-grid">{% for item in p.methodology.references %}{{ reference_item(item) }}{% endfor %}</div>{% endcall %}
-    {% call section('Evidence Boundary', 'This report is built strictly within the committed observation boundary defined by the data cut-off.') %}
+    {% call ui.section('Methodology References') %}<div class="reference-grid methodology-reference-grid">{% for item in p.methodology.references %}{{ reference_item(item) }}{% endfor %}</div>{% endcall %}
+    {% call ui.section('Evidence Boundary', 'This report is built strictly within the committed observation boundary defined by the data cut-off.') %}
     <div class="boundary-columns"><div><h3>Included in This Report</h3><ul>{% for item in p.methodology.included %}<li>{{ item }}</li>{% endfor %}</ul></div><div><h3>Not Included in This Report</h3><ul>{% for item in p.methodology.excluded %}<li>{{ item }}</li>{% endfor %}</ul></div></div>
     {% endcall %}
-    {% call section('Limitations and Status Language') %}
+    {% call ui.section('Limitations and Status Language') %}
     <div class="limitations-status-grid">
       <div><h3>Known Limitations and Operational Use</h3><ul>{% for item in p.methodology.limitations %}<li>{{ item }}</li>{% endfor %}</ul></div>
       <div><h3>Status Language</h3><div class="status-language-grid">{% for item in p.methodology.status_language %}{{ reference_item(item) }}{% endfor %}</div></div>

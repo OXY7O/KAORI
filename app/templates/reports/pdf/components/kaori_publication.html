@@ -1,0 +1,108 @@
+{#
+  KAORI reusable PDF publication primitives.
+
+  Keep report-specific templates focused on content and page profiles. Shared
+  typography, section hierarchy, metrics, tables, interpretation cards, and
+  footers are emitted from this component contract.
+#}
+
+{% macro report_header(report_title, report_subtitle='Kubernetes Operational Intelligence Report') -%}
+<div class="report-header">
+  <div class="brand">
+    <img src="app/static/images/kaori-logo.svg" alt="KAORI">
+    <div>
+      <strong>KAORI</strong>
+      <span>Knowledge, Automation, Operations, Resilience &amp; Intelligence</span>
+    </div>
+  </div>
+  <div class="report-name">
+    <strong>{{ report_title }}</strong>
+    <span>{{ report_subtitle }}</span>
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro page_title(number, title, subtitle, data_cutoff) -%}
+<div class="page-title-row">
+  <div class="section-index">{{ number }}</div>
+  <div class="page-title-copy">
+    <h1>{{ title }}</h1>
+    <p>{{ subtitle }}</p>
+  </div>
+  <div class="cutoff">
+    <span>Data Cut-off</span>
+    <strong>{{ data_cutoff }}</strong>
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro footer(report_id, classification, page_number, page_count) -%}
+<div class="page-footer">
+  <span>Report ID: {{ report_id }} &nbsp; | &nbsp; {{ classification }}</span>
+  <span>Page {{ page_number }} of {{ page_count }}</span>
+</div>
+{%- endmacro %}
+
+{% macro metric_strip(items, limit=4) -%}
+<div class="metric-strip" style="--metric-cols:{{ [items|length, limit]|min }}">
+  {% for item in items[:limit] %}
+  {% set metric_status = item.status|default(item.note|default('')) %}
+  <div class="metric">
+    <span>{{ item.label }}</span>
+    <strong class="{% if item.value|string|length > 18 %}metric-long{% elif item.value|string|length > 10 %}metric-medium{% endif %}">{{ item.value }}</strong>
+    {% if metric_status %}<em class="status {{ item.tone|default('muted') }}">{{ metric_status }}</em>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{%- endmacro %}
+
+{% macro section(title, subtitle='', extra_class='') -%}
+<section class="content-section {{ extra_class }}">
+  <h2>{{ title }}</h2>
+  {% if subtitle %}<p class="section-subtitle">{{ subtitle }}</p>{% endif %}
+  <div class="section-rule" aria-hidden="true"><span></span></div>
+  <div class="section-body">{{ caller() }}</div>
+</section>
+{%- endmacro %}
+
+{% macro technical_table(columns, rows, extra_class='', empty_message='No committed evidence is available.') -%}
+<table class="report-table {{ extra_class }}">
+  <thead><tr>{% for column in columns %}<th>{{ column }}</th>{% endfor %}</tr></thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>{% for value in row %}<td{% if loop.first %} class="ref-or-primary"{% endif %}>{{ value }}</td>{% endfor %}</tr>
+    {% else %}
+    <tr><td colspan="{{ columns|length }}" class="empty-row">{{ empty_message }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{%- endmacro %}
+
+{% macro recommendation_table(rows, extra_class='') -%}
+<table class="report-table recommendation-register {{ extra_class }}">
+  <thead><tr><th>Ref.</th><th>Priority</th><th>Recommendation</th><th>Owner</th><th>Target</th><th>Status</th></tr></thead>
+  <tbody>
+    {% for item in rows %}
+    <tr><td class="ref">{{ item.ref }}</td><td>{{ item.priority }}</td><td>{{ item.title }}</td><td>{{ item.owner }}</td><td>{{ item.target }}</td><td>{{ item.status }}</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{%- endmacro %}
+
+{% macro interpretation_card(title, body, note='', tone='normal') -%}
+<div class="interpretation-card{% if tone and tone != 'normal' %} {{ tone }}-card{% endif %}">
+  <strong>{{ title }}</strong>
+  <p>{{ body }}</p>
+  {% if note %}<small>{{ note }}</small>{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro reference_item(code, title, description, label='Decision') -%}
+<div class="reference-item">
+  <span class="reference-code">{{ code }}</span>
+  <div class="reference-copy">
+    <strong>{{ title }}</strong>
+    <p><b>{{ label }}.</b> {{ description }}</p>
+  </div>
+</div>
+{%- endmacro %}

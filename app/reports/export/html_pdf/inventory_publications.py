@@ -436,7 +436,7 @@ def build_inventory_publication_presentation(
     recommendations = _recommendations(profile, rows, evidence_rows, topology_rows)
 
     return {
-        'presentation_version': f'v1.0-{report_type.replace("_", "-")}-publication',
+        'presentation_version': f'v1.1-{report_type.replace("_", "-")}-publication',
         'page_count': _PAGE_COUNT,
         'layout_contract': {
             'paper': 'A4 Portrait',
@@ -446,7 +446,7 @@ def build_inventory_publication_presentation(
             'inventory_policy': 'latest-committed-generation',
             'relationship_policy': 'committed-edges-only',
             'missing_evidence_policy': 'explicit-not-available',
-            'visual_style': 'kaori-inventory-publications-v1.0',
+            'visual_style': 'kaori-publication-standard-v1.0',
         },
         'report_id': report_id,
         'report_name': report_name,
@@ -475,6 +475,7 @@ def build_inventory_publication_presentation(
             'interpretation_title': _interpretation_title(report_type, total_assets, topology_rows),
             'interpretation_body': _interpretation_body(report_type, total_assets, distinct_statuses, distinct_types, evidence_rows),
             'interpretation_note': 'Inventory presence and current status do not replace live validation, analytics, governance, or ownership evidence.',
+            'interpretation_tone': _interpretation_tone(report_type, total_assets, topology_rows, evidence_rows),
             'decisions': recommendations[:4],
         },
         'detail_pages': detail_pages,
@@ -555,7 +556,7 @@ def _build_detail_pages(
     primary_columns = [item['label'] for item in profile['primary_fields']]
     primary_rows = _table_rows(rows, profile['primary_fields'], limit=7)
 
-    if report_type in {'inventory_overview', 'topology_inventory'}:
+    if report_type == 'inventory_overview':
         resource_rows = [
             [sanitize_text(item.get('resource_type')), str(_int(item.get('assets'))), sanitize_text(item.get('status'))]
             for item in rows[:9]
@@ -624,6 +625,94 @@ def _build_detail_pages(
             'Network and Storage Boundary', 'Counts do not establish endpoint health, TLS validity, dependency direction, or storage capacity.',
             'Network and Storage Register', ['Resource', 'Count', 'Status'], network_rows,
         ))
+    elif report_type == 'topology_inventory':
+        readiness = _float(overview.get('node_readiness_percent'))
+        ready = _int(overview.get('ready_nodes'))
+        not_ready = _int(overview.get('not_ready_nodes'))
+        cluster_rows_data = [
+            ['Clusters', str(_int(overview.get('clusters'))), 'Committed'],
+            ['Nodes', str(_int(overview.get('nodes'))), 'Committed'],
+            ['Namespaces', str(_int(overview.get('namespaces'))), 'Committed'],
+            ['Ready Nodes', str(ready), 'Current'],
+        ]
+        pages.append(_detail_page(
+            detail_titles[0], [
+                _metric('Clusters', str(_int(overview.get('clusters'))), 'Committed', 'normal'),
+                _metric('Nodes', str(_int(overview.get('nodes'))), f'{_percent(readiness)} Ready' if readiness is not None else 'Not Available', 'normal' if not_ready == 0 else 'warning'),
+                _metric('Namespaces', str(_int(overview.get('namespaces'))), 'Committed', 'info'),
+                _metric('Ready Nodes', str(ready), 'Current', 'normal' if not_ready == 0 else 'warning'),
+            ],
+            'Cluster Composition', 'Committed cluster, node, namespace, and readiness counts.',
+            ['Resource', 'Count', 'Status'], cluster_rows_data,
+            'Cluster Topology Boundary', 'Composition counts do not create node identities, zones, or cluster-to-node edges.',
+            'Cluster Topology Register', ['Resource', 'Count', 'Status'], cluster_rows_data,
+        ))
+
+        namespace_topology = _filter_topology_rows(topology_rows, ('namespace',))
+        namespace_rows_data = [
+            ['Namespaces', str(_int(overview.get('namespaces'))), 'Committed'],
+            ['Workloads', str(_int(overview.get('workloads'))), 'Committed'],
+            ['Pods', str(_int(overview.get('pods'))), 'Committed'],
+            ['Services', str(_int(overview.get('services'))), 'Committed'],
+            ['Ingresses', str(_int(overview.get('ingresses'))), 'Committed'],
+            ['Storage', str(_int(overview.get('storage'))), 'Committed'],
+        ]
+        pages.append(_detail_page(
+            detail_titles[1], [
+                _metric('Namespaces', str(_int(overview.get('namespaces'))), 'Committed', 'normal'),
+                _metric('Workloads', str(_int(overview.get('workloads'))), 'Committed', 'normal'),
+                _metric('Pods', str(_int(overview.get('pods'))), 'Committed', 'info'),
+                _metric('Namespace Edges', str(sum(_int(item.get('edges')) for item in namespace_topology)), 'Committed fields', 'info'),
+            ],
+            'Namespace Composition', 'Committed namespace, workload, pod, network, and storage totals.',
+            ['Resource', 'Count', 'Status'], namespace_rows_data,
+            'Namespace Relationship Boundary', 'Only committed namespace relationship fields are published; aggregate totals do not create synthetic edges.',
+            'Namespace Topology Register', ['Relationship', 'Scope', 'Edges', 'Status'], _topology_table_rows(namespace_topology, limit=7),
+        ))
+
+        workload_topology = _filter_topology_rows(topology_rows, ('workload', 'pod'))
+        workload_rows_data = [
+            ['Workloads', str(_int(overview.get('workloads'))), 'Committed'],
+            ['Pods', str(_int(overview.get('pods'))), 'Committed'],
+            ['Nodes', str(_int(overview.get('nodes'))), 'Committed'],
+        ]
+        pages.append(_detail_page(
+            detail_titles[2], [
+                _metric('Workloads', str(_int(overview.get('workloads'))), 'Committed', 'normal'),
+                _metric('Pods', str(_int(overview.get('pods'))), 'Committed', 'normal'),
+                _metric('Nodes', str(_int(overview.get('nodes'))), 'Committed', 'info'),
+                _metric('Relationship Edges', str(sum(_int(item.get('edges')) for item in workload_topology)), 'Committed fields', 'info'),
+            ],
+            'Workload and Pod Composition', 'Committed workload, pod, and node totals.',
+            ['Resource', 'Count', 'Status'], workload_rows_data,
+            'Placement Relationship Boundary', 'Workload-to-pod and pod-to-node mappings are published only from committed relationship fields.',
+            'Workload and Pod Topology Register', ['Relationship', 'Scope', 'Edges', 'Status'], _topology_table_rows(workload_topology, limit=7),
+        ))
+
+        network_topology = _filter_topology_rows(topology_rows, ('service', 'ingress', 'storage', 'configuration', 'pvc', 'volume'))
+        network_rows_data = [
+            ['Services', str(_int(overview.get('services'))), 'Committed'],
+            ['Ingresses', str(_int(overview.get('ingresses'))), 'Committed'],
+            ['Configuration', str(_int(overview.get('configuration'))), 'Committed'],
+            ['Storage', str(_int(overview.get('storage'))), 'Committed'],
+        ]
+        network_register_rows = _topology_table_rows(network_topology, limit=7)
+        network_register_columns = ['Relationship', 'Scope', 'Edges', 'Status']
+        if not network_register_rows:
+            network_register_rows = network_rows_data
+            network_register_columns = ['Resource', 'Count', 'Status']
+        pages.append(_detail_page(
+            detail_titles[3], [
+                _metric('Services', str(_int(overview.get('services'))), 'Committed', 'normal'),
+                _metric('Ingresses', str(_int(overview.get('ingresses'))), 'Committed', 'normal'),
+                _metric('Configuration', str(_int(overview.get('configuration'))), 'Committed', 'info'),
+                _metric('Storage', str(_int(overview.get('storage'))), 'Committed', 'info'),
+            ],
+            'Network and Storage Composition', 'Committed service, ingress, configuration, and storage totals.',
+            ['Resource', 'Count', 'Status'], network_rows_data,
+            'Network and Storage Relationship Boundary', 'Counts do not establish endpoint health, TLS validity, dependency direction, or storage capacity.',
+            'Network and Storage Topology Register', network_register_columns, network_register_rows,
+        ))
     else:
         pages.append(_detail_page(
             detail_titles[0], [
@@ -670,8 +759,8 @@ def _build_detail_pages(
                 _metric('Partial Fields', str(sum(1 for item in evidence_rows if item['state'] == 'Partial Coverage')), 'Review', 'warning'),
                 _metric('Unavailable Fields', str(sum(1 for item in evidence_rows if item['state'] == 'Not Available')), 'Review', 'warning'),
             ],
-            'Governance Evidence Coverage', 'Field-level availability across the selected asset rows.',
-            ['Evidence', 'Coverage', 'State'], evidence_table,
+            'Governance Evidence Coverage', 'Leading field-level availability across the selected asset rows.',
+            ['Evidence', 'Coverage', 'State'], evidence_table[:5],
             'Decision Boundary', 'Missing evidence must not be converted to compliant, healthy, internal-only, or zero risk.',
             'Governance and Risk Register', ['Evidence', 'Coverage', 'State'], evidence_table,
         ))
@@ -728,6 +817,7 @@ def _detail_page(
             'callout_title': right_title,
             'callout_body': right_body,
             'callout_note': 'Validate all operational actions against live Kubernetes state and approved ownership before execution.',
+            'tone': 'normal',
         },
         'register': {
             'title': register_title,
@@ -805,6 +895,7 @@ def _recommendations(
             'ref': f'R{index}',
             'priority': priority,
             'title': title,
+            'description': _recommendation_description(title),
             'owner': owner,
             'target': target,
             'status': status,
@@ -812,14 +903,46 @@ def _recommendations(
     if not rows:
         recommendations.insert(0, {
             'ref': 'R0', 'priority': 'P2', 'title': 'Restore Committed Inventory Evidence',
+            'description': _recommendation_description('Restore Committed Inventory Evidence'),
             'owner': 'Platform Operations', 'target': 'Next Week', 'status': 'Open',
         })
     if not topology_rows and profile['title'] == 'Kubernetes Topology':
         recommendations.insert(0, {
             'ref': 'R0', 'priority': 'P2', 'title': 'Restore Committed Topology Edges',
+            'description': _recommendation_description('Restore Committed Topology Edges'),
             'owner': 'Platform Operations', 'target': 'Next Week', 'status': 'Open',
         })
     return recommendations[:5]
+
+
+def _recommendation_description(title: str) -> str:
+    return (
+        f'Confirm committed evidence for {title.lower()}, validate live state, '
+        'assign the owner, and retain closure evidence.'
+    )
+
+
+def _interpretation_tone(
+    report_type: str,
+    total_assets: int,
+    topology_rows: list[dict[str, Any]],
+    evidence_rows: list[dict[str, str]],
+) -> str:
+    if total_assets == 0:
+        return 'warning'
+    if report_type == 'topology_inventory' and not topology_rows:
+        return 'warning'
+    if any(item['state'] == 'Not Available' for item in evidence_rows):
+        return 'warning'
+    return 'normal'
+
+
+def _filter_topology_rows(rows: list[dict[str, Any]], tokens: Sequence[str]) -> list[dict[str, Any]]:
+    lowered_tokens = tuple(token.lower() for token in tokens)
+    return [
+        item for item in rows
+        if any(token in str(item.get('relationship', '')).lower() for token in lowered_tokens)
+    ]
 
 
 def _recommendation_metrics(rows: list[dict[str, str]]) -> list[dict[str, str]]:

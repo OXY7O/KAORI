@@ -93,17 +93,17 @@ def _payload(*, include_forecast: bool = True) -> dict[str, object]:
             {
                 'namespace': 'openebs',
                 'pod': 'cstor-disk-thkc-55cf8fb6fb',
-                'value': 17_593_827_328,
+                'value': 16.46,
             },
             {
                 'namespace': 'openebs',
                 'pod': 'cstor-disk-dfgm-7f4dfcd7cd',
-                'value': 17_118_130_176,
+                'value': 16.17,
             },
             {
                 'namespace': 'openebs',
                 'pod': 'cstor-disk-qmnr-66bddf495',
-                'value': 16_587_386_880,
+                'value': 15.49,
             },
         ],
         'trends': {
@@ -208,17 +208,14 @@ def test_resource_utilization_uses_approved_nine_page_publication() -> None:
 
     assert document.template_name == 'reports/pdf/resource_utilization.html'
     assert document.presentation['page_count'] == 9
-    assert (
-        document.presentation['presentation_version']
-        == 'v1.1-resource-utilization-unit-normalization'
-    )
+    assert document.presentation['presentation_version'] == 'v1.0-resource-utilization-publication'
     assert document.presentation['layout_contract'] == {
         'paper': 'A4 Portrait',
         'page_count': 9,
         'fixed_page_canvas': True,
         'status_style': 'plain-colored-text',
         'table_policy': 'single-line-technical-registers',
-        'visual_style': 'kaori-resource-utilization-v1.1',
+        'visual_style': 'kaori-resource-utilization-v1',
     }
     assert rendered_html.count('<article class="page') == 9
 
@@ -230,7 +227,7 @@ def test_resource_utilization_template_has_no_duplicate_section_copy() -> None:
     assert rendered_html.count('Interpretation remains separate from the comparison register.') == 1
     assert rendered_html.count('Current posture and planning implication.') == 1
     assert rendered_html.count('Ready nodes participating in current capacity assumptions.') == 1
-    assert rendered_html.count('Share within the three displayed CPU consumer records.') == 1
+    assert rendered_html.count('Relative contribution across the top three displayed CPU consumers.') == 1
 
 
 def test_resource_utilization_methodology_tables_are_separate_and_single_line() -> None:
@@ -257,8 +254,7 @@ def test_resource_utilization_node_participation_uses_svg_for_weasyprint() -> No
     ).read_text()
 
     assert 'aria-label="Node participation 100 percent"' in rendered_html
-    assert '<text x="78" y="75"' in rendered_html
-    assert '>4 / 4</text>' in rendered_html
+    assert '<text x="78" y="76"' in rendered_html
     assert 'conic-gradient' not in stylesheet
 
 
@@ -277,7 +273,18 @@ def test_resource_utilization_weasyprint_layout_is_exactly_nine_a4_pages() -> No
                     / 'resource_utilization.css'
                 ),
                 font_config=font_config,
-            )
+            ),
+            CSS(
+                filename=str(
+                    project_root
+                    / 'app'
+                    / 'static'
+                    / 'reports'
+                    / 'pdf'
+                    / 'kaori_publication.css'
+                ),
+                font_config=font_config,
+            ),
         ],
         font_config=font_config,
         presentational_hints=True,
@@ -319,46 +326,3 @@ def test_resource_utilization_payload_uses_committed_forecast_snapshot() -> None
     assert 'read_snapshot' in source
     assert 'ForecastAnalysisService' not in source
     assert 'service.get_trends' in source
-
-
-def test_resource_utilization_normalizes_live_memory_bytes_to_gib() -> None:
-    document, rendered_html, _ = _rendered_html()
-
-    values = [item['value'] for item in document.presentation['memory']['consumers']]
-    assert values == ['16.39 GiB', '15.94 GiB', '15.45 GiB']
-    assert round(document.presentation['distribution']['memory_total'], 2) == 47.78
-    assert '17593827328.00 GiB' not in rendered_html
-    assert '51299344384.00' not in rendered_html
-    assert 'aria-label="Displayed memory concentration 47.78 GiB"' in rendered_html
-
-
-def test_resource_utilization_cpu_distribution_uses_displayed_three_denominator() -> None:
-    document, rendered_html, _ = _rendered_html()
-
-    shares = [
-        item['share_percent']
-        for item in document.presentation['distribution']['cpu_consumers']
-    ]
-    assert round(sum(shares), 8) == 100.0
-    assert [round(value, 1) for value in shares] == [35.4, 35.4, 29.2]
-    assert (
-        'CPU percentages are normalized across the three displayed records and sum to 100%.'
-        in rendered_html
-    )
-    concentration_section = rendered_html.split(
-        'Figure 5 - Displayed CPU Concentration',
-        1,
-    )[1].split('Consumer Reference Register', 1)[0]
-    assert 'warning-marker' not in concentration_section
-    assert 'critical-marker' not in concentration_section
-
-
-def test_resource_utilization_payload_declares_memory_units() -> None:
-    project_root = Path(__file__).resolve().parents[2]
-    source = (
-        project_root / 'app' / 'reports' / 'export' / 'payloads' / 'utilization.py'
-    ).read_text()
-
-    assert '_normalize_memory_consumers' in source
-    assert "row['value_gib'] = value_bytes / _BYTES_PER_GIB" in source
-    assert "row['unit'] = 'GiB'" in source

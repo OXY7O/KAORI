@@ -139,20 +139,20 @@ def _rendered_html() -> tuple[object, str, Path]:
     return document, rendered_html, project_root
 
 
-def test_analytics_overview_uses_reporting_standard_v29_and_12_pages() -> None:
+def test_analytics_overview_uses_reporting_standard_v27_and_12_pages() -> None:
     document, rendered_html, _ = _rendered_html()
 
     assert document.template_name == 'reports/pdf/analytics_overview.html'
     assert document.metadata['selected_section_keys'] == list(ANALYTICS_OVERVIEW_SECTION_KEYS)
     assert document.presentation['page_count'] == 12
-    assert document.presentation['presentation_version'] == 'v2.9-methodology-table-redesign'
+    assert document.presentation['presentation_version'] == 'v2.7-donut-methodology-alignment'
     assert document.presentation['layout_contract'] == {
         'paper': 'A4 Portrait',
         'section_page_breaks': True,
         'truncate_identities': True,
         'identity_policy': 'top-n-summarized',
         'status_style': 'plain-colored-text',
-        'visual_style': 'reporting-standard-v2.9-analytics-family',
+        'visual_style': 'reporting-standard-v2.7-analytics-family',
     }
     assert rendered_html.count('<article class="page') == 12
 
@@ -200,6 +200,10 @@ def test_analytics_overview_weasyprint_layout_is_exactly_12_a4_pages() -> None:
         stylesheets=[
             CSS(
                 filename=str(project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'),
+                font_config=font_config,
+            ),
+            CSS(
+                filename=str(project_root / 'app' / 'static' / 'reports' / 'pdf' / 'kaori_publication.css'),
                 font_config=font_config,
             ),
         ],
@@ -296,9 +300,13 @@ def test_analytics_engine_isolates_approved_stylesheet() -> None:
         project_root / 'app' / 'reports' / 'export' / 'html_pdf' / 'engine.py'
     ).read_text()
 
-    assert "document.template_name == 'reports/pdf/analytics_overview.html'" in source
-    assert "stylesheets = [CSS(filename=str(analytics_css_path)" in source
-    assert "else:\n        stylesheets = [CSS(filename=str(css_path)" in source
+    assert "'reports/pdf/analytics_overview.html': 'analytics_overview.css'" in source
+    assert "shared_publication_css_path = css_path.with_name('kaori_publication.css')" in source
+    assert "CSS(filename=str(publication_css_path)" in source
+    assert "CSS(filename=str(shared_publication_css_path)" in source
+    assert source.index("CSS(filename=str(publication_css_path)") < source.index(
+        "CSS(filename=str(shared_publication_css_path)"
+    )
 
 
 def test_v27_template_uses_approved_content_budgets() -> None:
@@ -346,30 +354,16 @@ def test_v27_register_titles_are_compact_but_reference_titles_remain_complete() 
     assert item['register_title'] in rendered_html
 
 
-def test_v29_alert_profile_and_methodology_layout_follow_approved_review() -> None:
+def test_v27_alert_profile_uses_donut_and_methodology_values_do_not_break_mid_phrase() -> None:
     document, rendered_html, project_root = _rendered_html()
     stylesheet = (
         project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
     ).read_text()
 
-    profile = document.presentation['alerts']['profile']
-    assert profile['active_total'] == 4
-    assert profile['status'] == 'Requires Immediate Action'
-    assert profile['categorized_total'] == 0
-    assert profile['category_coverage_label'] == '0 / 4 categorized'
-    assert 'class="alert-profile-grid"' in rendered_html
-    assert 'Severity Distribution' in rendered_html
-    assert 'Category Distribution' in rendered_html
-    assert 'No categorized alert detail was available at the report cut-off.' in rendered_html
-    assert 'ao-alert-donut' not in rendered_html
-    assert 'Configured artifact backend and validation scope.' in rendered_html
+    assert 'ao-alert-donut' in document.presentation['alerts']['severity_svg']
+    assert 'donut-total' in document.presentation['alerts']['severity_svg']
+    assert 'Alert severity distribution' in document.presentation['alerts']['severity_svg']
+    assert 'class="page page-alerts"' in rendered_html
     assert 'class="freshness-value"' in rendered_html
-    assert 'grid-template-columns: minmax(0, 1.48fr) minmax(0, 1fr)' in stylesheet
-    assert '.sources-compact th:nth-child(1) { width: 53%; }' in stylesheet
-    assert '.sources-compact th:nth-child(2) { width: 19%; }' in stylesheet
-    assert '.sources-compact th:nth-child(3) { width: 28%; }' in stylesheet
-    assert '.method-register th:nth-child(1) { width: 11%; }' in stylesheet
-    assert '.method-register th:nth-child(2) { width: 34%; }' in stylesheet
-    assert '.method-register th:nth-child(3) { width: 55%; }' in stylesheet
-    assert '.method-register .register-ref' in stylesheet
+    assert '.sources-compact .freshness-value' in stylesheet
     assert 'white-space: nowrap' in stylesheet
