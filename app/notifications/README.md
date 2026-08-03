@@ -48,13 +48,18 @@ records, and integrations.
 6. Store identifiers useful for audit; present readable labels separately.
 
 
-## Notification Center refresh boundary
+## Notification Deck refresh boundary
 
-Operational toast responses must never include the full Notification Center markup.
-They dispatch the `kaori:notifications-changed` browser event instead. The single
-canonical `#notification-center` instance in the navbar listens for that event and
-refreshes itself from `notifications.panel` using `outerHTML`. This prevents duplicate
-notification bells from being appended beside or below toast containers.
+Operational toast responses must never include top-bar navigation markup. They dispatch
+the `kaori:notifications-changed` browser event instead. The bell trigger remains a
+stable DOM element; only canonical `#notification-deck-content` is refreshed from
+`notifications.panel`. Badge and running-indicator values are updated through HTMX
+out-of-band swaps.
+
+The self-replacing deck content uses `every 15s` and must never use an additional
+`load` trigger. Combining `load` with `outerHTML` replacement causes a refresh loop,
+visible flicker, and navigation controls that appear and disappear.
+
 ## Activity Log visual standard
 
 The Activity Audit Log uses the KAORI Violet Infrastructure presentation standard. The page hero and operational posture use KAORI Violet surfaces, while success, warning, failure, pending, and disabled states retain their semantic colors. Text labels use compact rectangular geometry (`rounded-md`) rather than pill geometry. Activity payloads, audit metadata, filters, HTMX pagination, retention execution, and lifecycle behavior are unchanged by this visual standard.
@@ -71,34 +76,27 @@ operation state visible without making the toast look like a single fused block.
 Personal preference saves do not generate operational toasts. They create personal
 Notification Center records and trigger the canonical notification refresh event.
 
-## Activity Center standard
+## Notification Deck standard
 
-KAORI uses one synchronized **Activity & Notifications** source across:
+KAORI uses one synchronized source across:
 
-- the top-bar Activity trigger;
-- the top-bar notification bell;
-- the right-side Activity Center drawer; and
+- one persistent top-bar notification bell;
+- the right-side Notification Deck; and
 - `/notifications/`, the full personal notification page.
 
-The Activity trigger represents work currently being performed by KAORI. Its count
-comes from canonical `JobExecution` rows visible to the authenticated user, including
-jobs requested by the user and shared jobs where the user is a subscriber. Active
-states are `queued`, `running`, `retrying`, and `cancel_requested`.
+Do not add a second Activity icon to the top bar. The bell badge represents unread
+`Notification` rows only. A small violet dot on the bell indicates that one or more
+`JobExecution` or local foreground operations are active; it does not change the unread
+badge count. Both indicators are absolutely positioned so header width never changes.
 
-The bell represents persistent information the user has not reviewed. Its badge is
-always the unread count from `Notification`; it must never be reused as a running-job
-counter. Opening the drawer does not mark records as read. Records become read only
-through an explicit item action or **Mark all read**.
+The bell opens a full-height slide-over deck from the right with two sections:
 
-Both top-bar triggers open the same right-side drawer:
+- **Activity** shows canonical jobs and short-lived in-browser HTMX operations.
+- **Notifications** shows the same persistent records used by the full Notifications page.
 
-- **Running** shows canonical jobs and short-lived in-browser HTMX operations.
-- **Attention** shows warning and error notifications.
-- **History** shows the latest persistent notifications.
-
-The drawer polls the canonical panel endpoint and also refreshes immediately after
-`kaori:notifications-changed`. Do not create a second bell, duplicate drawer, or
-feature-local notification list.
+Opening the deck does not mark records as read. Records become read only through an
+explicit item action or **Mark all read**. Background refresh replaces only the deck
+content, never the bell or the navbar, so polling cannot make top-bar controls flicker.
 
 ## Toast delivery policy
 

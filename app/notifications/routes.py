@@ -20,7 +20,7 @@ notifications_bp = Blueprint(
     url_prefix='/notifications',
 )
 
-_ALLOWED_CENTER_VIEWS = frozenset({'running', 'attention', 'history'})
+_ALLOWED_CENTER_VIEWS = frozenset({'activity', 'notifications'})
 
 
 def _request_int(
@@ -34,19 +34,20 @@ def _request_int(
 
 
 def _center_view() -> str:
-    requested_view = request.args.get('view', 'running').strip().lower()
-    return requested_view if requested_view in _ALLOWED_CENTER_VIEWS else 'running'
+    requested_view = request.args.get('view', 'notifications').strip().lower()
+    return requested_view if requested_view in _ALLOWED_CENTER_VIEWS else 'notifications'
 
 
-def _render_notification_center() -> str:
+def _render_notification_deck_content(*, emit_oob: bool = True) -> str:
     context = get_navigation_notification_context(
         user_id=current_user.id,
         include_all_jobs=current_user.has_permission('jobs.view'),
     )
 
     return render_template(
-        'components/navigation/_notification_center.html',
+        'notifications/partials/_notification_deck_content.html',
         activity_center=context,
+        emit_oob=emit_oob,
     )
 
 
@@ -71,7 +72,7 @@ def _render_mutation_response() -> ResponseReturnValue:
             response = make_response(_render_center_page_content())
             response.headers['HX-Trigger-After-Swap'] = 'kaori:notifications-changed'
             return response
-        return _render_notification_center()
+        return _render_notification_deck_content()
 
     next_url = (request.form.get('next') or request.referrer or '').strip()
     if not next_url.startswith('/') or next_url.startswith('//'):
@@ -104,7 +105,7 @@ def center() -> ResponseReturnValue:
 @notifications_bp.get('/panel')
 @login_required
 def panel() -> ResponseReturnValue:
-    return _render_notification_center()
+    return _render_notification_deck_content()
 
 
 @notifications_bp.get('/activity')

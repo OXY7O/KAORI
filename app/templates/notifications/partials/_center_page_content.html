@@ -1,6 +1,5 @@
 {% import "notifications/components/_activity_center_items.html" as center_item %}
 {% set active_jobs = activity_center.get('active_jobs', []) %}
-{% set attention_items = activity_center.get('attention_items', []) %}
 {% set history_items = activity_center.get('history_items', []) %}
 <div id="activity-notification-page"
      class="space-y-5"
@@ -10,62 +9,46 @@
      hx-select="#activity-notification-page"
      hx-swap="outerHTML"
      hx-history="false">
-    <div class="grid gap-3 md:grid-cols-3">
+    <div class="grid gap-3 md:grid-cols-2">
         <button type="button"
-                hx-get="{{ url_for('notifications.center', view='running') }}"
+                hx-get="{{ url_for('notifications.center', view='activity') }}"
                 hx-target="#activity-notification-page"
                 hx-select="#activity-notification-page"
                 hx-swap="outerHTML"
                 hx-push-url="true"
-                class="rounded-xl border p-4 text-left transition {% if selected_view == 'running' %}border-kaori-primary bg-kaori-soft{% else %}border-outline-default bg-surface-card hover:border-kaori-primary/30{% endif %}">
+                class="rounded-xl border p-4 text-left transition {% if selected_view == 'activity' %}border-kaori-primary bg-kaori-soft{% else %}border-outline-default bg-surface-card hover:border-kaori-primary/30{% endif %}">
             <div class="flex items-center justify-between gap-3">
                 <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-kaori-primary text-white"><i data-lucide="activity" class="h-4 w-4"></i></span>
                 <span class="text-xl font-bold text-content-primary">{{ activity_center.active_count }}</span>
             </div>
-            <p class="mt-3 text-sm font-semibold text-content-primary">Running Processes</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Jobs currently queued, running, retrying, or waiting for cancellation.</p>
+            <p class="mt-3 text-sm font-semibold text-content-primary">Activity</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Queued and running jobs visible to your account.</p>
         </button>
         <button type="button"
-                hx-get="{{ url_for('notifications.center', view='attention') }}"
+                hx-get="{{ url_for('notifications.center', view='notifications') }}"
                 hx-target="#activity-notification-page"
                 hx-select="#activity-notification-page"
                 hx-swap="outerHTML"
                 hx-push-url="true"
-                class="rounded-xl border p-4 text-left transition {% if selected_view == 'attention' %}border-kaori-primary bg-kaori-soft{% else %}border-outline-default bg-surface-card hover:border-kaori-primary/30{% endif %}">
+                class="rounded-xl border p-4 text-left transition {% if selected_view == 'notifications' %}border-kaori-primary bg-kaori-soft{% else %}border-outline-default bg-surface-card hover:border-kaori-primary/30{% endif %}">
             <div class="flex items-center justify-between gap-3">
-                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-status-warning-soft text-status-warning-text"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>
-                <span class="text-xl font-bold text-content-primary">{{ activity_center.attention_count }}</span>
-            </div>
-            <p class="mt-3 text-sm font-semibold text-content-primary">Needs Attention</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Unread warnings and failed operations that may require action.</p>
-        </button>
-        <button type="button"
-                hx-get="{{ url_for('notifications.center', view='history') }}"
-                hx-target="#activity-notification-page"
-                hx-select="#activity-notification-page"
-                hx-swap="outerHTML"
-                hx-push-url="true"
-                class="rounded-xl border p-4 text-left transition {% if selected_view == 'history' %}border-kaori-primary bg-kaori-soft{% else %}border-outline-default bg-surface-card hover:border-kaori-primary/30{% endif %}">
-            <div class="flex items-center justify-between gap-3">
-                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-status-info-soft text-status-info-text"><i data-lucide="history" class="h-4 w-4"></i></span>
+                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-status-info-soft text-status-info-text"><i data-lucide="bell" class="h-4 w-4"></i></span>
                 <span class="text-xl font-bold text-content-primary">{{ activity_center.unread_count }}</span>
             </div>
-            <p class="mt-3 text-sm font-semibold text-content-primary">Notification History</p>
-            <p class="mt-1 text-xs leading-5 text-content-muted">Persistent operational outcomes and account notifications.</p>
+            <p class="mt-3 text-sm font-semibold text-content-primary">Notifications</p>
+            <p class="mt-1 text-xs leading-5 text-content-muted">Persistent outcomes, warnings, and account notifications.</p>
         </button>
     </div>
 
     <section class="overflow-hidden rounded-xl border border-outline-default bg-surface-card">
         <header class="flex flex-col gap-3 border-b border-outline-subtle px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <h2 class="text-sm font-semibold text-content-primary">
-                    {% if selected_view == 'running' %}Running Processes{% elif selected_view == 'attention' %}Attention Queue{% else %}Notification History{% endif %}
-                </h2>
+                <h2 class="text-sm font-semibold text-content-primary">{{ 'Activity' if selected_view == 'activity' else 'Notifications' }}</h2>
                 <p class="mt-1 text-xs leading-5 text-content-muted">
-                    {% if selected_view == 'running' %}Live work visible to your account from the canonical JobExecution registry.{% elif selected_view == 'attention' %}Warnings and failed operations are sourced from the same notification records used by the top-bar bell.{% else %}Reading an item here immediately updates the top-bar bell and Activity Center drawer.{% endif %}
+                    {% if selected_view == 'activity' %}The same active-process source used by the top-bar Notification Deck.{% else %}Reading an item here immediately synchronizes the top-bar bell and Notification Deck.{% endif %}
                 </p>
             </div>
-            {% if selected_view != 'running' and activity_center.unread_count %}
+            {% if selected_view == 'notifications' and activity_center.unread_count %}
                 <form method="POST" action="{{ url_for('notifications.mark_all_read', surface='page', view=selected_view) }}">
                     {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                     <button type="submit"
@@ -79,25 +62,26 @@
             {% endif %}
         </header>
         <div class="space-y-3 bg-surface-page p-4">
-            {% if selected_view == 'running' %}
+            {% if selected_view == 'activity' %}
                 <div data-local-activity-list class="space-y-3"></div>
                 {% for job in active_jobs %}{{ center_item.job_item(job) }}{% endfor %}
                 <div data-running-empty class="rounded-xl border border-dashed border-outline-default bg-surface-card px-5 py-12 text-center {% if active_jobs %}hidden{% endif %}">
-                        <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="circle-check" class="h-5 w-5"></i></span>
-                        <p class="mt-3 text-sm font-semibold text-content-primary">No process is running</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Queued and active background jobs will appear here automatically.</p>
+                    <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="circle-check" class="h-5 w-5"></i></span>
+                    <p class="mt-3 text-sm font-semibold text-content-primary">No process is running</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Queued and active background jobs will appear here automatically.</p>
                 </div>
-            {% elif selected_view == 'attention' %}
-                {% if attention_items %}
-                    {% for notification in attention_items %}{{ center_item.notification_item(notification, surface='page', target='#activity-notification-page') }}{% endfor %}
-                {% else %}
-                    <div class="rounded-xl border border-dashed border-outline-default bg-surface-card px-5 py-12 text-center">
-                        <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-lg bg-status-normal-soft text-status-normal-text"><i data-lucide="shield-check" class="h-5 w-5"></i></span>
-                        <p class="mt-3 text-sm font-semibold text-content-primary">Nothing needs attention</p>
-                        <p class="mt-1 text-xs leading-5 text-content-muted">Unread warnings and failures will be collected here.</p>
+            {% else %}
+                {% if activity_center.attention_count %}
+                    <div class="flex items-center justify-between gap-3 rounded-xl border border-status-warning-border bg-status-warning-soft px-4 py-3">
+                        <div class="flex min-w-0 items-center gap-3">
+                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-status-warning text-white"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>
+                            <div class="min-w-0">
+                                <p class="text-xs font-semibold text-status-warning-text">{{ activity_center.attention_count }} notification{{ '' if activity_center.attention_count == 1 else 's' }} need attention</p>
+                                <p class="mt-0.5 text-xs text-content-secondary">Unread warnings and failed operations are highlighted below.</p>
+                            </div>
+                        </div>
                     </div>
                 {% endif %}
-            {% else %}
                 {% if history_items %}
                     {% for notification in history_items %}{{ center_item.notification_item(notification, surface='page', target='#activity-notification-page') }}{% endfor %}
                 {% else %}

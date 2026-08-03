@@ -240,18 +240,13 @@
             }
 
             window.renderLocalOperationalActivities = () => {
-                const centerRoot = document.querySelector('[data-activity-center-root]')
-                const serverCount = Number.parseInt(centerRoot?.dataset.serverActiveCount || '0', 10) || 0
+                const deckContent = document.querySelector('[data-activity-server-count]')
+                const serverCount = Number.parseInt(deckContent?.dataset.activityServerCount || '0', 10) || 0
                 const localCount = localOperationalActivities.size
                 const totalCount = serverCount + localCount
 
                 document.querySelectorAll('[data-local-activity-list]').forEach((list) => {
                     list.replaceChildren(...Array.from(localOperationalActivities.values(), buildLocalActivityNode))
-                })
-
-                document.querySelectorAll('[data-activity-count-badge]').forEach((badge) => {
-                    badge.textContent = totalCount > 9 ? '9+' : String(totalCount)
-                    badge.classList.toggle('hidden', totalCount === 0)
                 })
 
                 document.querySelectorAll('[data-activity-count-label]').forEach((label) => {
@@ -262,9 +257,8 @@
                     emptyState.classList.toggle('hidden', totalCount > 0)
                 })
 
-                document.querySelectorAll('[data-activity-trigger-icon]').forEach((icon) => {
-                    icon.classList.toggle('animate-pulse', totalCount > 0)
-                })
+                const runningIndicator = document.getElementById('notification-running-indicator')
+                runningIndicator?.classList.toggle('hidden', totalCount === 0)
 
                 window.renderKaoriIcons?.()
             }

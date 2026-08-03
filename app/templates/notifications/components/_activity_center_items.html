@@ -83,7 +83,7 @@
                             {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                             <input type="hidden" name="next" value="{{ request.full_path }}">
                             <button type="submit"
-                                    hx-post="{{ url_for('notifications.mark_read', notification_id=notification.id, surface=surface, view=request.args.get('view', 'history')) }}"
+                                    hx-post="{{ url_for('notifications.mark_read', notification_id=notification.id, surface=surface, view=request.args.get('view', 'notifications')) }}"
                                     hx-target="{{ target }}"
                                     hx-swap="outerHTML"
                                     class="inline-flex items-center gap-1 text-xs font-semibold text-content-muted hover:text-content-primary">

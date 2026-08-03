@@ -1,15 +1,15 @@
 {% extends "layouts/app.html" %}
-{% set page_title = "Activity & Notifications" %}
-{% block title %}Activity & Notifications{% endblock title %}
+{% set page_title = "Notifications" %}
+{% block title %}Notifications{% endblock title %}
 {% block dashboard_content %}
     {% import "components/page_hero.html" as page_hero %}
     <div class="space-y-6">
         <section class="{{ page_hero.shell_classes() }}">
             <div class="{{ page_hero.layout_classes() }}">
                 <div class="{{ page_hero.content_classes() }}">
-                    {% call page_hero.intro('activity', 'Personal operations center', 'bell-ring') %}
-                        <h1 class="{{ page_hero.title_classes() }}">Activity & Notifications</h1>
-                        <p class="{{ page_hero.description_classes() }}">Track running background work, review items needing attention, and manage persistent notifications from the same source used by the top bar.</p>
+                    {% call page_hero.intro('bell', 'Personal notification center', 'bell-ring') %}
+                        <h1 class="{{ page_hero.title_classes() }}">Notifications</h1>
+                        <p class="{{ page_hero.description_classes() }}">Review persistent notifications and monitor running work from the same source used by the top-bar Notification Deck.</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('activity', activity_center.active_count ~ ' Running') }}
                             {{ page_hero.meta_label('triangle-alert', activity_center.attention_count ~ ' Attention') }}

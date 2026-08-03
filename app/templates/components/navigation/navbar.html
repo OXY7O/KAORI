@@ -1,8 +1,8 @@
 {% set breadcrumb_items = navigation_breadcrumb|default([], true) %}
 {% set current_user_role = current_user.role_name|default('Viewer', true)|replace('_', ' ')|title %}
 <header class="sticky top-0 z-30 border-b border-outline-subtle bg-surface-card/90 backdrop-blur-xl transition-colors duration-300"
-        x-data="{ quickOpen: false, activityCenterOpen: false, activityCenterTab: 'running', userOpen: false }"
-        @keydown.escape.window="activityCenterOpen = false; quickOpen = false; userOpen = false">
+        x-data="{ quickOpen: false, notificationDeckOpen: false, notificationDeckTab: 'notifications', userOpen: false }"
+        @keydown.escape.window="notificationDeckOpen = false; quickOpen = false; userOpen = false">
     <div class="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <!-- Left: sidebar control and current page context -->
         <div class="flex min-w-0 items-center gap-2">
@@ -58,7 +58,7 @@
         <div class="flex flex-shrink-0 items-center gap-2 sm:gap-3">
             <!-- Quick actions -->
             <div class="relative">
-                <button @click="quickOpen = !quickOpen; activityCenterOpen = false; userOpen = false"
+                <button @click="quickOpen = !quickOpen; notificationDeckOpen = false; userOpen = false"
                         type="button"
                         class="hidden h-10 items-center gap-2 rounded-xl border border-outline-default bg-surface-card px-3 text-xs font-semibold text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary md:inline-flex"
                         aria-label="Open quick actions"
@@ -69,7 +69,7 @@
                     <span>Quick Actions</span>
                     <i data-lucide="chevron-down" class="h-4 w-4 text-content-muted"></i>
                 </button>
-                <button @click="quickOpen = !quickOpen; activityCenterOpen = false; userOpen = false"
+                <button @click="quickOpen = !quickOpen; notificationDeckOpen = false; userOpen = false"
                         type="button"
                         class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary md:hidden"
                         aria-label="Open quick actions"
@@ -108,7 +108,7 @@
                                             hx-swap="innerHTML"
                                             hx-include="#quick-sync-form"
                                             hx-disabled-elt="this"
-                                            @click="quickOpen = false; document.getElementById('quick-sync-feedback')?.replaceChildren()"
+                                            @click="quickOpen = false; notificationDeckTab = 'activity'; notificationDeckOpen = true; document.getElementById('quick-sync-feedback')?.replaceChildren()"
                                             class="group relative flex w-full items-start gap-3 overflow-hidden rounded-xl border border-kaori-primary/15 bg-kaori-soft p-3 text-left transition hover:border-kaori-primary/30 hover:bg-kaori-soft cursor-pointer disabled:cursor-wait disabled:opacity-75">
                                         <span class="relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-kaori-primary text-white shadow-sm shadow-kaori-primary/20">
                                             <i data-lucide="refresh-cw"
@@ -185,7 +185,7 @@
             </button>
             <!-- User menu -->
             <div class="relative">
-                <button @click="userOpen = !userOpen; quickOpen = false; activityCenterOpen = false"
+                <button @click="userOpen = !userOpen; quickOpen = false; notificationDeckOpen = false"
                         type="button"
                         class="inline-flex items-center gap-2 rounded-xl border border-outline-default bg-surface-card p-1.5 pr-2 text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary"
                         aria-label="Open user menu">
@@ -216,7 +216,7 @@
                         <a href="{{ url_for('notifications.center') }}"
                            class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs text-content-secondary transition hover:bg-surface-hover">
                             <i data-lucide="bell" class="h-4 w-4"></i>
-                            <span class="flex-1">Activity & Notifications</span>
+                            <span class="flex-1">Notifications</span>
                         </a>
                         <a href="{{ url_for('settings.account') }}"
                            class="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-xs text-content-secondary transition hover:bg-surface-hover">

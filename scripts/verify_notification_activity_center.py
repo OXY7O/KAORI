@@ -7,17 +7,26 @@ ROOT = Path(__file__).resolve().parents[1]
 def read(relative: str) -> str:
     path = ROOT / relative
     if not path.exists():
-        raise SystemExit(f'Missing Activity Center file: {relative}')
+        raise SystemExit(f'Missing Notification Deck file: {relative}')
     return path.read_text(encoding='utf-8')
 
 
 checks = {
     'app/templates/components/navigation/_notification_center.html': (
-        'data-lucide="activity"',
         'data-lucide="bell"',
-        'Activity & Notifications',
+        'Notification Deck',
+        'notificationDeckOpen',
+        'notification-running-indicator',
+        'notification-bell-badge',
+        'translate-x-full',
+    ),
+    'app/templates/notifications/partials/_notification_deck_content.html': (
+        "notificationDeckTab = 'activity'",
+        "notificationDeckTab = 'notifications'",
         'data-local-activity-list',
-        "activityCenterTab = 'running'",
+        'every 15s',
+        'kaori:notifications-changed from:body',
+        'hx-swap-oob="outerHTML"',
     ),
     'app/notifications/queries.py': (
         'get_activity_center_context',
@@ -26,13 +35,14 @@ checks = {
         'ACTIVITY_CENTER_ACTIVE_JOB_STATUSES',
     ),
     'app/templates/notifications/index.html': (
-        'Activity & Notifications',
+        'Notifications',
         'activity_center.active_count',
         'activity_center.unread_count',
     ),
     'app/templates/layouts/app.html': (
         'startOperationalActivity',
         'renderLocalOperationalActivities',
+        'notification-running-indicator',
     ),
     'app/notifications/service.py': (
         '_feedback_delivery',
@@ -43,11 +53,14 @@ checks = {
     'app/templates/notifications/partials/_center_page_content.html': (
         'kaori:notifications-changed from:body',
         'every 15s',
-        'data-local-activity-list',
+        "view='activity'",
+        "view='notifications'",
     ),
     'app/notifications/routes.py': (
-        "HX-Trigger-After-Swap",
-        "kaori:notifications-changed",
+        "frozenset({'activity', 'notifications'})",
+        "'notifications/partials/_notification_deck_content.html'",
+        'HX-Trigger-After-Swap',
+        'kaori:notifications-changed',
     ),
 }
 
@@ -55,13 +68,26 @@ for relative, required in checks.items():
     content = read(relative)
     missing = [needle for needle in required if needle not in content]
     if missing:
-        raise SystemExit(f'{relative} is missing required Activity Center contracts: {missing}')
+        raise SystemExit(f'{relative} is missing required Notification Deck contracts: {missing}')
+
+trigger = read('app/templates/components/navigation/_notification_center.html')
+if trigger.count('aria-label="Open notification deck"') != 1:
+    raise SystemExit('Top bar must expose exactly one Notification Deck trigger.')
+if 'data-lucide="activity"' in trigger:
+    raise SystemExit('A separate top-bar Activity icon remains; only the bell is allowed.')
+if 'hx-trigger=' in trigger:
+    raise SystemExit('The stable top-bar bell must not be replaced by polling.')
+
+deck = read('app/templates/notifications/partials/_notification_deck_content.html')
+if 'hx-trigger="load, every 15s' in deck or 'load, every 15s' in deck:
+    raise SystemExit('Self-replacing Notification Deck must not use a load trigger.')
 
 layout = read('app/templates/layouts/app.html')
 if 'showOperationalProgressToast' in layout:
     raise SystemExit('Legacy operational progress toast remains active in app layout.')
 
 print(
-    'KAORI Activity Center audit passed: running jobs, attention notifications, '
-    'history, explicit read state, and background-feedback delivery are synchronized.'
+    'KAORI Notification Deck audit passed: one stable bell opens the right-side '
+    'slider, active work stays inside the deck, unread state remains synchronized, '
+    'and polling cannot create a self-refresh loop.'
 )
