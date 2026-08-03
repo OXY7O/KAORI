@@ -139,20 +139,20 @@ def _rendered_html() -> tuple[object, str, Path]:
     return document, rendered_html, project_root
 
 
-def test_analytics_overview_uses_reporting_standard_v28_and_12_pages() -> None:
+def test_analytics_overview_uses_reporting_standard_v29_and_12_pages() -> None:
     document, rendered_html, _ = _rendered_html()
 
     assert document.template_name == 'reports/pdf/analytics_overview.html'
     assert document.metadata['selected_section_keys'] == list(ANALYTICS_OVERVIEW_SECTION_KEYS)
     assert document.presentation['page_count'] == 12
-    assert document.presentation['presentation_version'] == 'v2.8-alert-profile-table-alignment'
+    assert document.presentation['presentation_version'] == 'v2.9-methodology-table-redesign'
     assert document.presentation['layout_contract'] == {
         'paper': 'A4 Portrait',
         'section_page_breaks': True,
         'truncate_identities': True,
         'identity_policy': 'top-n-summarized',
         'status_style': 'plain-colored-text',
-        'visual_style': 'reporting-standard-v2.8-analytics-family',
+        'visual_style': 'reporting-standard-v2.9-analytics-family',
     }
     assert rendered_html.count('<article class="page') == 12
 
@@ -346,7 +346,7 @@ def test_v27_register_titles_are_compact_but_reference_titles_remain_complete() 
     assert item['register_title'] in rendered_html
 
 
-def test_v28_alert_profile_and_methodology_layout_follow_approved_review() -> None:
+def test_v29_alert_profile_and_methodology_layout_follow_approved_review() -> None:
     document, rendered_html, project_root = _rendered_html()
     stylesheet = (
         project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
@@ -364,6 +364,12 @@ def test_v28_alert_profile_and_methodology_layout_follow_approved_review() -> No
     assert 'ao-alert-donut' not in rendered_html
     assert 'Configured artifact backend and validation scope.' in rendered_html
     assert 'class="freshness-value"' in rendered_html
-    assert 'grid-template-columns: minmax(0, 1.62fr) minmax(0, .98fr)' in stylesheet
-    assert '.sources-compact td:first-child' in stylesheet
+    assert 'grid-template-columns: minmax(0, 1.48fr) minmax(0, 1fr)' in stylesheet
+    assert '.sources-compact th:nth-child(1) { width: 53%; }' in stylesheet
+    assert '.sources-compact th:nth-child(2) { width: 19%; }' in stylesheet
+    assert '.sources-compact th:nth-child(3) { width: 28%; }' in stylesheet
+    assert '.method-register th:nth-child(1) { width: 11%; }' in stylesheet
+    assert '.method-register th:nth-child(2) { width: 34%; }' in stylesheet
+    assert '.method-register th:nth-child(3) { width: 55%; }' in stylesheet
+    assert '.method-register .register-ref' in stylesheet
     assert 'white-space: nowrap' in stylesheet

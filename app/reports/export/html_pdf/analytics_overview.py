@@ -84,14 +84,14 @@ def build_analytics_overview_presentation(
 
     common = {
         'page_count': len(_ANALYTICS_PAGE_TITLES),
-        'presentation_version': 'v2.8-alert-profile-table-alignment',
+        'presentation_version': 'v2.9-methodology-table-redesign',
         'layout_contract': {
             'paper': 'A4 Portrait',
             'section_page_breaks': True,
             'truncate_identities': True,
             'identity_policy': 'top-n-summarized',
             'status_style': 'plain-colored-text',
-            'visual_style': 'reporting-standard-v2.8-analytics-family',
+            'visual_style': 'reporting-standard-v2.9-analytics-family',
         },
         'report_id': report_id,
         'report_name': report_name,

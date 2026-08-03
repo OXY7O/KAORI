@@ -1421,16 +1421,36 @@ html, body {
   min-height: 3.5mm;
 }
 
-/* Give source identities enough width to stay on one row while keeping the
-   methodology register compact and readable. */
+/* V2.9 approved methodology-table redesign.
+   The source register remains dominant, while the methodology register gains
+   enough setting width to keep operational values on a single row. */
 .page-methodology .methodology-register-layout {
-  grid-template-columns: minmax(0, 1.62fr) minmax(0, .98fr);
+  grid-template-columns: minmax(0, 1.48fr) minmax(0, 1fr);
   gap: 6mm;
 }
-.page-methodology .sources-compact { font-size: 6.05pt; }
-.page-methodology .sources-compact th:nth-child(1) { width: 50%; }
-.page-methodology .sources-compact th:nth-child(2) { width: 23%; }
-.page-methodology .sources-compact th:nth-child(3) { width: 27%; }
+.page-methodology .methodology-source-block > h3,
+.page-methodology .methodology-table-block > h3 {
+  position: relative;
+  margin: 0 0 2.2mm;
+  padding-bottom: 2.1mm;
+  border-bottom: .22mm solid #CBD5E1;
+}
+.page-methodology .methodology-source-block > h3::after,
+.page-methodology .methodology-table-block > h3::after {
+  position: absolute;
+  left: 0;
+  bottom: -.22mm;
+  width: 12mm;
+  height: .45mm;
+  background: #7C3AED;
+  content: "";
+}
+.page-methodology .sources-compact {
+  font-size: 6pt;
+}
+.page-methodology .sources-compact th:nth-child(1) { width: 53%; }
+.page-methodology .sources-compact th:nth-child(2) { width: 19%; }
+.page-methodology .sources-compact th:nth-child(3) { width: 28%; }
 .page-methodology .sources-compact td:first-child,
 .page-methodology .sources-compact .freshness-value,
 .page-methodology .sources-compact .collected-value {
@@ -1438,14 +1458,34 @@ html, body {
 }
 .page-methodology .sources-compact .freshness-value,
 .page-methodology .sources-compact .collected-value {
-  font-size: 5.95pt;
+  font-size: 5.9pt;
 }
-.page-methodology .method-register { font-size: 5.75pt; }
-.page-methodology .method-register th:nth-child(1) { width: 15%; }
-.page-methodology .method-register th:nth-child(2) { width: 48%; }
-.page-methodology .method-register th:nth-child(3) { width: 37%; }
-.page-methodology .methodology-register-layout .method-register th,
-.page-methodology .methodology-register-layout .method-register td {
-  padding: 1.05mm 1.25mm;
-  line-height: 1.18;
+.page-methodology .method-register {
+  font-size: 5.8pt;
+}
+.page-methodology .method-register th:nth-child(1) { width: 11%; }
+.page-methodology .method-register th:nth-child(2) { width: 34%; }
+.page-methodology .method-register th:nth-child(3) { width: 55%; }
+.page-methodology .methodology-register-layout .report-table th,
+.page-methodology .methodology-register-layout .report-table td {
+  padding: 1.25mm 1.4mm;
+  line-height: 1.2;
+  vertical-align: middle;
+}
+.page-methodology .method-register th,
+.page-methodology .method-register td {
+  white-space: nowrap;
+}
+.page-methodology .method-register .register-ref {
+  display: inline-flex;
+  min-width: 6.7mm;
+  min-height: 4mm;
+  align-items: center;
+  justify-content: center;
+  padding: 0 .7mm;
+  border-radius: .6mm;
+  background: #EDE9FE;
+  color: #5B21B6;
+  font-size: 5.55pt;
+  line-height: 1;
 }
