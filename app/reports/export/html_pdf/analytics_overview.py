@@ -89,7 +89,7 @@ def build_analytics_overview_presentation(
 
     common = {
         'page_count': len(_ANALYTICS_PAGE_TITLES),
-        'presentation_version': 'v2.7-donut-methodology-alignment',
+        'presentation_version': 'v2.8-typography-spacing-alignment',
         'publication_family': ANALYTICS_PUBLICATION_FAMILY,
         'publication_standard': ANALYTICS_PUBLICATION_STANDARD,
         'canonical_reference': ANALYTICS_CANONICAL_REFERENCE,
@@ -99,7 +99,7 @@ def build_analytics_overview_presentation(
             'truncate_identities': True,
             'identity_policy': 'top-n-summarized',
             'status_style': 'plain-colored-text',
-            'visual_style': 'reporting-standard-v2.7-analytics-family',
+            'visual_style': 'reporting-standard-v2.8-analytics-family',
         },
         'report_id': report_id,
         'report_name': report_name,

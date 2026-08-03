@@ -139,20 +139,20 @@ def _rendered_html() -> tuple[object, str, Path]:
     return document, rendered_html, project_root
 
 
-def test_analytics_overview_uses_reporting_standard_v27_and_12_pages() -> None:
+def test_analytics_overview_uses_reporting_standard_v28_and_12_pages() -> None:
     document, rendered_html, _ = _rendered_html()
 
     assert document.template_name == 'reports/pdf/analytics_overview.html'
     assert document.metadata['selected_section_keys'] == list(ANALYTICS_OVERVIEW_SECTION_KEYS)
     assert document.presentation['page_count'] == 12
-    assert document.presentation['presentation_version'] == 'v2.7-donut-methodology-alignment'
+    assert document.presentation['presentation_version'] == 'v2.8-typography-spacing-alignment'
     assert document.presentation['layout_contract'] == {
         'paper': 'A4 Portrait',
         'section_page_breaks': True,
         'truncate_identities': True,
         'identity_policy': 'top-n-summarized',
         'status_style': 'plain-colored-text',
-        'visual_style': 'reporting-standard-v2.7-analytics-family',
+        'visual_style': 'reporting-standard-v2.8-analytics-family',
     }
     assert rendered_html.count('<article class="page') == 12
 
@@ -375,3 +375,34 @@ def test_v27_alert_profile_uses_donut_and_methodology_values_do_not_break_mid_ph
     assert 'class="freshness-value"' in rendered_html
     assert '.sources-compact .freshness-value' in stylesheet
     assert 'white-space: nowrap' in stylesheet
+
+
+def test_analytics_overview_v28_precision_layout_contract() -> None:
+    _, rendered_html, project_root = _rendered_html()
+    shared_stylesheet = (
+        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_publication.css'
+    ).read_text(encoding='utf-8')
+    specialization = (
+        project_root / 'app' / 'static' / 'reports' / 'pdf' / 'analytics_overview.css'
+    ).read_text(encoding='utf-8')
+    shared_compact = shared_stylesheet.replace(' ', '')
+    specialization_compact = specialization.replace(' ', '')
+
+    assert '.brandimg{width:8.2mm;height:8.2mm' in shared_compact
+    assert '.brandstrong{font-size:11.8pt' in shared_compact
+    assert '.cover-brandimg{width:10.5mm;height:10.5mm' in shared_compact
+    assert '.cover-brandstrong{font-size:14.2pt' in shared_compact
+
+    assert '.page-consumers.consumer-charth3' in specialization_compact
+    assert 'margin:0 0 5mm' in specialization_compact
+    assert '.donut-total{font:700 18px' in specialization_compact
+    assert '.donut-legend-label{font:500 8.6px' in specialization_compact
+    assert '.report-schedules-section{margin-top:8.5mm' in specialization_compact
+    assert 'grid-template-columns:minmax(0,1.2fr)minmax(0,.8fr)' in specialization_compact
+    assert '.methodology-register-layout.report-tabletbodytr{height:8mm' in specialization_compact
+    assert '.evidence-columnsh3{margin:0 0 2.8mm' in specialization_compact
+    assert '.limitations-status-layouth3{margin:0 0 3mm' in specialization_compact
+
+    assert "ui.section('Storage Readiness','Configured artifact backend and validation scope.')" in rendered_html
+    assert 'report-schedules-section' in rendered_html
+

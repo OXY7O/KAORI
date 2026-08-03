@@ -785,3 +785,122 @@
 .page-methodology .sources-compact .collected-value {
   font-size: 6.05pt;
 }
+
+/* V2.8 - Analytics Overview precision typography, chart, and spacing refinement. */
+.page-consumers .consumer-chart h3 {
+  margin: 0 0 5mm;
+  font-size: 8.75pt;
+  line-height: 1.22;
+}
+.page-consumers .consumer-row {
+  margin-bottom: 3.6mm;
+}
+.page-consumers .consumer-row:last-child {
+  margin-bottom: 0;
+}
+
+.page-alerts .severity-chart {
+  height: 37mm;
+}
+.page-alerts .ao-alert-donut .donut-total {
+  font: 700 18px "Inter", "DejaVu Sans", Arial, sans-serif;
+}
+.page-alerts .ao-alert-donut .donut-caption {
+  font: 500 7.8px "Inter", "DejaVu Sans", Arial, sans-serif;
+}
+.page-alerts .ao-alert-donut .donut-legend-label {
+  font: 500 8.6px "Inter", "DejaVu Sans", Arial, sans-serif;
+}
+.page-alerts .ao-alert-donut .donut-legend-value {
+  font: 700 8.6px "Inter", "DejaVu Sans", Arial, sans-serif;
+}
+
+.page-reporting .report-overview {
+  align-items: stretch;
+}
+.page-reporting .report-overview > .content-section {
+  margin-top: 0;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+.page-reporting .report-overview > .content-section > .section-subtitle {
+  min-height: 7mm;
+}
+.page-reporting .report-overview > .content-section > .section-body {
+  flex: 1;
+}
+.page-reporting .report-schedules-section {
+  margin-top: 8.5mm;
+}
+
+.page-methodology .methodology-register-layout {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr);
+  gap: 6mm;
+}
+.page-methodology .sources-compact th:nth-child(1) { width: 45%; }
+.page-methodology .sources-compact th:nth-child(2) { width: 20%; }
+.page-methodology .sources-compact th:nth-child(3) { width: 35%; }
+.page-methodology .method-register th:nth-child(1) { width: 14%; }
+.page-methodology .method-register th:nth-child(2) { width: 38%; }
+.page-methodology .method-register th:nth-child(3) { width: 48%; }
+.page-methodology .methodology-register-layout .report-table thead tr {
+  height: 7.2mm;
+}
+.page-methodology .methodology-register-layout .report-table tbody tr {
+  height: 8mm;
+}
+.page-methodology .methodology-register-layout .report-table th,
+.page-methodology .methodology-register-layout .report-table td {
+  vertical-align: middle;
+}
+.page-methodology .sources-compact td:first-child {
+  font-size: 5.8pt;
+  line-height: 1.16;
+}
+.page-methodology .sources-compact .freshness-value {
+  font-size: 5.9pt;
+}
+.page-methodology .sources-compact .collected-value {
+  font-size: 5.75pt;
+}
+
+.page-methodology .evidence-columns {
+  margin-top: 3.8mm;
+  gap: 10mm;
+}
+.page-methodology .evidence-columns h3 {
+  margin: 0 0 2.8mm;
+}
+.page-methodology .evidence-columns ul {
+  margin: 0;
+  padding-left: 5mm;
+}
+.page-methodology .evidence-columns li {
+  margin-bottom: 1.35mm;
+  line-height: 1.38;
+}
+.page-methodology .limitations-status-layout h3 {
+  margin: 0 0 3mm;
+}
+.page-methodology .limitations-copy ul {
+  margin: 0 0 3mm;
+}
+.page-methodology .limitations-copy li {
+  margin-bottom: 1.45mm;
+  line-height: 1.38;
+}
+.page-methodology .limitations-copy p {
+  margin-top: .5mm;
+  line-height: 1.45;
+}
+.page-methodology .status-legend-grid {
+  margin-top: .2mm;
+}
+.page-methodology .status-legend-item {
+  padding: 1.8mm 0;
+  align-items: center;
+}
+.page-methodology .status-legend-item strong {
+  margin-bottom: .65mm;
+}
