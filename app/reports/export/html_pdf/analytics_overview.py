@@ -84,9 +84,6 @@ def build_analytics_overview_presentation(
     freshness = _mapping(payload.get('data_freshness'))
 
     scope_label = cluster_scope
-    if selected_cluster and not getattr(report, 'cluster_id', None):
-        selected_name = _text(selected_cluster.get('name'), 'Unknown Cluster')
-        scope_label = f'All Clusters - analytics snapshot from {selected_name}'
 
     common = {
         'page_count': len(_ANALYTICS_PAGE_TITLES),

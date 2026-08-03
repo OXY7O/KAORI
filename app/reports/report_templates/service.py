@@ -13,204 +13,39 @@ from app.extensions.db import db
 from app.models.report import ReportTemplate
 from app.models.user import User
 from app.reports.export.constants import (
-    ANALYTICS_OVERVIEW_SECTION_KEYS,
     DEFAULT_REPORT_DOMAIN,
     DEFAULT_REPORT_SOURCE_KIND,
     REPORT_DOMAIN_DESCRIPTIONS,
     REPORT_DOMAIN_LABELS,
     SOURCE_KIND_LABELS,
 )
-from app.reports.generate.service import (
+from app.reports.catalog import (
+    OUTPUT_FORMAT_OPTIONS,
+    REPORT_FAMILY_INVENTORY,
     REPORT_TYPE_OPTIONS,
-    SECTION_OPTIONS,
-    get_report_primary_output_format,
+    get_allowed_output_formats,
+    get_default_output_format,
+    get_report_type_spec,
 )
+from app.reports.generate.service import SECTION_OPTIONS
 
 SYSTEM_TEMPLATE_ITEMS: list[dict[str, Any]] = [
     {
-        'id': 'analytics_overview',
-        'name': 'Analytics Overview Template',
-        'report_type': 'analytics_overview',
-        'report_type_label': 'Analytics Overview',
-        'description': 'High-level analytics summary across utilization, capacity, forecast, top consumers, and alerts.',  # noqa: E501
+        'id': str(option['value']),
+        'name': f"{str(option['label']).removesuffix(' Report')} Template",
+        'report_type': str(option['value']),
+        'report_type_label': str(option['label']).removesuffix(' Report'),
+        'description': str(option['description']),
         'status': 'system',
         'report_domain': DEFAULT_REPORT_DOMAIN,
         'source_kind': DEFAULT_REPORT_SOURCE_KIND,
-        'output_format': 'PDF',
-        'icon': 'layout-dashboard',
-        'sections': list(ANALYTICS_OVERVIEW_SECTION_KEYS),
-    },
-    {
-        'id': 'resource_utilization',
-        'name': 'Resource Utilization Template',
-        'report_type': 'resource_utilization',
-        'report_type_label': 'Resource Utilization',
-        'description': 'CPU, memory, storage, pod utilization, and node resource detail for one selected cluster.',
-        'status': 'system',
-        'report_domain': DEFAULT_REPORT_DOMAIN,
-        'source_kind': DEFAULT_REPORT_SOURCE_KIND,
-        'output_format': 'PDF',
-        'icon': 'activity',
-        'sections': [
-            'executive_summary',
-            'cpu_utilization',
-            'memory_utilization',
-            'storage_utilization',
-            'pod_utilization',
-            'node_resource_detail',
-            'operational_recommendations',
-        ],
-    },
-    {
-        'id': 'capacity_analysis',
-        'name': 'Capacity Analysis Template',
-        'report_type': 'capacity_analysis',
-        'report_type_label': 'Capacity Analysis',
-        'description': 'Worker capacity, allocation, schedulable headroom, and pressure risk aligned with the Capacity Analysis generator.',  # noqa: E501
-        'status': 'system',
-        'report_domain': DEFAULT_REPORT_DOMAIN,
-        'source_kind': DEFAULT_REPORT_SOURCE_KIND,
-        'output_format': 'PDF',
-        'icon': 'database',
-        'sections': [
-            'executive_summary',
-            'worker_capacity_summary',
-            'resource_allocation_headroom',
-            'capacity_pressure_risk',
-            'operational_recommendations',
-        ],
-    },
-    {
-        'id': 'storage_analysis',
-        'name': 'Storage Analysis Template',
-        'report_type': 'storage_analysis',
-        'report_type_label': 'Storage Analysis',
-        'description': 'Filesystem, persistent volume, PVC, used/free capacity, and storage risk context.',
-        'status': 'system',
-        'report_domain': DEFAULT_REPORT_DOMAIN,
-        'source_kind': DEFAULT_REPORT_SOURCE_KIND,
-        'output_format': 'PDF',
-        'icon': 'hard-drive',
-        'sections': [
-            'executive_summary',
-            'filesystem_summary',
-            'persistent_volume_summary',
-            'persistent_volume_claims',
-            'storage_risk',
-            'operational_recommendations',
-        ],
-    },
-    {
-        'id': 'workload_analysis',
-        'name': 'Workload Analysis Template',
-        'report_type': 'workload_analysis',
-        'report_type_label': 'Workload Analysis',
-        'description': 'Workload requests, limits, tenant quota posture, governance findings, and resource mapping.',
-        'status': 'system',
-        'report_domain': DEFAULT_REPORT_DOMAIN,
-        'source_kind': DEFAULT_REPORT_SOURCE_KIND,
-        'output_format': 'PDF',
-        'icon': 'boxes',
-        'sections': [
-            'executive_summary',
-            'tenant_quota_summary',
-            'request_limit_coverage',
-            'workload_resource_mapping',
-            'governance_findings',
-            'operational_recommendations',
-        ],
-    },
-    {
-        'id': 'resource_forecast',
-        'name': 'Resource Forecast Template',
-        'report_type': 'resource_forecast',
-        'report_type_label': 'Resource Forecast',
-        'description': 'Forecast CPU, memory, storage, pod growth, and projected capacity pressure.',
-        'status': 'system',
-        'report_domain': DEFAULT_REPORT_DOMAIN,
-        'source_kind': DEFAULT_REPORT_SOURCE_KIND,
-        'output_format': 'PDF',
-        'icon': 'line-chart',
-        'sections': [
-            'executive_summary',
-            'forecast_summary',
-            'cpu_forecast',
-            'memory_forecast',
-            'storage_forecast',
-            'pod_forecast',
-            'capacity_projection',
-            'operational_recommendations',
-        ],
-    },
-    {
-        'id': 'top_consumers',
-        'name': 'Top Consumers Template',
-        'report_type': 'top_consumers',
-        'report_type_label': 'Top Consumers',
-        'description': 'Top namespaces, workloads, pods, and resource hotspot summary.',
-        'status': 'system',
-        'report_domain': DEFAULT_REPORT_DOMAIN,
-        'source_kind': DEFAULT_REPORT_SOURCE_KIND,
-        'output_format': 'PDF',
-        'icon': 'users',
-        'sections': [
-            'executive_summary',
-            'top_namespace_consumers',
-            'top_workload_consumers',
-            'top_pod_consumers',
-            'resource_hotspots',
-            'operational_recommendations',
-        ],
-    },
-    {
-        'id': 'alerts_anomalies',
-        'name': 'Alerts & Anomalies Template',
-        'report_type': 'alerts_anomalies',
-        'report_type_label': 'Alerts & Anomalies',
-        'description': 'Alert Intelligence report covering alert source health, routing, silence, ownership, incident readiness, anomaly context, and recommendations.',  # noqa: E501
-        'status': 'system',
-        'report_domain': DEFAULT_REPORT_DOMAIN,
-        'source_kind': DEFAULT_REPORT_SOURCE_KIND,
-        'output_format': 'PDF',
-        'icon': 'triangle-alert',
-        'sections': [
-            'executive_summary',
-            'active_alerts',
-            'alert_severity_summary',
-            'source_health',
-            'routing_grouping',
-            'silence_inhibition',
-            'ownership_runbook',
-            'incident_readiness',
-            'anomaly_context',
-            'affected_resources',
-            'operational_recommendations',
-        ],
-    },
-
-
-
+        'output_format': str(option['primary_format']).upper(),
+        'allowed_formats': [str(value).upper() for value in option['allowed_formats']],
+        'icon': str(option['icon']),
+        'sections': list(option['default_sections']),
+    }
+    for option in REPORT_TYPE_OPTIONS
 ]
-
-SYSTEM_TEMPLATE_ITEMS.extend(
-    [
-        {
-            'id': str(option['value']),
-            'name': f"{str(option['label']).removesuffix(' Report')} Template",
-            'report_type': str(option['value']),
-            'report_type_label': str(option['label']).removesuffix(' Report'),
-            'description': str(option['description']),
-            'status': 'system',
-            'report_domain': DEFAULT_REPORT_DOMAIN,
-            'source_kind': DEFAULT_REPORT_SOURCE_KIND,
-            'output_format': str(option.get('primary_format') or 'pdf').upper(),
-            'icon': str(option['icon']),
-            'sections': list(option['default_sections']),
-        }
-        for option in REPORT_TYPE_OPTIONS
-        if option.get('family') == 'inventory'
-    ]
-)
 
 IMPLEMENTED_TEMPLATE_IDS = {item['id'] for item in SYSTEM_TEMPLATE_ITEMS}
 
@@ -246,6 +81,10 @@ def get_report_templates_payload(
         'edit_template': edit_template,
         'section_options_by_report_type': get_section_options_by_report_type(),
         'default_sections_by_report_type': get_default_sections_by_report_type(),
+        'output_format_options': OUTPUT_FORMAT_OPTIONS,
+        'allowed_formats_by_report_type': {
+            str(option['value']): list(option['allowed_formats']) for option in REPORT_TYPE_OPTIONS
+        },
     }
 
 
@@ -283,8 +122,8 @@ def build_system_template_item(template: dict[str, Any]) -> dict[str, Any]:
         'status_tone': get_status_tone(str(template['status'])),
         'renderer_status': 'Ready' if template_id in IMPLEMENTED_TEMPLATE_IDS else 'Review',
         'renderer_tone': 'green' if template_id in IMPLEMENTED_TEMPLATE_IDS else 'gray',
-        'renderer_label': 'WeasyPrint renderer ready' if template_id in IMPLEMENTED_TEMPLATE_IDS else 'Renderer needs review',
-        'generate_href': build_generate_href(str(template['report_type']), sections),
+        'renderer_label': 'Canonical artifact renderer ready' if template_id in IMPLEMENTED_TEMPLATE_IDS else 'Renderer needs review',
+        'generate_href': build_generate_href(str(template['report_type']), sections, output_format=str(template['output_format']).lower()),
         'duplicate_href': url_for('reports.duplicate_system_template', template_id=template_id),
         'edit_href': '',
         'delete_href': '',
@@ -320,8 +159,8 @@ def build_custom_template_item(template: ReportTemplate) -> dict[str, Any]:
         'status_tone': get_status_tone(status),
         'renderer_status': 'Ready',
         'renderer_tone': 'green',
-        'renderer_label': 'WeasyPrint renderer ready',
-        'generate_href': build_generate_href(template.report_type, sections, template.name),
+        'renderer_label': 'Canonical artifact renderer ready',
+        'generate_href': build_generate_href(template.report_type, sections, template.name, template.output_format),
         'duplicate_href': url_for('reports.duplicate_custom_template', template_id=template.id),
         'edit_href': url_for('reports.report_templates', edit_template_id=template.id),
         'delete_href': url_for('reports.delete_report_template', template_id=template.id),
@@ -349,6 +188,7 @@ def get_template_form_context(template: ReportTemplate | None = None) -> dict[st
         'report_type': report_type,
         'status': template.status if template else 'draft',
         'sections': sections,
+        'output_format': template.output_format if template else get_default_output_format(report_type),
     }
 
 
@@ -448,7 +288,7 @@ def duplicate_system_template(template_id: str, user_id: int | None) -> tuple[bo
     template.report_domain = str(source.get('report_domain') or DEFAULT_REPORT_DOMAIN)
     template.source_kind = str(source.get('source_kind') or DEFAULT_REPORT_SOURCE_KIND)
     template.status = 'draft'
-    template.output_format = get_report_primary_output_format(template.report_type)
+    template.output_format = get_default_output_format(template.report_type)
     template.sections = list(source['sections'])
     template.source_template_key = f'system:{template_id}'
     apply_template_owner_snapshot(template, user_id)
@@ -492,7 +332,7 @@ def get_template_form_state(
         'report_type': report_type,
         'status': normalize_template_status(form.get('status', 'draft')),
         'sections': sections,
-        'output_format': get_report_primary_output_format(report_type),
+        'output_format': str(form.get('output_format', get_default_output_format(report_type))).strip().lower(),
     }
 
 
@@ -508,6 +348,8 @@ def validate_template_form_state(form_state: dict[str, Any]) -> list[str]:
         errors.append('Please select a valid report type.')
     if form_state['status'] not in {'draft', 'active'}:
         errors.append('Please select a valid template status.')
+    if form_state['output_format'] not in get_allowed_output_formats(form_state['report_type']):
+        errors.append('Please select an output format supported by the report type.')
     if not form_state['sections']:
         errors.append('Please select at least one template section.')
     return errors
@@ -520,7 +362,7 @@ def apply_template_state(template: ReportTemplate, form_state: dict[str, Any]) -
     template.report_domain = DEFAULT_REPORT_DOMAIN
     template.source_kind = DEFAULT_REPORT_SOURCE_KIND
     template.status = form_state['status']
-    template.output_format = get_report_primary_output_format(template.report_type)
+    template.output_format = form_state['output_format']
     template.sections = form_state['sections']
 
 
@@ -554,7 +396,7 @@ def get_summary_cards(templates: list[dict[str, Any]]) -> list[dict[str, str]]:
         {
             'label': 'Renderer Ready',
             'value': str(ready_templates),
-            'caption': 'Templates mapped to canonical PDF or Excel renderers',
+            'caption': 'Templates mapped to canonical PDF, Excel, or CSV renderers',
             'icon': 'file-check-2',
             'tone': 'green',
         },
@@ -667,7 +509,7 @@ def get_template_context() -> list[str]:
     return [
         'System templates provide protected defaults for repeatable infrastructure reports and cannot be modified directly.',  # noqa: E501
         'Custom templates store a report type, selected sections, owner snapshot, status, and source template reference.',  # noqa: E501
-        'Templates pre-fill Generate Report so users can create consistent PDF or Excel artifacts without rebuilding the section checklist every time.',  # noqa: E501
+        'Templates pre-fill Generate Report so users can create consistent PDF, Excel, or CSV artifacts without rebuilding the section checklist every time.',  # noqa: E501
         'Template sections are validated against each report type so the configured renderer receives a supported output contract.',  # noqa: E501
     ]
 
@@ -690,7 +532,7 @@ def get_renderer_readiness() -> list[dict[str, str]]:
         },
         {
             'label': 'Output renderer mapping',
-            'description': 'Templates are mapped to the canonical Analytics PDF or Inventory Excel renderer and existing payload builders.',  # noqa: E501
+            'description': 'Templates are mapped to the canonical Analytics PDF/CSV or Inventory Excel/CSV renderer and shared payload builders.',  # noqa: E501
             'status': 'Ready',
             'tone': 'green',
             'icon': 'file-check-2',
@@ -726,7 +568,7 @@ def get_default_sections(report_type: str) -> list[str]:
 
 def sanitize_sections(report_type: str, sections: list[str]) -> list[str]:
     default_sections = get_default_sections(report_type)
-    if get_report_primary_output_format(report_type) == 'xlsx':
+    if get_report_type_spec(report_type).family == REPORT_FAMILY_INVENTORY:
         return default_sections
     allowed_sections = set(default_sections)
     return [section for section in sections if section in allowed_sections]
@@ -769,8 +611,16 @@ def get_report_type_icon(report_type: str) -> str:
     return 'layout-template'
 
 
-def build_generate_href(report_type: str, sections: list[str], name: str | None = None) -> str:
-    params: list[tuple[str, str]] = [('report_type', report_type)]
+def build_generate_href(
+    report_type: str,
+    sections: list[str],
+    name: str | None = None,
+    output_format: str | None = None,
+) -> str:
+    params: list[tuple[str, str]] = [
+        ('report_type', report_type),
+        ('output_format', output_format or get_default_output_format(report_type)),
+    ]
     if name:
         params.append(('name', name))
     params.extend(('sections', section) for section in sections)

@@ -11,8 +11,8 @@ from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.report import Report
 from app.models.user import User
+from app.reports.catalog import REPORT_TYPE_SPECS
 from app.reports.export.artifacts import get_report_artifact_format
-from app.reports.export.constants import REPORT_TYPE_LABELS as CANONICAL_REPORT_TYPE_LABELS
 from app.reports.generate.service import REPORT_TYPE_OPTIONS
 from app.reports.storage.service import (
     get_configured_storage_backend_name,
@@ -20,7 +20,7 @@ from app.reports.storage.service import (
     report_file_exists,
 )
 
-REPORT_TYPE_LABELS = dict(CANONICAL_REPORT_TYPE_LABELS)
+REPORT_TYPE_LABELS = {spec.value: spec.label for spec in REPORT_TYPE_SPECS}
 
 STATUS_LABELS = {
     'requested': 'Requested',
@@ -891,10 +891,10 @@ def _serialize_report(
         ),
         'cluster': cluster_map.get(
             report.cluster_id,
-            'All Clusters',
+            'Unknown Cluster',
         )
         if report.cluster_id
-        else 'All Clusters',
+        else 'Cluster Selection Missing',
         'cluster_id': report.cluster_id or '',
         'namespace': report.namespace or 'All Namespaces',
         'period': _format_period(
@@ -941,13 +941,7 @@ def _serialize_report(
         'storage_object_key': storage_location['object_key'],
         'storage_uri_display': storage_location['display'],
         'can_generate_artifact': can_generate_artifact,
-        'can_generate_pdf': can_generate_artifact,
         'generate_artifact_label': (
-            f'Regenerate {artifact_format.label}'
-            if report.status == 'ready'
-            else f'Generate {artifact_format.label}'
-        ),
-        'generate_pdf_label': (
             f'Regenerate {artifact_format.label}'
             if report.status == 'ready'
             else f'Generate {artifact_format.label}'
@@ -960,7 +954,6 @@ def _serialize_report(
         ],
         'can_restore_report': report.status == 'archived',
         'can_download_artifact': can_download_artifact,
-        'can_download_pdf': can_download_artifact,
     }
 
 
@@ -1023,7 +1016,6 @@ def _serialize_report_detail(
             report.updated_at,
         ),
         'can_generate_artifact': report_item['can_generate_artifact'],
-        'can_generate_pdf': report_item['can_generate_artifact'],
         'can_archive_report': report.status
         in [
             'requested',
@@ -1032,7 +1024,6 @@ def _serialize_report_detail(
         ],
         'can_restore_report': report.status == 'archived',
         'can_download_artifact': report_item['can_download_artifact'],
-        'can_download_pdf': report_item['can_download_artifact'],
     }
 
 
@@ -1050,7 +1041,7 @@ def get_report_detail_status_context(
             },
             {
                 'label': 'Artifact generation available',
-                'description': 'Generate the configured PDF or Excel artifact for this request.',
+                'description': 'Generate the configured PDF, Excel, or CSV artifact for this request.',
                 'status': 'Ready to run',
                 'tone': 'blue',
                 'icon': 'file-text',
@@ -1237,6 +1228,21 @@ def get_report_detail_export_readiness(
         renderer_status = 'Failed'
         renderer_tone = 'red'
 
+    renderer_context = {
+        'pdf': (
+            'Analytics PDF renderer',
+            'The canonical WeasyPrint workflow renders the shared Analytics document model into PDF.',
+        ),
+        'xlsx': (
+            'Inventory Excel renderer',
+            'The reusable Inventory builder renders Inventory, Metadata, and Field Dictionary sheets into XLSX.',
+        ),
+        'csv': (
+            'Canonical CSV renderer',
+            'The CSV renderer exports the shared Analytics document model or Inventory profile without a parallel data contract.',
+        ),
+    }[artifact_format.value]
+
     return [
         {
             'label': 'Report request',
@@ -1245,16 +1251,8 @@ def get_report_detail_export_readiness(
             'tone': 'blue',
         },
         {
-            'label': (
-                'HTML/PDF renderer'
-                if artifact_format.value == 'pdf'
-                else 'Inventory Excel renderer'
-            ),
-            'description': (
-                'The canonical WeasyPrint workflow renders the Analytics publication into PDF.'
-                if artifact_format.value == 'pdf'
-                else 'The reusable Inventory workbook builder renders Inventory, Metadata, and Field Dictionary sheets into XLSX.'
-            ),
+            'label': renderer_context[0],
+            'description': renderer_context[1],
             'status': renderer_status,
             'tone': renderer_tone,
         },
@@ -1978,7 +1976,7 @@ def _get_cluster_options() -> list[dict[str, str]]:
     options = [
         {
             'value': '',
-            'label': 'All Clusters',
+            'label': 'Any Cluster',
         },
     ]
 

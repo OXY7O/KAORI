@@ -7,6 +7,7 @@ from uuid import uuid4
 from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.report import Report
+from app.reports.catalog import OUTPUT_FORMAT_SPECS, require_selected_cluster
 
 PERIOD_SLUGS = {
     '24h': 'last-24-hours',
@@ -14,6 +15,7 @@ PERIOD_SLUGS = {
     '30d': 'last-30-days',
     '90d': 'last-90-days',
     'month': 'this-month',
+    'snapshot': 'current-snapshot',
 }
 
 
@@ -57,9 +59,7 @@ def get_report_source_kind_slug(
 def get_report_cluster_slug(
     report: Report,
 ) -> str:
-    if not report.cluster_id:
-        return 'all-clusters'
-
+    require_selected_cluster(report)
     cluster_name = get_report_cluster_name(
         report,
     )
@@ -177,8 +177,11 @@ def build_report_object_key(
     )
     short_uuid = uuid4().hex[:8]
 
-    output_format = str(getattr(report, 'output_format', 'pdf') or 'pdf').strip().lower()
-    extension = '.xlsx' if output_format == 'xlsx' else '.pdf'
+    output_format = str(getattr(report, 'output_format', '') or '').strip().lower()
+    try:
+        extension = OUTPUT_FORMAT_SPECS[output_format].extension
+    except KeyError as exc:
+        raise ValueError(f'Unsupported report output format: {output_format!r}.') from exc
     filename = (
         f'report-{report.id}-{report_type_slug}-{cluster_slug}-'
         f'{namespace_slug}-{period_slug}-{timestamp}-{short_uuid}{extension}'

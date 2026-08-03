@@ -4,14 +4,13 @@ from collections.abc import Callable
 from typing import Any
 
 from app.models.report import Report
+from app.reports.catalog import ANALYTICS_REPORT_TYPES, validate_report_instance
 from app.reports.export.payloads.alerts import get_report_alerts_anomalies_payload
 from app.reports.export.payloads.analytics import get_report_analytics_overview_payload
 from app.reports.export.payloads.capacity import get_report_capacity_analysis_payload
 from app.reports.export.payloads.forecast import get_report_resource_forecast_payload
-from app.reports.export.payloads.inventory import get_report_kubernetes_inventory_payload
 from app.reports.export.payloads.storage import get_report_storage_analysis_payload
 from app.reports.export.payloads.top_consumers import get_report_top_consumers_payload
-from app.reports.export.payloads.tls_certificate_health import get_report_tls_certificate_health_payload
 from app.reports.export.payloads.utilization import get_report_resource_utilization_payload
 from app.reports.export.payloads.workload import get_report_workload_analysis_payload
 
@@ -26,23 +25,19 @@ _PAYLOAD_COLLECTORS: dict[str, PayloadCollector] = {
     'resource_forecast': get_report_resource_forecast_payload,
     'top_consumers': get_report_top_consumers_payload,
     'alerts_anomalies': get_report_alerts_anomalies_payload,
-    'tls_certificate_health': get_report_tls_certificate_health_payload,
-    'inventory_overview': get_report_kubernetes_inventory_payload,
-    'node_inventory': get_report_kubernetes_inventory_payload,
-    'namespace_inventory': get_report_kubernetes_inventory_payload,
-    'workload_inventory': get_report_kubernetes_inventory_payload,
-    'pod_inventory': get_report_kubernetes_inventory_payload,
-    'service_inventory': get_report_kubernetes_inventory_payload,
-    'ingress_inventory': get_report_kubernetes_inventory_payload,
-    'storage_inventory': get_report_kubernetes_inventory_payload,
-    'topology_inventory': get_report_kubernetes_inventory_payload,
 }
 
 
 def collect_report_payload(report: Report) -> dict[str, Any]:
+    """Collect analytics data through the canonical selected-cluster contract."""
+
+    validate_report_instance(report)
+    if report.report_type not in ANALYTICS_REPORT_TYPES:
+        raise ValueError(
+            f'HTML/PDF analytics collector does not support report type {report.report_type!r}.'
+        )
+
     collector = _PAYLOAD_COLLECTORS.get(report.report_type)
     if collector is None:
-        return {
-            '_error': 'This report type does not have a data collector yet.',
-        }
+        raise ValueError(f'No analytics data collector is registered for {report.report_type!r}.')
     return collector(report)

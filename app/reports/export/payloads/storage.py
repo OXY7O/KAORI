@@ -7,11 +7,9 @@ from app.analytics.storage.service import (
     build_storage_recommendation_context,
 )
 from app.analytics.utilization.service import UtilizationService
-from app.analytics.utilization.service import (
-    get_selected_cluster as get_utilization_selected_cluster,
-)
 from app.cluster.constants import get_environment_label
 from app.models.report import Report
+from app.reports.export.payloads.common import get_report_selected_cluster
 from app.prometheus.consumer import PrometheusConsumer
 from app.prometheus.service import PrometheusService
 
@@ -20,14 +18,7 @@ def get_report_storage_analysis_payload(
     report: Report,
 ) -> dict[str, Any]:
     try:
-        cluster = get_utilization_selected_cluster(
-            report.cluster_id,
-        )
-
-        if not cluster:
-            return {
-                '_error': 'No cluster configured for Storage Analysis report.',
-            }
+        cluster = get_report_selected_cluster(report)
 
         prometheus = PrometheusService(
             cluster,

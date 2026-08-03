@@ -5,7 +5,8 @@ from pathlib import Path
 
 from openpyxl import load_workbook
 
-from app.reports.export.xlsx.builder import InventoryWorkbookContext, build_inventory_workbook
+from app.reports.export.inventory_common import InventoryExportContext
+from app.reports.export.xlsx.builder import build_inventory_workbook
 from app.reports.export.xlsx.standard import (
     INVENTORY_DATA_SHEET,
     INVENTORY_DICTIONARY_SHEET,
@@ -62,8 +63,8 @@ def _payload(report_type: str) -> dict[str, object]:
     }
 
 
-def _context(report_type: str) -> InventoryWorkbookContext:
-    return InventoryWorkbookContext(
+def _context(report_type: str) -> InventoryExportContext:
+    return InventoryExportContext(
         report_id=701,
         report_name=f'{report_type} validation',
         report_type=report_type,
@@ -78,8 +79,6 @@ def _context(report_type: str) -> InventoryWorkbookContext:
 
 def test_inventory_workbook_profiles_are_exactly_the_ten_supported_reports() -> None:
     assert set(INVENTORY_WORKBOOK_PROFILES) == EXPECTED_REPORT_TYPES
-    assert 'topology_inventory' not in INVENTORY_WORKBOOK_PROFILES
-    assert 'tls_certificate_health' not in INVENTORY_WORKBOOK_PROFILES
 
 
 def test_all_inventory_workbooks_follow_the_reusable_three_sheet_contract(tmp_path: Path) -> None:

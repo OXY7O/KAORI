@@ -21,6 +21,8 @@ from app.models import (
     WorkloadInventory,
 )
 from app.models.report import Report
+from app.reports.catalog import require_selected_cluster
+from app.reports.export.payloads.common import get_report_selected_cluster
 
 InventoryRowBuilder = Callable[[Any, str, str], dict[str, Any]]
 InventoryStatusBuilder = Callable[[Any], str]
@@ -324,9 +326,9 @@ _OVERVIEW_MODELS: tuple[tuple[str, Any, str], ...] = (
 
 
 def _apply_scope(query: Any, model: Any, report: Report) -> Any:
+    cluster_id = require_selected_cluster(report)
     query = filter_current_generation(query, model)
-    if report.cluster_id:
-        query = query.filter(model.cluster_id == report.cluster_id)
+    query = query.filter(model.cluster_id == cluster_id)
     if report.namespace and hasattr(model, 'namespace'):
         query = query.filter(model.namespace == report.namespace)
     return query
@@ -341,13 +343,11 @@ def _order_columns(model: Any) -> list[Any]:
     return columns
 
 
-def _selected_cluster(report: Report) -> Cluster | None:
-    return db.session.get(Cluster, report.cluster_id) if report.cluster_id else None
+def _selected_cluster(report: Report) -> Cluster:
+    return get_report_selected_cluster(report)
 
 
-def _cluster_payload(cluster: Cluster | None) -> dict[str, Any] | None:
-    if cluster is None:
-        return None
+def _cluster_payload(cluster: Cluster) -> dict[str, Any]:
     return {
         'id': str(cluster.id),
         'name': cluster.name,
@@ -455,55 +455,14 @@ def _collect_overview_payload(report: Report) -> dict[str, Any]:
             'by_type': aggregate_rows,
         },
         'inventory_assets': aggregate_rows,
-        'topology_edges': _collect_topology_edges(report),
         'collected_at': collected_at,
         'generated_at': datetime.now(UTC),
     }
 
 
-def _collect_topology_edges(report: Report) -> list[dict[str, Any]]:
-    edges: Counter[tuple[str, str]] = Counter()
-
-    workload_query = _apply_scope(db.session.query(WorkloadInventory), WorkloadInventory, report)
-    for item in workload_query.all():
-        edges[('Namespace -> Workload', item.namespace)] += 1
-
-    pod_query = _apply_scope(db.session.query(PodInventory), PodInventory, report)
-    for item in pod_query.all():
-        edges[('Namespace -> Pod', item.namespace)] += 1
-        if item.workload_name:
-            edges[('Workload -> Pod', item.workload_name)] += 1
-        if item.node_name:
-            edges[('Pod -> Node', item.node_name)] += 1
-        for _claim in item.persistent_volume_claims or []:
-            edges[('Pod -> PVC', item.namespace)] += 1
-        for _reference in item.configuration_references or []:
-            edges[('Pod -> Configuration', item.namespace)] += 1
-
-    service_query = _apply_scope(db.session.query(ServiceInventory), ServiceInventory, report)
-    for item in service_query.all():
-        edges[('Namespace -> Service', item.namespace)] += 1
-        if item.selector:
-            edges[('Service -> Selector', item.namespace)] += 1
-
-    ingress_query = _apply_scope(db.session.query(IngressInventory), IngressInventory, report)
-    for item in ingress_query.all():
-        edges[('Namespace -> Ingress', item.namespace)] += 1
-        for _backend in item.backend_paths or []:
-            edges[('Ingress -> Service Backend', item.namespace)] += 1
-
-    storage_query = _apply_scope(db.session.query(StorageInventory), StorageInventory, report)
-    for item in storage_query.all():
-        edges[('Namespace -> Storage', item.namespace or 'Cluster-Wide')] += 1
-
-    return [
-        {'relationship': relationship, 'scope': scope, 'edges': count, 'status': 'Committed'}
-        for (relationship, scope), count in sorted(edges.items())
-    ]
-
-
 def get_report_kubernetes_inventory_payload(report: Report) -> dict[str, Any]:
-    if report.report_type in {'inventory_overview', 'topology_inventory'}:
+    get_report_selected_cluster(report)
+    if report.report_type == 'inventory_overview':
         try:
             return _collect_overview_payload(report)
         except Exception as exc:
@@ -590,8 +549,7 @@ def get_report_kubernetes_inventory_payload(report: Report) -> dict[str, Any]:
                 ],
             },
             'inventory_assets': rows,
-            'topology_edges': _collect_topology_edges(report),
-            'collected_at': collected_at,
+                'collected_at': collected_at,
             'generated_at': datetime.now(UTC),
         }
     except Exception as exc:

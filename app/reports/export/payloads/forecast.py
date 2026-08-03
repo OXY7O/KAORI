@@ -3,11 +3,9 @@ from __future__ import annotations
 from typing import Any
 
 from app.analytics.forecast.service import present_forecast_materialized_context
-from app.analytics.utilization.service import (
-    get_selected_cluster as get_utilization_selected_cluster,
-)
 from app.cluster.constants import get_environment_label
 from app.models.report import Report
+from app.reports.export.payloads.common import get_report_selected_cluster
 
 
 def get_report_resource_forecast_payload(report: Report) -> dict[str, Any]:
@@ -18,9 +16,7 @@ def get_report_resource_forecast_payload(report: Report) -> dict[str, Any]:
     memory for the configured horizon and Holt-Winters method.
     """
     try:
-        cluster = get_utilization_selected_cluster(report.cluster_id)
-        if not cluster:
-            return {'_error': 'No cluster configured for Resource Forecast report.'}
+        cluster = get_report_selected_cluster(report)
 
         history_window = normalize_report_forecast_history_window(report.period or '30d')
         forecast_horizon = normalize_report_forecast_horizon(report.period or '90d')

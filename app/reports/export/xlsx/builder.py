@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
+from collections.abc import Mapping
 from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
@@ -13,6 +12,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table, TableStyleInfo
 from openpyxl.worksheet.worksheet import Worksheet
 
+from app.reports.export.inventory_common import InventoryExportContext, get_inventory_rows
 from app.reports.export.xlsx.standard import (
     INVENTORY_DATA_SHEET,
     INVENTORY_DICTIONARY_SHEET,
@@ -53,30 +53,15 @@ _HEADER_BORDER = Border(
 _BODY_BORDER = Border(bottom=_THIN_LINE)
 
 
-@dataclass(frozen=True, slots=True)
-class InventoryWorkbookContext:
-    report_id: int | str
-    report_name: str
-    report_type: str
-    generated_at: datetime
-    generated_by: str
-    cluster_scope: str
-    namespace_scope: str
-    period_label: str
-    data_cutoff: datetime | str | None
-    source_label: str = 'Kubernetes Committed Inventory'
-    classification: str = 'Internal'
-
-
 def build_inventory_workbook(
     *,
     report_type: str,
     payload: Mapping[str, Any],
-    context: InventoryWorkbookContext,
+    context: InventoryExportContext,
     output_path: Path,
 ) -> None:
     profile = get_inventory_workbook_profile(report_type)
-    rows = _payload_rows(payload, profile)
+    rows = get_inventory_rows(payload, profile)
 
     workbook = Workbook()
     inventory_sheet = workbook.active
@@ -98,21 +83,6 @@ def build_inventory_workbook(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     workbook.save(output_path)
 
-
-def _payload_rows(
-    payload: Mapping[str, Any],
-    profile: InventoryWorkbookProfile,
-) -> list[dict[str, Any]]:
-    raw_rows = payload.get(profile.row_source, [])
-    if not isinstance(raw_rows, Iterable) or isinstance(raw_rows, (str, bytes, Mapping)):
-        return []
-
-    rows: list[dict[str, Any]] = []
-    for raw_row in raw_rows:
-        if not isinstance(raw_row, Mapping):
-            continue
-        rows.append(dict(raw_row))
-    return rows
 
 
 def _build_inventory_sheet(
@@ -212,7 +182,7 @@ def _build_metadata_sheet(
     sheet: Worksheet,
     profile: InventoryWorkbookProfile,
     payload: Mapping[str, Any],
-    context: InventoryWorkbookContext,
+    context: InventoryExportContext,
     row_count: int,
 ) -> None:
     sheet.merge_cells('A1:D1')

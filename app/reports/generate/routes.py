@@ -30,7 +30,7 @@ def generate_report() -> ResponseReturnValue:
                 event_type='report_request_created',
                 status='success',
                 title='Report Request Created',
-                message='KAORI created the report request. Generate the configured PDF or Excel artifact from Generated Reports.',
+                message='KAORI created the report request. Generate the configured PDF, Excel, or CSV artifact from Generated Reports.',
                 detail=f'Report ID: {report.id}.',
                 action_url=url_for('reports.generated_report_detail', report_id=report.id),
                 action_label='View report',

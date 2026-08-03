@@ -5,7 +5,7 @@ from collections.abc import Callable
 from copy import deepcopy
 from threading import RLock
 from time import monotonic, sleep, time
-from typing import Any
+from typing import Any, TypeVar
 from uuid import uuid4
 
 from flask import current_app, has_app_context
@@ -16,6 +16,8 @@ _CACHE: dict[str, tuple[float, float, Any]] = {}
 _LOCK = RLock()
 _PREFIX = 'kaori:analytics:cache:'
 _ENVELOPE_MARKER = 'kaori-analytics-cache-v1'
+
+CacheValueT = TypeVar('CacheValueT')
 
 
 def _redis_client() -> Redis | None:
@@ -81,11 +83,11 @@ def _wait_for_shared_value(client: Redis, cache_key: str, *, attempts: int = 300
     return None
 
 
-def get_or_set_cache[T](
+def get_or_set_cache(
     key: str,
     ttl_seconds: int,
-    loader: Callable[[], T],
-) -> T:
+    loader: Callable[[], CacheValueT],
+) -> CacheValueT:
     """Use one Redis-backed cache and stampede lock across every web replica.
 
     Fresh values are shared across processes. Expired values remain available for

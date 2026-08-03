@@ -1,4 +1,4 @@
-from flask import redirect, request, send_file, url_for
+from flask import abort, redirect, request, send_file, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user
 
@@ -13,7 +13,9 @@ from app.reports.export.service import generate_report_artifact, get_download_fi
 @permission_required('reports.generate')
 def generate_report_output(report_id: int) -> ResponseReturnValue:
     report = db.session.get(Report, report_id)
-    artifact_format = get_report_artifact_format(report.output_format if report else 'pdf')
+    if report is None:
+        abort(404)
+    artifact_format = get_report_artifact_format(report.output_format)
     success, message = generate_report_artifact(report_id)
     detail_url = url_for('reports.generated_report_detail', report_id=report_id)
 
@@ -44,17 +46,12 @@ def generate_report_output(report_id: int) -> ResponseReturnValue:
     return redirect(detail_url)
 
 
-@permission_required('reports.generate')
-def generate_report_pdf(report_id: int) -> ResponseReturnValue:
-    """Backward-compatible route handler for historical form actions."""
-
-    return generate_report_output(report_id)
-
-
 @permission_required('reports.view')
 def download_report_artifact(report_id: int) -> ResponseReturnValue:
     report = db.session.get(Report, report_id)
-    artifact_format = get_report_artifact_format(report.output_format if report else 'pdf')
+    if report is None:
+        abort(404)
+    artifact_format = get_report_artifact_format(report.output_format)
     success, message, file_path = get_download_file_path(report_id)
 
     if not success or file_path is None:
@@ -75,10 +72,3 @@ def download_report_artifact(report_id: int) -> ResponseReturnValue:
         download_name=file_path.name,
         mimetype=artifact_format.mimetype,
     )
-
-
-@permission_required('reports.view')
-def download_report_pdf(report_id: int) -> ResponseReturnValue:
-    """Backward-compatible download handler."""
-
-    return download_report_artifact(report_id)

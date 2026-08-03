@@ -68,7 +68,7 @@
                     </div>
                     <div class="rounded-2xl bg-surface-subtle p-4 bg-surface-subtle">
                         <p class="text-sm font-semibold text-content-primary text-content-primary">Safe customization</p>
-                        <p class="mt-2 text-sm leading-6 text-content-secondary dark:text-content-secondary">Duplicate a base template or create a custom template, then choose the sections that should appear in the generated PDF.</p>
+                        <p class="mt-2 text-sm leading-6 text-content-secondary dark:text-content-secondary">Duplicate a base template or create a custom template, then choose the canonical sections and supported output format used by generated artifacts.</p>
                     </div>
                     <div class="rounded-2xl bg-surface-subtle p-4 bg-surface-subtle">
                         <p class="text-sm font-semibold text-content-primary text-content-primary">Domain ownership</p>
@@ -406,6 +406,15 @@
                                 </select>
                             </label>
                             <label class="block">
+                                <span class="text-xs font-medium text-content-muted dark:text-content-muted">Output Format</span>
+                                <select name="output_format" data-template-output-format
+                                        class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
+                                    {% for option in payload.output_format_options %}
+                                        <option value="{{ option.value }}" {% if form.output_format == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </label>
+                            <label class="block">
                                 <span class="text-xs font-medium text-content-muted dark:text-content-muted">Status</span>
                                 <select name="status"
                                         class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm text-content-secondary shadow-sm focus:border-kaori-primary focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
@@ -496,7 +505,7 @@
                             </span>
                             <span class="min-w-0">
                                 <span class="block text-base font-semibold text-content-primary text-content-primary">Renderer Readiness</span>
-                                <span class="block text-xs text-content-muted dark:text-content-muted">PDF output readiness for system and custom templates.</span>
+                                <span class="block text-xs text-content-muted dark:text-content-muted">PDF, Excel, and CSV readiness for system and custom templates.</span>
                             </span>
                         </span>
                         <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-outline-default text-content-muted dark:border-outline-default dark:text-content-secondary">
@@ -537,10 +546,20 @@
 
             const reportTypeSelect = form.querySelector('[data-template-report-type]');
             const resetButton = form.querySelector('[data-template-reset-sections]');
+            const outputFormatSelect = form.querySelector('[data-template-output-format]');
             const defaultSectionsByType = {{ payload.default_sections_by_report_type | tojson }};
+            const allowedFormatsByType = {{ payload.allowed_formats_by_report_type | tojson }};
 
             function syncSectionGroups(resetToDefault) {
                 const selectedType = reportTypeSelect.value;
+                const allowedFormats = allowedFormatsByType[selectedType] || [];
+                Array.from(outputFormatSelect.options).forEach(function (option) {
+                    option.disabled = !allowedFormats.includes(option.value);
+                    option.hidden = option.disabled;
+                });
+                if (!allowedFormats.includes(outputFormatSelect.value)) {
+                    outputFormatSelect.value = allowedFormats[0] || '';
+                }
                 form.querySelectorAll('[data-template-section-group]').forEach(function (group) {
                     const isActive = group.dataset.templateSectionGroup === selectedType;
                     group.classList.toggle('hidden', !isActive);

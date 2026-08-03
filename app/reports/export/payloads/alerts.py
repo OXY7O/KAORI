@@ -6,13 +6,15 @@ from app.analytics.alerts.application import get_alerts_context
 from app.cluster.constants import get_environment_label
 from app.intelligence.recommendation_engine import build_alerts_actionable_recommendations
 from app.models.report import Report
+from app.reports.export.payloads.common import get_report_selected_cluster
 
 def get_report_alerts_anomalies_payload(
     report: Report,
 ) -> dict[str, Any]:
     try:
+        cluster = get_report_selected_cluster(report)
         context = get_alerts_context(
-            cluster_id=report.cluster_id,
+            cluster_id=cluster.id,
             source='auto',
             severity='all',
             status='all',
@@ -23,9 +25,6 @@ def get_report_alerts_anomalies_payload(
             anomalies_per_page=50,
         )
 
-        selected_cluster = context.get(
-            'selected_cluster',
-        )
 
         actionable_recommendations = build_alerts_actionable_recommendations(
             {
@@ -76,22 +75,22 @@ def get_report_alerts_anomalies_payload(
             'cluster': {
                 'id': str(
                     getattr(
-                        selected_cluster,
+                        cluster,
                         'id',
-                        report.cluster_id or '',
+                        '',
                     )
                 ),
                 'name': str(
                     getattr(
-                        selected_cluster,
+                        cluster,
                         'name',
                         'Unknown Cluster',
                     )
                 ),
-                'environment': get_environment_label(getattr(selected_cluster, 'environment', None), empty=''),
+                'environment': get_environment_label(getattr(cluster, 'environment', None), empty=''),
                 'status': str(
                     getattr(
-                        selected_cluster,
+                        cluster,
                         'status',
                         '',
                     )

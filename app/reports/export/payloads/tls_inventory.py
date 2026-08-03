@@ -14,6 +14,7 @@ from app.governance.tls_certificates.readiness import check_tls_governance_schem
 from app.models.cluster import Cluster
 from app.models.governance import TLSCertificateCollectionState, TLSCertificateInventory
 from app.models.report import Report
+from app.reports.export.payloads.common import get_report_selected_cluster
 
 _STATUS_ORDER = {
     'expired': 0,
@@ -25,7 +26,7 @@ _STATUS_ORDER = {
 }
 
 
-def get_report_tls_certificate_health_payload(report: Report) -> dict[str, Any]:
+def get_report_tls_inventory_payload(report: Report) -> dict[str, Any]:
     """Build a committed TLS certificate snapshot for governed report exports.
 
     The collector reads only the persisted TLS certificate inventory and
@@ -33,20 +34,19 @@ def get_report_tls_certificate_health_payload(report: Report) -> dict[str, Any]:
     Secret data during report generation.
     """
 
+    selected_cluster = get_report_selected_cluster(report)
+    cluster_id = str(selected_cluster.id)
     readiness = check_tls_governance_schema_readiness()
     policy = validity_policy_from_config(current_app.config)
     if not readiness.ready:
         return _schema_unavailable_payload(report, readiness.as_dict(), policy)
 
-    scoped_clusters = _scoped_clusters(report.cluster_id)
+    scoped_clusters = _scoped_clusters(selected_cluster)
     scoped_cluster_ids = [str(cluster.id) for cluster in scoped_clusters]
     collection_states = _collection_state_map(scoped_cluster_ids)
 
     query = TLSCertificateInventory.query.options(joinedload(TLSCertificateInventory.cluster))
-    if report.cluster_id:
-        query = query.filter(TLSCertificateInventory.cluster_id == report.cluster_id)
-    elif scoped_cluster_ids:
-        query = query.filter(TLSCertificateInventory.cluster_id.in_(scoped_cluster_ids))
+    query = query.filter(TLSCertificateInventory.cluster_id == cluster_id)
     if report.namespace:
         query = query.filter(TLSCertificateInventory.namespace == report.namespace)
 
@@ -108,11 +108,8 @@ def get_report_tls_certificate_health_payload(report: Report) -> dict[str, Any]:
     }
 
 
-def _scoped_clusters(cluster_id: str | None) -> list[Cluster]:
-    query = Cluster.query
-    if cluster_id:
-        query = query.filter(Cluster.id == cluster_id)
-    return query.order_by(Cluster.name.asc()).all()
+def _scoped_clusters(selected_cluster: Cluster) -> list[Cluster]:
+    return [selected_cluster]
 
 
 def _collection_state_map(cluster_ids: Iterable[str]) -> dict[str, TLSCertificateCollectionState]:

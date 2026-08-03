@@ -1,39 +1,54 @@
 # Reports domain
 
-Reports orchestrates report configuration, generation, rendering, storage,
-scheduling, and generated-report lifecycle.
+Reports orchestrates report configuration, selected-cluster validation, source collection, artifact generation, storage, scheduling, delivery, and generated-report lifecycle.
 
 ## Subdomains
 
 - `overview/`: reporting coverage and readiness.
-- `generate/`: generation use cases and input validation.
-- `generated/`: generated report listing and actions.
-- `report_templates/`: base and custom template management.
-- `export/`: renderer and report sections.
+- `generate/`: request use cases and contract validation.
+- `generated/`: generated report listing and generic artifact actions.
+- `report_templates/`: system and custom template management.
+- `export/`: shared contracts, collectors, document/profile models, and renderers.
 - `schedules/`: schedule definitions and execution controls.
-- `storage/`: report storage status and operations.
+- `storage/`: artifact storage status and operations.
+
+## Canonical contract
+
+`app/reports/catalog.py` is the single source of truth.
+
+- Analytics: PDF or CSV; PDF is the default.
+- Inventory: XLSX or CSV; XLSX is the default.
+- Every report and schedule requires one selected Kubernetes cluster.
+- Cross-cluster and default-cluster fallback behavior is prohibited.
+- Generic artifact routes and lifecycle fields are format-neutral.
+
+See `docs/reports/kaori-reporting-standard-v1.md` for the complete mandatory standard.
 
 ## Rules
 
-Routes call subdomain services; PDF section code must not query HTTP request state.
-Base templates remain protected and custom templates derive from a known base.
-Long-running generation belongs in Celery. Storage and cleanup must reuse the
-cross-domain retention/archive foundation rather than implement report-only
-retention logic.
+Routes call subdomain services. Renderers do not read HTTP request state and do not query external systems. Collection occurs before rendering through the canonical selected-cluster payload path. System templates are catalog-derived; custom templates may only store sections and output formats allowed by their report type.
+
+Long-running generation belongs in Celery. Storage and cleanup must reuse the cross-domain retention/archive foundation rather than implement report-only retention logic.
 
 ## KAORI Violet presentation standard
 
-All report workspaces use the KAORI Violet Infrastructure design system: solid violet hero surfaces, tokenized card/background/border/text colors, compact rectangular status and metadata labels, violet focus/action states, and semantic colors only for operational state. This applies to Overview, Generate, Generated Reports and detail, Templates, Schedules, and Storage. Presentation changes must not alter report generation, lifecycle, scheduling, retention, or storage behavior.
+All report workspaces use the KAORI Violet Infrastructure design system: solid violet hero surfaces, tokenized card/background/border/text colors, compact rectangular status and metadata labels, violet focus/action states, and semantic colors only for operational state. This applies to Overview, Generate, Generated Reports and detail, Templates, Schedules, and Storage.
 
-## PDF renderer architecture
+Artifact presentation is also standardized:
 
-KAORI uses one canonical PDF engine: Jinja HTML, dedicated print CSS, and WeasyPrint. The existing Report Template System remains the source of truth for report type, section order, scope, schedule, storage, and retention.
+- Analytics PDF uses the shared Analytics publication component and stylesheet.
+- Inventory XLSX uses the reusable three-sheet workbook contract.
+- Analytics and Inventory CSV use one canonical CSV standard and shared source models.
 
-The renderer reuses prepared real-data payload collectors and never performs HTTP or Prometheus queries from Jinja templates. Selected sections are rendered in the exact order stored by the current system or custom template. Rendering failures are logged with technical evidence and returned to users as sanitized operational feedback; KAORI does not switch to a second PDF engine.
+## Renderer architecture
 
-PDF-specific source lives under:
+The artifact registry in `app/reports/export/artifacts.py` resolves exactly one renderer from the validated format.
 
-- `app/reports/export/html_pdf/`: document model, payload normalization, chart SVGs, and the canonical WeasyPrint engine.
-- `app/reports/export/formatting.py`: renderer-neutral filename and period formatting.
-- `app/templates/reports/pdf/`: Jinja PDF document template.
-- `app/static/reports/pdf/`: dedicated print CSS tokens and layout.
+- `app/reports/export/html_pdf/`: Analytics document model, presentation normalization, chart SVGs, and canonical WeasyPrint engine.
+- `app/reports/export/xlsx/`: Inventory workbook profiles, style primitives, and workbook builder.
+- `app/reports/export/csv/`: canonical CSV standard and family dispatcher.
+- `app/reports/export/inventory_common.py`: shared Inventory collection context and row normalization used by XLSX and CSV.
+- `app/reports/export/payloads/`: selected-cluster source collectors.
+- `app/reports/storage/naming.py`: selected-cluster object-key and extension rules.
+
+Rendering failures are logged with technical evidence and returned to users as sanitized operational feedback. KAORI does not switch to another report type, cluster, format, or renderer after validation.

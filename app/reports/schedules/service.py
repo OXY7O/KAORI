@@ -14,6 +14,7 @@ from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.report import Report, ReportSchedule, ReportScheduleRun
 from app.models.user import User
+from app.reports.catalog import ReportContractError, validate_report_contract
 from app.reports.export.constants import DEFAULT_REPORT_DOMAIN, DEFAULT_REPORT_SOURCE_KIND
 from app.reports.delivery import deliver_generated_report, get_delivery_channel_catalog
 from app.reports.export.service import generate_report_artifact
@@ -26,7 +27,7 @@ from app.reports.generate.service import (
     get_report_primary_output_format,
     validate_form_state,
 )
-from app.reports.generated.service import REPORT_TYPE_LABELS
+from app.reports.catalog import get_report_type_label
 from app.reports.storage.health import build_local_storage_health, build_s3_storage_health
 from app.reports.storage.service import get_configured_storage_backend_name
 
@@ -346,6 +347,22 @@ def execute_schedule(
     run.started_at = datetime.now(UTC)
     db.session.add(run)
 
+    try:
+        validate_report_contract(
+            report_type=schedule.report_type,
+            output_format=schedule.output_format,
+            cluster_id=schedule.cluster_id,
+        )
+    except ReportContractError as exc:
+        run.status = 'failed'
+        run.finished_at = datetime.now(UTC)
+        run.error_message = str(exc)
+        schedule.last_status = 'failed'
+        schedule.last_run_at = run.finished_at
+        schedule.next_run_at = calculate_next_run_at(schedule, base=run.finished_at)
+        db.session.commit()
+        return False, str(exc), None
+
     report = _create_report_from_schedule(schedule)
     db.session.add(report)
     db.session.flush()
@@ -510,7 +527,7 @@ def _apply_form_state_to_schedule(schedule: ReportSchedule, form_state: dict[str
     schedule.cluster_id = form_state['cluster_id'] or None
     schedule.namespace = form_state['namespace'] or None
     schedule.period = form_state['period']
-    schedule.output_format = get_report_primary_output_format(form_state['report_type'])
+    schedule.output_format = form_state['output_format']
     schedule.sections = list(form_state['sections'])
     schedule.notification_channels = list(form_state.get('notification_channels') or [])
     schedule.cadence = form_state['cadence']
@@ -545,7 +562,7 @@ def _create_report_from_schedule(schedule: ReportSchedule) -> Report:
     report.cluster_id = schedule.cluster_id
     report.namespace = schedule.namespace
     report.period = schedule.period
-    report.output_format = get_report_primary_output_format(schedule.report_type)
+    report.output_format = schedule.output_format
     report.status = 'requested'
     report.sections = schedule.sections_as_list()
     report.generated_by_id = schedule.created_by_id
@@ -586,14 +603,12 @@ def _serialize_schedule(schedule: ReportSchedule, cluster_map: dict[str, str]) -
         'name': schedule.name,
         'description': schedule.description or 'No description provided.',
         'report_type_value': schedule.report_type,
-        'report_type': REPORT_TYPE_LABELS.get(schedule.report_type, schedule.report_type.replace('_', ' ').title()),
+        'report_type': get_report_type_label(schedule.report_type),
         'cluster_id': schedule.cluster_id or '',
-        'cluster': cluster_map.get(
-            schedule.cluster_id or '', 'All Clusters' if not schedule.cluster_id else 'Unknown Cluster'
-        ),
+        'cluster': cluster_map.get(schedule.cluster_id or '', 'Cluster Selection Required'),
         'namespace': schedule.namespace or 'All Namespaces',
         'period': schedule.period,
-        'output_format': get_report_primary_output_format(schedule.report_type).upper(),
+        'output_format': str(schedule.output_format or '').upper(),
         'sections': schedule.sections_as_list(),
         'sections_count': len(schedule.sections_as_list()),
         'notification_channels': schedule.notification_channels_as_list(),
@@ -643,7 +658,7 @@ def _schedule_edit_state(schedule: ReportSchedule) -> dict[str, Any]:
         'namespace': schedule.namespace or '',
         'report_type': schedule.report_type,
         'period': schedule.period,
-        'output_format': get_report_primary_output_format(schedule.report_type),
+        'output_format': schedule.output_format,
         'sections': schedule.sections_as_list(),
         'cadence': schedule.cadence,
         'run_time': schedule.run_time,
@@ -657,7 +672,7 @@ def _schedule_edit_state(schedule: ReportSchedule) -> dict[str, Any]:
 
 def _get_cluster_options() -> list[dict[str, str]]:
     clusters = db.session.scalars(select(Cluster).order_by(Cluster.name.asc())).all()
-    return [{'value': '', 'label': 'All Clusters'}] + [{'value': item.id, 'label': item.name} for item in clusters]
+    return [{'value': item.id, 'label': item.name} for item in clusters]
 
 
 def _get_cluster_map(cluster_ids: list[str]) -> dict[str, str]:

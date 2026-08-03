@@ -7,9 +7,7 @@ from werkzeug.exceptions import HTTPException
 from app.rbac.decorators import permission_required
 from app.reports.export.routes import (
     download_report_artifact,
-    download_report_pdf,
     generate_report_output,
-    generate_report_pdf,
 )
 from app.reports.generate.routes import generate_report
 from app.reports.generated.routes import (
@@ -116,27 +114,9 @@ reports_bp.add_url_rule(
 )
 
 reports_bp.add_url_rule(
-    '/generated/<int:report_id>/generate-pdf',
-    endpoint='generate_report_pdf',
-    view_func=generate_report_pdf,
-    methods=[
-        'POST',
-    ],
-)
-
-reports_bp.add_url_rule(
     '/generated/<int:report_id>/download-artifact',
     endpoint='download_report_artifact',
     view_func=download_report_artifact,
-    methods=[
-        'GET',
-    ],
-)
-
-reports_bp.add_url_rule(
-    '/generated/<int:report_id>/download',
-    endpoint='download_report_pdf',
-    view_func=download_report_pdf,
     methods=[
         'GET',
     ],

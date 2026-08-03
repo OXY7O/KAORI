@@ -68,7 +68,6 @@ class Report(db.Model):
     output_format: Mapped[str] = mapped_column(
         db.String(50),
         nullable=False,
-        default='pdf',
     )
 
     status: Mapped[str] = mapped_column(
@@ -215,7 +214,6 @@ class ReportTemplate(db.Model):
     output_format: Mapped[str] = mapped_column(
         db.String(50),
         nullable=False,
-        default='pdf',
     )
 
     sections: Mapped[list[str]] = mapped_column(
@@ -350,7 +348,6 @@ class ReportSchedule(db.Model):
     output_format: Mapped[str] = mapped_column(
         db.String(50),
         nullable=False,
-        default='pdf',
     )
 
     sections: Mapped[list[str]] = mapped_column(

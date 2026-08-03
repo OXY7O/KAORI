@@ -3,11 +3,9 @@ from __future__ import annotations
 from typing import Any
 
 from app.analytics.utilization.service import UtilizationService
-from app.analytics.utilization.service import (
-    get_selected_cluster as get_utilization_selected_cluster,
-)
 from app.cluster.constants import get_environment_label
 from app.models.report import Report
+from app.reports.export.payloads.common import get_report_selected_cluster
 from app.prometheus.service import PrometheusService
 
 
@@ -15,14 +13,7 @@ def get_report_resource_utilization_payload(
     report: Report,
 ) -> dict[str, Any]:
     try:
-        cluster = get_utilization_selected_cluster(
-            report.cluster_id,
-        )
-
-        if not cluster:
-            return {
-                '_error': 'No cluster configured for Resource Utilization report.',
-            }
+        cluster = get_report_selected_cluster(report)
 
         prometheus = PrometheusService(
             cluster,

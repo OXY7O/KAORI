@@ -3,19 +3,21 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 
 from app.analytics.overview.service import get_analytics_overview
 from app.extensions.db import db
 from app.models.report import Report, ReportSchedule
+from app.reports.catalog import require_selected_cluster
 from app.reports.export.payloads.alerts import get_report_alerts_anomalies_payload
+from app.reports.export.payloads.common import get_report_selected_cluster
 
 
 def get_report_analytics_overview_payload(
     report: Report,
 ) -> dict[str, Any]:
     try:
-        selected_cluster_id = report.cluster_id or None
+        selected_cluster_id = str(get_report_selected_cluster(report).id)
         time_range = report.period or '24h'
 
         payload = get_analytics_overview(
@@ -24,8 +26,8 @@ def get_report_analytics_overview_payload(
             hydrate_snapshot_sections=True,
         )
         payload['alert_detail'] = _collect_alert_detail(report)
-        payload['reporting_summary'] = _collect_reporting_summary()
-        payload['inventory_snapshot'] = _collect_inventory_snapshot()
+        payload['reporting_summary'] = _collect_reporting_summary(report)
+        payload['inventory_snapshot'] = _collect_inventory_snapshot(report)
         payload['data_freshness'] = _collect_data_freshness(payload)
         return payload
     except Exception as exc:
@@ -43,27 +45,67 @@ def _collect_alert_detail(report: Report) -> dict[str, Any]:
     return detail
 
 
-def _collect_reporting_summary() -> dict[str, Any]:
+def _collect_reporting_summary(report: Report) -> dict[str, Any]:
     try:
-        from app.reports.overview.service import (
-            get_recent_reports,
-            get_report_counts,
-            get_storage_context,
-        )
+        from app.reports.overview.service import get_storage_context, serialize_recent_report
 
+        cluster_id = require_selected_cluster(report)
+        now = datetime.now(UTC)
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+        def count_reports(*statuses: str, since: datetime | None = None) -> int:
+            statement = select(func.count(Report.id)).where(Report.cluster_id == cluster_id)
+            if statuses:
+                statement = statement.where(Report.status.in_(statuses))
+            if since is not None:
+                statement = statement.where(Report.created_at >= since)
+            return int(db.session.scalar(statement) or 0)
+
+        recent_reports = db.session.scalars(
+            select(Report)
+            .where(Report.cluster_id == cluster_id)
+            .order_by(Report.created_at.desc())
+            .limit(8)
+        ).all()
         schedules = db.session.scalars(
             select(ReportSchedule)
+            .where(ReportSchedule.cluster_id == cluster_id)
             .order_by(ReportSchedule.is_enabled.desc(), ReportSchedule.next_run_at.asc())
             .limit(8)
         ).all()
+        active_schedules = int(
+            db.session.scalar(
+                select(func.count(ReportSchedule.id)).where(
+                    ReportSchedule.cluster_id == cluster_id,
+                    ReportSchedule.is_enabled.is_(True),
+                )
+            )
+            or 0
+        )
+        schedule_count = int(
+            db.session.scalar(
+                select(func.count(ReportSchedule.id)).where(ReportSchedule.cluster_id == cluster_id)
+            )
+            or 0
+        )
+
         return {
-            'counts': get_report_counts(),
-            'recent_reports': get_recent_reports(limit=8),
+            'counts': {
+                'total': count_reports(),
+                'ready': count_reports('ready'),
+                'pending': count_reports('requested', 'generating'),
+                'failed': count_reports('failed'),
+                'archived': count_reports('archived'),
+                'generated_this_month': count_reports(since=month_start),
+                'schedules': schedule_count,
+                'active_schedules': active_schedules,
+            },
+            'recent_reports': [serialize_recent_report(item) for item in recent_reports],
             'schedules': [_serialize_schedule(schedule) for schedule in schedules],
             'storage': _serialize_storage_context(get_storage_context()),
             'notes': [
-                'All generated PDF artifacts use the canonical KAORI WeasyPrint renderer.',
-                'Recurring schedules remain governed independently from generated report records.',
+                'Analytics artifacts use one selected-cluster source boundary for PDF and CSV.',
+                'Recurring schedules and generated records shown here are filtered to the selected cluster.',
             ],
         }
     except Exception:
@@ -72,9 +114,8 @@ def _collect_reporting_summary() -> dict[str, Any]:
             'recent_reports': [],
             'schedules': [],
             'storage': {},
-            'notes': ['Reporting operation evidence was unavailable during payload collection.'],
+            'notes': ['Selected-cluster reporting operation evidence was unavailable during payload collection.'],
         }
-
 
 def _serialize_schedule(schedule: ReportSchedule) -> dict[str, Any]:
     return {
@@ -96,17 +137,58 @@ def _serialize_storage_context(storage: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _collect_inventory_snapshot() -> dict[str, Any]:
+def _collect_inventory_snapshot(report: Report) -> dict[str, Any]:
     try:
         from app.inventory.overview import get_inventory_overview
 
-        return get_inventory_overview()
+        cluster_id = require_selected_cluster(report)
+        overview = get_inventory_overview()
+        selected = next(
+            (item for item in overview.get('clusters', []) if str(item.get('id')) == cluster_id),
+            None,
+        )
+        if selected is None:
+            return {'clusters': [], 'health': {}, 'posture': {'status': 'Unknown', 'tone': 'unknown'}}
+
+        counts = dict(selected.get('counts') or {})
+        synced_at = selected.get('synced_at')
+        fresh = selected.get('sync_status_tone') == 'normal'
+        connected = selected.get('status') == 'connected'
+        totals = {
+            'total_clusters': 1,
+            **{f'total_{key}': int(value or 0) for key, value in counts.items()},
+        }
+        return {
+            **totals,
+            'inventory_total': sum(int(value or 0) for value in counts.values()),
+            'active_signal_count': len(selected.get('signals') or []),
+            'clusters': [selected],
+            'inventory_summary': {cluster_id: overview.get('inventory_summary', {}).get(cluster_id, {})},
+            'health': {
+                'connected_clusters': 1 if connected else 0,
+                'healthy_clusters': 1 if connected and fresh else 0,
+                'never_synced': 1 if synced_at is None else 0,
+                'stale_synced': 1 if synced_at is not None and not fresh else 0,
+                'fresh_synced': 1 if fresh else 0,
+                'synced_clusters': 1 if synced_at is not None else 0,
+                'disconnected_clusters': 0 if connected else 1,
+                'coverage_score': 100 if synced_at is not None else 0,
+                'connection_score': 100 if connected else 0,
+                'freshness_score': 100 if fresh else 0,
+                'freshness_window_hours': selected.get('freshness_window_hours'),
+                'last_sync': synced_at,
+            },
+            'posture': {
+                'status': 'Healthy' if connected and fresh else 'Attention',
+                'tone': 'normal' if connected and fresh else 'warning',
+            },
+        }
     except Exception:
         return {
             'clusters': [],
             'health': {},
+            'posture': {'status': 'Unknown', 'tone': 'unknown'},
         }
-
 
 def _collect_data_freshness(payload: dict[str, Any]) -> dict[str, Any]:
     snapshot = payload.get('snapshot_summary') or {}

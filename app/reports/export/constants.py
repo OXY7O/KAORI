@@ -37,98 +37,6 @@ REPORT_DOMAIN_SOURCE_KINDS = {
 DEFAULT_REPORT_DOMAIN = REPORT_DOMAIN_KUBERNETES
 DEFAULT_REPORT_SOURCE_KIND = SOURCE_KIND_KUBERNETES
 
-REPORT_TYPE_LABELS = {
-    'analytics_overview': 'Analytics Overview',
-    'resource_utilization': 'Resource Utilization',
-    'capacity_analysis': 'Capacity Analysis',
-    'storage_analysis': 'Storage Analysis',
-    'workload_analysis': 'Workload Analysis',
-    'resource_forecast': 'Resource Forecast',
-    'top_consumers': 'Top Consumers',
-    'alerts_anomalies': 'Alerts & Anomalies',
-    'inventory_overview': 'Inventory Overview',
-    'node_inventory': 'Node Inventory',
-    'namespace_inventory': 'Namespace Inventory',
-    'workload_inventory': 'Workload Inventory',
-    'pod_inventory': 'Pod Inventory',
-    'service_inventory': 'Service Inventory',
-    'ingress_inventory': 'Ingress Inventory',
-    'storage_inventory': 'Storage Inventory',
-    'configuration_inventory': 'Configuration Inventory',
-    'tls_inventory': 'TLS Certificate Inventory',
-    'topology_inventory': 'Kubernetes Topology (Legacy)',
-    'tls_certificate_health': 'TLS Certificate Health & Expiry (Legacy)',
-}
-
-REPORT_TYPE_DESCRIPTIONS = {
-    'analytics_overview': (
-        'High-level Kubernetes operational summary covering resource posture, '
-        'risk context, and recommended follow-up actions.'
-    ),
-    'resource_utilization': (
-        'Resource usage report focused on CPU, memory, storage, and pod utilization patterns across the selected scope.'
-    ),
-    'capacity_analysis': (
-        'Capacity and headroom report focused on allocatable resources, usage pressure, and scheduling risk.'
-    ),
-    'storage_analysis': (
-        'Storage-focused report covering filesystem, persistent volume, persistent volume claim, '
-        'quota, and storage risk context.'
-    ),
-    'workload_analysis': (
-        'Workload governance report focused on request/limit coverage, namespace breakdown, '
-        'and workload resource mapping.'
-    ),
-    'resource_forecast': (
-        'Forecast report designed to summarize projected resource growth and capacity planning signals.'
-    ),
-    'top_consumers': (
-        'Top consumer report for identifying high-impact namespaces, workloads, pods, and resource hotspots.'
-    ),
-    'alerts_anomalies': (
-        'Alert and anomaly report focused on active alert state, severity distribution, '
-        'affected resources, and operational response context.'
-    ),
-    'inventory_overview': (
-        'Current Kubernetes inventory overview covering cluster, node, namespace, workload, pod, network, '
-        'configuration, and storage asset counts.'
-    ),
-    'node_inventory': (
-        'Current Kubernetes node asset register covering role, readiness, platform capacity, runtime, and addressing.'
-    ),
-    'namespace_inventory': (
-        'Current Kubernetes namespace asset register covering lifecycle status, controls, and service account posture.'
-    ),
-    'workload_inventory': (
-        'Current Kubernetes workload asset register covering workload kind, readiness, runtime status, and strategy.'
-    ),
-    'pod_inventory': (
-        'Current Kubernetes pod asset register covering phase, readiness, node placement, and restart count.'
-    ),
-    'service_inventory': (
-        'Current Kubernetes service asset register covering service type, ports, addresses, and network exposure.'
-    ),
-    'ingress_inventory': (
-        'Current Kubernetes ingress asset register covering class, host, address, backend exposure, and TLS posture.'
-    ),
-    'storage_inventory': (
-        'Current Kubernetes storage asset register covering StorageClasses, persistent volumes, claims, capacity, and state.'
-    ),
-    'configuration_inventory': (
-        'Current Kubernetes ConfigMap and Secret asset register covering metadata, key names, immutability, and payload size without exporting values.'
-    ),
-    'tls_inventory': (
-        'Current TLS certificate asset register covering validity, usage references, hostname coverage, and collection evidence without exporting private keys.'
-    ),
-    'topology_inventory': (
-        'Legacy Kubernetes topology PDF report retained only for historical report records.'
-    ),
-    'tls_certificate_health': (
-        'Legacy TLS governance PDF report retained only for historical report records.'
-    ),
-}
-
-
 ANALYTICS_OVERVIEW_SECTION_KEYS = (
     'executive_brief',
     'resource_posture',
@@ -201,16 +109,9 @@ SECTION_LABELS = {
     'incident_readiness': 'Incident Readiness',
     'anomaly_context': 'Anomaly Context',
     'affected_resources': 'Affected Resources',
-    'inventory_summary': 'Inventory Summary',
-    'inventory_distribution': 'Asset Distribution',
     'inventory_assets': 'Inventory Data',
     'inventory_metadata': 'Workbook Metadata',
     'inventory_field_dictionary': 'Field Dictionary',
-    'tls_validity_inventory': 'TLS Certificate Validity Inventory',
-    'tls_expiry_exposure': 'TLS Expiry Exposure',
-    'tls_usage_mapping': 'TLS Usage & Reference Mapping',
-    'tls_validation_evidence': 'TLS Validation Evidence',
-    'tls_governance_risk': 'TLS Governance Risk',
 }
 
 SECTION_DESCRIPTIONS = {
@@ -290,36 +191,15 @@ SECTION_DESCRIPTIONS = {
     ),
     'anomaly_context': ('Prepared section for anomaly signals, unusual behavior, and correlation context.'),
     'affected_resources': ('Prepared section for resources affected by alerts, anomalies, or capacity risk.'),
-    'inventory_summary': (
-        'Summarizes current asset totals, selected scope, status coverage, and the committed inventory collection time.'
-    ),
-    'inventory_distribution': (
-        'Groups the selected asset type by cluster, operational status, and Kubernetes resource classification.'
-    ),
     'inventory_assets': (
         'Lists asset-level records from the latest committed Kubernetes inventory snapshot for the selected scope.'
-    ),
-    'tls_validity_inventory': (
-        'Lists committed certificate validity, expiry, common-name, issuer, and usage evidence.'
-    ),
-    'tls_expiry_exposure': (
-        'Prioritizes expired, invalid, critical-window, and renewal-window certificates by committed usage.'
-    ),
-    'tls_usage_mapping': (
-        'Summarizes committed Ingress references, unused Secrets, unknown usage, and mapping collection state.'
-    ),
-    'tls_validation_evidence': (
-        'Summarizes certificate parsing, declared-host coverage, and explicit validation evidence boundaries.'
-    ),
-    'tls_governance_risk': (
-        'Summarizes TLS lifecycle, usage, host-coverage, collection, and ownership risks.'
     ),
     'operational_recommendations': (
         'Provides operational recommendations. For supported report types, recommendations are derived from real findings, risk signals, and utilization/capacity pressure instead of static cards only.'  # noqa: E501
     ),
 }
 
-REPORT_TYPE_RECOMMENDATIONS = {
+ANALYTICS_REPORT_RECOMMENDATIONS = {
     'analytics_overview': [
         'Review high-level resource posture before starting deeper troubleshooting.',
         'Use detail reports when this overview indicates capacity, utilization, or alert risk.',
@@ -360,66 +240,6 @@ REPORT_TYPE_RECOMMENDATIONS = {
         'Review repeated anomalies for recurring platform or application issues.',
         'Confirm runbook, contact point, and escalation ownership for critical alerts.',
     ],
-    'tls_certificate_health': [
-        'Replace expired or invalid certificates that remain actively referenced.',
-        'Schedule renewal before certificates enter the critical expiry window.',
-        'Restore Ingress usage mapping and hostname coverage evidence before classifying Secrets as unused.',
-    ],
-    'inventory_overview': [
-        'Maintain committed inventory freshness and complete asset-type coverage.',
-        'Use dedicated inventory reports to review identities, lifecycle state, and relationships.',
-        'Validate operational actions against live Kubernetes state before execution.',
-    ],
-    'node_inventory': [
-        'Review Not Ready or cordoned nodes before scheduling additional workloads.',
-        'Validate node role, runtime, operating system, and address metadata against the intended platform baseline.',
-        'Use the asset register as evidence for capacity, lifecycle, and maintenance reviews.',
-    ],
-    'namespace_inventory': [
-        'Review inactive namespaces and confirm ownership before cleanup.',
-        'Validate namespace controls, network policies, and service account posture against governance requirements.',
-        'Use the namespace asset register to confirm tenant and application boundaries.',
-    ],
-    'workload_inventory': [
-        'Review workloads with incomplete readiness or unknown runtime status.',
-        'Confirm workload kind and update strategy match the intended deployment model.',
-        'Coordinate remediation with application owners using cluster and namespace scope.',
-    ],
-    'pod_inventory': [
-        'Review Pending, Failed, or repeatedly restarting pods.',
-        'Validate node placement and readiness for pods supporting critical services.',
-        'Use workload ownership context before deleting or rescheduling pod assets.',
-    ],
-    'service_inventory': [
-        'Review externally exposed services and confirm the exposure is intentional.',
-        'Validate service type, address, selector, and port configuration against application design.',
-        'Investigate services without expected endpoints through the live inventory workspace.',
-    ],
-    'ingress_inventory': [
-        'Review ingress resources without TLS for externally reachable hosts.',
-        'Validate host, class, address, and backend routing against the intended application entry point.',
-        'Confirm certificate and ownership readiness through Kubernetes Governance.',
-    ],
-    'storage_inventory': [
-        'Review unbound or non-ready persistent volumes and claims.',
-        'Validate StorageClass, capacity, reclaim policy, and binding relationships before lifecycle changes.',
-        'Use the storage asset register to support capacity and data protection reviews.',
-    ],
-    'configuration_inventory': [
-        'Use the workbook to review ConfigMap and Secret metadata without exporting values.',
-        'Validate key names, object type, immutability, and collection time in the inventory workspace.',
-        'Keep Secret reveal and content access governed separately from report export.',
-    ],
-    'tls_inventory': [
-        'Use the workbook to filter certificate validity, usage, and hostname coverage states.',
-        'Keep private keys and Secret values excluded from every export.',
-        'Use Analytics or Intelligence for interpretation, prioritization, and remediation planning.',
-    ],
-    'topology_inventory': [
-        'Maintain committed resource identity and relationship coverage.',
-        'Review missing network, configuration, storage, and placement edges before dependency decisions.',
-        'Validate topology findings against live Kubernetes state and application ownership.',
-    ],
 }
 
 DEFAULT_RECOMMENDATIONS = [
@@ -427,193 +247,3 @@ DEFAULT_RECOMMENDATIONS = [
     'Validate findings with live cluster data when the report is used for incident response.',
     'Use generated reports as operational evidence and attach them to follow-up tasks when needed.',
 ]
-
-KUBERNETES_INVENTORY_REPORT_TYPES = {
-    'inventory_overview',
-    'node_inventory',
-    'namespace_inventory',
-    'workload_inventory',
-    'pod_inventory',
-    'service_inventory',
-    'ingress_inventory',
-    'configuration_inventory',
-    'storage_inventory',
-    'tls_inventory',
-}
-
-LEGACY_INVENTORY_PDF_REPORT_TYPES = {
-    'inventory_overview',
-    'node_inventory',
-    'namespace_inventory',
-    'workload_inventory',
-    'pod_inventory',
-    'service_inventory',
-    'ingress_inventory',
-    'storage_inventory',
-    'topology_inventory',
-}
-
-
-REAL_DATA_REPORT_TYPES = {
-    'analytics_overview',
-    'resource_utilization',
-    'capacity_analysis',
-    'storage_analysis',
-    'workload_analysis',
-    'resource_forecast',
-    'top_consumers',
-    'alerts_anomalies',
-    'tls_certificate_health',
-    'topology_inventory',
-    *KUBERNETES_INVENTORY_REPORT_TYPES,
-}
-
-REQUIRES_SINGLE_CLUSTER_REPORT_TYPES = {
-    'resource_utilization',
-    'capacity_analysis',
-    'storage_analysis',
-    'workload_analysis',
-    'resource_forecast',
-    'top_consumers',
-    'alerts_anomalies',
-}
-
-
-REAL_DATA_SECTION_MAP = {
-    'analytics_overview': set(ANALYTICS_OVERVIEW_SECTION_KEYS),
-    'resource_utilization': {
-        'executive_summary',
-        'resource_snapshot',
-        'cpu_utilization',
-        'memory_utilization',
-        'storage_utilization',
-        'pod_utilization',
-        'node_resource_detail',
-        'risk_overview',
-        'operational_recommendations',
-    },
-    'capacity_analysis': {
-        'executive_summary',
-        'worker_capacity_summary',
-        'resource_allocation_headroom',
-        'capacity_pressure_risk',
-        'operational_recommendations',
-    },
-    'storage_analysis': {
-        'executive_summary',
-        'filesystem_summary',
-        'persistent_volume_summary',
-        'persistent_volume_claims',
-        'storage_risk',
-        'operational_recommendations',
-    },
-    'workload_analysis': {
-        'executive_summary',
-        'tenant_quota_summary',
-        'request_limit_coverage',
-        'workload_resource_mapping',
-        'governance_findings',
-        'operational_recommendations',
-    },
-    'resource_forecast': {
-        'executive_summary',
-        'forecast_summary',
-        'forecast_risk_summary',
-        'resource_trend_summary',
-        'cpu_forecast',
-        'memory_forecast',
-        'storage_forecast',
-        'pod_forecast',
-        'capacity_projection',
-        'forecast_projection',
-        'threshold_eta',
-        'operational_recommendations',
-    },
-    'top_consumers': {
-        'executive_summary',
-        'top_namespace_consumers',
-        'top_workload_consumers',
-        'top_pod_consumers',
-        'resource_hotspots',
-        'operational_recommendations',
-    },
-    'alerts_anomalies': {
-        'executive_summary',
-        'active_alerts',
-        'alert_severity_summary',
-        'source_health',
-        'routing_grouping',
-        'silence_inhibition',
-        'ownership_runbook',
-        'incident_readiness',
-        'anomaly_context',
-        'affected_resources',
-        'operational_recommendations',
-    },
-    'tls_certificate_health': {
-        'executive_summary',
-        'tls_validity_inventory',
-        'tls_expiry_exposure',
-        'tls_usage_mapping',
-        'tls_validation_evidence',
-        'tls_governance_risk',
-        'operational_recommendations',
-    },
-    'inventory_overview': {
-        'inventory_assets',
-        'inventory_metadata',
-        'inventory_field_dictionary',
-    },
-    'node_inventory': {
-        'inventory_assets',
-        'inventory_metadata',
-        'inventory_field_dictionary',
-    },
-    'namespace_inventory': {
-        'inventory_assets',
-        'inventory_metadata',
-        'inventory_field_dictionary',
-    },
-    'workload_inventory': {
-        'inventory_assets',
-        'inventory_metadata',
-        'inventory_field_dictionary',
-    },
-    'pod_inventory': {
-        'inventory_assets',
-        'inventory_metadata',
-        'inventory_field_dictionary',
-    },
-    'service_inventory': {
-        'inventory_assets',
-        'inventory_metadata',
-        'inventory_field_dictionary',
-    },
-    'ingress_inventory': {
-        'inventory_assets',
-        'inventory_metadata',
-        'inventory_field_dictionary',
-    },
-    'configuration_inventory': {
-        'inventory_assets',
-        'inventory_metadata',
-        'inventory_field_dictionary',
-    },
-    'storage_inventory': {
-        'inventory_assets',
-        'inventory_metadata',
-        'inventory_field_dictionary',
-    },
-    'tls_inventory': {
-        'inventory_assets',
-        'inventory_metadata',
-        'inventory_field_dictionary',
-    },
-    'topology_inventory': {
-        'executive_summary',
-        'inventory_summary',
-        'inventory_distribution',
-        'inventory_assets',
-        'operational_recommendations',
-    },
-}

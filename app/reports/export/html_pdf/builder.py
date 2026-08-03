@@ -4,15 +4,12 @@ from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from typing import Any
 
+from app.reports.catalog import get_report_type_spec
 from app.reports.export.constants import (
     ANALYTICS_OVERVIEW_SECTION_KEYS,
     DEFAULT_RECOMMENDATIONS,
-    LEGACY_INVENTORY_PDF_REPORT_TYPES,
     REPORT_DOMAIN_LABELS,
-    REPORT_TYPE_DESCRIPTIONS,
-    REPORT_TYPE_LABELS,
-    REPORT_TYPE_RECOMMENDATIONS,
-    REQUIRES_SINGLE_CLUSTER_REPORT_TYPES,
+    ANALYTICS_REPORT_RECOMMENDATIONS,
     SECTION_LABELS,
     SOURCE_KIND_LABELS,
 )
@@ -22,10 +19,6 @@ from app.reports.export.html_pdf.alerts_anomalies import build_alerts_anomalies_
 from app.reports.export.html_pdf.capacity_analysis import build_capacity_analysis_presentation
 from app.reports.export.html_pdf.charts import build_alert_severity_chart, build_forecast_chart
 from app.reports.export.html_pdf.forecast_analysis import build_forecast_analysis_presentation
-from app.reports.export.html_pdf.inventory_publications import (
-    build_inventory_publication_presentation,
-    inventory_template_for_report_type,
-)
 from app.reports.export.html_pdf.document import (
     ReportDocument,
     ReportFinding,
@@ -39,7 +32,6 @@ from app.reports.export.html_pdf.normalization import (
     metrics_from_mapping,
     sanitize_error_message,
     sanitize_text,
-    table_from_rows,
     tables_from_value,
     tone_from_value,
 )
@@ -48,7 +40,6 @@ from app.reports.export.html_pdf.resource_utilization import (
 )
 from app.reports.export.html_pdf.storage_analysis import build_storage_analysis_presentation
 from app.reports.export.html_pdf.top_consumers_analysis import build_top_consumers_analysis_presentation
-from app.reports.export.html_pdf.tls_certificate_health import build_tls_certificate_health_presentation
 from app.reports.export.html_pdf.workload_analysis import build_workload_analysis_presentation
 
 _SECTION_SOURCE_PATHS: dict[str, tuple[str, ...]] = {
@@ -94,14 +85,6 @@ _SECTION_SOURCE_PATHS: dict[str, tuple[str, ...]] = {
     'incident_readiness': ('incident_readiness',),
     'anomaly_context': ('anomalies',),
     'affected_resources': ('alerts', 'anomalies'),
-    'tls_validity_inventory': ('records', 'summary'),
-    'tls_expiry_exposure': ('records', 'summary'),
-    'tls_usage_mapping': ('records', 'collection_states', 'summary'),
-    'tls_validation_evidence': ('records', 'sensitive_data_policy'),
-    'tls_governance_risk': ('records', 'summary', 'schema_readiness'),
-    'inventory_summary': ('inventory_summary', 'summary'),
-    'inventory_distribution': ('inventory_distribution',),
-    'inventory_assets': ('inventory_assets',),
 }
 
 _SECTION_DESCRIPTIONS: dict[str, str] = {
@@ -114,14 +97,6 @@ _SECTION_DESCRIPTIONS: dict[str, str] = {
     'forecast_summary': 'Projected resource growth, threshold exposure, and historical signal quality for the selected horizon.',
     'alert_severity_summary': 'Distribution of active alert signals by operational severity.',
     'source_health': 'Connectivity and readiness posture of the alert and analytics source integrations.',
-    'tls_validity_inventory': 'Committed certificate validity, lifecycle, and usage evidence.',
-    'tls_expiry_exposure': 'Expired, invalid, critical-window, and renewal-window certificate exposure.',
-    'tls_usage_mapping': 'Committed Ingress references, unused Secrets, unknown usage, and collection state.',
-    'tls_validation_evidence': 'Certificate parse, hostname coverage, and explicit validation boundaries.',
-    'tls_governance_risk': 'TLS lifecycle, usage, collection, hostname coverage, and ownership risk.',
-    'inventory_summary': 'Current asset totals, selected scope, status coverage, and committed snapshot time.',
-    'inventory_distribution': 'Distribution of the selected asset type across clusters, statuses, and Kubernetes classifications.',
-    'inventory_assets': 'Asset-level records from the latest committed Kubernetes inventory snapshot.',
 }
 
 
@@ -143,25 +118,7 @@ def build_report_document(
     overall_posture, overall_tone = _derive_overall_posture(payload)
 
     sections: list[ReportSection] = []
-    if report.report_type in REQUIRES_SINGLE_CLUSTER_REPORT_TYPES and not report.cluster_id:
-        sections.append(
-            ReportSection(
-                key='scope_limitation',
-                number=1,
-                title='Single Cluster Required',
-                description='KAORI blocked a misleading fallback because this report type requires one explicit cluster.',
-                status_label='Action Required',
-                status_tone='warning',
-                findings=(
-                    ReportFinding(
-                        title='Select a Cluster',
-                        description='Regenerate this report with one cluster selected. Analytics Overview remains available for all-cluster reporting.',
-                        tone='warning',
-                    ),
-                ),
-            )
-        )
-    elif payload.get('_error'):
+    if payload.get('_error'):
         sections.append(_build_error_section(payload, number=1))
     else:
         for number, section_key in enumerate(selected_sections, start=1):
@@ -176,7 +133,8 @@ def build_report_document(
     namespace_scope = sanitize_text(getattr(report, 'namespace', None), fallback='All Namespaces')
     report_id = str(getattr(report, 'id', '-'))
     report_name = sanitize_text(getattr(report, 'name', None), fallback='KAORI Operational Report')
-    report_type_label = REPORT_TYPE_LABELS.get(report.report_type, humanize_key(report.report_type))
+    report_type_spec = get_report_type_spec(report.report_type)
+    report_type_label = report_type_spec.label.removesuffix(' Report')
     period_label = _report_period_label(report)
     generated_at_label = generated_at.strftime('%d %b %Y %H:%M UTC')
     data_cutoff = _derive_data_cutoff(payload, generated_at)
@@ -305,45 +263,13 @@ def build_report_document(
             generated_by=generated_by_label,
             classification=classification,
         )
-    elif report.report_type == 'tls_certificate_health' and not payload.get('_error'):
-        template_name = 'reports/pdf/tls_certificate_health.html'
-        presentation = build_tls_certificate_health_presentation(
-            report,
-            payload,
-            report_id=report_id,
-            report_name=report_name,
-            cluster_scope=cluster_scope,
-            namespace_scope=namespace_scope,
-            period_label=period_label,
-            data_cutoff=data_cutoff,
-            generated_at=generated_at_label,
-            generated_by=generated_by_label,
-            classification=classification,
-        )
-    elif report.report_type in LEGACY_INVENTORY_PDF_REPORT_TYPES and not payload.get('_error'):
-        template_name = inventory_template_for_report_type(report.report_type)
-        presentation = build_inventory_publication_presentation(
-            report,
-            payload,
-            report_id=report_id,
-            report_name=report_name,
-            cluster_scope=cluster_scope,
-            namespace_scope=namespace_scope,
-            period_label=period_label,
-            data_cutoff=data_cutoff,
-            generated_at=generated_at_label,
-            generated_by=generated_by_label,
-            classification=classification,
-        )
+
 
     return ReportDocument(
         report_id=report_id,
         report_name=report_name,
         report_type_label=report_type_label,
-        report_description=REPORT_TYPE_DESCRIPTIONS.get(
-            report.report_type,
-            'Operational report generated from the current KAORI template configuration.',
-        ),
+        report_description=report_type_spec.description,
         report_domain_label=REPORT_DOMAIN_LABELS.get(
             getattr(report, 'report_domain', ''),
             'KAORI Kubernetes Reports',
@@ -373,7 +299,7 @@ def build_report_document(
         metadata={
             'section_count': len(sections),
             'selected_section_keys': selected_sections,
-            'output_format': sanitize_text(getattr(report, 'output_format', 'pdf')).upper(),
+            'output_format': sanitize_text(getattr(report, 'output_format', None), fallback='Not Available').upper(),
         },
     )
 
@@ -410,20 +336,7 @@ def _build_section(report: Any, payload: Mapping[str, Any], section_key: str, nu
         ]
 
     metrics = metrics_from_mapping(value) if isinstance(value, Mapping) else ()
-    if section_key == 'inventory_assets' and isinstance(value, Sequence) and not isinstance(
-        value,
-        (str, bytes, bytearray),
-    ):
-        inventory_table = table_from_rows(
-            title,
-            value,
-            max_rows=500,
-            max_columns=7,
-            note='Asset records from the latest committed inventory snapshot.',
-        )
-        tables = (inventory_table,) if inventory_table is not None else ()
-    else:
-        tables = tables_from_value(title, value)
+    tables = tables_from_value(title, value)
     findings = findings_from_value(value) if not tables or section_key in {'risk_overview', 'capacity_pressure_risk', 'governance_findings', 'resource_hotspots'} else ()
 
     chart_svg = ''
@@ -522,7 +435,7 @@ def _build_recommendations_section(report: Any, payload: Mapping[str, Any], numb
     if not recommendation_value and isinstance(forecast_payload, Mapping):
         recommendation_value = forecast_payload.get('actionable_recommendations')
     if not recommendation_value:
-        recommendation_value = REPORT_TYPE_RECOMMENDATIONS.get(report.report_type, DEFAULT_RECOMMENDATIONS)
+        recommendation_value = ANALYTICS_REPORT_RECOMMENDATIONS.get(report.report_type, DEFAULT_RECOMMENDATIONS)
 
     findings = findings_from_value(recommendation_value, limit=12)
     return ReportSection(
@@ -561,8 +474,6 @@ def _build_error_section(payload: Mapping[str, Any], *, number: int) -> ReportSe
 
 
 def _report_period_label(report: Any) -> str:
-    if getattr(report, 'report_type', '') in LEGACY_INVENTORY_PDF_REPORT_TYPES:
-        return 'Current Inventory Snapshot'
     return format_period(getattr(report, 'period', '30d'))
 
 
@@ -575,7 +486,7 @@ def _cluster_scope(report: Any, payload: Mapping[str, Any]) -> str:
             return sanitize_text(name)
         if identifier:
             return sanitize_text(identifier)
-    return sanitize_text(getattr(report, 'cluster_id', None), fallback='All Clusters')
+    return sanitize_text(getattr(report, 'cluster_id', None), fallback='Selected Cluster Unavailable')
 
 
 def _derive_data_cutoff(payload: Mapping[str, Any], generated_at: datetime) -> str:

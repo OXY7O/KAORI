@@ -27,22 +27,7 @@ def render_document_pdf(
     rendered_html = template.render(document=document)
     font_config = FontConfiguration()
 
-    fixed_publication_stylesheets = {
-        'reports/pdf/tls_certificate_health.html': 'tls_certificate_health.css',
-        'reports/pdf/inventory_overview.html': 'inventory_publications.css',
-        'reports/pdf/nodes_inventory.html': 'inventory_publications.css',
-        'reports/pdf/namespaces_inventory.html': 'inventory_publications.css',
-        'reports/pdf/workloads_inventory.html': 'inventory_publications.css',
-        'reports/pdf/pods_inventory.html': 'inventory_publications.css',
-        'reports/pdf/services_inventory.html': 'inventory_publications.css',
-        'reports/pdf/ingresses_inventory.html': 'inventory_publications.css',
-        'reports/pdf/storage_inventory.html': 'inventory_publications.css',
-        'reports/pdf/topology_inventory.html': 'inventory_publications.css',
-    }
-
     analytics_stylesheet = ANALYTICS_TEMPLATE_STYLESHEETS.get(document.template_name)
-    fixed_stylesheet = fixed_publication_stylesheets.get(document.template_name)
-
     if analytics_stylesheet:
         # Analytics reports use one canonical publication grammar derived from
         # Analytics Overview Report ID 34. Report-specific CSS is loaded first;
@@ -52,15 +37,6 @@ def render_document_pdf(
         stylesheets = [
             CSS(filename=str(report_css_path), font_config=font_config),
             CSS(filename=str(analytics_css_path), font_config=font_config),
-        ]
-    elif fixed_stylesheet:
-        # Existing non-Analytics fixed publications remain isolated from the
-        # Analytics contract until their own output family is implemented.
-        report_css_path = css_path.with_name(fixed_stylesheet)
-        shared_css_path = css_path.with_name('kaori_publication.css')
-        stylesheets = [
-            CSS(filename=str(report_css_path), font_config=font_config),
-            CSS(filename=str(shared_css_path), font_config=font_config),
         ]
     else:
         stylesheets = [CSS(filename=str(css_path), font_config=font_config)]

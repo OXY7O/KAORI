@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import TypeAlias
 
 from werkzeug.datastructures import Headers
 
-type HeaderSource = Mapping[str, str] | Headers
+HeaderSource: TypeAlias = Mapping[str, str] | Headers
 
 
 def header_is_true(headers: HeaderSource, name: str) -> bool:

@@ -210,7 +210,14 @@
                                                            class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
                                                 </label>
                                             </div>
-                                            <input type="hidden" name="output_format" value="{{ form_state.output_format }}">
+                                            <label class="block">
+                                                <span class="text-xs font-medium text-content-muted dark:text-content-muted">Output Format</span>
+                                                <select name="output_format" class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
+                                                    {% for option in payload.output_format_options %}
+                                                        <option value="{{ option.value }}" {% if schedule.edit_state.output_format == option.value %}selected{% endif %}>{{ option.label }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                            </label>
                                             {% for section in schedule.edit_state.sections %}
                                                 <input type="hidden" name="sections" value="{{ section }}">
                                             {% endfor %}
@@ -297,7 +304,7 @@
             </div>
             <aside class="space-y-6">
                 <section class="rounded-2xl border border-outline-default bg-white p-5 shadow-sm dark:border-outline-default bg-surface-card"
-                         x-data='{ reportType: {{ payload.form_state.report_type|tojson }}, sections: {{ payload.form_state.sections|tojson }}, sectionOptionsByType: {{ payload.section_options_by_report_type|tojson }}, defaultSectionsByType: {{ payload.default_sections_by_report_type|tojson }}, selectDefaults() { this.sections = [...(this.defaultSectionsByType[this.reportType] || [])]; }, selectAll() { this.sections = (this.sectionOptionsByType[this.reportType] || []).map((item) => item.value); }, syncReportType() { this.selectDefaults(); } }'>
+                         x-data='{ reportType: {{ payload.form_state.report_type|tojson }}, outputFormat: {{ payload.form_state.output_format|tojson }}, reportTypes: {{ payload.report_type_options|tojson }}, sections: {{ payload.form_state.sections|tojson }}, sectionOptionsByType: {{ payload.section_options_by_report_type|tojson }}, defaultSectionsByType: {{ payload.default_sections_by_report_type|tojson }}, reportSpec() { return this.reportTypes.find((item) => item.value === this.reportType) || {}; }, allowedFormats() { return this.reportSpec().allowed_formats || []; }, selectDefaults() { this.sections = [...(this.defaultSectionsByType[this.reportType] || [])]; }, selectAll() { this.sections = (this.sectionOptionsByType[this.reportType] || []).map((item) => item.value); }, syncReportType() { this.selectDefaults(); const spec = this.reportSpec(); if (!this.allowedFormats().includes(this.outputFormat)) { this.outputFormat = spec.primary_format || ""; } } }'>
                     <div class="mb-4 flex items-center gap-3">
                         <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-kaori-soft text-kaori-primary bg-kaori-soft dark:text-kaori-primary">
                             <i data-lucide="calendar-plus" class="h-4 w-4"></i>
@@ -337,8 +344,9 @@
                         <div class="grid gap-3 md:grid-cols-2">
                             <label class="block">
                                 <span class="text-xs font-medium text-content-muted dark:text-content-muted">Cluster</span>
-                                <select name="cluster_id"
+                                <select name="cluster_id" required
                                         class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
+                                    <option value="" disabled {% if not payload.form_state.cluster_id %}selected{% endif %}>Select Cluster</option>
                                     {% for option in payload.clusters %}
                                         <option value="{{ option.value }}"
                                                 {% if payload.form_state.cluster_id == option.value %}selected{% endif %}>{{ option.label }}</option>
@@ -410,7 +418,16 @@
                                 {% endfor %}
                             </select>
                         </label>
-                        <input type="hidden" name="output_format" value="xlsx">
+                        <label class="block">
+                            <span class="text-xs font-medium text-content-muted dark:text-content-muted">Output Format</span>
+                            <select name="output_format" x-model="outputFormat"
+                                    class="mt-1 w-full rounded-xl border border-outline-default bg-white px-3 py-2 text-sm dark:border-outline-default bg-surface-subtle dark:text-content-secondary">
+                                {% for option in payload.output_format_options %}
+                                    <option value="{{ option.value }}" :disabled="!allowedFormats().includes('{{ option.value }}')">{{ option.label }}</option>
+                                {% endfor %}
+                            </select>
+                            <span class="mt-1 block text-xs leading-5 text-content-muted">Analytics: PDF/CSV. Inventory: Excel/CSV.</span>
+                        </label>
                         <input type="hidden" name="is_enabled" value="1">
                         <div class="rounded-xl border border-outline-default p-3 dark:border-outline-default">
                             <div class="mb-3 flex items-center justify-between gap-3">

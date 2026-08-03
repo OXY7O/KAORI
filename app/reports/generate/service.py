@@ -11,234 +11,18 @@ from app.models.cluster import Cluster
 from app.models.inventory import NamespaceInventory
 from app.models.report import Report
 from app.models.user import User
-from app.reports.export.constants import (
-    ANALYTICS_OVERVIEW_SECTION_KEYS,
-    DEFAULT_REPORT_DOMAIN,
-    DEFAULT_REPORT_SOURCE_KIND,
+from app.reports.catalog import (
+    OUTPUT_FORMAT_OPTIONS,
+    REPORT_TYPE_OPTIONS,
+    REQUIRES_SELECTED_CLUSTER_REPORT_TYPES,
+    get_allowed_output_formats,
+    get_default_output_format,
+    get_report_type_spec,
+    normalize_report_type as normalize_catalog_report_type,
 )
+from app.reports.export.constants import DEFAULT_REPORT_DOMAIN, DEFAULT_REPORT_SOURCE_KIND
 from app.reports.storage.health import build_local_storage_health, build_s3_storage_health
 from app.reports.storage.service import get_configured_storage_backend_name
-
-REPORT_TYPE_OPTIONS: list[dict[str, Any]] = [
-    {
-        'value': 'analytics_overview',
-        'label': 'Analytics Overview Report',
-        'description': 'High-level analytics summary across utilization, capacity, forecast, and alerts.',
-        'icon': 'layout-dashboard',
-        'default_sections': list(ANALYTICS_OVERVIEW_SECTION_KEYS),
-    },
-    {
-        'value': 'resource_utilization',
-        'label': 'Resource Utilization Report',
-        'description': 'CPU, memory, storage, pod utilization, and node resource detail.',
-        'icon': 'activity',
-        'default_sections': [
-            'executive_summary',
-            'cpu_utilization',
-            'memory_utilization',
-            'storage_utilization',
-            'pod_utilization',
-            'node_resource_detail',
-            'operational_recommendations',
-        ],
-    },
-    {
-        'value': 'capacity_analysis',
-        'label': 'Capacity Analysis Report',
-        'description': 'Worker capacity, allocation, headroom, and pressure risk.',
-        'icon': 'database',
-        'default_sections': [
-            'executive_summary',
-            'worker_capacity_summary',
-            'resource_allocation_headroom',
-            'capacity_pressure_risk',
-            'operational_recommendations',
-        ],
-    },
-    {
-        'value': 'storage_analysis',
-        'label': 'Storage Analysis Report',
-        'description': 'Filesystem, persistent volume, PVC, capacity, usage, and free space summary.',
-        'icon': 'hard-drive',
-        'default_sections': [
-            'executive_summary',
-            'filesystem_summary',
-            'persistent_volume_summary',
-            'persistent_volume_claims',
-            'storage_risk',
-            'operational_recommendations',
-        ],
-    },
-    {
-        'value': 'workload_analysis',
-        'label': 'Workload Analysis Report',
-        'description': 'Workload resource requests, limits, mapping, and namespace resource behavior.',
-        'icon': 'boxes',
-        'default_sections': [
-            'executive_summary',
-            'tenant_quota_summary',
-            'request_limit_coverage',
-            'workload_resource_mapping',
-            'governance_findings',
-            'operational_recommendations',
-        ],
-    },
-    {
-        'value': 'resource_forecast',
-        'label': 'Resource Forecast Report',
-        'description': 'Forecast CPU, memory, storage, and pod growth using historical metrics.',
-        'icon': 'line-chart',
-        'default_sections': [
-            'executive_summary',
-            'forecast_summary',
-            'cpu_forecast',
-            'memory_forecast',
-            'storage_forecast',
-            'pod_forecast',
-            'capacity_projection',
-            'operational_recommendations',
-        ],
-    },
-    {
-        'value': 'top_consumers',
-        'label': 'Top Consumers Report',
-        'description': 'Top namespaces, workloads, and pods consuming cluster resources.',
-        'icon': 'users',
-        'default_sections': [
-            'executive_summary',
-            'top_namespace_consumers',
-            'top_workload_consumers',
-            'top_pod_consumers',
-            'resource_hotspots',
-            'operational_recommendations',
-        ],
-    },
-    {
-        'value': 'alerts_anomalies',
-        'label': 'Alerts & Anomalies Report',
-        'description': 'Alert visibility, anomaly context, source health, routing, ownership, incident readiness, and recommendation notes.',
-        'icon': 'triangle-alert',
-        'default_sections': [
-            'executive_summary',
-            'active_alerts',
-            'alert_severity_summary',
-            'source_health',
-            'routing_grouping',
-            'silence_inhibition',
-            'ownership_runbook',
-            'incident_readiness',
-            'anomaly_context',
-            'affected_resources',
-            'operational_recommendations',
-        ],
-    },
-
-]
-
-for report_type_option in REPORT_TYPE_OPTIONS:
-    report_type_option['family'] = 'analytics'
-    report_type_option['primary_format'] = 'pdf'
-
-_INVENTORY_REPORT_SECTIONS = [
-    'inventory_assets',
-    'inventory_metadata',
-    'inventory_field_dictionary',
-]
-
-REPORT_TYPE_OPTIONS.extend(
-    [
-        {
-            'value': 'inventory_overview',
-            'label': 'Inventory Overview',
-            'description': 'Committed Kubernetes asset totals by inventory category.',
-            'icon': 'layout-dashboard',
-            'family': 'inventory',
-            'primary_format': 'xlsx',
-            'default_sections': list(_INVENTORY_REPORT_SECTIONS),
-        },
-        {
-            'value': 'node_inventory',
-            'label': 'Nodes Inventory',
-            'description': 'Node identities, readiness, platform, capacity, addressing, and collection evidence.',
-            'icon': 'server-cog',
-            'family': 'inventory',
-            'primary_format': 'xlsx',
-            'default_sections': list(_INVENTORY_REPORT_SECTIONS),
-        },
-        {
-            'value': 'namespace_inventory',
-            'label': 'Namespaces Inventory',
-            'description': 'Namespace identities, lifecycle state, controls, and service-account posture.',
-            'icon': 'folder-tree',
-            'family': 'inventory',
-            'primary_format': 'xlsx',
-            'default_sections': list(_INVENTORY_REPORT_SECTIONS),
-        },
-        {
-            'value': 'workload_inventory',
-            'label': 'Workloads Inventory',
-            'description': 'Workload identities, readiness, replica state, runtime status, and update strategy.',
-            'icon': 'boxes',
-            'family': 'inventory',
-            'primary_format': 'xlsx',
-            'default_sections': list(_INVENTORY_REPORT_SECTIONS),
-        },
-        {
-            'value': 'pod_inventory',
-            'label': 'Pods Inventory',
-            'description': 'Pod identities, ownership, phase, readiness, placement, restarts, and attached evidence.',
-            'icon': 'box',
-            'family': 'inventory',
-            'primary_format': 'xlsx',
-            'default_sections': list(_INVENTORY_REPORT_SECTIONS),
-        },
-        {
-            'value': 'service_inventory',
-            'label': 'Services Inventory',
-            'description': 'Service identities, types, addresses, ports, selectors, and exposure fields.',
-            'icon': 'waypoints',
-            'family': 'inventory',
-            'primary_format': 'xlsx',
-            'default_sections': list(_INVENTORY_REPORT_SECTIONS),
-        },
-        {
-            'value': 'ingress_inventory',
-            'label': 'Ingresses Inventory',
-            'description': 'Ingress identities, class, hosts, addresses, backend counts, and TLS references.',
-            'icon': 'route',
-            'family': 'inventory',
-            'primary_format': 'xlsx',
-            'default_sections': list(_INVENTORY_REPORT_SECTIONS),
-        },
-        {
-            'value': 'configuration_inventory',
-            'label': 'Configuration Inventory',
-            'description': 'ConfigMap and Secret metadata, key names, immutability, and payload size without values.',
-            'icon': 'file-key-2',
-            'family': 'inventory',
-            'primary_format': 'xlsx',
-            'default_sections': list(_INVENTORY_REPORT_SECTIONS),
-        },
-        {
-            'value': 'storage_inventory',
-            'label': 'Storage Inventory',
-            'description': 'StorageClass, persistent-volume, and persistent-volume-claim identities and lifecycle fields.',
-            'icon': 'database-zap',
-            'family': 'inventory',
-            'primary_format': 'xlsx',
-            'default_sections': list(_INVENTORY_REPORT_SECTIONS),
-        },
-        {
-            'value': 'tls_inventory',
-            'label': 'TLS Certificate Inventory',
-            'description': 'Certificate validity, usage references, hostname coverage, and collection evidence without private keys.',
-            'icon': 'shield-check',
-            'family': 'inventory',
-            'primary_format': 'xlsx',
-            'default_sections': list(_INVENTORY_REPORT_SECTIONS),
-        },
-    ]
-)
 
 PERIOD_OPTIONS: list[dict[str, str]] = [
     {
@@ -267,33 +51,11 @@ PERIOD_OPTIONS: list[dict[str, str]] = [
     },
 ]
 
-OUTPUT_FORMAT_OPTIONS: list[dict[str, str]] = [
-    {
-        'value': 'pdf',
-        'label': 'PDF',
-    },
-    {
-        'value': 'xlsx',
-        'label': 'Excel Workbook (.xlsx)',
-    },
-]
 
-
-SINGLE_CLUSTER_REQUIRED_REPORT_TYPES = {
-    'resource_utilization',
-    'capacity_analysis',
-    'storage_analysis',
-    'workload_analysis',
-    'resource_forecast',
-    'top_consumers',
-    'alerts_anomalies',
-}
-
-
-def report_requires_specific_cluster(
+def report_requires_selected_cluster(
     report_type: str,
 ) -> bool:
-    return report_type in SINGLE_CLUSTER_REQUIRED_REPORT_TYPES
+    return report_type in REQUIRES_SELECTED_CLUSTER_REPORT_TYPES
 
 
 SECTION_OPTIONS: list[dict[str, str]] = [
@@ -453,31 +215,6 @@ SECTION_OPTIONS: list[dict[str, str]] = [
         'description': 'Detected workload governance gaps, severity, and remediation filters.',
     },
     {
-        'value': 'tls_validity_inventory',
-        'label': 'TLS Certificate Validity Inventory',
-        'description': 'Certificate identity, issuer, validity window, usage, and lifecycle status.',
-    },
-    {
-        'value': 'tls_expiry_exposure',
-        'label': 'TLS Expiry Exposure',
-        'description': 'Expired, invalid, critical-window, and renewal-window certificates prioritized by usage.',
-    },
-    {
-        'value': 'tls_usage_mapping',
-        'label': 'TLS Usage & Reference Mapping',
-        'description': 'Committed Ingress references, unused Secrets, unknown usage, and mapping evidence.',
-    },
-    {
-        'value': 'tls_validation_evidence',
-        'label': 'TLS Validation Evidence',
-        'description': 'Certificate parsing, declared-host coverage, and sensitive-data validation boundaries.',
-    },
-    {
-        'value': 'tls_governance_risk',
-        'label': 'TLS Governance Risk',
-        'description': 'TLS lifecycle, hostname coverage, collection, ownership, and renewal risks.',
-    },
-    {
         'value': 'forecast_summary',
         'label': 'Forecast Summary',
         'description': 'Resource growth forecast overview.',
@@ -603,16 +340,6 @@ SECTION_OPTIONS: list[dict[str, str]] = [
         'description': 'High-level risk posture across analytics signals.',
     },
     {
-        'value': 'inventory_summary',
-        'label': 'Inventory Summary',
-        'description': 'Snapshot totals, selected scope, status coverage, and collection time.',
-    },
-    {
-        'value': 'inventory_distribution',
-        'label': 'Asset Distribution',
-        'description': 'Asset distribution by cluster, status, and Kubernetes resource type.',
-    },
-    {
         'value': 'inventory_assets',
         'label': 'Inventory Data',
         'description': 'Primary Excel table containing committed asset identities and fields.',
@@ -721,7 +448,7 @@ def get_generate_report_payload(
             'Build a governed report from connected data, selected scope, and reusable sections.'
         ),
         'clusters': cluster_options,
-        'has_clusters': len(cluster_options) > 1,
+        'has_clusters': bool(cluster_options),
         'namespace_options_by_cluster': namespace_options_by_cluster,
         'selected_namespace_options': namespace_options_by_cluster.get(
             str(form_state.get('cluster_id') or ''),
@@ -739,7 +466,7 @@ def get_generate_report_payload(
         ),
         'selected_report_type': selected_report_type,
         'single_cluster_required_report_types': sorted(
-            SINGLE_CLUSTER_REQUIRED_REPORT_TYPES,
+            REQUIRES_SELECTED_CLUSTER_REPORT_TYPES,
         ),
         'form_state': form_state,
         'preview_report_name': form_state['name'].strip() or build_default_report_name(form_state),
@@ -748,7 +475,7 @@ def get_generate_report_payload(
             storage_context=storage_context,
             form_state=form_state,
             selected_report_type=selected_report_type,
-            has_clusters=len(cluster_options) > 1,
+            has_clusters=bool(cluster_options),
         ),
         'storage_context': storage_context,
         'generation_flow': _get_generation_flow(),
@@ -843,23 +570,17 @@ def build_default_form_state(
 
 
 def get_report_primary_output_format(report_type: str) -> str:
-    normalized_report_type = normalize_report_type(report_type)
-    for item in REPORT_TYPE_OPTIONS:
-        if item['value'] == normalized_report_type:
-            return str(item.get('primary_format') or 'pdf')
-    return 'pdf'
+    return get_default_output_format(normalize_report_type(report_type))
+
+
+def get_report_allowed_output_formats(report_type: str) -> tuple[str, ...]:
+    return get_allowed_output_formats(normalize_report_type(report_type))
 
 
 def normalize_report_type(
     value: str | None,
 ) -> str:
-    allowed_report_types = {item['value'] for item in REPORT_TYPE_OPTIONS}
-    normalized_value = (value or REPORT_TYPE_OPTIONS[0]['value']).strip()
-
-    if normalized_value not in allowed_report_types:
-        return REPORT_TYPE_OPTIONS[0]['value']
-
-    return normalized_value
+    return normalize_catalog_report_type(value)
 
 
 def _get_report_type_context(
@@ -879,16 +600,13 @@ def _get_report_type_context(
                 'section_count': len(
                     item['default_sections'],
                 ),
-                'family': str(item.get('family') or 'analytics'),
-                'primary_format': str(item.get('primary_format') or 'pdf'),
-                'requires_cluster': report_requires_specific_cluster(
+                'family': str(item['family']),
+                'primary_format': str(item['primary_format']),
+                'allowed_formats': list(item['allowed_formats']),
+                'requires_cluster': report_requires_selected_cluster(
                     item['value'],
                 ),
-                'cluster_scope_label': 'Specific Cluster Required'
-                if report_requires_specific_cluster(
-                    item['value'],
-                )
-                else 'All Clusters Supported',
+                'cluster_scope_label': 'Selected Cluster Required',
             }
 
     fallback = REPORT_TYPE_OPTIONS[0]
@@ -901,16 +619,13 @@ def _get_report_type_context(
         'section_count': len(
             fallback['default_sections'],
         ),
-        'family': str(fallback.get('family') or 'analytics'),
-        'primary_format': str(fallback.get('primary_format') or 'pdf'),
-        'requires_cluster': report_requires_specific_cluster(
+        'family': str(fallback['family']),
+        'primary_format': str(fallback['primary_format']),
+        'allowed_formats': list(fallback['allowed_formats']),
+        'requires_cluster': report_requires_selected_cluster(
             fallback['value'],
         ),
-        'cluster_scope_label': 'Specific Cluster Required'
-        if report_requires_specific_cluster(
-            fallback['value'],
-        )
-        else 'All Clusters Supported',
+        'cluster_scope_label': 'Selected Cluster Required',
     }
 
 
@@ -994,7 +709,7 @@ def get_form_state_from_form(
 
     report_context = _get_report_type_context(report_type)
     if report_context.get('family') == 'inventory':
-        sections = list(_INVENTORY_REPORT_SECTIONS)
+        sections = _get_default_sections(report_type)
     elif not sections:
         sections = _get_default_sections(
             report_type,
@@ -1027,7 +742,10 @@ def get_form_state_from_form(
         ),
         'report_type': report_type,
         'period': period,
-        'output_format': get_report_primary_output_format(report_type),
+        'output_format': str(
+            form.get('output_format', get_report_primary_output_format(report_type))
+            or get_report_primary_output_format(report_type)
+        ).strip().lower(),
         'sections': sections,
     }
 
@@ -1063,13 +781,13 @@ def validate_form_state(
         )
 
     if (
-        report_requires_specific_cluster(
+        report_requires_selected_cluster(
             form_state['report_type'],
         )
         and not form_state['cluster_id']
     ):
         errors.append(
-            'This report type requires a specific cluster. Please select a cluster before generating the report.',
+            'A selected Kubernetes cluster is required for every report artifact.',
         )
 
     if form_state['period'] not in allowed_periods:
@@ -1082,10 +800,11 @@ def validate_form_state(
             'Please select a valid output format.',
         )
 
-    expected_output_format = get_report_primary_output_format(form_state['report_type'])
-    if form_state['output_format'] != expected_output_format:
+    allowed_formats_for_report = get_report_allowed_output_formats(form_state['report_type'])
+    if form_state['output_format'] in allowed_output_formats and form_state['output_format'] not in allowed_formats_for_report:
+        allowed_label = ' or '.join(value.upper() for value in allowed_formats_for_report)
         errors.append(
-            f'This report type requires {expected_output_format.upper()} output.',
+            f'This report type supports only {allowed_label} output.',
         )
 
     if not form_state['sections']:
@@ -1131,7 +850,7 @@ def validate_form_state(
     namespace = (form_state.get('namespace') or '').strip()
     if namespace and not form_state['cluster_id']:
         errors.append(
-            'Select a specific cluster before choosing a namespace.',
+            'Select a Kubernetes cluster before choosing a namespace.',
         )
     elif namespace and cluster_exists is not None:
         namespace_query = filter_current_generation(
@@ -1151,10 +870,7 @@ def validate_form_state(
 
 
 def _get_default_period(report_type: str) -> str:
-    for item in REPORT_TYPE_OPTIONS:
-        if item['value'] == report_type and item.get('family') in {'inventory', 'governance'}:
-            return 'snapshot'
-    return '30d'
+    return 'snapshot' if get_report_type_spec(report_type).period_mode == 'snapshot' else '30d'
 
 
 def build_default_report_name(
@@ -1186,12 +902,7 @@ def _get_cluster_options() -> list[dict[str, str]]:
         .all()
     )
 
-    options = [
-        {
-            'value': '',
-            'label': 'All Clusters',
-        },
-    ]
+    options: list[dict[str, str]] = []
 
     for cluster in clusters:
         options.append(
@@ -1348,7 +1059,7 @@ def _get_generation_readiness(
         {
             'key': 'artifact',
             'label': 'Artifact Generation',
-            'description': 'Create the request first, then generate the canonical PDF or Excel artifact from Generated Reports.',
+            'description': 'Create the request first, then generate the configured PDF, Excel, or CSV artifact from Generated Reports.',
             'status': 'Ready',
             'tone': 'blue',
             'icon': 'file-text',
@@ -1391,7 +1102,7 @@ def _get_generation_flow() -> list[tuple[str, str]]:
         ),
         (
             'Generate Artifact',
-            'Open Generated Reports and generate the canonical PDF or Excel artifact for the request.',
+            'Open Generated Reports and generate the configured PDF, Excel, or CSV artifact for the request.',
         ),
         (
             'Store and Download',
@@ -1488,8 +1199,8 @@ def _get_recommended_actions() -> list[dict[str, str]]:
             'href': '#report-configuration',
         },
         {
-            'label': 'Use a specific cluster for Prometheus-backed reports',
-            'description': 'Utilization, capacity, storage, workload, forecast, top consumers, and alerts reports require one selected cluster.',
+            'label': 'Bind every report to one cluster',
+            'description': 'Analytics and inventory artifacts use one explicit selected-cluster boundary; cross-cluster generation is disabled.',
             'href': '#report-configuration',
         },
         {

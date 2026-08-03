@@ -8,6 +8,7 @@ from sqlalchemy import func, select
 
 from app.extensions.db import db
 from app.models.report import Report, ReportSchedule, ReportTemplate
+from app.reports.catalog import REPORT_TYPE_SPECS
 from app.reports.delivery.service import get_delivery_channel_catalog
 from app.reports.export.constants import (
     DEFAULT_REPORT_DOMAIN,
@@ -40,23 +41,8 @@ ARCHIVED_REPORT_STATUSES = [
     'archived',
 ]
 
-IMPLEMENTED_REPORT_TYPES = {
-    'analytics_overview',
-    'resource_utilization',
-    'capacity_analysis',
-    'storage_analysis',
-    'workload_analysis',
-    'resource_forecast',
-    'top_consumers',
-    'alerts_anomalies',
-    'node_inventory',
-    'namespace_inventory',
-    'workload_inventory',
-    'pod_inventory',
-    'service_inventory',
-    'ingress_inventory',
-    'storage_inventory',
-}
+IMPLEMENTED_REPORT_TYPES = frozenset(spec.value for spec in REPORT_TYPE_SPECS)
+
 
 SERVER_REPORT_TYPE_COVERAGE = [
     {

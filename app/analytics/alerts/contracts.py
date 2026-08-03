@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 from datetime import datetime
 from math import ceil
-from typing import Any, Literal, NotRequired, TypedDict
+from typing import Any, Literal, NotRequired, TypeAlias, TypedDict, TypeVar
 
 DEFAULT_PER_PAGE = 5
+
+ItemT = TypeVar('ItemT')
 
 PER_PAGE_OPTIONS = [5, 10, 25, 50]
 SOURCE_OPTIONS = ['auto', 'alertmanager', 'prometheus']
@@ -341,7 +343,7 @@ class AlertsSnapshot(TypedDict):
     recommendation_count: int
 
 
-type AlertLoadResult = tuple[list[NormalizedAlert], AlertSourceStatus]
+AlertLoadResult: TypeAlias = tuple[list[NormalizedAlert], AlertSourceStatus]
 
 
 @dataclass(frozen=True)
@@ -466,12 +468,12 @@ def build_pagination(
     )
 
 
-def paginate_items[T](
-    items: list[T],
+def paginate_items(
+    items: list[ItemT],
     *,
     page: int,
     per_page: int,
-) -> tuple[list[T], AlertsPagination]:
+) -> tuple[list[ItemT], AlertsPagination]:
     pagination = build_pagination(
         page=page,
         per_page=per_page,

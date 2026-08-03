@@ -7,6 +7,7 @@ from flask import current_app
 
 from app.extensions.db import db
 from app.models.report import Report
+from app.reports.catalog import ReportContractError, validate_report_instance
 from app.reports.export.artifacts import get_report_artifact_format
 from app.reports.export.formatting import slugify
 from app.reports.storage.naming import build_report_object_key
@@ -32,9 +33,11 @@ def generate_report_artifact(
     previous_artifact_available = bool(previous_file_path) and report_file_exists(previous_file_path)
 
     staging_path: Path | None = None
-    artifact_format = get_report_artifact_format(report.output_format)
+    artifact_format = None
 
     try:
+        validate_report_instance(report)
+        artifact_format = get_report_artifact_format(report.output_format)
         report.status = 'generating'
         report.error_message = None
         db.session.commit()
@@ -66,47 +69,55 @@ def generate_report_artifact(
 
         return True, f'{artifact_format.label} report generated successfully.'
 
-    except Exception:
-        current_app.logger.exception(
-            '%s report generation failed for report %s.',
-            artifact_format.label,
-            report_id,
-        )
+    except Exception as exc:
+        is_contract_error = isinstance(exc, ReportContractError)
+        artifact_label = artifact_format.label if artifact_format is not None else 'report'
+        if is_contract_error:
+            current_app.logger.warning(
+                'Report contract rejected generation for report %s: %s',
+                report_id,
+                exc,
+            )
+        else:
+            current_app.logger.exception(
+                '%s generation failed for report %s.',
+                artifact_label,
+                report_id,
+            )
         db.session.rollback()
 
         failed_report = db.session.get(Report, report_id)
-        user_message = (
-            f'KAORI could not generate the {artifact_format.label} artifact. '
-            'Review report scope, inventory readiness, storage readiness, and worker logs before retrying.'
+        failure_detail = (
+            str(exc)
+            if is_contract_error
+            else (
+                f'KAORI could not generate the {artifact_label} artifact. '
+                'Review report scope, source readiness, storage readiness, and worker logs before retrying.'
+            )
         )
+        retained_artifact = previous_status == 'ready' and previous_artifact_available
 
         if failed_report is not None:
-            if previous_status == 'ready' and previous_artifact_available:
+            if retained_artifact:
                 failed_report.status = 'ready'
                 failed_report.file_path = previous_file_path
                 failed_report.file_size_bytes = previous_file_size_bytes
                 failed_report.error_message = (
                     'Regeneration failed. The existing ready artifact was retained. '
-                    f'{user_message}'
+                    f'{failure_detail}'
                 )
             else:
                 failed_report.status = 'failed'
-                failed_report.error_message = user_message
+                failed_report.error_message = failure_detail
             db.session.commit()
 
-        if previous_status == 'ready' and previous_artifact_available:
-            return False, f'Regeneration failed. The existing artifact was retained. {user_message}'
-        return False, user_message
+        if retained_artifact:
+            return False, f'Regeneration failed. The existing artifact was retained. {failure_detail}'
+        return False, failure_detail
 
     finally:
         if staging_path is not None and staging_path.exists():
             staging_path.unlink(missing_ok=True)
-
-
-def generate_pdf_for_report(report_id: int) -> tuple[bool, str]:
-    """Backward-compatible alias for existing routes and scheduled jobs."""
-
-    return generate_report_artifact(report_id)
 
 
 def get_download_file_path(

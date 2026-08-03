@@ -68,7 +68,6 @@ def test_all_analytics_templates_use_the_isolated_analytics_contract() -> None:
         assert 'kaori-analytics-publication' in source, filename
         assert "import 'reports/pdf/components/analytics_publication.html' as ui" in source, filename
         assert 'kaori-publication-standard' not in source, filename
-        assert 'components/kaori_publication.html' not in source, filename
         assert 'ui.report_header' in source, filename
         assert 'ui.page_title' in source, filename
         assert 'ui.footer' in source, filename
