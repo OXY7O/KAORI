@@ -121,3 +121,8 @@ the current screen.
 and represents immediate request feedback. Background events still persist a
 `Notification` row and dispatch `kaori:notifications-changed`, even when no toast is
 rendered.
+### Slider deck viewport boundary
+
+The Notification Deck is rendered through Alpine `x-teleport="body"`. The bell remains in the top navigation, while the dialog is moved to the document body. This is mandatory because the sticky navigation uses backdrop filtering, which creates a containing block and can otherwise clip a `position: fixed` drawer to the navbar height.
+
+The deck uses only utilities present in the committed Tailwind build: `fixed inset-0`, `bg-surface-overlay/70`, and `max-w-md`. Do not replace these with uncompiled arbitrary values without rebuilding `app/static/css/output.css`.

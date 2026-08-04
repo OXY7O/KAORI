@@ -19,6 +19,9 @@ checks = {
         'notification-running-indicator',
         'notification-bell-badge',
         'translate-x-full',
+        'x-teleport="body"',
+        'h-full w-full max-w-md',
+        'bg-surface-overlay/70',
     ),
     'app/templates/notifications/partials/_notification_deck_content.html': (
         "notificationDeckTab = 'activity'",
@@ -77,6 +80,15 @@ if 'data-lucide="activity"' in trigger:
     raise SystemExit('A separate top-bar Activity icon remains; only the bell is allowed.')
 if 'hx-trigger=' in trigger:
     raise SystemExit('The stable top-bar bell must not be replaced by polling.')
+
+if 'max-w-[28rem]' in trigger or 'bg-surface-overlay/80' in trigger:
+    raise SystemExit(
+        'Notification Deck still depends on non-canonical utility classes that may be absent from the compiled stylesheet.'
+    )
+if '<template x-teleport="body">' not in trigger:
+    raise SystemExit(
+        'Notification Deck must be teleported to body so sticky/backdrop-filter navbar containment cannot clip it.'
+    )
 
 deck = read('app/templates/notifications/partials/_notification_deck_content.html')
 if 'hx-trigger="load, every 15s' in deck or 'load, every 15s' in deck:

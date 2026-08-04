@@ -18,6 +18,17 @@ def test_topbar_uses_one_stable_bell_for_notification_deck() -> None:
     assert 'hx-trigger=' not in trigger
 
 
+def test_slider_deck_is_teleported_outside_the_sticky_navbar() -> None:
+    trigger = read('app/templates/components/navigation/_notification_center.html')
+
+    assert '<template x-teleport="body">' in trigger
+    assert 'class="fixed inset-0 z-50"' in trigger
+    assert 'bg-surface-overlay/70' in trigger
+    assert 'h-full w-full max-w-md' in trigger
+    assert 'max-w-[28rem]' not in trigger
+    assert 'bg-surface-overlay/80' not in trigger
+
+
 def test_slider_deck_has_activity_and_notifications_tabs() -> None:
     deck = read('app/templates/notifications/partials/_notification_deck_content.html')
 
