@@ -1,47 +1,26 @@
-{% import "notifications/components/_activity_center_items.html" as center_item %}
 {% set center = activity_center|default({}) %}
-{% set active_jobs = center.get('active_jobs', []) %}
 {% set active_count = center.get('active_count', 0) %}
-{% set visible_jobs = namespace(items=[]) %}
-{% for job in active_jobs %}
-    {% if job.operation not in ['inventory_sync_all', 'inventory_sync_cluster'] %}
-        {% set visible_jobs.items = visible_jobs.items + [job] %}
-    {% endif %}
-{% endfor %}
 <div class="space-y-2"
      data-notification-deck-activity-body
-     data-activity-surface
-     data-activity-server-count="{{ visible_jobs.items|length }}">
+     data-activity-surface>
     <div class="flex items-center justify-between gap-3 px-1 pb-1">
         <div>
             <p class="text-xs font-semibold text-content-primary">Processes in progress</p>
             <p class="mt-0.5 text-xs text-content-muted">Background jobs and current page operations.</p>
         </div>
-        <span class="inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 text-xs font-semibold text-kaori-primary">{{ active_count }}&nbsp;active</span>
+        <span class="inline-flex min-h-6 items-center rounded-md bg-kaori-soft px-2 text-xs font-semibold text-kaori-primary">
+            <span data-activity-count-label>{{ active_count }}</span>&nbsp;active
+        </span>
     </div>
 
     <div data-local-activity-list class="space-y-2"></div>
-    {% if current_user.has_permission('clusters.sync') and cluster_onboarding.has_clusters %}
-        <div id="individual-sync-feedback"
-             data-activity-dynamic-source
-             class="space-y-2"
-             hx-get="{{ url_for('cluster.active_individual_sync_statuses') }}"
-             hx-trigger="load, every 5s"
-             hx-swap="innerHTML"></div>
-        <div id="quick-sync-feedback"
-             data-activity-dynamic-source
-             class="space-y-2"
-             hx-get="{{ url_for('cluster.active_sync_all_status') }}"
-             hx-trigger="load, every 5s"
-             hx-swap="innerHTML"></div>
-    {% endif %}
 
-    {% for job in visible_jobs.items %}
-        {{ center_item.job_item(job, compact=true) }}
-    {% endfor %}
+    <div id="notification-deck-active-job-list" class="space-y-2">
+        {% include "notifications/partials/_notification_deck_activity_jobs.html" %}
+    </div>
 
     <div data-running-empty
-         class="rounded-xl border border-dashed border-outline-default bg-surface-card px-4 py-10 text-center {% if visible_jobs.items %}hidden{% endif %}">
+         class="hidden rounded-xl border border-dashed border-outline-default bg-surface-card px-4 py-10 text-center">
         <span class="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
             <i data-lucide="circle-check" class="h-5 w-5"></i>
         </span>
@@ -49,6 +28,7 @@
         <p class="mt-1 text-xs leading-5 text-content-muted">Queued work and active page operations will appear here automatically.</p>
     </div>
 </div>
+
 {% if emit_oob|default(false) %}
     {% include "notifications/partials/_notification_deck_oob.html" %}
 {% endif %}

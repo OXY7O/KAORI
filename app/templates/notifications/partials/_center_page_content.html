@@ -57,10 +57,14 @@
             {% endif %}
         </header>
         <div class="space-y-3 bg-surface-page p-4"
-             {% if selected_view == 'activity' %}data-activity-surface data-activity-server-count="{{ active_jobs|length }}"{% endif %}>
+             {% if selected_view == 'activity' %}data-activity-surface{% endif %}>
             {% if selected_view == 'activity' %}
                 <div data-local-activity-list class="space-y-3"></div>
-                {% for job in active_jobs %}{{ center_item.job_item(job) }}{% endfor %}
+                {% for job in active_jobs %}
+                    <div data-server-activity-item>
+                        {{ center_item.job_item(job) }}
+                    </div>
+                {% endfor %}
                 <div data-running-empty class="rounded-xl border border-dashed border-outline-default bg-surface-card px-5 py-12 text-center {% if active_jobs %}hidden{% endif %}">
                     <span class="mx-auto flex h-11 w-11 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="circle-check" class="h-5 w-5"></i></span>
                     <p class="mt-3 text-sm font-semibold text-content-primary">No process is running</p>

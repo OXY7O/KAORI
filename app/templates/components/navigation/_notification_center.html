@@ -48,24 +48,24 @@
                         </span>
                         <div class="min-w-0">
                             <h2 class="text-sm font-semibold text-content-primary">Notifications</h2>
-                            <p class="mt-0.5 truncate text-xs text-content-muted">Running activity and persistent updates</p>
+                            <p class="mt-0.5 truncate text-xs text-content-muted">Activity and persistent updates</p>
                         </div>
                     </div>
-                    <div class="flex items-center gap-1.5">
+                    <div class="flex items-center gap-2">
                         <button type="button"
-                                @click="refreshNotificationDeck()"
+                                @click="refreshNotificationDeck(true)"
                                 :disabled="notificationDeckRefreshing"
                                 :aria-busy="notificationDeckRefreshing.toString()"
-                                class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-content-muted transition hover:bg-surface-hover hover:text-content-primary disabled:cursor-wait disabled:bg-kaori-soft disabled:text-kaori-primary"
-                                aria-label="Refresh notification deck"
-                                :title="notificationDeckRefreshing ? 'Refreshing notification deck' : 'Refresh notification deck'">
+                                class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-kaori-primary bg-kaori-primary text-white shadow-sm transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-70"
+                                aria-label="Refresh activity and notifications now"
+                                :title="notificationDeckRefreshing ? 'Refreshing activity and notifications' : 'Refresh now'">
                             <i data-lucide="refresh-cw"
                                class="h-4 w-4"
                                :class="notificationDeckRefreshing ? 'animate-spin' : ''"></i>
                         </button>
                         <button type="button"
                                 @click="notificationDeckOpen = false"
-                                class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-content-muted transition hover:bg-surface-hover hover:text-content-primary"
+                                class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition hover:bg-surface-hover hover:text-content-primary"
                                 aria-label="Close notification deck">
                             <i data-lucide="x" class="h-4 w-4"></i>
                         </button>
@@ -107,14 +107,7 @@
                              :class="notificationDeckTab === 'activity' ? 'block' : 'hidden'"
                              role="tabpanel"
                              class="space-y-2"
-                             data-notification-deck-panel
-                             hx-get="{{ url_for('notifications.panel_activity') }}"
-                             hx-trigger="every 15s, kaori:notifications-changed from:body, kaori:notification-deck-refresh from:body"
-                             hx-target="this"
-                             hx-swap="innerHTML"
-                             hx-sync="this:replace"
-                             hx-history="false"
-                             hx-on::after-request="window.dispatchEvent(new CustomEvent('kaori:notification-deck-refresh-complete'))">
+                             data-notification-deck-panel>
                         {% include "notifications/partials/_notification_deck_activity.html" %}
                     </section>
 
@@ -123,32 +116,41 @@
                              :class="notificationDeckTab === 'notifications' ? 'block' : 'hidden'"
                              role="tabpanel"
                              class="space-y-2"
-                             data-notification-deck-panel
-                             hx-get="{{ url_for('notifications.panel_notifications') }}"
-                             hx-trigger="every 15s, kaori:notifications-changed from:body, kaori:notification-deck-refresh from:body"
-                             hx-target="this"
-                             hx-swap="innerHTML"
-                             hx-sync="this:replace"
-                             hx-history="false"
-                             hx-on::after-request="window.dispatchEvent(new CustomEvent('kaori:notification-deck-refresh-complete'))">
-                        {% include "notifications/partials/_notification_deck_notifications.html" %}
+                             data-notification-deck-panel>
+                        <div id="notification-deck-notifications-content">
+                            {% include "notifications/partials/_notification_deck_notifications.html" %}
+                        </div>
                     </section>
                 </div>
 
                 <footer class="flex shrink-0 items-center justify-between gap-3 border-t border-outline-subtle bg-surface-card px-4 py-3">
-                    <p class="min-w-0 truncate text-xs text-content-muted">
-                        <span x-show="!notificationDeckRefreshing">Auto refresh every 15 seconds</span>
-                        <span x-cloak x-show="notificationDeckRefreshing" class="inline-flex items-center gap-1.5 text-kaori-primary">
+                    <div class="min-w-0">
+                        <p x-show="!notificationDeckRefreshing && !notificationDeckRefreshError"
+                           class="truncate text-xs text-content-muted">Auto refresh every 15 seconds</p>
+                        <p x-cloak
+                           x-show="notificationDeckRefreshing"
+                           class="inline-flex items-center gap-1.5 text-xs font-medium text-kaori-primary">
                             <i data-lucide="loader-circle" class="h-3.5 w-3.5 animate-spin"></i>
                             Refreshing activity and notifications
-                        </span>
-                    </p>
+                        </p>
+                        <p x-cloak
+                           x-show="!notificationDeckRefreshing && notificationDeckRefreshError"
+                           class="inline-flex items-center gap-1.5 text-xs font-medium text-status-warning-text">
+                            <i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i>
+                            Refresh failed. Auto refresh will retry.
+                        </p>
+                    </div>
                     <a href="{{ url_for('notifications.center', view='notifications') }}"
                        @click="notificationDeckOpen = false"
                        class="inline-flex shrink-0 items-center gap-1 text-xs font-semibold text-kaori-primary hover:text-kaori-primary-hover">
                         View all <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
                     </a>
                 </footer>
+
+                <div id="notification-deck-refresh-coordinator"
+                     class="hidden"
+                     data-refresh-url="{{ url_for('notifications.panel_refresh') }}"
+                     aria-hidden="true"></div>
             </aside>
         </div>
     </template>

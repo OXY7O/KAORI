@@ -244,14 +244,8 @@
                 let indicatorCount = localOperationalActivities.size
 
                 document.querySelectorAll('[data-activity-surface]').forEach((surface) => {
-                    const serverCount = Number.parseInt(surface.dataset.activityServerCount || '0', 10) || 0
-                    const dynamicCount = Array.from(surface.querySelectorAll('[data-activity-dynamic-source]'))
-                        .reduce((count, source) => {
-                            return count + source.querySelectorAll(
-                                '[data-quick-action-toast], [data-cluster-sync-task]'
-                            ).length
-                        }, 0)
-                    const totalCount = serverCount + localOperationalActivities.size + dynamicCount
+                    const serverCount = surface.querySelectorAll('[data-server-activity-item]').length
+                    const totalCount = serverCount + localOperationalActivities.size
                     indicatorCount = Math.max(indicatorCount, totalCount)
 
                     surface.querySelectorAll('[data-local-activity-list]').forEach((list) => {
@@ -269,6 +263,11 @@
 
                 const runningIndicator = document.getElementById('notification-running-indicator')
                 runningIndicator?.classList.toggle('hidden', indicatorCount === 0)
+
+                const activeCountBadge = document.getElementById('notification-deck-active-count')
+                if (activeCountBadge) {
+                    activeCountBadge.textContent = String(indicatorCount)
+                }
 
                 window.renderKaoriIcons?.()
             }

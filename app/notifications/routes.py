@@ -67,6 +67,13 @@ def _render_notifications_panel(*, emit_oob: bool = True) -> ResponseReturnValue
     )
 
 
+def _render_refresh_payload() -> ResponseReturnValue:
+    return _fragment_response(
+        'notifications/partials/_notification_deck_refresh.html',
+        activity_center=_navigation_context(),
+    )
+
+
 def _render_center_page_content() -> str:
     context = get_activity_center_context(
         user_id=current_user.id,
@@ -126,6 +133,12 @@ def panel() -> ResponseReturnValue:
     if _center_view() == 'activity':
         return _render_activity_panel()
     return _render_notifications_panel()
+
+
+@notifications_bp.get('/panel/refresh')
+@login_required
+def panel_refresh() -> ResponseReturnValue:
+    return _render_refresh_payload()
 
 
 @notifications_bp.get('/panel/activity')

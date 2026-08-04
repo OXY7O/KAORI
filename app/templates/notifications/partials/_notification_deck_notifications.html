@@ -14,7 +14,7 @@
                 {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                 <button type="submit"
                         hx-post="{{ url_for('notifications.mark_all_read', surface='panel') }}"
-                        hx-target="#notification-deck-notifications"
+                        hx-target="#notification-deck-notifications-content"
                         hx-swap="innerHTML"
                         class="text-xs font-semibold text-content-muted hover:text-content-primary">Mark all read</button>
             </form>
@@ -35,7 +35,7 @@
 
     {% if history_items %}
         {% for notification in history_items %}
-            {{ center_item.notification_item(notification, surface='panel', target='#notification-deck-notifications', compact=true, swap='innerHTML') }}
+            {{ center_item.notification_item(notification, surface='panel', target='#notification-deck-notifications-content', compact=true, swap='innerHTML') }}
         {% endfor %}
     {% else %}
         <div class="rounded-xl border border-dashed border-outline-default bg-surface-card px-4 py-10 text-center">

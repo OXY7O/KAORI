@@ -6,30 +6,78 @@
             notificationDeckOpen: false,
             notificationDeckTab: 'notifications',
             notificationDeckRefreshing: false,
-            notificationDeckRefreshPending: 0,
-            notificationDeckRefreshTimer: null,
+            notificationDeckRefreshError: false,
+            notificationDeckRefreshInFlight: null,
+            notificationDeckAutoTimer: null,
             userOpen: false,
-            refreshNotificationDeck() {
-                if (this.notificationDeckRefreshing || !window.htmx) return
-                this.notificationDeckRefreshing = true
-                this.notificationDeckRefreshPending = 2
-                window.clearTimeout(this.notificationDeckRefreshTimer)
-                this.notificationDeckRefreshTimer = window.setTimeout(() => {
-                    this.notificationDeckRefreshing = false
-                    this.notificationDeckRefreshPending = 0
-                }, 10000)
-                window.htmx.trigger(document.body, 'kaori:notification-deck-refresh')
+            init() {
+                this.notificationDeckAutoTimer = window.setInterval(() => {
+                    this.refreshNotificationDeck(false)
+                }, 15000)
             },
-            finishNotificationDeckRefresh() {
-                if (!this.notificationDeckRefreshing) return
-                this.notificationDeckRefreshPending = Math.max(0, this.notificationDeckRefreshPending - 1)
-                if (this.notificationDeckRefreshPending === 0) {
-                    window.clearTimeout(this.notificationDeckRefreshTimer)
+            async refreshNotificationDeck(manual = true) {
+                if (!window.htmx) return
+                if (!manual && this.notificationDeckRefreshInFlight) return
+                if (manual && this.notificationDeckRefreshing) return
+
+                if (manual) {
+                    this.notificationDeckRefreshing = true
+                }
+                this.notificationDeckRefreshError = false
+
+                if (manual && this.notificationDeckRefreshInFlight) {
+                    try {
+                        await this.notificationDeckRefreshInFlight
+                    } catch (error) {
+                        console.debug('Previous notification refresh did not complete.', error)
+                    }
+                }
+
+                const coordinator = document.getElementById('notification-deck-refresh-coordinator')
+                const refreshUrl = coordinator?.dataset.refreshUrl
+                if (!coordinator || !refreshUrl) {
                     this.notificationDeckRefreshing = false
+                    this.notificationDeckRefreshError = true
+                    return
+                }
+
+                let request = null
+                let timeoutId = null
+
+                try {
+                    request = window.htmx.ajax('GET', refreshUrl, {
+                        source: coordinator,
+                        target: coordinator,
+                        swap: 'innerHTML',
+                    })
+                    this.notificationDeckRefreshInFlight = request
+
+                    const timeout = new Promise((_, reject) => {
+                        timeoutId = window.setTimeout(() => {
+                            window.htmx.trigger(coordinator, 'htmx:abort')
+                            reject(new Error('Notification Deck refresh timed out.'))
+                        }, 12000)
+                    })
+
+                    await Promise.race([request, timeout])
+                    this.notificationDeckRefreshError = false
+                } catch (error) {
+                    this.notificationDeckRefreshError = true
+                    console.error('Notification Deck refresh failed.', error)
+                } finally {
+                    window.clearTimeout(timeoutId)
+                    if (this.notificationDeckRefreshInFlight === request) {
+                        this.notificationDeckRefreshInFlight = null
+                    }
+                    if (manual) {
+                        this.notificationDeckRefreshing = false
+                    }
+                    window.renderLocalOperationalActivities?.()
+                    window.renderKaoriIcons?.()
                 }
             }
         }"
-        @kaori:notification-deck-refresh-complete.window="finishNotificationDeckRefresh()"
+        @kaori:notifications-changed.window="refreshNotificationDeck(false)"
         @keydown.escape.window="notificationDeckOpen = false; quickOpen = false; userOpen = false">
     <div class="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <!-- Left: sidebar control and current page context -->

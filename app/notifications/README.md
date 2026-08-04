@@ -145,12 +145,17 @@ Activity and Notifications remain separate semantic views but share one visual
 contract.
 
 The Activity panel must always render one of the following: local foreground
-activity, specialized synchronization progress, canonical `JobExecution` cards,
-or the explicit empty state. Server, local, and dynamically loaded sync activity
-are counted per activity surface so a stale or filtered job cannot leave the tab
-blank.
+activity, canonical `JobExecution` cards, or the explicit empty state. Inventory
+synchronization is not rendered through a second nested polling source; it remains
+part of the canonical job list. This prevents activity cards from disappearing and
+reappearing whenever the panel refreshes.
 
-Manual refresh is explicit and observable. The refresh control is disabled while
-both panel requests are in flight, its icon spins, and the deck footer displays
-`Refreshing activity and notifications`. Automatic 15-second polling does not
-show the manual loading state and never replaces the tab shell.
+Activity and Notifications are refreshed together through one serialized request
+every 15 seconds. The response updates only the active-job list, notification list,
+and stable counters through HTMX out-of-band swaps. It never replaces the tab shell,
+local foreground activity slot, drawer, or Alpine state.
+
+Manual refresh uses the same combined endpoint. The violet refresh icon is disabled
+and spins only for the manual request. One promise and a 12-second safety timeout own
+the loading state, so the icon always stops after success, failure, abort, or timeout.
+Automatic polling remains silent and skips a cycle while another refresh is active.
