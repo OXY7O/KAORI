@@ -1,4 +1,6 @@
-# KAORI Sidebar Navigation Standard
+# KAORI Sidebar Navigation Standard v1.1
+
+**Status:** Locked application-shell contract. The source templates, this document, and `scripts/verify_sidebar_navigation_standard.py` must change together.
 
 This document is the authoritative visual, typography, spacing, hierarchy, and interaction contract for the authenticated KAORI sidebar. Sidebar navigation is an application-shell component and intentionally does **not** inherit the ordinary content typography scale unchanged.
 
@@ -50,21 +52,21 @@ The sidebar typography scale is frozen independently from content typography.
 | Role | Size | Weight | Casing | Line height |
 |---|---:|---|---|---|
 | Product name | 14 px | Extra-bold / strong brand emphasis | Official `KAORI` casing | 20 px |
-| Product descriptor | 10 px | Medium | Title Case | Compact |
-| Navigation section label | 9 px | Extra-bold | Uppercase | Compact |
-| Parent menu label | 12 px | Semibold | Title Case | 20 px |
-| Submenu label | 11 px | Regular or medium | Title Case | 16 px |
+| Product descriptor | 12 px | Medium | Title Case | 16 px |
+| Navigation section label | 12 px | Extra-bold | Uppercase | 16 px |
+| Parent menu label | 16 px | Semibold | Title Case | 24 px |
+| Submenu label | 14 px | Regular or medium | Title Case | 20 px |
 
 ### Mandatory hierarchy
 
 Parent menu labels must remain visually stronger than submenu labels:
 
 ```text
-Parent menu: 12 px semibold
-Submenu:     11 px regular/medium
+Parent menu: 16 px semibold
+Submenu:     14 px regular/medium
 ```
 
-Do not shrink parent labels to the global `text-xs` treatment merely to make all application text use the same class. The semantic role is different.
+Do not shrink parent labels to `text-sm` or `text-xs` merely to make all application text use the same class. The semantic role is different.
 
 ### Casing exceptions
 
@@ -104,7 +106,7 @@ Contract:
 
 - logo surface: 44 × 44 px;
 - product name: strong brand emphasis, not ordinary card-title styling;
-- descriptor: 10 px medium and muted;
+- descriptor: 12 px medium and muted;
 - brand block remains vertically centered;
 - collapsed mode shows only the logo, centered;
 - no alternate text abbreviation is shown in collapsed mode.
@@ -116,7 +118,7 @@ Section labels provide grouping, not navigation.
 Contract:
 
 - visible only in expanded mode;
-- 9 px extra-bold uppercase;
+- 12 px extra-bold uppercase;
 - restrained tracking;
 - low-contrast inverse text;
 - 12 px horizontal inset relative to the sidebar frame;
@@ -136,7 +138,7 @@ Parent navigation represents a primary functional domain such as Inventory, Anal
 - icon surface: 32 × 32 px;
 - icon: 16 × 16 px;
 - icon-to-label gap: 10 px;
-- label: 12 px semibold;
+- label: 16 px semibold;
 - chevron: 16 × 16 px;
 - full-width click target in expanded mode.
 
@@ -198,7 +200,7 @@ Submenu links are secondary navigation and must not compete with their parent.
 - radius: 8 px;
 - icon: 14 px;
 - indicator dot: 6 px;
-- label: 11 px with 16 px line height;
+- label: 14 px with 20 px line height;
 - item gap: 8 px between dot, icon, and text composition.
 
 ### Default state
@@ -297,13 +299,79 @@ The sidebar uses inverse shell colors rather than ordinary content-surface color
 - mobile behavior may use an overlay drawer while preserving the same parent/submenu hierarchy;
 - route state and expanded menu state must remain stable after HTMX updates to the main content region.
 
+## Canonical Information Architecture
+
+The top-level order is locked. New modules must be placed in the existing domain group unless an approved information-architecture change updates this document and the verifier in the same commit.
+
+```text
+MAIN
+├── Welcome
+└── Dashboards
+
+KUBERNETES
+├── K8s Inventory
+├── K8s Operations
+└── K8s Governance
+
+INSIGHTS & REPORTING
+├── K8s Analytics
+├── Intelligence
+└── Reports
+
+PLATFORM EXTENSIONS
+└── Integrations
+
+PLATFORM OPERATIONS
+└── Platform Operations
+
+ADMINISTRATION
+├── Access
+└── Settings
+```
+
+Rules for adding navigation:
+
+1. Add a child route to an existing parent when it belongs to the same operational domain.
+2. Add a new parent only when the module owns a distinct domain and cannot be represented by an existing parent.
+3. Do not create a new section label for one feature. A new section requires an explicit information-architecture decision.
+4. Permission checks remain in `sidebar.html`; route ownership and active-state logic remain in the owning `*_menu.html`.
+5. Every expandable parent requires `title`, `aria-label`, collapsed-sidebar expansion behavior, one stable Lucide icon, and an owned endpoint set.
+6. Every submenu link uses the standard dot, 14 px icon, single-line truncated label, and subordinate active state.
+
+## Enforcement and Change Control
+
+The sidebar is considered locked only when all three layers agree:
+
+```text
+Documentation  docs/design/components/SIDEBAR_NAVIGATION.md
+Implementation app/templates/components/navigation/sidebar.html
+               app/templates/components/navigation/*_menu.html
+Quality gate   scripts/verify_sidebar_navigation_standard.py
+               tests/contracts/design/test_sidebar_navigation_standard_contract.py
+```
+
+Any sidebar change must update the contract deliberately. Never weaken or delete an assertion merely to make a local menu variant pass. A legitimate standard change must include rationale, documentation, implementation updates, regression tests, and a design-system version increment.
+
+### New-parent checklist
+
+- assign the parent to one canonical section;
+- add the permission boundary in `sidebar.html`;
+- create one `*_menu.html` owner;
+- reuse 44 px parent geometry and 32 px icon surface;
+- use `text-base font-semibold leading-6`;
+- add `title`, `aria-label`, and collapsed expansion behavior;
+- use a stable endpoint-family active rule;
+- keep child links at `text-sm leading-5`;
+- run `python scripts/verify_sidebar_navigation_standard.py`;
+- run the design contract tests.
+
 ## Prohibited Patterns
 
 Do not:
 
 - apply ordinary content typography wholesale to sidebar navigation;
 - make parent and submenu labels the same size and weight;
-- shrink parent labels below 12 px to solve clipping;
+- shrink parent labels below 16 px to solve clipping;
 - use `font-bold` or extra-bold on every navigation item;
 - use solid Violet for active submenu links;
 - use provider-specific colors in navigation;
@@ -324,19 +392,19 @@ app/templates/components/navigation/*_menu.html
 The current implementation establishes the baseline classes:
 
 ```text
-Parent:  min-h-11 rounded-lg px-2.5 py-2 text-[12px] font-semibold
-Child:   rounded-lg px-2.5 py-1.5 text-[11px] leading-4
-Section: text-[9px] font-extrabold uppercase tracking-[0.18em]
+Parent:  min-h-11 rounded-lg px-2.5 py-2 text-base font-semibold leading-6
+Child:   rounded-lg px-2.5 py-1.5 text-sm leading-5
+Section: text-xs font-extrabold uppercase tracking-widest
 ```
 
-These arbitrary sizes are intentional shell-navigation tokens. They are approved exceptions to the content typography rule that otherwise discourages local arbitrary font sizes.
+These Tailwind tokens are the canonical sidebar scale. The earlier 12/11 px markdown baseline and the 15/13 px visual-guide draft are superseded by this v1.1 contract.
 
 ## Review Checklist
 
 Before accepting a sidebar change, verify:
 
-- parent remains 12 px semibold;
-- submenu remains 11 px and visually subordinate;
+- parent remains 16 px semibold (`text-base leading-6`);
+- submenu remains 14 px (`text-sm leading-5`) and visually subordinate;
 - section label remains compact uppercase metadata;
 - collapsed mode hides text instead of shrinking it;
 - active parent and active child use different emphasis levels;

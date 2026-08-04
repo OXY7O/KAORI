@@ -46,7 +46,7 @@ The Styling Guide selects the correct reusable component. The Design System and 
 - `components/INFO_FLOW.md`
 - `components/RELATED_PAGE_CARD.md`
 - `components/VIEW_MORE_CONTENT.md`
-- `components/SIDEBAR_NAVIGATION.md`
+- `components/SIDEBAR_NAVIGATION.md` — locked application-shell navigation contract and menu-extension checklist.
 - `components/FORM_ACTION_BAR.md`
 - `components/CONNECTION_VALIDATION_HEADER.md`
 - `components/OPERATIONAL_TOGGLE.md`
