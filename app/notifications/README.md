@@ -53,20 +53,22 @@ records, and integrations.
 Operational toast responses must never include top-bar navigation markup. They dispatch
 the `kaori:notifications-changed` browser event instead. The bell trigger, teleported
 slider shell, tabs, and Alpine-controlled sections are stable DOM boundaries and must
-never be replaced by HTMX polling.
+never be replaced by polling.
 
-Polling is split between two containers:
+The deck uses one read-only status endpoint:
 
-- `#notification-deck-activity` loads `/notifications/panel/activity`.
-- `#notification-deck-notifications` loads `/notifications/panel/notifications`.
+- `/notifications/panel/snapshot` returns Activity cards, Notification cards, unread
+  count, and active-job count from one database snapshot.
 
-Both containers use `hx-swap="innerHTML"`, so only list content changes. This preserves
-the Alpine tab scope inside the teleported slider and prevents the panel from becoming
-blank after an automatic refresh. Panel responses use `Cache-Control: no-store`, and
-badge values are synchronized through HTMX out-of-band swaps.
+The browser writes only into `#notification-deck-active-job-list` and
+`#notification-deck-notifications-content`. The bell, drawer, tabs, selected state,
+local foreground activities, and footer remain mounted. The endpoint uses
+`Cache-Control: no-store`, and notification mutation responses retain HTMX out-of-band
+badge synchronization.
 
 Do not reintroduce `_notification_deck_content.html`, an `outerHTML` poll on the slider
-root, or a self-replacing fragment with a `load` trigger.
+root, a self-replacing fragment with a `load` trigger, or separate Activity and
+Notifications polling requests.
 
 ## Activity Log visual standard
 
@@ -152,14 +154,15 @@ reappearing whenever the panel refreshes.
 
 Activity and Notifications use one read-only JSON snapshot every 15 seconds. The
 snapshot reads current `JobExecution` and `Notification` rows only; it never waits for
-a queued or running worker to complete. The response updates the two stable content
-slots and counters in place, while the drawer, selected tab, local foreground activity,
-and bell remain mounted.
+a queued or running worker to complete. Opening the deck also requests a snapshot so
+the user does not wait for the next interval. The response updates the two stable
+content slots and counters in place, while the drawer, selected tab, local foreground
+activity, and bell remain mounted.
 
-Manual refresh aborts any older automatic request and immediately starts a fresh
-snapshot. Native `fetch()` with `AbortController` owns the request lifecycle and has a
-five-second UI timeout. The violet icon spins only for that manual snapshot and always
-stops on success, HTTP failure, abort, or timeout. A queued job remains visible as
-**Queued / Waiting** with a static progress marker; queue state never controls the
-refresh indicator. Automatic polling is silent and skips a cycle while a snapshot is
-already in flight.
+The deck has no manual refresh button, spinner, or manual-refresh state. Automatic
+polling is silent, allows only one request at a time, and skips a cycle while the prior
+snapshot is still in flight. Native `fetch()` uses `AbortController` with a five-second
+request boundary so a stalled request cannot block later intervals. On failure, existing
+content remains visible and the footer shows a quiet reconnecting state; no toast or
+blocking error is emitted. A queued job remains visible as **Queued / Waiting** with a
+static progress marker and never controls polling state.

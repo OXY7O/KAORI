@@ -51,14 +51,6 @@ def _fragment_response(template_name: str, **context: object) -> ResponseReturnV
     return response
 
 
-def _render_activity_panel(*, emit_oob: bool = True) -> ResponseReturnValue:
-    return _fragment_response(
-        'notifications/partials/_notification_deck_activity.html',
-        activity_center=_navigation_context(),
-        emit_oob=emit_oob,
-    )
-
-
 def _render_notifications_panel(*, emit_oob: bool = True) -> ResponseReturnValue:
     return _fragment_response(
         'notifications/partials/_notification_deck_notifications.html',
@@ -67,7 +59,7 @@ def _render_notifications_panel(*, emit_oob: bool = True) -> ResponseReturnValue
     )
 
 
-def _render_refresh_snapshot() -> ResponseReturnValue:
+def _render_status_snapshot() -> ResponseReturnValue:
     """Return one database snapshot; never wait for queued workers to finish."""
     context = _navigation_context()
     response = jsonify(
@@ -141,31 +133,10 @@ def center() -> ResponseReturnValue:
     )
 
 
-@notifications_bp.get('/panel')
+@notifications_bp.get('/panel/snapshot')
 @login_required
-def panel() -> ResponseReturnValue:
-    """Compatibility endpoint returning one stable deck panel, never the shell."""
-    if _center_view() == 'activity':
-        return _render_activity_panel()
-    return _render_notifications_panel()
-
-
-@notifications_bp.get('/panel/refresh')
-@login_required
-def panel_refresh() -> ResponseReturnValue:
-    return _render_refresh_snapshot()
-
-
-@notifications_bp.get('/panel/activity')
-@login_required
-def panel_activity() -> ResponseReturnValue:
-    return _render_activity_panel()
-
-
-@notifications_bp.get('/panel/notifications')
-@login_required
-def panel_notifications() -> ResponseReturnValue:
-    return _render_notifications_panel()
+def panel_snapshot() -> ResponseReturnValue:
+    return _render_status_snapshot()
 
 
 @notifications_bp.get('/activity')

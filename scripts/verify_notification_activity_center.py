@@ -41,6 +41,7 @@ routes = read('app/notifications/routes.py')
 presentation = read('app/jobs/presentation.py')
 layout = read('app/templates/layouts/app.html')
 page_tabs = read('app/templates/notifications/partials/_center_page_content.html')
+readme = read('app/notifications/README.md')
 
 if shell.count('aria-label="Open notification deck"') != 1:
     raise SystemExit('Top bar must expose exactly one Notification Deck trigger.')
@@ -49,8 +50,8 @@ for needle in (
     'data-notification-deck-dialog',
     'id="notification-deck-activity"',
     'id="notification-deck-notifications"',
-    'id="notification-deck-refresh-coordinator"',
-    "url_for('notifications.panel_refresh')",
+    'data-notification-deck-root',
+    "url_for('notifications.panel_snapshot')",
     'notification-bell-badge',
     'notification-running-indicator',
 ):
@@ -62,51 +63,61 @@ for needle in (
     'rounded-xl border border-kaori-primary/20 bg-kaori-soft p-1',
     "notificationDeckTab === 'activity' ? 'bg-surface-card text-kaori-primary shadow-sm'",
     ':class="notificationDeckTab === \'activity\' ? \'block\' : \'hidden\'"',
-    '@click="refreshNotificationDeck(true)"',
-    ':disabled="notificationDeckRefreshing"',
-    "notificationDeckRefreshing ? 'animate-spin' : ''",
-    'border border-kaori-primary bg-kaori-primary text-white',
     'Auto refresh every 15 seconds',
-    'Refreshing current status',
-    'Status refresh failed. Auto refresh will retry.',
-    'Last checked ${notificationDeckLastChecked}',
+    'Connection issue · retrying automatically',
+    'Updated ${notificationDeckLastChecked}',
+    'refreshNotificationDeck()"',
 ):
     if needle not in shell:
-        raise SystemExit(f'Notification Deck is missing professional refresh/tab contract: {needle}')
+        raise SystemExit(f'Notification Deck is missing automatic refresh/tab contract: {needle}')
+
+for forbidden in (
+    'aria-label="Refresh activity and notifications now"',
+    'data-lucide="refresh-cw"',
+    '@click="refreshNotificationDeck(true)"',
+    'notificationDeckRefreshing',
+    'notificationDeckRefreshError',
+    'Refreshing current status',
+    'Status refresh failed. Auto refresh will retry.',
+):
+    if forbidden in shell:
+        raise SystemExit(f'Manual refresh UI or state remains in Notification Deck: {forbidden}')
 
 for needle in (
-    'notificationDeckRefreshing: false',
-    'notificationDeckRefreshError: false',
-    'notificationDeckRefreshController: null',
-    'notificationDeckRefreshToken: 0',
+    'notificationDeckSnapshotInFlight: false',
+    'notificationDeckSnapshotController: null',
+    'notificationDeckConnectionIssue: false',
     'notificationDeckLastChecked: null',
     'window.setInterval(() =>',
     '}, 15000)',
-    'async refreshNotificationDeck(manual = true)',
+    'async refreshNotificationDeck()',
+    'if (this.notificationDeckSnapshotInFlight) return',
     'const controller = new AbortController()',
     'window.setTimeout(() => controller.abort(), 5000)',
-    'const response = await fetch(refreshUrl',
+    'const response = await fetch(snapshotUrl',
     "Accept: 'application/json'",
     "cache: 'no-store'",
     'const payload = await response.json()',
     'this.applyNotificationDeckSnapshot(payload)',
-    'finally {',
-    'this.notificationDeckRefreshing = false',
+    'this.notificationDeckSnapshotInFlight = false',
+    '@kaori:notifications-changed.window="refreshNotificationDeck()"',
 ):
     if needle not in navbar:
-        raise SystemExit(f'Navbar is missing snapshot refresh lifecycle: {needle}')
+        raise SystemExit(f'Navbar is missing bounded automatic snapshot lifecycle: {needle}')
 
 for forbidden in (
     'notificationDeckRefreshPending',
     'notificationDeckRefreshInFlight',
-    'finishNotificationDeckRefresh()',
+    'notificationDeckRefreshToken',
+    'notificationDeckRefreshing',
+    'notificationDeckRefreshError',
+    'async refreshNotificationDeck(manual',
     'window.htmx.ajax',
     'await Promise.race([request, timeout])',
-    'await this.notificationDeckRefreshInFlight',
     "window.htmx.trigger(document.body, 'kaori:notification-deck-refresh')",
 ):
     if forbidden in navbar:
-        raise SystemExit(f'Legacy or unbounded refresh state remains in navbar: {forbidden}')
+        raise SystemExit(f'Legacy/manual refresh state remains in navbar: {forbidden}')
 
 for needle in (
     "document.getElementById('notification-deck-active-job-list')",
@@ -121,18 +132,31 @@ for needle in (
 
 for needle in (
     'from flask import Blueprint, jsonify,',
-    'def _render_refresh_snapshot()',
+    'def _render_status_snapshot()',
     'never wait for queued workers to finish',
     "'active_count': int(context.get('active_count', 0))",
     "'unread_count': int(context.get('unread_count', 0))",
     "'activity_html': render_template(",
     "'notifications_html': render_template(",
-    "@notifications_bp.get('/panel/refresh')",
-    'return _render_refresh_snapshot()',
+    "@notifications_bp.get('/panel/snapshot')",
+    'return _render_status_snapshot()',
     "response.headers['Cache-Control'] = 'no-store, max-age=0'",
 ):
     if needle not in routes:
-        raise SystemExit(f'Notification routes are missing JSON snapshot contract: {needle}')
+        raise SystemExit(f'Notification routes are missing automatic snapshot contract: {needle}')
+
+for forbidden in (
+    "@notifications_bp.get('/panel/refresh')",
+    'def panel_refresh()',
+    "@notifications_bp.get('/panel/activity')",
+    'def panel_activity()',
+    "@notifications_bp.get('/panel/notifications')",
+    'def panel_notifications()',
+    "@notifications_bp.get('/panel')",
+    'def _render_activity_panel(',
+):
+    if forbidden in routes:
+        raise SystemExit(f'Unused legacy panel route/helper remains: {forbidden}')
 
 for needle in (
     'data-local-activity-list',
@@ -175,9 +199,18 @@ for needle in (
     "selected_view == 'activity'",
     "selected_view == 'notifications'",
     'data-server-activity-item',
+    'every 15s',
 ):
     if needle not in page_tabs:
         raise SystemExit(f'Notifications page is not aligned with deck tabs: {needle}')
+
+for needle in (
+    'The deck has no manual refresh button, spinner, or manual-refresh state.',
+    '/notifications/panel/snapshot',
+    'allows only one request at a time',
+):
+    if needle not in readme:
+        raise SystemExit(f'Notification refresh standard is not documented: {needle}')
 
 if oob.count('hx-swap-oob="outerHTML"') != 4:
     raise SystemExit('OOB badge fragment must remain available for mutation responses.')
@@ -191,7 +224,8 @@ for legacy_path in (
         raise SystemExit(f'Legacy self-replacing Notification Deck fragment remains: {legacy_path}')
 
 print(
-    'KAORI Notification Deck audit passed: Activity and Notifications use a five-second '
-    'read-only JSON snapshot, manual refresh aborts older polling and always releases its '
-    'spinner, queued workers never block refresh, and stable content slots prevent flicker.'
+    'KAORI Notification Deck audit passed: Activity and Notifications auto-refresh from '
+    'one bounded snapshot every 15 seconds, opening the deck requests current status, '
+    'manual refresh code is absent, queued workers never block polling, and stable content '
+    'slots prevent flicker.'
 )

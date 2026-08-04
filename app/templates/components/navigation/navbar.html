@@ -5,21 +5,20 @@
             quickOpen: false,
             notificationDeckOpen: false,
             notificationDeckTab: 'notifications',
-            notificationDeckRefreshing: false,
-            notificationDeckRefreshError: false,
-            notificationDeckRefreshController: null,
-            notificationDeckRefreshToken: 0,
+            notificationDeckSnapshotInFlight: false,
+            notificationDeckSnapshotController: null,
             notificationDeckAutoTimer: null,
             notificationDeckLastChecked: null,
+            notificationDeckConnectionIssue: false,
             userOpen: false,
             init() {
                 this.notificationDeckAutoTimer = window.setInterval(() => {
-                    this.refreshNotificationDeck(false)
+                    this.refreshNotificationDeck()
                 }, 15000)
             },
             destroy() {
                 window.clearInterval(this.notificationDeckAutoTimer)
-                this.notificationDeckRefreshController?.abort()
+                this.notificationDeckSnapshotController?.abort()
             },
             applyNotificationDeckSnapshot(payload) {
                 if (!payload || typeof payload !== 'object') return
@@ -57,33 +56,23 @@
                 window.renderLocalOperationalActivities?.()
                 window.renderKaoriIcons?.()
             },
-            async refreshNotificationDeck(manual = true) {
-                const coordinator = document.getElementById('notification-deck-refresh-coordinator')
-                const refreshUrl = coordinator?.dataset.refreshUrl
+            async refreshNotificationDeck() {
+                if (this.notificationDeckSnapshotInFlight) return
 
-                if (!coordinator || !refreshUrl) {
-                    if (manual) this.notificationDeckRefreshing = false
-                    this.notificationDeckRefreshError = true
+                const notificationCenter = document.getElementById('notification-center')
+                const snapshotUrl = notificationCenter?.dataset.snapshotUrl
+                if (!notificationCenter || !snapshotUrl) {
+                    this.notificationDeckConnectionIssue = true
                     return
                 }
 
-                if (!manual && this.notificationDeckRefreshController) return
-                if (manual && this.notificationDeckRefreshing) return
-
-                if (manual && this.notificationDeckRefreshController) {
-                    this.notificationDeckRefreshController.abort()
-                }
-
                 const controller = new AbortController()
-                const token = ++this.notificationDeckRefreshToken
-                this.notificationDeckRefreshController = controller
-                this.notificationDeckRefreshError = false
-                if (manual) this.notificationDeckRefreshing = true
-
+                this.notificationDeckSnapshotInFlight = true
+                this.notificationDeckSnapshotController = controller
                 const timeoutId = window.setTimeout(() => controller.abort(), 5000)
 
                 try {
-                    const response = await fetch(refreshUrl, {
+                    const response = await fetch(snapshotUrl, {
                         method: 'GET',
                         headers: {
                             Accept: 'application/json',
@@ -98,33 +87,28 @@
                     }
 
                     const payload = await response.json()
-                    if (token !== this.notificationDeckRefreshToken) return
-
                     this.applyNotificationDeckSnapshot(payload)
                     this.notificationDeckLastChecked = new Date().toLocaleTimeString([], {
                         hour: '2-digit',
                         minute: '2-digit',
                         second: '2-digit',
                     })
-                    this.notificationDeckRefreshError = false
+                    this.notificationDeckConnectionIssue = false
                 } catch (error) {
-                    if (token !== this.notificationDeckRefreshToken) return
-                    this.notificationDeckRefreshError = true
+                    this.notificationDeckConnectionIssue = true
                     if (error?.name !== 'AbortError') {
                         console.error('Notification snapshot refresh failed.', error)
                     }
                 } finally {
                     window.clearTimeout(timeoutId)
-                    if (this.notificationDeckRefreshController === controller) {
-                        this.notificationDeckRefreshController = null
+                    if (this.notificationDeckSnapshotController === controller) {
+                        this.notificationDeckSnapshotController = null
                     }
-                    if (manual && token === this.notificationDeckRefreshToken) {
-                        this.notificationDeckRefreshing = false
-                    }
+                    this.notificationDeckSnapshotInFlight = false
                 }
             }
         }"
-        @kaori:notifications-changed.window="refreshNotificationDeck(false)"
+        @kaori:notifications-changed.window="refreshNotificationDeck()"
         @keydown.escape.window="notificationDeckOpen = false; quickOpen = false; userOpen = false">
     <div class="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <!-- Left: sidebar control and current page context -->

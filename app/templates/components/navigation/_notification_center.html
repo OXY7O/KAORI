@@ -3,8 +3,9 @@
 {% set unread_count = center.get('unread_count', 0) %}
 <div id="notification-center"
      class="contents"
-     data-notification-deck-root>
-    <button @click="notificationDeckTab = {{ "'notifications'" if unread_count else "'activity'" }}; notificationDeckOpen = true; quickOpen = false; userOpen = false"
+     data-notification-deck-root
+     data-snapshot-url="{{ url_for('notifications.panel_snapshot') }}">
+    <button @click="notificationDeckTab = {{ "'notifications'" if unread_count else "'activity'" }}; notificationDeckOpen = true; quickOpen = false; userOpen = false; refreshNotificationDeck()"
             type="button"
             class="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-outline-default bg-surface-card text-content-secondary shadow-sm transition hover:border-kaori-primary/30 hover:bg-kaori-soft hover:text-kaori-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus"
             aria-label="Open notification deck"
@@ -52,17 +53,6 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button type="button"
-                                @click="refreshNotificationDeck(true)"
-                                :disabled="notificationDeckRefreshing"
-                                :aria-busy="notificationDeckRefreshing.toString()"
-                                class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-kaori-primary bg-kaori-primary text-white shadow-sm transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-70"
-                                aria-label="Refresh activity and notifications now"
-                                :title="notificationDeckRefreshing ? 'Refreshing current status' : 'Refresh now'">
-                            <i data-lucide="refresh-cw"
-                               class="h-4 w-4"
-                               :class="notificationDeckRefreshing ? 'animate-spin' : ''"></i>
-                        </button>
                         <button type="button"
                                 @click="notificationDeckOpen = false"
                                 class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-outline-default bg-surface-card text-content-muted transition hover:bg-surface-hover hover:text-content-primary"
@@ -124,27 +114,17 @@
                 </div>
 
                 <footer class="flex shrink-0 items-center justify-between gap-3 border-t border-outline-subtle bg-surface-card px-4 py-3">
-                    <div class="min-w-0">
-                        <div x-show="!notificationDeckRefreshing && !notificationDeckRefreshError"
-                             class="min-w-0 text-xs text-content-muted">
-                            <p class="truncate">Auto refresh every 15 seconds</p>
-                            <p x-cloak
-                               x-show="notificationDeckLastChecked"
-                               class="mt-0.5 truncate"
-                               x-text="`Last checked ${notificationDeckLastChecked}`"></p>
-                        </div>
-                        <p x-cloak
-                           x-show="notificationDeckRefreshing"
-                           class="inline-flex items-center gap-1.5 text-xs font-medium text-kaori-primary">
-                            <i data-lucide="loader-circle" class="h-3.5 w-3.5 animate-spin"></i>
-                            Refreshing current status
+                    <div class="min-w-0 text-xs text-content-muted" aria-live="polite">
+                        <p class="inline-flex items-center gap-1.5 truncate">
+                            <span class="h-2 w-2 shrink-0 rounded-full"
+                                  :class="notificationDeckConnectionIssue ? 'bg-status-warning' : 'bg-status-normal'"></span>
+                            <span x-show="!notificationDeckConnectionIssue">Auto refresh every 15 seconds</span>
+                            <span x-cloak x-show="notificationDeckConnectionIssue">Connection issue · retrying automatically</span>
                         </p>
                         <p x-cloak
-                           x-show="!notificationDeckRefreshing && notificationDeckRefreshError"
-                           class="inline-flex items-center gap-1.5 text-xs font-medium text-status-warning-text">
-                            <i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i>
-                            Status refresh failed. Auto refresh will retry.
-                        </p>
+                           x-show="notificationDeckLastChecked"
+                           class="mt-0.5 truncate"
+                           x-text="`Updated ${notificationDeckLastChecked}`"></p>
                     </div>
                     <a href="{{ url_for('notifications.center', view='notifications') }}"
                        @click="notificationDeckOpen = false"
@@ -152,11 +132,6 @@
                         View all <i data-lucide="arrow-right" class="h-3.5 w-3.5"></i>
                     </a>
                 </footer>
-
-                <div id="notification-deck-refresh-coordinator"
-                     class="hidden"
-                     data-refresh-url="{{ url_for('notifications.panel_refresh') }}"
-                     aria-hidden="true"></div>
             </aside>
         </div>
     </template>
