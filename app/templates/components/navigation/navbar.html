@@ -7,13 +7,14 @@
             notificationDeckTab: 'notifications',
             notificationDeckSnapshotInFlight: false,
             notificationDeckSnapshotController: null,
+            notificationDeckSnapshotQueued: false,
             notificationDeckAutoTimer: null,
             notificationDeckLastChecked: null,
             notificationDeckConnectionIssue: false,
             userOpen: false,
             init() {
                 this.notificationDeckAutoTimer = window.setInterval(() => {
-                    this.refreshNotificationDeck()
+                    this.queueNotificationDeckRefresh()
                 }, 15000)
             },
             destroy() {
@@ -56,8 +57,18 @@
                 window.renderLocalOperationalActivities?.()
                 window.renderKaoriIcons?.()
             },
+            queueNotificationDeckRefresh() {
+                this.notificationDeckSnapshotQueued = true
+                if (!this.notificationDeckSnapshotInFlight) {
+                    this.refreshNotificationDeck()
+                }
+            },
             async refreshNotificationDeck() {
-                if (this.notificationDeckSnapshotInFlight) return
+                if (this.notificationDeckSnapshotInFlight) {
+                    this.notificationDeckSnapshotQueued = true
+                    return
+                }
+                this.notificationDeckSnapshotQueued = false
 
                 const notificationCenter = document.getElementById('notification-center')
                 const snapshotUrl = notificationCenter?.dataset.snapshotUrl
@@ -105,10 +116,13 @@
                         this.notificationDeckSnapshotController = null
                     }
                     this.notificationDeckSnapshotInFlight = false
+                    if (this.notificationDeckSnapshotQueued) {
+                        window.queueMicrotask(() => this.refreshNotificationDeck())
+                    }
                 }
             }
         }"
-        @kaori:notifications-changed.window="refreshNotificationDeck()"
+        @kaori:notifications-changed.window="if ($event.detail?.tab === 'activity' || $event.detail?.tab === 'notifications') { notificationDeckTab = $event.detail.tab } queueNotificationDeckRefresh()"
         @keydown.escape.window="notificationDeckOpen = false; quickOpen = false; userOpen = false">
     <div class="flex h-16 items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
         <!-- Left: sidebar control and current page context -->
@@ -211,11 +225,10 @@
                                     {% endif %}
                                     <button type="submit"
                                             hx-post="{{ url_for('cluster.sync_all_clusters') }}"
-                                            hx-target="#quick-sync-feedback"
-                                            hx-swap="innerHTML"
+                                            hx-swap="none"
                                             hx-include="#quick-sync-form"
                                             hx-disabled-elt="this"
-                                            @click="quickOpen = false; notificationDeckTab = 'activity'; notificationDeckOpen = true; document.getElementById('quick-sync-feedback')?.replaceChildren()"
+                                            @click="quickOpen = false"
                                             class="group relative flex w-full items-start gap-3 overflow-hidden rounded-xl border border-kaori-primary/15 bg-kaori-soft p-3 text-left transition hover:border-kaori-primary/30 hover:bg-kaori-soft cursor-pointer disabled:cursor-wait disabled:opacity-75">
                                         <span class="relative z-10 flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-kaori-primary text-white shadow-sm shadow-kaori-primary/20">
                                             <i data-lucide="refresh-cw"

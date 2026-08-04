@@ -152,6 +152,19 @@ synchronization is not rendered through a second nested polling source; it remai
 part of the canonical job list. This prevents activity cards from disappearing and
 reappearing whenever the panel refreshes.
 
+The **Quick Actions → Sync All Inventory** workflow only dispatches the canonical
+worker job. Clicking the action closes Quick Actions but never opens the Notification
+Deck, changes its selected tab, creates a local foreground Activity card, or forces an
+immediate snapshot request. The button may show request-local disabled/spinner feedback
+while the enqueue HTTP request is in flight; this is not Activity Center state.
+
+The Activity tab is updated exclusively from committed `JobExecution` rows through the
+normal 15-second snapshot cycle. Successful dispatch does not create a duplicate
+"queued" notification because the job row is already the authoritative activity source.
+Blocked, skipped, and failed dispatches remain persistent Notifications and appear on the
+next automatic snapshot. Never target the removed `#quick-sync-feedback` element or
+reintroduce a forced drawer-open/event-refresh flow.
+
 Activity and Notifications use one read-only JSON snapshot every 15 seconds. The
 snapshot reads current `JobExecution` and `Notification` rows only; it never waits for
 a queued or running worker to complete. Opening the deck also requests a snapshot so
@@ -160,9 +173,11 @@ content slots and counters in place, while the drawer, selected tab, local foreg
 activity, and bell remain mounted.
 
 The deck has no manual refresh button, spinner, or manual-refresh state. Automatic
-polling is silent, allows only one request at a time, and skips a cycle while the prior
-snapshot is still in flight. Native `fetch()` uses `AbortController` with a five-second
-request boundary so a stalled request cannot block later intervals. On failure, existing
+polling is silent and allows only one request at a time. If an event-driven refresh
+arrives while a snapshot is in flight, KAORI queues exactly one follow-up snapshot
+instead of dropping the event or starting an overlapping request. Native `fetch()`
+uses `AbortController` with a five-second request boundary so a stalled request cannot
+block later intervals. On failure, existing
 content remains visible and the footer shows a quiet reconnecting state; no toast or
 blocking error is emitted. A queued job remains visible as **Queued / Waiting** with a
 static progress marker and never controls polling state.

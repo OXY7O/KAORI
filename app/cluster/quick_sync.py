@@ -14,9 +14,23 @@ from app.cluster.sync_state import build_cluster_sync_snapshot
 from app.jobs.dispatcher import dispatch_registered_job
 from app.jobs.service import JobQuotaExceeded
 from app.models.cluster import Cluster
-from app.notifications.service import create_notification, get_navigation_notification_context
+from app.notifications.service import get_navigation_notification_context, record_operational_activity
 
 logger = logging.getLogger(__name__)
+
+
+def _htmx_dispatch_response(*, response_status: int = 204) -> ResponseReturnValue:
+    """Return an eventless response for a Quick Action dispatch.
+
+    Quick Actions only enqueue canonical worker jobs. Notification Center state is
+    derived from committed ``JobExecution`` and ``Notification`` rows by the normal
+    15-second snapshot cycle; the dispatch response must not open the drawer, switch
+    tabs, or force an immediate snapshot request.
+    """
+
+    response = make_response('', response_status)
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    return response
 
 
 def sync_snapshot_visible_to_user(snapshot: dict, *, user_id: int) -> bool:
@@ -33,7 +47,11 @@ def sync_snapshot_visible_to_user(snapshot: dict, *, user_id: int) -> bool:
         return False
 
 
-def render_sync_snapshot(snapshot: dict, *, response_status: int = 200) -> ResponseReturnValue:
+def render_sync_snapshot(
+    snapshot: dict,
+    *,
+    response_status: int = 200,
+) -> ResponseReturnValue:
     template = 'components/navigation/_quick_sync_status.html'
     context = {'sync': snapshot}
     if not snapshot['is_active']:
@@ -89,15 +107,18 @@ def run_global_inventory_sync() -> ResponseReturnValue:
 
     if total_count == 0:
         duration_seconds = round(perf_counter() - started_at, 1)
-        create_notification(
-            user_id=current_user.id,
+        record_operational_activity(
+            user_id=int(current_user.id),
             event_type='kubernetes_inventory_sync',
             status='warning',
-            title='Sync Skipped',
+            title='Inventory Sync Skipped',
             message='No Kubernetes clusters are registered yet.',
             detail='Add a Kubernetes cluster before running global inventory sync.',
             action_url=view_url,
+            action_label='Add Kubernetes Cluster',
+            action_icon='server-cog',
             metadata={
+                'feedback_delivery': 'activity_center',
                 'total_count': 0,
                 'synced_count': 0,
                 'failed_count': 0,
@@ -105,21 +126,7 @@ def run_global_inventory_sync() -> ResponseReturnValue:
             },
         )
         if is_htmx:
-            return render_template(
-                'components/navigation/_quick_sync_result.html',
-                status='warning',
-                title='Sync Skipped',
-                message='No Kubernetes clusters are registered yet.',
-                detail='Add a Kubernetes cluster before running global inventory sync.',
-                view_url=view_url,
-                total_count=0,
-                synced_count=0,
-                failed_count=0,
-                duration_seconds=duration_seconds,
-                completed_label='Completed just now',
-                notification_context=get_navigation_notification_context(user_id=current_user.id),
-                notification_saved=True,
-            )
+            return _htmx_dispatch_response(response_status=204)
         flash('No Kubernetes clusters are registered yet.', 'warning')
         return redirect(request.referrer or view_url)
 
@@ -130,18 +137,28 @@ def run_global_inventory_sync() -> ResponseReturnValue:
             requested_by_user_id=int(current_user.id),
         )
         if not outcome.accepted or outcome.job is None:
+            record_operational_activity(
+                user_id=int(current_user.id),
+                event_type='kubernetes_inventory_sync',
+                status='warning',
+                title='Inventory Sync Blocked',
+                message='No eligible Kubernetes cluster can be synchronized.',
+                detail=outcome.message,
+                action_url=view_url,
+                action_label='Review Kubernetes Integrations',
+                action_icon='shield-alert',
+                metadata={
+                    'feedback_delivery': 'activity_center',
+                    'dispatch_status': outcome.status,
+                },
+            )
             if is_htmx:
-                return render_enqueue_error(
-                    message='No eligible Kubernetes cluster can be synchronized.',
-                    detail=outcome.message,
-                    response_status=409,
-                )
+                return _htmx_dispatch_response(response_status=204)
             flash(outcome.message, 'warning')
             return redirect(request.referrer or view_url)
 
-        snapshot = build_cluster_sync_snapshot(str(outcome.job.celery_task_id))
         if is_htmx:
-            return render_sync_snapshot(snapshot, response_status=202)
+            return _htmx_dispatch_response(response_status=202)
         flash(
             'Kubernetes inventory synchronization started in the inventory worker.'
             if outcome.created
@@ -156,13 +173,24 @@ def run_global_inventory_sync() -> ResponseReturnValue:
         OSError,
         RuntimeError,
         SQLAlchemyError,
-    ):
+    ) as exc:
         logger.exception('KAORI could not enqueue the canonical Kubernetes inventory job.')
+        record_operational_activity(
+            user_id=int(current_user.id),
+            event_type='kubernetes_inventory_sync',
+            status='error',
+            title='Inventory Sync Could Not Start',
+            message='The inventory job could not be added to the canonical job registry.',
+            detail='Verify PostgreSQL, Redis, and the Celery inventory worker before retrying.',
+            action_url=view_url,
+            action_label='Review Kubernetes Integrations',
+            action_icon='triangle-alert',
+            metadata={
+                'feedback_delivery': 'activity_center',
+                'error_type': type(exc).__name__,
+            },
+        )
         if is_htmx:
-            return render_enqueue_error(
-                message='The inventory job could not be added to the canonical job registry.',
-                detail='Verify PostgreSQL, Redis, and the Celery inventory worker before retrying.',
-                response_status=503,
-            )
+            return _htmx_dispatch_response(response_status=204)
         flash('KAORI could not start the Kubernetes inventory job.', 'danger')
         return redirect(request.referrer or view_url)

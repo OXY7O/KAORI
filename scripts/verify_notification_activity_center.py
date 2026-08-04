@@ -42,6 +42,8 @@ presentation = read('app/jobs/presentation.py')
 layout = read('app/templates/layouts/app.html')
 page_tabs = read('app/templates/notifications/partials/_center_page_content.html')
 readme = read('app/notifications/README.md')
+quick_sync = read('app/cluster/quick_sync.py')
+queries = read('app/notifications/queries.py')
 
 if shell.count('aria-label="Open notification deck"') != 1:
     raise SystemExit('Top bar must expose exactly one Notification Deck trigger.')
@@ -66,7 +68,7 @@ for needle in (
     'Auto refresh every 15 seconds',
     'Connection issue · retrying automatically',
     'Updated ${notificationDeckLastChecked}',
-    'refreshNotificationDeck()"',
+    'queueNotificationDeckRefresh()"',
 ):
     if needle not in shell:
         raise SystemExit(f'Notification Deck is missing automatic refresh/tab contract: {needle}')
@@ -91,7 +93,10 @@ for needle in (
     'window.setInterval(() =>',
     '}, 15000)',
     'async refreshNotificationDeck()',
-    'if (this.notificationDeckSnapshotInFlight) return',
+    'notificationDeckSnapshotQueued: false',
+    'queueNotificationDeckRefresh()',
+    'if (this.notificationDeckSnapshotInFlight) {',
+    'this.notificationDeckSnapshotQueued = true',
     'const controller = new AbortController()',
     'window.setTimeout(() => controller.abort(), 5000)',
     'const response = await fetch(snapshotUrl',
@@ -100,13 +105,62 @@ for needle in (
     'const payload = await response.json()',
     'this.applyNotificationDeckSnapshot(payload)',
     'this.notificationDeckSnapshotInFlight = false',
-    '@kaori:notifications-changed.window="refreshNotificationDeck()"',
+    '@kaori:notifications-changed.window="if ($event.detail?.tab',
+    'window.queueMicrotask(() => this.refreshNotificationDeck())',
 ):
     if needle not in navbar:
         raise SystemExit(f'Navbar is missing bounded automatic snapshot lifecycle: {needle}')
 
 for forbidden in (
-    'notificationDeckRefreshPending',
+    "response.headers['HX-Trigger']",
+    "response.headers['HX-Trigger-After-Swap']",
+    "'source': 'inventory_quick_action'",
+    'def _activity_center_response(',
+    'def _trigger_notification_snapshot(',
+    'trigger_notification_refresh=True',
+):
+    if forbidden in quick_sync:
+        raise SystemExit(
+            f'Inventory Quick Action still forces Notification Deck refresh/open behavior: {forbidden}'
+        )
+
+for needle in (
+    'def _htmx_dispatch_response(',
+    "event_type='kubernetes_inventory_sync'",
+):
+    if needle not in quick_sync:
+        raise SystemExit(f'Inventory Quick Action dispatch contract is missing: {needle}')
+
+for forbidden in (
+    'data-operational-progress-title="Inventory Sync"',
+    'data-operational-progress-message="Registering the fleet inventory job',
+):
+    if forbidden in navbar:
+        raise SystemExit(f'Inventory Quick Action still creates foreground Activity state: {forbidden}')
+
+quick_form_start = navbar.find('id="quick-sync-form"')
+quick_form_end = navbar.find('</form>', quick_form_start)
+quick_form = navbar[quick_form_start:quick_form_end] if quick_form_start >= 0 and quick_form_end >= 0 else ''
+if not quick_form:
+    raise SystemExit('Inventory Quick Action form is missing.')
+if '@click="quickOpen = false"' not in quick_form:
+    raise SystemExit('Inventory Quick Action must close only the Quick Actions menu.')
+if 'notificationDeckOpen = true' in quick_form or "notificationDeckTab = 'activity'" in quick_form:
+    raise SystemExit('Inventory Quick Action still opens or changes the Notification Deck.')
+if 'hx-swap="none"' not in quick_form:
+    raise SystemExit('Inventory Quick Action must remain an eventless dispatch surface.')
+
+if 'quick-sync-feedback' in navbar:
+    raise SystemExit('Inventory Quick Action still targets the removed #quick-sync-feedback element.')
+
+for needle in (
+    'JobExecution.requested_by_user_id == user_id',
+    'JobExecutionSubscriber.user_id == user_id',
+):
+    if needle not in queries:
+        raise SystemExit(f'Activity visibility does not include the Quick Action requester/subscriber: {needle}')
+
+for forbidden in (
     'notificationDeckRefreshInFlight',
     'notificationDeckRefreshToken',
     'notificationDeckRefreshing',
@@ -226,6 +280,7 @@ for legacy_path in (
 print(
     'KAORI Notification Deck audit passed: Activity and Notifications auto-refresh from '
     'one bounded snapshot every 15 seconds, opening the deck requests current status, '
-    'manual refresh code is absent, queued workers never block polling, and stable content '
-    'slots prevent flicker.'
+    'manual refresh code is absent, Quick Action inventory sync dispatches without opening '
+    'or forcing the deck, canonical jobs appear through the normal snapshot cycle, queued '
+    'workers never block polling, and stable content slots prevent flicker.'
 )

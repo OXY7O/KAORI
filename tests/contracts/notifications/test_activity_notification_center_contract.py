@@ -41,11 +41,14 @@ def test_deck_auto_refreshes_one_snapshot_every_15_seconds() -> None:
 
     assert 'data-notification-deck-root' in shell
     assert "url_for('notifications.panel_snapshot')" in shell
-    assert 'refreshNotificationDeck()"' in shell
+    assert 'queueNotificationDeckRefresh()"' in shell
     assert 'window.setInterval(() =>' in navbar
     assert '}, 15000)' in navbar
     assert 'async refreshNotificationDeck()' in navbar
-    assert 'if (this.notificationDeckSnapshotInFlight) return' in navbar
+    assert 'notificationDeckSnapshotQueued: false' in navbar
+    assert 'queueNotificationDeckRefresh()' in navbar
+    assert 'if (this.notificationDeckSnapshotInFlight) {' in navbar
+    assert 'this.notificationDeckSnapshotQueued = true' in navbar
     assert 'const response = await fetch(snapshotUrl' in navbar
     assert "Accept: 'application/json'" in navbar
     assert "cache: 'no-store'" in navbar
@@ -83,7 +86,10 @@ def test_auto_poll_is_bounded_and_never_overlaps() -> None:
 
     assert 'notificationDeckSnapshotInFlight: false' in navbar
     assert 'notificationDeckSnapshotController: null' in navbar
-    assert 'if (this.notificationDeckSnapshotInFlight) return' in navbar
+    assert 'notificationDeckSnapshotQueued: false' in navbar
+    assert 'queueNotificationDeckRefresh()' in navbar
+    assert 'if (this.notificationDeckSnapshotInFlight) {' in navbar
+    assert 'this.notificationDeckSnapshotQueued = true' in navbar
     assert 'const controller = new AbortController()' in navbar
     assert 'window.setTimeout(() => controller.abort(), 5000)' in navbar
     assert 'finally {' in navbar
@@ -221,3 +227,38 @@ def test_refresh_standard_is_documented() -> None:
     assert '/notifications/panel/snapshot' in readme
     assert 'The deck has no manual refresh button, spinner, or manual-refresh state.' in readme
     assert 'allows only one request at a time' in readme
+
+
+def test_inventory_quick_action_relies_on_canonical_auto_refresh() -> None:
+    navbar = read('app/templates/components/navigation/navbar.html')
+    quick_sync = read('app/cluster/quick_sync.py')
+    queries = read('app/notifications/queries.py')
+
+    assert 'hx-swap="none"' in navbar
+    assert 'hx-target="#quick-sync-feedback"' not in navbar
+    assert 'quick-sync-feedback' not in navbar
+    assert 'data-operational-progress-title="Inventory Sync"' not in navbar
+    assert 'data-operational-progress-message="Registering the fleet inventory job' not in navbar
+    assert '@click="quickOpen = false"' in navbar
+    assert "notificationDeckOpen = true" not in navbar[
+        navbar.index('id="quick-sync-form"'):navbar.index('</form>', navbar.index('id="quick-sync-form"'))
+    ]
+
+    assert 'def _htmx_dispatch_response(' in quick_sync
+    assert "response.headers['HX-Trigger']" not in quick_sync
+    assert 'HX-Trigger-After-Swap' not in quick_sync
+    assert "'source': 'inventory_quick_action'" not in quick_sync
+    assert 'def _activity_center_response(' not in quick_sync
+    assert 'def _trigger_notification_snapshot(' not in quick_sync
+
+    # Success is represented only by the canonical JobExecution row.
+    success_block = quick_sync[
+        quick_sync.index("outcome = dispatch_registered_job("):
+        quick_sync.index('    except (', quick_sync.index("outcome = dispatch_registered_job("))
+    ]
+    assert "title='Inventory Sync Queued'" not in success_block
+    assert "'job_execution_id': job.id" not in success_block
+    assert "event_type='kubernetes_inventory_sync'" in quick_sync  # blocked/error notifications remain
+
+    assert 'JobExecution.requested_by_user_id == user_id' in queries
+    assert 'JobExecutionSubscriber.user_id == user_id' in queries
