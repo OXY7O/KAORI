@@ -240,25 +240,35 @@
             }
 
             window.renderLocalOperationalActivities = () => {
-                const deckContent = document.querySelector('[data-activity-server-count]')
-                const serverCount = Number.parseInt(deckContent?.dataset.activityServerCount || '0', 10) || 0
-                const localCount = localOperationalActivities.size
-                const totalCount = serverCount + localCount
+                const localNodes = Array.from(localOperationalActivities.values(), buildLocalActivityNode)
+                let indicatorCount = localOperationalActivities.size
 
-                document.querySelectorAll('[data-local-activity-list]').forEach((list) => {
-                    list.replaceChildren(...Array.from(localOperationalActivities.values(), buildLocalActivityNode))
-                })
+                document.querySelectorAll('[data-activity-surface]').forEach((surface) => {
+                    const serverCount = Number.parseInt(surface.dataset.activityServerCount || '0', 10) || 0
+                    const dynamicCount = Array.from(surface.querySelectorAll('[data-activity-dynamic-source]'))
+                        .reduce((count, source) => {
+                            return count + source.querySelectorAll(
+                                '[data-quick-action-toast], [data-cluster-sync-task]'
+                            ).length
+                        }, 0)
+                    const totalCount = serverCount + localOperationalActivities.size + dynamicCount
+                    indicatorCount = Math.max(indicatorCount, totalCount)
 
-                document.querySelectorAll('[data-activity-count-label]').forEach((label) => {
-                    label.textContent = String(totalCount)
-                })
+                    surface.querySelectorAll('[data-local-activity-list]').forEach((list) => {
+                        list.replaceChildren(...localNodes.map((node) => node.cloneNode(true)))
+                    })
 
-                document.querySelectorAll('[data-running-empty]').forEach((emptyState) => {
-                    emptyState.classList.toggle('hidden', totalCount > 0)
+                    surface.querySelectorAll('[data-activity-count-label]').forEach((label) => {
+                        label.textContent = String(totalCount)
+                    })
+
+                    surface.querySelectorAll('[data-running-empty]').forEach((emptyState) => {
+                        emptyState.classList.toggle('hidden', totalCount > 0)
+                    })
                 })
 
                 const runningIndicator = document.getElementById('notification-running-indicator')
-                runningIndicator?.classList.toggle('hidden', totalCount === 0)
+                runningIndicator?.classList.toggle('hidden', indicatorCount === 0)
 
                 window.renderKaoriIcons?.()
             }

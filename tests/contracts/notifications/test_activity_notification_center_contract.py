@@ -89,7 +89,8 @@ def test_manual_and_automatic_refresh_target_stable_panels() -> None:
     shell = read('app/templates/components/navigation/_notification_center.html')
 
     assert "kaori:notification-deck-refresh from:body" in shell
-    assert "window.htmx?.trigger(document.body, 'kaori:notification-deck-refresh')" in shell
+    navbar = read('app/templates/components/navigation/navbar.html')
+    assert "window.htmx.trigger(document.body, 'kaori:notification-deck-refresh')" in navbar
     assert shell.count('every 15s') == 2
     assert shell.count('hx-sync="this:replace"') == 2
 
@@ -116,3 +117,49 @@ def test_background_progress_stays_out_of_stacked_toasts() -> None:
     assert 'startOperationalActivity' in layout
     assert 'notification-running-indicator' in layout
     assert "return 'activity_center'" in feedback
+
+
+def test_tabs_match_report_type_guide_segmented_control() -> None:
+    shell = read('app/templates/components/navigation/_notification_center.html')
+    page = read('app/templates/notifications/partials/_center_page_content.html')
+
+    expected_track = 'rounded-xl border border-kaori-primary/20 bg-kaori-soft p-1'
+    expected_active = "bg-surface-card text-kaori-primary shadow-sm"
+
+    assert expected_track in shell
+    assert expected_track in page
+    assert expected_active in shell
+    assert expected_active in page
+    assert 'role="tablist"' in shell
+    assert 'aria-label="Notification center sections"' in page
+
+
+def test_activity_tab_always_has_visible_content_contract() -> None:
+    shell = read('app/templates/components/navigation/_notification_center.html')
+    activity = read('app/templates/notifications/partials/_notification_deck_activity.html')
+    layout = read('app/templates/layouts/app.html')
+
+    assert ":class=\"notificationDeckTab === 'activity' ? 'block' : 'hidden'\"" in shell
+    assert 'data-activity-surface' in activity
+    assert 'data-activity-server-count' in activity
+    assert 'data-activity-dynamic-source' in activity
+    assert 'visible_jobs' in activity
+    assert 'data-running-empty' in activity
+    assert "document.querySelectorAll('[data-activity-surface]')" in layout
+    assert "surface.querySelectorAll('[data-activity-dynamic-source]')" in layout
+
+
+def test_manual_refresh_exposes_loading_until_both_panels_finish() -> None:
+    navbar = read('app/templates/components/navigation/navbar.html')
+    shell = read('app/templates/components/navigation/_notification_center.html')
+
+    assert 'notificationDeckRefreshing: false' in navbar
+    assert 'notificationDeckRefreshPending: 0' in navbar
+    assert 'this.notificationDeckRefreshPending = 2' in navbar
+    assert 'finishNotificationDeckRefresh()' in navbar
+    assert '@kaori:notification-deck-refresh-complete.window' in navbar
+    assert '@click="refreshNotificationDeck()"' in shell
+    assert ':disabled="notificationDeckRefreshing"' in shell
+    assert "notificationDeckRefreshing ? 'animate-spin' : ''" in shell
+    assert shell.count('kaori:notification-deck-refresh-complete') == 2
+    assert 'Refreshing activity and notifications' in shell

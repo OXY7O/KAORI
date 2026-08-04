@@ -49,8 +49,42 @@ if 'hx-swap="outerHTML"' in shell:
     raise SystemExit('Notification shell must never be replaced with outerHTML.')
 if 'hx-get="{{ url_for(\'notifications.panel\') }}"' in shell:
     raise SystemExit('Notification shell still polls the legacy combined panel endpoint.')
-if 'data-lucide="activity"' not in shell:
-    raise SystemExit('Activity tab icon is missing inside the slider deck.')
+
+
+for needle in (
+    'role="tablist"',
+    'rounded-xl border border-kaori-primary/20 bg-kaori-soft p-1',
+    "notificationDeckTab === 'activity' ? 'bg-surface-card text-kaori-primary shadow-sm'",
+    ":class=\"notificationDeckTab === 'activity' ? 'block' : 'hidden'\"",
+    '@click="refreshNotificationDeck()"',
+    ':disabled="notificationDeckRefreshing"',
+    "notificationDeckRefreshing ? 'animate-spin' : ''",
+    'kaori:notification-deck-refresh-complete',
+    'Refreshing activity and notifications',
+):
+    if needle not in shell:
+        raise SystemExit(f'Notification Deck is missing tab/loading contract: {needle}')
+
+navbar = read('app/templates/components/navigation/navbar.html')
+for needle in (
+    'notificationDeckRefreshing: false',
+    'notificationDeckRefreshPending: 0',
+    'refreshNotificationDeck()',
+    'finishNotificationDeckRefresh()',
+    '@kaori:notification-deck-refresh-complete.window',
+):
+    if needle not in navbar:
+        raise SystemExit(f'Navbar is missing manual refresh state contract: {needle}')
+
+page_tabs = read('app/templates/notifications/partials/_center_page_content.html')
+for needle in (
+    'aria-label="Notification center sections"',
+    'rounded-xl border border-kaori-primary/20 bg-kaori-soft p-1',
+    "selected_view == 'activity'",
+    "selected_view == 'notifications'",
+):
+    if needle not in page_tabs:
+        raise SystemExit(f'Notifications page is missing Report Type Guide tab styling: {needle}')
 
 legacy_fragment = ROOT / 'app/templates/notifications/partials/_notification_deck_content.html'
 if legacy_fragment.exists():
@@ -62,7 +96,7 @@ oob = read('app/templates/notifications/partials/_notification_deck_oob.html')
 component = read('app/templates/notifications/components/_activity_center_items.html')
 routes = read('app/notifications/routes.py')
 
-for needle in ('data-local-activity-list', 'data-running-empty', 'emit_oob'):
+for needle in ('data-local-activity-list', 'data-running-empty', 'data-activity-surface', 'data-activity-server-count', 'data-activity-dynamic-source', 'visible_jobs', 'emit_oob'):
     if needle not in activity:
         raise SystemExit(f'Activity panel is missing contract: {needle}')
 for needle in (
@@ -97,7 +131,15 @@ for needle in (
 if "'_notification_deck_content.html'" in routes:
     raise SystemExit('Routes still render the legacy combined deck fragment.')
 
+
 layout = read('app/templates/layouts/app.html')
+for needle in (
+    "document.querySelectorAll('[data-activity-surface]')",
+    "surface.querySelectorAll('[data-activity-dynamic-source]')",
+    "indicatorCount = Math.max(indicatorCount, totalCount)",
+):
+    if needle not in layout:
+        raise SystemExit(f'Activity surface reconciliation is missing: {needle}')
 if 'showOperationalProgressToast' in layout:
     raise SystemExit('Legacy operational progress toast remains active in app layout.')
 

@@ -135,3 +135,22 @@ rendered.
 The Notification Deck is rendered through Alpine `x-teleport="body"`. The bell remains in the top navigation, while the dialog is moved to the document body. This is mandatory because the sticky navigation uses backdrop filtering, which creates a containing block and can otherwise clip a `position: fixed` drawer to the navbar height.
 
 The deck uses only utilities present in the committed Tailwind build: `fixed inset-0`, `bg-surface-overlay/70`, and `max-w-md`. Do not replace these with uncompiled arbitrary values without rebuilding `app/static/css/output.css`.
+
+### Notification Deck tab and refresh standard
+
+The deck and `/notifications/` use the same segmented-control geometry as the
+Reports **Report Type Guide**: a violet-soft `rounded-xl` track with compact
+`rounded-lg` text tabs, a white active surface, and no oversized tab cards.
+Activity and Notifications remain separate semantic views but share one visual
+contract.
+
+The Activity panel must always render one of the following: local foreground
+activity, specialized synchronization progress, canonical `JobExecution` cards,
+or the explicit empty state. Server, local, and dynamically loaded sync activity
+are counted per activity surface so a stale or filtered job cannot leave the tab
+blank.
+
+Manual refresh is explicit and observable. The refresh control is disabled while
+both panel requests are in flight, its icon spins, and the deck footer displays
+`Refreshing activity and notifications`. Automatic 15-second polling does not
+show the manual loading state and never replaces the tab shell.
