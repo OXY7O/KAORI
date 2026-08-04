@@ -38,15 +38,31 @@ def _center_view() -> str:
     return requested_view if requested_view in _ALLOWED_CENTER_VIEWS else 'notifications'
 
 
-def _render_notification_deck_content(*, emit_oob: bool = True) -> str:
-    context = get_navigation_notification_context(
+def _navigation_context() -> dict[str, object]:
+    return get_navigation_notification_context(
         user_id=current_user.id,
         include_all_jobs=current_user.has_permission('jobs.view'),
     )
 
-    return render_template(
-        'notifications/partials/_notification_deck_content.html',
-        activity_center=context,
+
+def _fragment_response(template_name: str, **context: object) -> ResponseReturnValue:
+    response = make_response(render_template(template_name, **context))
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    return response
+
+
+def _render_activity_panel(*, emit_oob: bool = True) -> ResponseReturnValue:
+    return _fragment_response(
+        'notifications/partials/_notification_deck_activity.html',
+        activity_center=_navigation_context(),
+        emit_oob=emit_oob,
+    )
+
+
+def _render_notifications_panel(*, emit_oob: bool = True) -> ResponseReturnValue:
+    return _fragment_response(
+        'notifications/partials/_notification_deck_notifications.html',
+        activity_center=_navigation_context(),
         emit_oob=emit_oob,
     )
 
@@ -71,8 +87,9 @@ def _render_mutation_response() -> ResponseReturnValue:
         if surface == 'page':
             response = make_response(_render_center_page_content())
             response.headers['HX-Trigger-After-Swap'] = 'kaori:notifications-changed'
+            response.headers['Cache-Control'] = 'no-store, max-age=0'
             return response
-        return _render_notification_deck_content()
+        return _render_notifications_panel()
 
     next_url = (request.form.get('next') or request.referrer or '').strip()
     if not next_url.startswith('/') or next_url.startswith('//'):
@@ -105,7 +122,22 @@ def center() -> ResponseReturnValue:
 @notifications_bp.get('/panel')
 @login_required
 def panel() -> ResponseReturnValue:
-    return _render_notification_deck_content()
+    """Compatibility endpoint returning one stable deck panel, never the shell."""
+    if _center_view() == 'activity':
+        return _render_activity_panel()
+    return _render_notifications_panel()
+
+
+@notifications_bp.get('/panel/activity')
+@login_required
+def panel_activity() -> ResponseReturnValue:
+    return _render_activity_panel()
+
+
+@notifications_bp.get('/panel/notifications')
+@login_required
+def panel_notifications() -> ResponseReturnValue:
+    return _render_notifications_panel()
 
 
 @notifications_bp.get('/activity')

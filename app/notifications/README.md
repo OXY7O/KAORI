@@ -51,14 +51,22 @@ records, and integrations.
 ## Notification Deck refresh boundary
 
 Operational toast responses must never include top-bar navigation markup. They dispatch
-the `kaori:notifications-changed` browser event instead. The bell trigger remains a
-stable DOM element; only canonical `#notification-deck-content` is refreshed from
-`notifications.panel`. Badge and running-indicator values are updated through HTMX
-out-of-band swaps.
+the `kaori:notifications-changed` browser event instead. The bell trigger, teleported
+slider shell, tabs, and Alpine-controlled sections are stable DOM boundaries and must
+never be replaced by HTMX polling.
 
-The self-replacing deck content uses `every 15s` and must never use an additional
-`load` trigger. Combining `load` with `outerHTML` replacement causes a refresh loop,
-visible flicker, and navigation controls that appear and disappear.
+Polling is split between two containers:
+
+- `#notification-deck-activity` loads `/notifications/panel/activity`.
+- `#notification-deck-notifications` loads `/notifications/panel/notifications`.
+
+Both containers use `hx-swap="innerHTML"`, so only list content changes. This preserves
+the Alpine tab scope inside the teleported slider and prevents the panel from becoming
+blank after an automatic refresh. Panel responses use `Cache-Control: no-store`, and
+badge values are synchronized through HTMX out-of-band swaps.
+
+Do not reintroduce `_notification_deck_content.html`, an `outerHTML` poll on the slider
+root, or a self-replacing fragment with a `load` trigger.
 
 ## Activity Log visual standard
 
@@ -95,8 +103,9 @@ The bell opens a full-height slide-over deck from the right with two sections:
 - **Notifications** shows the same persistent records used by the full Notifications page.
 
 Opening the deck does not mark records as read. Records become read only through an
-explicit item action or **Mark all read**. Background refresh replaces only the deck
-content, never the bell or the navbar, so polling cannot make top-bar controls flicker.
+explicit item action or **Mark all read**. Background refresh replaces only the inner contents of the stable Activity and
+Notifications sections. It never replaces the bell, navbar, slider shell, tabs, or
+Alpine state, so polling cannot make controls flicker or leave a blank panel.
 
 ## Toast delivery policy
 

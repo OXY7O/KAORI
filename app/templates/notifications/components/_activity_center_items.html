@@ -41,7 +41,7 @@
     </article>
 {%- endmacro %}
 
-{% macro notification_item(notification, surface='panel', target='#notification-center', compact=false) -%}
+{% macro notification_item(notification, surface='panel', target='#notification-center', compact=false, swap='outerHTML') -%}
     {% set is_success = notification.status == 'success' %}
     {% set is_warning = notification.status == 'warning' %}
     {% set is_error = notification.status == 'error' %}
@@ -85,7 +85,7 @@
                             <button type="submit"
                                     hx-post="{{ url_for('notifications.mark_read', notification_id=notification.id, surface=surface, view=request.args.get('view', 'notifications')) }}"
                                     hx-target="{{ target }}"
-                                    hx-swap="outerHTML"
+                                    hx-swap="{{ swap }}"
                                     class="inline-flex items-center gap-1 text-xs font-semibold text-content-muted hover:text-content-primary">
                                 <i data-lucide="check" class="h-3 w-3"></i>Mark read
                             </button>
