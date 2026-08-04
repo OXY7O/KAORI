@@ -1,4 +1,5 @@
 {% import "notifications/components/_activity_center_items.html" as center_item %}
+{% import "components/operational_callout.html" as operational_callout %}
 {% set center = activity_center|default({}) %}
 {% set history_items = center.get('history_items', center.get('items', [])) %}
 {% set attention_count = center.get('attention_count', 0) %}
@@ -22,15 +23,13 @@
     </div>
 
     {% if attention_count %}
-        <div class="flex items-center gap-3 rounded-xl border border-status-warning-border bg-status-warning-soft px-3 py-2.5">
-            <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-status-warning text-white">
-                <i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i>
-            </span>
-            <div class="min-w-0">
-                <p class="text-xs font-semibold text-status-warning-text">{{ attention_count }} notification{{ '' if attention_count == 1 else 's' }} need attention</p>
-                <p class="mt-0.5 text-xs text-content-secondary">Unread warnings and failed operations are highlighted.</p>
-            </div>
-        </div>
+        {{ operational_callout.render(
+            attention_count ~ ' notification' ~ ('' if attention_count == 1 else 's') ~ ' need attention',
+            'Unread warnings and failed operations are highlighted.',
+            icon='triangle-alert',
+            tone='warning',
+            variant='semantic'
+        ) }}
     {% endif %}
 
     {% if history_items %}

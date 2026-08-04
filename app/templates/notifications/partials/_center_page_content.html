@@ -1,3 +1,4 @@
+{% import "components/operational_callout.html" as operational_callout %}
 {% import "notifications/components/_activity_center_items.html" as center_item %}
 {% set active_jobs = activity_center.get('active_jobs', []) %}
 {% set history_items = activity_center.get('history_items', []) %}
@@ -72,15 +73,13 @@
                 </div>
             {% else %}
                 {% if activity_center.attention_count %}
-                    <div class="flex items-center justify-between gap-3 rounded-xl border border-status-warning-border bg-status-warning-soft px-4 py-3">
-                        <div class="flex min-w-0 items-center gap-3">
-                            <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-status-warning text-white"><i data-lucide="triangle-alert" class="h-4 w-4"></i></span>
-                            <div class="min-w-0">
-                                <p class="text-xs font-semibold text-status-warning-text">{{ activity_center.attention_count }} notification{{ '' if activity_center.attention_count == 1 else 's' }} need attention</p>
-                                <p class="mt-0.5 text-xs text-content-secondary">Unread warnings and failed operations are highlighted below.</p>
-                            </div>
-                        </div>
-                    </div>
+                    {{ operational_callout.render(
+                        activity_center.attention_count ~ ' notification' ~ ('' if activity_center.attention_count == 1 else 's') ~ ' need attention',
+                        'Unread warnings and failed operations are highlighted below.',
+                        icon='triangle-alert',
+                        tone='warning',
+                        variant='semantic'
+                    ) }}
                 {% endif %}
                 {% if history_items %}
                     {% for notification in history_items %}{{ center_item.notification_item(notification, surface='page', target='#activity-notification-page') }}{% endfor %}

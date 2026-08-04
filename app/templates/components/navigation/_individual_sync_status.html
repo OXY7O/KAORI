@@ -1,10 +1,11 @@
+{% import "components/activity_status_card.html" as activity_status_card %}
 <div id="individual-sync-task-{{ sync.task_id }}"
      hx-get="{{ url_for('cluster.individual_sync_status', task_id=sync.task_id) }}"
      hx-trigger="load delay:2s"
      hx-swap="outerHTML"
      role="status"
      aria-live="polite"
-     class="relative overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm">
+     class="{{ activity_status_card.shell_classes() }}">
     <div class="p-4">
         <div class="flex items-start gap-3">
             <span class="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">

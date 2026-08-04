@@ -10,6 +10,8 @@ run_static() {
     bash scripts/verify_source_hygiene.sh
     python scripts/verify_python_syntax.py
     python scripts/verify_single_pdf_engine.py
+    python scripts/verify_report_runtime_imports.py
+    python scripts/verify_report_storage_resilience.py
     python -m ruff check app migrations tests scripts
     python -m ruff format --check app migrations tests scripts
     python -m djlint app/templates --check
@@ -25,7 +27,10 @@ run_static() {
     python scripts/verify_feature_test_coverage.py
     python scripts/verify_ui_reuse.py
     python scripts/verify_ui_style.py
+    python scripts/verify_notification_activity_center.py
+    python scripts/verify_dark_mode_standard.py
     python scripts/verify_sidebar_navigation_standard.py
+    python scripts/verify_hero_component_standard.py
     pytest -q tests/contracts tests/migrations -m 'contract or migration'
 }
 

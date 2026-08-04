@@ -107,9 +107,6 @@
     "app/templates/components/live_lookup_notice.html": {
       "semantic_border_utilities": 1
     },
-    "app/templates/components/navigation/_notification_center.html": {
-      "page_local_compact_pill_labels": 2
-    },
     "app/templates/components/navigation/_quick_sync_result.html": {
       "semantic_border_utilities": 2
     },
@@ -123,9 +120,6 @@
     "app/templates/components/navigation/sidebar.html": {
       "custom_hero_titles": 1,
       "font_extrabold_utilities": 7
-    },
-    "app/templates/components/navigation/topbar.html": {
-      "raw_palette_utilities": 11
     },
     "app/templates/components/operational_metric_card.html": {
       "copied_standard_surface_shells": 1
@@ -353,6 +347,7 @@
       "semantic_border_utilities": 1
     },
     "app/templates/reports/generate/index.html": {
+      "arbitrary_text_sizes": 1,
       "raw_palette_utilities": 18,
       "semantic_border_utilities": 16
     },
@@ -365,9 +360,21 @@
       "raw_palette_utilities": 63,
       "semantic_border_utilities": 2
     },
+    "app/templates/reports/pdf/alerts_anomalies.html": {
+      "raw_hex_colors": 7
+    },
+    "app/templates/reports/pdf/components/_reporting_standard.html": {
+      "custom_hero_titles": 1
+    },
+    "app/templates/reports/pdf/components/analytics_publication.html": {
+      "custom_hero_titles": 2
+    },
     "app/templates/reports/pdf/report.html": {
       "custom_hero_titles": 1,
       "raw_hex_colors": 3
+    },
+    "app/templates/reports/pdf/top_consumers_analysis.html": {
+      "raw_hex_colors": 5
     },
     "app/templates/reports/report_templates/index.html": {
       "raw_palette_utilities": 34

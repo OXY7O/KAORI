@@ -47,6 +47,16 @@ _TABLIST = re.compile(r'role=[\"\']tablist[\"\']', re.IGNORECASE)
 _APPROVED_SEMANTIC_BORDER_COMPONENTS = {
     'app/templates/components/operational_callout.html',
 }
+_APPROVED_STANDARD_SURFACE_COMPONENTS = {
+    'app/templates/components/table.html',
+    'app/templates/components/operational_section_card.html',
+    'app/templates/components/snapshot_context_bar.html',
+    'app/templates/components/visualization_workspace.html',
+    'app/templates/components/details/_detail_content.html',
+    'app/templates/components/operation_evidence_boundary.html',
+    'app/templates/components/protected_value_panel.html',
+    'app/templates/components/activity_status_card.html',
+}
 
 _APPROVED_ARBITRARY_TEXT_COMPONENTS = {
     'app/templates/components/forecast_projection_chart.html',
@@ -105,15 +115,7 @@ def _count_custom_hero_titles(relative: str, source: str) -> int:
 
 
 def _count_copied_standard_surface_shells(relative: str, source: str) -> int:
-    if relative in {
-        'app/templates/components/table.html',
-        'app/templates/components/operational_section_card.html',
-        'app/templates/components/snapshot_context_bar.html',
-        'app/templates/components/visualization_workspace.html',
-        'app/templates/components/details/_detail_content.html',
-        'app/templates/components/operation_evidence_boundary.html',
-        'app/templates/components/protected_value_panel.html',
-    }:
+    if relative in _APPROVED_STANDARD_SURFACE_COMPONENTS:
         return 0
     count = 0
     for match in _TAG_WITH_CLASS.finditer(source):
