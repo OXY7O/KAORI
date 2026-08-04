@@ -58,7 +58,7 @@
                                 :aria-busy="notificationDeckRefreshing.toString()"
                                 class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-kaori-primary bg-kaori-primary text-white shadow-sm transition hover:bg-kaori-primary-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus disabled:cursor-wait disabled:opacity-70"
                                 aria-label="Refresh activity and notifications now"
-                                :title="notificationDeckRefreshing ? 'Refreshing activity and notifications' : 'Refresh now'">
+                                :title="notificationDeckRefreshing ? 'Refreshing current status' : 'Refresh now'">
                             <i data-lucide="refresh-cw"
                                class="h-4 w-4"
                                :class="notificationDeckRefreshing ? 'animate-spin' : ''"></i>
@@ -125,19 +125,25 @@
 
                 <footer class="flex shrink-0 items-center justify-between gap-3 border-t border-outline-subtle bg-surface-card px-4 py-3">
                     <div class="min-w-0">
-                        <p x-show="!notificationDeckRefreshing && !notificationDeckRefreshError"
-                           class="truncate text-xs text-content-muted">Auto refresh every 15 seconds</p>
+                        <div x-show="!notificationDeckRefreshing && !notificationDeckRefreshError"
+                             class="min-w-0 text-xs text-content-muted">
+                            <p class="truncate">Auto refresh every 15 seconds</p>
+                            <p x-cloak
+                               x-show="notificationDeckLastChecked"
+                               class="mt-0.5 truncate"
+                               x-text="`Last checked ${notificationDeckLastChecked}`"></p>
+                        </div>
                         <p x-cloak
                            x-show="notificationDeckRefreshing"
                            class="inline-flex items-center gap-1.5 text-xs font-medium text-kaori-primary">
                             <i data-lucide="loader-circle" class="h-3.5 w-3.5 animate-spin"></i>
-                            Refreshing activity and notifications
+                            Refreshing current status
                         </p>
                         <p x-cloak
                            x-show="!notificationDeckRefreshing && notificationDeckRefreshError"
                            class="inline-flex items-center gap-1.5 text-xs font-medium text-status-warning-text">
                             <i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i>
-                            Refresh failed. Auto refresh will retry.
+                            Status refresh failed. Auto refresh will retry.
                         </p>
                     </div>
                     <a href="{{ url_for('notifications.center', view='notifications') }}"

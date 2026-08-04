@@ -48,6 +48,8 @@ _QUEUE_ICONS = {
 
 
 def _duration_label(job: JobExecution) -> str:
+    if job.status == 'queued':
+        return 'Waiting'
     start = job.started_at or job.queued_at
     end = job.completed_at
     if start is None:

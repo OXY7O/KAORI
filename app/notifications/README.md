@@ -150,12 +150,16 @@ synchronization is not rendered through a second nested polling source; it remai
 part of the canonical job list. This prevents activity cards from disappearing and
 reappearing whenever the panel refreshes.
 
-Activity and Notifications are refreshed together through one serialized request
-every 15 seconds. The response updates only the active-job list, notification list,
-and stable counters through HTMX out-of-band swaps. It never replaces the tab shell,
-local foreground activity slot, drawer, or Alpine state.
+Activity and Notifications use one read-only JSON snapshot every 15 seconds. The
+snapshot reads current `JobExecution` and `Notification` rows only; it never waits for
+a queued or running worker to complete. The response updates the two stable content
+slots and counters in place, while the drawer, selected tab, local foreground activity,
+and bell remain mounted.
 
-Manual refresh uses the same combined endpoint. The violet refresh icon is disabled
-and spins only for the manual request. One promise and a 12-second safety timeout own
-the loading state, so the icon always stops after success, failure, abort, or timeout.
-Automatic polling remains silent and skips a cycle while another refresh is active.
+Manual refresh aborts any older automatic request and immediately starts a fresh
+snapshot. Native `fetch()` with `AbortController` owns the request lifecycle and has a
+five-second UI timeout. The violet icon spins only for that manual snapshot and always
+stops on success, HTTP failure, abort, or timeout. A queued job remains visible as
+**Queued / Waiting** with a static progress marker; queue state never controls the
+refresh indicator. Automatic polling is silent and skips a cycle while a snapshot is
+already in flight.

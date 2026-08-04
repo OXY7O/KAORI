@@ -24,6 +24,8 @@
                     <div class="h-1.5 overflow-hidden rounded-full bg-kaori-soft/70">
                         {% if job.progress_mode == 'determinate' %}
                             <div class="h-full rounded-full bg-kaori-primary" style="width: {{ job.progress }}%"></div>
+                        {% elif job.progress_mode == 'queued' %}
+                            <div class="h-full w-1/3 rounded-full bg-kaori-primary/60"></div>
                         {% else %}
                             <div class="notification-progress-indeterminate h-full rounded-full bg-kaori-primary"></div>
                         {% endif %}

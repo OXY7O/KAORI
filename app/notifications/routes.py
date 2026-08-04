@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flask import Blueprint, make_response, redirect, render_template, request, url_for
+from flask import Blueprint, jsonify, make_response, redirect, render_template, request, url_for
 from flask.typing import ResponseReturnValue
 from flask_login import current_user, login_required
 
@@ -67,11 +67,26 @@ def _render_notifications_panel(*, emit_oob: bool = True) -> ResponseReturnValue
     )
 
 
-def _render_refresh_payload() -> ResponseReturnValue:
-    return _fragment_response(
-        'notifications/partials/_notification_deck_refresh.html',
-        activity_center=_navigation_context(),
+def _render_refresh_snapshot() -> ResponseReturnValue:
+    """Return one database snapshot; never wait for queued workers to finish."""
+    context = _navigation_context()
+    response = jsonify(
+        {
+            'active_count': int(context.get('active_count', 0)),
+            'unread_count': int(context.get('unread_count', 0)),
+            'activity_html': render_template(
+                'notifications/partials/_notification_deck_activity_jobs.html',
+                activity_center=context,
+            ),
+            'notifications_html': render_template(
+                'notifications/partials/_notification_deck_notifications.html',
+                activity_center=context,
+                emit_oob=False,
+            ),
+        }
     )
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    return response
 
 
 def _render_center_page_content() -> str:
@@ -138,7 +153,7 @@ def panel() -> ResponseReturnValue:
 @notifications_bp.get('/panel/refresh')
 @login_required
 def panel_refresh() -> ResponseReturnValue:
-    return _render_refresh_payload()
+    return _render_refresh_snapshot()
 
 
 @notifications_bp.get('/panel/activity')
