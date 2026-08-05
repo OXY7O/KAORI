@@ -22,27 +22,33 @@
     <body class="min-h-full bg-surface-page font-sans text-content-primary antialiased">
         {% block content %}
         {% endblock content %}
-        {% set queued_quick_action_feedback = load_quick_action_feedback() %}
-        <div id="quick-action-feedback"
+        {% set queued_operational_feedback = load_operational_feedback() %}
+        <div id="operational-toast-region"
              class="pointer-events-none fixed right-4 top-4 z-50 flex w-[min(28rem,calc(100vw-2rem))] flex-col gap-3 sm:right-6 sm:top-6">
-            {% if queued_quick_action_feedback %}
+            <div id="operational-toast-stack" class="flex w-full flex-col gap-3">
+            {% if queued_operational_feedback %}
                 {% with
-                    status=queued_quick_action_feedback.status,
-                    title=queued_quick_action_feedback.title,
-                    message=queued_quick_action_feedback.message,
-                    detail=queued_quick_action_feedback.detail,
-                    view_url=queued_quick_action_feedback.view_url,
-                    action_label=queued_quick_action_feedback.action_label,
-                    action_icon=queued_quick_action_feedback.action_icon,
-                    completed_label=queued_quick_action_feedback.completed_label,
-                    notification_saved=queued_quick_action_feedback.notification_saved,
-                    delivery=queued_quick_action_feedback.delivery|default('toast')
+                    status=queued_operational_feedback.status,
+                    title=queued_operational_feedback.title,
+                    message=queued_operational_feedback.message,
+                    detail=queued_operational_feedback.detail,
+                    view_url=queued_operational_feedback.view_url,
+                    action_label=queued_operational_feedback.action_label,
+                    action_icon=queued_operational_feedback.action_icon,
+                    completed_label=queued_operational_feedback.completed_label,
+                    notification_saved=queued_operational_feedback.notification_saved,
+                    activity_audit_expected=queued_operational_feedback.activity_audit_expected|default(queued_operational_feedback.notification_saved),
+                    feedback_id=queued_operational_feedback.feedback_id|default(None),
+                    auto_dismiss_ms=queued_operational_feedback.auto_dismiss_ms|default(None),
+                    delivery=queued_operational_feedback.delivery|default('toast')
                     %}
-                    {% include "components/navigation/_quick_sync_result.html" %}
+                    {% include "components/operational_toast.html" %}
                 {% endwith %}
             {% endif %}
+            </div>
         </div>
         <script src="{{ url_for('static', filename='vendor/lucide/lucide.min.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/operational_toasts.js') }}"></script>
         <script>
             document.addEventListener('DOMContentLoaded', () => {
                 const renderIcons = () => {
@@ -52,22 +58,6 @@
                 }
 
                 renderIcons()
-
-                window.dismissQuickActionToast = (button) => {
-                    const toast = button?.closest?.('[data-quick-action-toast]')
-                    if (toast) {
-                        toast.remove()
-                    }
-                }
-
-                document.addEventListener('click', (event) => {
-                    const target = event.target instanceof Element ? event.target : null
-                    const closeButton = target?.closest('[data-quick-action-toast-close]')
-                    if (closeButton) {
-                        event.preventDefault()
-                        window.dismissQuickActionToast(closeButton)
-                    }
-                })
 
                 const passwordInput = document.querySelector('[data-password-input]')
                 const passwordToggle = document.querySelector('[data-password-toggle]')

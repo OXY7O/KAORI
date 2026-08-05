@@ -79,9 +79,9 @@ Impact context can lag behind the live object. The UI must label it as inventory
 
 - Create and update forms use the shared validation gate in `app/static/js/validated_operations.js`.
 - The final mutation button stays disabled until the latest form state passes validation. Any input or target change invalidates that UI state.
-- The server never trusts the browser gate: final create and update requests run Kubernetes server-side validation again immediately before mutation through `validate_then_apply`.
+- The server never trusts the browser gate: validation performs one Kubernetes server-side dry-run, while final create and update perform one new server-side dry-run followed by exactly one mutation.
 - Successful create, update, and delete operations redirect to a clean page state so cluster, namespace, ConfigMap, entries, and confirmation values do not remain stale.
-- Validation failures preserve the current form and are surfaced through the KAORI notification pipeline without Flask flash messages.
+- Validation failures preserve the current form, replace the persistent validation preview, and append one canonical operational toast without Flask flash messages.
 
 ### Validation-gated action state
 
@@ -101,7 +101,7 @@ Impact context can lag behind the live object. The UI must label it as inventory
 
 ### Shared action-bar contract
 
-- ConfigMap and Secret templates import `kubernetes_operations/_components.html` directly; domain-specific component wrappers are not retained.
+- ConfigMap and Secret templates import `components/kubernetes_operation_ui.html`; the former compatibility wrapper is removed.
 - The canonical `action_bar` macro owns call-block rendering so validation and mutation controls use one runtime-safe implementation.
 - Direct component ownership and wrapper absence are covered by `tests/contracts/kubernetes/test_operation_component_caller_contract.py`.
 
@@ -120,3 +120,21 @@ The canonical presentation is documented in `docs/design/patterns/KUBERNETES_CON
 ## Workspace density
 
 Create, Update, and Delete use the shared 22rem wide mutation rail. Primary Info Flow remains visible. Secondary guardrail collections are expandable and closed by default. Form Action Bar remains within the primary workspace and separates its title from helper copy.
+
+
+## Canonical service boundaries
+
+ConfigMap Management is split by responsibility:
+
+- `contracts.py` owns typed target, entry, and impact contracts;
+- `validation.py` owns DNS/key validation, base64 normalization, update mode, payload sizing, and diff calculation;
+- `runtime.py` owns Kubernetes client construction, TLS policy, timeout, and safe provider errors;
+- `service.py` owns live lookup and mutation orchestration;
+- `receipts.py` owns signed destructive-operation receipts bound to user, target, resource version, and ten-minute expiry;
+- `routes.py` owns HTTP, CSRF, Activity Audit, HTMX/OOB response, and redirect behavior.
+
+No internal compatibility aliases or session-stored delete tokens are retained.
+
+## Operational feedback
+
+Every validation and mutation outcome uses `components/operational_toast.html` and the durable Activity Audit event created from the same normalized payload. Success, information, and warning toasts auto-dismiss according to the global policy; errors remain visible until dismissed. Hover or keyboard focus pauses the timer. At most four toasts remain visible.

@@ -4,7 +4,7 @@
 {% import "components/context_rail.html" as context_rail %}
 {% import "components/live_lookup_notice.html" as live_lookup %}
 {% import "components/table_label.html" as table_label %}
-{% import "kubernetes_operations/_components.html" as configmap_ui %}
+{% import "components/kubernetes_operation_ui.html" as configmap_ui %}
 {% import "components/info_flow.html" as info_flow %}
 {% import "components/information_guide_card.html" as information_guide_card %}
 {% block title %}Create ConfigMap{% endblock title %}
@@ -48,6 +48,8 @@
               hx-post="{{ url_for('kubernetes_operations.create_configmap') }}"
               hx-target="#configmap-operation-feedback"
               hx-swap="innerHTML"
+              hx-sync="this:drop"
+              hx-disabled-elt="find button"
               class="space-y-6">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div class="{{ context_rail.layout_classes('wide') }}">
@@ -117,6 +119,8 @@
                             {% include 'kubernetes_operations/configmaps/_entries_editor.html' %}
                         </div>
                     </section>
+                    {% set validation_preview = none %}
+                    {% include 'kubernetes_operations/configmaps/_validation_preview.html' %}
                     {% call configmap_ui.action_bar('scan-search', 'Validate Before Creation', 'Validate the latest form state before creating this ConfigMap.') %}
                         <button name="operation" value="validate" class="{{ configmap_ui.validate_button_classes() }}"><i data-lucide="scan-search" class="h-4 w-4"></i>Validate</button>
                         <button name="operation" value="create" data-validation-apply disabled aria-disabled="true" title="Run validation after the latest input change before applying this operation" class="{{ configmap_ui.primary_button_classes() }}"><i data-lucide="file-plus-2" class="h-4 w-4"></i>Create ConfigMap</button>

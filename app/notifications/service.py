@@ -12,13 +12,9 @@ from app.notifications.constants import (
     NAVIGATION_NOTIFICATION_LIMIT,
 )
 from app.notifications.feedback import (
-    build_quick_action_feedback,
-)
-from app.notifications.feedback import (
-    pop_quick_action_feedback as _pop_quick_action_feedback,
-)
-from app.notifications.feedback import (
-    queue_quick_action_feedback as _queue_quick_action_feedback,
+    OperationalFeedbackSpec,
+    build_operational_feedback,
+    queue_operational_feedback,
 )
 from app.notifications.normalization import standardize_activity_text
 from app.notifications.queries import (
@@ -218,24 +214,26 @@ def record_operational_activity(
                 event_type,
             )
 
-    feedback = build_quick_action_feedback(
-        status=normalized_status,
-        title=normalized_title,
-        message=normalized_message,
-        detail=normalized_detail,
-        action_url=action_url,
-        action_label=action_label,
-        action_icon=action_icon,
-        notification_saved=notification_saved,
-        delivery=_feedback_delivery(
-            event_type=event_type,
+    feedback = build_operational_feedback(
+        OperationalFeedbackSpec(
             status=normalized_status,
-            metadata=metadata,
-        ),
+            title=normalized_title,
+            message=normalized_message,
+            detail=normalized_detail,
+            action_url=action_url,
+            action_label=action_label,
+            action_icon=action_icon,
+            notification_saved=notification_saved,
+            delivery=_feedback_delivery(
+                event_type=event_type,
+                status=normalized_status,
+                metadata=metadata,
+            ),
+        )
     )
 
     if queue_feedback:
-        _queue_quick_action_feedback(feedback)
+        queue_operational_feedback(feedback)
 
     return feedback
 
@@ -263,18 +261,21 @@ def queue_transient_feedback(
         message=message,
         detail=detail,
     )
-    feedback = build_quick_action_feedback(
-        status=normalized_status,
-        title=normalized_title,
-        message=normalized_message,
-        detail=normalized_detail,
-        action_url=action_url,
-        action_label=action_label,
-        action_icon=action_icon,
-        notification_saved=False,
-        delivery='toast',
+    feedback = build_operational_feedback(
+        OperationalFeedbackSpec(
+            status=normalized_status,
+            title=normalized_title,
+            message=normalized_message,
+            detail=normalized_detail,
+            action_url=action_url,
+            action_label=action_label,
+            action_icon=action_icon,
+            notification_saved=False,
+            activity_audit_expected=False,
+            delivery='toast',
+        )
     )
-    _queue_quick_action_feedback(feedback)
+    queue_operational_feedback(feedback)
     return feedback
 
 
@@ -337,11 +338,3 @@ def mark_notification_read(*, notification_id: int, user_id: int) -> None:
 
 def mark_all_notifications_read(*, user_id: int) -> None:
     _mark_all_notifications_read(user_id=user_id)
-
-
-def queue_quick_action_feedback(feedback: dict[str, Any]) -> None:
-    _queue_quick_action_feedback(feedback)
-
-
-def pop_quick_action_feedback() -> dict[str, Any] | None:
-    return _pop_quick_action_feedback()

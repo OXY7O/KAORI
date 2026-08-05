@@ -84,8 +84,8 @@
                                 <form method="post"
                                       action="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
                                       hx-post="{{ url_for('alertmanager.validate_instance', instance_id=instance.id) }}"
-                                      hx-target="#operational-action-feedback"
-                                      hx-swap="innerHTML"
+                                      hx-target="#alertmanager-validation-workspace"
+                                      hx-swap="outerHTML"
                                       hx-disabled-elt="button">
                                     {% if csrf_token is defined %}<input type="hidden" name="csrf_token" value="{{ csrf_token() }}">{% endif %}
                                     <button type="submit"

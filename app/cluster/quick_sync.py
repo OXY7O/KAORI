@@ -55,7 +55,7 @@ def render_sync_snapshot(
     template = 'components/navigation/_quick_sync_status.html'
     context = {'sync': snapshot}
     if not snapshot['is_active']:
-        template = 'components/navigation/_quick_sync_result.html'
+        template = 'components/operational_toast.html'
         context = {
             'task_id': snapshot.get('task_id'),
             'status': snapshot.get('status') or 'info',
@@ -82,7 +82,7 @@ def render_sync_snapshot(
 def render_enqueue_error(*, message: str, detail: str, response_status: int) -> ResponseReturnValue:
     return (
         render_template(
-            'components/navigation/_quick_sync_result.html',
+            'components/operational_toast.html',
             status='error',
             title='Kubernetes sync could not start',
             message=message,

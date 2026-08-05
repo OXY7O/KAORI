@@ -33,11 +33,14 @@ def test_active_progress_is_determinate_without_restarting_animation() -> None:
         'app/templates/components/navigation/_quick_sync_status.html'
     )
 
-    for relative in (
-        'app/templates/jobs/configuration/_execution_activity.html',
-        'app/templates/components/navigation/_quick_sync_status.html',
-    ):
-        assert 'progress_bar.determinate' in _read(relative)
+    assert 'progress_bar.determinate' in _read(
+        'app/templates/jobs/configuration/_execution_activity.html'
+    )
+    quick_sync = _read('app/templates/components/navigation/_quick_sync_status.html')
+    shared_progress = _read('app/templates/components/operational_progress_toast.html')
+    assert 'components/operational_progress_toast.html' in quick_sync
+    assert 'progress_toast.render' in quick_sync
+    assert 'progress_bar.determinate' in shared_progress
 
     for relative in (
         'app/templates/jobs/configuration/definitions/inventory_sync.html',

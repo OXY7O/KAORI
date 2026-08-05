@@ -124,7 +124,7 @@ def individual_sync_status(task_id: str) -> ResponseReturnValue:
         return render_template('components/navigation/_individual_sync_status.html', sync=snapshot)
 
     return render_template(
-        'components/navigation/_quick_sync_result.html',
+        'components/operational_toast.html',
         task_id=task_id,
         dismiss_url=url_for('cluster.dismiss_individual_sync_status', task_id=task_id),
         status=snapshot['status'],

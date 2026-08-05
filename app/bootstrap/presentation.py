@@ -20,7 +20,8 @@ from app.common.timezone import (
     normalize_timezone_mode,
     normalize_timezone_name,
 )
-from app.notifications.service import get_navigation_notification_context, pop_quick_action_feedback
+from app.notifications.feedback import pop_operational_feedback
+from app.notifications.service import get_navigation_notification_context
 
 _DEFAULT_PREFERENCES = {
     'timezone_name': 'UTC',
@@ -61,10 +62,10 @@ def _navigation_notifications() -> dict[str, Any]:
     )
 
 
-def _quick_action_feedback() -> Any:
+def _operational_feedback() -> Any:
     if not current_user.is_authenticated:
         return None
-    return pop_quick_action_feedback()
+    return pop_operational_feedback()
 
 
 def register_presentation(app: Flask) -> None:
@@ -88,7 +89,7 @@ def register_presentation(app: Flask) -> None:
             'current_time_format': preferences['time_format'],
             'csrf_token': generate_csrf,
             'load_navigation_notification_context': _navigation_notifications,
-            'load_quick_action_feedback': _quick_action_feedback,
+            'load_operational_feedback': _operational_feedback,
             'cluster_onboarding': build_cluster_onboarding_context(),
             'navigation_breadcrumb': build_navigation_breadcrumb(request.endpoint, request.path),
         }

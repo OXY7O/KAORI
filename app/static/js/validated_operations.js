@@ -65,7 +65,16 @@
       (associatedForm && associatedForm.matches(formSelector) ? associatedForm : null) ||
       (explicitFormId ? document.getElementById(explicitFormId) : null);
     if (form && form.matches(formSelector) && !target.matches('[name="operation"]')) {
+      const wasValidated = form.dataset.validationState === 'validated';
       setValidated(form, false);
+      if (wasValidated) {
+        form.dispatchEvent(
+          new CustomEvent('kaori:operation-validation-invalidated', {
+            bubbles: true,
+            detail: { formId: form.id || '' },
+          }),
+        );
+      }
     }
   };
 

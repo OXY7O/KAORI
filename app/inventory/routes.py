@@ -67,11 +67,8 @@ from app.inventory.resources.workloads import (
     get_workload_inventory,
 )
 from app.inventory.topology.service import build_topology_graph, build_topology_page_context
-from app.notifications.service import (
-    get_navigation_notification_context,
-    queue_quick_action_feedback,
-    record_operational_activity,
-)
+from app.notifications.feedback import queue_operational_feedback
+from app.notifications.service import get_navigation_notification_context, record_operational_activity
 from app.rbac.decorators import permission_required
 
 logger = logging.getLogger(__name__)
@@ -146,12 +143,12 @@ def sync(cluster_id: str):
         )
         if request.headers.get('HX-Request') == 'true':
             return render_template(
-                'components/navigation/_quick_sync_result.html',
+                'components/operational_toast.html',
                 **feedback,
                 toast_oob=True,
                 notification_context=get_navigation_notification_context(user_id=current_user.id),
             ), 503
-        queue_quick_action_feedback(feedback)
+        queue_operational_feedback(feedback)
         return redirect(request.referrer or url_for('integrations.kubernetes'))
 
     metadata = {

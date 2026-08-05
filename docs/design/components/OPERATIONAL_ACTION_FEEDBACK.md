@@ -12,7 +12,7 @@ For a same-page mutation:
 2. The server performs the operation and its server-side guardrails.
 3. `record_operational_activity(...)` or the provider wrapper persists the Activity Audit event.
 4. The route returns the affected workspace partial.
-5. The response includes `components/operation_feedback_oob.html` so the toast is swapped into `#operational-action-feedback`.
+5. The response includes `components/operation_feedback_oob.html`, which renders `components/operational_toast.html` into `#operational-toast-stack`.
 6. The page is not fully reloaded.
 
 For an operation that changes the current resource location, such as successful registration or deletion, the HTMX response uses `HX-Redirect`. The event is queued before navigation so the destination page displays the same persisted feedback.
@@ -76,3 +76,13 @@ Cluster compatibility routes may exist only as redirect or migration boundaries.
 - `app/notifications/service.py::record_operational_activity`
 - `app/prometheus/routes.py`
 - `app/alertmanager/routes.py`
+
+
+## Toast lifecycle
+
+- The payload contains a unique `feedback_id` and `auto_dismiss_ms`.
+- Success defaults to 8 seconds, information to 10 seconds, warning to 12 seconds, and error to persistent.
+- Hover and keyboard focus pause the timer.
+- The global stack keeps at most four visible toasts and deduplicates the same feedback ID.
+- Both authenticated and authentication layouts load `operational_toasts.js`; domain layouts do not own close handlers.
+- Background progress remains in Activity Center unless a domain explicitly selects toast delivery for a user-initiated synchronous result.

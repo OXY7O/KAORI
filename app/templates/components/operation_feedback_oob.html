@@ -1,5 +1,6 @@
 {% if operation_feedback %}
     {% with
+        feedback_id=operation_feedback.feedback_id,
         status=operation_feedback.status,
         title=operation_feedback.title,
         message=operation_feedback.message,
@@ -9,9 +10,12 @@
         action_icon=operation_feedback.action_icon,
         completed_label=operation_feedback.completed_label,
         notification_saved=operation_feedback.notification_saved,
+        activity_audit_expected=operation_feedback.activity_audit_expected|default(operation_feedback.notification_saved),
+        notification_context=operation_feedback.notification_context|default(none),
         delivery=operation_feedback.delivery|default('toast'),
+        auto_dismiss_ms=operation_feedback.auto_dismiss_ms|default(none),
         toast_oob=true
-        %}
-        {% include 'components/navigation/_quick_sync_result.html' %}
+    %}
+        {% include 'components/operational_toast.html' %}
     {% endwith %}
 {% endif %}

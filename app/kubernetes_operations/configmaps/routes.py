@@ -2,15 +2,16 @@ from __future__ import annotations
 
 from typing import Any
 
-from flask import current_app, make_response, redirect, render_template, request, session, url_for
+from flask import current_app, make_response, redirect, render_template, request, url_for
 from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
-from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from wtforms.validators import ValidationError
 
+from app.kubernetes_operations.configmaps.receipts import issue_delete_receipt, verify_delete_receipt
 from app.kubernetes_operations.configmaps.service import (
     create_configmap,
     delete_configmap,
+    get_clusters,
     get_configmaps,
     get_context,
     get_impact_context,
@@ -19,61 +20,12 @@ from app.kubernetes_operations.configmaps.service import (
     read_configmap,
     update_configmap,
 )
-from app.kubernetes_operations.operation_flow import validate_then_apply
-from app.notifications.service import (
-    get_navigation_notification_context,
-    record_operational_activity,
-)
+from app.notifications.service import get_navigation_notification_context, record_operational_activity
 from app.rbac.decorators import any_permission_required, permission_required
 
 
-
-
-_CONFIGMAP_DELETE_RECEIPT_SESSION_KEY = 'configmap_delete_validation_receipt'
-_CONFIGMAP_DELETE_RECEIPT_MAX_AGE_SECONDS = 600
-
-
-def _delete_receipt_serializer() -> URLSafeTimedSerializer:
-    return URLSafeTimedSerializer(
-        current_app.config['SECRET_KEY'],
-        salt='kaori-configmap-delete-validation',
-    )
-
-
-def _issue_delete_receipt(metadata: dict[str, Any]) -> str:
-    token = _delete_receipt_serializer().dumps(
-        {
-            'cluster_id': str(metadata['cluster_id']),
-            'namespace': metadata['namespace'],
-            'configmap_name': metadata['configmap_name'],
-            'resource_version': metadata['resource_version'],
-        }
-    )
-    session[_CONFIGMAP_DELETE_RECEIPT_SESSION_KEY] = token
-    return token
-
-
-def _verify_delete_receipt(source: Any) -> dict[str, str]:
-    token = (source.get('delete_validation_token') or '').strip()
-    if not token:
-        raise ValueError('Validate the ConfigMap deletion before applying the final delete action.')
-    try:
-        payload = _delete_receipt_serializer().loads(
-            token,
-            max_age=_CONFIGMAP_DELETE_RECEIPT_MAX_AGE_SECONDS,
-        )
-    except SignatureExpired as exc:
-        raise ValueError('The deletion validation expired. Run validation again before deleting.') from exc
-    except BadSignature as exc:
-        raise ValueError('The deletion validation receipt is invalid. Run validation again.') from exc
-
-    cluster_id, namespace, configmap_name = _target_values(source)
-    expected = (str(payload.get('cluster_id') or ''), payload.get('namespace') or '', payload.get('configmap_name') or '')
-    if (cluster_id, namespace, configmap_name) != expected:
-        raise ValueError('The selected ConfigMap changed after validation. Run validation again.')
-    return {
-        'resource_version': str(payload.get('resource_version') or ''),
-    }
+def _is_htmx() -> bool:
+    return request.headers.get('HX-Request') == 'true'
 
 
 def _csrf() -> None:
@@ -81,43 +33,6 @@ def _csrf() -> None:
         validate_csrf(request.form.get('csrf_token'))
     except ValidationError as exc:
         raise ValueError('The security token is missing or expired. Refresh the page and retry.') from exc
-
-
-def _feedback(
-    *,
-    event_type: str,
-    status: str,
-    title: str,
-    message: str,
-    metadata: dict[str, Any],
-    action_url: str,
-    queue_feedback: bool | None = None,
-) -> dict[str, Any]:
-    return record_operational_activity(
-        user_id=current_user.id,
-        event_type=event_type,
-        status=status,
-        title=title,
-        message=message,
-        action_url=action_url,
-        action_label='Open ConfigMap Management',
-        action_icon='file-cog',
-        metadata=metadata,
-        queue_feedback=(
-            request.headers.get('HX-Request') != 'true'
-            if queue_feedback is None
-            else queue_feedback
-        ),
-    )
-
-
-def _oob(feedback: dict[str, Any]) -> dict[str, Any]:
-    return {
-        'operation_feedback': {
-            **feedback,
-            'notification_context': get_navigation_notification_context(user_id=current_user.id),
-        }
-    }
 
 
 def _target_values(source: Any) -> tuple[str, str, str]:
@@ -138,12 +53,52 @@ def _target_url(endpoint: str, source: Any) -> str:
     )
 
 
+def _feedback(
+    *,
+    event_type: str,
+    status: str,
+    title: str,
+    message: str,
+    metadata: dict[str, Any],
+    action_url: str,
+    detail: str | None = None,
+    queue_feedback: bool = False,
+) -> dict[str, Any]:
+    normalized_metadata = {
+        **metadata,
+        'feedback_delivery': 'toast',
+        'operation_domain': 'kubernetes_configmaps',
+    }
+    return record_operational_activity(
+        user_id=int(current_user.id),
+        event_type=event_type,
+        status=status,
+        title=title,
+        message=message,
+        detail=detail,
+        action_url=action_url,
+        action_label='Open ConfigMap Management',
+        action_icon='file-cog',
+        metadata=normalized_metadata,
+        queue_feedback=queue_feedback,
+    )
+
+
+def _feedback_context(feedback: dict[str, Any]) -> dict[str, Any]:
+    return {
+        'operation_feedback': {
+            **feedback,
+            'notification_context': get_navigation_notification_context(user_id=int(current_user.id)),
+        }
+    }
+
+
 def _selection_context(
     cluster_id: str,
     namespace: str,
     configmap_name: str = '',
 ) -> dict[str, Any]:
-    context = get_context()
+    context = {'clusters': get_clusters()}
     namespaces: list[str] = []
     configmaps = []
     selection_error = None
@@ -154,7 +109,7 @@ def _selection_context(
             namespaces = get_namespaces(cluster_id)
         except ValueError as exc:
             selection_error = str(exc)
-            selection_error_title = 'Live namespace lookup failed'
+            selection_error_title = 'Live Namespace Lookup Failed'
             namespace = ''
             configmap_name = ''
         else:
@@ -166,7 +121,7 @@ def _selection_context(
                     configmaps = get_configmaps(cluster_id, namespace)
                 except ValueError as exc:
                     selection_error = str(exc)
-                    selection_error_title = 'Live ConfigMap lookup failed'
+                    selection_error_title = 'Live ConfigMap Lookup Failed'
                     configmap_name = ''
                 else:
                     live_names = {item.name for item in configmaps}
@@ -192,6 +147,58 @@ def _load_selected_target(source: Any):
     return get_target(cluster_id, namespace, configmap_name)
 
 
+def _validation_response(
+    *,
+    feedback: dict[str, Any],
+    form_id: str,
+    preview: dict[str, Any],
+    delete_validation_token: str | None = None,
+):
+    response = make_response(
+        render_template(
+            'kubernetes_operations/configmaps/_operation_response.html',
+            form_id=form_id,
+            validation_preview=preview,
+            delete_validation_token=delete_validation_token,
+            **_feedback_context(feedback),
+        )
+    )
+    if feedback.get('status') == 'success':
+        response.headers['HX-Trigger'] = (
+            '{"kaori:operation-validated":{"formId":"' + form_id + '"}}'
+        )
+    return response
+
+
+def _redirect_after_mutation(endpoint: str):
+    redirect_url = url_for(endpoint)
+    if _is_htmx():
+        response = make_response('', 200)
+        response.headers['HX-Redirect'] = redirect_url
+        return response
+    return redirect(redirect_url)
+
+
+def _unexpected_failure(
+    *,
+    operation: str,
+    endpoint: str,
+    metadata: dict[str, Any],
+    queue_feedback: bool,
+) -> dict[str, Any]:
+    current_app.logger.exception('Unexpected ConfigMap %s failure.', operation)
+    return _feedback(
+        event_type=f'kubernetes_configmap_{operation}_failed',
+        status='error',
+        title='ConfigMap Operation Failed',
+        message='KAORI could not complete the ConfigMap operation because of an unexpected internal error.',
+        detail='Review the Activity Audit and application logs before retrying.',
+        metadata={**metadata, 'operation': operation},
+        action_url=url_for(endpoint),
+        queue_feedback=queue_feedback,
+    )
+
+
 @any_permission_required(
     'kubernetes_configmaps.view',
     'kubernetes_configmaps.create',
@@ -199,18 +206,15 @@ def _load_selected_target(source: Any):
     'kubernetes_configmaps.delete',
 )
 def configmap_management_index():
-    return render_template(
-        'kubernetes_operations/configmaps/index.html',
-        **get_context(),
-    )
+    return render_template('kubernetes_operations/configmaps/index.html', **get_context())
 
 
 @permission_required('kubernetes_configmaps.create')
 def configmap_namespace_options():
     namespaces: list[str] = []
     namespace_error = None
-    cluster_id = request.args.get('cluster_id', '')
-    if cluster_id.strip():
+    cluster_id = request.args.get('cluster_id', '').strip()
+    if cluster_id:
         try:
             namespaces = get_namespaces(cluster_id)
         except ValueError as exc:
@@ -219,101 +223,92 @@ def configmap_namespace_options():
         'kubernetes_operations/configmaps/_namespace_options.html',
         namespaces=namespaces,
         selected_namespace=request.args.get('namespace', ''),
-        cluster_selected=bool(cluster_id.strip()),
+        cluster_selected=bool(cluster_id),
         namespace_error=namespace_error,
     )
 
 
 @permission_required('kubernetes_configmaps.create')
 def create_configmap_page():
-    feedback = None
-    if request.method == 'POST':
-        dry_run = request.form.get('operation') != 'create'
-        try:
-            _csrf()
-            metadata = (
-                create_configmap(request.form, dry_run=True)
-                if dry_run
-                else validate_then_apply(
-                    validate=lambda: create_configmap(request.form, dry_run=True),
-                    apply=lambda: create_configmap(request.form, dry_run=False),
-                )
-            )
-            title = 'ConfigMap validation completed' if dry_run else 'ConfigMap created'
-            message = (
-                'Kubernetes accepted the ConfigMap payload during server-side dry-run.'
-                if dry_run
-                else f'ConfigMap {metadata["configmap_name"]} was created in namespace {metadata["namespace"]}.'
-            )
-            feedback = _feedback(
-                event_type=('kubernetes_configmap_validated' if dry_run else 'kubernetes_configmap_created'),
-                status='success',
-                title=title,
-                message=message,
-                metadata=metadata,
-                action_url=url_for('kubernetes_operations.configmap_management'),
-                queue_feedback=(
-                    request.headers.get('HX-Request') != 'true'
-                    or not dry_run
-                ),
-            )
-        except ValueError as exc:
-            title = 'ConfigMap validation failed' if dry_run else 'ConfigMap creation failed'
-            metadata = {
-                'cluster_id': request.form.get('cluster_id'),
-                'namespace': request.form.get('namespace'),
-                'configmap_name': request.form.get('configmap_name'),
-                'operation': 'validation' if dry_run else 'creation',
-            }
-            feedback = _feedback(
-                event_type=(
-                    'kubernetes_configmap_validation_failed' if dry_run else 'kubernetes_configmap_creation_failed'
-                ),
-                status='error',
-                title=title,
-                message=str(exc),
-                metadata=metadata,
-                action_url=url_for('kubernetes_operations.create_configmap'),
-            )
-        except Exception:
-            current_app.logger.exception('Unexpected ConfigMap create failure.')
-            feedback = _feedback(
-                event_type='kubernetes_configmap_creation_failed',
-                status='error',
-                title='ConfigMap operation failed',
-                message=('KAORI could not complete the ConfigMap operation because of an unexpected internal error.'),
-                metadata={'operation': 'creation'},
-                action_url=url_for('kubernetes_operations.create_configmap'),
-            )
-        if not dry_run and feedback.get('status') == 'success':
-            redirect_url = url_for('kubernetes_operations.create_configmap')
-            if request.headers.get('HX-Request') == 'true':
-                response = make_response('', 200)
-                response.headers['HX-Redirect'] = redirect_url
-                return response
-            return redirect(redirect_url)
-        if request.headers.get('HX-Request') == 'true':
-            response = make_response(render_template(
-                'kubernetes_operations/configmaps/_operation_notification.html',
-                **_oob(feedback),
-            ))
-            if dry_run and feedback.get('status') == 'success':
-                response.headers['HX-Trigger'] = '{"kaori:operation-validated":{"formId":"configmap-create-form"}}'
-            return response
-        return redirect(url_for('kubernetes_operations.create_configmap'))
-    return render_template(
-        'kubernetes_operations/configmaps/create.html',
-        **get_context(),
-    )
+    if request.method == 'GET':
+        return render_template('kubernetes_operations/configmaps/create.html', **get_context())
+
+    validate_only = request.form.get('operation') != 'create'
+    queue_feedback = not _is_htmx() or not validate_only
+    try:
+        _csrf()
+        metadata = create_configmap(request.form, dry_run=validate_only)
+        feedback = _feedback(
+            event_type=(
+                'kubernetes_configmap_create_validated'
+                if validate_only
+                else 'kubernetes_configmap_created'
+            ),
+            status='success',
+            title=('ConfigMap Validation Passed' if validate_only else 'ConfigMap Created'),
+            message=(
+                'Kubernetes accepted the ConfigMap during server-side dry-run.'
+                if validate_only
+                else f'{metadata["configmap_name"]} was created in {metadata["namespace"]}.'
+            ),
+            detail=(
+                f'{metadata["cluster_name"]} · {metadata["key_count"]} keys · '
+                f'{"Immutable" if metadata["immutable"] else "Mutable"}'
+            ),
+            metadata=metadata,
+            action_url=url_for('kubernetes_operations.configmap_management'),
+            queue_feedback=queue_feedback,
+        )
+    except ValueError as exc:
+        metadata = {
+            'cluster_id': request.form.get('cluster_id'),
+            'namespace': request.form.get('namespace'),
+            'configmap_name': request.form.get('configmap_name'),
+            'operation': 'validation' if validate_only else 'creation',
+        }
+        feedback = _feedback(
+            event_type=(
+                'kubernetes_configmap_create_validation_failed'
+                if validate_only
+                else 'kubernetes_configmap_creation_failed'
+            ),
+            status='error',
+            title=('ConfigMap Validation Failed' if validate_only else 'ConfigMap Creation Failed'),
+            message=str(exc),
+            metadata=metadata,
+            action_url=url_for('kubernetes_operations.create_configmap'),
+            queue_feedback=not _is_htmx(),
+        )
+    except Exception:
+        feedback = _unexpected_failure(
+            operation='creation',
+            endpoint='kubernetes_operations.create_configmap',
+            metadata={'cluster_id': request.form.get('cluster_id')},
+            queue_feedback=not _is_htmx(),
+        )
+
+    if not validate_only and feedback.get('status') == 'success':
+        return _redirect_after_mutation('kubernetes_operations.create_configmap')
+    if _is_htmx():
+        return _validation_response(
+            feedback=feedback,
+            form_id='configmap-create-form',
+            preview={
+                'operation': 'create',
+                'status': feedback.get('status'),
+                'title': feedback.get('title'),
+                'message': feedback.get('message'),
+                'metadata': metadata if 'metadata' in locals() else {},
+            },
+        )
+    return redirect(url_for('kubernetes_operations.create_configmap'))
 
 
-@any_permission_required(
-    'kubernetes_configmaps.update',
-    'kubernetes_configmaps.delete',
-)
+@any_permission_required('kubernetes_configmaps.update', 'kubernetes_configmaps.delete')
 def configmap_workspace():
     cluster_id, namespace, configmap_name = _target_values(request.args)
     context = _selection_context(cluster_id, namespace, configmap_name)
+    workspace_mode = 'delete' if request.args.get('workspace_mode') == 'delete' else 'update'
     return render_template(
         'kubernetes_operations/configmaps/_workspace_response.html',
         clusters=context['clusters'],
@@ -324,7 +319,7 @@ def configmap_workspace():
         selected_configmap_name=context['selected_configmap_name'],
         selection_error=context['selection_error'],
         selection_error_title=context['selection_error_title'],
-        workspace_mode=request.args.get('workspace_mode', 'update'),
+        workspace_mode=workspace_mode,
         delete_target_url=url_for('kubernetes_operations.configmap_delete_target'),
     )
 
@@ -336,17 +331,19 @@ def configmap_editor():
         if target is None:
             raise ValueError('Select a ConfigMap to load its current values.')
         live = read_configmap(target)
+        impact = get_impact_context(target)
         return render_template(
-            'kubernetes_operations/configmaps/_editor.html',
+            'kubernetes_operations/configmaps/_editor_response.html',
             target=target,
             live=live,
-            impacts=get_impact_context(target),
+            impact=impact,
             target_error=None,
         )
     except ValueError as exc:
         return render_template(
-            'kubernetes_operations/configmaps/_editor.html',
+            'kubernetes_operations/configmaps/_editor_response.html',
             target=None,
+            impact=None,
             target_error=str(exc),
         )
 
@@ -358,17 +355,19 @@ def configmap_delete_target():
         if target is None:
             raise ValueError('Select a ConfigMap to review deletion impact.')
         live = read_configmap(target)
+        impact = get_impact_context(target)
         return render_template(
-            'kubernetes_operations/configmaps/_delete_target.html',
+            'kubernetes_operations/configmaps/_delete_target_response.html',
             target=target,
             live=live,
-            impacts=get_impact_context(target),
+            impact=impact,
             target_error=None,
         )
     except ValueError as exc:
         return render_template(
-            'kubernetes_operations/configmaps/_delete_target.html',
+            'kubernetes_operations/configmaps/_delete_target_response.html',
             target=None,
+            impact=None,
             target_error=str(exc),
         )
 
@@ -376,78 +375,75 @@ def configmap_delete_target():
 @permission_required('kubernetes_configmaps.update')
 def update_configmap_page():
     if request.method == 'POST':
-        dry_run = request.form.get('operation') != 'update'
+        validate_only = request.form.get('operation') != 'update'
+        queue_feedback = not _is_htmx() or not validate_only
+        metadata: dict[str, Any] = {}
         try:
             _csrf()
-            metadata = (
-                update_configmap(request.form, dry_run=True)
-                if dry_run
-                else validate_then_apply(
-                    validate=lambda: update_configmap(request.form, dry_run=True),
-                    apply=lambda: update_configmap(request.form, dry_run=False),
-                )
-            )
+            metadata = update_configmap(request.form, dry_run=validate_only)
             diff = metadata['diff']
             feedback = _feedback(
-                event_type=('kubernetes_configmap_update_validated' if dry_run else 'kubernetes_configmap_updated'),
+                event_type=(
+                    'kubernetes_configmap_update_validated'
+                    if validate_only
+                    else 'kubernetes_configmap_updated'
+                ),
                 status='success',
-                title=('ConfigMap update validated' if dry_run else 'ConfigMap updated'),
+                title=('ConfigMap Update Validated' if validate_only else 'ConfigMap Updated'),
                 message=(
-                    f'{len(diff["added"])} added, '
-                    f'{len(diff["changed"])} changed, and '
-                    f'{len(diff["removed"])} removed keys.'
+                    f'{len(diff["added"])} added, {len(diff["changed"])} changed, '
+                    f'and {len(diff["removed"])} removed keys.'
                 ),
+                detail=f'{metadata["cluster_name"]} · {metadata["namespace"]} / {metadata["configmap_name"]}',
                 metadata=metadata,
-                action_url=_target_url(
-                    'kubernetes_operations.update_configmap',
-                    request.form,
-                ),
-                queue_feedback=(
-                    request.headers.get('HX-Request') != 'true'
-                    or not dry_run
-                ),
+                action_url=_target_url('kubernetes_operations.update_configmap', request.form),
+                queue_feedback=queue_feedback,
             )
         except ValueError as exc:
+            metadata = {
+                'cluster_id': request.form.get('cluster_id'),
+                'namespace': request.form.get('namespace'),
+                'configmap_name': request.form.get('configmap_name'),
+                'operation': 'validation' if validate_only else 'update',
+            }
             feedback = _feedback(
                 event_type='kubernetes_configmap_update_failed',
                 status='error',
-                title=('ConfigMap update validation failed' if dry_run else 'ConfigMap update failed'),
+                title=('ConfigMap Update Validation Failed' if validate_only else 'ConfigMap Update Failed'),
                 message=str(exc),
-                metadata={
-                    'cluster_id': request.form.get('cluster_id'),
-                    'namespace': request.form.get('namespace'),
-                    'configmap_name': request.form.get('configmap_name'),
-                    'operation': 'validation' if dry_run else 'update',
-                },
+                metadata=metadata,
                 action_url=url_for('kubernetes_operations.update_configmap'),
+                queue_feedback=not _is_htmx(),
             )
-        if not dry_run and feedback.get('status') == 'success':
-            redirect_url = url_for('kubernetes_operations.update_configmap')
-            if request.headers.get('HX-Request') == 'true':
-                response = make_response('', 200)
-                response.headers['HX-Redirect'] = redirect_url
-                return response
-            return redirect(redirect_url)
-        if request.headers.get('HX-Request') == 'true':
-            response = make_response(render_template(
-                'kubernetes_operations/configmaps/_operation_notification.html',
-                **_oob(feedback),
-            ))
-            if dry_run and feedback.get('status') == 'success':
-                response.headers['HX-Trigger'] = '{"kaori:operation-validated":{"formId":"configmap-update-form"}}'
-            return response
-        return redirect(
-            _target_url(
-                'kubernetes_operations.update_configmap',
-                request.form,
+        except Exception:
+            feedback = _unexpected_failure(
+                operation='update',
+                endpoint='kubernetes_operations.update_configmap',
+                metadata={'configmap_name': request.form.get('configmap_name')},
+                queue_feedback=not _is_htmx(),
             )
-        )
+
+        if not validate_only and feedback.get('status') == 'success':
+            return _redirect_after_mutation('kubernetes_operations.update_configmap')
+        if _is_htmx():
+            return _validation_response(
+                feedback=feedback,
+                form_id='configmap-update-form',
+                preview={
+                    'operation': 'update',
+                    'status': feedback.get('status'),
+                    'title': feedback.get('title'),
+                    'message': feedback.get('message'),
+                    'metadata': metadata,
+                },
+            )
+        return redirect(_target_url('kubernetes_operations.update_configmap', request.form))
 
     cluster_id, namespace, configmap_name = _target_values(request.args)
     context = _selection_context(cluster_id, namespace, configmap_name)
     target = None
     live = None
-    impacts = []
+    impact = None
     target_error = None
     if context['selected_configmap_name']:
         try:
@@ -457,7 +453,7 @@ def update_configmap_page():
                 context['selected_configmap_name'],
             )
             live = read_configmap(target)
-            impacts = get_impact_context(target)
+            impact = get_impact_context(target)
         except ValueError as exc:
             target_error = str(exc)
 
@@ -465,7 +461,7 @@ def update_configmap_page():
         'kubernetes_operations/configmaps/update.html',
         target=target,
         live=live,
-        impacts=impacts,
+        impact=impact,
         target_error=target_error,
         **context,
     )
@@ -473,26 +469,30 @@ def update_configmap_page():
 
 @permission_required('kubernetes_configmaps.delete')
 def delete_configmap_page():
-    delete_validation_token = None
-    delete_completed = False
     if request.method == 'POST':
         validate_only = request.form.get('operation') != 'delete'
+        metadata: dict[str, Any] = {}
+        delete_validation_token: str | None = None
         try:
             _csrf()
             expected_resource_version = None
             if not validate_only:
-                receipt = _verify_delete_receipt(request.form)
-                expected_resource_version = receipt['resource_version']
-                session.pop(_CONFIGMAP_DELETE_RECEIPT_SESSION_KEY, None)
+                cluster_id, namespace, configmap_name = _target_values(request.form)
+                receipt = verify_delete_receipt(
+                    request.form.get('delete_validation_token') or '',
+                    user_id=int(current_user.id),
+                    cluster_id=cluster_id,
+                    namespace=namespace,
+                    configmap_name=configmap_name,
+                )
+                expected_resource_version = receipt.resource_version
             metadata = delete_configmap(
                 request.form,
                 validate_only=validate_only,
                 expected_resource_version=expected_resource_version,
             )
             if validate_only:
-                delete_validation_token = _issue_delete_receipt(metadata)
-            else:
-                delete_completed = True
+                delete_validation_token = issue_delete_receipt(metadata, user_id=int(current_user.id))
             feedback = _feedback(
                 event_type=(
                     'kubernetes_configmap_delete_validated'
@@ -502,59 +502,65 @@ def delete_configmap_page():
                 status='success',
                 title=('ConfigMap Deletion Validated' if validate_only else 'ConfigMap Deleted'),
                 message=(
-                    'Kubernetes confirmed the live target and ConfigMap delete authorization. '
-                    'The final delete action is available for ten minutes.'
+                    'The exact live object and effective delete authorization were validated.'
                     if validate_only
-                    else f'ConfigMap {metadata["configmap_name"]} was deleted from namespace {metadata["namespace"]}.'
+                    else f'{metadata["configmap_name"]} was deleted from {metadata["namespace"]}.'
+                ),
+                detail=(
+                    'The signed validation receipt is valid for ten minutes and for this user, target, and resource version.'
+                    if validate_only
+                    else metadata['cluster_name']
                 ),
                 metadata=metadata,
                 action_url=url_for('kubernetes_operations.configmap_management'),
-                queue_feedback=(
-                    request.headers.get('HX-Request') != 'true'
-                    or not validate_only
-                ),
+                queue_feedback=not _is_htmx() or not validate_only,
             )
         except ValueError as exc:
-            session.pop(_CONFIGMAP_DELETE_RECEIPT_SESSION_KEY, None)
+            metadata = {
+                'cluster_id': request.form.get('cluster_id'),
+                'namespace': request.form.get('namespace'),
+                'configmap_name': request.form.get('configmap_name'),
+                'operation': 'validation' if validate_only else 'deletion',
+            }
             feedback = _feedback(
                 event_type='kubernetes_configmap_delete_failed',
                 status='error',
                 title=('ConfigMap Deletion Validation Failed' if validate_only else 'ConfigMap Deletion Failed'),
                 message=str(exc),
-                metadata={
-                    'cluster_id': request.form.get('cluster_id'),
-                    'namespace': request.form.get('namespace'),
-                    'configmap_name': request.form.get('configmap_name'),
-                    'operation': 'validation' if validate_only else 'delete',
-                },
+                metadata=metadata,
                 action_url=url_for('kubernetes_operations.delete_configmap'),
+                queue_feedback=not _is_htmx(),
             )
-        if delete_completed and feedback.get('status') == 'success':
-            redirect_url = url_for('kubernetes_operations.delete_configmap')
-            if request.headers.get('HX-Request') == 'true':
-                response = make_response('', 200)
-                response.headers['HX-Redirect'] = redirect_url
-                return response
-            return redirect(redirect_url)
-        if request.headers.get('HX-Request') == 'true':
-            return render_template(
-                'kubernetes_operations/configmaps/_operation_notification.html',
+        except Exception:
+            feedback = _unexpected_failure(
+                operation='deletion',
+                endpoint='kubernetes_operations.delete_configmap',
+                metadata={'configmap_name': request.form.get('configmap_name')},
+                queue_feedback=not _is_htmx(),
+            )
+
+        if not validate_only and feedback.get('status') == 'success':
+            return _redirect_after_mutation('kubernetes_operations.delete_configmap')
+        if _is_htmx():
+            return _validation_response(
+                feedback=feedback,
+                form_id='configmap-delete-form',
+                preview={
+                    'operation': 'delete',
+                    'status': feedback.get('status'),
+                    'title': feedback.get('title'),
+                    'message': feedback.get('message'),
+                    'metadata': metadata,
+                },
                 delete_validation_token=delete_validation_token,
-                delete_completed=delete_completed,
-                **_oob(feedback),
             )
-        return redirect(
-            _target_url(
-                'kubernetes_operations.delete_configmap',
-                request.form,
-            )
-        )
+        return redirect(_target_url('kubernetes_operations.delete_configmap', request.form))
 
     cluster_id, namespace, configmap_name = _target_values(request.args)
     context = _selection_context(cluster_id, namespace, configmap_name)
     target = None
     live = None
-    impacts = []
+    impact = None
     target_error = None
     if context['selected_configmap_name']:
         try:
@@ -564,19 +570,7 @@ def delete_configmap_page():
                 context['selected_configmap_name'],
             )
             live = read_configmap(target)
-            impacts = get_impact_context(target)
-            delete_validation_token = session.get(_CONFIGMAP_DELETE_RECEIPT_SESSION_KEY)
-            if delete_validation_token:
-                try:
-                    _verify_delete_receipt({
-                        'delete_validation_token': delete_validation_token,
-                        'cluster_id': context['selected_cluster_id'],
-                        'namespace': context['selected_namespace'],
-                        'configmap_name': context['selected_configmap_name'],
-                    })
-                except ValueError:
-                    session.pop(_CONFIGMAP_DELETE_RECEIPT_SESSION_KEY, None)
-                    delete_validation_token = None
+            impact = get_impact_context(target)
         except ValueError as exc:
             target_error = str(exc)
 
@@ -584,8 +578,8 @@ def delete_configmap_page():
         'kubernetes_operations/configmaps/delete.html',
         target=target,
         live=live,
-        impacts=impacts,
+        impact=impact,
         target_error=target_error,
-        delete_validation_token=delete_validation_token,
+        delete_validation_token=None,
         **context,
     )

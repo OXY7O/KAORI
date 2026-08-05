@@ -104,17 +104,11 @@
     "app/templates/components/health_interpretation.html": {
       "semantic_border_utilities": 6
     },
-    "app/templates/components/live_lookup_notice.html": {
-      "semantic_border_utilities": 1
-    },
-    "app/templates/components/navigation/_notification_center.html": {
-      "page_local_compact_pill_labels": 2
-    },
-    "app/templates/components/navigation/_quick_sync_result.html": {
+    "app/templates/components/kubernetes_operation_ui.html": {
       "semantic_border_utilities": 2
     },
-    "app/templates/components/navigation/_quick_sync_status.html": {
-      "raw_palette_utilities": 19
+    "app/templates/components/live_lookup_notice.html": {
+      "semantic_border_utilities": 1
     },
     "app/templates/components/navigation/navbar.html": {
       "copied_standard_surface_shells": 1,
@@ -124,11 +118,11 @@
       "custom_hero_titles": 1,
       "font_extrabold_utilities": 7
     },
-    "app/templates/components/navigation/topbar.html": {
-      "raw_palette_utilities": 11
-    },
     "app/templates/components/operational_metric_card.html": {
       "copied_standard_surface_shells": 1
+    },
+    "app/templates/components/operational_toast.html": {
+      "semantic_border_utilities": 2
     },
     "app/templates/components/operational_toggle.html": {
       "semantic_border_utilities": 3
@@ -236,15 +230,6 @@
     },
     "app/templates/jobs/index.html": {
       "page_local_workspace_tablists": 1
-    },
-    "app/templates/kubernetes_operations/_components.html": {
-      "semantic_border_utilities": 2
-    },
-    "app/templates/kubernetes_operations/configmaps/_delete_target.html": {
-      "semantic_border_utilities": 3
-    },
-    "app/templates/kubernetes_operations/configmaps/_editor.html": {
-      "semantic_border_utilities": 3
     },
     "app/templates/kubernetes_operations/configmaps/create.html": {
       "copied_standard_surface_shells": 2

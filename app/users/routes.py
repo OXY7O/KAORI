@@ -58,7 +58,7 @@ def render_users_content(feedback: dict[str, Any] | None = None) -> str:
     if feedback is None:
         return content
     toast = render_template(
-        'components/navigation/_quick_sync_result.html',
+        'components/operational_toast.html',
         **feedback,
         toast_oob=True,
     )

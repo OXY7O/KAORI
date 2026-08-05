@@ -7,15 +7,20 @@ def read(relative: str) -> str:
     return (ROOT / relative).read_text(encoding='utf-8')
 
 
-def test_background_status_cards_use_shared_surface_contract() -> None:
+def test_background_progress_uses_shared_operational_toast_contract() -> None:
+    shared = read('app/templates/components/operational_progress_toast.html')
+    assert 'components/progress_bar.html' in shared
+    assert 'progress_bar.determinate' in shared
+    assert 'data-operational-toast' in shared
+
     for relative in (
         'app/templates/components/navigation/_individual_sync_status.html',
         'app/templates/components/navigation/_quick_sync_status.html',
     ):
         source = read(relative)
-        assert 'components/activity_status_card.html' in source
-        assert 'activity_status_card.shell_classes()' in source
-        assert 'overflow-hidden rounded-xl border border-outline-default bg-surface-card shadow-sm' not in source
+        assert 'components/operational_progress_toast.html' in source
+        assert 'progress_toast.render' in source
+        assert 'components/activity_status_card.html' not in source
 
 
 def test_notification_badges_follow_rectangular_kaori_label_geometry() -> None:

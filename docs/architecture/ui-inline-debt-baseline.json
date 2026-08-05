@@ -25,11 +25,6 @@
       "inline_scripts": 1,
       "inline_styles": 0
     },
-    "app/templates/components/navigation/_quick_sync_result.html": {
-      "inline_event_handlers": 1,
-      "inline_scripts": 1,
-      "inline_styles": 0
-    },
     "app/templates/intelligence/automation_control.html": {
       "inline_event_handlers": 1,
       "inline_scripts": 0,

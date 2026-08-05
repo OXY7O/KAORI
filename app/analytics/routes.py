@@ -67,7 +67,7 @@ PROMETHEUS_FAILURE_SESSION_LIMIT = 32
 
 def _render_operational_toast(feedback: dict) -> str:
     return render_template(
-        'components/navigation/_quick_sync_result.html',
+        'components/operational_toast.html',
         **feedback,
         toast_oob=True,
         notification_context=get_navigation_notification_context(

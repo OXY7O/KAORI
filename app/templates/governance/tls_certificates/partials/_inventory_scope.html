@@ -26,10 +26,11 @@
         action_label=sync_feedback.action_label,
         action_icon=sync_feedback.action_icon,
         notification_saved=sync_feedback.notification_saved,
+        activity_audit_expected=sync_feedback.activity_audit_expected|default(sync_feedback.notification_saved),
         notification_context=sync_feedback.notification_context,
         delivery=sync_feedback.delivery|default('activity_center'),
         toast_oob=true
         %}
-        {% include "components/navigation/_quick_sync_result.html" %}
+        {% include "components/operational_toast.html" %}
     {% endwith %}
 {% endif %}

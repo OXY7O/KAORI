@@ -39,9 +39,10 @@
         action_icon=password_toast.action_icon,
         completed_label=password_toast.completed_label,
         notification_saved=password_toast.notification_saved,
+        activity_audit_expected=password_toast.activity_audit_expected|default(password_toast.notification_saved),
         delivery=password_toast.delivery|default('toast'),
         toast_oob=true
         %}
-        {% include "components/navigation/_quick_sync_result.html" %}
+        {% include "components/operational_toast.html" %}
     {% endwith %}
 {% endif %}

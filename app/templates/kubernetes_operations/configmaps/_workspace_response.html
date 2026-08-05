@@ -1,11 +1,17 @@
-{% import "kubernetes_operations/_components.html" as configmap_ui %}
+{% import 'components/kubernetes_operation_ui.html' as configmap_ui %}
 {% include 'kubernetes_operations/configmaps/_workspace.html' %}
 {% if workspace_mode == 'delete' %}
     <div id="configmap-delete-target" hx-swap-oob="innerHTML">
-        {{ configmap_ui.empty_state('file-warning', 'Select a live ConfigMap to review deletion impact', 'The previous target was cleared because the cluster or namespace changed.') }}
+        {{ configmap_ui.empty_state('file-warning', 'Select a Live ConfigMap', 'The previous target was cleared because the cluster or namespace changed.') }}
     </div>
+    {% set delete_validation_token = none %}
+    {% set oob = true %}
+    {% include 'kubernetes_operations/configmaps/_delete_actions.html' %}
 {% else %}
     <div id="configmap-editor" hx-swap-oob="innerHTML">
-        {{ configmap_ui.empty_state('file-search', 'Select a live ConfigMap to begin', 'The previous editor was cleared because the cluster or namespace changed.') }}
+        {{ configmap_ui.empty_state('file-search', 'Select a Live ConfigMap', 'The previous editor was cleared because the cluster or namespace changed.') }}
     </div>
 {% endif %}
+{% set validation_preview = none %}
+{% set validation_preview_oob = true %}
+{% include 'kubernetes_operations/configmaps/_validation_preview.html' %}

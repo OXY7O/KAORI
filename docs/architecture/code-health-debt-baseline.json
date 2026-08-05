@@ -34,7 +34,6 @@
     "app/knowledge/remediation_workflow.py::promote_reviewed_candidate": 10,
     "app/knowledge/service.py::create_revision": 14,
     "app/kubernetes_operations/secrets/routes.py::_record_secret_activity": 9,
-    "app/notifications/feedback.py::build_quick_action_feedback": 9,
     "app/notifications/service.py::record_operational_activity": 11,
     "app/prometheus/resolver.py::_decision_reason": 10,
     "app/rbac/notifications.py::role_access_feedback": 9,

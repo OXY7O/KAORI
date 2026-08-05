@@ -9,7 +9,7 @@ Authentication pages use the same KAORI operational toast presentation as authen
 - Local login and browser SSO failures queue transient feedback through `queue_transient_feedback()`.
 - Authentication failures do not create Notification Center entries.
 - Login and logout security evidence continues to be written through `record_authentication_activity()`.
-- `layouts/auth.html` consumes one queued quick-action feedback payload and supports dismissing it without HTMX or the authenticated application layout.
+- `layouts/auth.html` consumes one queued operational feedback payload and supports dismissing it without HTMX or the authenticated application layout.
 - Database setup readiness remains rendered directly as a 503 setup page and clears stale feedback before rendering.
 
 ## Security boundary

@@ -10,7 +10,7 @@ def read(relative: str) -> str:
 
 def test_shared_operation_actions_use_high_contrast_hover_in_both_modes() -> None:
     action_button = read('app/templates/components/action_button.html')
-    operation_ui = read('app/templates/kubernetes_operations/_components.html')
+    operation_ui = read('app/templates/components/kubernetes_operation_ui.html')
     view_more = read('app/templates/components/view_more_content.html')
 
     assert 'hover:bg-kaori-primary hover:text-white' in action_button
@@ -46,8 +46,8 @@ def test_secret_type_selection_uses_one_native_checked_authority() -> None:
 def test_delete_action_oob_fragments_only_render_for_htmx_responses() -> None:
     for relative in (
         'app/templates/kubernetes_operations/secrets/_delete_operation_result.html',
-        'app/templates/kubernetes_operations/configmaps/_operation_notification.html',
+        'app/templates/kubernetes_operations/configmaps/_operation_response.html',
     ):
         source = read(relative)
-        assert "request.headers.get('HX-Request') == 'true'" in source
+        assert 'operation_feedback_oob.html' in source
         assert 'hx-swap-oob="outerHTML"' not in source or 'include' in source

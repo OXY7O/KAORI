@@ -1,13 +1,35 @@
 <div id="configmap-delete-actions"
+     data-configmap-delete-actions
      class="flex flex-wrap gap-3 sm:justify-end"
      {% if oob %}hx-swap-oob="outerHTML"{% endif %}>
-    {% if delete_validation_token %}<input type="hidden" name="delete_validation_token" value="{{ delete_validation_token }}">{% endif %}
-    <button type="submit" name="operation" value="validate" class="{{ configmap_ui.validate_button_classes() }}"><i data-lucide="scan-search" class="h-4 w-4"></i>{{ 'Revalidate Deletion' if delete_validation_token else 'Validate Deletion' }}</button>
-    <button id="configmap-delete-submit" type="submit" name="operation" value="delete" class="hidden" tabindex="-1" aria-hidden="true"></button>
+    {% if delete_validation_token %}
+        <input type="hidden"
+               name="delete_validation_token"
+               value="{{ delete_validation_token }}"
+               data-configmap-delete-validation-token>
+    {% endif %}
+    <button type="submit"
+            name="operation"
+            value="validate"
+            class="{{ configmap_ui.validate_button_classes() }}">
+        <i data-lucide="scan-search" class="h-4 w-4"></i>
+        <span data-configmap-delete-validation-label>{{ 'Revalidate Deletion' if delete_validation_token else 'Validate Deletion' }}</span>
+    </button>
+    <button id="configmap-delete-submit"
+            type="submit"
+            name="operation"
+            value="delete"
+            class="hidden"
+            tabindex="-1"
+            aria-hidden="true"></button>
     <button type="button"
             data-destructive-modal-open
             data-destructive-modal-id="configmap-delete-confirmation"
             data-destructive-target-input="#configmap-confirm-name"
-            {% if not delete_validation_token %}disabled aria-disabled="true" title="Validate deletion before applying the final delete action"{% endif %}
-            class="{{ configmap_ui.destructive_button_classes() }}"><i data-lucide="trash-2" class="h-4 w-4"></i>Delete ConfigMap</button>
+            data-configmap-delete-final-action
+            {% if not delete_validation_token %}disabled aria-disabled="true" title="Validate deletion after the latest target or confirmation change"{% endif %}
+            class="{{ configmap_ui.destructive_button_classes() }}">
+        <i data-lucide="trash-2" class="h-4 w-4"></i>
+        Delete ConfigMap
+    </button>
 </div>

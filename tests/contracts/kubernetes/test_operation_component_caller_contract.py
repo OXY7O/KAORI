@@ -15,7 +15,7 @@ def test_shared_operation_action_bar_renders_call_block_directly() -> None:
     )
     template = environment.from_string(
         """
-        {% import "kubernetes_operations/_components.html" as operation_ui %}
+        {% import "components/kubernetes_operation_ui.html" as operation_ui %}
         {% call operation_ui.action_bar(
             'scan-search',
             'Validate Before Creation',

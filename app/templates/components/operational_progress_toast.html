@@ -1,0 +1,79 @@
+{% import "components/progress_bar.html" as progress_bar %}
+{% macro render(
+    dom_id,
+    toast_id,
+    refresh_url,
+    trigger,
+    title,
+    message,
+    state_label,
+    progress_percent=none,
+    progress_text=none,
+    view_url=none,
+    action_label='View Details',
+    action_icon='arrow-up-right',
+    hx_sync=none,
+    icon='refresh-cw'
+) -%}
+<div id="{{ dom_id }}"
+     hx-get="{{ refresh_url }}"
+     hx-trigger="{{ trigger }}"
+     hx-swap="outerHTML swap:0ms settle:0ms"
+     {% if hx_sync %}hx-sync="{{ hx_sync }}"{% endif %}
+     data-operational-toast
+     data-toast-id="{{ toast_id }}"
+     data-auto-dismiss-ms="0"
+     role="status"
+     aria-live="polite"
+     aria-atomic="true"
+     class="pointer-events-auto w-full overflow-hidden rounded-xl border border-kaori-outline bg-surface-elevated opacity-0 shadow-lg shadow-black/10 transition duration-200 ease-out">
+    <div class="flex items-stretch">
+        <span class="w-1.5 shrink-0 bg-kaori-primary" aria-hidden="true"></span>
+        <div class="min-w-0 flex-1 p-4">
+            <div class="flex items-start gap-3">
+                <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary" aria-hidden="true">
+                    <i data-lucide="{{ icon }}" class="h-4 w-4 animate-spin"></i>
+                </span>
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="text-xs font-semibold uppercase tracking-wide text-kaori-primary">In Progress</p>
+                            <p class="mt-1 break-words text-sm font-semibold leading-5 text-content-primary [overflow-wrap:anywhere]">{{ title }}</p>
+                        </div>
+                        <span class="rounded-md border border-kaori-outline bg-kaori-soft px-2 py-1 text-xs font-semibold text-kaori-primary">{{ state_label }}</span>
+                    </div>
+                    <p class="mt-2 break-words text-xs leading-5 text-content-muted [overflow-wrap:anywhere]">{{ message }}</p>
+                    {% if caller %}{{ caller() }}{% endif %}
+                    {% if progress_text or view_url %}
+                        <div class="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-outline-subtle pt-3 text-xs font-medium text-content-muted">
+                            {% if progress_text %}
+                                <span class="inline-flex items-center gap-1.5">
+                                    <i data-lucide="activity" class="h-3.5 w-3.5"></i>{{ progress_text }}
+                                </span>
+                            {% endif %}
+                            {% if view_url %}
+                                <a href="{{ view_url }}"
+                                   class="inline-flex min-h-8 items-center gap-1.5 rounded-md border border-outline-default bg-surface-card px-2.5 text-xs font-semibold text-content-secondary transition hover:border-brand-outline hover:bg-kaori-soft hover:text-kaori-primary-dark">
+                                    {{ action_label }}
+                                    <i data-lucide="{{ action_icon }}" class="h-3.5 w-3.5"></i>
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% if progress_percent is not none %}
+                {{ progress_bar.determinate(
+                    progress_percent,
+                    label=title ~ ' progress',
+                    classes='mt-3 h-1 w-full overflow-hidden rounded-full accent-kaori-primary'
+                ) }}
+            {% else %}
+                <div class="mt-3 h-1 overflow-hidden rounded-full bg-kaori-soft/70" aria-hidden="true">
+                    <div class="notification-progress-indeterminate h-full rounded-full bg-kaori-primary"></div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{%- endmacro %}

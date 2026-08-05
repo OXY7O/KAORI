@@ -20,7 +20,7 @@ def test_create_secret_route_uses_create_service_dry_run_keyword() -> None:
 
 def test_operation_action_bar_separates_title_from_helper_copy() -> None:
     component = read('app/templates/components/form_action_bar.html')
-    wrapper = read('app/templates/kubernetes_operations/_components.html')
+    wrapper = read('app/templates/components/kubernetes_operation_ui.html')
 
     assert "title=None" in component
     assert "form_action_bar.render(description, aria_label, title)" in wrapper

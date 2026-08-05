@@ -21,7 +21,7 @@ Operational Secret values remain owned by `app/kubernetes_operations/secrets/`. 
 ## Architecture Rules
 
 - Do not add advanced Kubernetes setup back under Settings.
-- Do not create proxy wrapper templates for ConfigMap or Secret UI components; import `kubernetes_operations/_components.html` directly.
+- Do not create proxy wrapper templates for ConfigMap or Secret UI components; import `components/kubernetes_operation_ui.html` directly.
 - New advanced Kubernetes controls should use a dedicated tab and domain package under `app/platform_operations/kubernetes/`.
 - Keep operational mutations, setup policy, and live Secret value access in separate modules.
 
