@@ -8,6 +8,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 
+MAX_ALEMBIC_REVISION_LENGTH = 32
+
+
 @dataclass(frozen=True)
 class MigrationRevision:
     path: Path
@@ -50,6 +53,11 @@ def load_migrations(versions_dir: Path) -> list[MigrationRevision]:
 
         if not isinstance(revision, str) or not revision.strip():
             raise ValueError(f'{path}: revision must be a non-empty string')
+        if len(revision) > MAX_ALEMBIC_REVISION_LENGTH:
+            raise ValueError(
+                f'{path}: revision {revision!r} is {len(revision)} characters; '
+                f'Alembic version_num supports at most {MAX_ALEMBIC_REVISION_LENGTH}'
+            )
 
         revisions.append(
             MigrationRevision(

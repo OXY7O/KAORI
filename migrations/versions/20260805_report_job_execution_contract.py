@@ -1,12 +1,12 @@
 """link reports and schedule runs to canonical job executions
 
-Revision ID: 20260805_report_job_execution_contract
-Revises: 20260730_inventory_collection_evidence
+Revision ID: 20260805_report_job_execution
+Revises: 20260731_tls_evidence
 """
 from alembic import op
 import sqlalchemy as sa
 
-revision = '20260805_report_job_execution_contract'
+revision = '20260805_report_job_execution'
 down_revision = '20260731_tls_evidence'
 branch_labels = None
 depends_on = None
