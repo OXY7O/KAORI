@@ -199,6 +199,7 @@ Secret values, decoded payloads, certificate bytes, private keys, and tokens are
 ## Operation feedback and refresh contract
 
 - Validation is non-mutating and returns an HTMX toast without replacing the form or rendering an inline success/error card.
+- CRUD operation response partials are transport-only: they preserve the HTMX swap target and emit canonical OOB toast markup, but never render `operation_result_panel` or another inline feedback banner.
 - Create, replace, and delete mutations use POST/Redirect/GET. HTMX mutation responses set `HX-Redirect`; non-HTMX responses use a normal redirect.
 - Mutation feedback is queued before redirect so the persistent KAORI toast survives the reload.
 - A successful mutation reloads the workflow from live Kubernetes state, clearing stale target selectors, secret payload inputs, validation state, and deleted resources.
