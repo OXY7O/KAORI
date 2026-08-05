@@ -25,6 +25,8 @@ def test_every_inventory_workspace_shows_committed_snapshot_freshness() -> None:
     )
     for page in pages:
         source = read(INVENTORY_TEMPLATES / page / 'index.html')
+        if page == 'nodes':
+            source += read(INVENTORY_TEMPLATES / page / 'partials' / '_page_workspace.html')
         assert 'inventory/components/_data_freshness.html' in source, page
 
     freshness = read(INVENTORY_TEMPLATES / 'components' / '_data_freshness.html')

@@ -22,6 +22,9 @@ def main() -> int:
     table_card = read('app/templates/inventory/nodes/partials/_table_card.html')
     table_content = read('app/templates/inventory/nodes/partials/_table_content.html')
     detail = read('app/templates/inventory/nodes/partials/_node_detail_content.html')
+    workspace = read('app/templates/inventory/nodes/partials/_page_workspace.html')
+    persistence = read('app/inventory/persistence.py')
+    formatting = read('app/inventory/formatting.py')
     table_component = read('app/templates/components/table.html')
     standard = read('docs/design/patterns/KUBERNETES_NODE_INVENTORY.md')
     audit = read('docs/design/audits/KUBERNETES_NODE_INVENTORY_ALIGNMENT_AUDIT_2026_08.md')
@@ -37,9 +40,15 @@ def main() -> int:
     require("'memory_coverage_description'" in backend, 'Memory coverage must remain explicit.', errors)
     require("'ephemeral_coverage_description'" in backend, 'Ephemeral-storage coverage must remain explicit.', errors)
     require('sum(cpu or 0' not in backend, 'Missing CPU evidence must not be silently converted to zero.', errors)
-    require("'value': value, 'label': _role_display(value)" in backend, 'Role filters must separate canonical value from display label.', errors)
+    require("_canonical_role_filter(value): _role_display(value)" in backend, 'Role filters must deduplicate legacy control-plane aliases.', errors)
+    require("func.lower(NodeInventory.role).in_(('control-plane', 'master'))" in backend, 'The canonical Control Plane filter must match legacy and current role values.', errors)
     require("'value': value, 'label': _status_display(value)" in backend, 'Readiness filters must separate canonical value from display label.', errors)
     require("'title': 'Validate Node Readiness Evidence'" in backend, 'Unknown readiness must produce explicit validation guidance.', errors)
+    require("'title': 'Validate Node Scheduling Evidence'" in backend, 'Unknown scheduling must not produce a healthy action.', errors)
+    require("or row[3] not in {'Ready', 'NotReady'}" in backend, 'Unknown readiness must count as an active signal.', errors)
+    require("if metadata is None or not metadata.name" in persistence, 'Node collection must preserve named Nodes with incomplete status evidence.', errors)
+    require('if status is None:' not in persistence[persistence.index('def save_nodes'):persistence.index('def _namespace_count_snapshot')], 'Node collection must not discard Nodes solely because status is absent.', errors)
+    require('caller owns final presentation rounding' in formatting, 'Capacity aggregation must preserve precision until the fleet total is complete.', errors)
 
     require("valid_roles = {option['value'] for option in node_roles}" in routes, 'Role validation must use canonical filter values.', errors)
     require("valid_statuses = {option['value'] for option in node_statuses}" in routes, 'Status validation must use canonical filter values.', errors)
@@ -47,6 +56,10 @@ def main() -> int:
     require('page_hero.context_card' in hero, 'Node Inventory must use the canonical Hero context card.', errors)
     require('inventory.fleet_posture_label' in hero, 'Hero status must use overall fleet posture.', errors)
     require("'Active Signals', inventory.active_signal_nodes" in hero, 'Hero context must expose active signals.', errors)
+    require('id="nodes-page-workspace"' in workspace, 'Node filtering must own a complete page workspace.', errors)
+    require('inventory/components/_data_freshness.html' in workspace, 'The workspace must refresh snapshot context with filtered scope.', errors)
+    require('hx-target="#nodes-page-workspace"' in table_card, 'Node filters must refresh Hero, snapshot, posture, and table together.', errors)
+    require('name="partial_mode" value="page_workspace"' in table_card, 'Node filter requests must select the page-workspace partial.', errors)
 
     for token in (
         'inventory.total_cpu_display',

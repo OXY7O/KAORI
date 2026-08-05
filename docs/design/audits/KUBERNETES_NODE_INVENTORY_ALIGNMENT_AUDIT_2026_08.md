@@ -81,6 +81,40 @@ The page already used the correct high-level KAORI structure and did not require
 
 **Correction:** wording now explicitly states `Latest committed Kubernetes node records`.
 
+### 11. HTMX filters left Hero and snapshot scope stale
+
+**Before:** filter requests replaced only the resource posture and table. Cluster,
+role, readiness, or search changes could leave Hero totals and Snapshot Context
+describing the previous scope.
+
+**Correction:** Node filter changes now replace the complete
+`#nodes-page-workspace`; pagination remains table-only.
+
+### 12. Incomplete Node status evidence removed the Node entirely
+
+**Before:** collection skipped a Node when `status` or `status.node_info` was
+missing, hiding the asset instead of presenting explicit Unknown/Not Reported
+evidence.
+
+**Correction:** collection preserves every named Node and records missing status,
+runtime, platform, capacity, and scheduling values explicitly.
+
+### 13. Capacity totals accumulated per-node rounding error
+
+**Before:** memory and ephemeral-storage values were rounded to one decimal before
+fleet aggregation.
+
+**Correction:** source precision is retained during aggregation and rounded only
+after the fleet total is complete.
+
+### 14. Legacy control-plane roles produced duplicate filters
+
+**Before:** clusters containing both `master` and `control-plane` role labels
+rendered two indistinguishable `Control Plane` options.
+
+**Correction:** both stored values map to one canonical `control-plane` request
+filter while matching both legacy and current records.
+
 ## Files changed
 
 ```text

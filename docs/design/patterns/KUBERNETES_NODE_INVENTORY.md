@@ -90,6 +90,7 @@ Requirements:
 
 - every label is programmatically associated with its input;
 - `control-plane` and `master` display as `Control Plane`;
+- legacy `master` and canonical `control-plane` values share one `Control Plane` filter option;
 - `NotReady` displays as `Not Ready`;
 - raw canonical values remain in request parameters;
 - changes reset the result page to 1;
@@ -171,8 +172,8 @@ Color is never the sole signal; every state includes text.
 
 ## Responsive and HTMX behavior
 
-- Hero and snapshot context remain stable during filtering and pagination.
-- Filter changes replace `#nodes-inventory-scope` so posture and table remain aligned.
+- Filter changes replace `#nodes-page-workspace` so Hero posture, snapshot context,
+  resource posture, filter options, and table remain aligned with the active scope.
 - Pagination replaces only `#nodes-table-content` because posture is unchanged.
 - Detail content loads on demand through the shared resource detail modal.
 - Routine filtering, pagination, and detail loading must not trigger live Kubernetes requests.
@@ -193,6 +194,7 @@ Before changing Node Inventory:
 
 - preserve committed-generation filtering;
 - preserve missing-evidence semantics;
+- preserve Node identity even when status or node-info evidence is incomplete;
 - keep the seven-column compact table;
 - keep default pagination at 5;
 - reuse shared Hero, Snapshot, Posture, Table, Detail, Metadata, and Callout components;

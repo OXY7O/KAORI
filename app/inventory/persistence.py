@@ -190,18 +190,12 @@ def save_nodes(
         metadata = node.metadata
         status = node.status
 
-        if metadata is None:
+        if metadata is None or not metadata.name:
             continue
 
-        if status is None:
-            continue
-
-        if status.node_info is None:
-            continue
-
-        capacity = status.capacity or {}
-
-        allocatable = status.allocatable or {}
+        node_info = status.node_info if status is not None else None
+        capacity = (status.capacity or {}) if status is not None else {}
+        allocatable = (status.allocatable or {}) if status is not None else {}
 
         cpu_value = capacity.get('cpu')
 
@@ -223,7 +217,7 @@ def save_nodes(
         node_inventory.cluster_id = cluster.id
         node_inventory.node_name = metadata.name
         node_inventory.node_uid = str(metadata.uid) if metadata.uid else None
-        node_inventory.system_uuid = getattr(status.node_info, 'system_uuid', None) or None
+        node_inventory.system_uuid = getattr(node_info, 'system_uuid', None) or None
         node_inventory.role = get_node_role(node)
         node_inventory.created_at = metadata.creation_timestamp
         node_inventory.status = ready_status
@@ -232,8 +226,10 @@ def save_nodes(
                 (metadata.labels or {}).items(),
             )
         )
-        node_inventory.unschedulable = bool(
-            node.spec.unschedulable if node.spec and node.spec.unschedulable is not None else False
+        node_inventory.unschedulable = (
+            bool(node.spec.unschedulable)
+            if node.spec is not None
+            else None
         )
         node_inventory.memory_pressure = _get_node_condition_status(
             node,
@@ -268,17 +264,21 @@ def save_nodes(
             'hostname_address',
         )
 
-        node_inventory.os_image = status.node_info.os_image
-        node_inventory.operating_system = status.node_info.operating_system or (metadata.labels or {}).get(
-            'kubernetes.io/os'
+        node_inventory.os_image = getattr(node_info, 'os_image', None) or None
+        node_inventory.operating_system = (
+            getattr(node_info, 'operating_system', None)
+            or (metadata.labels or {}).get('kubernetes.io/os')
         )
-        node_inventory.architecture = status.node_info.architecture or (metadata.labels or {}).get('kubernetes.io/arch')
-        node_inventory.kubelet_version = status.node_info.kubelet_version
-        node_inventory.kube_proxy_version = status.node_info.kube_proxy_version
-
-        node_inventory.kernel_version = status.node_info.kernel_version
-
-        node_inventory.container_runtime = status.node_info.container_runtime_version
+        node_inventory.architecture = (
+            getattr(node_info, 'architecture', None)
+            or (metadata.labels or {}).get('kubernetes.io/arch')
+        )
+        node_inventory.kubelet_version = getattr(node_info, 'kubelet_version', None) or None
+        node_inventory.kube_proxy_version = getattr(node_info, 'kube_proxy_version', None) or None
+        node_inventory.kernel_version = getattr(node_info, 'kernel_version', None) or None
+        node_inventory.container_runtime = (
+            getattr(node_info, 'container_runtime_version', None) or None
+        )
 
         node_inventory.cpu = cpu
         node_inventory.memory = capacity.get('memory')

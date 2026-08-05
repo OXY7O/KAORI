@@ -35,7 +35,8 @@ def test_node_filters_are_human_readable_and_accessible() -> None:
     table = read('app/templates/inventory/nodes/partials/_table_card.html')
     shared_table = read('app/templates/components/table.html')
 
-    assert "'value': value, 'label': _role_display(value)" in backend
+    assert "_canonical_role_filter(value): _role_display(value)" in backend
+    assert "func.lower(NodeInventory.role).in_(('control-plane', 'master'))" in backend
     assert "'value': value, 'label': _status_display(value)" in backend
     assert "valid_roles = {option['value'] for option in node_roles}" in routes
     assert 'for="nodes-cluster-filter"' in table
@@ -44,6 +45,18 @@ def test_node_filters_are_human_readable_and_accessible() -> None:
     assert 'for="nodes-search"' in table
     assert 'aria-label="Node inventory filters"' in table
     assert '{% macro search_field(name, value, placeholder, id=None)' in shared_table
+
+
+def test_node_filters_refresh_the_complete_scope_workspace() -> None:
+    table = read('app/templates/inventory/nodes/partials/_table_card.html')
+    workspace = read('app/templates/inventory/nodes/partials/_page_workspace.html')
+    routes = read('app/inventory/routes.py')
+
+    assert 'hx-target="#nodes-page-workspace"' in table
+    assert 'name="partial_mode" value="page_workspace"' in table
+    assert 'id="nodes-page-workspace"' in workspace
+    assert 'inventory/components/_data_freshness.html' in workspace
+    assert "partial_mode == 'page_workspace'" in routes
 
 
 def test_node_table_keeps_seven_columns_and_surfaces_conditions() -> None:
@@ -68,6 +81,17 @@ def test_node_detail_reuses_shared_metadata_and_avoids_duplicate_badges() -> Non
     assert "table_label.metadata_label(taint, 'tag'" not in detail
     assert "detail.detail_card('Node Identity', 'badge-info', node.age" not in detail
     assert 'Committed Snapshot Boundary' in detail
+    assert 'node.capacity_summary' in detail
+    assert "node.scheduling_display == 'Not Reported'" in detail
+
+
+def test_node_collection_preserves_incomplete_evidence() -> None:
+    persistence = read('app/inventory/persistence.py')
+    save_nodes = persistence[persistence.index('def save_nodes'):persistence.index('def _namespace_count_snapshot')]
+
+    assert 'if metadata is None or not metadata.name' in save_nodes
+    assert 'if status is None:' not in save_nodes
+    assert "getattr(node_info, 'container_runtime_version', None)" in save_nodes
 
 
 def test_node_inventory_standard_is_documented_and_gated() -> None:

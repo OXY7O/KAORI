@@ -6,7 +6,7 @@
 {% import "components/technical_metadata_collection.html" as metadata_collection %}
 {% set node_status_tone = 'normal' if node.status == 'Ready' else ('critical' if node.status == 'NotReady' else 'unknown') %}
 {% set network_tone = 'normal' if node.network_availability == 'Available' else ('critical' if node.network_availability == 'Unavailable' else 'unknown') %}
-{% set condition_tone = 'critical' if node.ready_condition == 'Not Ready' or node.network_availability == 'Unavailable' else ('warning' if node.has_pressure or node.scheduling_display == 'Cordoned' else ('normal' if node.ready_condition == 'Ready' else 'unknown')) %}
+{% set condition_tone = 'critical' if node.ready_condition == 'Not Ready' or node.network_availability == 'Unavailable' else ('warning' if node.has_pressure or node.scheduling_display == 'Cordoned' else ('unknown' if node.ready_condition == 'Unknown' or node.scheduling_display == 'Not Reported' else 'normal')) %}
 {% set condition_posture = 'Critical' if condition_tone == 'critical' else ('Warning' if condition_tone == 'warning' else ('Normal' if condition_tone == 'normal' else 'Unknown')) %}
 <div data-kaori-detail-variant="full-workspace-modal"
      data-kaori-detail-density="adaptive-stacks"
@@ -31,7 +31,7 @@
             {{ detail.summary_metric('Readiness', node.status_display, 'Current node readiness condition.', 'circle-check' if node.status == 'Ready' else 'triangle-alert', node_status_tone) }}
             {{ detail.summary_metric('Scheduling', node.scheduling_display, 'Whether new Pods can be scheduled.', 'calendar-clock', 'warning' if node.scheduling_display == 'Cordoned' else ('normal' if node.scheduling_display == 'Schedulable' else 'unknown')) }}
             {{ detail.summary_metric('Scheduled Pods', node.scheduled_pod_count, 'Pods assigned in the committed snapshot.', 'boxes', 'brand') }}
-            {{ detail.summary_metric('Capacity', (node.cpu if node.cpu is not none else '-') ~ ' CPU · ' ~ node.memory_display, 'CPU and memory summary; full storage evidence is listed below.', 'gauge', 'brand') }}
+            {{ detail.summary_metric('Capacity', node.capacity_summary, 'CPU and memory summary; full storage evidence is listed below.', 'gauge', 'brand') }}
         </div>
 
         <div class="grid items-stretch gap-4 p-5 md:grid-cols-2 2xl:grid-cols-3">
@@ -46,7 +46,7 @@
             {% endcall %}
 
             {% call detail.detail_card('Node Capacity', 'gauge') %}
-                {{ detail.detail_row('CPU', (node.cpu if node.cpu is not none else '-') ~ ' Cores') }}
+                {{ detail.detail_row('CPU', node.cpu_display) }}
                 {{ detail.detail_row('Memory', node.memory_display) }}
                 {{ detail.detail_row('Ephemeral Storage', node.ephemeral_storage_display) }}
                 {{ detail.detail_row('Allocatable Ephemeral', node.ephemeral_storage_allocatable_display) }}

@@ -81,7 +81,9 @@ def convert_ki_to_gib(
     size_bytes = _parse_kubernetes_size_bytes(value)
     if size_bytes is None:
         return 0
-    return round(float(size_bytes / (Decimal(1024) ** 3)), 1)
+    # Preserve source precision while aggregating multiple node values. The
+    # caller owns final presentation rounding after the complete sum is known.
+    return float(size_bytes / (Decimal(1024) ** 3))
 
 
 def convert_storage_to_gib(

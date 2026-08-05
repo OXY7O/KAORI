@@ -92,6 +92,9 @@ _INVENTORY_PARTIAL_TEMPLATES = {
         'storage',
     )
 }
+_INVENTORY_PARTIAL_TEMPLATES['nodes']['workspace'] = (
+    'inventory/nodes/partials/_page_workspace.html'
+)
 
 inventory_bp = Blueprint(
     'inventory',
@@ -201,6 +204,9 @@ def _inventory_template(resource: str) -> str:
 
     if partial_mode == 'inventory_scope' or hx_target == f'{resource}-inventory-scope':
         return templates['scope']
+
+    if partial_mode == 'page_workspace' or hx_target == f'{resource}-page-workspace':
+        return templates.get('workspace', templates['scope'])
 
     return templates['card']
 
@@ -329,6 +335,7 @@ def nodes():
         selected_status=status,
         search=search,
         pagination=inventory['pagination'],
+        inventory_freshness=get_inventory_freshness_context(cluster_id=cluster_id),
     )
 
 

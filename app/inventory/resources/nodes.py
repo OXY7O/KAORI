@@ -28,6 +28,13 @@ def _role_display(role: str | None) -> str:
     return role_value.replace('_', ' ').replace('-', ' ').title()
 
 
+def _canonical_role_filter(role: str | None) -> str:
+    role_value = str(role or '').strip()
+    if role_value.lower() in {'control-plane', 'master'}:
+        return 'control-plane'
+    return role_value
+
+
 def _status_display(status: str | None) -> str:
     return {'Ready': 'Ready', 'NotReady': 'Not Ready'}.get(status or '', status or 'Unknown')
 
@@ -47,9 +54,14 @@ def _node_filter_values(column: Any, cluster_id: str | None = None) -> list[str]
 
 def get_node_filter_roles(cluster_id: str | None = None) -> list[dict[str, str]]:
     values = _node_filter_values(NodeInventory.role, cluster_id)
+    options = {
+        _canonical_role_filter(value): _role_display(value)
+        for value in values
+        if _canonical_role_filter(value)
+    }
     return [
-        {'value': value, 'label': _role_display(value)}
-        for value in sorted(values, key=lambda item: _role_display(item).lower())
+        {'value': value, 'label': label}
+        for value, label in sorted(options.items(), key=lambda item: item[1].lower())
     ]
 
 
@@ -118,7 +130,10 @@ def get_node_inventory(
     if cluster_id:
         query = query.filter(NodeInventory.cluster_id == cluster_id)
     if role:
-        query = query.filter(NodeInventory.role == role)
+        if role == 'control-plane':
+            query = query.filter(func.lower(NodeInventory.role).in_(('control-plane', 'master')))
+        else:
+            query = query.filter(NodeInventory.role == role)
     if status:
         query = query.filter(NodeInventory.status == status)
     if search:
@@ -181,7 +196,12 @@ def get_node_inventory(
                 'condition_count': len(condition_labels),
                 'internal_ip': node.internal_ip,
                 'network_scope': network_scope,
-                'capacity_primary': f"{node.cpu if node.cpu is not None else '-'} CPU · {memory_display}",
+                'capacity_primary': ' · '.join(
+                    (
+                        f'{node.cpu} CPU' if node.cpu is not None else 'CPU Not Reported',
+                        memory_display if memory_display != '-' else 'Memory Not Reported',
+                    )
+                ),
                 'capacity_secondary': (
                     f'{ephemeral_display} Ephemeral'
                     if ephemeral_display != '-'
@@ -216,13 +236,16 @@ def get_node_inventory(
     not_ready_nodes = sum(1 for row in summary_rows if row[3] == 'NotReady')
     unknown_nodes = sum(1 for row in summary_rows if row[3] not in {'Ready', 'NotReady'})
     cordoned_nodes = sum(1 for row in summary_rows if _reported_true(row[4]))
+    scheduling_unknown_nodes = sum(1 for row in summary_rows if row[4] is None)
     pressure_nodes = sum(1 for row in summary_rows if any(_reported_true(value) for value in row[5:8]))
     network_issue_nodes = sum(1 for row in summary_rows if _reported_true(row[8]))
     active_signal_nodes = sum(
         1
         for row in summary_rows
         if row[3] == 'NotReady'
+        or row[3] not in {'Ready', 'NotReady'}
         or _reported_true(row[4])
+        or row[4] is None
         or any(_reported_true(value) for value in row[5:8])
         or _reported_true(row[8])
     )
@@ -235,7 +258,7 @@ def get_node_inventory(
         fleet_posture_tone, fleet_posture_label = 'warning', 'Attention'
     elif pressure_nodes > 0 or cordoned_nodes > 0:
         fleet_posture_tone, fleet_posture_label = 'warning', 'Attention'
-    elif unknown_nodes > 0:
+    elif unknown_nodes > 0 or scheduling_unknown_nodes > 0:
         fleet_posture_tone, fleet_posture_label = 'unknown', 'Incomplete'
     else:
         fleet_posture_tone, fleet_posture_label = 'normal', 'Healthy'
@@ -246,6 +269,7 @@ def get_node_inventory(
         'not_ready_nodes': not_ready_nodes,
         'unknown_nodes': unknown_nodes,
         'cordoned_nodes': cordoned_nodes,
+        'scheduling_unknown_nodes': scheduling_unknown_nodes,
         'pressure_nodes': pressure_nodes,
         'network_issue_nodes': network_issue_nodes,
         'active_signal_nodes': active_signal_nodes,
@@ -370,6 +394,16 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
             'tone': 'unknown',
             'icon': 'circle-help',
         }
+    elif scheduling_display == 'Not Reported':
+        operational_context = {
+            'title': 'Validate Node Scheduling Evidence',
+            'description': (
+                'Scheduling state is not reported in the committed snapshot. Confirm '
+                'the Node spec before treating this node as available for new Pod placement.'
+            ),
+            'tone': 'unknown',
+            'icon': 'calendar-search',
+        }
     else:
         operational_context = {
             'title': 'Node Ready for Scheduling',
@@ -387,6 +421,21 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
         operating_system.title() if operating_system.lower() in {'linux', 'windows'} else operating_system
     )
     architecture = node.architecture or node_labels.get('kubernetes.io/arch') or 'Not Reported'
+    memory_display = format_kubernetes_size(node.memory)
+    ephemeral_storage_display = format_kubernetes_size(node.ephemeral_storage)
+    ephemeral_storage_allocatable_display = format_kubernetes_size(
+        node.ephemeral_storage_allocatable
+    )
+    cpu_display = f'{node.cpu} Cores' if node.cpu is not None else 'Not Reported'
+    memory_display = memory_display if memory_display != '-' else 'Not Reported'
+    ephemeral_storage_display = (
+        ephemeral_storage_display if ephemeral_storage_display != '-' else 'Not Reported'
+    )
+    ephemeral_storage_allocatable_display = (
+        ephemeral_storage_allocatable_display
+        if ephemeral_storage_allocatable_display != '-'
+        else 'Not Reported'
+    )
 
     return {
         'cluster_name': cluster_name,
@@ -424,9 +473,11 @@ def get_node_detail(node_id: int) -> dict[str, Any] | None:
         'kubelet_version': node.kubelet_version or 'Not Reported',
         'kube_proxy_version': node.kube_proxy_version or 'Not Reported',
         'cpu': node.cpu,
-        'memory_display': format_kubernetes_size(node.memory),
-        'ephemeral_storage_display': format_kubernetes_size(node.ephemeral_storage),
-        'ephemeral_storage_allocatable_display': format_kubernetes_size(node.ephemeral_storage_allocatable),
+        'cpu_display': cpu_display,
+        'memory_display': memory_display,
+        'capacity_summary': f'{cpu_display} · {memory_display}',
+        'ephemeral_storage_display': ephemeral_storage_display,
+        'ephemeral_storage_allocatable_display': ephemeral_storage_allocatable_display,
         'os_image': node.os_image or 'Not Reported',
         'kernel_version': node.kernel_version or 'Not Reported',
         'container_runtime_identifier': runtime or 'Not Reported',
