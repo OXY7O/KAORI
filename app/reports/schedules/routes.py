@@ -7,13 +7,13 @@ from werkzeug.exceptions import HTTPException
 
 from app.notifications.service import queue_transient_feedback, record_operational_activity
 from app.rbac.decorators import permission_required
+from app.reports.schedules.job_adapter import run_schedule_now
 from app.reports.web import render_reports_unavailable
 from app.reports.schedules.service import (
     create_report_schedule,
     delete_report_schedule,
     get_form_state_from_schedule_form,
     get_report_schedules_payload,
-    run_schedule_now,
     toggle_report_schedule,
     update_report_schedule,
 )

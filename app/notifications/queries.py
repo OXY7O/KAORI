@@ -6,6 +6,7 @@ from typing import Any
 from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
 
+from app.common.celery_queue_health import get_queue_readiness, inspect_celery_topology
 from app.common.job_execution_presentation import present_job_execution
 from app.extensions.db import db
 from app.models.job import JobExecution, JobExecutionSubscriber
@@ -131,11 +132,22 @@ def get_activity_center_context(
         for notification in attention_notifications
     ]
 
+    presented_jobs = [present_job_execution(job) for job in active_jobs]
+    queued_jobs = [job for job in presented_jobs if job['status'] == 'queued']
+    if queued_jobs:
+        topology = inspect_celery_topology()
+        queue_health = {
+            queue_name: get_queue_readiness(queue_name, topology=topology)
+            for queue_name in {str(job['queue_name']) for job in queued_jobs}
+        }
+        for job in queued_jobs:
+            job['queue_health'] = queue_health[str(job['queue_name'])]
+
     return {
         'items': history_items,
         'history_items': history_items,
         'attention_items': attention_items,
-        'active_jobs': [present_job_execution(job) for job in active_jobs],
+        'active_jobs': presented_jobs,
         'active_count': active_count,
         'attention_count': attention_count,
         'unread_count': unread_count,

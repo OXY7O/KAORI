@@ -164,11 +164,12 @@ def test_activity_panel_uses_stable_local_and_server_slots() -> None:
 
 def test_queued_jobs_do_not_look_like_a_never_ending_refresh() -> None:
     component = read('app/templates/notifications/components/_activity_center_items.html')
-    presentation = read('app/jobs/presentation.py')
+    presentation = read('app/common/job_execution_presentation.py')
 
     assert "elif job.progress_mode == 'queued'" in component
     assert 'w-1/3 rounded-full bg-kaori-primary/60' in component
     assert "if job.status == 'queued':\n        return 'Waiting'" in presentation
+    assert 'job.queue_health.show_warning' in component
 
 
 def test_activity_reconciliation_counts_stable_items_without_dynamic_pollers() -> None:

@@ -7,11 +7,11 @@ from app.jobs.definitions.base import RegisteredJobDispatchResult
 from app.jobs.dispatcher import enqueue_canonical_job
 from app.models.report import Report
 from app.reports.jobs.contract import build_report_job_parameters
+from app.reports.jobs.queue import get_reports_queue_name
 from app.reports.jobs.tasks import generate_report_job
 
 JOB_TYPE = 'report_generation'
 OPERATION = 'generate_report_artifact'
-QUEUE_NAME = 'reports'
 
 
 class ReportJobEnqueueError(RuntimeError):
@@ -44,7 +44,7 @@ def enqueue_report_generation(
             },
             job_type=JOB_TYPE,
             operation=OPERATION,
-            queue_name=QUEUE_NAME,
+            queue_name=get_reports_queue_name(),
             workload_class='heavy' if parameters.report_family == 'analytics' else 'standard',
             requested_by_user_id=requested_by_user_id,
             provider_type='kubernetes',

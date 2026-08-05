@@ -6,6 +6,7 @@ from typing import Any
 from flask import url_for
 from sqlalchemy import func, select
 
+from app.common.celery_queue_health import get_queue_readiness
 from app.extensions.db import db
 from app.models.report import Report, ReportSchedule, ReportTemplate
 from app.reports.catalog import REPORT_TYPE_SPECS
@@ -18,6 +19,7 @@ from app.reports.export.constants import (
     SOURCE_KIND_LABELS,
 )
 from app.reports.generate.service import REPORT_TYPE_OPTIONS
+from app.reports.jobs.queue import get_reports_queue_name
 from app.reports.storage.health import (
     build_local_storage_health,
     build_s3_storage_health,
@@ -125,14 +127,17 @@ def get_reports_overview_payload() -> dict[str, Any]:
     storage_context = get_storage_context()
     report_type_coverage = get_report_type_coverage()
     telegram_delivery = get_telegram_delivery_context()
-    pipeline_status = get_pipeline_status(storage_context, telegram_delivery)
-    current_status = get_current_status(report_counts, storage_context, report_type_coverage)
+    worker_context = get_queue_readiness(get_reports_queue_name())
+    pipeline_status = get_pipeline_status(storage_context, telegram_delivery, worker_context)
+    current_status = get_current_status(
+        report_counts, storage_context, report_type_coverage, worker_context
+    )
 
     return {
         'page_title': 'Reports Overview',
         'page_subtitle': 'Generate governed infrastructure reports from connected KAORI data sources.',
         'selected_cluster_label': 'All Infrastructure Scopes',
-        'report_engine_status': 'Ready',
+        'report_engine_status': worker_context['label'],
         'storage_status': storage_context['display_status'],
         'summary_cards': get_summary_cards(report_counts),
         'recent_reports': get_recent_reports(),
@@ -150,6 +155,7 @@ def get_reports_overview_payload() -> dict[str, Any]:
         'data_collection_status': get_data_collection_status(storage_context, telegram_delivery),
         'related_information': get_related_information(),
         'storage_context': storage_context,
+        'worker_context': worker_context,
     }
 
 
@@ -428,10 +434,12 @@ def get_telegram_delivery_context() -> dict[str, Any]:
 def get_pipeline_status(
     storage_context: dict[str, Any],
     telegram_delivery: dict[str, Any] | None = None,
+    worker_context: dict[str, Any] | None = None,
 ) -> list[dict[str, str]]:
     storage_tone = 'normal' if str(storage_context.get('tone')) == 'green' else 'warning'
     telegram = telegram_delivery or get_telegram_delivery_context()
     telegram_ready = bool(telegram.get('ready'))
+    worker = worker_context or get_queue_readiness(get_reports_queue_name())
 
     return [
         {
@@ -446,26 +454,23 @@ def get_pipeline_status(
             'icon': 'sliders-horizontal',
         },
         {
-            'name': 'Create Report Request',
-            'summary': 'KAORI saves the report definition with Requested status.',
+            'name': 'Create & Queue Report Request',
+            'summary': 'KAORI persists the request and dispatches one canonical report job.',
             'description': (
-                'Submitting Generate Report persists the request. Manual reports continue from Generated Reports, '
-                'while scheduled runs create the same request automatically.'
+                'Generate Report and scheduled runs both save the report definition, create one JobExecution, '
+                'and enqueue artifact generation on the configured Reports queue.'
             ),
             'status': 'Ready',
             'tone': 'normal',
             'icon': 'clipboard-plus',
         },
         {
-            'name': 'Start Generation',
-            'summary': 'A manual action or the Reports worker starts artifact generation.',
-            'description': (
-                'Manual requests are started from Generated Reports. Scheduled requests are '
-                'started by the dedicated Reports worker through the canonical job execution flow.'
-            ),
-            'status': 'Ready',
-            'tone': 'normal',
-            'icon': 'play-circle',
+            'name': 'Start Worker Generation',
+            'summary': 'The dedicated Reports worker claims the queued artifact job.',
+            'description': str(worker['description']),
+            'status': str(worker['label']),
+            'tone': str(worker['tone']),
+            'icon': str(worker['icon']),
         },
         {
             'name': 'Collect Data & Render Artifact',
@@ -575,17 +580,18 @@ def get_current_status(
     report_counts: dict[str, int],
     storage_context: dict[str, Any],
     report_type_coverage: dict[str, Any],
+    worker_context: dict[str, Any],
 ) -> list[dict[str, str]]:
     type_summary = get_report_type_summary(report_type_coverage)
     storage_tone = 'normal' if str(storage_context.get('tone')) == 'green' else 'warning'
 
     return [
         {
-            'label': 'Report Engine',
-            'value': 'Ready',
-            'description': 'Manual generation and PDF/Excel export contracts are available.',
-            'tone': 'normal',
-            'icon': 'file-check-2',
+            'label': 'Reports Worker',
+            'value': str(worker_context['label']),
+            'description': str(worker_context['description']),
+            'tone': str(worker_context['tone']),
+            'icon': str(worker_context['icon']),
         },
         {
             'label': 'Generated Artifacts',

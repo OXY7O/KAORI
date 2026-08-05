@@ -199,6 +199,7 @@ services:
         --loglevel="$${CELERY_LOG_LEVEL:-INFO}"
         --concurrency="$${REPORTS_WORKER_CONCURRENCY:-1}"
         --max-tasks-per-child="$${REPORTS_MAX_TASKS_PER_CHILD:-25}"
+        --hostname=reports@%h
     tmpfs:
       - /tmp:rw,noexec,nosuid,size=256m
     stop_grace_period: 180s

@@ -81,8 +81,8 @@ def test_reporting_capability_explains_types_and_readiness() -> None:
     assert 'Browse report contracts currently supported by connected and validated data sources.' in workspace
     assert 'Follow request creation, format-specific execution, artifact storage, and optional Telegram delivery.' in workspace
     assert 'output supported by the currently connected and validated data sources' in coverage
-    assert 'Manual flow:' in pipeline
-    assert 'Scheduled flow:' in pipeline
+    assert 'Canonical flow:' in pipeline
+    assert 'scheduled delivery sends Telegram' in pipeline
     assert 'text-sm font-semibold leading-5 text-content-primary' in workspace
     assert 'text-xs leading-5 text-content-muted' in workspace
     assert 'Expand one domain at a time' not in workspace + coverage + pipeline
@@ -129,6 +129,9 @@ def test_report_schedule_dispatcher_uses_canonical_worker_job() -> None:
     task = read(ROOT / 'app' / 'reports' / 'schedules' / 'tasks.py')
     config = read(ROOT / 'app' / 'config' / 'default.py')
     compose = read(ROOT / 'compose.production.yml')
+    dev_compose = read(ROOT / '.devcontainer' / 'compose.devcontainer.yml')
+    devcontainer = read(ROOT / '.devcontainer' / 'devcontainer.json')
+    queue_contract = read(ROOT / 'app' / 'reports' / 'jobs' / 'queue.py')
 
     assert "key='reports.schedule.dispatch'" in definition
     assert "queue_name='reports'" in definition
@@ -139,6 +142,13 @@ def test_report_schedule_dispatcher_uses_canonical_worker_job() -> None:
     assert "'app.reports.schedules.tasks.run_report_schedule_job'" in config
     assert 'reports-worker:' in compose
     assert 'REPORTS_CELERY_QUEUE:-reports' in compose
+    assert '--hostname=reports@%h' in compose
+    assert 'reports-worker:' in dev_compose
+    assert 'REPORTS_CELERY_QUEUE:-reports' in dev_compose
+    assert '--hostname=reports@%h' in dev_compose
+    assert '"reports-worker"' in devcontainer
+    assert 'get_reports_queue_name()' in adapter
+    assert 'REPORTS_CELERY_QUEUE' in queue_contract
 
 
 def test_report_delivery_is_telegram_first_and_channel_extensible() -> None:

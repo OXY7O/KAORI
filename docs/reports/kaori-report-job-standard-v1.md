@@ -24,3 +24,37 @@ The task `app.reports.jobs.tasks.generate_report_job` runs on the `reports` queu
 
 ## Notification contract
 Queued, completed, and failed report events are persistent Notification Center records. Completion notifications include `job_execution_id`, `job_public_id`, `report_id`, `report_type`, output format, and final status. Background report jobs do not create stacked toasts.
+
+## Worker topology and queue identity
+
+`REPORTS_CELERY_QUEUE` is the single queue-name authority for manual report generation, schedule dispatch, Celery task routing, `JobExecution.queue_name`, and the dedicated worker subscription. Domain dispatchers call `get_reports_queue_name()` and must not hardcode `reports` at dispatch time.
+
+The canonical worker identity is `reports@<container-hostname>`. Run `python scripts/verify_reports_worker_runtime.py` inside the KAORI runtime to require both queue subscription and task registration:
+
+- Development service: `.devcontainer/compose.devcontainer.yml` → `reports-worker`.
+- Production service: `compose.production.yml` → `reports-worker`.
+- Dev Container startup: `.devcontainer/devcontainer.json` includes `reports-worker` in `runServices`.
+
+## Runtime readiness
+
+KAORI inspects Celery worker topology through one short-lived shared cache. Report workspaces and queued Activity Deck items distinguish these states:
+
+- **Online**: at least one worker consumes the configured Reports queue.
+- **Worker Missing**: Celery workers respond, but none consume the Reports queue.
+- **Offline**: no Celery worker responds; queued jobs cannot start.
+- **Unknown**: inspection failed and KAORI cannot assert queue liveness.
+
+Readiness is diagnostic and does not replace broker acknowledgement. A request can still be accepted during a short worker restart; Redis-retained messages start when the worker returns.
+
+## Canonical manual and scheduled flow
+
+Manual and scheduled paths use the same execution boundary:
+
+1. Persist the report request.
+2. Create or attach one canonical `JobExecution`.
+3. Enqueue the task on the configured Reports queue.
+4. Let `reports-worker` render and store the artifact.
+5. Finalize schedule delivery when applicable.
+6. Persist terminal Activity Audit and Notification Deck evidence.
+
+The Generate Report page therefore creates and queues generation in one submission. It does not require a second Generate action from Generated Reports.

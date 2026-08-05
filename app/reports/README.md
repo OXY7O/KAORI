@@ -52,3 +52,9 @@ The artifact registry in `app/reports/export/artifacts.py` resolves exactly one 
 - `app/reports/storage/naming.py`: selected-cluster object-key and extension rules.
 
 Rendering failures are logged with technical evidence and returned to users as sanitized operational feedback. KAORI does not switch to another report type, cluster, format, or renderer after validation.
+
+## Worker runtime contract
+
+`app/reports/jobs/queue.py` owns the Reports queue name. Both artifact generation and schedule dispatch resolve `REPORTS_CELERY_QUEUE` through this module before creating a canonical `JobExecution`. The Dev Container and production Compose definitions each run `reports-worker` with hostname `reports@%h` and the same queue environment variable.
+
+`app/common/celery_queue_health.py` owns the shared, cached Celery topology inspection used by Reports, Retention, and the Activity Deck. Report pages must never render a static worker-ready state. Worker liveness is presentation evidence; business tasks remain owned by Celery workers and never execute inside HTTP requests.

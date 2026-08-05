@@ -10,6 +10,7 @@ from flask import current_app
 from sqlalchemy import select
 from werkzeug.datastructures import ImmutableMultiDict, MultiDict
 
+from app.common.celery_queue_health import get_queue_readiness
 from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.report import Report, ReportSchedule, ReportScheduleRun
@@ -26,6 +27,7 @@ from app.reports.generate.service import (
     get_report_primary_output_format,
     validate_form_state,
 )
+from app.reports.jobs.queue import get_reports_queue_name
 from app.reports.jobs.service import ReportJobEnqueueError, enqueue_report_generation
 from app.reports.schedules.failures import mark_schedule_dispatch_failed
 from app.reports.storage.health import build_local_storage_health, build_s3_storage_health
@@ -70,6 +72,7 @@ def get_report_schedules_payload(
     schedules = _get_schedule_rows()
     recent_runs = _get_recent_runs()
     storage_context = _get_storage_context()
+    worker_context = get_queue_readiness(get_reports_queue_name())
 
     if form_state is None:
         form_state = build_default_schedule_form_state()
@@ -79,10 +82,8 @@ def get_report_schedules_payload(
         'page_subtitle': (
             'Automate report generation and delivery through the dedicated Reports worker.'
         ),
-        'status_label': 'Report worker enabled',
-        'status_description': (
-            'Schedules are dispatched through the dedicated Reports worker and recorded in Job Execution.'
-        ),
+        'status_label': f"Reports Worker {worker_context['label']}",
+        'status_description': worker_context['description'],
         'summary_cards': get_summary_cards(
             schedules=schedules,
             recent_runs=recent_runs,
@@ -102,7 +103,8 @@ def get_report_schedules_payload(
         'form_state': form_state,
         'errors': errors or [],
         'storage_context': storage_context,
-        'scheduler_context': get_scheduler_context(storage_context),
+        'worker_context': worker_context,
+        'scheduler_context': get_scheduler_context(storage_context, worker_context),
         'recommended_actions': get_recommended_actions(),
         'delivery_channel_options': get_delivery_channel_catalog(),
     }
@@ -261,27 +263,6 @@ def delete_report_schedule(schedule_id: int) -> tuple[bool, str]:
     db.session.delete(schedule)
     db.session.commit()
     return True, 'Schedule deleted successfully.'
-
-
-def run_schedule_now(
-    schedule_id: int,
-    *,
-    requested_by_user_id: int | None = None,
-) -> tuple[bool, str, int | None]:
-    schedule = db.session.get(ReportSchedule, schedule_id)
-    if schedule is None:
-        return False, 'Schedule not found.', None
-
-    from app.reports.schedules.job_adapter import dispatch_report_schedule_job
-
-    result = dispatch_report_schedule_job(
-        requested_by_user_id=requested_by_user_id,
-        trigger_type='manual',
-        parameters={'schedule_id': schedule_id, 'limit': 1},
-    )
-    if not result.accepted:
-        return False, result.message, None
-    return True, result.message, None
 
 
 def run_due_schedules(
@@ -473,7 +454,10 @@ def calculate_next_run_at(
     return candidate.astimezone(UTC)
 
 
-def get_scheduler_context(storage_context: dict[str, Any]) -> list[dict[str, str]]:
+def get_scheduler_context(
+    storage_context: dict[str, Any],
+    worker_context: dict[str, Any],
+) -> list[dict[str, str]]:
     telegram = next(
         (item for item in get_delivery_channel_catalog() if item['value'] == 'telegram'),
         None,
@@ -488,10 +472,10 @@ def get_scheduler_context(storage_context: dict[str, Any]) -> list[dict[str, str
         },
         {
             'label': 'Reports Worker',
-            'description': 'Due and manual schedule runs use the dedicated Reports queue and canonical Job Execution records.',
-            'status': 'Ready',
-            'tone': 'normal',
-            'icon': 'worker',
+            'description': str(worker_context['description']),
+            'status': str(worker_context['label']),
+            'tone': str(worker_context['tone']),
+            'icon': str(worker_context['icon']),
         },
         {
             'label': 'Artifact Storage',

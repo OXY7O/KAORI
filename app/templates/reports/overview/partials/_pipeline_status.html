@@ -53,6 +53,6 @@
 
     <div class="flex items-start gap-2 rounded-lg border border-kaori-primary/20 bg-kaori-soft px-3 py-2.5 text-xs leading-5 text-content-secondary">
         <i data-lucide="info" class="mt-0.5 h-4 w-4 shrink-0 text-kaori-primary" aria-hidden="true"></i>
-        <p><span class="font-semibold text-content-primary">Manual flow:</span> Generate Report creates a Requested record, then Generate PDF is started from Generated Reports. <span class="font-semibold text-content-primary">Scheduled flow:</span> the Reports worker creates and generates the report automatically, then sends Telegram when selected and configured.</p>
+        <p><span class="font-semibold text-content-primary">Canonical flow:</span> manual and scheduled requests both create a report record and enqueue one JobExecution on the dedicated Reports queue. The Reports worker renders and stores the artifact, then scheduled delivery sends Telegram when selected and configured.</p>
     </div>
 </div>

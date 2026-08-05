@@ -156,3 +156,33 @@ Deployment validation:
 4. Open every Kubernetes Analytics page for a ready cluster and for an explicitly selected incomplete cluster.
 5. Confirm committed data remains visible with an advisory readiness notice rather than a blank or full-page blocker.
 
+
+## Reports Worker Deployment
+
+Report generation is not executed by Gunicorn, the generic inventory worker, or the maintenance worker. Deploy the dedicated `reports-worker` with the same image, database, broker, result backend, artifact-storage volume, and `REPORTS_CELERY_QUEUE` value used by the web process.
+
+```bash
+docker compose -f compose.production.yml up -d --no-deps \
+  web \
+  reports-worker \
+  maintenance-worker \
+  beat
+```
+
+Verify the process identity and queue subscription:
+
+```bash
+docker compose -f compose.production.yml ps reports-worker
+docker compose -f compose.production.yml logs --tail=100 reports-worker
+docker compose -f compose.production.yml exec web \
+  python scripts/verify_reports_worker_runtime.py
+```
+
+The inspection must show `reports@...` consuming the configured Reports queue. The following tasks must route to that same queue:
+
+- `app.reports.jobs.tasks.generate_report_job`
+- `app.reports.schedules.tasks.run_report_schedule_job`
+
+KAORI now resolves the queue from `REPORTS_CELERY_QUEUE` at dispatch time; a custom queue name therefore cannot diverge between the worker and `JobExecution.queue_name`. The Reports Overview, Generate Report, Report Schedules, Job Configuration, and Activity Deck surface worker/queue readiness instead of reporting a static Ready state.
+
+Queued records created while the worker was stopped will continue when Redis still contains their Celery messages. When the broker was reset or purged, cancel the orphaned queued execution from **Platform Operations → Jobs & Executions**, then run the report or schedule again so KAORI creates a new canonical task identifier.

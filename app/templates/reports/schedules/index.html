@@ -10,7 +10,7 @@
                         <h1 class="{{ page_hero.title_classes() }}">{{ payload.page_title }}</h1>
                         <p class="mt-2 {{ page_hero.description_classes() }}">{{ payload.page_subtitle }}</p>
                         <div class="{{ page_hero.metadata_row_classes() }}">
-                            {{ page_hero.meta_label('play-circle', payload.status_label) }}
+                            {{ page_hero.meta_label(payload.worker_context.icon, payload.status_label) }}
                             {{ page_hero.meta_label('hard-drive', 'Storage ' ~ payload.storage_context.status) }}
                             {{ page_hero.meta_label('send', 'Scalable Delivery') }}
                         </div>
@@ -23,11 +23,11 @@
                                 <p class="{{ page_hero.context_panel_eyebrow_classes() }}">Automation Posture</p>
                                 <h2 class="{{ page_hero.context_panel_title_classes() }}">Reports Worker</h2>
                             </div>
-                            {{ page_hero.context_status_badge('Ready', 'normal') }}
+                            {{ page_hero.context_status_badge(payload.worker_context.label, payload.worker_context.tone) }}
                         </div>
                         <div class="{{ page_hero.context_panel_metrics_classes() }}">
                             {{ page_hero.context_metric('calendar-check', 'Active', payload.summary_cards[1].value, 'Enabled schedules') }}
-                            {{ page_hero.context_metric('hard-drive', 'Storage', payload.storage_context.status, 'Artifact destination', value_classes='text-sm font-semibold leading-5') }}
+                            {{ page_hero.context_metric('cpu', 'Worker', payload.worker_context.label, payload.worker_context.queue_name, value_classes='text-sm font-semibold leading-5') }}
                         </div>
                         <div class="{{ page_hero.context_actions_classes() }}">
                             <a href="{{ url_for('jobs.configuration', job_key='reports.schedule.dispatch') }}" class="{{ page_hero.context_action_classes() }}"><i data-lucide="settings-2" class="h-4 w-4"></i>Job Config</a>
@@ -38,6 +38,22 @@
             </div>
         </section>
         {% include "reports/components/_summary_strip.html" %}
+        {% if payload.worker_context.show_warning %}
+            <section class="rounded-xl border p-4 {% if payload.worker_context.tone == 'critical' %}border-status-critical-border bg-status-critical-soft{% else %}border-status-warning-border bg-status-warning-soft{% endif %}"
+                     role="status"
+                     aria-label="Reports worker unavailable">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-surface-card {% if payload.worker_context.tone == 'critical' %}border-status-critical-border text-status-critical-text{% else %}border-status-warning-border text-status-warning-text{% endif %}">
+                        <i data-lucide="{{ payload.worker_context.icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold {% if payload.worker_context.tone == 'critical' %}text-status-critical-text{% else %}text-status-warning-text{% endif %}">Reports queue cannot be processed</p>
+                        <p class="mt-1 text-xs leading-5 {% if payload.worker_context.tone == 'critical' %}text-status-critical-text{% else %}text-status-warning-text{% endif %}">{{ payload.worker_context.description }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">Start the <span class="font-semibold">reports-worker</span> service. Existing broker-backed jobs will begin processing when the worker subscribes to this queue.</p>
+                    </div>
+                </div>
+            </section>
+        {% endif %}
         {% if payload.errors %}
             <section class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-300">
                 <div class="flex items-start gap-3">

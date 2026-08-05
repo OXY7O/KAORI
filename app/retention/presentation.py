@@ -13,6 +13,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from flask import current_app
 from sqlalchemy import case, func
 
+from app.common.celery_queue_health import get_queue_readiness
 from app.models.archive import (
     ACTIVE_ARCHIVE_STATUSES,
     ARCHIVE_STATUS_CLEANUP_PARTIAL,
@@ -569,69 +570,22 @@ def _probe_storage_endpoint(endpoint_url: str) -> dict[str, Any]:
 
 def _inspect_retention_worker() -> dict[str, Any]:
     queue_name = str(current_app.config.get('RETENTION_CELERY_QUEUE', 'inventory') or 'inventory')
-    celery_app = current_app.extensions.get('celery')
-    if celery_app is None:
-        return {
-            'status': 'unavailable',
-            'label': 'Unavailable',
-            'tone': 'rose',
-            'count': 0,
-            'queue_ready': False,
-            'detail': 'Celery is not initialized in the KAORI web runtime.',
-            'worker_names': [],
-        }
-
-    try:
-        inspector = celery_app.control.inspect(timeout=0.75)
-        queue_map = inspector.active_queues() or {}
-        if not queue_map:
-            ping_map = inspector.ping() or {}
-            if not ping_map:
-                return {
-                    'status': 'offline',
-                    'label': 'Offline',
-                    'tone': 'rose',
-                    'count': 0,
-                    'queue_ready': False,
-                    'detail': 'No Celery worker responded to the health inspection.',
-                    'worker_names': [],
-                }
-            queue_map = {name: [] for name in ping_map}
-
-        worker_names = sorted(queue_map.keys())
-        queue_ready = any(
-            any(str(queue.get('name') or '') == queue_name for queue in queues or []) for queues in queue_map.values()
-        )
-        if queue_ready:
-            return {
-                'status': 'online',
-                'label': 'Online',
-                'tone': 'emerald',
-                'count': len(worker_names),
-                'queue_ready': True,
-                'detail': f'{len(worker_names)} worker(s) are listening on the {queue_name} queue.',
-                'worker_names': worker_names,
-            }
-        return {
-            'status': 'queue_mismatch',
-            'label': 'Queue mismatch',
-            'tone': 'amber',
-            'count': len(worker_names),
-            'queue_ready': False,
-            'detail': f'Workers responded, but none reported the {queue_name} queue.',
-            'worker_names': worker_names,
-        }
-    except Exception as exc:
-        current_app.logger.warning('Could not inspect retention Celery worker: %s', exc)
-        return {
-            'status': 'unknown',
-            'label': 'Unknown',
-            'tone': 'slate',
-            'count': 0,
-            'queue_ready': False,
-            'detail': f'Worker health inspection failed with {type(exc).__name__}.',
-            'worker_names': [],
-        }
+    state = get_queue_readiness(queue_name)
+    tone = {
+        'normal': 'emerald',
+        'warning': 'amber',
+        'critical': 'rose',
+        'unknown': 'slate',
+    }.get(str(state['tone']), 'slate')
+    return {
+        'status': state['status'],
+        'label': state['label'],
+        'tone': tone,
+        'count': state['worker_count'],
+        'queue_ready': state['ready'],
+        'detail': state['description'],
+        'worker_names': state['worker_names'],
+    }
 
 
 def _cached_status(

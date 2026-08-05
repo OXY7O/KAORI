@@ -55,3 +55,35 @@ Rebuild the Dev Container after regenerating either lock file.
 Delete the Windows or macOS `.venv` only after the Dev Container can start Flask,
 run migrations and build Tailwind successfully. The canonical
 Python interpreter is `/usr/local/bin/python` inside the container.
+
+## Reports worker
+
+The Dev Container starts a dedicated `reports-worker` service automatically. It consumes the queue configured by `REPORTS_CELERY_QUEUE` and identifies itself as `reports@<container-hostname>`. Manual generation, scheduled report dispatch, and generated artifact delivery all use this same queue contract.
+
+After pulling a change that adds or modifies worker services, run **Dev Containers: Rebuild and Reopen in Container**. To start or inspect the service directly from the host:
+
+```bash
+docker compose \
+  -f compose.yml \
+  -f .devcontainer/compose.devcontainer.yml \
+  up -d reports-worker
+
+docker compose \
+  -f compose.yml \
+  -f .devcontainer/compose.devcontainer.yml \
+  ps reports-worker
+
+docker compose \
+  -f compose.yml \
+  -f .devcontainer/compose.devcontainer.yml \
+  logs --tail=100 reports-worker
+```
+
+From the Dev Container terminal, verify the worker registration and queue subscription:
+
+```bash
+python scripts/verify_reports_worker_runtime.py
+celery --app celery_worker:celery_app inspect active_queues
+```
+
+Expected evidence includes a worker named `reports@...` with the `reports` queue, or the custom queue value configured in `REPORTS_CELERY_QUEUE`. Existing messages retained by Redis begin processing as soon as the worker subscribes.

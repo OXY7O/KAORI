@@ -15,6 +15,7 @@
                         <div class="{{ page_hero.metadata_row_classes() }}">
                             {{ page_hero.meta_label('layout-template', 'Reusable Templates') }}
                             {{ page_hero.meta_label('layers-3', 'Selectable Sections') }}
+                            {{ page_hero.meta_label(payload.worker_context.icon, 'Worker ' ~ payload.worker_context.label) }}
                             {{ page_hero.meta_label('hard-drive', payload.storage_context.label) }}
                         </div>
                     {% endcall %}
@@ -40,6 +41,22 @@
                 </aside>
             </div>
         </section>
+        {% if payload.worker_context.show_warning %}
+            <section class="rounded-xl border p-4 {% if payload.worker_context.tone == 'critical' %}border-status-critical-border bg-status-critical-soft{% else %}border-status-warning-border bg-status-warning-soft{% endif %}"
+                     role="status"
+                     aria-label="Reports worker unavailable">
+                <div class="flex items-start gap-3">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border bg-surface-card {% if payload.worker_context.tone == 'critical' %}border-status-critical-border text-status-critical-text{% else %}border-status-warning-border text-status-warning-text{% endif %}">
+                        <i data-lucide="{{ payload.worker_context.icon }}" class="h-4 w-4" aria-hidden="true"></i>
+                    </span>
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold {% if payload.worker_context.tone == 'critical' %}text-status-critical-text{% else %}text-status-warning-text{% endif %}">Reports worker is not consuming the queue</p>
+                        <p class="mt-1 text-xs leading-5 {% if payload.worker_context.tone == 'critical' %}text-status-critical-text{% else %}text-status-warning-text{% endif %}">{{ payload.worker_context.description }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">A submitted request remains queued until <span class="font-semibold">reports-worker</span> is online.</p>
+                    </div>
+                </div>
+            </section>
+        {% endif %}
         {% if payload.errors %}
             <section class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 shadow-sm dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-200">
                 <div class="flex items-start gap-3">
@@ -402,13 +419,13 @@
                                             <dd>
                                                 <span class="inline-flex min-h-6 items-center gap-1 rounded-md border border-status-info-border bg-status-info-soft px-2 py-0.5 text-xs font-semibold leading-4 text-status-info-text">
                                                     <i data-lucide="clock-3" class="h-3 w-3 shrink-0 text-status-info"></i>
-                                                    Requested
+                                                    Queued Automatically
                                                 </span>
                                             </dd>
                                         </div>
                                         <div class="flex items-start justify-between gap-4 py-2.5">
                                             <dt class="text-xs text-content-muted">Generation Mode</dt>
-                                            <dd class="max-w-[65%] text-right text-xs font-semibold text-content-primary">Manual from Generated Reports</dd>
+                                            <dd class="max-w-[65%] text-right text-xs font-semibold text-content-primary">Automatic Reports worker job</dd>
                                         </div>
                                     </dl>
                                 </div>
@@ -480,11 +497,11 @@
                                 </span>
                                 <div>
                                     <p id="preview-next-step-title" class="text-xs font-semibold text-content-primary">
-                                        {{ 'Next Step: Create the Request' if initial_request_ready else 'Complete the Required Inputs' }}
+                                        {{ 'Next Step: Create & Queue the Report' if initial_request_ready else 'Complete the Required Inputs' }}
                                     </p>
                                     <p id="preview-next-step-description" class="mt-1 text-xs leading-5 text-content-muted">
                                         {% if initial_request_ready %}
-                                            The request will be saved as Requested, then its configured artifact can be rendered from Generated Reports.
+                                            The request will be saved and one canonical artifact-generation job will be queued automatically.
                                         {% else %}
                                             Resolve the cluster scope or section selection before creating the request.
                                         {% endif %}
@@ -502,13 +519,13 @@
                                 </span>
                                 <div>
                                     <div class="flex flex-wrap items-center gap-2">
-                                        <h2 class="text-base font-semibold text-content-primary">Create Report Request</h2>
+                                        <h2 class="text-base font-semibold text-content-primary">Create & Queue Report</h2>
                                         <span class="inline-flex min-h-6 items-center gap-1 rounded-md border border-status-info-border bg-status-info-soft px-2 py-0.5 text-xs font-semibold leading-4 text-status-info-text">
                                             <i data-lucide="clock-3" class="h-3 w-3 shrink-0 text-status-info" aria-hidden="true"></i>
-                                            Requested
+                                            Queued Automatically
                                         </span>
                                     </div>
-                                    <p class="mt-1 text-xs leading-5 text-content-muted">KAORI records the selected contract first. PDF, Excel, or CSV artifact generation starts separately from Generated Reports.</p>
+                                    <p class="mt-1 text-xs leading-5 text-content-muted">KAORI records the selected contract and immediately queues PDF, Excel, or CSV artifact generation on the dedicated Reports worker.</p>
                                 </div>
                             </div>
                         </div>
@@ -525,7 +542,7 @@
                                         id="generate-report-button"
                                         class="inline-flex min-h-9 cursor-pointer items-center justify-center gap-2 rounded-lg bg-kaori-primary px-5 text-sm font-semibold text-white transition hover:bg-kaori-primary-dark focus:outline-none focus:ring-2 focus:ring-kaori-primary/20 disabled:cursor-not-allowed">
                                     <i data-lucide="file-plus-2" class="h-4 w-4"></i>
-                                    Create Report Request
+                                    Create & Queue Report
                                 </button>
                             </div>
                         </div>
@@ -539,7 +556,7 @@
                     'Follow the governed request-to-artifact flow.',
                     payload.generation_flow,
                     icon='route',
-                    note='Creating a request records the contract first. PDF, Excel, or CSV generation starts from Generated Reports.',
+                    note='Creating a request records the contract and immediately queues PDF, Excel, or CSV generation on the dedicated Reports worker.',
                     note_icon='file-clock',
                     open_by_default=true
                 ) }}
@@ -787,13 +804,13 @@
 
                     if (previewNextStepTitle) {
                         previewNextStepTitle.textContent = isReady
-                            ? 'Next Step: Create the Request'
+                            ? 'Next Step: Create & Queue the Report'
                             : 'Complete the Required Inputs';
                     }
 
                     if (previewNextStepDescription) {
                         previewNextStepDescription.textContent = isReady
-                            ? 'The request will be saved as Requested, then its configured artifact can be rendered from Generated Reports.'
+                            ? 'The request will be saved and one canonical artifact-generation job will be queued automatically.'
                             : 'Resolve the cluster scope or section selection before creating the request.';
                     }
                 }

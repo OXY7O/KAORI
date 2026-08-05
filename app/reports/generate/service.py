@@ -5,6 +5,7 @@ from typing import Any
 from sqlalchemy import func, select
 from werkzeug.datastructures import ImmutableMultiDict, MultiDict
 
+from app.common.celery_queue_health import get_queue_readiness
 from app.common.inventory_generation import filter_current_generation
 from app.extensions.db import db
 from app.models.cluster import Cluster
@@ -21,6 +22,7 @@ from app.reports.catalog import (
     normalize_report_type as normalize_catalog_report_type,
 )
 from app.reports.export.constants import DEFAULT_REPORT_DOMAIN, DEFAULT_REPORT_SOURCE_KIND
+from app.reports.jobs.queue import get_reports_queue_name
 from app.reports.storage.health import build_local_storage_health
 from app.reports.storage.service import (
     get_configured_storage_backend_name,
@@ -439,6 +441,7 @@ def get_generate_report_payload(
         )
 
     storage_context = _get_storage_generation_context()
+    worker_context = get_queue_readiness(get_reports_queue_name())
     selected_report_type = _get_report_type_context(
         form_state['report_type'],
     )
@@ -479,8 +482,10 @@ def get_generate_report_payload(
             form_state=form_state,
             selected_report_type=selected_report_type,
             has_clusters=bool(cluster_options),
+            worker_context=worker_context,
         ),
         'storage_context': storage_context,
+        'worker_context': worker_context,
         'generation_flow': _get_generation_flow(),
         'report_type_guide_groups': _get_report_type_guide_groups(),
         'recommended_actions': _get_recommended_actions(),
@@ -980,6 +985,7 @@ def _get_generation_readiness(
     form_state: dict[str, Any],
     selected_report_type: dict[str, Any],
     has_clusters: bool,
+    worker_context: dict[str, Any],
 ) -> list[dict[str, str]]:
     requires_specific_cluster = bool(
         selected_report_type.get(
@@ -1054,10 +1060,18 @@ def _get_generation_readiness(
             'icon': 'list-checks',
         },
         {
+            'key': 'worker',
+            'label': 'Reports Worker',
+            'description': str(worker_context['description']),
+            'status': str(worker_context['label']),
+            'tone': 'blue' if worker_context['ready'] else 'amber',
+            'icon': str(worker_context['icon']),
+        },
+        {
             'key': 'artifact',
             'label': 'Artifact Generation',
-            'description': 'Create the request first, then generate the configured PDF, Excel, or CSV artifact from Generated Reports.',
-            'status': 'Ready',
+            'description': 'Submitting the form creates the report request and immediately queues the configured PDF, Excel, or CSV artifact.',
+            'status': 'Automatic',
             'tone': 'blue',
             'icon': 'file-text',
         },
@@ -1094,12 +1108,12 @@ def _get_generation_flow() -> list[tuple[str, str]]:
             'Choose the report type, scope, period, output format, and sections.',
         ),
         (
-            'Create Request',
-            'KAORI saves a governed report record with Requested status.',
+            'Create & Queue Request',
+            'KAORI saves the governed report record and dispatches one canonical report job.',
         ),
         (
             'Generate Artifact',
-            'Open Generated Reports and generate the configured PDF, Excel, or CSV artifact for the request.',
+            'The dedicated Reports worker renders the configured PDF, Excel, or CSV artifact.',
         ),
         (
             'Store and Download',
