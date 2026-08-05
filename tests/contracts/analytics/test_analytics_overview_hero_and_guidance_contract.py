@@ -18,7 +18,7 @@ def test_analytics_overview_hero_caps_metadata_and_uses_manage_clusters_action()
 
 
 def test_overview_guidance_blocks_use_icon_led_callouts():
-    surface = Path('app/templates/analytics/components/_overview_surfaces.html').read_text()
+    surface = Path('app/templates/analytics/components/_analysis_surfaces.html').read_text()
     assert 'macro interpretation_callout' in surface
 
     health = Path('app/templates/analytics/overview/partials/_health_summary.html').read_text()

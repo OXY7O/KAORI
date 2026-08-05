@@ -31,6 +31,19 @@ def test_storage_inventory_uses_canonical_resource_page_pattern() -> None:
     assert 'hx-target="#storage-page-workspace"' in card
     assert 'name="partial_mode" value="page_workspace"' in card
     assert 'aria-label="Storage inventory filters"' in card
+    assert (
+        'lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.9fr)'
+        '_minmax(0,0.9fr)_minmax(16rem,1.35fr)]' in card
+    )
+    for control_id in (
+        'storage-cluster-filter',
+        'storage-namespace-filter',
+        'storage-type-filter',
+        'storage-lifecycle-filter',
+        'storage-search',
+    ):
+        assert f'id="{control_id}"' in card or f"id='{control_id}'" in card
+        assert f'for="{control_id}"' in card
     for column in ('Storage Object', 'Scope', 'Provisioning', 'Capacity & Access', 'Binding & Lifecycle', 'Details'):
         assert column in table
     assert '<caption class="sr-only">' in table

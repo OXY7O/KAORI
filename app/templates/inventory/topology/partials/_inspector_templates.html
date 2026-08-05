@@ -12,7 +12,7 @@
     <div class="space-y-4">
         <section class="rounded-xl border border-outline-subtle bg-surface-elevated p-4">
             <div class="flex items-start gap-3">
-                <span data-node-icon-shell class="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary">
+                <span data-node-icon-shell class="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border">
                     <i data-node-icon class="h-5 w-5" aria-hidden="true"></i>
                 </span>
                 <div class="min-w-0 flex-1">
@@ -75,16 +75,10 @@
 <template id="topology-field-row-template">
     <div class="flex items-start justify-between gap-3 py-2.5">
         <dt data-field-label class="text-xs font-normal text-content-muted"></dt>
-        <dd data-field-value class="max-w-[12rem] break-words text-right text-xs font-medium text-content-primary"></dd>
+        <dd data-field-value class="max-w-[15rem] break-words text-right text-xs font-medium text-content-primary"></dd>
     </div>
 </template>
 
-<template id="topology-stacked-field-row-template">
-    <div class="py-2.5">
-        <dt data-field-label class="text-xs font-normal leading-5 text-content-muted"></dt>
-        <dd data-field-value class="mt-1 min-w-0 break-words text-left text-xs font-medium leading-5 text-content-primary [overflow-wrap:anywhere]"></dd>
-    </div>
-</template>
 
 <template id="topology-relationship-row-template">
     <button type="button" data-topology-related-node class="flex w-full items-start gap-3 rounded-lg border border-outline-subtle bg-surface-card px-3 py-3 text-left transition hover:border-outline-focus hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus">

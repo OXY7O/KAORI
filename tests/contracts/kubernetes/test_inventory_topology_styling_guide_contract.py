@@ -17,7 +17,7 @@ def test_topology_uses_the_adaptive_visualization_workspace() -> None:
     assert '{% import "components/visualization_workspace.html" as visualization_workspace %}' in workspace
     assert 'visualization_workspace.render(' in workspace
     assert 'data-kaori-visualization-workspace="adaptive-explorer"' in component
-    assert '2xl:grid-cols-[18rem_minmax(0,1fr)_22rem]' in component
+    assert '2xl:grid-cols-[18rem_minmax(0,1fr)_26rem]' in component
     assert 'topology-controls-panel' in workspace
     assert 'topology-details-panel' in workspace
     assert 'topology-pane-backdrop' in workspace
@@ -85,7 +85,12 @@ def test_topology_palette_is_tokenized_and_contains_no_raw_js_colors() -> None:
 
     for domain in ('scope', 'compute', 'networking', 'configuration', 'storage'):
         assert f'--kaori-topology-domain-{domain}-fill' in styles
-        assert f'kaori-topology-domain-{domain}' in styles
+        assert f'--kaori-topology-domain-{domain}-border' in styles
+        assert f'--kaori-topology-domain-{domain}-text' in styles
+        assert f'.kaori-topology-domain-{domain}' in styles
+        assert f'background-color: var(--kaori-topology-domain-{domain}-fill);' in styles
+        assert f'border-color: var(--kaori-topology-domain-{domain}-border);' in styles
+        assert f'color: var(--kaori-topology-domain-{domain}-text);' in styles
     for relationship in ('contains', 'owns', 'scheduled', 'selects', 'routes', 'uses', 'mounts', 'binds'):
         assert f'--kaori-topology-edge-{relationship}' in styles
     assert re.search(r'(?<![\w-])#[0-9a-fA-F]{3,8}\b', script) is None
@@ -151,7 +156,8 @@ def test_topology_cluster_icon_and_api_server_layout_are_readable() -> None:
 
     assert "cluster: { icon: 'server', domain: 'scope' }" in script
     assert "cluster: { icon: 'server-cog', domain: 'scope' }" not in script
-    assert 'topology-stacked-field-row-template' in inspector
+    assert 'topology-stacked-field-row-template' not in inspector
     assert "normalizedLabel === 'api server'" in script
-    assert "? 'topology-stacked-field-row-template'" in script
-    assert '[overflow-wrap:anywhere]' in inspector
+    assert "valueElement.classList.add('min-w-0', 'flex-1', 'truncate', 'whitespace-nowrap')" in script
+    assert "valueElement.title = String(displayValue || 'Not Reported')" in script
+    assert 'max-w-[15rem]' in inspector

@@ -7,6 +7,9 @@ logger = logging.getLogger(__name__)
 
 _HEALTHY_STATES = {'healthy'}
 _KUBERNETES_CLUSTER_SCOPE = 'kubernetes_cluster'
+_INVENTORY_JOB_KEY = 'kubernetes.inventory.sync'
+_TLS_CERTIFICATE_JOB_KEY = 'governance.tls_certificates.sync'
+_ANALYTICS_JOB_KEY = 'analytics.materialize'
 
 
 def latest_runtime_health(integration_instance_id: int | None) -> str | None:
@@ -51,59 +54,69 @@ def _bound_cluster_ids(instance: Any) -> list[str]:
     )
 
 
+def _get_job_definition(job_key: str) -> Any:
+    from app.jobs.registry import get_job_definition
+
+    return get_job_definition(job_key)
+
+
+def _dispatch_recovery_job(*, job_key: str, parameters: dict[str, Any]) -> bool:
+    outcome = _get_job_definition(job_key).dispatch(
+        requested_by_user_id=None,
+        trigger_type='recovery',
+        parameters=parameters,
+    )
+    return bool(outcome.accepted and outcome.created)
+
+
+def _record_dispatch(result: dict[str, object], *, created: bool) -> None:
+    result['queued'] = int(result['queued']) + int(created)
+    result['skipped'] = int(result['skipped']) + int(not created)
+
+
 def enqueue_recovery_work(*, provider_type: str, instance: Any) -> dict[str, object]:
     """Queue focused data refresh after a provider transitions back to healthy.
 
     Recovery dispatch is best-effort. A failed enqueue must never turn a healthy
-    runtime refresh back into a failed runtime observation.
+    runtime refresh back into a failed runtime observation. Registered job
+    definitions remain the canonical dispatch boundary, so Integration Runtime
+    does not import Inventory, Governance, or Analytics implementations directly.
     """
     cluster_ids = _bound_cluster_ids(instance)
-    result: dict[str, object] = {'provider_type': provider_type, 'clusters': cluster_ids, 'queued': 0, 'skipped': 0}
+    result: dict[str, object] = {
+        'provider_type': provider_type,
+        'clusters': cluster_ids,
+        'queued': 0,
+        'skipped': 0,
+    }
     if not cluster_ids:
         return result
 
     if provider_type == 'kubernetes':
-        from app.cluster.sync_jobs import enqueue_cluster_inventory_sync
-        from app.governance.tls_certificates.sync_jobs import enqueue_tls_certificate_sync
-        from app.models.cluster import Cluster
-
+        requests = (
+            (_INVENTORY_JOB_KEY, 'inventory'),
+            (_TLS_CERTIFICATE_JOB_KEY, 'TLS certificate'),
+        )
         for cluster_id in cluster_ids:
-            cluster = Cluster.query.get(cluster_id)
-            if cluster is None:
-                result['skipped'] = int(result['skipped']) + 2
-                continue
-
-            try:
-                _, inventory_created = enqueue_cluster_inventory_sync(
-                    cluster=cluster,
-                    requested_by_user_id=None,
-                    trigger_type='recovery',
-                )
-            except Exception:
-                logger.exception('Could not queue recovery inventory sync for cluster %s.', cluster_id)
-                result['skipped'] = int(result['skipped']) + 1
-            else:
-                result['queued'] = int(result['queued']) + int(inventory_created)
-                result['skipped'] = int(result['skipped']) + int(not inventory_created)
-
-            try:
-                _, tls_created = enqueue_tls_certificate_sync(
-                    requested_by_user_id=None,
-                    trigger_type='recovery',
-                    cluster_id=cluster_id,
-                )
-            except Exception:
-                logger.exception('Could not queue recovery TLS sync for cluster %s.', cluster_id)
-                result['skipped'] = int(result['skipped']) + 1
-            else:
-                result['queued'] = int(result['queued']) + int(tls_created)
-                result['skipped'] = int(result['skipped']) + int(not tls_created)
+            for job_key, label in requests:
+                try:
+                    created = _dispatch_recovery_job(
+                        job_key=job_key,
+                        parameters={'cluster_id': cluster_id},
+                    )
+                except Exception:
+                    logger.exception(
+                        'Could not queue recovery %s sync for cluster %s.',
+                        label,
+                        cluster_id,
+                    )
+                    result['skipped'] = int(result['skipped']) + 1
+                else:
+                    _record_dispatch(result, created=created)
         return result
 
     if provider_type not in {'prometheus', 'alertmanager'}:
         return result
-
-    from app.analytics.job_adapter import dispatch_analytics_materialization
 
     requests = (
         ('dashboard.kubernetes.alerts', {}),
@@ -112,9 +125,8 @@ def enqueue_recovery_work(*, provider_type: str, instance: Any) -> dict[str, obj
     for cluster_id in cluster_ids:
         for dataset_key, snapshot_parameters in requests:
             try:
-                outcome = dispatch_analytics_materialization(
-                    requested_by_user_id=None,
-                    trigger_type='recovery',
+                created = _dispatch_recovery_job(
+                    job_key=_ANALYTICS_JOB_KEY,
                     parameters={
                         'cluster_id': cluster_id,
                         'dataset_key': dataset_key,
@@ -129,6 +141,5 @@ def enqueue_recovery_work(*, provider_type: str, instance: Any) -> dict[str, obj
                 )
                 result['skipped'] = int(result['skipped']) + 1
             else:
-                result['queued'] = int(result['queued']) + int(outcome.created)
-                result['skipped'] = int(result['skipped']) + int(not outcome.created)
+                _record_dispatch(result, created=created)
     return result

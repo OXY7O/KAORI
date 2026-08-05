@@ -18,13 +18,13 @@ from app.analytics.materialization.catalog import (
     source_binding_capabilities,
     source_technical_capabilities,
 )
+from app.analytics.materialization.keys import CAPACITY_DATASET_KEY
 from app.analytics.materialization.service import get_snapshot, normalize_parameters
 from app.analytics.tasks import materialize_analytics_snapshots, materialize_forecast_snapshots
-from app.dashboards.kubernetes.snapshots import CAPACITY_DATASET_KEY
+from app.common.job_execution_presentation import present_job_execution
 from app.jobs.constants import ACTIVE_JOB_STATUSES
 from app.jobs.definitions.base import RegisteredJobDispatchResult
 from app.jobs.dispatcher import enqueue_canonical_job
-from app.jobs.presentation import present_job_execution
 from app.models import AnalyticsSnapshot, Cluster
 from app.models.job import JobExecution, JobPolicy
 from app.prometheus.repository import resolve_instance_for_cluster

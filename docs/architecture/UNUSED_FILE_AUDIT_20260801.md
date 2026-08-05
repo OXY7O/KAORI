@@ -86,9 +86,9 @@ These are local/generated artifacts and must not be included in source ZIP deliv
 
 ## Candidates Retained Pending Architecture Decision
 
-### `app/analytics/common/cache.py`
+### `app/analytics/common/cache.py` — removed August 5, 2026
 
-Static analysis found no imports or function calls. It implements a Redis/local stale-cache mechanism, so it was not deleted automatically. Confirm whether Analytics still plans to use this cache layer; otherwise it should be removed with focused cache tests and documentation cleanup.
+The module had no importer and duplicated the committed `AnalyticsSnapshot` evidence path with a second Redis/local pickle cache. It was removed during the core-workspace revalidation and is now registered in the obsolete-file cleanup guard.
 
 ### `app/knowledge/remediation_workflow.py`
 

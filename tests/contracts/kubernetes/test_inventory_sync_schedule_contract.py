@@ -55,3 +55,14 @@ def test_quick_action_wording_describes_inventory_scope() -> None:
 
     assert 'Sync All Inventory' in navbar
     assert 'complete inventory refresh' in navbar
+
+
+def test_registered_inventory_dispatch_supports_recovery_for_one_cluster() -> None:
+    adapter = _source('app/inventory/job_adapter.py')
+    recovery = _source('app/integrations/runtime/recovery.py')
+
+    assert "cluster_id = str((parameters or {}).get('cluster_id') or '').strip()" in adapter
+    assert 'enqueue_cluster_inventory_sync(' in adapter
+    assert "_INVENTORY_JOB_KEY = 'kubernetes.inventory.sync'" in recovery
+    assert "parameters={'cluster_id': cluster_id}" in recovery
+    assert 'from app.cluster.sync_jobs import enqueue_cluster_inventory_sync' not in recovery

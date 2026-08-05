@@ -164,3 +164,37 @@ The audit environment does not include Flask, Ruff, DjLint, or Pyright. Runtime 
 full Flask integration tests, and those optional developer-tool checks must therefore run in the
 KAORI development container after applying the patch. No result in this audit claims live browser
 or connected Kubernetes validation.
+
+## August 5 revalidation extension
+
+The review scope now also includes Storage Inventory, Configuration Inventory, Ingress Inventory,
+Kubernetes Governance TLS Certificates, and Kubernetes Operations ConfigMaps and Secrets.
+
+The following additional canonicalization was completed:
+
+- Dashboard alert materialization moved from `app/dashboards/kubernetes/snapshot_builder.py` to
+  `app/analytics/materialization/dashboard_alerts.py`. Dataset identifiers are owned by
+  `app/analytics/materialization/keys.py`. Dashboard remains a database-only reader and Analytics no
+  longer imports Dashboard implementation modules.
+- `app/analytics/common/cache.py` was removed. The Analytics services already use committed worker
+  snapshots; retaining an unreferenced, pickle-based cache would create a second evidence path.
+- Integration runtime recovery now resolves registered job definitions and dispatches Inventory,
+  TLS Certificate, and Analytics recovery through the Job Registry. Direct imports into those
+  domain implementations were removed.
+- One-cluster Inventory recovery is handled by the existing `kubernetes.inventory.sync` registered
+  dispatcher through `parameters.cluster_id`; no recovery-specific wrapper was introduced.
+- Compact job execution presentation moved to
+  `app/common/job_execution_presentation.py`. Notifications, Reports, Analytics, Governance, and
+  Jobs reuse that presenter, while Jobs adds only cancellation-policy presentation. This removes
+  duplicate state mapping and the reverse Notifications-to-Jobs dependency.
+- Topology domain icon classes now apply the canonical fill, border, and foreground tokens. The
+  right inspector is `26rem`, and API Server uses a single-line canonical field row with full-value
+  hover disclosure.
+- Storage Inventory uses one aligned five-control filter row from the `lg` breakpoint and explicit
+  label/control bindings.
+- The obsolete Analytics Overview surface macro was removed; its stale contract now points to the
+  canonical shared `_analysis_surfaces.html` component.
+
+The cleanup verifier and contract suite register the removed Dashboard builder and Analytics cache
+as obsolete files and guard the new ownership boundaries. No compatibility allowlist was expanded
+to make the architecture verifier pass.

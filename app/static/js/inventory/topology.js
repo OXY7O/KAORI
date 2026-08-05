@@ -829,16 +829,18 @@ const startTopologyWorkspace = () => {
         container?.replaceChildren()
         fields.forEach((field) => {
             const normalizedLabel = String(field.label || '').trim().toLowerCase()
-            const templateId = normalizedLabel === 'api server'
-                ? 'topology-stacked-field-row-template'
-                : 'topology-field-row-template'
-            const row = cloneTemplate(templateId)
+            const row = cloneTemplate('topology-field-row-template')
             if (!row) return
             text(row, '[data-field-label]', field.label)
             const displayValue = normalizedLabel === 'status'
                 ? titleCaseText(field.value)
                 : field.value
-            text(row, '[data-field-value]', displayValue || 'Not Reported')
+            const valueElement = text(row, '[data-field-value]', displayValue || 'Not Reported')
+            if (normalizedLabel === 'api server' && valueElement) {
+                valueElement.classList.remove('break-words')
+                valueElement.classList.add('min-w-0', 'flex-1', 'truncate', 'whitespace-nowrap')
+                valueElement.title = String(displayValue || 'Not Reported')
+            }
             container.appendChild(row)
         })
     }
@@ -1370,7 +1372,7 @@ const startTopologyWorkspace = () => {
                 button.setAttribute('aria-selected', 'false')
                 button.className = 'flex w-full items-start gap-3 rounded-lg px-3 py-2.5 text-left transition hover:bg-kaori-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-outline-focus'
                 const iconShell = document.createElement('span')
-                iconShell.className = `flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft kaori-topology-domain-${ui.domain}`
+                iconShell.className = `flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border kaori-topology-domain-${ui.domain}`
                 const icon = document.createElement('i')
                 icon.setAttribute('data-lucide', ui.icon)
                 icon.className = 'h-4 w-4'

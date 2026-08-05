@@ -10,6 +10,8 @@ def read(relative: str) -> str:
 def test_reviewed_core_workspaces_do_not_restore_internal_compatibility_bridges() -> None:
     obsolete = (
         'app/static/js/inventory/topology_bootstrap.js',
+        'app/dashboards/kubernetes/snapshot_builder.py',
+        'app/analytics/common/cache.py',
         'app/templates/inventory/components/_detail_macros.html',
         'app/templates/inventory/nodes/partials/_inventory_scope.html',
         'app/templates/inventory/namespaces/partials/_inventory_scope.html',
@@ -99,3 +101,24 @@ def test_configuration_inventory_derives_key_count_without_synthetic_payload_col
     assert "'payload_size_bytes':" not in collector
     assert "op.drop_column('configuration_inventory', 'key_count')" in migration
     assert "op.drop_column('configuration_inventory', 'payload_size_bytes')" in migration
+
+
+def test_dashboard_materialization_and_recovery_use_canonical_domain_boundaries() -> None:
+    catalog = read('app/analytics/materialization/catalog.py')
+    analytics_adapter = read('app/analytics/job_adapter.py')
+    dashboard_snapshots = read('app/dashboards/kubernetes/snapshots.py')
+    recovery = read('app/integrations/runtime/recovery.py')
+    notifications = read('app/notifications/queries.py')
+    shared_presentation = read('app/common/job_execution_presentation.py')
+
+    assert 'from app.analytics.materialization.dashboard_alerts import build_dashboard_alerts_context' in catalog
+    assert 'app.dashboards' not in catalog
+    assert 'app.dashboards' not in analytics_adapter
+    assert 'from app.analytics.materialization.keys import (' in dashboard_snapshots
+    assert 'from app.jobs.registry import get_job_definition' in recovery
+    assert 'from app.cluster.sync_jobs import' not in recovery
+    assert 'from app.governance.tls_certificates.sync_jobs import' not in recovery
+    assert 'from app.analytics.job_adapter import' not in recovery
+    assert 'from app.common.job_execution_presentation import present_job_execution' in notifications
+    assert 'app.jobs.presentation' not in notifications
+    assert 'app.jobs.service' not in shared_presentation

@@ -58,6 +58,8 @@ Storage uses one canonical workspace:
 
 Scope-changing filters refresh the workspace. Pagination and page size refresh only `#storage-table-content`. The default page size is five rows.
 
+On desktop widths (`lg` and above), Cluster, Namespace, Storage Type, Lifecycle, and Search occupy one aligned filter row. The search control retains a minimum usable width, while narrower viewports progressively stack the controls. Each label is explicitly bound to its control ID.
+
 ## Table contract
 
 The compact table contains:

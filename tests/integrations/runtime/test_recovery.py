@@ -41,20 +41,14 @@ def test_bound_cluster_ids_use_enabled_canonical_bindings() -> None:
 
 
 def test_alert_provider_recovery_queues_dashboard_and_alerts_snapshots(monkeypatch) -> None:
-    import sys
-    from types import ModuleType
-
     calls: list[dict[str, object]] = []
-    job_adapter = ModuleType('app.analytics.job_adapter')
 
-    def dispatch_analytics_materialization(**kwargs):
-        calls.append(kwargs)
-        return SimpleNamespace(created=True)
+    class Definition:
+        def dispatch(self, **kwargs):
+            calls.append(kwargs)
+            return SimpleNamespace(accepted=True, created=True)
 
-    job_adapter.dispatch_analytics_materialization = dispatch_analytics_materialization
-    monkeypatch.setitem(sys.modules, 'app', ModuleType('app'))
-    monkeypatch.setitem(sys.modules, 'app.analytics', ModuleType('app.analytics'))
-    monkeypatch.setitem(sys.modules, 'app.analytics.job_adapter', job_adapter)
+    monkeypatch.setattr(MODULE, '_get_job_definition', lambda job_key: Definition())
 
     instance = SimpleNamespace(
         cluster_id=None,
@@ -74,39 +68,17 @@ def test_alert_provider_recovery_queues_dashboard_and_alerts_snapshots(monkeypat
 
 
 def test_kubernetes_recovery_queues_inventory_and_tls_sync(monkeypatch) -> None:
-    import sys
-    from types import ModuleType
+    calls: list[tuple[str, dict[str, object]]] = []
 
-    inventory_calls: list[dict[str, object]] = []
-    tls_calls: list[dict[str, object]] = []
-    cluster = SimpleNamespace(id='cluster-1')
+    class Definition:
+        def __init__(self, job_key: str):
+            self.job_key = job_key
 
-    inventory_jobs = ModuleType('app.cluster.sync_jobs')
+        def dispatch(self, **kwargs):
+            calls.append((self.job_key, kwargs))
+            return SimpleNamespace(accepted=True, created=True)
 
-    def enqueue_cluster_inventory_sync(**kwargs):
-        inventory_calls.append(kwargs)
-        return SimpleNamespace(), True
-
-    inventory_jobs.enqueue_cluster_inventory_sync = enqueue_cluster_inventory_sync
-
-    tls_jobs = ModuleType('app.governance.tls_certificates.sync_jobs')
-
-    def enqueue_tls_certificate_sync(**kwargs):
-        tls_calls.append(kwargs)
-        return SimpleNamespace(), True
-
-    tls_jobs.enqueue_tls_certificate_sync = enqueue_tls_certificate_sync
-    cluster_module = ModuleType('app.models.cluster')
-    cluster_module.Cluster = SimpleNamespace(query=SimpleNamespace(get=lambda cluster_id: cluster))
-
-    monkeypatch.setitem(sys.modules, 'app', ModuleType('app'))
-    monkeypatch.setitem(sys.modules, 'app.cluster', ModuleType('app.cluster'))
-    monkeypatch.setitem(sys.modules, 'app.cluster.sync_jobs', inventory_jobs)
-    monkeypatch.setitem(sys.modules, 'app.governance', ModuleType('app.governance'))
-    monkeypatch.setitem(sys.modules, 'app.governance.tls_certificates', ModuleType('app.governance.tls_certificates'))
-    monkeypatch.setitem(sys.modules, 'app.governance.tls_certificates.sync_jobs', tls_jobs)
-    monkeypatch.setitem(sys.modules, 'app.models', ModuleType('app.models'))
-    monkeypatch.setitem(sys.modules, 'app.models.cluster', cluster_module)
+    monkeypatch.setattr(MODULE, '_get_job_definition', lambda job_key: Definition(job_key))
 
     result = MODULE.enqueue_recovery_work(
         provider_type='kubernetes',
@@ -114,17 +86,21 @@ def test_kubernetes_recovery_queues_inventory_and_tls_sync(monkeypatch) -> None:
     )
 
     assert result['queued'] == 2
-    assert inventory_calls == [
-        {
-            'cluster': cluster,
-            'requested_by_user_id': None,
-            'trigger_type': 'recovery',
-        }
-    ]
-    assert tls_calls == [
-        {
-            'requested_by_user_id': None,
-            'trigger_type': 'recovery',
-            'cluster_id': 'cluster-1',
-        }
+    assert calls == [
+        (
+            'kubernetes.inventory.sync',
+            {
+                'requested_by_user_id': None,
+                'trigger_type': 'recovery',
+                'parameters': {'cluster_id': 'cluster-1'},
+            },
+        ),
+        (
+            'governance.tls_certificates.sync',
+            {
+                'requested_by_user_id': None,
+                'trigger_type': 'recovery',
+                'parameters': {'cluster_id': 'cluster-1'},
+            },
+        ),
     ]

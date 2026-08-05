@@ -712,19 +712,29 @@ thead th {
 }
 
 .kaori-topology-domain-scope {
-    color: var(--kaori-topology-domain-scope-fill);
+    border-color: var(--kaori-topology-domain-scope-border);
+    background-color: var(--kaori-topology-domain-scope-fill);
+    color: var(--kaori-topology-domain-scope-text);
 }
 .kaori-topology-domain-compute {
-    color: var(--kaori-topology-domain-compute-fill);
+    border-color: var(--kaori-topology-domain-compute-border);
+    background-color: var(--kaori-topology-domain-compute-fill);
+    color: var(--kaori-topology-domain-compute-text);
 }
 .kaori-topology-domain-networking {
-    color: var(--kaori-topology-domain-networking-fill);
+    border-color: var(--kaori-topology-domain-networking-border);
+    background-color: var(--kaori-topology-domain-networking-fill);
+    color: var(--kaori-topology-domain-networking-text);
 }
 .kaori-topology-domain-configuration {
-    color: var(--kaori-topology-domain-configuration-fill);
+    border-color: var(--kaori-topology-domain-configuration-border);
+    background-color: var(--kaori-topology-domain-configuration-fill);
+    color: var(--kaori-topology-domain-configuration-text);
 }
 .kaori-topology-domain-storage {
-    color: var(--kaori-topology-domain-storage-fill);
+    border-color: var(--kaori-topology-domain-storage-border);
+    background-color: var(--kaori-topology-domain-storage-fill);
+    color: var(--kaori-topology-domain-storage-text);
 }
 
 .kaori-topology-edge-contains { background-color: var(--kaori-topology-edge-contains); }

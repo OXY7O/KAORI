@@ -68,3 +68,25 @@ Topology does not use one monolithic service or an internal compatibility wrappe
 - `contracts.py` owns typed graph inputs and state.
 
 The browser loads `topology.js` directly. That module imports the Cytoscape renderer itself; no bootstrap file, global renderer alias, or secondary workspace loader is permitted.
+
+## Domain Icon Surface Contract
+
+Every Topology domain icon uses the complete three-token surface in both themes:
+
+- `*-fill` is the icon-shell background;
+- `*-border` is the visible shell outline;
+- `*-text` is the glyph foreground.
+
+A domain class must never assign the translucent `*-fill` token to `color`. Resource Visibility,
+Resource List rows, search results, graph details, and the selected-resource inspector all reuse the
+same `.kaori-topology-domain-*` classes so light and dark mode cannot diverge.
+
+## Inspector Width and API Server Presentation
+
+The Adaptive Explorer uses a `26rem` right inspector at the `2xl` breakpoint and `max-w-md` for the
+mobile right drawer. This gives operational identities enough width without reducing the graph to a
+secondary column.
+
+`API Server` uses the canonical horizontal field row. Its value is single-line, right aligned, and
+truncated only when the endpoint exceeds the available width. The complete endpoint remains exposed
+through the native `title` attribute. A dedicated stacked-row compatibility template is prohibited.

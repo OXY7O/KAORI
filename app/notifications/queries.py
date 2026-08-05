@@ -6,8 +6,8 @@ from typing import Any
 from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
 
+from app.common.job_execution_presentation import present_job_execution
 from app.extensions.db import db
-from app.jobs.presentation import present_job_execution
 from app.models.job import JobExecution, JobExecutionSubscriber
 from app.models.notification import Notification
 from app.models.user import User

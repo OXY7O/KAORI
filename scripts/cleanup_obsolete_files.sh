@@ -36,6 +36,8 @@ obsolete_paths=(
   'app/templates/integrations/partials/_binding_validation_posture.html'
   'app/templates/integrations/partials/_status_badge.html'
   'app/static/js/inventory/topology_bootstrap.js'
+  'app/dashboards/kubernetes/snapshot_builder.py'
+  'app/analytics/common/cache.py'
   'app/templates/inventory/components/_detail_macros.html'
   'app/templates/inventory/namespaces/partials/_inventory_scope.html'
   'app/templates/inventory/nodes/partials/_inventory_scope.html'

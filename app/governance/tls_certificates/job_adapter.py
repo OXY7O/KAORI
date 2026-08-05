@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from app.common.job_execution_presentation import present_job_execution
 from app.governance.tls_certificates.sync_jobs import (
     NoEligibleTLSCertificateTargets,
     TLS_SYNC_JOB_TYPE,
@@ -12,7 +13,6 @@ from app.governance.tls_certificates.sync_jobs import (
 from app.jobs.constants import ACTIVE_JOB_STATUSES
 from app.jobs.definitions.base import RegisteredJobDispatchResult
 from app.jobs.policies.presentation import present_interval
-from app.jobs.presentation import present_job_execution
 from app.models.governance import TLSCertificateInventory
 from app.models.job import JobExecution, JobPolicy
 

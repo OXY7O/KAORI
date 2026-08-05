@@ -35,7 +35,7 @@ Examples:
 - Routes: `routes.py`
 - Shell and section orchestration: `service.py`
 - Snapshot keys and read contract: `snapshots.py`
-- Dashboard alert worker builder: `snapshot_builder.py`
+- Dashboard alert worker builder: `app/analytics/materialization/dashboard_alerts.py`
 - View models: `schema.py`
 - Aggregate and set-based database access: `repository.py`
 - Canonical ORM ownership: dashboard services and sections import model classes directly from `app.models`; dynamic loaders and alternate import-path probes are prohibited.

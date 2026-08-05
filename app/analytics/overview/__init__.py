@@ -1,0 +1,1 @@
+"""Kubernetes Analytics Overview domain."""

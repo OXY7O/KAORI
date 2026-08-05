@@ -3,7 +3,9 @@ from __future__ import annotations
 from types import SimpleNamespace
 
 from app.analytics import job_adapter
-from app.dashboards.kubernetes import service, snapshot_builder
+from app.analytics.materialization import dashboard_alerts
+from app.analytics.materialization.dashboard_alerts import build_dashboard_alerts_context
+from app.dashboards.kubernetes import service
 from app.dashboards.kubernetes.schema import (
     AlertsSnapshot,
     CapacityItem,
@@ -13,7 +15,6 @@ from app.dashboards.kubernetes.schema import (
 )
 from app.dashboards.kubernetes.sections.cluster_health import build_cluster_health
 from app.dashboards.kubernetes.sections.forecast import build_forecast_snapshot
-from app.dashboards.kubernetes.snapshot_builder import build_dashboard_alerts_context
 
 
 def _scope_with_selected():
@@ -131,12 +132,16 @@ def test_cluster_health_does_not_read_removed_cluster_server_field() -> None:
 def test_alert_materialization_builds_compact_worker_payload(monkeypatch) -> None:
     cluster = SimpleNamespace(id='cluster-1')
     monkeypatch.setattr(
-        snapshot_builder,
+        dashboard_alerts,
         'Cluster',
-        SimpleNamespace(query=SimpleNamespace(get=lambda _cluster_id: cluster)),
+        SimpleNamespace(
+            query=SimpleNamespace(
+                filter_by=lambda **_kwargs: SimpleNamespace(first=lambda: cluster),
+            )
+        ),
     )
     monkeypatch.setattr(
-        'app.dashboards.kubernetes.snapshot_builder.load_alerts_by_source',
+        'app.analytics.materialization.dashboard_alerts.load_alerts_by_source',
         lambda **_kwargs: (
             [
                 {'name': 'CriticalA', 'severity': 'critical', 'status': 'firing', 'summary': 'A'},

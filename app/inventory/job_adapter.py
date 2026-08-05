@@ -6,25 +6,14 @@ from app.cluster.sync_jobs import (
     NoEligibleInventoryTargets,
     build_fleet_inventory_targets,
     enqueue_all_cluster_inventory_sync,
+    enqueue_cluster_inventory_sync,
 )
-from app.common.presentation import present_user_datetime
+from app.common.job_execution_presentation import present_job_execution
 from app.jobs.constants import ACTIVE_JOB_STATUSES
 from app.jobs.definitions.base import RegisteredJobDispatchResult
 from app.jobs.policies.presentation import present_interval
 from app.models.cluster import Cluster
 from app.models.job import JobExecution, JobPolicy
-
-_STATUS_PRESENTATION = {
-    'queued': ('Queued', 'pending', 'clock-3'),
-    'running': ('Running', 'pending', 'loader-circle'),
-    'retrying': ('Retrying', 'warning', 'rotate-ccw'),
-    'cancel_requested': ('Cancel Requested', 'warning', 'octagon-alert'),
-    'succeeded': ('Succeeded', 'normal', 'circle-check'),
-    'partially_succeeded': ('Partially Succeeded', 'warning', 'triangle-alert'),
-    'failed': ('Failed', 'critical', 'circle-x'),
-    'canceled': ('Canceled', 'unknown', 'ban'),
-    'expired': ('Expired', 'unknown', 'clock-alert'),
-}
 
 
 def _job_progress(job: JobExecution) -> tuple[int, str]:
@@ -42,37 +31,17 @@ def _job_progress(job: JobExecution) -> tuple[int, str]:
 
 def present_inventory_job(job: JobExecution) -> dict[str, Any]:
     payload = job.payload_json or {}
-    status_label, status_tone, status_icon = _STATUS_PRESENTATION.get(
-        job.status,
-        (job.status.replace('_', ' ').title(), 'unknown', 'circle-help'),
-    )
     progress, progress_label = _job_progress(job)
-    requester = job.requested_by.display_label if job.requested_by is not None else 'KAORI Scheduler'
-    trigger_type = str(
-        payload.get('trigger_type') or ('scheduled' if job.requested_by_user_id is None else 'manual')
+    row = present_job_execution(job)
+    row.update(
+        {
+            'progress': progress,
+            'progress_label': progress_label,
+            'target_count': int(payload.get('total_count') or job.progress_total or 0),
+            'progress_message': job.progress_message or 'Waiting for the inventory worker.',
+        }
     )
-    target_count = int(payload.get('total_count') or job.progress_total or 0)
-    return {
-        'public_id': job.public_id,
-        'status': job.status,
-        'status_label': status_label,
-        'status_tone': status_tone,
-        'status_icon': status_icon,
-        'trigger_type': trigger_type,
-        'trigger_label': trigger_type.replace('_', ' ').title(),
-        'trigger_icon': 'calendar-clock' if trigger_type == 'scheduled' else 'mouse-pointer-click',
-        'requester': requester,
-        'target_count': target_count,
-        'progress': progress,
-        'progress_label': progress_label,
-        'progress_message': job.progress_message or 'Waiting for the inventory worker.',
-        'queued_at': present_user_datetime(job.queued_at, empty='Not Queued'),
-        'started_at': present_user_datetime(job.started_at, empty='Not Started'),
-        'completed_at': present_user_datetime(job.completed_at, empty='In Progress'),
-        'is_active': job.is_active,
-        'is_terminal': job.is_terminal,
-        'error_message': job.error_message,
-    }
+    return row
 
 
 def dispatch_inventory_sync(
@@ -81,7 +50,33 @@ def dispatch_inventory_sync(
     trigger_type: str,
     parameters: dict[str, Any] | None = None,
 ) -> RegisteredJobDispatchResult:
-    del parameters
+    cluster_id = str((parameters or {}).get('cluster_id') or '').strip()
+    if cluster_id:
+        cluster = Cluster.query.filter_by(id=cluster_id).first()
+        if cluster is None:
+            return RegisteredJobDispatchResult(
+                status='blocked',
+                message='The selected Kubernetes cluster no longer exists.',
+            )
+        try:
+            job, created = enqueue_cluster_inventory_sync(
+                cluster=cluster,
+                requested_by_user_id=requested_by_user_id,
+                trigger_type=trigger_type,
+            )
+        except (LookupError, RuntimeError) as exc:
+            return RegisteredJobDispatchResult(status='blocked', message=str(exc))
+        return RegisteredJobDispatchResult(
+            status='queued' if created else 'reused',
+            message=(
+                f'Inventory synchronization was queued for {cluster.name}.'
+                if created
+                else f'The request joined the active inventory synchronization for {cluster.name}.'
+            ),
+            job=job,
+            created=created,
+        )
+
     try:
         job, created = enqueue_all_cluster_inventory_sync(
             requested_by_user_id=requested_by_user_id,
@@ -122,7 +117,11 @@ def build_inventory_sync_context(policy: JobPolicy) -> dict[str, Any]:
         .order_by(JobExecution.updated_at.desc(), JobExecution.id.desc())
         .first()
     )
-    recent_jobs = jobs_query.order_by(JobExecution.created_at.desc(), JobExecution.id.desc()).limit(5).all()
+    recent_jobs = (
+        jobs_query.order_by(JobExecution.created_at.desc(), JobExecution.id.desc())
+        .limit(5)
+        .all()
+    )
     latest_job = recent_jobs[0] if recent_jobs else None
 
     if policy.enabled and eligible_cluster_count:
@@ -146,7 +145,6 @@ def build_inventory_sync_context(policy: JobPolicy) -> dict[str, Any]:
             'icon': 'circle-pause',
             'description': 'Automatic sync is disabled.',
         }
-
 
     if eligible_cluster_count:
         readiness_state = {

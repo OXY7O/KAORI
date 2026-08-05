@@ -21,6 +21,7 @@ required_files = (
     'app/notifications/routes.py',
     'app/notifications/queries.py',
     'app/notifications/service.py',
+    'app/common/job_execution_presentation.py',
     'app/jobs/presentation.py',
     'app/templates/notifications/index.html',
     'app/templates/notifications/partials/_center_page_content.html',
@@ -38,7 +39,7 @@ notifications = read('app/templates/notifications/partials/_notification_deck_no
 oob = read('app/templates/notifications/partials/_notification_deck_oob.html')
 component = read('app/templates/notifications/components/_activity_center_items.html')
 routes = read('app/notifications/routes.py')
-presentation = read('app/jobs/presentation.py')
+presentation = read('app/common/job_execution_presentation.py')
 layout = read('app/templates/layouts/app.html')
 page_tabs = read('app/templates/notifications/partials/_center_page_content.html')
 readme = read('app/notifications/README.md')

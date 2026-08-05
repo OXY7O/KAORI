@@ -19,6 +19,8 @@ def main() -> int:
 
     obsolete_paths = (
         'app/static/js/inventory/topology_bootstrap.js',
+        'app/dashboards/kubernetes/snapshot_builder.py',
+        'app/analytics/common/cache.py',
         'app/templates/inventory/components/_detail_macros.html',
         'app/templates/inventory/nodes/partials/_inventory_scope.html',
         'app/templates/inventory/namespaces/partials/_inventory_scope.html',
@@ -66,6 +68,61 @@ def main() -> int:
             'Reporting summary must use canonical model imports.', errors)
     require("if live_cluster is not None else 'Select a cluster for a worker snapshot'" not in dashboard_kpis,
             'Dashboard KPI copy must not retain the duplicated conditional bridge.', errors)
+
+    analytics_catalog = read('app/analytics/materialization/catalog.py')
+    analytics_job_adapter = read('app/analytics/job_adapter.py')
+    dashboard_snapshots = read('app/dashboards/kubernetes/snapshots.py')
+    require(
+        'from app.analytics.materialization.dashboard_alerts import build_dashboard_alerts_context' in analytics_catalog,
+        'Dashboard alert materialization must be owned by Analytics.',
+        errors,
+    )
+    require(
+        'app.dashboards' not in analytics_catalog and 'app.dashboards' not in analytics_job_adapter,
+        'Analytics must not import Dashboard implementation modules.',
+        errors,
+    )
+    require(
+        'from app.analytics.materialization.keys import (' in dashboard_snapshots,
+        'Dashboard snapshot readers must consume Analytics-owned dataset keys.',
+        errors,
+    )
+
+    runtime_recovery = read('app/integrations/runtime/recovery.py')
+    inventory_job_adapter = read('app/inventory/job_adapter.py')
+    notifications_queries = read('app/notifications/queries.py')
+    shared_job_presentation = read('app/common/job_execution_presentation.py')
+    require(
+        'from app.jobs.registry import get_job_definition' in runtime_recovery,
+        'Integration recovery must dispatch through the registered job boundary.',
+        errors,
+    )
+    for forbidden in (
+        'from app.cluster.sync_jobs import',
+        'from app.governance.tls_certificates.sync_jobs import',
+        'from app.analytics.job_adapter import',
+    ):
+        require(
+            forbidden not in runtime_recovery,
+            f'Integration recovery must not import domain implementation directly: {forbidden}',
+            errors,
+        )
+    require(
+        "cluster_id = str((parameters or {}).get('cluster_id') or '').strip()" in inventory_job_adapter
+        and 'enqueue_cluster_inventory_sync(' in inventory_job_adapter,
+        'Registered Inventory dispatch must support one-cluster recovery without a wrapper.',
+        errors,
+    )
+    require(
+        'from app.common.job_execution_presentation import present_job_execution' in notifications_queries,
+        'Notification Deck must use the Common-owned job presenter.',
+        errors,
+    )
+    require(
+        'app.jobs.presentation' not in notifications_queries and 'app.jobs.service' not in shared_job_presentation,
+        'Shared job presentation must not recreate the Notifications-Jobs dependency cycle.',
+        errors,
+    )
 
     overview_content = read('app/templates/inventory/overview/partials/_resources_by_cluster_content.html')
     require('hx-target="#resources-by-cluster-content"' in overview_content,

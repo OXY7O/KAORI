@@ -7,8 +7,8 @@ from typing import Any
 from flask import abort, current_app
 from sqlalchemy import Select, func, or_, select
 
+from app.common.job_execution_presentation import present_job_execution
 from app.extensions.db import db
-from app.jobs.presentation import present_job_execution
 from app.models.cluster import Cluster
 from app.models.job import JobExecution
 from app.models.report import Report

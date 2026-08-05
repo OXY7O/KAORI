@@ -4,12 +4,15 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
+from app.analytics.materialization.keys import (
+    CAPACITY_DATASET_KEY,
+    DASHBOARD_ALERTS_DATASET_KEY,
+    FORECAST_DATASET_KEY,
+    TOP_CONSUMERS_DATASET_KEY,
+)
 from app.analytics.materialization.service import SnapshotResult, read_snapshot
 
-CAPACITY_DATASET_KEY = 'analytics.capacity'
-TOP_CONSUMERS_DATASET_KEY = 'analytics.top_consumers'
-FORECAST_DATASET_KEY = 'analytics.forecast'
-ALERTS_DATASET_KEY = 'dashboard.kubernetes.alerts'
+ALERTS_DATASET_KEY = DASHBOARD_ALERTS_DATASET_KEY
 
 
 def capacity_parameters(cluster_id: str) -> dict[str, str]:

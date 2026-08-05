@@ -12,13 +12,15 @@ _ACTIVE_ALERT_STATES = {'active', 'firing', 'pending'}
 
 def build_dashboard_alerts_context(query_args: Mapping[str, Any]) -> dict[str, Any]:
     cluster_id = str(query_args.get('cluster_id') or '').strip()
-    cluster = Cluster.query.get(cluster_id) if cluster_id else None
+    cluster = Cluster.query.filter_by(id=cluster_id).first() if cluster_id else None
     if cluster is None:
         return _empty_alerts_context('Cluster is unavailable for alert materialization.')
 
     alerts, source_status = load_alerts_by_source(cluster=cluster, source='auto')
     active_alerts = [
-        item for item in alerts if str(item.get('status', 'active')).lower() in _ACTIVE_ALERT_STATES
+        item
+        for item in alerts
+        if str(item.get('status', 'active')).lower() in _ACTIVE_ALERT_STATES
     ]
     critical = sum(1 for item in active_alerts if str(item.get('severity', '')).lower() == 'critical')
     warning = sum(1 for item in active_alerts if str(item.get('severity', '')).lower() == 'warning')
