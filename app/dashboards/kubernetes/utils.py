@@ -157,11 +157,6 @@ def forecast_insight(payload: dict[str, Any]) -> str:
         return 'Forecast snapshot loaded from analytics forecast service.'
 
 
-def kpi_metric_description(live_cluster: Any | None, fallback: str) -> str:
-    if live_cluster is None:
-        return 'Select a cluster for a worker snapshot'
-    return fallback
-
 
 def format_gib(value: Any) -> str:
     number = safe_float(value)

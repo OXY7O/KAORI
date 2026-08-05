@@ -12,7 +12,7 @@ The audit covered Service collection, EndpointSlice/Endpoints fallback, committe
 - Backend collection evidence is committed to `ClusterInventory.collection_evidence`.
 - Duplicate EndpointSlice addresses and ports are deduplicated.
 - EndpointSlice serving and terminating conditions are retained.
-- Legacy `ports` and `external_ip` strings are bounded to 255 characters while full evidence remains in JSON details.
+- Duplicate `ports` and `external_ip` presentation columns were removed; complete port and external-address evidence remains in canonical JSON details.
 - Selectorless Services no longer mask missing endpoint evidence.
 - Empty manual endpoint registration is an attention state.
 - Unknown Service type can be filtered correctly.

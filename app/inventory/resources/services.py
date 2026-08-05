@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import cast, func, or_
+from sqlalchemy import String, cast, func, or_
 from sqlalchemy.dialects.postgresql import JSONB
 
 from app.common.inventory_generation import filter_current_generation
@@ -12,7 +12,6 @@ from app.inventory.resources.common import (
     _pod_summary,
     _selector_matches,
     _service_port_rows,
-    _split_inventory_values,
     format_age,
 )
 from app.inventory.resources.descriptions import SERVICE_TYPE_DESCRIPTIONS
@@ -84,8 +83,7 @@ def _apply_filters(query, cluster_id=None, namespace=None, service_type=None, se
                 ServiceInventory.namespace.ilike(pattern),
                 ServiceInventory.service_type.ilike(pattern),
                 ServiceInventory.cluster_ip.ilike(pattern),
-                ServiceInventory.external_ip.ilike(pattern),
-                ServiceInventory.ports.ilike(pattern),
+                cast(ServiceInventory.details, String).ilike(pattern),
             )
         )
     return query
@@ -125,7 +123,7 @@ def _service_summary(summary_rows) -> dict[str, Any]:
 def _service_access_details(service: ServiceInventory, effective_type: str) -> tuple[str, str]:
     details = service.details or {}
     cluster_ips = list(details.get('cluster_ips') or ([service.cluster_ip] if service.cluster_ip else []))
-    external_addresses = list(details.get('external_addresses') or _split_inventory_values(service.external_ip))
+    external_addresses = list(details.get('external_addresses') or [])
     return access_presentation(
         effective_type,
         cluster_ips,
@@ -298,7 +296,7 @@ def _service_detail_configuration(
     effective: str,
 ) -> dict[str, Any]:
     cluster_ips = list(details.get('cluster_ips') or ([service.cluster_ip] if service.cluster_ip else []))
-    external_ips = list(details.get('external_addresses') or _split_inventory_values(service.external_ip))
+    external_ips = list(details.get('external_addresses') or [])
     return {
         'id': service.id,
         'cluster_name': cluster_name,

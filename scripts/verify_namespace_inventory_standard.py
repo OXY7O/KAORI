@@ -91,7 +91,7 @@ def main() -> int:
     )
 
     require(
-        "_INVENTORY_PARTIAL_TEMPLATES['namespaces']['workspace']" in routes,
+        "for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services')" in routes,
         'Namespace workspace partial must be registered.',
         errors,
     )

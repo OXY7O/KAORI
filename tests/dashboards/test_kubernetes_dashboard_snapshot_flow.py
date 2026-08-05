@@ -4,7 +4,13 @@ from types import SimpleNamespace
 
 from app.analytics import job_adapter
 from app.dashboards.kubernetes import service, snapshot_builder
-from app.dashboards.kubernetes.schema import AlertsSnapshot, CapacityItem, CapacitySnapshot, InventorySnapshot
+from app.dashboards.kubernetes.schema import (
+    AlertsSnapshot,
+    CapacityItem,
+    CapacitySnapshot,
+    DashboardKpiContext,
+    InventorySnapshot,
+)
 from app.dashboards.kubernetes.sections.cluster_health import build_cluster_health
 from app.dashboards.kubernetes.sections.forecast import build_forecast_snapshot
 from app.dashboards.kubernetes.snapshot_builder import build_dashboard_alerts_context
@@ -418,21 +424,23 @@ def test_dashboard_kpi_display_copy_uses_title_case() -> None:
         SimpleNamespace(status='warning'),
     ]
     kpis = build_kpis(
-        clusters_raw=clusters_raw,
-        clusters=[SimpleNamespace(id='cluster-1', name='Primary')],
-        nodes_total=5,
-        nodes_ready=5,
-        not_ready_nodes=0,
-        namespaces_total=12,
-        workloads_total=42,
-        pods_total=190,
-        running_pods=166,
-        unhealthy_pods=24,
-        capacity_snapshot=CapacitySnapshot(),
-        alerts_snapshot=AlertsSnapshot(),
-        live_cluster=object(),
-        active_alerts_label='0',
-        active_alerts_description='0 Critical • 0 Warning',
+        DashboardKpiContext(
+            clusters_raw=clusters_raw,
+            clusters=[SimpleNamespace(id='cluster-1', name='Primary')],
+            nodes_total=5,
+            nodes_ready=5,
+            not_ready_nodes=0,
+            namespaces_total=12,
+            workloads_total=42,
+            pods_total=190,
+            running_pods=166,
+            unhealthy_pods=24,
+            capacity_snapshot=CapacitySnapshot(),
+            alerts_snapshot=AlertsSnapshot(),
+            live_cluster=object(),
+            active_alerts_label='0',
+            active_alerts_description='0 Critical • 0 Warning',
+        )
     )
 
     descriptions = {item.label: item.description for item in kpis}

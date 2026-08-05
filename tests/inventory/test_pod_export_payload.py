@@ -168,19 +168,18 @@ def test_pod_export_leaves_evidence_derived_numbers_blank_when_not_reported(
     assert row['pod_ip'] == 'Not Reported'
 
 
-def test_pod_export_supports_legacy_snapshot_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_pod_export_requires_explicit_canonical_evidence_flags(monkeypatch: pytest.MonkeyPatch) -> None:
     payload = _load_payload(monkeypatch)
     row = payload._pod_row(
         _pod(
             {'configuration': {'container_count': 2}, 'qos_class': 'Guaranteed'},
-            container_names=[],
             ready='2/2',
         ),
         'staging',
         'staging',
     )
 
-    assert row['restarts'] == 2
-    assert row['container_count'] == 2
-    assert row['image_count'] == 2
+    assert row['restarts'] is None
+    assert row['container_count'] is None
+    assert row['image_count'] is None
     assert row['qos_class'] == 'Guaranteed'

@@ -37,9 +37,11 @@ def test_workload_collector_commits_flat_export_and_condition_evidence() -> None
         assert token in source
 
     payload = _read('app/reports/export/payloads/inventory.py')
-    assert "_detail_row_value(details, 'delivery_rows', 'Strategy', 'Update Strategy')" in payload
-    assert "_detail_integer(details, 'desired_replicas'" in payload
-    assert "_detail_integer(details, 'available_replicas'" in payload
+    assert "update_strategy = details.get('update_strategy')" in payload
+    assert "_optional_integer(details.get('desired_replicas'))" in payload
+    assert "_optional_integer(details.get('available_replicas'))" in payload
+    assert '_detail_row_value' not in payload
+    assert '_detail_integer' not in payload
 
 
 def test_workload_filters_refresh_complete_workspace_and_use_canonical_state() -> None:
@@ -48,7 +50,7 @@ def test_workload_filters_refresh_complete_workspace_and_use_canonical_state() -
     workspace = _read('app/templates/inventory/workloads/partials/_page_workspace.html')
     service = _read('app/inventory/resources/workloads.py')
 
-    assert "_INVENTORY_PARTIAL_TEMPLATES['workloads']['workspace']" in routes
+    assert "for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services')" in routes
     assert 'id="workloads-page-workspace"' in workspace
     assert 'inventory/components/_data_freshness.html' in workspace
     assert 'hx-target="#workloads-page-workspace"' in table

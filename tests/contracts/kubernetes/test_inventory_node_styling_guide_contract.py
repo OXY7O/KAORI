@@ -45,7 +45,7 @@ def test_node_table_is_compact_and_uses_canonical_labels_and_values() -> None:
 def test_node_readiness_semantics_and_posture_signals_are_normalized_in_service() -> None:
     service = read("app/inventory/resources/nodes.py")
 
-    assert "elif not_ready_nodes == total_nodes:" in service
+    assert "if not_ready_nodes == total_nodes:" in service
     assert "fleet_posture_tone, fleet_posture_label = 'critical', 'Critical'" in service
     assert "unknown_nodes" in service
     assert "cordoned_nodes" in service

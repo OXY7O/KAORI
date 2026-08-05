@@ -460,14 +460,6 @@ class ServiceInventory(db.Model):
         String(100),
     )
 
-    external_ip: Mapped[str | None] = mapped_column(
-        String(255),
-    )
-
-    ports: Mapped[str | None] = mapped_column(
-        String(255),
-    )
-
     selector: Mapped[dict[str, str]] = mapped_column(
         JSON,
         nullable=False,

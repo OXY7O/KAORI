@@ -54,8 +54,8 @@ def test_service_filters_and_page_size_refresh_the_complete_workspace() -> None:
     table = read('app/templates/inventory/services/partials/_table_content.html')
     card = read('app/templates/inventory/services/partials/_table_card.html')
 
-    assert 'hx-target="#services-page-workspace"' in table
-    assert 'name="partial_mode" value="page_workspace"' in table
+    assert 'hx-target="#services-table-content"' in table
+    assert 'name="partial_mode" value="table_content"' in table
     assert '>Rows</label>' in table
     assert "endpoint='inventory.services'" in table
     assert 'hx-target="#services-page-workspace"' in card

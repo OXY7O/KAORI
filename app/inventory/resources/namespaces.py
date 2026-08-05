@@ -56,10 +56,7 @@ def _resource_quota_collection_state(evidence: dict[str, Any] | None) -> str:
     if state:
         return str(state)
 
-    # Before this evidence key existed, ResourceQuota API failures rolled back
-    # the complete inventory transaction. A committed legacy generation can
-    # therefore be treated as successfully collected.
-    return COLLECTED
+    return 'Not Reported'
 
 
 def _base_namespace_query():

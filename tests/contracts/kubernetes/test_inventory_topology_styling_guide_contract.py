@@ -56,11 +56,12 @@ def test_topology_graph_has_an_accessible_resource_list_fallback() -> None:
     assert 'Resource List remains available from the committed inventory snapshot.' in script
     assert 'renderPayloadNodeDetails' in script
     assert "setActiveView('list')" in script
-    bootstrap = _read('app/static/js/inventory/topology_bootstrap.js')
-    assert "filename='js/inventory/topology_bootstrap.js'" in index
+    assert "filename='js/inventory/topology.js'" in index
     assert "'renderer_url':" in index
-    assert "'workspace_url':" in index
-    assert 'KAORI_TOPOLOGY_RENDERER_ERROR' in bootstrap
+    assert "'workspace_url':" not in index
+    assert 'await import(config.renderer_url)' in script
+    assert 'Topology renderer could not start:' in script
+    assert not (ROOT / 'app/static/js/inventory/topology_bootstrap.js').exists()
 
 
 def test_topology_inspector_uses_native_templates_instead_of_tailwind_html_strings() -> None:
@@ -111,18 +112,25 @@ def test_topology_hero_does_not_duplicate_snapshot_context() -> None:
 
 def test_topology_service_bounds_queries_and_caches_committed_payloads() -> None:
     service = _read('app/inventory/topology/service.py')
+    repository = _read('app/inventory/topology/repository.py')
+    node_builder = _read('app/inventory/topology/node_builder.py')
+    edge_builder = _read('app/inventory/topology/edge_builder.py')
+    presentation = _read('app/inventory/topology/presentation.py')
 
     assert '_TOPOLOGY_CACHE_MAX_ENTRIES' in service
     assert '_topology_cache_get' in service
     assert '_topology_cache_put' in service
     assert '_TOPOLOGY_CACHE_LOCK' in service
     assert 'generation_signature' in service
-    assert 'if include_level_2 and show_networking' in service
-    assert 'if include_level_2 and show_configuration' in service
-    assert 'if include_level_2 and show_storage' in service
-    assert 'services_by_scope' in service
-    assert 'pods_by_scope' in service
-    assert 'omitted_by_type' in service
+    assert 'filter_current_generation' in repository
+    assert 'if not selection.include_level_2 or not selection.show_networking' in repository
+    assert 'if not selection.include_level_2 or not selection.show_configuration' in repository
+    assert 'if not selection.include_level_2 or not selection.show_storage' in repository
+    assert 'services_by_scope' in node_builder
+    assert 'pods_by_scope' in edge_builder
+    assert 'omitted_by_type' in presentation
+    assert '_node_element' not in service
+    assert 'class TopologyGraphBuilder' in _read('app/inventory/topology/graph_builder.py')
 
 
 def test_topology_reference_pattern_is_documented() -> None:

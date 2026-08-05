@@ -17,12 +17,11 @@
             window.KAORI_TOPOLOGY = {{ {
                 'data_url': url_for('inventory.topology_data'),
                 'renderer_url': url_for('static', filename='vendor/cytoscape/cytoscape.esm.min.js'),
-                'workspace_url': url_for('static', filename='js/inventory/topology.js'),
                 'initial_graph': graph,
                 'namespace_map': namespace_map,
                 'filters': filters
             } | tojson }};
         </script>
-        <script type="module" src="{{ url_for('static', filename='js/inventory/topology_bootstrap.js') }}"></script>
+        <script type="module" src="{{ url_for('static', filename='js/inventory/topology.js') }}"></script>
     {% endif %}
 {% endblock scripts %}

@@ -2,14 +2,6 @@
 {% block title %}Service Inventory{% endblock title %}
 {% block dashboard_content %}
     {% import "components/resource_detail_modal.html" as resource_detail_modal %}
-    <div class="space-y-6">
-        {% if cluster_onboarding.is_blocked %}
-            {% include "inventory/services/partials/_hero.html" %}
-            {% include "inventory/components/_data_freshness.html" %}
-            {% include "components/cluster/_onboarding_banner.html" %}
-        {% else %}
-            {% include "inventory/services/partials/_page_workspace.html" %}
-        {% endif %}
-    </div>
+    {% include "inventory/services/partials/_page_workspace.html" %}
     {{ resource_detail_modal.host('Service', url_for('inventory.service_details', service_id=0)) }}
 {% endblock dashboard_content %}

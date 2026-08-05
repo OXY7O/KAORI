@@ -250,89 +250,109 @@ def _sync_status(synced_at: datetime | None) -> tuple[str, str]:
     return 'Current', 'normal'
 
 
-def get_inventory_freshness_context(cluster_id: str = '') -> dict[str, Any]:
-    """Describe when the committed inventory snapshot for the current scope was collected."""
-    clusters, summary = get_inventory_cluster_summary()
+def _selected_freshness_scope(
+    clusters: list[Cluster],
+    summary: dict[str, dict[str, Any]],
+    cluster_id: str,
+) -> tuple[list[Cluster], list[datetime], list[tuple[str, str, str]]]:
     selected = [cluster for cluster in clusters if not cluster_id or str(cluster.id) == str(cluster_id)]
-    snapshots = [
-        _normalize_datetime(summary.get(cluster.id, {}).get('synced_at'))
+    committed = [
+        value
         for cluster in selected
+        if (value := _normalize_datetime(summary.get(cluster.id, {}).get('synced_at'))) is not None
     ]
-    committed = [value for value in snapshots if value is not None]
-    latest = max(committed) if committed else None
-    oldest = min(committed) if committed else None
-    missing_count = max(len(selected) - len(committed), 0)
-    stale_count = sum(1 for value in committed if _is_stale_inventory(value))
-    collection_exceptions: list[tuple[str, str, str]] = []
-    for cluster in selected:
-        evidence = summary.get(cluster.id, {}).get('collection_evidence') or {}
-        for family, state in evidence.items():
-            if state != 'Collected':
-                collection_exceptions.append((cluster.name, family, state))
-    collection_exception_count = len(collection_exceptions)
+    exceptions = [
+        (cluster.name, family, state)
+        for cluster in selected
+        for family, state in (summary.get(cluster.id, {}).get('collection_evidence') or {}).items()
+        if state != 'Collected'
+    ]
+    return selected, committed, exceptions
 
-    if not selected:
-        status = 'No Scope'
-        tone = 'unknown'
-        description = 'No registered Kubernetes cluster matches the selected inventory scope.'
-    elif not committed:
-        status = 'Not Collected'
-        tone = 'warning'
+
+def _freshness_posture(
+    *,
+    selected_count: int,
+    committed_count: int,
+    stale_count: int,
+    missing_count: int,
+    collection_exception_count: int,
+) -> tuple[str, str, str]:
+    if selected_count == 0:
+        return 'No Scope', 'unknown', 'No registered Kubernetes cluster matches the selected inventory scope.'
+    if committed_count == 0:
         description = (
             'No committed snapshot is available for the selected cluster.'
-            if len(selected) == 1
+            if selected_count == 1
             else 'No committed snapshots are available for the selected fleet scope.'
         )
-    elif stale_count or missing_count or collection_exception_count:
-        status = 'Review Freshness'
-        tone = 'warning'
+        return 'Not Collected', 'warning', description
+    if stale_count or missing_count or collection_exception_count:
         description = (
             'The selected cluster snapshot needs freshness or collection review.'
-            if len(selected) == 1
+            if selected_count == 1
             else (
-                f'{len(committed)} of {len(selected)} cluster snapshots are committed; '
+                f'{committed_count} of {selected_count} cluster snapshots are committed; '
                 'review stale, missing, or partial collection evidence.'
             )
         )
-    else:
-        status = 'Current'
-        tone = 'normal'
-        description = (
-            'The selected cluster snapshot is current and fully committed.'
-            if len(selected) == 1
-            else f'All {len(selected)} cluster snapshots are current and fully committed.'
-        )
+        return 'Review Freshness', 'warning', description
+    description = (
+        'The selected cluster snapshot is current and fully committed.'
+        if selected_count == 1
+        else f'All {selected_count} cluster snapshots are current and fully committed.'
+    )
+    return 'Current', 'normal', description
 
-    exception_parts = []
-    if stale_count:
-        exception_parts.append(f'{stale_count} Stale')
-    if missing_count:
-        exception_parts.append(f'{missing_count} Missing')
-    if collection_exception_count:
-        exception_parts.append(f'{collection_exception_count} Collection')
-    exception_label = ' · '.join(exception_parts) if exception_parts else 'No Exceptions'
+
+def _freshness_coverage(selected_count: int, committed_count: int) -> tuple[str, str, str]:
+    if selected_count == 0:
+        return 'No active scope', 'Select a registered cluster', 'unknown'
+    label = f'{committed_count} of {selected_count} snapshots'
+    if committed_count == selected_count:
+        return label, 'Fully committed', 'normal'
+    if committed_count:
+        return label, 'Partially committed', 'warning'
+    return label, 'No committed data', 'warning'
+
+
+def _freshness_exception_label(stale_count: int, missing_count: int, collection_count: int) -> str:
+    parts = [
+        f'{count} {label}'
+        for count, label in (
+            (stale_count, 'Stale'),
+            (missing_count, 'Missing'),
+            (collection_count, 'Collection'),
+        )
+        if count
+    ]
+    return ' · '.join(parts) if parts else 'No Exceptions'
+
+
+def get_inventory_freshness_context(cluster_id: str = '') -> dict[str, Any]:
+    """Describe when the committed inventory snapshot for the current scope was collected."""
+    clusters, summary = get_inventory_cluster_summary()
+    selected, committed, collection_exceptions = _selected_freshness_scope(clusters, summary, cluster_id)
     selected_count = len(selected)
     committed_count = len(committed)
-    coverage_complete = selected_count > 0 and committed_count == selected_count
-
-    if selected_count == 0:
-        coverage_label = 'No active scope'
-        coverage_supporting = 'Select a registered cluster'
-        coverage_tone = 'unknown'
-    elif coverage_complete:
-        coverage_label = f'{committed_count} of {selected_count} snapshots'
-        coverage_supporting = 'Fully committed'
-        coverage_tone = 'normal'
-    elif committed_count:
-        coverage_label = f'{committed_count} of {selected_count} snapshots'
-        coverage_supporting = 'Partially committed'
-        coverage_tone = 'warning'
-    else:
-        coverage_label = f'0 of {selected_count} snapshots'
-        coverage_supporting = 'No committed data'
-        coverage_tone = 'warning'
-
+    latest = max(committed) if committed else None
+    oldest = min(committed) if committed else None
+    missing_count = max(selected_count - committed_count, 0)
+    stale_count = sum(_is_stale_inventory(value) for value in committed)
+    collection_exception_count = len(collection_exceptions)
+    status, tone, description = _freshness_posture(
+        selected_count=selected_count,
+        committed_count=committed_count,
+        stale_count=stale_count,
+        missing_count=missing_count,
+        collection_exception_count=collection_exception_count,
+    )
+    coverage_label, coverage_supporting, coverage_tone = _freshness_coverage(
+        selected_count,
+        committed_count,
+    )
     has_exceptions = bool(stale_count or missing_count or collection_exception_count)
+    exception_label = _freshness_exception_label(stale_count, missing_count, collection_exception_count)
 
     return {
         'latest_collected_at': latest,
@@ -345,16 +365,8 @@ def get_inventory_freshness_context(cluster_id: str = '') -> dict[str, Any]:
         'collection_exceptions': collection_exceptions,
         'freshness_window_hours': INVENTORY_FRESHNESS_HOURS,
         'scope_label': selected[0].name if selected_count == 1 else f'{selected_count} Clusters',
-        'scope_supporting': (
-            'Selected cluster'
-            if selected_count == 1
-            else ('Fleet scope' if selected_count > 1 else 'No active scope')
-        ),
-        'latest_supporting': (
-            f'{INVENTORY_FRESHNESS_HOURS}-hour freshness window'
-            if latest is not None
-            else 'No committed timestamp'
-        ),
+        'scope_supporting': 'Selected cluster' if selected_count == 1 else ('Fleet scope' if selected_count else 'No active scope'),
+        'latest_supporting': f'{INVENTORY_FRESHNESS_HOURS}-hour freshness window' if latest else 'No committed timestamp',
         'status': status,
         'tone': tone,
         'description': description,

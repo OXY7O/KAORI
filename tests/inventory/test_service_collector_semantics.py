@@ -163,7 +163,7 @@ def test_endpoint_slice_collection_deduplicates_backend_and_port_evidence(monkey
 
 def test_endpoint_slice_permission_failure_uses_endpoints_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
     collector, ApiException = _load_collector(monkeypatch)
-    legacy = SimpleNamespace(
+    endpoint_record = SimpleNamespace(
         metadata=SimpleNamespace(namespace='payments', name='api'),
         subsets=[
             SimpleNamespace(
@@ -175,7 +175,7 @@ def test_endpoint_slice_permission_failure_uses_endpoints_fallback(monkeypatch: 
     )
     core_api = SimpleNamespace(
         list_service_for_all_namespaces=lambda: SimpleNamespace(items=[_service()]),
-        list_endpoints_for_all_namespaces=lambda: SimpleNamespace(items=[legacy]),
+        list_endpoints_for_all_namespaces=lambda: SimpleNamespace(items=[endpoint_record]),
     )
 
     def forbidden():
@@ -229,7 +229,7 @@ def test_missing_backend_permissions_are_committed_as_missing_evidence(monkeypat
     assert rows[0]['details']['endpoints']['reported'] is False
 
 
-def test_invalid_service_identity_is_skipped_and_legacy_columns_are_bounded(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_invalid_service_identity_is_skipped_and_canonical_details_are_complete(monkeypatch: pytest.MonkeyPatch) -> None:
     collector, _ = _load_collector(monkeypatch)
     many_ports = [_port(value=10000 + index, target=str(20000 + index), node_port=30000 + index) for index in range(60)]
     many_ips = [f'203.0.113.{index}' for index in range(1, 40)]
@@ -243,8 +243,8 @@ def test_invalid_service_identity_is_skipped_and_legacy_columns_are_bounded(monk
     rows = collector.get_services(core_api)
 
     assert len(rows) == 1
-    assert len(rows[0]['ports']) <= 255
-    assert len(rows[0]['external_ip']) <= 255
+    assert 'ports' not in rows[0]
+    assert 'external_ip' not in rows[0]
     assert len(rows[0]['details']['ports']) == 60
     assert len(rows[0]['details']['external_addresses']) >= len(many_ips)
 

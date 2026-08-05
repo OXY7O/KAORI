@@ -46,7 +46,7 @@ The compact row now shows Workload, Scope, Operational State, Managed Pods, Upda
 - Filter controls have explicit labels and IDs.
 - The table has an accessible caption and scoped headers.
 - A dedicated Workload Inventory verifier is registered in the KAORI quality gate.
-- Behavioral tests cover missing status, stale observed generation, replica failure, progress deadline failure, Job retry semantics, completion, suspension, canonical export fields, and legacy export fallback.
+- Behavioral tests cover missing status, stale observed generation, replica failure, progress deadline failure, Job retry semantics, completion, suspension, and canonical export fields. Legacy nested export fallback has been removed; older snapshots require recollection.
 
 ## Validation boundary
 

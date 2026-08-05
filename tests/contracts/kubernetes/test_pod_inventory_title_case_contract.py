@@ -22,8 +22,8 @@ def test_pod_inventory_footer_uses_resource_aware_count_and_rows_label() -> None
     assert "'Pod' if pagination.total_items == 1 else 'Pods'" in source
     assert 'for="pods-per-page"' in source
     assert '>Rows</label>' in source
-    assert 'hx-target="#pods-inventory-scope"' in source
-    assert 'value="inventory_scope"' in source
+    assert 'hx-target="#pods-table-content"' in source
+    assert 'value="table_content"' in source
 
 
 def test_pod_detail_uses_canonical_section_names_and_operational_context() -> None:

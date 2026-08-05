@@ -21,6 +21,39 @@ class DashboardKpi:
 
 
 @dataclass(slots=True)
+class DashboardKpiContext:
+    clusters_raw: list[object]
+    clusters: list[DashboardClusterOption]
+    nodes_total: int
+    nodes_ready: int
+    not_ready_nodes: int
+    namespaces_total: int
+    workloads_total: int
+    pods_total: int
+    running_pods: int
+    unhealthy_pods: int
+    capacity_snapshot: CapacitySnapshot
+    alerts_snapshot: AlertsSnapshot
+    live_cluster: object | None
+    active_alerts_label: str
+    active_alerts_description: str
+
+
+@dataclass(slots=True)
+class ClusterStatusSignals:
+    cluster: object
+    nodes_total: int
+    not_ready_nodes: int
+    unhealthy_pods: int
+    inventory_nodes_available: bool
+    active_alerts: int
+    critical_alerts: int
+    warning_alerts: int
+    cpu_percent: float | None
+    memory_percent: float | None
+
+
+@dataclass(slots=True)
 class ClusterHealthRow:
     cluster_id: str
     cluster_name: str

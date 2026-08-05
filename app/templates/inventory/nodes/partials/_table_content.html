@@ -60,8 +60,9 @@
 <footer class="flex flex-col gap-4 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs text-content-muted lg:flex-row lg:items-center lg:justify-between">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
         <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ 'Node' if pagination.total_items == 1 else 'Nodes' }}</p>
-        <form hx-get="{{ url_for('inventory.nodes') }}" hx-target="#nodes-inventory-scope" hx-swap="outerHTML" hx-indicator="#nodes-table-loading" class="flex items-center gap-2">
+        <form hx-get="{{ url_for('inventory.nodes') }}" hx-target="#nodes-table-content" hx-swap="innerHTML" hx-indicator="#nodes-table-loading" class="flex items-center gap-2">
             <input type="hidden" name="page" value="1">
+            <input type="hidden" name="partial_mode" value="table_content">
             <input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}">
             <input type="hidden" name="role" value="{{ selected_role }}">
             <input type="hidden" name="status" value="{{ selected_status }}">

@@ -107,7 +107,7 @@ def main() -> int:
     )
 
     require(
-        "_INVENTORY_PARTIAL_TEMPLATES['pods']['workspace']" in routes,
+        "for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services')" in routes,
         'Pod workspace partial must be registered.',
         errors,
     )

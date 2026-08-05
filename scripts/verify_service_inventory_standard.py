@@ -42,10 +42,11 @@ def main() -> int:
         errors,
     )
     require(
-        'LEGACY_TEXT_LIMIT = 255' in collector
+        'LEGACY_TEXT_LIMIT' not in collector
         and "'external_addresses': external_addresses" in collector
-        and "'ports': port_details" in collector,
-        'Legacy fields must be bounded while full evidence remains available.',
+        and "'ports': port_details" in collector
+        and "'external_ip':" not in collector,
+        'Service collector must persist canonical JSON evidence without duplicate presentation columns.',
         errors,
     )
     require(
@@ -77,7 +78,7 @@ def main() -> int:
     )
 
     require(
-        "_INVENTORY_PARTIAL_TEMPLATES['services']['workspace']" in routes,
+        "for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services')" in routes,
         'Service workspace partial must be registered.',
         errors,
     )

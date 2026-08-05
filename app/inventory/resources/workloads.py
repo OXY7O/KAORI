@@ -19,9 +19,6 @@ _WORKLOAD_UPDATE_STRATEGIES = {
 
 _OPERATIONAL_STATES = {
     'stable': ('Stable', 'normal'),
-    'running': ('Stable', 'normal'),
-    'succeeded': ('Stable', 'normal'),
-    'scheduled': ('Stable', 'normal'),
     'progressing': ('Progressing', 'pending'),
     'failed': ('Failed', 'critical'),
     'suspended': ('Suspended', 'info'),
@@ -35,7 +32,7 @@ _OPERATIONAL_FILTERS = (
     {'value': 'Unknown', 'label': 'Unknown'},
 )
 
-_STABLE_STATUS_VALUES = ('stable', 'running', 'succeeded', 'scheduled')
+_STABLE_STATUS_VALUES = ('stable',)
 _KNOWN_STATUS_VALUES = (*_STABLE_STATUS_VALUES, 'progressing', 'failed', 'suspended')
 
 

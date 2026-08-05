@@ -31,16 +31,19 @@ This prevents an incomplete, stale, or superseded generation from being mixed wi
 the active snapshot. `Cluster` and `ClusterInventory` themselves are not filtered by
 this helper because they define cluster identity and the generation marker.
 
-## HTMX filter scope
+## HTMX workspace contract
 
-Resource filters replace the complete `*-inventory-scope` block. The scope contains
-both summary cards and the table card so totals always describe the active filters.
-Pagination replaces only `*-table-content`; it must not rebuild filter options or
-summary cards. Resource services must use `app.common.pagination.paginate_query`
-so only the requested ORM rows are materialized. Summary cards may use lightweight
-filtered projections, but routes must never call `.all()` and slice the full result.
-A cluster change must rebuild dependent namespace, status, type, role, owner, node,
-or class options from the same committed generation.
+Audited resource filters replace the canonical `*-page-workspace` block. The workspace
+owns Hero context, snapshot evidence, summary posture, dependent filter options, and
+the table card, so all scope-sensitive content is refreshed from one request. Page-size
+and pagination controls replace only `*-table-content`; they must not rebuild Hero,
+summary, or filter-option data. Resource services must use
+`app.common.pagination.paginate_query` so only the requested ORM rows are materialized.
+Summary cards may use lightweight filtered projections, but routes must never call
+`.all()` and slice the full result. A cluster change must rebuild dependent namespace,
+status, type, role, owner, node, or class options from the same committed generation.
+Do not restore `*-inventory-scope` compatibility wrappers after a page migrates to a
+canonical workspace.
 
 ## Consistency rules
 
@@ -48,10 +51,12 @@ Inventory pages use the same filter, pagination, label, empty-state, and detail
 patterns. Default page size is 5 with 5/10/25/50 options. Keep raw payloads and
 technical exceptions out of rows; expose only relevant normalized information.
 Topology relationships must come from the latest committed snapshot and preserve
-Cluster and Namespace boundaries.
+Cluster and Namespace boundaries. The canonical server implementation separates committed
+queries, node projection, edge projection, graph assembly, presentation, and cache orchestration;
+do not restore a monolithic graph function or renderer bootstrap.
 
 Workload Pod configuration is authoritative only when supplied by the workload
-collector's schema-v2 `pod_template`. Do not infer configuration from runtime Pods;
+collector's canonical `pod_template`. Do not infer configuration from runtime Pods;
 a missing template is an explicit unavailable state and requires a fresh sync.
 
 ## Template data access
@@ -181,7 +186,7 @@ Namespace and Workload details use the shared Adaptive Detail Stacks contract fr
 
 ## Pod Inventory Reference Pattern
 
-Pod Inventory is the fourth Inventory Resource Page reference. It uses Pod Runtime Posture, a compact grouped table, Adaptive Detail Stacks, Container Runtime Collection, reference-only Related Resource Collection rows, and Technical Metadata Collection. Pod page-size changes refresh `#pods-inventory-scope`, and owner type constrains available Phase and Node filters.
+Pod Inventory is the fourth Inventory Resource Page reference. It uses Pod Runtime Posture, a compact grouped table, Adaptive Detail Stacks, Container Runtime Collection, reference-only Related Resource Collection rows, and Technical Metadata Collection. Pod scope filters refresh `#pods-page-workspace`; page-size and pagination controls refresh only `#pods-table-content`. Owner type constrains available Phase and Node filters.
 
 ## Service and Ingress presentation
 

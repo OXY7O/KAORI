@@ -7,6 +7,7 @@ from app.dashboards.kubernetes.schema import (
     CapacitySnapshot,
     ClusterHealthPagination,
     ClusterHealthRow,
+    ClusterStatusSignals,
 )
 from app.dashboards.kubernetes.utils import (
     coerce_datetime,
@@ -117,19 +118,8 @@ def build_cluster_health(
             warning_alerts = alerts.warning
             alerts_status = 'Snapshot'
 
-        status = _derive_cluster_status(
-            cluster,
-            nodes_total=nodes_total,
-            not_ready_nodes=not_ready,
-            unhealthy_pods=unhealthy_pods,
-            inventory_nodes_available=bool(nodes),
-            active_alerts=active_alerts or 0,
-            critical_alerts=critical_alerts,
-            cpu_percent=cpu_percent,
-            memory_percent=memory_percent,
-        )
-        status_reason = _derive_cluster_status_reason(
-            cluster,
+        signals = ClusterStatusSignals(
+            cluster=cluster,
             nodes_total=nodes_total,
             not_ready_nodes=not_ready,
             unhealthy_pods=unhealthy_pods,
@@ -140,6 +130,8 @@ def build_cluster_health(
             cpu_percent=cpu_percent,
             memory_percent=memory_percent,
         )
+        status = _derive_cluster_status(signals)
+        status_reason = _derive_cluster_status_reason(signals)
         last_sync = latest_timestamp([*nodes, *pods]) or coerce_datetime(
             get_attr(cluster, 'last_check', 'updated_at', 'created_at')
         )
@@ -170,12 +162,8 @@ def build_cluster_health(
 
 def _cluster_endpoint(cluster: Any) -> str:
     """Return the API server from the canonical Kubernetes connection."""
-    try:
-        connection = get_attr(cluster, 'kubernetes_connection', default=None)
-        endpoint = str(get_attr(connection, 'server', default='') or '').strip()
-    except Exception:
-        endpoint = ''
-
+    connection = get_attr(cluster, 'kubernetes_connection', default=None)
+    endpoint = str(get_attr(connection, 'server', default='') or '').strip()
     return endpoint or 'Endpoint unavailable'
 
 
@@ -188,90 +176,103 @@ def _capacity_percent(snapshot: CapacitySnapshot | None, label: str) -> float | 
     return None
 
 
-def _derive_cluster_status(
-    cluster: Any,
-    *,
-    nodes_total: int,
-    not_ready_nodes: int,
-    unhealthy_pods: int,
-    inventory_nodes_available: bool,
-    active_alerts: int,
-    critical_alerts: int,
-    cpu_percent: float | None,
-    memory_percent: float | None,
-) -> str:
-    raw_status = normalize_status(get_attr(cluster, 'status', 'connection_status', 'health', default=''))
-
-    if not inventory_nodes_available:
-        if critical_alerts > 0:
-            return 'Critical'
-        if active_alerts > 0 or unhealthy_pods > 0:
-            return 'Warning'
-        return 'Unknown'
+def _derive_cluster_status(signals: ClusterStatusSignals) -> str:
+    raw_status = normalize_status(
+        get_attr(signals.cluster, 'status', 'connection_status', 'health', default='')
+    )
+    if not signals.inventory_nodes_available:
+        return _status_without_inventory(signals)
     if raw_status in {'offline', 'failed', 'unreachable', 'critical'}:
         return 'Critical'
-    if critical_alerts > 0:
+    if _has_critical_signal(signals):
         return 'Critical'
-    if not_ready_nodes >= max(1, nodes_total // 2):
-        return 'Critical'
-    if safe_float(cpu_percent) >= 90 or safe_float(memory_percent) >= 90:
-        return 'Critical'
-    if not_ready_nodes > 0:
-        return 'Warning'
-    if unhealthy_pods > 0:
-        return 'Warning'
-    if active_alerts > 0:
-        return 'Warning'
-    if safe_float(cpu_percent) >= 75 or safe_float(memory_percent) >= 75:
-        return 'Warning'
-    if raw_status in {'warning', 'degraded'}:
+    if _has_warning_signal(signals, raw_status):
         return 'Warning'
     return 'Healthy'
 
 
-def _derive_cluster_status_reason(
-    cluster: Any,
-    *,
-    nodes_total: int,
-    not_ready_nodes: int,
-    unhealthy_pods: int,
-    inventory_nodes_available: bool,
-    active_alerts: int,
-    critical_alerts: int,
-    warning_alerts: int,
-    cpu_percent: float | None,
-    memory_percent: float | None,
-) -> str:
-    raw_status = normalize_status(get_attr(cluster, 'status', 'connection_status', 'health', default=''))
+def _status_without_inventory(signals: ClusterStatusSignals) -> str:
+    if signals.critical_alerts > 0:
+        return 'Critical'
+    if signals.active_alerts > 0 or signals.unhealthy_pods > 0:
+        return 'Warning'
+    return 'Unknown'
 
-    if not inventory_nodes_available:
-        if critical_alerts > 0:
-            return f'{critical_alerts} critical alert{plural_suffix(critical_alerts)} detected; node inventory snapshot unavailable'  # noqa: E501
-        if active_alerts > 0:
-            return f'{active_alerts} active alert{plural_suffix(active_alerts)} detected; node inventory snapshot unavailable'
-        return 'Node inventory snapshot unavailable'
+
+def _has_critical_signal(signals: ClusterStatusSignals) -> bool:
+    return (
+        signals.critical_alerts > 0
+        or signals.not_ready_nodes >= max(1, signals.nodes_total // 2)
+        or safe_float(signals.cpu_percent) >= 90
+        or safe_float(signals.memory_percent) >= 90
+    )
+
+
+def _has_warning_signal(signals: ClusterStatusSignals, raw_status: str) -> bool:
+    return (
+        signals.not_ready_nodes > 0
+        or signals.unhealthy_pods > 0
+        or signals.active_alerts > 0
+        or safe_float(signals.cpu_percent) >= 75
+        or safe_float(signals.memory_percent) >= 75
+        or raw_status in {'warning', 'degraded'}
+    )
+
+
+def _derive_cluster_status_reason(signals: ClusterStatusSignals) -> str:
+    raw_status = normalize_status(
+        get_attr(signals.cluster, 'status', 'connection_status', 'health', default='')
+    )
+    if not signals.inventory_nodes_available:
+        return _reason_without_inventory(signals)
+    reason = _critical_reason(signals, raw_status)
+    if reason:
+        return reason
+    reason = _warning_reason(signals, raw_status)
+    return reason or 'No issue detected'
+
+
+def _reason_without_inventory(signals: ClusterStatusSignals) -> str:
+    if signals.critical_alerts > 0:
+        return (
+            f'{signals.critical_alerts} critical alert{plural_suffix(signals.critical_alerts)} detected; '
+            'node inventory snapshot unavailable'
+        )
+    if signals.active_alerts > 0:
+        return (
+            f'{signals.active_alerts} active alert{plural_suffix(signals.active_alerts)} detected; '
+            'node inventory snapshot unavailable'
+        )
+    return 'Node inventory snapshot unavailable'
+
+
+def _critical_reason(signals: ClusterStatusSignals, raw_status: str) -> str | None:
     if raw_status in {'offline', 'failed', 'unreachable', 'critical'}:
         return f'Cluster connection status is {raw_status}'
-    if critical_alerts > 0:
-        return f'{critical_alerts} critical alert{plural_suffix(critical_alerts)} detected'
-    if not_ready_nodes >= max(1, nodes_total // 2):
-        return f'{not_ready_nodes} of {nodes_total} nodes are NotReady'
-    if safe_float(cpu_percent) >= 90:
-        return f'CPU utilization is {safe_float(cpu_percent):.1f}%'
-    if safe_float(memory_percent) >= 90:
-        return f'Memory utilization is {safe_float(memory_percent):.1f}%'
-    if not_ready_nodes > 0:
-        return f'{not_ready_nodes} node{plural_suffix(not_ready_nodes)} NotReady'
-    if unhealthy_pods > 0:
-        return f'{unhealthy_pods} unhealthy pod{plural_suffix(unhealthy_pods)} detected'
-    if active_alerts > 0:
-        if warning_alerts > 0:
-            return f'{warning_alerts} warning alert{plural_suffix(warning_alerts)} detected'
-        return f'{active_alerts} active alert{plural_suffix(active_alerts)} detected'
-    if safe_float(cpu_percent) >= 75:
-        return f'CPU utilization is {safe_float(cpu_percent):.1f}%'
-    if safe_float(memory_percent) >= 75:
-        return f'Memory utilization is {safe_float(memory_percent):.1f}%'
+    if signals.critical_alerts > 0:
+        return f'{signals.critical_alerts} critical alert{plural_suffix(signals.critical_alerts)} detected'
+    if signals.not_ready_nodes >= max(1, signals.nodes_total // 2):
+        return f'{signals.not_ready_nodes} of {signals.nodes_total} nodes are NotReady'
+    if safe_float(signals.cpu_percent) >= 90:
+        return f'CPU utilization is {safe_float(signals.cpu_percent):.1f}%'
+    if safe_float(signals.memory_percent) >= 90:
+        return f'Memory utilization is {safe_float(signals.memory_percent):.1f}%'
+    return None
+
+
+def _warning_reason(signals: ClusterStatusSignals, raw_status: str) -> str | None:
+    if signals.not_ready_nodes > 0:
+        return f'{signals.not_ready_nodes} node{plural_suffix(signals.not_ready_nodes)} NotReady'
+    if signals.unhealthy_pods > 0:
+        return f'{signals.unhealthy_pods} unhealthy pod{plural_suffix(signals.unhealthy_pods)} detected'
+    if signals.active_alerts > 0:
+        alerts = signals.warning_alerts or signals.active_alerts
+        severity = 'warning' if signals.warning_alerts else 'active'
+        return f'{alerts} {severity} alert{plural_suffix(alerts)} detected'
+    if safe_float(signals.cpu_percent) >= 75:
+        return f'CPU utilization is {safe_float(signals.cpu_percent):.1f}%'
+    if safe_float(signals.memory_percent) >= 75:
+        return f'Memory utilization is {safe_float(signals.memory_percent):.1f}%'
     if raw_status in {'warning', 'degraded'}:
         return f'Cluster status is {raw_status} in database'
-    return 'No issue detected'
+    return None

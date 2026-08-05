@@ -78,20 +78,4 @@ def _service_port_rows(service: ServiceInventory) -> list[dict[str, Any]]:
             }
         )
 
-    if rows:
-        return rows
-
-    for value in _split_inventory_values(service.ports):
-        port_value, _, protocol = value.partition('/')
-        rows.append(
-            {
-                'name': 'Not Reported',
-                'protocol': protocol or 'TCP',
-                'port': int(port_value) if port_value.isdigit() else 0,
-                'target_port': port_value if port_value.isdigit() else 'Not Reported',
-                'node_port': 0,
-                'app_protocol': 'Not Configured',
-            }
-        )
-
     return rows

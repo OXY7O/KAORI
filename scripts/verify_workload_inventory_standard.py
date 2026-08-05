@@ -103,7 +103,7 @@ def main() -> int:
     )
 
     require(
-        "_INVENTORY_PARTIAL_TEMPLATES['workloads']['workspace']" in routes,
+        "for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services')" in routes,
         'Workload workspace partial must be registered.',
         errors,
     )
@@ -186,13 +186,15 @@ def main() -> int:
     )
 
     require(
-        "_detail_row_value(details, 'delivery_rows', 'Strategy', 'Update Strategy')" in export_payload,
-        'Inventory export must support canonical and legacy update strategy evidence.',
+        "update_strategy = details.get('update_strategy')" in export_payload
+        and '_detail_row_value' not in export_payload,
+        'Inventory export must require the canonical update strategy field.',
         errors,
     )
     require(
-        "_detail_integer(details, 'desired_replicas'" in export_payload,
-        'Inventory export must populate desired replica evidence.',
+        "_optional_integer(details.get('desired_replicas'))" in export_payload
+        and '_detail_integer' not in export_payload,
+        'Inventory export must populate canonical desired replica evidence.',
         errors,
     )
 

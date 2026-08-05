@@ -42,8 +42,8 @@ def test_pod_filters_are_owner_aware_and_workspace_scoped() -> None:
     assert 'hx-trigger="change, keyup changed delay:500ms from:find input[name=\'search\']"' in card
     assert 'hx-target="#pods-page-workspace"' in card
     assert 'name="partial_mode" value="page_workspace"' in card
-    assert 'hx-target="#pods-inventory-scope"' in content
-    assert 'hx-swap="outerHTML"' in content
+    assert 'hx-target="#pods-table-content"' in content
+    assert 'hx-swap="innerHTML"' in content
     assert "'partial_mode': 'table_content'" in content
     assert "endpoint='inventory.pods'" in content
 

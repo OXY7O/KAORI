@@ -454,7 +454,6 @@ def _pod_details(
     raw_conditions = _model_value(status, 'conditions', default=None)
 
     return {
-        'schema_version': 2,
         'uid': _string_value(_model_value(metadata, 'uid')),
         'annotations': dict(sorted((_model_value(metadata, 'annotations', default={}) or {}).items())),
         'kubernetes_phase': _model_value(status, 'phase'),
@@ -466,6 +465,8 @@ def _pod_details(
         'runtime_evidence_reported': container_inventory['runtime_evidence_reported'],
         'condition_evidence_reported': raw_conditions is not None,
         'specification_evidence_reported': spec is not None,
+        'volume_evidence_reported': spec is not None,
+        'reference_evidence_reported': spec is not None,
         'conditions': _pod_condition_rows(status),
         'owner_chain': _pod_owner_chain(
             pod_name=_model_value(metadata, 'name') or 'Not Reported',

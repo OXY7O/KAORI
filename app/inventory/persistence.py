@@ -594,10 +594,6 @@ def save_services(
 
         service_inventory.cluster_ip = service['cluster_ip']
 
-        service_inventory.external_ip = service['external_ip']
-
-        service_inventory.ports = service['ports']
-
         service_inventory.selector = service.get(
             'selector',
             {},

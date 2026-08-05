@@ -86,7 +86,7 @@ The committed generation stores:
 - EndpointSlice serving and terminating conditions;
 - backend collection evidence in `ClusterInventory.collection_evidence`.
 
-Legacy `ServiceInventory.ports` and `external_ip` fields remain bounded to their database column limits. Full evidence is retained in `ServiceInventory.details`.
+Service port and external-address evidence is stored only in canonical `ServiceInventory.details`. Duplicate presentation columns are not retained in the relational model.
 
 ## Detail contract
 

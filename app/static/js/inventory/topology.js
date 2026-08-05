@@ -1,7 +1,27 @@
-(() => {
-    const config = window.KAORI_TOPOLOGY
-    if (!config) return
+const config = window.KAORI_TOPOLOGY
+const runtimeStatusPanel = document.getElementById('topology-runtime-status')
+const startupErrorPanel = document.getElementById('topology-error')
 
+if (!config) {
+    throw new Error('KAORI topology configuration is unavailable.')
+}
+
+let topologyRenderer
+try {
+    const cytoscapeModule = await import(config.renderer_url)
+    topologyRenderer = cytoscapeModule.c
+    window.KAORI_TOPOLOGY_LIBRARY_VERSION = topologyRenderer?.version || 'unknown'
+} catch (error) {
+    console.error('KAORI topology renderer could not start.', error)
+    if (runtimeStatusPanel) runtimeStatusPanel.classList.add('hidden')
+    if (startupErrorPanel) {
+        startupErrorPanel.textContent = `Topology renderer could not start: ${error?.message || 'unknown JavaScript error'}`
+        startupErrorPanel.classList.remove('hidden')
+    }
+    throw error
+}
+
+const startTopologyWorkspace = () => {
     const $ = (id) => document.getElementById(id)
     const canvas = $('topology-canvas')
     const canvasShell = $('topology-canvas-shell')
@@ -1476,7 +1496,7 @@
     const createGraph = (payload) => {
         currentPayload = payload
         if (cy) cy.destroy()
-        if (!window.cytoscape) {
+        if (!topologyRenderer) {
             cy = null
             const graphTab = viewTabs.find((button) => button.dataset.topologyViewTab === 'graph')
             if (graphTab) {
@@ -1517,7 +1537,7 @@
         ensureCanvasDimensions()
         setRuntimeStatus(`Rendering ${prepared.nodes.length} resources and ${prepared.edges.length} relationships...`)
         try {
-            cy = window.cytoscape({
+            cy = topologyRenderer({
                 container: canvas,
                 elements: prepared.elements,
                 layout: { name: 'preset' },
@@ -1691,4 +1711,6 @@
         cy.style(graphStyle())
         scheduleBoundaryUpdate(); scheduleDrawerMiniMapUpdate()
     }, 0))
-})()
+}
+
+startTopologyWorkspace()

@@ -91,8 +91,6 @@ def _service(details: dict, **overrides):
     values = {
         'service_type': 'LoadBalancer',
         'cluster_ip': '10.96.0.10',
-        'external_ip': None,
-        'ports': '443/TCP',
         'selector': {'app': 'api'},
         'namespace': 'payments',
         'service_name': 'api',
@@ -165,8 +163,6 @@ def test_service_export_leaves_backend_counts_blank_when_evidence_missing(
                 },
             },
             service_type='ClusterIP',
-            external_ip='-',
-            ports=None,
         ),
         'staging',
         'staging',

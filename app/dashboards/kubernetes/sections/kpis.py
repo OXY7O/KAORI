@@ -1,103 +1,90 @@
 from __future__ import annotations
 
-from app.dashboards.kubernetes.schema import (
-    AlertsSnapshot,
-    CapacitySnapshot,
-    DashboardClusterOption,
-    DashboardKpi,
-)
-from app.dashboards.kubernetes.utils import (
-    capacity_percent,
-    count_cluster_status,
-    kpi_metric_description,
-    percent_label,
-)
+from app.dashboards.kubernetes.schema import DashboardKpi, DashboardKpiContext
+from app.dashboards.kubernetes.utils import capacity_percent, count_cluster_status, percent_label
 
 
-def build_kpis(
-    *,
-    clusters_raw: list[object],
-    clusters: list[DashboardClusterOption],
-    nodes_total: int,
-    nodes_ready: int,
-    not_ready_nodes: int,
-    namespaces_total: int,
-    workloads_total: int,
-    pods_total: int,
-    running_pods: int,
-    unhealthy_pods: int,
-    capacity_snapshot: CapacitySnapshot,
-    alerts_snapshot: AlertsSnapshot,
-    live_cluster: object | None,
-    active_alerts_label: str,
-    active_alerts_description: str,
-) -> list[DashboardKpi]:
+def build_kpis(context: DashboardKpiContext) -> list[DashboardKpi]:
     return [
         DashboardKpi(
             label='Clusters',
-            value=str(len(clusters)),
+            value=str(len(context.clusters)),
             description=(
-                f'{count_cluster_status(clusters_raw, "healthy")} Healthy • '
-                f'{count_cluster_status(clusters_raw, "warning")} Warning'
+                f'{count_cluster_status(context.clusters_raw, "healthy")} Healthy • '
+                f'{count_cluster_status(context.clusters_raw, "warning")} Warning'
             ),
             icon='network',
             tone='blue',
         ),
         DashboardKpi(
             label='Nodes',
-            value=str(nodes_total),
-            description=f'{nodes_ready} Ready • {not_ready_nodes} NotReady',
+            value=str(context.nodes_total),
+            description=f'{context.nodes_ready} Ready • {context.not_ready_nodes} NotReady',
             icon='server',
-            tone='emerald' if not_ready_nodes == 0 else 'amber',
+            tone='emerald' if context.not_ready_nodes == 0 else 'amber',
         ),
         DashboardKpi(
             label='Namespaces',
-            value=str(namespaces_total),
+            value=str(context.namespaces_total),
             description='Discovered Kubernetes Namespaces',
             icon='layout-grid',
             tone='violet',
         ),
         DashboardKpi(
             label='Workloads',
-            value=str(workloads_total),
+            value=str(context.workloads_total),
             description='Deployments, StatefulSets, DaemonSets, Jobs, CronJobs',
             icon='boxes',
             tone='blue',
         ),
         DashboardKpi(
             label='Pods',
-            value=str(pods_total),
-            description=f'{running_pods} Running • {unhealthy_pods} Need Attention',
+            value=str(context.pods_total),
+            description=f'{context.running_pods} Running • {context.unhealthy_pods} Need Attention',
             icon='container',
-            tone='emerald' if unhealthy_pods == 0 else 'amber',
+            tone='emerald' if context.unhealthy_pods == 0 else 'amber',
         ),
         DashboardKpi(
             label='CPU Usage',
-            value=percent_label(capacity_percent(capacity_snapshot, 'CPU')) if live_cluster is not None else 'N/A',
+            value=(
+                percent_label(capacity_percent(context.capacity_snapshot, 'CPU'))
+                if context.live_cluster is not None
+                else 'N/A'
+            ),
             description=(
-                kpi_metric_description(live_cluster, 'Committed Worker Snapshot')
-                if live_cluster is not None
+                'Committed Worker Snapshot'
+                if context.live_cluster is not None
                 else 'Select a cluster to view committed CPU usage'
             ),
             icon='cpu',
-            tone='orange' if live_cluster is not None else 'slate',
+            tone='orange' if context.live_cluster is not None else 'slate',
         ),
         DashboardKpi(
             label='Memory Usage',
-            value=percent_label(capacity_percent(capacity_snapshot, 'Memory')) if live_cluster is not None else 'N/A',
+            value=(
+                percent_label(capacity_percent(context.capacity_snapshot, 'Memory'))
+                if context.live_cluster is not None
+                else 'N/A'
+            ),
             description=(
-                kpi_metric_description(live_cluster, 'Committed Worker Snapshot')
-                if live_cluster is not None
+                'Committed Worker Snapshot'
+                if context.live_cluster is not None
                 else 'Select a cluster to view committed memory usage'
             ),
             icon='memory-stick',
-            tone='violet' if live_cluster is not None else 'slate',
+            tone='violet' if context.live_cluster is not None else 'slate',
         ),
         DashboardKpi(
             label='Active Alerts',
-            value=active_alerts_label,
-            description=active_alerts_description,
+            value=context.active_alerts_label,
+            description=context.active_alerts_description,
             icon='bell-ring',
-            tone='red' if alerts_snapshot.critical else 'amber' if alerts_snapshot.warning else 'emerald',
+            tone=(
+                'red'
+                if context.alerts_snapshot.critical
+                else 'amber'
+                if context.alerts_snapshot.warning
+                else 'emerald'
+            ),
         ),
     ]

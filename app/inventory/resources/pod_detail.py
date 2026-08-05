@@ -139,20 +139,16 @@ def _specification_context(
     placement = details.get('placement') or {}
     unknown = 'Not Reported'
 
-    def value(name: str, fallback: Any = None) -> str:
+    def value(name: str) -> str:
         if not spec_reported:
             return unknown
         raw = configuration.get(name)
-        if raw is None:
-            raw = fallback
         return str(raw) if raw is not None and str(raw) else unknown
 
-    def count_value(name: str, fallback: int | None = None) -> int | None:
+    def count_value(name: str) -> int | None:
         if not spec_reported:
             return None
         raw = configuration.get(name)
-        if raw is None:
-            raw = fallback
         try:
             return int(raw) if raw is not None else None
         except (TypeError, ValueError):
@@ -162,20 +158,16 @@ def _specification_context(
     security_context = configuration.get('security_context_configured') if security_reported else None
     host_network_reported = spec_reported and 'host_network' in placement
     host_network = placement.get('host_network') if host_network_reported else None
-    volume_fallback = len(volumes) if volumes or details.get('schema_version') == 2 else None
-    container_fallback = _pod_container_count(pod) if pod.container_names else None
-    init_fallback = len(pod.init_container_images or []) if pod.init_container_images else None
-
     normalized = {
-        'service_account': value('service_account', 'default'),
+        'service_account': value('service_account'),
         'restart_policy': value('restart_policy'),
         'dns_policy': value('dns_policy'),
         'runtime_class': value('runtime_class'),
         'security_context_configured': security_context,
         'image_pull_secret_count': count_value('image_pull_secret_count'),
-        'volume_count': count_value('volume_count', volume_fallback),
-        'container_count': count_value('container_count', container_fallback),
-        'init_container_count': count_value('init_container_count', init_fallback),
+        'volume_count': count_value('volume_count'),
+        'container_count': count_value('container_count'),
+        'init_container_count': count_value('init_container_count'),
         'ephemeral_container_count': count_value('ephemeral_container_count'),
     }
 
@@ -283,18 +275,11 @@ def _reference_evidence_availability(
     specification_reported: bool,
     volumes: list[dict[str, Any]],
 ) -> tuple[bool, bool]:
-    schema_version = details.get('schema_version')
     volume_reported = bool(
-        specification_reported
-        and (schema_version == 2 or 'volumes' in details or bool(volumes))
+        specification_reported and details.get('volume_evidence_reported') is True
     )
     references_reported = bool(
-        specification_reported
-        and (
-            schema_version == 2
-            or bool(pod.configuration_references)
-            or bool(pod.persistent_volume_claims)
-        )
+        specification_reported and details.get('reference_evidence_reported') is True
     )
     return volume_reported, references_reported
 

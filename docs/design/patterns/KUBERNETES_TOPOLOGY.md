@@ -54,3 +54,17 @@ A truncated graph uses a warning callout with omitted counts. Renderer errors pr
 ## Readable Graph Node Refinement
 
 The canonical graph uses compact rounded domain badges with a resource-type glyph and semantic status dot. The object name is rendered below the badge as one external line with bounded ellipsis, while the complete name and type remain available in Resource List and Details. Containment lines are quiet dashed orthogonal connectors without arrowheads; dependency labels remain progressive-disclosure content.
+
+## Canonical Server Architecture
+
+Topology does not use one monolithic service or an internal compatibility wrapper. Ownership is split by responsibility:
+
+- `service.py` owns filter normalization, cache orchestration, and the public page/graph entry points;
+- `repository.py` owns committed-generation queries and resource-family query bounds;
+- `node_builder.py` owns resource node projection;
+- `edge_builder.py` owns supported relationship projection;
+- `graph_builder.py` owns final graph assembly and summary;
+- `presentation.py` owns node/edge payload formatting and graph limits;
+- `contracts.py` owns typed graph inputs and state.
+
+The browser loads `topology.js` directly. That module imports the Cytoscape renderer itself; no bootstrap file, global renderer alias, or secondary workspace loader is permitted.

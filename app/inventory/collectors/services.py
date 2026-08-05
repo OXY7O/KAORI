@@ -11,7 +11,6 @@ from app.inventory.collectors.common import _metadata_details, _string_value
 COLLECTED = 'Collected'
 PERMISSION_UNAVAILABLE = 'Permission Unavailable'
 API_UNAVAILABLE = 'API Unavailable'
-LEGACY_TEXT_LIMIT = 255
 
 
 def _collection_error_state(exc: ApiException) -> str:
@@ -102,7 +101,7 @@ def _endpoint_slice_map(
     return endpoint_map, True, COLLECTED
 
 
-def _legacy_endpoint_map(
+def _endpoints_map(
     api: CoreV1Api,
 ) -> tuple[dict[tuple[str, str], dict[str, Any]], bool, str]:
     endpoint_map: dict[tuple[str, str], dict[str, Any]] = {}
@@ -180,7 +179,7 @@ def _service_endpoint_map(
         if available:
             return endpoint_map, 'EndpointSlice', True, COLLECTED
 
-    endpoint_map, available, endpoints_state = _legacy_endpoint_map(core_api)
+    endpoint_map, available, endpoints_state = _endpoints_map(core_api)
     if available:
         return endpoint_map, 'Endpoints', True, COLLECTED
     final_state = (
@@ -191,18 +190,8 @@ def _service_endpoint_map(
     return endpoint_map, 'Endpoints', False, final_state
 
 
-def _bounded_legacy_text(values: list[str]) -> str | None:
-    text = ','.join(value for value in values if value)
-    if not text:
-        return None
-    if len(text) <= LEGACY_TEXT_LIMIT:
-        return text
-    return f'{text[: LEGACY_TEXT_LIMIT - 1]}…'
-
-
-def _service_ports(spec: Any) -> tuple[list[dict[str, Any]], list[str]]:
+def _service_ports(spec: Any) -> list[dict[str, Any]]:
     details: list[dict[str, Any]] = []
-    compact: list[str] = []
     for port in getattr(spec, 'ports', None) or []:
         target_port = getattr(port, 'target_port', None)
         target_port_value = getattr(target_port, 'value', None) if target_port is not None else None
@@ -210,7 +199,6 @@ def _service_ports(spec: Any) -> tuple[list[dict[str, Any]], list[str]]:
             target_port_value = str(target_port)
         port_value = int(getattr(port, 'port', 0) or 0)
         protocol = _string_value(getattr(port, 'protocol', None), 'TCP')
-        compact.append(f'{port_value}/{protocol}')
         details.append(
             {
                 'name': _string_value(getattr(port, 'name', None), ''),
@@ -221,7 +209,7 @@ def _service_ports(spec: Any) -> tuple[list[dict[str, Any]], list[str]]:
                 'app_protocol': _string_value(getattr(port, 'app_protocol', None), ''),
             }
         )
-    return details, compact
+    return details
 
 
 def _external_address_evidence(spec: Any, status: Any) -> tuple[list[str], list[str], list[str], bool]:
@@ -279,7 +267,7 @@ def get_services(
         if metadata is None or spec is None or not metadata.namespace or not metadata.name:
             continue
 
-        port_details, compact_ports = _service_ports(spec)
+        port_details = _service_ports(spec)
         declared_external_ips, load_balancer_ingress, external_addresses, load_balancer_reported = (
             _external_address_evidence(spec, status)
         )
@@ -320,8 +308,6 @@ def get_services(
                 'service_name': metadata.name,
                 'service_type': service_type,
                 'cluster_ip': cluster_ip,
-                'external_ip': _bounded_legacy_text(external_addresses),
-                'ports': _bounded_legacy_text(compact_ports),
                 'selector': dict(getattr(spec, 'selector', None) or {}),
                 'details': details,
                 'created_at': metadata.creation_timestamp,

@@ -25,7 +25,8 @@ def test_workload_backend_owns_state_delivery_and_grouped_summary() -> None:
     source = _read('app/inventory/resources/workloads.py')
 
     assert '_OPERATIONAL_STATES' in source
-    assert "'running': ('Stable', 'normal')" in source
+    assert "'stable': ('Stable', 'normal')" in source
+    assert "'running': ('Stable', 'normal')" not in source
     assert "'suspended': ('Suspended', 'info')" in source
     assert 'func.count(WorkloadInventory.id)' in source
     assert '.group_by(WorkloadInventory.workload_type, WorkloadInventory.status)' in source

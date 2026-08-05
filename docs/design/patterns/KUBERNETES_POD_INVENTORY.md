@@ -95,7 +95,7 @@ Pod XLSX and CSV export use the same committed evidence contract:
 - Runtime-derived restart count is blank when runtime evidence was not reported.
 - Container, image, configuration-reference, and PVC counts are blank when specification evidence was not reported.
 - Image count represents regular, init, and ephemeral image references, not a distinct-image calculation.
-- Legacy snapshots remain readable through conservative fallback rules without manufacturing healthy zero values.
+- Pod presentation and export require explicit canonical evidence flags. Snapshots produced before the canonical evidence contract must be recollected instead of inferred through presentation-field fallbacks.
 
 ## Policy boundary
 

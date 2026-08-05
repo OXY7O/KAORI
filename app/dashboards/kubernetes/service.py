@@ -7,11 +7,15 @@ from app.dashboards.kubernetes.repository import (
     count_records,
     count_records_with_values,
     latest_record_timestamp,
-    load_models,
     query_all,
     query_for_clusters,
 )
-from app.dashboards.kubernetes.schema import DashboardClusterOption, DashboardOverview, InventorySnapshot
+from app.dashboards.kubernetes.schema import (
+    DashboardClusterOption,
+    DashboardKpiContext,
+    DashboardOverview,
+    InventorySnapshot,
+)
 from app.dashboards.kubernetes.sections import (
     build_alerts_snapshot,
     build_capacity_snapshot,
@@ -36,16 +40,32 @@ from app.dashboards.kubernetes.snapshots import (
     top_consumers_parameters,
     unavailable_message,
 )
-from app.dashboards.kubernetes.utils import coerce_datetime, get_attr, get_live_cluster, human_time, normalize_selected_cluster
+from app.dashboards.kubernetes.utils import (
+    coerce_datetime,
+    get_attr,
+    get_live_cluster,
+    human_time,
+    normalize_selected_cluster,
+)
+from app.models import (
+    Cluster,
+    IngressInventory,
+    NamespaceInventory,
+    NodeInventory,
+    PodInventory,
+    ServiceInventory,
+    StorageInventory,
+    WorkloadInventory,
+)
 
-_INVENTORY_MODEL_NAMES = (
-    'NodeInventory',
-    'NamespaceInventory',
-    'WorkloadInventory',
-    'PodInventory',
-    'ServiceInventory',
-    'IngressInventory',
-    'StorageInventory',
+_INVENTORY_MODELS = (
+    NodeInventory,
+    NamespaceInventory,
+    WorkloadInventory,
+    PodInventory,
+    ServiceInventory,
+    IngressInventory,
+    StorageInventory,
 )
 _READY_NODE_STATES = {'ready', 'true', 'active', 'healthy'}
 _RUNNING_POD_STATES = {'running'}
@@ -54,10 +74,8 @@ _UNHEALTHY_POD_STATES = {'pending', 'failed', 'unknown', 'crashloopbackoff', 'im
 
 def _scope(
     selected_cluster_id: str | None,
-) -> tuple[dict[str, Any], list[Any], list[DashboardClusterOption], str | None, Any | None]:
-    models = load_models()
-    Cluster = models.get('Cluster')
-    clusters_raw = query_all(Cluster) if Cluster else []
+) -> tuple[list[Any], list[DashboardClusterOption], str | None, Any | None]:
+    clusters_raw = query_all(Cluster)
     clusters = [
         DashboardClusterOption(
             id=str(get_attr(cluster, 'id', default='')),
@@ -67,7 +85,7 @@ def _scope(
     ]
     normalized = normalize_selected_cluster(selected_cluster_id, clusters)
     selected = get_live_cluster(clusters_raw=clusters_raw, selected_cluster_id=normalized)
-    return models, clusters_raw, clusters, normalized, selected
+    return clusters_raw, clusters, normalized, selected
 
 
 def _base_dashboard(
@@ -136,15 +154,14 @@ def _forecast_signal(cluster: Any):
     ), result
 
 
-def _inventory_snapshot(models: dict[str, Any], selected_cluster_id: str | None) -> InventorySnapshot:
-    PodInventory = models.get('PodInventory')
+def _inventory_snapshot(selected_cluster_id: str | None) -> InventorySnapshot:
     return InventorySnapshot(
-        namespaces=count_records(models.get('NamespaceInventory'), selected_cluster_id),
-        workloads=count_records(models.get('WorkloadInventory'), selected_cluster_id),
+        namespaces=count_records(NamespaceInventory, selected_cluster_id),
+        workloads=count_records(WorkloadInventory, selected_cluster_id),
         pods=count_records(PodInventory, selected_cluster_id),
-        services=count_records(models.get('ServiceInventory'), selected_cluster_id),
-        ingresses=count_records(models.get('IngressInventory'), selected_cluster_id),
-        storage=count_records(models.get('StorageInventory'), selected_cluster_id),
+        services=count_records(ServiceInventory, selected_cluster_id),
+        ingresses=count_records(IngressInventory, selected_cluster_id),
+        storage=count_records(StorageInventory, selected_cluster_id),
         running_pods=count_records_with_values(
             PodInventory,
             'phase',
@@ -160,10 +177,10 @@ def _inventory_snapshot(models: dict[str, Any], selected_cluster_id: str | None)
     )
 
 
-def _latest_inventory_sync(models: dict[str, Any], selected_cluster_id: str | None):
+def _latest_inventory_sync(selected_cluster_id: str | None):
     timestamps = [
-        coerce_datetime(latest_record_timestamp(models.get(name), selected_cluster_id))
-        for name in _INVENTORY_MODEL_NAMES
+        coerce_datetime(latest_record_timestamp(model, selected_cluster_id))
+        for model in _INVENTORY_MODELS
     ]
     return max((value for value in timestamps if value is not None), default=None)
 
@@ -184,15 +201,15 @@ def get_dashboard_overview(
     **_: Any,
 ) -> DashboardOverview:
     """Build the database-only dashboard shell; live integrations are never called here."""
-    models, _clusters_raw, clusters, selected_cluster_id, _selected = _scope(selected_cluster_id)
+    _clusters_raw, clusters, selected_cluster_id, _selected = _scope(selected_cluster_id)
     dashboard = _base_dashboard(
         clusters=clusters,
         selected_cluster_id=selected_cluster_id,
         active_tab=active_tab,
     )
-    dashboard.inventory_snapshot = _inventory_snapshot(models, selected_cluster_id)
+    dashboard.inventory_snapshot = _inventory_snapshot(selected_cluster_id)
     dashboard.reporting_snapshot = build_reporting_snapshot(selected_cluster_id=selected_cluster_id)
-    latest_sync = _latest_inventory_sync(models, selected_cluster_id)
+    latest_sync = _latest_inventory_sync(selected_cluster_id)
     dashboard.last_updated = human_time(latest_sync) if latest_sync else 'No sync yet'
     _, pagination = paginate_sequence(
         items=clusters,
@@ -211,7 +228,7 @@ def get_dashboard_section(
     cluster_health_per_page: int = 5,
 ) -> DashboardOverview:
     """Build one section from inventory tables and committed worker snapshots only."""
-    models, clusters_raw, clusters, selected_cluster_id, selected = _scope(selected_cluster_id)
+    clusters_raw, clusters, selected_cluster_id, selected = _scope(selected_cluster_id)
     dashboard = _base_dashboard(clusters=clusters, selected_cluster_id=selected_cluster_id)
 
     if section == 'cluster_health':
@@ -224,8 +241,8 @@ def get_dashboard_section(
             per_page=cluster_health_per_page,
         )
         visible_cluster_ids = [str(cluster.id) for cluster in visible]
-        node_rows = query_for_clusters(models.get('NodeInventory'), visible_cluster_ids)
-        pod_rows = query_for_clusters(models.get('PodInventory'), visible_cluster_ids)
+        node_rows = query_for_clusters(NodeInventory, visible_cluster_ids)
+        pod_rows = query_for_clusters(PodInventory, visible_cluster_ids)
         capacities = {}
         alerts = {}
         for cluster in visible:
@@ -252,8 +269,7 @@ def get_dashboard_section(
         if selected is not None:
             dashboard.capacity_snapshot, _ = _capacity_signal(selected)
             dashboard.alerts_snapshot, _ = _alerts_signal(selected)
-        inventory = _inventory_snapshot(models, selected_cluster_id)
-        NodeInventory = models.get('NodeInventory')
+        inventory = _inventory_snapshot(selected_cluster_id)
         nodes_total = count_records(NodeInventory, selected_cluster_id)
         nodes_ready = count_records_with_values(
             NodeInventory,
@@ -267,25 +283,28 @@ def get_dashboard_section(
             + dashboard.alerts_snapshot.info
         )
         dashboard.global_kpis = build_kpis(
-            clusters_raw=clusters_raw,
-            clusters=clusters,
-            nodes_total=nodes_total,
-            nodes_ready=nodes_ready,
-            not_ready_nodes=max(nodes_total - nodes_ready, 0),
-            namespaces_total=inventory.namespaces,
-            workloads_total=inventory.workloads,
-            pods_total=inventory.pods,
-            running_pods=inventory.running_pods,
-            unhealthy_pods=inventory.unhealthy_pods,
-            capacity_snapshot=dashboard.capacity_snapshot,
-            alerts_snapshot=dashboard.alerts_snapshot,
-            live_cluster=selected,
-            active_alerts_label=str(active_alerts) if selected is not None else 'N/A',
-            active_alerts_description=(
-                f'{dashboard.alerts_snapshot.critical} Critical • {dashboard.alerts_snapshot.warning} Warning'
-                if selected is not None
-                else 'Select a cluster to view committed alert signals'
-            ),
+            DashboardKpiContext(
+                clusters_raw=clusters_raw,
+                clusters=clusters,
+                nodes_total=nodes_total,
+                nodes_ready=nodes_ready,
+                not_ready_nodes=max(nodes_total - nodes_ready, 0),
+                namespaces_total=inventory.namespaces,
+                workloads_total=inventory.workloads,
+                pods_total=inventory.pods,
+                running_pods=inventory.running_pods,
+                unhealthy_pods=inventory.unhealthy_pods,
+                capacity_snapshot=dashboard.capacity_snapshot,
+                alerts_snapshot=dashboard.alerts_snapshot,
+                live_cluster=selected,
+                active_alerts_label=str(active_alerts) if selected is not None else 'N/A',
+                active_alerts_description=(
+                    f'{dashboard.alerts_snapshot.critical} Critical • '
+                    f'{dashboard.alerts_snapshot.warning} Warning'
+                    if selected is not None
+                    else 'Select a cluster to view committed alert signals'
+                ),
+            )
         )
         return dashboard
 
@@ -316,7 +335,7 @@ def get_dashboard_section(
             dashboard.alerts_snapshot, alerts_result = _alerts_signal(selected)
             dashboard.top_consumers_snapshot, top_result = _top_consumers_signal(selected)
             dashboard.forecast_snapshot, forecast_result = _forecast_signal(selected)
-        latest_sync = _latest_inventory_sync(models, selected_cluster_id)
+        latest_sync = _latest_inventory_sync(selected_cluster_id)
         dashboard.reporting_snapshot = build_reporting_snapshot(selected_cluster_id=selected_cluster_id)
         has_prometheus_data = any(
             snapshot.source_status == 'Available'

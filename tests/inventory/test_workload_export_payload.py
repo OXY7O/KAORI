@@ -111,17 +111,12 @@ def test_workload_export_prefers_canonical_flat_fields(monkeypatch: pytest.Monke
     assert row['unavailable_replicas'] == 1
 
 
-def test_workload_export_supports_legacy_nested_evidence(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_workload_export_requires_canonical_flat_evidence(monkeypatch: pytest.MonkeyPatch) -> None:
     payload = _load_payload(monkeypatch)
     row = payload._workload_row(
         _workload(
             {
-                'state_rows': [
-                    {'label': 'Desired Replicas', 'value': '4'},
-                    {'label': 'Available Replicas', 'value': '3'},
-                    {'label': 'Updated Replicas', 'value': '3'},
-                    {'label': 'Unavailable Replicas', 'value': '1'},
-                ],
+                'state_rows': [{'label': 'Desired Replicas', 'value': '4'}],
                 'delivery_rows': [{'label': 'Strategy', 'value': 'RollingUpdate'}],
             }
         ),
@@ -129,8 +124,8 @@ def test_workload_export_supports_legacy_nested_evidence(monkeypatch: pytest.Mon
         'staging',
     )
 
-    assert row['update_strategy'] == 'RollingUpdate'
-    assert row['desired_replicas'] == 4
-    assert row['available_replicas'] == 3
-    assert row['updated_replicas'] == 3
-    assert row['unavailable_replicas'] == 1
+    assert row['update_strategy'] == 'Not Available'
+    assert row['desired_replicas'] is None
+    assert row['available_replicas'] is None
+    assert row['updated_replicas'] is None
+    assert row['unavailable_replicas'] is None

@@ -618,7 +618,7 @@ Required rules:
 - equal-height remains required only for true peer main-content boxes where side-by-side comparison is the purpose;
 - do not add fixed `min-height` values to hide content imbalance.
 
-Inventory page-size controls must refresh the owning `*-inventory-scope` with `outerHTML`, not only the table body. This keeps the filter form's hidden `per_page` value synchronized. Filter forms listen to their own bubbled `change` events and scoped search input events; do not use a global `change from:select` trigger that can capture the separate Rows selector.
+Inventory scope-changing filters must refresh the owning `*-page-workspace` with `outerHTML` so Hero context, snapshot evidence, summary posture, dependent options, and rows remain synchronized. Page-size and pagination controls refresh only `*-table-content` with `innerHTML`; their requests carry the active filters and `partial_mode=table_content`. Do not retain `*-inventory-scope` wrapper partials after a page adopts the canonical workspace contract. Filter forms listen to their own bubbled `change` events and scoped search input events; do not use a global `change from:select` trigger that can capture the separate Rows selector.
 
 ## 21. Pod Runtime and Container Evidence
 

@@ -21,10 +21,12 @@ def test_service_collector_commits_backend_collection_evidence() -> None:
     assert 'committed_evidence.update(collection_evidence)' in persistence
 
 
-def test_service_collector_preserves_full_evidence_and_bounds_legacy_columns() -> None:
+def test_service_collector_preserves_full_canonical_evidence_without_duplicate_columns() -> None:
     collector = read('app/inventory/collectors/services.py')
 
-    assert 'LEGACY_TEXT_LIMIT = 255' in collector
+    assert 'LEGACY_TEXT_LIMIT' not in collector
+    assert "'external_ip':" not in collector
+    assert "'ports': _bounded" not in collector
     assert "'external_addresses': external_addresses" in collector
     assert "'load_balancer_ingress': load_balancer_ingress" in collector
     assert "'ports': port_details" in collector
@@ -50,14 +52,14 @@ def test_service_page_filters_refresh_complete_committed_scope() -> None:
     card = read('app/templates/inventory/services/partials/_table_card.html')
     table = read('app/templates/inventory/services/partials/_table_content.html')
 
-    assert "_INVENTORY_PARTIAL_TEMPLATES['services']['workspace']" in routes
+    assert "for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services')" in routes
     assert 'id="services-page-workspace"' in workspace
     assert 'inventory/components/_data_freshness.html' in workspace
     assert 'hx-target="#services-page-workspace"' in card
     assert 'name="partial_mode" value="page_workspace"' in card
     assert 'aria-label="Service inventory filters"' in card
-    assert 'hx-target="#services-page-workspace"' in table
-    assert 'name="partial_mode" value="page_workspace"' in table
+    assert 'hx-target="#services-table-content"' in table
+    assert 'name="partial_mode" value="table_content"' in table
 
 
 def test_service_table_uses_compact_access_and_accessible_structure() -> None:

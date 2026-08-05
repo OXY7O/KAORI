@@ -71,21 +71,7 @@ def _join_json(value: Any, fallback: str = 'Not Available', limit: int = 3) -> s
     return rendered
 
 
-def _detail_row_value(details: dict[str, Any], key: str, *labels: str) -> Any:
-    wanted = {label.casefold() for label in labels}
-    for row in details.get(key) or []:
-        if not isinstance(row, dict):
-            continue
-        if str(row.get('label') or '').casefold() in wanted:
-            value = row.get('value')
-            return None if value in (None, '', '-', 'None') else value
-    return None
-
-
-def _detail_integer(details: dict[str, Any], field: str, *fallback_labels: str) -> int | None:
-    value = details.get(field)
-    if value is None and fallback_labels:
-        value = _detail_row_value(details, 'state_rows', *fallback_labels)
+def _optional_integer(value: Any) -> int | None:
     if value in (None, '', '-', 'None'):
         return None
     try:
@@ -153,9 +139,7 @@ def _namespace_row(item: NamespaceInventory, cluster_name: str, environment: str
 
 def _workload_row(item: WorkloadInventory, cluster_name: str, environment: str) -> dict[str, Any]:
     details = item.details or {}
-    update_strategy = details.get('update_strategy') or details.get('strategy')
-    if update_strategy is None:
-        update_strategy = _detail_row_value(details, 'delivery_rows', 'Strategy', 'Update Strategy')
+    update_strategy = details.get('update_strategy')
     return {
         'status': _text(item.status, 'Unknown'),
         'cluster': cluster_name,
@@ -165,10 +149,10 @@ def _workload_row(item: WorkloadInventory, cluster_name: str, environment: str) 
         'resource_type': item.workload_type,
         'ready': _text(item.ready, 'Not Reported'),
         'update_strategy': _text(update_strategy, 'Not Available'),
-        'desired_replicas': _detail_integer(details, 'desired_replicas', 'Desired Replicas', 'Completions', 'Desired Scheduled'),
-        'available_replicas': _detail_integer(details, 'available_replicas', 'Available Replicas', 'Available', 'Succeeded'),
-        'updated_replicas': _detail_integer(details, 'updated_replicas', 'Updated Replicas', 'Updated'),
-        'unavailable_replicas': _detail_integer(details, 'unavailable_replicas', 'Unavailable Replicas', 'Unavailable'),
+        'desired_replicas': _optional_integer(details.get('desired_replicas')),
+        'available_replicas': _optional_integer(details.get('available_replicas')),
+        'updated_replicas': _optional_integer(details.get('updated_replicas')),
+        'unavailable_replicas': _optional_integer(details.get('unavailable_replicas')),
         'created_at': item.created_at,
         'collected_at': item.collected_at,
     }
@@ -177,22 +161,9 @@ def _workload_row(item: WorkloadInventory, cluster_name: str, environment: str) 
 def _pod_row(item: PodInventory, cluster_name: str, environment: str) -> dict[str, Any]:
     details = item.details or {}
     configuration = details.get('configuration') or {}
-    specification_reported = bool(
-        details.get(
-            'specification_evidence_reported',
-            configuration.get('reported', bool(configuration or item.container_names)),
-        )
-    )
-    runtime_reported = bool(
-        details.get(
-            'runtime_evidence_reported',
-            item.ready not in (None, '', 'Not Reported'),
-        )
-    )
+    specification_reported = details.get('specification_evidence_reported') is True
+    runtime_reported = details.get('runtime_evidence_reported') is True
     configured_container_count = configuration.get('container_count')
-    if configured_container_count is None and specification_reported:
-        configured_container_count = len(item.container_names or [])
-
     return {
         'status': _text(item.phase, 'Unknown'),
         'cluster': cluster_name,
@@ -220,10 +191,10 @@ def _pod_row(item: PodInventory, cluster_name: str, environment: str) -> dict[st
     }
 
 
-def _service_port_export_value(details: dict[str, Any], legacy_value: str | None) -> str:
+def _service_port_export_value(details: dict[str, Any]) -> str:
     rows = [row for row in details.get('ports') or [] if isinstance(row, dict)]
     if not rows:
-        return _text(legacy_value, 'Not Configured')
+        return 'Not Configured'
     values = []
     for row in rows:
         service_port = int(row.get('port') or 0)
@@ -251,7 +222,6 @@ def _service_row(item: ServiceInventory, cluster_name: str, environment: str) ->
     load_balancer_addresses = list(details.get('load_balancer_ingress') or [])
     cluster_ip = 'None (Headless)' if effective_type == 'Headless' else _text(item.cluster_ip, 'Not Reported')
     port_rows = [row for row in details.get('ports') or [] if isinstance(row, dict)]
-    legacy_port_count = len([value for value in str(item.ports or '').split(',') if value.strip()])
     load_balancer_reported = details.get('load_balancer_status_reported')
     if load_balancer_addresses:
         load_balancer_value = ', '.join(load_balancer_addresses)
@@ -269,8 +239,8 @@ def _service_row(item: ServiceInventory, cluster_name: str, environment: str) ->
         'access_model': service_access_model(effective_type),
         'cluster_ip': cluster_ip,
         'external_ip': ', '.join(external_addresses) if external_addresses else 'Not Configured',
-        'ports': _service_port_export_value(details, item.ports),
-        'port_count': len(port_rows) if port_rows else legacy_port_count,
+        'ports': _service_port_export_value(details),
+        'port_count': len(port_rows),
         'selector_count': _count_json(item.selector),
         'selector': _join_json(item.selector, fallback='Not Configured'),
         'endpoint_source': 'Not Applicable' if not endpoint_applicable else registration['source'],

@@ -38,6 +38,7 @@ Examples:
 - Dashboard alert worker builder: `snapshot_builder.py`
 - View models: `schema.py`
 - Aggregate and set-based database access: `repository.py`
+- Canonical ORM ownership: dashboard services and sections import model classes directly from `app.models`; dynamic loaders and alternate import-path probes are prohibited.
 - Section projection: `sections/`
 - Templates: `templates/dashboards/kubernetes/`
 

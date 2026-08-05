@@ -38,6 +38,8 @@ Dashboard routing is canonical-only. Welcome is owned by `welcome.index`, while 
 
 Database loading and defensive queries are isolated in `repository.py`. Reusable Kubernetes dashboard formatting and normalization helpers are isolated in `utils.py`.
 
+Dashboard code imports canonical ORM models directly from `app.models`. Do not add dynamic model loaders, alternate package probes, or broad import compatibility bridges inside the application boundary.
+
 A new dashboard section must not be implemented directly in the orchestration function. Add a section builder module, return a typed schema object, and let the orchestrator compose it.
 
 ## Retired path guardrail
