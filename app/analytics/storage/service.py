@@ -1091,7 +1091,7 @@ def get_storage_analysis_context(
 
 def get_storage_snapshot(
     cluster_id: str,
-) -> dict[str, Any]:
+) -> dict[str, Any] | None:
     from app.analytics.materialization.service import read_snapshot
 
     result = read_snapshot(
@@ -1105,7 +1105,7 @@ def get_storage_snapshot(
     pvc_summary = _as_dict(persistent_storage.get('pvc', {}))
     pvc_rows = _as_list(persistent_storage.get('pvc_all_rows') or persistent_storage.get('pvc_rows', []))
     if not storage_summary:
-        return _empty_storage_snapshot()
+        return None
     risk_count = _count_pvc_risks(pvc_rows)
     used_percent = _safe_int(pvc_summary.get('used_percent', 0))
     return {
@@ -1123,17 +1123,6 @@ def get_storage_snapshot(
         ),
     }
 
-def _empty_storage_snapshot() -> dict[str, Any]:
-    return {
-        'pvc_requested': '0 GiB',
-        'pvc_used': '0 GiB',
-        'pvc_free': '0 GiB',
-        'pvc_risk_count': 0,
-        'used_percent': 0,
-        'free_percent': 0,
-        'top_namespace': '-',
-        'recommendation_count': 0,
-    }
 
 
 def _count_pvc_risks(

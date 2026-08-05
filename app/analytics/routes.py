@@ -1,6 +1,6 @@
 from hashlib import sha256
 
-from flask import Blueprint, redirect, render_template, request, session, url_for
+from flask import Blueprint, make_response, redirect, render_template, request, session, url_for
 from flask_login import current_user
 
 from app.analytics.alerts.routes import (
@@ -13,6 +13,7 @@ from app.analytics.forecast.routes import (
     forecast,
     forecast_section,
 )
+from app.analytics.overview.sections import get_overview_section
 from app.analytics.overview.service import get_analytics_overview, get_analytics_overview_section
 from app.analytics.materialization.presentation import materialization_progress_context
 from app.analytics.storage.routes import (
@@ -174,8 +175,6 @@ def _build_prometheus_failure_feedback(payload: dict) -> str:
 @analytics_bp.get('/materialization/status')
 @permission_required('analytics.view')
 def materialization_status():
-    from flask import make_response
-
     from app.analytics.materialization.service import read_snapshot
 
     dataset_key = request.args.get('dataset_key', '').strip()
@@ -264,24 +263,8 @@ def overview():
 )
 @permission_required('analytics.view')
 def overview_section(section: str):
-    allowed_sections = {
-        'health-summary': 'analytics/overview/partials/_health_summary.html',
-        'hero-posture': 'analytics/overview/partials/_hero_posture.html',
-        'prometheus-status': 'analytics/overview/partials/_prometheus_status.html',
-        'resource-snapshot': 'analytics/overview/partials/_resource_snapshot.html',
-        'capacity-snapshot': 'analytics/overview/partials/_capacity_snapshot.html',
-        'actionable-recommendations': 'analytics/overview/partials/_actionable_recommendation_summary.html',
-        'storage-snapshot': 'analytics/overview/partials/_storage_snapshot.html',
-        'workload-snapshot': 'analytics/overview/partials/_workload_snapshot.html',
-        'top-consumers': 'analytics/overview/partials/_top_consumers_snapshot.html',
-        'forecast-snapshot': 'analytics/overview/partials/_forecast_snapshot.html',
-        'alerts-snapshot': 'analytics/overview/partials/_alerts_snapshot.html',
-        'recommendations': 'analytics/overview/partials/_recommendations.html',
-    }
-
-    template_name = allowed_sections.get(section)
-
-    if not template_name:
+    section_definition = get_overview_section(section)
+    if section_definition is None:
         return '', 404
 
     selected_time_range = request.args.get(
@@ -308,14 +291,30 @@ def overview_section(section: str):
     )
 
     section_html = render_template(
-        template_name,
+        section_definition.template,
         payload=payload,
     )
 
-    if section in {'prometheus-status', 'health-summary'}:
-        return f'{section_html}{_build_prometheus_failure_feedback(payload)}'
+    if section == 'health-summary':
+        section_html = ''.join(
+            (
+                section_html,
+                render_template(
+                    'analytics/overview/partials/_hero_posture_oob.html',
+                    payload=payload,
+                ),
+                render_template(
+                    'analytics/overview/partials/_composite_tabs_oob.html',
+                    payload=payload,
+                ),
+                _build_prometheus_failure_feedback(payload),
+            )
+        )
 
-    return section_html
+    response = make_response(section_html)
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    response.headers['Vary'] = 'HX-Request'
+    return response
 
 
 analytics_bp.add_url_rule(

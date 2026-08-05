@@ -18,7 +18,7 @@ from app.intelligence.recommendation_engine import count_actionable_recommendati
 
 def get_alerts_snapshot(
     cluster_id: str,
-) -> AlertsSnapshot:
+) -> AlertsSnapshot | None:
     from app.analytics.materialization.service import read_snapshot
 
     result = read_snapshot(
@@ -28,7 +28,7 @@ def get_alerts_snapshot(
     )
     context = result.context or {}
     if not result.available:
-        return _empty_alerts_snapshot()
+        return None
     alerts = list(context.get('all_alerts') or [])
     anomalies = list(context.get('all_anomalies') or [])
     source_status = context.get('source_status') or _empty_source_status()
@@ -74,56 +74,6 @@ def get_alerts_snapshot(
             recommendations if isinstance(recommendations, list) else []
         ),
     }
-
-def _empty_alerts_snapshot() -> AlertsSnapshot:
-    return {
-        'firing_alerts': 0,
-        'pending_alerts': 0,
-        'critical_alerts': 0,
-        'warning_alerts': 0,
-        'recent_anomalies': 0,
-        'highest_severity': '-',
-        'highest_severity_description': 'No active critical alert detected.',
-        'source': 'none',
-        'resolved_source': 'none',
-        'fallback_used': False,
-        'fallback_reason': None,
-        'source_connected': False,
-        'source_health': {
-            'score': 0,
-            'level': 'unavailable',
-            'label': 'No Alert Source',
-            'description': 'No alert source health signal is available.',
-            'icon': 'circle-off',
-            'checks': [],
-            'selected_source': 'auto',
-            'resolved_source': 'none',
-            'fallback_used': False,
-        },
-        'routing_summary': build_empty_routing_summary(),
-        'silence_summary': build_empty_silence_summary(),
-        'inhibition_summary': build_inhibition_summary(
-            alerts=[],
-            source_status=_empty_source_status(),
-        ),
-        'ownership_summary': build_empty_ownership_summary(),
-        'incident_readiness': build_empty_incident_readiness(),
-        'priority': {
-            'level': 'normal',
-            'label': 'Normal',
-            'description': 'No active alert or anomaly signal detected.',
-            'icon': 'shield-check',
-        },
-        'insight': {
-            'dominant_signal': 'No signal',
-            'dominant_signal_count': 0,
-            'dominant_anomaly': 'No anomaly',
-            'dominant_anomaly_count': 0,
-            'action_hint': 'No immediate inspection is required.',
-        },
-        'recommendation_count': 0,
-    }
-
 
 def _empty_source_status() -> AlertSourceStatus:
     """Return a complete unavailable-source contract for empty snapshots."""

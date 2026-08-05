@@ -1692,7 +1692,7 @@ def get_workload_analysis_context(
 def get_workload_snapshot(
     cluster_id: str,
     time_range: str = '24h',
-) -> dict[str, Any]:
+) -> dict[str, Any] | None:
     from app.analytics.materialization.service import read_snapshot
 
     result = read_snapshot(
@@ -1703,7 +1703,7 @@ def get_workload_snapshot(
     context = result.context or {}
     rows = _as_list(context.get('workload_mapping_rows', []))
     if not result.available:
-        return _empty_workload_snapshot()
+        return None
 
     missing_cpu_requests = 0
     missing_memory_requests = 0
@@ -1741,17 +1741,6 @@ def get_workload_snapshot(
         ),
     }
 
-
-def _empty_workload_snapshot() -> dict[str, Any]:
-    return {
-        'missing_cpu_requests': 0,
-        'missing_memory_requests': 0,
-        'cpu_limits_unset': 0,
-        'memory_limits_missing': 0,
-        'over_provisioned': 0,
-        'under_provisioned': 0,
-        'recommendation_count': 0,
-    }
 
 def present_workload_materialized_context(
     context: dict[str, Any],

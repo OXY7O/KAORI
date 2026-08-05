@@ -1,1 +1,1 @@
-"""Kubernetes Analytics Overview domain."""
+"""Analytics Overview composition and presentation boundary."""

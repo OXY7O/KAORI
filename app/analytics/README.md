@@ -188,38 +188,49 @@ Storage Analysis uses mixed but explicit scope ownership: Cluster and Namespace 
 
 - Use the shared Analytics content-tab component and `kaoriAnalyticsTabs`; do not maintain a separate Overview-only tab implementation.
 - Capacity is the analytics snapshot-style baseline. Analytics Overview tabs and domain workspaces uses the shared snapshot shell, header, header icon, metric strip when applicable, bright evidence/context body, and darker interpretation/action region from `analytics/components/_analysis_surfaces.html`. Domain layouts may differ, but they must not fork the geometry or surface contract.
-- Every lazy Overview section declares its tracked load state. The compact Overview progress strip reports completed or failed section requests and coexists with local skeletons and the filter-owned HTMX loading bar.
+- Every requested Overview section declares its tracked load state. The compact progress strip counts only sections actually requested; composite OOB targets are marked loaded by the Health Summary response. The tracker runtime lives in `app/static/js/analytics_overview.js`, not an inline script.
 - Snapshot section headers, actions, metric labels, status text, and empty-state titles use Title Case. Descriptive sentences and technical identifiers retain their natural casing.
 - Resource utilization progress bars must receive resolved class strings, clamp width to 0–100%, and update from the committed snapshot percentage. Do not pass nested Jinja expressions inside a quoted macro argument.
 - Top Consumers and Alerts & Anomalies Snapshot are always visible on the Overview page. They must not use `details`, chevrons, or expand/collapse state.
 - Storage Snapshot and Trend Summary end with concise operational tips using the shared `components/detail_tip.html` treatment.
-- Overview redesigns must preserve lazy-section HTMX endpoints, selected cluster/time-range state, and worker-first committed-snapshot boundaries.
+- Overview redesigns must preserve first-activation HTMX loading, selected cluster/time-range state, parameter-exact snapshot matching, and worker-first committed-snapshot boundaries.
 - Overview primary data, readiness, charts, metric grids, and side context panels use the bright `bg-surface-card` surface. `bg-surface-hover` is reserved for attention, interpretation, recommended-action, review-path, and execution-guidance strips through `analytics/components/_analysis_surfaces.html`.
 - Prometheus status and committed dataset metadata remain bright; dataset freshness exceptions appear as a distinct darker attention strip below them.
 - Pressure Posture and equivalent analytical context panels remain bright and use borders for separation.
 - Normalize all status tones through `table_label.semantic_tone(...)`. New presentation payloads use semantic tones; legacy color aliases are accepted only at the shared label boundary.
 - Analytics heroes use `page_hero.context_card(...)` or `context_card_body(...)` with exactly two metrics and one `Manage Clusters` action. Interpretation and attention messages belong below the hero in shared Analytics content surfaces.
 
-## Analytics overview Prometheus status flow
+## Analytics Overview runtime and evidence flow
 
-- The overview shell validates cluster selection and Prometheus configuration
-  only.
-- Live connection health is owned by the dedicated `prometheus-status` lazy
-  section.
-- Do not run a separate Prometheus health check before every lazy overview
-  section; this creates contradictory status and unnecessary load.
-- A transient failure in one analytics query must be rendered in that section
-  and must not replace unrelated sections with a page-level connection blocker.
+- The full-page request resolves cluster scope only. It does not read every
+  analytics dataset.
+- `health-summary` is the single composite owner. It reads Prometheus readiness
+  once, hydrates the seven committed datasets, builds snapshot coverage, health,
+  action summary, and prioritized recommendations, then updates Hero Posture,
+  Action Summary, and Recommendations through HTMX out-of-band swaps.
+- Utilization, Capacity, Workloads, Storage, Consumers, Forecast, and Alerts tabs
+  read their committed snapshot only on first tab activation. Hidden tabs must
+  never issue initial requests.
+- Overview snapshot freshness is parameter-exact. Capacity and Workload use the
+  selected `time_range`; Forecast uses its normalized `history_window`; Alerts
+  uses `source=auto`; cluster-scoped datasets match the selected `cluster_id`. A
+  snapshot for another parameter variant is not counted as current.
+- Domain snapshot adapters return `None` when committed evidence is unavailable.
+  The Overview presenter owns the Unknown/N/A state. Missing evidence must never
+  be projected as zero, Normal, Healthy, Low Risk, or No Alerts.
+- Cluster Health can be Healthy only when all expected datasets are current and
+  no known risk is present. Partial evidence produces Limited/Warning; absent
+  evidence produces Unknown.
 - Overview section endpoints are HTMX partial endpoints. Direct browser
-  navigation must redirect to the full Analytics Overview page.
-- Keep inline Prometheus status concise. Low-level connection exceptions must
-  not be rendered inside the status card.
+  navigation redirects to the full Analytics Overview page. Responses use
+  `Cache-Control: no-store` and vary on `HX-Request`.
 - A newly observed Prometheus failure emits one operator-facing toast and one
-  Activity Audit record per user session and failure fingerprint. Repeated lazy
-  refreshes of the same unresolved failure must not create notification noise.
-- Failure feedback uses normalized endpoint, category, and remediation context.
-  The card only directs the operator to the toast or Activity Audit Log for
-  details.
+  Activity Audit record per user session and failure fingerprint. Repeated
+  refreshes of the same unresolved failure do not create notification noise.
+- Drill-down links use the shared scoped-link helper so cluster/time-range
+  parameters are appended with `&` when a destination already has a query string.
+- Analytics Overview uses no web-process Redis/local result cache. Worker-owned
+  committed snapshots are the only data cache and evidence boundary.
 
 ## Analytics dependency-state presentation
 

@@ -1,10 +1,13 @@
 {% import "components/recommendation_pager.html" as recommendation_pager %}
 {% import "components/table_label.html" as table_label %}
 {% import "analytics/components/_analysis_surfaces.html" as overview_surface %}
+{% import "analytics/components/_scoped_link.html" as scoped_link %}
 {% set actionable_summary = payload.actionable_recommendations|default({}) %}
 {% set recommendations = payload.recommendations|default([]) %}
 {% set critical_count = actionable_summary.priority_summary.critical|default(0) %}
 {% set warning_count = actionable_summary.priority_summary.warning|default(0) %}
+{% set evidence_available = actionable_summary.evidence_available|default(false) %}
+{% set evidence_complete = actionable_summary.evidence_complete|default(false) %}
 <section data-analytics-overview-panel="recommendations" class="{{ overview_surface.snapshot_shell_classes() }}">
     <header class="{{ overview_surface.snapshot_header_classes() }}">
         <div class="flex min-w-0 items-start gap-3">
@@ -14,7 +17,7 @@
             <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                     <h2 class="text-base font-semibold text-content-primary">Prioritized Actions</h2>
-                    {{ table_label.metadata_label(recommendations|length ~ ' Recommendations', 'list-checks', size='compact') }}
+                    {{ table_label.metadata_label((recommendations|length ~ ' Recommendations') if evidence_available else 'Evidence Unavailable', 'list-checks', size='compact') }}
                 </div>
                 <p class="mt-1 text-xs leading-5 text-content-muted">Highest-priority actions from consolidated analytics evidence.</p>
             </div>
@@ -32,7 +35,7 @@
                     {% set source_key = recommendation.source|default('overview') %}
                     {% set source_label = recommendation.source_label|default(source_key|replace('_', ' ')|title) %}
                     {% set severity_tone = table_label.semantic_tone(recommendation.severity_tone or recommendation.severity)|trim %}
-                    <a href="{{ recommendation.href }}?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}"
+                    <a href="{{ scoped_link.href(recommendation.href, payload.selected_cluster_id, payload.selected_time_range) }}"
                        class="flex flex-col gap-3 px-4 py-4 transition hover:bg-surface-hover sm:px-5 lg:flex-row lg:items-center lg:justify-between"
                        data-kaori-recommendation-item
                        {% if loop.index > 3 %}hidden{% endif %}>
@@ -61,10 +64,11 @@
         </div>
     {% else %}
         <div class="p-5 sm:p-6">
-            {% set empty_state_icon = "lightbulb" %}
-            {% set empty_state_label = "No Data" %}
-            {% set empty_state_title = "No Prioritized Actions Available" %}
-            {% set empty_state_description = "KAORI will surface prioritized actions after analytics evidence is available." %}
+            {% set empty_state_icon = 'database-zap' if not evidence_available else ('triangle-alert' if not evidence_complete else 'circle-check-2') %}
+            {% set empty_state_label = 'Snapshot Unavailable' if not evidence_available else ('Evidence Limited' if not evidence_complete else 'No Action Required') %}
+            {% set empty_state_tone = 'unknown' if not evidence_available else ('warning' if not evidence_complete else 'normal') %}
+            {% set empty_state_title = 'Committed Evidence Is Not Available' if not evidence_available else ('No Prioritized Action In Available Evidence' if not evidence_complete else 'No Prioritized Action Required') %}
+            {% set empty_state_description = 'KAORI will surface prioritized actions after analytics worker snapshots are committed.' if not evidence_available else ('Available domains show no action, but missing or stale datasets must be refreshed before confirming a normal posture.' if not evidence_complete else 'All current analytics evidence shows no prioritized operational action.') %}
             {% set empty_state_variant = "panel" %}
             {% set empty_state_min_height = "min-h-[150px]" %}
             {% include 'components/states/_empty_state.html' %}

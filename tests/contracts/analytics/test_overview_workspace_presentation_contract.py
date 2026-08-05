@@ -72,7 +72,9 @@ def test_overview_workspace_splits_long_domains_into_dedicated_tabs() -> None:
         ('recommendations', 'Recommendations'),
     ):
         assert f"('{tab_id}', '{label}'" in source
-        assert f'id="overview-content-panel-{tab_id}"' in source
+
+    assert '{% for tab in overview_tabs %}' in source
+    assert 'id="overview-content-panel-{{ tab_id }}"' in source
 
     for old_label in (
         'Resource & Capacity',
@@ -275,20 +277,27 @@ def test_overview_loading_tracker_reports_real_lazy_section_progress() -> None:
     index = read('index.html')
     hero = read('partials/_hero.html')
     tracker = read('partials/_load_tracker.html')
+    oob = read('partials/_composite_tabs_oob.html')
+    runtime = Path('app/static/js/analytics_overview.js').read_text(encoding='utf-8')
     health = read('partials/_health_summary.html')
     loading_bar = Path('app/templates/components/loading_bar.html').read_text(encoding='utf-8')
     stylesheet = Path('frontend/styles.css').read_text(encoding='utf-8')
 
     assert 'analytics/overview/partials/_load_tracker.html' in index
-    assert index.count('data-overview-lazy-section="true"') == 10
-    assert 'data-overview-lazy-section="true"' in hero
-    assert 'data-overview-load-state="pending"' in index
-    assert 'data-overview-load-state="pending"' in hero
+    assert 'data-overview-lazy-section="true"' in index
+    assert 'data-overview-lazy-section="true"' not in hero
+    assert 'data-overview-load-state="idle"' in index
+    assert 'hx-trigger="load delay:150ms once"' in index
+    assert 'hx-trigger="kaori:analytics-tab-activated once"' in index
+    assert 'data-overview-composite-dependent="true"' in index
+    assert 'data-overview-load-state="loaded"' in oob
     assert 'data-overview-refresh-request="true"' in health
-    assert "document.body.addEventListener('htmx:beforeRequest'" in tracker
-    assert "document.body.addEventListener('htmx:afterSettle'" in tracker
-    assert "completed + '/' + total + ' Sections'" in tracker
-    assert "section.dataset.overviewLoadState = 'failed'" in tracker
+    assert '<script' not in tracker
+    assert "document.body.addEventListener('htmx:beforeRequest'" in runtime
+    assert "document.body.addEventListener('htmx:afterSettle'" in runtime
+    assert 'Requested Sections' in runtime
+    assert "section.dataset.overviewLoadState = 'failed'" in runtime
+    assert "filename='js/analytics_overview.js'" in index
     assert 'kaori-loading-bar-segment' in loading_bar
     assert '@keyframes kaori-loading-bar-indeterminate' in stylesheet
 

@@ -2,6 +2,10 @@
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
 {% import "analytics/components/_analysis_surfaces.html" as overview_surface %}
+{% import "analytics/components/_scoped_link.html" as scoped_link %}
+{% if not payload.resource_snapshot.available|default(false) %}
+    {{ overview_surface.snapshot_unavailable('utilization', 'Resource Utilization Snapshot', 'The Analytics worker has not committed utilization evidence for the selected cluster and time range.', icon='gauge') }}
+{% else %}
 {% set resources = [payload.resource_snapshot.cpu, payload.resource_snapshot.memory, payload.resource_snapshot.storage, payload.resource_snapshot.pods] %}
 {% set ranked_resources = resources|sort(attribute='percent', reverse=true) %}
 {% set highest = ranked_resources[0] %}
@@ -22,7 +26,7 @@
             </div>
         </div>
         {{ section_link_button.render(
-            '/analytics/utilization?cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range,
+            scoped_link.href('/analytics/utilization', payload.selected_cluster_id, payload.selected_time_range),
             'View Resource Utilization'
         ) }}
     </header>
@@ -166,3 +170,4 @@
         </div>
     </div>
 </section>
+{% endif %}

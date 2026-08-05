@@ -72,11 +72,14 @@ def test_snapshot_summary_reports_latest_committed_generation() -> None:
     from datetime import UTC, datetime, timedelta
     from types import SimpleNamespace
 
-    from app.analytics.overview import service
+    from app.analytics.overview.snapshot_summary import (
+        OVERVIEW_SNAPSHOT_DATASETS,
+        present_snapshot_summary,
+    )
 
     now = datetime(2026, 7, 27, 12, 0, tzinfo=UTC)
     snapshots = []
-    for index, dataset_key in enumerate(service.OVERVIEW_SNAPSHOT_DATASETS):
+    for index, dataset_key in enumerate(OVERVIEW_SNAPSHOT_DATASETS):
         generated_at = now - timedelta(minutes=20 - index)
         snapshots.append(
             SimpleNamespace(
@@ -90,7 +93,7 @@ def test_snapshot_summary_reports_latest_committed_generation() -> None:
             )
         )
 
-    summary = service._present_snapshot_summary(
+    summary = present_snapshot_summary(
         snapshots,
         time_range='24h',
         now=now,
@@ -108,7 +111,7 @@ def test_snapshot_summary_distinguishes_stale_and_pending_datasets() -> None:
     from datetime import UTC, datetime, timedelta
     from types import SimpleNamespace
 
-    from app.analytics.overview import service
+    from app.analytics.overview.snapshot_summary import present_snapshot_summary
 
     now = datetime(2026, 7, 27, 12, 0, tzinfo=UTC)
     snapshots = [
@@ -132,7 +135,7 @@ def test_snapshot_summary_distinguishes_stale_and_pending_datasets() -> None:
         ),
     ]
 
-    summary = service._present_snapshot_summary(
+    summary = present_snapshot_summary(
         snapshots,
         time_range='7d',
         now=now,

@@ -903,7 +903,7 @@ class CapacityService(AnalyticsBaseService):
 def get_capacity_snapshot(
     cluster_id: str,
     time_range: str = '24h',
-) -> dict[str, Any]:
+) -> dict[str, Any] | None:
     from app.analytics.materialization.service import read_snapshot
 
     result = read_snapshot(
@@ -914,7 +914,7 @@ def get_capacity_snapshot(
     context = result.context or {}
     capacity_summary = context.get('capacity_summary')
     if not isinstance(capacity_summary, dict):
-        return _empty_capacity_snapshot()
+        return None
     cpu_summary = _as_dict(capacity_summary.get('cpu', {}))
     memory_summary = _as_dict(capacity_summary.get('memory', {}))
     pods_summary = _as_dict(capacity_summary.get('pods', {}))
@@ -931,16 +931,6 @@ def get_capacity_snapshot(
         ),
     }
 
-def _empty_capacity_snapshot() -> dict[str, Any]:
-    return {
-        'cpu_headroom': 0,
-        'cpu_unit': 'Cores',
-        'memory_headroom': 0,
-        'memory_unit': 'GiB',
-        'pod_capacity_remaining': 0,
-        'pod_unit': 'Pods',
-        'recommendation_count': 0,
-    }
 
 
 def _safe_int(

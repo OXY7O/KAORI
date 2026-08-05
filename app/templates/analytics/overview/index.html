@@ -5,15 +5,15 @@
 {% block dashboard_content %}
     {% set overview_query = 'cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range %}
     {% set overview_tabs = [
-        ('utilization', 'Utilization', 'gauge'),
-        ('capacity', 'Capacity', 'server-cog'),
-        ('workloads', 'Workloads', 'boxes'),
-        ('storage', 'Storage', 'database'),
-        ('consumers', 'Consumers', 'chart-no-axes-column-increasing'),
-        ('forecast', 'Forecast', 'chart-spline'),
-        ('alerts', 'Alerts', 'bell-ring'),
-        ('action-summary', 'Action Summary', 'list-checks'),
-        ('recommendations', 'Recommendations', 'clipboard-check')
+        ('utilization', 'Utilization', 'gauge', 'resource-snapshot', 'overview-resource-snapshot', 'section'),
+        ('capacity', 'Capacity', 'server-cog', 'capacity-snapshot', 'overview-capacity-snapshot', 'section'),
+        ('workloads', 'Workloads', 'boxes', 'workload-snapshot', 'overview-workload-snapshot', 'section'),
+        ('storage', 'Storage', 'database', 'storage-snapshot', 'overview-storage-snapshot', 'section'),
+        ('consumers', 'Consumers', 'chart-no-axes-column-increasing', 'top-consumers', 'overview-top-consumers', 'section'),
+        ('forecast', 'Forecast', 'chart-spline', 'forecast-snapshot', 'overview-forecast-snapshot', 'section'),
+        ('alerts', 'Alerts', 'bell-ring', 'alerts-snapshot', 'overview-alerts-snapshot', 'section'),
+        ('action-summary', 'Action Summary', 'list-checks', '', 'overview-actionable-recommendations', 'composite'),
+        ('recommendations', 'Recommendations', 'clipboard-check', '', 'overview-recommendations', 'composite')
     ] %}
     <div id="analytics-overview-page" class="kaori-analytics-page space-y-6" data-analytics-page-request-tracking="false">
         {% include "analytics/overview/partials/_hero.html" %}
@@ -26,10 +26,10 @@
             <div id="overview-health-summary"
                  data-overview-lazy-section="true"
                  data-overview-section-label="Health Summary"
-                 data-overview-load-state="pending"
+                 data-overview-load-state="idle"
                  hx-target="this"
                  hx-get="{{ url_for('analytics.overview_section', section='health-summary') }}?{{ overview_query }}"
-                 hx-trigger="load delay:150ms"
+                 hx-trigger="load delay:150ms once"
                  hx-swap="innerHTML"
                  hx-sync="this:replace">{% include "analytics/overview/partials/_section_loading.html" %}</div>
 
@@ -47,7 +47,7 @@
                             </span>
                             <div class="min-w-0">
                                 <h2 class="text-lg font-semibold text-content-primary">Analytics Overview Workspace</h2>
-                                <p class="mt-1 text-sm leading-6 text-content-muted">Each operational domain has a dedicated tab so long content remains focused, informative, and compact.</p>
+                                <p class="mt-1 text-sm leading-6 text-content-muted">Open one operational domain at a time. KAORI loads its committed snapshot only when the tab is first activated.</p>
                             </div>
                         </div>
                         <div class="flex flex-wrap items-center gap-2">
@@ -60,185 +60,39 @@
                 {{ analytics_content_tabs.render('overview-content', overview_tabs, 'Analytics Overview Workspace', embedded=true) }}
 
                 <div class="p-4 sm:p-5">
-                    <div id="overview-content-panel-utilization"
-                         role="tabpanel"
-                         aria-labelledby="overview-content-tab-utilization"
-                         data-analytics-tab-panel="utilization"
-                         x-show="activeTab === 'utilization'"
-                         x-bind:hidden="activeTab !== 'utilization'"
-                         class="space-y-4">
-                        <div id="overview-resource-snapshot"
-                             data-overview-lazy-section="true"
-                             data-overview-section-label="Utilization"
-                             data-overview-load-state="pending"
-                             hx-target="this"
-                             hx-get="{{ url_for('analytics.overview_section', section='resource-snapshot') }}?{{ overview_query }}"
-                             hx-trigger="load delay:250ms"
-                             hx-swap="innerHTML"
-                             hx-sync="this:replace">{% include "analytics/overview/partials/_section_loading.html" %}</div>
-                    </div>
-
-                    <div id="overview-content-panel-capacity"
-                         role="tabpanel"
-                         aria-labelledby="overview-content-tab-capacity"
-                         data-analytics-tab-panel="capacity"
-                         x-show="activeTab === 'capacity'"
-                         x-bind:hidden="activeTab !== 'capacity'"
-                         hidden
-                         x-cloak
-                         class="space-y-4">
-                        <div id="overview-capacity-snapshot"
-                             data-overview-lazy-section="true"
-                             data-overview-section-label="Capacity"
-                             data-overview-load-state="pending"
-                             hx-target="this"
-                             hx-get="{{ url_for('analytics.overview_section', section='capacity-snapshot') }}?{{ overview_query }}"
-                             hx-trigger="load delay:300ms"
-                             hx-swap="innerHTML"
-                             hx-sync="this:replace">{% include "analytics/overview/partials/_section_loading.html" %}</div>
-                    </div>
-
-                    <div id="overview-content-panel-workloads"
-                         role="tabpanel"
-                         aria-labelledby="overview-content-tab-workloads"
-                         data-analytics-tab-panel="workloads"
-                         x-show="activeTab === 'workloads'"
-                         x-bind:hidden="activeTab !== 'workloads'"
-                         hidden
-                         x-cloak
-                         class="space-y-4">
-                        <div id="overview-workload-snapshot"
-                             data-overview-lazy-section="true"
-                             data-overview-section-label="Workloads"
-                             data-overview-load-state="pending"
-                             hx-target="this"
-                             hx-get="{{ url_for('analytics.overview_section', section='workload-snapshot') }}?{{ overview_query }}"
-                             hx-trigger="load delay:350ms"
-                             hx-swap="innerHTML"
-                             hx-sync="this:replace">{% include "analytics/overview/partials/_section_loading.html" %}</div>
-                    </div>
-
-                    <div id="overview-content-panel-storage"
-                         role="tabpanel"
-                         aria-labelledby="overview-content-tab-storage"
-                         data-analytics-tab-panel="storage"
-                         x-show="activeTab === 'storage'"
-                         x-bind:hidden="activeTab !== 'storage'"
-                         hidden
-                         x-cloak
-                         class="space-y-4">
-                        <div id="overview-storage-snapshot"
-                             data-overview-lazy-section="true"
-                             data-overview-section-label="Storage"
-                             data-overview-load-state="pending"
-                             hx-target="this"
-                             hx-get="{{ url_for('analytics.overview_section', section='storage-snapshot') }}?{{ overview_query }}"
-                             hx-trigger="load delay:400ms"
-                             hx-swap="innerHTML"
-                             hx-sync="this:replace">{% include "analytics/overview/partials/_section_loading.html" %}</div>
-                    </div>
-
-                    <div id="overview-content-panel-consumers"
-                         role="tabpanel"
-                         aria-labelledby="overview-content-tab-consumers"
-                         data-analytics-tab-panel="consumers"
-                         x-show="activeTab === 'consumers'"
-                         x-bind:hidden="activeTab !== 'consumers'"
-                         hidden
-                         x-cloak
-                         class="space-y-4">
-                        <div id="overview-top-consumers"
-                             data-overview-lazy-section="true"
-                             data-overview-section-label="Consumers"
-                             data-overview-load-state="pending"
-                             hx-target="this"
-                             hx-get="{{ url_for('analytics.overview_section', section='top-consumers') }}?{{ overview_query }}"
-                             hx-trigger="load delay:450ms"
-                             hx-swap="innerHTML"
-                             hx-sync="this:replace">{% include "analytics/overview/partials/_section_loading.html" %}</div>
-                    </div>
-
-                    <div id="overview-content-panel-forecast"
-                         role="tabpanel"
-                         aria-labelledby="overview-content-tab-forecast"
-                         data-analytics-tab-panel="forecast"
-                         x-show="activeTab === 'forecast'"
-                         x-bind:hidden="activeTab !== 'forecast'"
-                         hidden
-                         x-cloak
-                         class="space-y-4">
-                        <div id="overview-forecast-snapshot"
-                             data-overview-lazy-section="true"
-                             data-overview-section-label="Forecast"
-                             data-overview-load-state="pending"
-                             hx-target="this"
-                             hx-get="{{ url_for('analytics.overview_section', section='forecast-snapshot') }}?{{ overview_query }}"
-                             hx-trigger="load delay:500ms"
-                             hx-swap="innerHTML"
-                             hx-sync="this:replace">{% include "analytics/overview/partials/_section_loading.html" %}</div>
-                    </div>
-
-                    <div id="overview-content-panel-alerts"
-                         role="tabpanel"
-                         aria-labelledby="overview-content-tab-alerts"
-                         data-analytics-tab-panel="alerts"
-                         x-show="activeTab === 'alerts'"
-                         x-bind:hidden="activeTab !== 'alerts'"
-                         hidden
-                         x-cloak
-                         class="space-y-4">
-                        <div id="overview-alerts-snapshot"
-                             data-overview-lazy-section="true"
-                             data-overview-section-label="Alerts"
-                             data-overview-load-state="pending"
-                             hx-target="this"
-                             hx-get="{{ url_for('analytics.overview_section', section='alerts-snapshot') }}?{{ overview_query }}"
-                             hx-trigger="load delay:550ms"
-                             hx-swap="innerHTML"
-                             hx-sync="this:replace">{% include "analytics/overview/partials/_section_loading.html" %}</div>
-                    </div>
-
-                    <div id="overview-content-panel-action-summary"
-                         role="tabpanel"
-                         aria-labelledby="overview-content-tab-action-summary"
-                         data-analytics-tab-panel="action-summary"
-                         x-show="activeTab === 'action-summary'"
-                         x-bind:hidden="activeTab !== 'action-summary'"
-                         hidden
-                         x-cloak
-                         class="space-y-4">
-                        <div id="overview-actionable-recommendations"
-                             data-overview-lazy-section="true"
-                             data-overview-section-label="Action Summary"
-                             data-overview-load-state="pending"
-                             hx-target="this"
-                             hx-get="{{ url_for('analytics.overview_section', section='actionable-recommendations') }}?{{ overview_query }}"
-                             hx-trigger="load delay:600ms"
-                             hx-swap="innerHTML"
-                             hx-sync="this:replace">{% include "analytics/overview/partials/_section_loading.html" %}</div>
-                    </div>
-
-                    <div id="overview-content-panel-recommendations"
-                         role="tabpanel"
-                         aria-labelledby="overview-content-tab-recommendations"
-                         data-analytics-tab-panel="recommendations"
-                         x-show="activeTab === 'recommendations'"
-                         x-bind:hidden="activeTab !== 'recommendations'"
-                         hidden
-                         x-cloak
-                         class="space-y-4">
-                        <div id="overview-recommendations"
-                             data-overview-lazy-section="true"
-                             data-overview-section-label="Recommendations"
-                             data-overview-load-state="pending"
-                             hx-target="this"
-                             hx-get="{{ url_for('analytics.overview_section', section='recommendations') }}?{{ overview_query }}"
-                             hx-trigger="load delay:650ms"
-                             hx-swap="innerHTML"
-                             hx-sync="this:replace">{% include "analytics/overview/partials/_section_loading.html" %}</div>
-                    </div>
+                    {% for tab in overview_tabs %}
+                        {% set tab_id = tab[0] %}
+                        {% set section = tab[3] %}
+                        {% set target_id = tab[4] %}
+                        {% set load_mode = tab[5] %}
+                        <div id="overview-content-panel-{{ tab_id }}"
+                             role="tabpanel"
+                             aria-labelledby="overview-content-tab-{{ tab_id }}"
+                             data-analytics-tab-panel="{{ tab_id }}"
+                             x-show="activeTab === '{{ tab_id }}'"
+                             x-bind:hidden="activeTab !== '{{ tab_id }}'"
+                             {% if not loop.first %}hidden x-cloak{% endif %}
+                             class="space-y-4">
+                            <div id="{{ target_id }}"
+                                 data-overview-lazy-section="true"
+                                 data-overview-section-label="{{ tab[1] }}"
+                                 data-overview-load-state="idle"
+                                 {% if load_mode == 'section' %}
+                                     hx-target="this"
+                                     hx-get="{{ url_for('analytics.overview_section', section=section) }}?{{ overview_query }}"
+                                     hx-trigger="kaori:analytics-tab-activated once"
+                                     hx-swap="innerHTML"
+                                     hx-sync="this:replace"
+                                 {% else %}
+                                     data-overview-composite-dependent="true"
+                                 {% endif %}>{% include "analytics/overview/partials/_section_loading.html" %}</div>
+                        </div>
+                    {% endfor %}
                 </div>
             </section>
         {% endif %}
     </div>
 {% endblock dashboard_content %}
+{% block scripts %}
+    <script src="{{ url_for('static', filename='js/analytics_overview.js') }}"></script>
+{% endblock scripts %}

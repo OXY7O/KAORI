@@ -1141,7 +1141,7 @@ def get_prometheus_status_snapshot(
 def get_utilization_snapshot(
     cluster_id: str,
     time_range: str = '24h',
-) -> dict[str, float]:
+) -> dict[str, float] | None:
     _ = time_range
     from app.analytics.materialization.service import read_snapshot
 
@@ -1152,7 +1152,7 @@ def get_utilization_snapshot(
     )
     summary = (result.context or {}).get('summary') if result.available else None
     if not isinstance(summary, dict):
-        return _empty_utilization_snapshot()
+        return None
     return {
         'cpu_percent': _safe_float(summary.get('cpu_utilization', 0)),
         'memory_percent': _safe_float(summary.get('memory_utilization', 0)),
@@ -1160,13 +1160,6 @@ def get_utilization_snapshot(
         'pod_percent': _safe_float(summary.get('pod_utilization', 0)),
     }
 
-def _empty_utilization_snapshot() -> dict[str, float]:
-    return {
-        'cpu_percent': 0.0,
-        'memory_percent': 0.0,
-        'storage_percent': 0.0,
-        'pod_percent': 0.0,
-    }
 
 
 def _build_utilization_service(

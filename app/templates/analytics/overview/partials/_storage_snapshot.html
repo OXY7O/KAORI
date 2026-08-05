@@ -2,6 +2,10 @@
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
 {% import "analytics/components/_analysis_surfaces.html" as overview_surface %}
+{% import "analytics/components/_scoped_link.html" as scoped_link %}
+{% if not payload.storage_snapshot.available|default(false) %}
+    {{ overview_surface.snapshot_unavailable('storage', 'Persistent Storage Snapshot', 'The Analytics worker has not committed storage evidence for the selected cluster.', icon='database') }}
+{% else %}
 {% set storage = payload.storage_snapshot %}
 {% set storage_tone = table_label.semantic_tone(storage.tone or storage.status)|trim %}
 {% set used_percent = storage.used_percent|default(0)|float %}
@@ -21,7 +25,7 @@
             </div>
         </div>
         {{ section_link_button.render(
-            storage.href ~ '?cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range,
+            scoped_link.href(storage.href, payload.selected_cluster_id, payload.selected_time_range),
             'View Storage Analysis'
         ) }}
     </header>
@@ -149,3 +153,4 @@
     </div>
 
 </section>
+{% endif %}

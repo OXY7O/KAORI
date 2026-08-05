@@ -1,19 +1,26 @@
 from __future__ import annotations
 
-from copy import deepcopy
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Any, SupportsFloat, SupportsIndex
 
 from flask import current_app, has_app_context
 from sqlalchemy import select
 
-from app.analytics.common.presentation import present_prometheus_status
 from app.analytics.common.coercion import as_dict as _as_dict
+from app.analytics.common.presentation import present_prometheus_status
+from app.analytics.overview.health import build_health_summary
 from app.analytics.overview.schema import (
     build_empty_overview_payload,
     classify_count_risk,
     classify_percent,
 )
+from app.analytics.overview.snapshot_summary import (
+    OVERVIEW_SNAPSHOT_DATASETS,
+    overview_snapshot_parameters,
+    present_snapshot_summary,
+)
+from app.analytics.overview.sections import get_overview_section
 from app.extensions.db import db
 from app.intelligence.recommendation_engine import (
     build_operational_recommendations,
@@ -26,25 +33,108 @@ from app.models.cluster import Cluster
 FloatLike = str | bytes | SupportsFloat | SupportsIndex
 
 
-OVERVIEW_SNAPSHOT_DATASETS: dict[str, str] = {
-    'analytics.utilization.summary': 'Utilization Summary',
-    'analytics.capacity': 'Capacity Analysis',
-    'analytics.storage': 'Storage Analysis',
-    'analytics.workload': 'Workload Analysis',
-    'analytics.top_consumers': 'Top Consumers',
-    'analytics.forecast': 'Resource Forecast',
-    'analytics.alerts': 'Alerts and Anomalies',
-}
+@dataclass(frozen=True, slots=True)
+class ActionableDomain:
+    key: str
+    evidence_key: str
+    label: str
+    href: str
+    source_description: str
+    aggregate_title: str = ''
+    aggregate_noun: str = ''
+    aggregate_guidance: str = ''
+    icon: str = ''
+    critical_threshold: int = 5
 
-ANALYTICS_TIME_RANGE_LABELS: dict[str, str] = {
-    '1h': 'Last 1 Hour',
-    '6h': 'Last 6 Hours',
-    '12h': 'Last 12 Hours',
-    '24h': 'Last 24 Hours',
-    '7d': 'Last 7 Days',
-    '30d': 'Last 30 Days',
-    '60d': 'Last 60 Days',
-}
+    @property
+    def has_aggregate_item(self) -> bool:
+        return bool(self.aggregate_title)
+
+
+ACTIONABLE_DOMAINS: tuple[ActionableDomain, ...] = (
+    ActionableDomain(
+        key='capacity',
+        evidence_key='capacity',
+        label='Capacity',
+        href='/analytics/capacity',
+        source_description='Based on capacity headroom and governance findings.',
+        aggregate_title='Review Capacity Actionable Findings',
+        aggregate_noun='capacity',
+        aggregate_guidance='Open Capacity Analysis to inspect headroom, allocation, and governance findings.',
+        icon='bar-chart-3',
+    ),
+    ActionableDomain(
+        key='utilization',
+        evidence_key='resource',
+        label='Utilization',
+        href='/analytics/utilization',
+        source_description='Based on utilization pressure and top consumer signals.',
+    ),
+    ActionableDomain(
+        key='storage',
+        evidence_key='storage',
+        label='Storage',
+        href='/analytics/storage',
+        source_description='Based on filesystem, PVC, PV, and storage risk signals.',
+        aggregate_title='Review Storage Actionable Findings',
+        aggregate_noun='storage',
+        aggregate_guidance='Open Storage Analysis to inspect filesystem, PVC, PV, and expansion risks.',
+        icon='database',
+    ),
+    ActionableDomain(
+        key='workload',
+        evidence_key='workload',
+        label='Workload',
+        href='/analytics/workload',
+        source_description='Based on quota, request, limit, QoS, and right-sizing signals.',
+        aggregate_title='Review Workload Governance Findings',
+        aggregate_noun='workload governance',
+        aggregate_guidance=(
+            'Open Workload Analysis to inspect quota, requests, limits, QoS, and right-sizing signals.'
+        ),
+        icon='boxes',
+        critical_threshold=10,
+    ),
+    ActionableDomain(
+        key='forecast',
+        evidence_key='forecast',
+        label='Forecast',
+        href='/analytics/forecast',
+        source_description='Based on forecasted growth and projected threshold breaches.',
+        aggregate_title='Review Forecast Capacity Findings',
+        aggregate_noun='forecast',
+        aggregate_guidance=(
+            'Open Resource Forecast to inspect projected threshold breaches and growth trends.'
+        ),
+        icon='line-chart',
+        critical_threshold=3,
+    ),
+    ActionableDomain(
+        key='top_consumers',
+        evidence_key='top_consumers',
+        label='Top Consumers',
+        href='/analytics/top-consumers',
+        source_description='Based on CPU, memory, pod, PVC, and namespace hotspot signals.',
+        aggregate_title='Review Top Consumer Hotspot Findings',
+        aggregate_noun='top consumer',
+        aggregate_guidance='Open Top Consumers to inspect CPU, memory, pod, and PVC hotspots.',
+        icon='list-ordered',
+    ),
+    ActionableDomain(
+        key='alerts',
+        evidence_key='alerts',
+        label='Alerts & Anomalies',
+        href='/analytics/alerts?tab=alerts',
+        source_description='Based on active alerts, source health, and anomaly candidates.',
+        aggregate_title='Review Alert and Anomaly Findings',
+        aggregate_noun='alert/anomaly',
+        aggregate_guidance=(
+            'Open Alerts & Anomalies to inspect active alerts, source health, and anomaly candidates.'
+        ),
+        icon='bell',
+    ),
+)
+
 
 
 def get_analytics_overview(
@@ -86,54 +176,46 @@ def _hydrate_overview_snapshot_sections(
     cluster_id: str,
     time_range: str,
 ) -> dict[str, Any]:
-    payload['prometheus'] = _read_committed_snapshot(
-        key=f'overview:prometheus:{cluster_id}',
-        ttl_seconds=30,
-        loader=lambda: _get_prometheus_status(cluster_id=cluster_id),
+    payload['prometheus'] = _get_prometheus_status(cluster_id=cluster_id)
+    payload['resource_snapshot'] = _get_resource_snapshot(
+        cluster_id=cluster_id,
+        time_range=time_range,
     )
-    payload['resource_snapshot'] = _read_committed_snapshot(
-        key=f'overview:resource:{cluster_id}:{time_range}',
-        ttl_seconds=45,
-        loader=lambda: _get_resource_snapshot(cluster_id=cluster_id, time_range=time_range),
+    payload['capacity_snapshot'] = _get_capacity_snapshot(
+        cluster_id=cluster_id,
+        time_range=time_range,
     )
-    payload['capacity_snapshot'] = _read_committed_snapshot(
-        key=f'overview:capacity:{cluster_id}:{time_range}',
-        ttl_seconds=60,
-        loader=lambda: _get_capacity_snapshot(cluster_id=cluster_id, time_range=time_range),
+    payload['storage_snapshot'] = _get_storage_snapshot(cluster_id=cluster_id)
+    payload['workload_snapshot'] = _get_workload_snapshot(
+        cluster_id=cluster_id,
+        time_range=time_range,
     )
-    payload['storage_snapshot'] = _read_committed_snapshot(
-        key=f'overview:storage:{cluster_id}',
-        ttl_seconds=60,
-        loader=lambda: _get_storage_snapshot(cluster_id=cluster_id),
+    payload['top_consumers'] = _get_top_consumers_snapshot(
+        cluster_id=cluster_id,
+        time_range=time_range,
     )
-    payload['workload_snapshot'] = _read_committed_snapshot(
-        key=f'overview:workload:{cluster_id}',
-        ttl_seconds=60,
-        loader=lambda: _get_workload_snapshot(cluster_id=cluster_id),
+    payload['forecast_snapshot'] = _get_forecast_snapshot(
+        cluster_id=cluster_id,
+        time_range=time_range,
     )
-    payload['top_consumers'] = _read_committed_snapshot(
-        key=f'overview:top-consumers:{cluster_id}:{time_range}',
-        ttl_seconds=60,
-        loader=lambda: _get_top_consumers_snapshot(cluster_id=cluster_id, time_range=time_range),
-    )
-    payload['forecast_snapshot'] = _read_committed_snapshot(
-        key=f'overview:forecast:{cluster_id}:{time_range}',
-        ttl_seconds=300,
-        loader=lambda: _get_forecast_snapshot(cluster_id=cluster_id, time_range=time_range),
-    )
-    payload['alerts_snapshot'] = _read_committed_snapshot(
-        key=f'overview:alerts:{cluster_id}',
-        ttl_seconds=20,
-        loader=lambda: _get_alerts_snapshot(cluster_id=cluster_id),
-    )
-    payload['health_summary'] = _build_health_summary(payload)
-    payload['actionable_recommendations'] = _build_actionable_recommendation_overview(payload)
-    payload['actionable_recommendation_count'] = payload['actionable_recommendations']['total_count']
-    payload['recommendations'] = build_operational_recommendations(payload)
+    payload['alerts_snapshot'] = _get_alerts_snapshot(cluster_id=cluster_id)
     payload['snapshot_summary'] = _get_snapshot_summary(
         cluster_id=cluster_id,
         time_range=time_range,
     )
+    payload['health_summary'] = build_health_summary(payload)
+    payload['actionable_recommendations'] = _build_actionable_recommendation_overview(payload)
+    payload['actionable_recommendation_count'] = payload['actionable_recommendations']['total_count']
+    evidence_complete = bool(payload['actionable_recommendations'].get('evidence_complete', False))
+    has_actionable_findings = payload['actionable_recommendation_count'] > 0
+    if evidence_complete or has_actionable_findings:
+        payload['recommendations'] = [
+            recommendation
+            for recommendation in build_operational_recommendations(payload)
+            if bool(recommendation.get('is_actionable', False))
+        ]
+    else:
+        payload['recommendations'] = []
 
     return payload
 
@@ -144,6 +226,10 @@ def get_analytics_overview_section(
     selected_cluster_id: str | None,
     time_range: str = '24h',
 ) -> dict[str, Any]:
+    section_definition = get_overview_section(section)
+    if section_definition is None:
+        raise LookupError(f'Unknown Analytics Overview section: {section}')
+
     payload = get_analytics_overview(
         selected_cluster_id=selected_cluster_id,
         time_range=time_range,
@@ -152,29 +238,30 @@ def get_analytics_overview_section(
 
     cluster_id = str(payload['selected_cluster_id'])
     selected_time_range = str(payload['selected_time_range'])
+    hydration = section_definition.hydration
 
-    if section == 'prometheus-status':
-        _hydrate_prometheus_section(payload, cluster_id)
-    elif section == 'resource-snapshot':
+    if hydration == 'resource':
         _hydrate_resource_section(payload, cluster_id, selected_time_range)
-    elif section == 'capacity-snapshot':
+    elif hydration == 'capacity':
         _hydrate_capacity_section(payload, cluster_id, selected_time_range)
-    elif section == 'storage-snapshot':
+    elif hydration == 'storage':
         _hydrate_storage_section(payload, cluster_id)
-    elif section == 'workload-snapshot':
-        _hydrate_workload_section(payload, cluster_id)
-    elif section == 'top-consumers':
+    elif hydration == 'workload':
+        _hydrate_workload_section(payload, cluster_id, selected_time_range)
+    elif hydration == 'top-consumers':
         _hydrate_top_consumers_section(payload, cluster_id, selected_time_range)
-    elif section == 'forecast-snapshot':
+    elif hydration == 'forecast':
         _hydrate_forecast_section(payload, cluster_id, selected_time_range)
-    elif section == 'alerts-snapshot':
+    elif hydration == 'alerts':
         _hydrate_alerts_section(payload, cluster_id)
-    else:
+    elif hydration == 'composite':
         _hydrate_overview_snapshot_sections(
             payload=payload,
             cluster_id=cluster_id,
             time_range=selected_time_range,
         )
+    else:
+        raise RuntimeError(f'Unsupported Analytics Overview hydration owner: {hydration}')
 
     payload['loaded_section'] = section
     payload['last_analyzed_at'] = _utc_now_display()
@@ -182,78 +269,64 @@ def get_analytics_overview_section(
     return payload
 
 
-def _hydrate_prometheus_section(payload: dict[str, Any], cluster_id: str) -> None:
-    payload['prometheus'] = _read_committed_snapshot(
-        key=f'overview:prometheus:{cluster_id}',
-        ttl_seconds=30,
-        loader=lambda: _get_prometheus_status(cluster_id=cluster_id),
-    )
-
-
 def _hydrate_resource_section(payload: dict[str, Any], cluster_id: str, time_range: str) -> None:
-    payload['prometheus'] = _read_committed_snapshot(
-        key=f'overview:prometheus:{cluster_id}',
-        ttl_seconds=30,
-        loader=lambda: _get_prometheus_status(cluster_id=cluster_id),
-    )
-    payload['resource_snapshot'] = _read_committed_snapshot(
-        key=f'overview:resource:{cluster_id}:{time_range}',
-        ttl_seconds=45,
-        loader=lambda: _get_resource_snapshot(cluster_id=cluster_id, time_range=time_range),
+    payload['resource_snapshot'] = _get_resource_snapshot(
+        cluster_id=cluster_id,
+        time_range=time_range,
     )
 
 
 def _hydrate_capacity_section(payload: dict[str, Any], cluster_id: str, time_range: str) -> None:
-    payload['capacity_snapshot'] = _read_committed_snapshot(
-        key=f'overview:capacity:{cluster_id}:{time_range}',
-        ttl_seconds=60,
-        loader=lambda: _get_capacity_snapshot(cluster_id=cluster_id, time_range=time_range),
+    payload['capacity_snapshot'] = _get_capacity_snapshot(
+        cluster_id=cluster_id,
+        time_range=time_range,
     )
 
 
 def _hydrate_storage_section(payload: dict[str, Any], cluster_id: str) -> None:
-    payload['storage_snapshot'] = _read_committed_snapshot(
-        key=f'overview:storage:{cluster_id}',
-        ttl_seconds=60,
-        loader=lambda: _get_storage_snapshot(cluster_id=cluster_id),
-    )
+    payload['storage_snapshot'] = _get_storage_snapshot(cluster_id=cluster_id)
 
 
-def _hydrate_workload_section(payload: dict[str, Any], cluster_id: str) -> None:
-    payload['workload_snapshot'] = _read_committed_snapshot(
-        key=f'overview:workload:{cluster_id}',
-        ttl_seconds=60,
-        loader=lambda: _get_workload_snapshot(cluster_id=cluster_id),
+def _hydrate_workload_section(
+    payload: dict[str, Any],
+    cluster_id: str,
+    time_range: str,
+) -> None:
+    payload['workload_snapshot'] = _get_workload_snapshot(
+        cluster_id=cluster_id,
+        time_range=time_range,
     )
 
 
 def _hydrate_top_consumers_section(payload: dict[str, Any], cluster_id: str, time_range: str) -> None:
-    payload['top_consumers'] = _read_committed_snapshot(
-        key=f'overview:top-consumers:{cluster_id}:{time_range}',
-        ttl_seconds=60,
-        loader=lambda: _get_top_consumers_snapshot(cluster_id=cluster_id, time_range=time_range),
+    payload['top_consumers'] = _get_top_consumers_snapshot(
+        cluster_id=cluster_id,
+        time_range=time_range,
     )
 
 
 def _hydrate_forecast_section(payload: dict[str, Any], cluster_id: str, time_range: str) -> None:
-    payload['forecast_snapshot'] = _read_committed_snapshot(
-        key=f'overview:forecast:{cluster_id}:{time_range}',
-        ttl_seconds=300,
-        loader=lambda: _get_forecast_snapshot(cluster_id=cluster_id, time_range=time_range),
+    payload['forecast_snapshot'] = _get_forecast_snapshot(
+        cluster_id=cluster_id,
+        time_range=time_range,
     )
 
 
 def _hydrate_alerts_section(payload: dict[str, Any], cluster_id: str) -> None:
-    payload['alerts_snapshot'] = _read_committed_snapshot(
-        key=f'overview:alerts:{cluster_id}',
-        ttl_seconds=20,
-        loader=lambda: _get_alerts_snapshot(cluster_id=cluster_id),
-    )
+    payload['alerts_snapshot'] = _get_alerts_snapshot(cluster_id=cluster_id)
 
 
 def _get_snapshot_summary(*, cluster_id: str, time_range: str) -> dict[str, Any]:
+    expected_parameters = overview_snapshot_parameters(
+        cluster_id=cluster_id,
+        time_range=time_range,
+    )
     if not cluster_id:
-        return _present_snapshot_summary([], time_range=time_range)
+        return present_snapshot_summary(
+            [],
+            time_range=time_range,
+            expected_parameters=expected_parameters,
+        )
 
     try:
         snapshots = db.session.scalars(
@@ -265,151 +338,12 @@ def _get_snapshot_summary(*, cluster_id: str, time_range: str) -> dict[str, Any]
     except Exception:
         snapshots = []
 
-    return _present_snapshot_summary(snapshots, time_range=time_range)
-
-
-def _present_snapshot_summary(
-    snapshots: list[Any],
-    *,
-    time_range: str,
-    now: datetime | None = None,
-) -> dict[str, Any]:
-    current_time = _normalize_datetime(now or datetime.now(UTC))
-    latest_by_dataset: dict[str, Any] = {}
-
-    for snapshot in snapshots:
-        dataset_key = str(getattr(snapshot, 'dataset_key', '') or '')
-        if dataset_key not in OVERVIEW_SNAPSHOT_DATASETS:
-            continue
-        previous = latest_by_dataset.get(dataset_key)
-        if previous is None or _snapshot_sort_value(snapshot) > _snapshot_sort_value(previous):
-            latest_by_dataset[dataset_key] = snapshot
-
-    expected_count = len(OVERVIEW_SNAPSHOT_DATASETS)
-    current_count = 0
-    available_count = 0
-    stale_count = 0
-    pending_count = 0
-    failed_count = 0
-
-    for snapshot in latest_by_dataset.values():
-        status = str(getattr(snapshot, 'status', '') or '').lower()
-        expires_at = _normalize_datetime(getattr(snapshot, 'expires_at', None))
-        is_stale = status == 'ready' and expires_at is not None and expires_at <= current_time
-
-        if status == 'ready':
-            available_count += 1
-            if is_stale:
-                stale_count += 1
-            else:
-                current_count += 1
-        elif status == 'pending':
-            pending_count += 1
-        elif status == 'failed':
-            failed_count += 1
-
-    generated_snapshots = [
-        snapshot
-        for snapshot in latest_by_dataset.values()
-        if getattr(snapshot, 'generated_at', None) is not None
-    ]
-    latest_snapshot = max(generated_snapshots, key=_snapshot_sort_value, default=None)
-    attempt_snapshots = [
-        snapshot
-        for snapshot in latest_by_dataset.values()
-        if getattr(snapshot, 'last_attempt_at', None) is not None
-    ]
-    latest_attempt = max(
-        attempt_snapshots,
-        key=lambda item: (
-            _normalize_datetime(getattr(item, 'last_attempt_at', None))
-            or datetime.min.replace(tzinfo=UTC)
-        ),
-        default=None,
+    return present_snapshot_summary(
+        snapshots,
+        time_range=time_range,
+        expected_parameters=expected_parameters,
     )
 
-    if pending_count:
-        status_label = 'Refresh In Progress'
-        tone = 'info'
-        description = 'One or more analytics datasets are currently being materialized by the worker.'
-    elif current_count == expected_count:
-        status_label = 'Current'
-        tone = 'normal'
-        description = 'All Analytics Overview datasets are available within their configured freshness windows.'
-    elif current_count > 0:
-        status_label = 'Partially Current'
-        tone = 'warning'
-        description = 'Current snapshot data is available, but one or more analytics domains still need refresh.'
-    elif stale_count > 0:
-        status_label = 'Stale'
-        tone = 'warning'
-        description = 'Only expired snapshot data is currently available for this cluster.'
-    elif failed_count > 0:
-        status_label = 'Failed'
-        tone = 'critical'
-        description = 'The latest materialization attempt failed before producing current analytics data.'
-    else:
-        status_label = 'Unavailable'
-        tone = 'unknown'
-        description = 'No committed Analytics Overview snapshot is available for this cluster.'
-
-    latest_generated_at = _format_snapshot_datetime(
-        getattr(latest_snapshot, 'generated_at', None) if latest_snapshot else None
-    )
-    latest_attempt_at = _format_snapshot_datetime(
-        getattr(latest_attempt, 'last_attempt_at', None) if latest_attempt else None
-    )
-    latest_dataset_key = str(getattr(latest_snapshot, 'dataset_key', '') or '') if latest_snapshot else ''
-
-    return {
-        'status': status_label,
-        'tone': tone,
-        'description': description,
-        'latest_generated_at': latest_generated_at,
-        'latest_attempt_at': latest_attempt_at,
-        'latest_dataset': OVERVIEW_SNAPSHOT_DATASETS.get(latest_dataset_key, 'No Snapshot'),
-        'current_dataset_count': current_count,
-        'available_dataset_count': available_count,
-        'expected_dataset_count': expected_count,
-        'stale_dataset_count': stale_count,
-        'pending_dataset_count': pending_count,
-        'failed_dataset_count': failed_count,
-        'analysis_window': ANALYTICS_TIME_RANGE_LABELS.get(time_range, time_range or 'Default'),
-    }
-
-
-def _snapshot_sort_value(snapshot: Any) -> datetime:
-    for attribute in ('generated_at', 'updated_at', 'last_attempt_at', 'created_at'):
-        value = _normalize_datetime(getattr(snapshot, attribute, None))
-        if value is not None:
-            return value
-    return datetime.min.replace(tzinfo=UTC)
-
-
-def _normalize_datetime(value: datetime | None) -> datetime | None:
-    if value is None:
-        return None
-    if value.tzinfo is None:
-        return value.replace(tzinfo=UTC)
-    return value.astimezone(UTC)
-
-
-def _format_snapshot_datetime(value: datetime | None) -> str:
-    normalized = _normalize_datetime(value)
-    if normalized is None:
-        return 'Not Available'
-    return normalized.strftime('%Y-%m-%d %H:%M UTC')
-
-
-def _read_committed_snapshot(
-    *,
-    key: str,
-    ttl_seconds: int,
-    loader: Any,
-) -> dict[str, Any]:
-    """Read the latest committed worker generation without a web-cache TTL."""
-    del key, ttl_seconds
-    return loader()
 
 
 def _utc_now_display() -> str:
@@ -560,6 +494,7 @@ def _get_resource_snapshot(*, cluster_id: str, time_range: str) -> dict[str, Any
     pod_percent = _pick_number(raw, ['pod_percent', 'pod_usage_percent', 'pod_utilization'])
 
     return {
+        'available': True,
         'cpu': _resource_card(
             label='CPU Utilization',
             value=cpu_percent,
@@ -599,7 +534,20 @@ def _resource_card(
     description: str,
     href: str,
 ) -> dict[str, Any]:
-    percent = int(round(float(value or 0)))
+    if value is None:
+        return {
+            'label': label,
+            'value': 'N/A',
+            'unit': '%',
+            'status': 'Unknown',
+            'tone': 'gray',
+            'icon': icon,
+            'description': f'{description} This metric is not present in the committed dataset.',
+            'href': href,
+            'percent': None,
+        }
+
+    percent = max(0, min(100, int(round(float(value)))))
     meta = classify_percent(percent)
 
     return {
@@ -639,23 +587,28 @@ def _get_capacity_snapshot(*, cluster_id: str, time_range: str) -> dict[str, Any
     )
 
     return {
+        'available': True,
         'cpu_headroom': {
             **default['cpu_headroom'],
-            'value': raw.get('cpu_headroom') or raw.get('cpu_available') or '-',
+            'value': raw.get('cpu_headroom') if raw.get('cpu_headroom') is not None else raw.get('cpu_available', '-'),
             'unit': raw.get('cpu_unit', 'Cores'),
             'status': 'Available',
             'tone': 'blue',
         },
         'memory_headroom': {
             **default['memory_headroom'],
-            'value': raw.get('memory_headroom') or raw.get('memory_available') or '-',
+            'value': raw.get('memory_headroom') if raw.get('memory_headroom') is not None else raw.get('memory_available', '-'),
             'unit': raw.get('memory_unit', 'GiB'),
             'status': 'Available',
             'tone': 'blue',
         },
         'pod_capacity_remaining': {
             **default['pod_capacity_remaining'],
-            'value': raw.get('pod_capacity_remaining') or raw.get('pods_available') or '-',
+            'value': (
+                raw.get('pod_capacity_remaining')
+                if raw.get('pod_capacity_remaining') is not None
+                else raw.get('pods_available', '-')
+            ),
             'unit': raw.get('pod_unit', 'Pods'),
             'status': 'Available',
             'tone': 'blue',
@@ -697,6 +650,7 @@ def _get_storage_snapshot(*, cluster_id: str) -> dict[str, Any]:
     risk_meta = classify_count_risk(risk_count)
 
     return {
+        'available': True,
         'pvc_requested': raw.get('pvc_requested') or raw.get('requested') or '0 GiB',
         'pvc_used': raw.get('pvc_used') or raw.get('used') or '0 GiB',
         'pvc_free': raw.get('pvc_free') or raw.get('free') or '0 GiB',
@@ -711,7 +665,7 @@ def _get_storage_snapshot(*, cluster_id: str) -> dict[str, Any]:
     }
 
 
-def _get_workload_snapshot(*, cluster_id: str) -> dict[str, Any]:
+def _get_workload_snapshot(*, cluster_id: str, time_range: str) -> dict[str, Any]:
     default = build_empty_overview_payload()['workload_snapshot']
 
     if not cluster_id:
@@ -723,6 +677,7 @@ def _get_workload_snapshot(*, cluster_id: str) -> dict[str, Any]:
             'get_workload_snapshot',
         ],
         cluster_id=cluster_id,
+        time_range=time_range,
     )
 
     if not raw:
@@ -751,6 +706,7 @@ def _get_workload_snapshot(*, cluster_id: str) -> dict[str, Any]:
     risk_meta = classify_count_risk(issue_count)
 
     return {
+        'available': True,
         'missing_cpu_requests': missing_cpu_requests,
         'missing_memory_requests': missing_memory_requests,
         'cpu_limits_unset': cpu_limits_unset,
@@ -784,6 +740,7 @@ def _get_top_consumers_snapshot(*, cluster_id: str, time_range: str) -> dict[str
         return default
 
     return {
+        'available': True,
         'cpu': _normalize_consumer_items(raw.get('cpu', [])),
         'memory': _normalize_consumer_items(raw.get('memory', [])),
         'storage': _normalize_consumer_items(raw.get('storage', [])),
@@ -815,83 +772,37 @@ def _get_forecast_snapshot(*, cluster_id: str, time_range: str) -> dict[str, Any
     if not raw:
         return default
 
-    forecast_risk = str(
-        raw.get(
-            'forecast_risk',
-            'Low',
-        )
-    )
+    forecast_risk = str(raw.get('forecast_risk', 'Unknown'))
+    risk_count = _safe_int(_as_float_like(raw.get('risk_count')))
 
-    risk_count = _safe_int(
-        _as_float_like(
-            raw.get(
-                'risk_count',
-            )
-        )
-    )
-
-    if risk_count == 0 and forecast_risk.lower() in [
-        'medium',
-        'high',
-        'critical',
-    ]:
+    if risk_count == 0 and forecast_risk.lower() in ['medium', 'high', 'critical']:
         risk_count = 1
 
-    risk_note = raw.get(
-        'risk_note',
-    ) or (
+    risk_note = raw.get('risk_note') or (
         f'{risk_count} metric(s) may breach warning thresholds in the forecast window.'
         if risk_count > 0
         else 'No forecast risk detected in the selected time range.'
     )
 
     return {
-        'cpu_trend': raw.get(
-            'cpu_trend',
-            'Unknown',
-        ),
-        'memory_trend': raw.get(
-            'memory_trend',
-            'Unknown',
-        ),
-        'storage_trend': raw.get(
-            'storage_trend',
-            'Unknown',
-        ),
-        'pod_trend': raw.get(
-            'pod_trend',
-            'Unknown',
-        ),
+        'available': True,
+        'cpu_trend': raw.get('cpu_trend', 'Unknown'),
+        'memory_trend': raw.get('memory_trend', 'Unknown'),
+        'storage_trend': raw.get('storage_trend', 'Unknown'),
+        'pod_trend': raw.get('pod_trend', 'Unknown'),
         'risk_count': risk_count,
         'risk_note': risk_note,
         'forecast_risk': forecast_risk,
-        'forecast_horizon': raw.get(
-            'forecast_horizon',
-            '30 days',
-        ),
-        'highest_projected_resource': raw.get(
-            'highest_projected_resource',
-            'N/A',
-        ),
+        'forecast_horizon': raw.get('forecast_horizon', '30 days'),
+        'highest_projected_resource': raw.get('highest_projected_resource', 'N/A'),
         'highest_projected_percent': (
             _as_float_like(raw.get('highest_projected_percent'))
             if raw.get('highest_projected_percent') is not None
             else None
         ),
-        'nearest_warning': raw.get(
-            'nearest_warning',
-            {},
-        ),
-        'nearest_critical': raw.get(
-            'nearest_critical',
-            {},
-        ),
-        'series': _normalize_forecast_series(
-            raw.get(
-                'series',
-                [],
-            )
-        ),
+        'nearest_warning': raw.get('nearest_warning', {}),
+        'nearest_critical': raw.get('nearest_critical', {}),
+        'series': _normalize_forecast_series(raw.get('series', [])),
         'href': '/analytics/forecast',
         'recommendation_count': _get_snapshot_recommendation_count(
             raw,
@@ -924,26 +835,28 @@ def _get_alerts_snapshot(*, cluster_id: str) -> dict[str, Any]:
     pending_alerts = _safe_int(_as_float_like(raw.get('pending_alerts')))
     recent_anomalies = _safe_int(_as_float_like(raw.get('recent_anomalies')))
 
-    source_connected = bool(
-        raw.get(
-            'source_connected',
-            False,
-        )
+    source_connected = bool(raw.get('source_connected', False))
+    recommendation_fallback_count = (
+        critical_alerts
+        + warning_alerts
+        + recent_anomalies
+        + (0 if source_connected else 1)
     )
-    anomaly_count = recent_anomalies
-    recommendation_fallback_count = critical_alerts + warning_alerts + anomaly_count + (0 if source_connected else 1)
 
     risk_count = firing_alerts + critical_alerts + warning_alerts + pending_alerts
     risk_meta = classify_count_risk(risk_count)
 
     return {
+        'available': True,
         'firing_alerts': firing_alerts,
         'pending_alerts': pending_alerts,
         'critical_alerts': critical_alerts,
         'warning_alerts': warning_alerts,
         'recent_anomalies': recent_anomalies,
         'highest_severity': raw.get('highest_severity') or '-',
-        'highest_severity_description': raw.get('highest_severity_description') or 'No active critical alert detected.',
+        'highest_severity_description': (
+            raw.get('highest_severity_description') or 'No active critical alert detected.'
+        ),
         'status': risk_meta['label'],
         'tone': risk_meta['tone'],
         'href': '/analytics/alerts?tab=alerts',
@@ -958,263 +871,173 @@ def _get_alerts_snapshot(*, cluster_id: str) -> dict[str, Any]:
 def _build_actionable_recommendation_overview(
     payload: dict[str, Any],
 ) -> dict[str, Any]:
-    capacity_snapshot = _as_dict(
-        payload.get(
-            'capacity_snapshot',
-        )
-    )
-    storage_snapshot = _as_dict(
-        payload.get(
-            'storage_snapshot',
-        )
-    )
-    workload_snapshot = _as_dict(
-        payload.get(
-            'workload_snapshot',
-        )
-    )
-    top_consumers_snapshot = _as_dict(
-        payload.get(
-            'top_consumers',
-        )
-    )
-    forecast_snapshot = _as_dict(
-        payload.get(
-            'forecast_snapshot',
-        )
-    )
-    alerts_snapshot = _as_dict(
-        payload.get(
-            'alerts_snapshot',
-        )
-    )
-
-    capacity_count = _get_capacity_actionable_recommendation_count(
-        capacity_snapshot,
-    )
-
-    utilization_recommendations = _build_utilization_actionable_recommendations_from_overview(
-        payload,
-    )
-    utilization_count = count_actionable_recommendations(
-        utilization_recommendations,
-    )
-
-    storage_count = _get_snapshot_actionable_count(
-        storage_snapshot,
-        fallback_keys=[
-            'pvc_risk_count',
-        ],
-    )
-    workload_count = _get_workload_actionable_count(
-        workload_snapshot,
-    )
-    forecast_count = _get_snapshot_actionable_count(
-        forecast_snapshot,
-        fallback_keys=[
-            'risk_count',
-        ],
-    )
-    top_consumers_count = _get_snapshot_actionable_count(
-        top_consumers_snapshot,
-        fallback_keys=[
-            'recommendation_count',
-        ],
-    )
-    alerts_count = _get_alerts_actionable_count(
-        alerts_snapshot,
-    )
-
-    capacity_items = _build_actionable_items_from_count(
-        count=capacity_count,
-        title='Review Capacity Actionable Findings',
-        description=(
-            f'{capacity_count} actionable capacity recommendation(s) were detected. '
-            'Open Capacity Analysis to inspect headroom, allocation, and governance findings.'
-        ),
-        source='capacity',
-        source_label='Capacity',
-        href='/analytics/capacity',
-        icon='bar-chart-3',
-        warning_threshold=1,
-        critical_threshold=5,
-    )
-    storage_items = _build_actionable_items_from_count(
-        count=storage_count,
-        title='Review Storage Actionable Findings',
-        description=(
-            f'{storage_count} actionable storage recommendation(s) were detected. '
-            'Open Storage Analysis to inspect filesystem, PVC, PV, and expansion risks.'
-        ),
-        source='storage',
-        source_label='Storage',
-        href='/analytics/storage',
-        icon='database',
-        warning_threshold=1,
-        critical_threshold=5,
-    )
-    workload_items = _build_actionable_items_from_count(
-        count=workload_count,
-        title='Review Workload Governance Findings',
-        description=(
-            f'{workload_count} actionable workload recommendation(s) were detected. '
-            'Open Workload Analysis to inspect quota, requests, limits, QoS, and right-sizing signals.'
-        ),
-        source='workload',
-        source_label='Workload',
-        href='/analytics/workload',
-        icon='boxes',
-        warning_threshold=1,
-        critical_threshold=10,
-    )
-    forecast_items = _build_actionable_items_from_count(
-        count=forecast_count,
-        title='Review Forecast Capacity Findings',
-        description=(
-            f'{forecast_count} actionable forecast recommendation(s) were detected. '
-            'Open Resource Forecast to inspect projected threshold breaches and growth trends.'
-        ),
-        source='forecast',
-        source_label='Forecast',
-        href='/analytics/forecast',
-        icon='line-chart',
-        warning_threshold=1,
-        critical_threshold=3,
-    )
-    top_consumers_items = _build_actionable_items_from_count(
-        count=top_consumers_count,
-        title='Review Top Consumer Hotspot Findings',
-        description=(
-            f'{top_consumers_count} actionable top consumer recommendation(s) were detected. '
-            'Open Top Consumers to inspect CPU, memory, pod, and PVC hotspots.'
-        ),
-        source='top_consumers',
-        source_label='Top Consumers',
-        href='/analytics/top-consumers',
-        icon='list-ordered',
-        warning_threshold=1,
-        critical_threshold=5,
-    )
-    alerts_items = _build_actionable_items_from_count(
-        count=alerts_count,
-        title='Review Alert and Anomaly Findings',
-        description=(
-            f'{alerts_count} actionable alert/anomaly recommendation(s) were detected. '
-            'Open Alerts & Anomalies to inspect active alerts, source health, and anomaly candidates.'
-        ),
-        source='alerts',
-        source_label='Alerts & Anomalies',
-        href='/analytics/alerts?tab=alerts',
-        icon='bell',
-        warning_threshold=1,
-        critical_threshold=5,
-    )
-
+    context = _build_actionable_context(payload)
+    items = _build_actionable_domain_items(context)
     actionable_items = [
-        *capacity_items,
-        *utilization_recommendations,
-        *storage_items,
-        *workload_items,
-        *forecast_items,
-        *top_consumers_items,
-        *alerts_items,
+        *items['capacity'],
+        *context['utilization_recommendations'],
+        *items['storage'],
+        *items['workload'],
+        *items['forecast'],
+        *items['top_consumers'],
+        *items['alerts'],
     ]
-
-    critical_count = _count_recommendations_by_priority(
-        actionable_items,
-        'Critical',
+    critical_count = _count_recommendations_by_priority(actionable_items, 'Critical')
+    warning_count = _count_recommendations_by_priority(actionable_items, 'Warning')
+    total_count = sum(context['counts'].values())
+    status = _actionable_status(
+        total_count=total_count,
+        critical_count=critical_count,
+        evidence_available=context['evidence_available'],
+        evidence_complete=context['evidence_complete'],
     )
-    warning_count = _count_recommendations_by_priority(
-        actionable_items,
-        'Warning',
-    )
-    total_count = (
-        capacity_count
-        + utilization_count
-        + storage_count
-        + workload_count
-        + forecast_count
-        + top_consumers_count
-        + alerts_count
-    )
-
-    if critical_count > 0:
-        status = 'Critical'
-        tone = 'red'
-        description = 'Critical actionable recommendation detected across analytics domains.'
-    elif total_count > 0:
-        status = 'Review'
-        tone = 'amber'
-        description = 'Actionable recommendation detected across analytics domains.'
-    else:
-        status = 'Normal'
-        tone = 'green'
-        description = 'No actionable recommendation detected across analytics domains.'
-
-    sources = [
-        _build_actionable_source(
-            label='Capacity',
-            count=capacity_count,
-            href='/analytics/capacity',
-            description='Based on capacity headroom and governance findings.',
-        ),
-        _build_actionable_source(
-            label='Utilization',
-            count=utilization_count,
-            href='/analytics/utilization',
-            description='Based on utilization pressure and top consumer signals.',
-        ),
-        _build_actionable_source(
-            label='Storage',
-            count=storage_count,
-            href='/analytics/storage',
-            description='Based on filesystem, PVC, PV, and storage risk signals.',
-        ),
-        _build_actionable_source(
-            label='Workload',
-            count=workload_count,
-            href='/analytics/workload',
-            description='Based on quota, request, limit, QoS, and right-sizing signals.',
-        ),
-        _build_actionable_source(
-            label='Forecast',
-            count=forecast_count,
-            href='/analytics/forecast',
-            description='Based on forecasted growth and projected threshold breaches.',
-        ),
-        _build_actionable_source(
-            label='Top Consumers',
-            count=top_consumers_count,
-            href='/analytics/top-consumers',
-            description='Based on CPU, memory, pod, PVC, and namespace hotspot signals.',
-        ),
-        _build_actionable_source(
-            label='Alerts & Anomalies',
-            count=alerts_count,
-            href='/analytics/alerts?tab=alerts',
-            description='Based on active alerts, source health, and anomaly candidates.',
-        ),
-    ]
 
     return {
         'total_count': total_count,
-        'status': status,
-        'tone': tone,
-        'description': description,
-        'sources': sources,
-        'priority_summary': {
-            'critical': critical_count,
-            'warning': warning_count,
-        },
+        **status,
+        'evidence_available': context['evidence_available'],
+        'evidence_complete': context['evidence_complete'],
+        'available_dataset_count': context['available_dataset_count'],
+        'expected_dataset_count': context['expected_dataset_count'],
+        'sources': _build_actionable_sources(context),
+        'priority_summary': {'critical': critical_count, 'warning': warning_count},
         'items': actionable_items,
-        'capacity_recommendations': capacity_items,
-        'utilization_recommendations': utilization_recommendations,
-        'storage_recommendations': storage_items,
-        'workload_recommendations': workload_items,
-        'forecast_recommendations': forecast_items,
-        'top_consumers_recommendations': top_consumers_items,
-        'alerts_recommendations': alerts_items,
+        'capacity_recommendations': items['capacity'],
+        'utilization_recommendations': context['utilization_recommendations'],
+        'storage_recommendations': items['storage'],
+        'workload_recommendations': items['workload'],
+        'forecast_recommendations': items['forecast'],
+        'top_consumers_recommendations': items['top_consumers'],
+        'alerts_recommendations': items['alerts'],
     }
+
+
+def _build_actionable_context(payload: dict[str, Any]) -> dict[str, Any]:
+    snapshots = {
+        'capacity': _as_dict(payload.get('capacity_snapshot')),
+        'resource': _as_dict(payload.get('resource_snapshot')),
+        'storage': _as_dict(payload.get('storage_snapshot')),
+        'workload': _as_dict(payload.get('workload_snapshot')),
+        'top_consumers': _as_dict(payload.get('top_consumers')),
+        'forecast': _as_dict(payload.get('forecast_snapshot')),
+        'alerts': _as_dict(payload.get('alerts_snapshot')),
+    }
+    summary = _as_dict(payload.get('snapshot_summary'))
+    available_count = _safe_int(_as_float_like(summary.get('available_dataset_count')))
+    current_count = _safe_int(_as_float_like(summary.get('current_dataset_count')))
+    expected_count = max(
+        1,
+        _safe_int(_as_float_like(summary.get('expected_dataset_count', 7))),
+    )
+    utilization_recommendations = _build_utilization_actionable_recommendations_from_overview(
+        payload
+    )
+    counts = {
+        'capacity': _get_capacity_actionable_recommendation_count(snapshots['capacity']),
+        'utilization': count_actionable_recommendations(utilization_recommendations),
+        'storage': _get_snapshot_actionable_count(
+            snapshots['storage'],
+            fallback_keys=['pvc_risk_count'],
+        ),
+        'workload': _get_workload_actionable_count(snapshots['workload']),
+        'forecast': _get_snapshot_actionable_count(
+            snapshots['forecast'],
+            fallback_keys=['risk_count'],
+        ),
+        'top_consumers': _get_snapshot_actionable_count(
+            snapshots['top_consumers'],
+            fallback_keys=['recommendation_count'],
+        ),
+        'alerts': _get_alerts_actionable_count(snapshots['alerts']),
+    }
+    return {
+        'snapshots': snapshots,
+        'counts': counts,
+        'utilization_recommendations': utilization_recommendations,
+        'available_dataset_count': available_count,
+        'expected_dataset_count': expected_count,
+        'evidence_available': available_count > 0,
+        'evidence_complete': current_count >= expected_count,
+    }
+
+
+def _build_actionable_domain_items(context: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    counts = context['counts']
+    return {
+        domain.key: _build_actionable_items_from_count(
+            count=counts[domain.key],
+            title=domain.aggregate_title,
+            description=(
+                f'{counts[domain.key]} actionable {domain.aggregate_noun} recommendation(s) were detected. '
+                f'{domain.aggregate_guidance}'
+            ),
+            source=domain.key,
+            source_label=domain.label,
+            href=domain.href,
+            icon=domain.icon,
+            warning_threshold=1,
+            critical_threshold=domain.critical_threshold,
+        )
+        for domain in ACTIONABLE_DOMAINS
+        if domain.has_aggregate_item
+    }
+
+
+def _actionable_status(
+    *,
+    total_count: int,
+    critical_count: int,
+    evidence_available: bool,
+    evidence_complete: bool,
+) -> dict[str, str]:
+    if critical_count > 0:
+        return {
+            'status': 'Critical',
+            'tone': 'red',
+            'description': 'Critical actionable recommendation detected across analytics domains.',
+        }
+    if total_count > 0:
+        return {
+            'status': 'Review',
+            'tone': 'amber',
+            'description': 'Actionable recommendation detected across analytics domains.',
+        }
+    if not evidence_available:
+        return {
+            'status': 'Unknown',
+            'tone': 'gray',
+            'description': 'Committed analytics evidence is not available for recommendation assessment.',
+        }
+    if not evidence_complete:
+        return {
+            'status': 'Limited',
+            'tone': 'amber',
+            'description': (
+                'No actionable finding is present in the available datasets, '
+                'but evidence coverage is incomplete.'
+            ),
+        }
+    return {
+        'status': 'Normal',
+        'tone': 'green',
+        'description': 'No actionable recommendation detected across current analytics datasets.',
+    }
+
+
+def _build_actionable_sources(context: dict[str, Any]) -> list[dict[str, Any]]:
+    counts = context['counts']
+    snapshots = context['snapshots']
+    sources = [
+        _build_actionable_source(
+            label=domain.label,
+            count=counts[domain.key],
+            href=domain.href,
+            description=domain.source_description,
+            available=bool(snapshots[domain.evidence_key].get('available', False)),
+        )
+        for domain in ACTIONABLE_DOMAINS
+    ]
+    return [source for source in sources if source['available']]
 
 
 def _build_actionable_source(
@@ -1223,6 +1046,7 @@ def _build_actionable_source(
     count: int,
     href: str,
     description: str,
+    available: bool,
 ) -> dict[str, Any]:
     return {
         'label': label,
@@ -1230,6 +1054,7 @@ def _build_actionable_source(
         'href': href,
         'tone': _get_count_tone(count),
         'description': description,
+        'available': available,
     }
 
 
@@ -1305,6 +1130,9 @@ def _get_snapshot_actionable_count(
     *,
     fallback_keys: list[str],
 ) -> int:
+    if not snapshot.get('available', False):
+        return 0
+
     explicit_count = _safe_int(
         _as_float_like(
             snapshot.get(
@@ -1338,6 +1166,9 @@ def _get_snapshot_actionable_count(
 def _get_workload_actionable_count(
     workload_snapshot: dict[str, Any],
 ) -> int:
+    if not workload_snapshot.get('available', False):
+        return 0
+
     explicit_count = _get_snapshot_actionable_count(
         workload_snapshot,
         fallback_keys=[],
@@ -1368,6 +1199,9 @@ def _get_workload_actionable_count(
 def _get_alerts_actionable_count(
     alerts_snapshot: dict[str, Any],
 ) -> int:
+    if not alerts_snapshot.get('available', False):
+        return 0
+
     explicit_count = _get_snapshot_actionable_count(
         alerts_snapshot,
         fallback_keys=[],
@@ -1440,7 +1274,7 @@ def _get_capacity_actionable_recommendation_count(
     if not isinstance(
         capacity_snapshot,
         dict,
-    ):
+    ) or not capacity_snapshot.get('available', False):
         return 0
 
     recommendations = capacity_snapshot.get(
@@ -1467,12 +1301,13 @@ def _get_capacity_actionable_recommendation_count(
 def _build_utilization_actionable_recommendations_from_overview(
     payload: dict[str, Any],
 ) -> list[dict[str, Any]]:
+    resource_snapshot = _as_dict(payload.get('resource_snapshot'))
+    if not resource_snapshot.get('available', False):
+        return []
+
     recommendation_payload = {
         'risk_assessment': _build_utilization_risk_assessment_from_resource_snapshot(
-            payload.get(
-                'resource_snapshot',
-                {},
-            )
+            resource_snapshot
         ),
         'top_cpu_consumers': _normalize_overview_consumers_for_recommendations(
             (
@@ -1647,232 +1482,6 @@ def _count_recommendations_by_priority(
         == normalized_priority
     )
 
-
-def _build_health_summary(payload: dict[str, Any]) -> dict[str, Any]:
-    default = deepcopy(build_empty_overview_payload()['health_summary'])
-
-    resource_snapshot = payload.get('resource_snapshot', {})
-    storage_snapshot = payload.get('storage_snapshot', {})
-    workload_snapshot = payload.get('workload_snapshot', {})
-    forecast_snapshot = payload.get('forecast_snapshot', {})
-    alerts_snapshot = payload.get('alerts_snapshot', {})
-
-    cpu_percent = _safe_float(_get_nested_float(resource_snapshot, 'cpu', 'percent'))
-    memory_percent = _safe_float(_get_nested_float(resource_snapshot, 'memory', 'percent'))
-    storage_percent = _safe_float(_get_nested_float(resource_snapshot, 'storage', 'percent'))
-    pod_percent = _safe_float(_get_nested_float(resource_snapshot, 'pods', 'percent'))
-
-    resource_pressures = {
-        'CPU': cpu_percent,
-        'Memory': memory_percent,
-        'Storage': storage_percent,
-        'Pods': pod_percent,
-    }
-
-    highest_pressure_resource = max(
-        resource_pressures,
-        key=lambda resource_name: resource_pressures[resource_name],
-    )
-    max_pressure = resource_pressures[highest_pressure_resource]
-    pressure_meta = classify_percent(max_pressure)
-
-    firing_alerts = _safe_int(_as_float_like(alerts_snapshot.get('firing_alerts')))
-    pending_alerts = _safe_int(_as_float_like(alerts_snapshot.get('pending_alerts')))
-    critical_alerts = _safe_int(_as_float_like(alerts_snapshot.get('critical_alerts')))
-    warning_alerts = _safe_int(_as_float_like(alerts_snapshot.get('warning_alerts')))
-    recent_anomalies = _safe_int(_as_float_like(alerts_snapshot.get('recent_anomalies')))
-
-    active_alerts = firing_alerts + pending_alerts
-
-    forecast_risk_count = _safe_int(_as_float_like(forecast_snapshot.get('risk_count')))
-    forecast_risk_value = str(
-        forecast_snapshot.get(
-            'forecast_risk',
-            'Low',
-        )
-    )
-    highest_projected_resource = str(
-        forecast_snapshot.get(
-            'highest_projected_resource',
-            'N/A',
-        )
-    )
-    highest_projected_percent = _safe_int(
-        _as_float_like(
-            forecast_snapshot.get(
-                'highest_projected_percent',
-                0,
-            )
-        )
-    )
-
-    pvc_risk_count = _safe_int(_as_float_like(storage_snapshot.get('pvc_risk_count')))
-
-    workload_issue_count = (
-        _safe_int(_as_float_like(workload_snapshot.get('missing_cpu_requests')))
-        + _safe_int(_as_float_like(workload_snapshot.get('missing_memory_requests')))
-        + _safe_int(_as_float_like(workload_snapshot.get('memory_limits_missing')))
-        + _safe_int(_as_float_like(workload_snapshot.get('over_provisioned')))
-        + _safe_int(_as_float_like(workload_snapshot.get('under_provisioned')))
-    )
-
-    forecast_is_high = forecast_risk_value.lower() in [
-        'high',
-        'critical',
-    ]
-    forecast_is_medium = forecast_risk_value.lower() in [
-        'medium',
-        'warning',
-    ]
-
-    if critical_alerts > 0 or max_pressure >= 90 or forecast_is_high:
-        cluster_value = 'Critical'
-        cluster_tone = 'red'
-        cluster_status = 'critical'
-        cluster_desc = 'Critical signal detected from alerts, resource pressure, or forecast risk.'
-    elif (
-        active_alerts > 0
-        or warning_alerts > 0
-        or recent_anomalies > 0
-        or max_pressure >= 75
-        or pvc_risk_count > 0
-        or workload_issue_count > 0
-        or forecast_risk_count > 0
-        or forecast_is_medium
-    ):
-        cluster_value = 'Warning'
-        cluster_tone = 'amber'
-        cluster_status = 'warning'
-        cluster_desc = 'Operational warning detected. Review the prioritized recommendations.'
-    else:
-        cluster_value = 'Healthy'
-        cluster_tone = 'green'
-        cluster_status = 'normal'
-        cluster_desc = 'No critical operational signal detected.'
-
-    capacity_risk_score = 0
-
-    if max_pressure >= 75:
-        capacity_risk_score += 1
-
-    if max_pressure >= 90:
-        capacity_risk_score += 1
-
-    if pvc_risk_count > 0:
-        capacity_risk_score += 1
-
-    if forecast_risk_count > 0 or forecast_is_medium:
-        capacity_risk_score += 1
-
-    if forecast_is_high:
-        capacity_risk_score += 2
-
-    if workload_issue_count > 0:
-        capacity_risk_score += 1
-
-    if workload_issue_count >= 10:
-        capacity_risk_score += 1
-
-    if capacity_risk_score >= 4:
-        capacity_value = 'High'
-        capacity_tone = 'red'
-        capacity_status = 'critical'
-        capacity_desc = 'Multiple capacity indicators require immediate review.'
-    elif capacity_risk_score > 0:
-        capacity_value = 'Medium'
-        capacity_tone = 'amber'
-        capacity_status = 'warning'
-        capacity_desc = 'Capacity risk is present across one or more signals.'
-    else:
-        capacity_value = 'Low'
-        capacity_tone = 'green'
-        capacity_status = 'normal'
-        capacity_desc = 'Capacity risk is currently low.'
-
-    if active_alerts > 0:
-        active_alert_description = (
-            f'{firing_alerts} firing and {pending_alerts} pending alert(s). '
-            f'{critical_alerts} critical, {warning_alerts} warning.'
-        )
-    elif recent_anomalies > 0:
-        active_alert_description = f'No firing alerts, but {recent_anomalies} anomaly candidate(s) detected.'
-    else:
-        active_alert_description = 'No firing or pending alert detected.'
-
-    if forecast_risk_count > 0 or forecast_is_medium or forecast_is_high:
-        forecast_value = forecast_risk_value
-        forecast_status = 'critical' if forecast_is_high else 'warning'
-        forecast_tone = 'red' if forecast_is_high else 'purple'
-        forecast_description = (
-            f'{highest_projected_resource} projected at {highest_projected_percent}% '
-            f'within {forecast_snapshot.get("forecast_horizon", "forecast window")}.'
-        )
-    else:
-        forecast_value = 'Low'
-        forecast_status = 'normal'
-        forecast_tone = 'green'
-        forecast_description = 'No forecast risk detected.'
-
-    top_namespace = str(storage_snapshot.get('top_namespace') or '-')
-
-    if top_namespace != '-' and pvc_risk_count > 0:
-        top_namespace_status = 'warning'
-        top_namespace_tone = 'blue'
-        top_namespace_description = f'{pvc_risk_count} PVC risk item(s) detected. Highest storage namespace signal.'
-    elif top_namespace != '-':
-        top_namespace_status = 'normal'
-        top_namespace_tone = 'blue'
-        top_namespace_description = 'Highest storage usage namespace.'
-    else:
-        top_namespace_status = 'unknown'
-        top_namespace_tone = 'gray'
-        top_namespace_description = 'Namespace risk data is not available.'
-
-    return {
-        **default,
-        'cluster_health': {
-            **default['cluster_health'],
-            'value': cluster_value,
-            'status': cluster_status,
-            'tone': cluster_tone,
-            'description': cluster_desc,
-        },
-        'resource_pressure': {
-            **default['resource_pressure'],
-            'value': pressure_meta['label'],
-            'status': pressure_meta['status'],
-            'tone': pressure_meta['tone'],
-            'description': f'{highest_pressure_resource} is the highest signal at {int(round(max_pressure))}%.',
-        },
-        'capacity_risk': {
-            **default['capacity_risk'],
-            'value': capacity_value,
-            'status': capacity_status,
-            'tone': capacity_tone,
-            'description': capacity_desc,
-        },
-        'active_alerts': {
-            **default['active_alerts'],
-            'value': active_alerts,
-            'status': 'warning' if active_alerts else 'normal',
-            'tone': 'red' if critical_alerts else 'amber' if active_alerts else 'green',
-            'description': active_alert_description,
-        },
-        'forecast_risk': {
-            **default['forecast_risk'],
-            'value': forecast_value,
-            'status': forecast_status,
-            'tone': forecast_tone,
-            'description': forecast_description,
-        },
-        'top_risk_namespace': {
-            **default['top_risk_namespace'],
-            'value': top_namespace,
-            'status': top_namespace_status,
-            'tone': top_namespace_tone,
-            'description': top_namespace_description,
-        },
-    }
 
 
 def _log_optional_snapshot_failure(

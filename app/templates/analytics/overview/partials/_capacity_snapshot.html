@@ -1,6 +1,10 @@
 {% import "components/section_link_button.html" as section_link_button %}
 {% import "components/table_label.html" as table_label %}
 {% import "analytics/components/_analysis_surfaces.html" as overview_surface %}
+{% import "analytics/components/_scoped_link.html" as scoped_link %}
+{% if not payload.capacity_snapshot.available|default(false) %}
+    {{ overview_surface.snapshot_unavailable('capacity', 'Worker Capacity Snapshot', 'The Analytics worker has not committed capacity evidence for the selected cluster and time range.', icon='server-cog') }}
+{% else %}
 {% set capacity = payload.capacity_snapshot %}
 {% set recommendations = capacity.recommendations.value|default(0)|int %}
 {% set posture_tone = 'warning' if recommendations > 0 else 'normal' %}
@@ -20,7 +24,7 @@
             </div>
         </div>
         {{ section_link_button.render(
-            capacity.cpu_headroom.href ~ '?cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range,
+            scoped_link.href(capacity.cpu_headroom.href, payload.selected_cluster_id, payload.selected_time_range),
             'View Capacity Analysis'
         ) }}
     </header>
@@ -63,3 +67,4 @@
         ) }}
     </div>
 </section>
+{% endif %}

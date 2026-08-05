@@ -1,10 +1,12 @@
-{% macro render(tabset_id, tabs, aria_label, embedded=false, scrollable=false) %}
-    <div class="{{ 'border-b border-outline-subtle bg-surface-hover px-5 py-2 sm:px-6' if embedded else 'rounded-xl border border-outline-default bg-surface-card p-2 shadow-sm' }}{% if scrollable %} overflow-x-auto{% endif %}"
-         {% if scrollable %}data-analytics-tab-scroll{% endif %}>
-        <div class="{{ 'flex w-max min-w-full flex-nowrap gap-2' if scrollable else 'flex flex-wrap gap-2' }}"
+{% macro render(tabset_id, tabs, aria_label, embedded=false) %}
+    <div class="{{ 'border-b border-outline-subtle bg-surface-hover px-5 py-2 sm:px-6' if embedded else 'rounded-xl border border-outline-default bg-surface-card p-2 shadow-sm' }}">
+        <div class="flex flex-wrap gap-2"
              role="tablist"
              aria-label="{{ aria_label }}">
-            {% for tab_id, tab_label, tab_icon in tabs %}
+            {% for tab in tabs %}
+                {% set tab_id = tab[0] %}
+                {% set tab_label = tab[1] %}
+                {% set tab_icon = tab[2] %}
                 <button type="button"
                         id="{{ tabset_id }}-tab-{{ tab_id }}"
                         role="tab"

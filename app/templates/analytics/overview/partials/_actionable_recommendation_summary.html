@@ -1,9 +1,12 @@
 {% import "components/table_label.html" as table_label %}
 {% import "analytics/components/_analysis_surfaces.html" as overview_surface %}
+{% import "analytics/components/_scoped_link.html" as scoped_link %}
 {% set summary = payload.actionable_recommendations %}
 {% set summary_tone = table_label.semantic_tone(summary.tone or summary.status)|trim %}
 {% set top_sources = summary.sources|sort(attribute='count', reverse=true) %}
 {% set highest_source = top_sources[0] if top_sources else none %}
+{% set evidence_available = summary.evidence_available|default(false) %}
+{% set evidence_complete = summary.evidence_complete|default(false) %}
 <section data-analytics-overview-panel="action-summary" class="{{ overview_surface.snapshot_shell_classes() }}">
     <header class="{{ overview_surface.snapshot_header_classes() }}">
         <div class="flex min-w-0 items-start gap-3">
@@ -18,14 +21,14 @@
                 <p class="mt-1 text-xs leading-5 text-content-muted">Consolidated action counts across all Kubernetes Analytics domains.</p>
             </div>
         </div>
-        {{ table_label.metadata_label(summary.total_count ~ ' Actionable', 'clipboard-list', size='compact') }}
+        {{ table_label.metadata_label((summary.total_count ~ ' Actionable') if evidence_available else 'Evidence Unavailable', 'clipboard-list', size='compact') }}
     </header>
 
     {% set metrics = [
-        {'label': 'Total Actionable', 'value': summary.total_count, 'icon': 'list-checks', 'tone': 'info'},
-        {'label': 'Critical Priority', 'value': summary.priority_summary.critical, 'icon': 'siren', 'tone': 'critical'},
-        {'label': 'Warning Priority', 'value': summary.priority_summary.warning, 'icon': 'triangle-alert', 'tone': 'warning'},
-        {'label': 'Highest Source', 'value': highest_source.label if highest_source else 'No Source', 'icon': 'database-zap', 'tone': 'maintenance'}
+        {'label': 'Total Actionable', 'value': summary.total_count if evidence_available else 'N/A', 'icon': 'list-checks', 'tone': 'info'},
+        {'label': 'Critical Priority', 'value': summary.priority_summary.critical if evidence_available else 'N/A', 'icon': 'siren', 'tone': 'critical'},
+        {'label': 'Warning Priority', 'value': summary.priority_summary.warning if evidence_available else 'N/A', 'icon': 'triangle-alert', 'tone': 'warning'},
+        {'label': 'Highest Source', 'value': highest_source.label if highest_source else ('No Source' if evidence_available else 'N/A'), 'icon': 'database-zap', 'tone': 'maintenance'}
     ] %}
     <div class="{{ overview_surface.metric_grid_classes(4) }}">
         {% for metric in metrics %}
@@ -52,11 +55,13 @@
                 </div>
                 {{ table_label.metadata_label(summary.sources|length ~ ' Domains', 'layers-3', size='compact') }}
             </div>
-            {% if summary.sources %}
+            {% if not evidence_available %}
+                <p class="mt-4 text-xs leading-5 text-content-muted">Recommendation sources will appear after at least one committed analytics dataset is available.</p>
+            {% elif summary.sources %}
                 <div class="mt-4 divide-y divide-outline-subtle border-y border-outline-subtle">
                     {% for source in top_sources %}
                         {% set source_tone = table_label.semantic_tone(source.tone)|trim %}
-                        <a href="{{ source.href }}?cluster_id={{ payload.selected_cluster_id }}&time_range={{ payload.selected_time_range }}"
+                        <a href="{{ scoped_link.href(source.href, payload.selected_cluster_id, payload.selected_time_range) }}"
                            class="flex items-center justify-between gap-4 py-3 transition hover:text-kaori-primary">
                             <div class="min-w-0">
                                 <p class="text-sm font-semibold text-content-primary">{{ source.label }}</p>
@@ -72,7 +77,16 @@
         </article>
 
         <aside class="{{ overview_surface.interpretation_panel_classes('border-t border-outline-subtle px-4 py-4 sm:px-5 xl:border-t-0') }}">
-            {% if summary.priority_summary.critical > 0 %}
+            {% if not evidence_available %}
+                {{ overview_surface.interpretation_callout(
+                    'Operational Triage',
+                    'Wait For Committed Analytics Evidence',
+                    'Do not interpret zero recommendation counts as a healthy result until the worker commits domain snapshots.',
+                    icon='database-zap',
+                    tone='unknown',
+                    extra='-mx-4 -mt-4 sm:-mx-5'
+                ) }}
+            {% elif summary.priority_summary.critical > 0 %}
                 {{ overview_surface.interpretation_callout(
                     'Operational Triage',
                     'Resolve Critical Recommendations First',
@@ -86,6 +100,15 @@
                     'Operational Triage',
                     'Schedule Warning Recommendations',
                     'Prioritize by affected resource, forecast direction, and remaining operational headroom.',
+                    icon='triangle-alert',
+                    tone='warning',
+                    extra='-mx-4 -mt-4 sm:-mx-5'
+                ) }}
+            {% elif not evidence_complete %}
+                {{ overview_surface.interpretation_callout(
+                    'Operational Triage',
+                    'Evidence Coverage Is Limited',
+                    'Available datasets show no action queue, but missing or stale domains must be refreshed before declaring a normal posture.',
                     icon='triangle-alert',
                     tone='warning',
                     extra='-mx-4 -mt-4 sm:-mx-5'
@@ -124,7 +147,9 @@
 
             <div class="mt-4 border-t border-outline-subtle pt-3">
                 <p class="text-xs font-semibold text-content-primary">Next Review Focus</p>
-                {% if highest_source %}
+                {% if not evidence_available %}
+                    <p class="mt-1 text-xs leading-5 text-content-muted">No review order can be established until committed analytics evidence is available.</p>
+                {% elif highest_source %}
                     <p class="mt-1 text-xs leading-5 text-content-muted">Open <span class="font-semibold text-content-secondary">{{ highest_source.label }}</span> first because it currently contributes {{ highest_source.count }} actionable item{{ '' if highest_source.count == 1 else 's' }}.</p>
                 {% else %}
                     <p class="mt-1 text-xs leading-5 text-content-muted">No domain currently contributes an actionable recommendation. Continue preventive review.</p>

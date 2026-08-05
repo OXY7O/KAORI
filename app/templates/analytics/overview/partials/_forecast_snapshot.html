@@ -2,6 +2,10 @@
 {% import "components/forecast_projection_chart.html" as forecast_projection_chart %}
 {% import "components/table_label.html" as table_label %}
 {% import "analytics/components/_analysis_surfaces.html" as overview_surface %}
+{% import "analytics/components/_scoped_link.html" as scoped_link %}
+{% if not payload.forecast_snapshot.available|default(false) %}
+    {{ overview_surface.snapshot_unavailable('forecast', 'Forecast & Trend Snapshot', 'The Analytics worker has not committed forecast evidence for the selected cluster and forecast history window.', icon='chart-spline') }}
+{% else %}
 {% set forecast = payload.forecast_snapshot %}
 {% set risk_count = forecast.risk_count|default(0)|int %}
 {% set has_forecast_evidence = forecast.series|default([])|length > 0 %}
@@ -24,7 +28,7 @@
             </div>
         </div>
         {{ section_link_button.render(
-            forecast.href ~ '?cluster_id=' ~ payload.selected_cluster_id ~ '&time_range=' ~ payload.selected_time_range,
+            scoped_link.href(forecast.href, payload.selected_cluster_id, payload.selected_time_range),
             'View Resource Forecast'
         ) }}
     </header>
@@ -131,3 +135,4 @@
         ) }}
     </div>
 </section>
+{% endif %}

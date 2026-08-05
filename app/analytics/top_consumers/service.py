@@ -1494,7 +1494,7 @@ def format_bytes(
 def get_top_consumers_snapshot(
     cluster_id: str,
     time_range: str = '24h',
-) -> TopConsumersSnapshot:
+) -> TopConsumersSnapshot | None:
     from app.analytics.materialization.service import read_snapshot
 
     result = read_snapshot(
@@ -1504,7 +1504,7 @@ def get_top_consumers_snapshot(
     )
     payload = (result.context or {}).get('consumer_payload') if result.available else None
     if not is_current_top_consumers_payload(payload):
-        return _empty_top_consumers_snapshot()
+        return None
     rows = list(payload.get('all_rows') or [])
     cpu_rows = [row for row in rows if row.get('resource_type') == 'cpu']
     memory_rows = [row for row in rows if row.get('resource_type') == 'memory']
@@ -1528,14 +1528,6 @@ def get_top_consumers_snapshot(
         'recommendation_count': _safe_int(payload.get('recommendation_count', 0)),
     }
 
-def _empty_top_consumers_snapshot() -> TopConsumersSnapshot:
-    return {
-        'cpu': [],
-        'memory': [],
-        'storage': [],
-        'pods': [],
-        'recommendation_count': 0,
-    }
 
 
 def _build_top_consumer_items(

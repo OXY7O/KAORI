@@ -86,10 +86,6 @@ These are local/generated artifacts and must not be included in source ZIP deliv
 
 ## Candidates Retained Pending Architecture Decision
 
-### `app/analytics/common/cache.py` — removed August 5, 2026
-
-The module had no importer and duplicated the committed `AnalyticsSnapshot` evidence path with a second Redis/local pickle cache. It was removed during the core-workspace revalidation and is now registered in the obsolete-file cleanup guard.
-
 ### `app/knowledge/remediation_workflow.py`
 
 Static analysis found no runtime imports, but the module is explicitly documented by `docs/architecture/domain-18-end-to-end-remediation-workflow.md`. It is retained as an intentional architecture workflow until the Knowledge/Intelligence execution path is either wired or formally retired.
@@ -106,3 +102,21 @@ Static analysis found no runtime imports, but the module is explicitly documente
 - `.gitignore` now ignores every ZIP at repository root via `/*.zip`;
 - `scripts/verify_obsolete_files.py` fails when deleted files, root `OX.zip`, Python caches, or compiled Python files return;
 - `scripts/cleanup_obsolete_files.sh` performs the approved cleanup idempotently.
+
+## Analytics Overview follow-up — 2026-08-05
+
+The following approved legacy files are now removed from the audited source:
+
+- `app/templates/analytics/components/_overview_surfaces.html`
+- `app/templates/analytics/overview/partials/_prometheus_status.html`
+
+Analytics Overview now uses `_analysis_surfaces.html` and the Health Summary-owned
+canonical Prometheus readiness card. No compatibility wrapper remains.
+
+Additional Analytics legacy removal:
+
+- `app/analytics/common/cache.py`
+
+The Analytics cache module had no importer after Overview was standardized on
+worker-owned committed snapshots. It was removed rather than retained as an
+unowned Redis/local compatibility layer.

@@ -40,248 +40,231 @@ def build_empty_overview_payload() -> dict[str, Any]:
         'selected_cluster_id': '',
         'selected_time_range': '24h',
         'last_analyzed_at': utc_now_display(),
-        'prometheus': {
-            'configured': False,
-            'connected': False,
-            'status': 'not_configured',
-            'status_label': 'Not configured',
-            'status_tone': 'gray',
-            'endpoint': '',
-            'response_time_ms': None,
-            'message': 'Prometheus configuration is not available for this cluster.',
-            'last_checked_at': utc_now_display(),
-        },
-        'snapshot_summary': {
-            'status': 'Unavailable',
-            'tone': 'unknown',
-            'description': 'No committed Analytics Overview snapshot is available for this cluster.',
-            'latest_generated_at': 'Not Available',
-            'latest_attempt_at': 'Not Available',
-            'latest_dataset': 'No Snapshot',
-            'current_dataset_count': 0,
-            'available_dataset_count': 0,
-            'expected_dataset_count': 7,
-            'stale_dataset_count': 0,
-            'pending_dataset_count': 0,
-            'failed_dataset_count': 0,
-            'analysis_window': 'Last 24 Hours',
-        },
-        'health_summary': {
-            'cluster_health': build_metric_card(
-                label='Cluster Health',
-                value='Unknown',
-                status='unknown',
-                tone='gray',
-                icon='shield-question',
-                description='Cluster health data is not available yet.',
-            ),
-            'resource_pressure': build_metric_card(
-                label='Resource Pressure',
-                value='Unknown',
-                status='unknown',
-                tone='gray',
-                icon='gauge',
-                description='Resource pressure data is not available yet.',
-            ),
-            'capacity_risk': build_metric_card(
-                label='Capacity Risk',
-                value='Unknown',
-                status='unknown',
-                tone='gray',
-                icon='triangle-alert',
-                description='Capacity risk data is not available yet.',
-            ),
-            'active_alerts': build_metric_card(
-                label='Active Alerts',
-                value=0,
-                status='normal',
-                tone='green',
-                icon='bell',
-                description='No active alert data available.',
-            ),
-            'forecast_risk': build_metric_card(
-                label='Forecast Risk',
-                value='Unknown',
-                status='unknown',
-                tone='gray',
-                icon='trending-up',
-                description='Forecast data is not available yet.',
-            ),
-            'top_risk_namespace': build_metric_card(
-                label='Top Risk Namespace',
-                value='-',
-                status='unknown',
-                tone='gray',
-                icon='folder',
-                description='Namespace risk data is not available yet.',
-            ),
-        },
-        'resource_snapshot': {
-            'cpu': build_metric_card(
-                label='CPU Utilization',
-                value=0,
-                unit='%',
-                status='unknown',
-                tone='gray',
-                icon='cpu',
-                description='CPU utilization data is not available.',
-                percent=0,
-                href='/analytics/utilization',
-            ),
-            'memory': build_metric_card(
-                label='Memory Utilization',
-                value=0,
-                unit='%',
-                status='unknown',
-                tone='gray',
-                icon='memory-stick',
-                description='Memory utilization data is not available.',
-                percent=0,
-                href='/analytics/utilization',
-            ),
-            'storage': build_metric_card(
-                label='Storage Utilization',
-                value=0,
-                unit='%',
-                status='unknown',
-                tone='gray',
-                icon='database',
-                description='Storage utilization data is not available.',
-                percent=0,
-                href='/analytics/storage',
-            ),
-            'pods': build_metric_card(
-                label='Pod Utilization',
-                value=0,
-                unit='%',
-                status='unknown',
-                tone='gray',
-                icon='boxes',
-                description='Pod utilization data is not available.',
-                percent=0,
-                href='/analytics/utilization',
-            ),
-        },
-        'capacity_snapshot': {
-            'cpu_headroom': build_metric_card(
-                label='CPU Headroom',
-                value='-',
-                unit='Cores',
-                status='unknown',
-                tone='gray',
-                icon='cpu',
-                description='Remaining worker CPU allocatable capacity.',
-                href='/analytics/capacity',
-            ),
-            'memory_headroom': build_metric_card(
-                label='Memory Headroom',
-                value='-',
-                unit='GiB',
-                status='unknown',
-                tone='gray',
-                icon='memory-stick',
-                description='Remaining worker memory allocatable capacity.',
-                href='/analytics/capacity',
-            ),
-            'pod_capacity_remaining': build_metric_card(
-                label='Pod Capacity Remaining',
-                value='-',
-                unit='Pods',
-                status='unknown',
-                tone='gray',
-                icon='box',
-                description='Available pod slots across worker nodes.',
-                href='/analytics/capacity',
-            ),
-            'recommendations': build_metric_card(
-                label='Capacity Recommendations',
-                value=0,
-                unit='Items',
-                status='normal',
-                tone='blue',
-                icon='lightbulb',
-                description='Capacity findings that need review.',
-                href='/analytics/capacity',
-            ),
-        },
-        'storage_snapshot': {
-            'pvc_requested': '0 GiB',
-            'pvc_used': '0 GiB',
-            'pvc_free': '0 GiB',
-            'pvc_risk_count': 0,
-            'used_percent': 0,
-            'free_percent': 0,
-            'top_namespace': '-',
-            'status': 'unknown',
-            'tone': 'gray',
-            'href': '/analytics/storage',
-            'recommendation_count': 0,
-        },
-        'workload_snapshot': {
-            'missing_cpu_requests': 0,
-            'missing_memory_requests': 0,
-            'cpu_limits_unset': 0,
-            'memory_limits_missing': 0,
-            'over_provisioned': 0,
-            'under_provisioned': 0,
-            'status': 'unknown',
-            'tone': 'gray',
-            'href': '/analytics/workload',
-            'recommendation_count': 0,
-        },
-        'top_consumers': {
-            'cpu': [],
-            'memory': [],
-            'storage': [],
-            'pods': [],
-            'href': '/analytics/top-consumers',
-            'recommendation_count': 0,
-        },
-        'forecast_snapshot': {
-            'cpu_trend': 'Unknown',
-            'memory_trend': 'Unknown',
-            'storage_trend': 'Unknown',
-            'pod_trend': 'Unknown',
-            'risk_count': 0,
-            'risk_note': 'Forecast data is not available yet.',
-            'forecast_risk': 'Unknown',
-            'forecast_horizon': '30 Days',
-            'highest_projected_resource': 'N/A',
-            'highest_projected_percent': None,
-            'series': [],
-            'href': '/analytics/forecast',
-            'recommendation_count': 0,
-        },
-        'alerts_snapshot': {
-            'firing_alerts': 0,
-            'pending_alerts': 0,
-            'critical_alerts': 0,
-            'warning_alerts': 0,
-            'recent_anomalies': 0,
-            'highest_severity': '-',
-            'highest_severity_description': 'No alert data available.',
-            'status': 'unknown',
-            'tone': 'gray',
-            'href': '/analytics/alerts?tab=alerts',
-            'source_connected': False,
-            'recommendation_count': 0,
-        },
-        'actionable_recommendations': {
-            'total_count': 0,
-            'status': 'Normal',
-            'tone': 'green',
-            'description': 'No actionable recommendation detected across analytics domains.',
-            'sources': [],
-            'priority_summary': {
-                'critical': 0,
-                'warning': 0,
-            },
-            'items': [],
-            'capacity_recommendations': [],
-            'utilization_recommendations': [],
-        },
+        'prometheus': _empty_prometheus(),
+        'snapshot_summary': _empty_snapshot_summary(),
+        'health_summary': _empty_health_summary(),
+        'resource_snapshot': _empty_resource_snapshot(),
+        'capacity_snapshot': _empty_capacity_snapshot(),
+        'storage_snapshot': _empty_storage_snapshot(),
+        'workload_snapshot': _empty_workload_snapshot(),
+        'top_consumers': _empty_top_consumers(),
+        'forecast_snapshot': _empty_forecast_snapshot(),
+        'alerts_snapshot': _empty_alerts_snapshot(),
+        'actionable_recommendations': _empty_actionable_recommendations(),
         'actionable_recommendation_count': 0,
         'recommendations': [],
+    }
+
+
+def _empty_prometheus() -> dict[str, Any]:
+    return {
+        'configured': False,
+        'connected': False,
+        'status': 'not_configured',
+        'status_label': 'Not configured',
+        'status_tone': 'gray',
+        'endpoint': '',
+        'response_time_ms': None,
+        'message': 'Prometheus configuration is not available for this cluster.',
+        'last_checked_at': utc_now_display(),
+    }
+
+
+def _empty_snapshot_summary() -> dict[str, Any]:
+    return {
+        'status': 'Unavailable',
+        'tone': 'unknown',
+        'description': 'No committed Analytics Overview snapshot is available for this cluster.',
+        'latest_generated_at': 'Not Available',
+        'latest_attempt_at': 'Not Available',
+        'latest_dataset': 'No Snapshot',
+        'current_dataset_count': 0,
+        'available_dataset_count': 0,
+        'expected_dataset_count': 7,
+        'stale_dataset_count': 0,
+        'pending_dataset_count': 0,
+        'failed_dataset_count': 0,
+        'missing_dataset_count': 7,
+        'datasets': {},
+        'analysis_window': 'Last 24 Hours',
+    }
+
+
+def _empty_health_summary() -> dict[str, Any]:
+    definitions = [
+        ('cluster_health', 'Cluster Health', 'Unknown', 'shield-question', 'Cluster health data is not available yet.'),
+        ('resource_pressure', 'Resource Pressure', 'Unknown', 'gauge', 'Resource pressure data is not available yet.'),
+        ('capacity_risk', 'Capacity Risk', 'Unknown', 'triangle-alert', 'Capacity risk data is not available yet.'),
+        ('active_alerts', 'Active Alerts', 'N/A', 'bell', 'Active alert evidence is not available yet.'),
+        ('forecast_risk', 'Forecast Risk', 'Unknown', 'trending-up', 'Forecast data is not available yet.'),
+        ('top_risk_namespace', 'Top Risk Namespace', '-', 'folder', 'Namespace risk data is not available yet.'),
+    ]
+    return {
+        key: build_metric_card(
+            label=label,
+            value=value,
+            status='unknown',
+            tone='gray',
+            icon=icon,
+            description=description,
+        )
+        for key, label, value, icon, description in definitions
+    }
+
+
+def _empty_resource_snapshot() -> dict[str, Any]:
+    definitions = {
+        'cpu': ('CPU Utilization', 'cpu', 'CPU utilization data is not available.', '/analytics/utilization'),
+        'memory': ('Memory Utilization', 'memory-stick', 'Memory utilization data is not available.', '/analytics/utilization'),
+        'storage': ('Storage Utilization', 'database', 'Storage utilization data is not available.', '/analytics/storage'),
+        'pods': ('Pod Utilization', 'boxes', 'Pod utilization data is not available.', '/analytics/utilization'),
+    }
+    return {
+        'available': False,
+        **{
+            key: build_metric_card(
+                label=label,
+                value='N/A',
+                unit='%',
+                status='unknown',
+                tone='gray',
+                icon=icon,
+                description=description,
+                percent=None,
+                href=href,
+            )
+            for key, (label, icon, description, href) in definitions.items()
+        },
+    }
+
+
+def _empty_capacity_snapshot() -> dict[str, Any]:
+    definitions = {
+        'cpu_headroom': ('CPU Headroom', 'Cores', 'cpu', 'Remaining worker CPU allocatable capacity.'),
+        'memory_headroom': ('Memory Headroom', 'GiB', 'memory-stick', 'Remaining worker memory allocatable capacity.'),
+        'pod_capacity_remaining': ('Pod Capacity Remaining', 'Pods', 'box', 'Available pod slots across worker nodes.'),
+        'recommendations': ('Capacity Recommendations', 'Items', 'lightbulb', 'Capacity findings that need review.'),
+    }
+    return {
+        'available': False,
+        **{
+            key: build_metric_card(
+                label=label,
+                value='N/A' if key == 'recommendations' else '-',
+                unit=unit,
+                status='unknown',
+                tone='gray',
+                icon=icon,
+                description=description,
+                href='/analytics/capacity',
+            )
+            for key, (label, unit, icon, description) in definitions.items()
+        },
+    }
+
+
+def _empty_storage_snapshot() -> dict[str, Any]:
+    return {
+        'available': False,
+        'pvc_requested': 'N/A',
+        'pvc_used': 'N/A',
+        'pvc_free': 'N/A',
+        'pvc_risk_count': 0,
+        'used_percent': 0,
+        'free_percent': 0,
+        'top_namespace': '-',
+        'status': 'unknown',
+        'tone': 'gray',
+        'href': '/analytics/storage',
+        'recommendation_count': 0,
+    }
+
+
+def _empty_workload_snapshot() -> dict[str, Any]:
+    return {
+        'available': False,
+        'missing_cpu_requests': 0,
+        'missing_memory_requests': 0,
+        'cpu_limits_unset': 0,
+        'memory_limits_missing': 0,
+        'over_provisioned': 0,
+        'under_provisioned': 0,
+        'status': 'unknown',
+        'tone': 'gray',
+        'href': '/analytics/workload',
+        'recommendation_count': 0,
+    }
+
+
+def _empty_top_consumers() -> dict[str, Any]:
+    return {
+        'available': False,
+        'cpu': [],
+        'memory': [],
+        'storage': [],
+        'pods': [],
+        'href': '/analytics/top-consumers',
+        'recommendation_count': 0,
+    }
+
+
+def _empty_forecast_snapshot() -> dict[str, Any]:
+    return {
+        'available': False,
+        'cpu_trend': 'Unknown',
+        'memory_trend': 'Unknown',
+        'storage_trend': 'Unknown',
+        'pod_trend': 'Unknown',
+        'risk_count': 0,
+        'risk_note': 'Forecast data is not available yet.',
+        'forecast_risk': 'Unknown',
+        'forecast_horizon': '30 Days',
+        'highest_projected_resource': 'N/A',
+        'highest_projected_percent': None,
+        'series': [],
+        'href': '/analytics/forecast',
+        'recommendation_count': 0,
+    }
+
+
+def _empty_alerts_snapshot() -> dict[str, Any]:
+    return {
+        'available': False,
+        'firing_alerts': 0,
+        'pending_alerts': 0,
+        'critical_alerts': 0,
+        'warning_alerts': 0,
+        'recent_anomalies': 0,
+        'highest_severity': '-',
+        'highest_severity_description': 'No alert data available.',
+        'status': 'unknown',
+        'tone': 'gray',
+        'href': '/analytics/alerts?tab=alerts',
+        'source_connected': False,
+        'recommendation_count': 0,
+    }
+
+
+def _empty_actionable_recommendations() -> dict[str, Any]:
+    return {
+        'total_count': 0,
+        'status': 'Unknown',
+        'tone': 'gray',
+        'description': 'Committed analytics evidence is not available for recommendation assessment.',
+        'evidence_available': False,
+        'evidence_complete': False,
+        'available_dataset_count': 0,
+        'expected_dataset_count': 7,
+        'sources': [],
+        'priority_summary': {'critical': 0, 'warning': 0},
+        'items': [],
+        'capacity_recommendations': [],
+        'utilization_recommendations': [],
+        'storage_recommendations': [],
+        'workload_recommendations': [],
+        'forecast_recommendations': [],
+        'top_consumers_recommendations': [],
+        'alerts_recommendations': [],
     }
 
 

@@ -1401,7 +1401,7 @@ def _empty_payload(
 def get_forecast_snapshot(
     cluster_id: str,
     time_range: str = '30d',
-) -> dict[str, Any]:
+) -> dict[str, Any] | None:
     from app.analytics.materialization.service import read_snapshot
 
     history_window = _normalize_forecast_history_window(time_range)
@@ -1416,7 +1416,7 @@ def get_forecast_snapshot(
     context = result.context or {}
     forecast_payload = context.get('forecast_payload')
     if not isinstance(forecast_payload, dict):
-        return _empty_forecast_snapshot()
+        return None
     items = _as_list(forecast_payload.get('items', []))
     summary = _as_dict(forecast_payload.get('summary', {}))
     item_map = _build_forecast_item_map(items)
@@ -1457,39 +1457,6 @@ def get_forecast_snapshot(
             else []
         ),
     }
-
-def _empty_forecast_snapshot() -> dict[str, Any]:
-    return {
-        'cpu_trend': 'Stable',
-        'cpu_trend_value': None,
-        'memory_trend': 'Stable',
-        'memory_trend_value': None,
-        'storage_trend': 'Stable',
-        'storage_trend_value': None,
-        'pod_trend': 'Stable',
-        'pod_trend_value': None,
-        'forecast_risk': 'Unknown',
-        'forecast_horizon': '30 days',
-        'risk_count': 0,
-        'risk_note': 'Forecast evidence is not available for the selected time range.',
-        'highest_projected_resource': 'N/A',
-        'highest_projected_percent': None,
-        'nearest_warning': {
-            'resource': None,
-            'label': 'Not projected',
-            'days': None,
-            'date': None,
-        },
-        'nearest_critical': {
-            'resource': None,
-            'label': 'Not projected',
-            'days': None,
-            'date': None,
-        },
-        'series': [],
-        'recommendation_count': 0,
-    }
-
 
 def _normalize_forecast_history_window(
     time_range: str,
