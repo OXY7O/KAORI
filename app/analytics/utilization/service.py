@@ -3,12 +3,13 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
+from app.analytics.common.clusters import get_selected_cluster as resolve_selected_cluster
+from app.analytics.common.coercion import safe_float
 from app.analytics.common.presentation import present_prometheus_status
 from app.integrations.consumer.contracts import ConsumerResult
 from app.integrations.prometheus.query_profiles import get_query_expression
 from app.models import Cluster
 from app.prometheus.consumer import PrometheusConsumer
-from app.prometheus.repository import resolve_instance_for_cluster
 from app.prometheus.service import PrometheusService
 
 CPU_CAPACITY = get_query_expression('analytics.utilization.queries.CPU_CAPACITY')
@@ -60,22 +61,6 @@ def get_utilization_clusters() -> list[Cluster]:
         Cluster.created_at.asc(),
         Cluster.id.asc(),
     ).all()
-
-
-def get_selected_cluster(
-    cluster_id: str | None,
-) -> Cluster | None:
-    if cluster_id:
-        cluster = Cluster.query.filter_by(
-            id=cluster_id,
-        ).first()
-
-        if cluster:
-            return cluster
-
-    return Cluster.query.order_by(
-        Cluster.name,
-    ).first()
 
 
 class UtilizationService:
@@ -825,14 +810,14 @@ class UtilizationService:
                 'capacity': summary['cpu_capacity'],
                 'usage': summary['cpu_usage'],
                 'utilization': summary['cpu_utilization'],
-                'scope': 'All nodes',
+                'scope': 'Worker nodes',
             },
             {
                 'resource': 'Memory',
                 'capacity': summary['memory_capacity'],
                 'usage': summary['memory_usage'],
                 'utilization': summary['memory_utilization'],
-                'scope': 'All nodes',
+                'scope': 'Worker nodes',
             },
             {
                 'resource': 'Disk /var or /',
@@ -846,7 +831,7 @@ class UtilizationService:
                 'capacity': summary['pod_capacity'],
                 'usage': summary['pod_count'],
                 'utilization': summary['pod_utilization'],
-                'scope': 'All nodes',
+                'scope': 'Worker nodes',
             },
         ]
 
@@ -907,19 +892,25 @@ class UtilizationService:
     @staticmethod
     def _risk_from_utilization(
         utilization: float,
+        *,
+        evidence_available: bool = True,
     ) -> str:
+        if not evidence_available:
+            return 'Unknown'
         if utilization > 90:
             return 'Critical'
-
         if utilization >= 75:
             return 'Warning'
-
         return 'Normal'
 
     @staticmethod
     def _utilization_reason(
         utilization: float,
+        *,
+        evidence_available: bool = True,
     ) -> str:
+        if not evidence_available:
+            return 'Capacity evidence unavailable'
         return f'Utilization {utilization:.2f}%'
 
     @staticmethod
@@ -966,6 +957,11 @@ class UtilizationService:
             )
         )
 
+        cpu_evidence = float(summary.get('cpu_capacity', 0) or 0) > 0
+        memory_evidence = float(summary.get('memory_capacity', 0) or 0) > 0
+        storage_evidence = float(summary.get('storage_capacity', 0) or 0) > 0
+        pod_evidence = float(summary.get('pod_capacity', 0) or 0) > 0
+
         memory_pressure_nodes = self.get_memory_pressure_nodes(
             node_name,
         )
@@ -978,9 +974,11 @@ class UtilizationService:
 
         memory_status = self._risk_from_utilization(
             memory_utilization,
+            evidence_available=memory_evidence,
         )
         memory_reason = self._utilization_reason(
             memory_utilization,
+            evidence_available=memory_evidence,
         )
 
         if memory_pressure_nodes > 0:
@@ -993,9 +991,11 @@ class UtilizationService:
 
         storage_status = self._risk_from_utilization(
             storage_utilization,
+            evidence_available=storage_evidence,
         )
         storage_reason = self._utilization_reason(
             storage_utilization,
+            evidence_available=storage_evidence,
         )
 
         if disk_pressure_nodes > 0:
@@ -1008,9 +1008,11 @@ class UtilizationService:
 
         pod_status = self._risk_from_utilization(
             pod_utilization,
+            evidence_available=pod_evidence,
         )
         pod_reason = self._utilization_reason(
             pod_utilization,
+            evidence_available=pod_evidence,
         )
 
         if pid_pressure_nodes > 0:
@@ -1025,9 +1027,11 @@ class UtilizationService:
             'cpu': {
                 'status': self._risk_from_utilization(
                     cpu_utilization,
+                    evidence_available=cpu_evidence,
                 ),
                 'reason': self._utilization_reason(
                     cpu_utilization,
+                    evidence_available=cpu_evidence,
                 ),
                 'pressure_nodes': 0,
                 'utilization': cpu_utilization,
@@ -1094,7 +1098,8 @@ class UtilizationService:
 def get_prometheus_status_snapshot(
     cluster_id: str,
 ) -> dict[str, Any]:
-    cluster = get_selected_cluster(cluster_id)
+    clusters = get_utilization_clusters()
+    cluster = resolve_selected_cluster(clusters, cluster_id or '')
     if not cluster:
         return present_prometheus_status(
             {
@@ -1141,7 +1146,7 @@ def get_prometheus_status_snapshot(
 def get_utilization_snapshot(
     cluster_id: str,
     time_range: str = '24h',
-) -> dict[str, float] | None:
+) -> dict[str, float | None] | None:
     _ = time_range
     from app.analytics.materialization.service import read_snapshot
 
@@ -1153,74 +1158,15 @@ def get_utilization_snapshot(
     summary = (result.context or {}).get('summary') if result.available else None
     if not isinstance(summary, dict):
         return None
+
+    def percent(utilization_key: str, capacity_key: str) -> float | None:
+        if capacity_key not in summary or safe_float(summary.get(capacity_key)) <= 0:
+            return None
+        return round(safe_float(summary.get(utilization_key)), 2)
+
     return {
-        'cpu_percent': _safe_float(summary.get('cpu_utilization', 0)),
-        'memory_percent': _safe_float(summary.get('memory_utilization', 0)),
-        'storage_percent': _safe_float(summary.get('storage_utilization', 0)),
-        'pod_percent': _safe_float(summary.get('pod_utilization', 0)),
+        'cpu_percent': percent('cpu_utilization', 'cpu_capacity'),
+        'memory_percent': percent('memory_utilization', 'memory_capacity'),
+        'storage_percent': percent('storage_utilization', 'storage_capacity'),
+        'pod_percent': percent('pod_utilization', 'pod_capacity'),
     }
-
-
-
-def _build_utilization_service(
-    cluster: Cluster,
-) -> UtilizationService:
-    prometheus_service = _build_prometheus_service(
-        cluster,
-    )
-
-    return UtilizationService(
-        prometheus_service,
-    )
-
-
-def _build_prometheus_service(
-    cluster: Cluster,
-) -> PrometheusService:
-    return PrometheusService(
-        cluster,
-    )
-
-
-def _get_cluster_prometheus_endpoint(
-    cluster: Cluster,
-) -> str:
-    prometheus_config = resolve_instance_for_cluster(cluster.id)
-
-    endpoint = getattr(
-        prometheus_config,
-        'endpoint',
-        '',
-    )
-
-    if isinstance(
-        endpoint,
-        str,
-    ):
-        return endpoint
-
-    return ''
-
-
-def _safe_float(
-    value: Any,
-) -> float:
-    if value is None:
-        return 0.0
-
-    if isinstance(
-        value,
-        int | float | str | bytes,
-    ):
-        try:
-            return round(
-                float(value),
-                2,
-            )
-        except (
-            TypeError,
-            ValueError,
-        ):
-            return 0.0
-
-    return 0.0

@@ -52,6 +52,40 @@
         resizeObserver.observe(container);
     }
 
+    function normalizedPoints(values) {
+        if (!Array.isArray(values)) return [];
+        return values
+            .filter((item) => Number.isFinite(Number(item?.timestamp)) && Number.isFinite(Number(item?.value)))
+            .map((item) => ({ timestamp: Number(item.timestamp), value: Number(item.value) }))
+            .sort((left, right) => left.timestamp - right.timestamp);
+    }
+
+    function alignedSeries(series) {
+        const timestamps = [...new Set(
+            series.flatMap(([, values]) => values.map((point) => point.timestamp)),
+        )].sort((left, right) => left - right);
+
+        return {
+            timestamps,
+            datasets: series.map(([label, values, color]) => {
+                const byTimestamp = new Map(values.map((point) => [point.timestamp, point.value]));
+                return {
+                    label,
+                    color,
+                    values: timestamps.map((timestamp) => byTimestamp.get(timestamp) ?? null),
+                };
+            }),
+        };
+    }
+
+    function formatTimestamp(timestamp, trendHours) {
+        const longWindow = Number(trendHours) > 24;
+        return new Intl.DateTimeFormat([], longWindow
+            ? { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' }
+            : { hour: '2-digit', minute: '2-digit' }
+        ).format(new Date(timestamp * 1000));
+    }
+
     function renderTrendChart(root = document) {
         const panel = trendPanel(root);
         const canvas = panel?.querySelector('#utilizationTrendChart');
@@ -62,17 +96,25 @@
         observeContainer(container);
         if (!isTrendRenderable(panel, container)) return false;
 
-        const cpuTrend = Array.isArray(data.cpu) ? data.cpu : [];
-        const memoryTrend = Array.isArray(data.memory) ? data.memory : [];
-        const podTrend = Array.isArray(data.pods) ? data.pods : [];
+        const rawSeries = [
+            ['CPU', normalizedPoints(data.cpu), cssVariable('--kaori-brand-primary', 'CanvasText')],
+            ['Memory', normalizedPoints(data.memory), cssVariable('--kaori-status-normal', 'CanvasText')],
+            ['Pods', normalizedPoints(data.pods), cssVariable('--kaori-status-pending', 'CanvasText')],
+        ];
+        const hasData = rawSeries.some(([, values]) => values.length);
         const emptyState = panel.querySelector('#trendEmptyState');
 
-        if (!cpuTrend.length && !memoryTrend.length && !podTrend.length) {
+        if (!hasData) {
             destroyChart();
             container.classList.add('hidden');
             emptyState?.classList.remove('hidden');
             return true;
         }
+
+        const aligned = alignedSeries(rawSeries);
+        const observedValues = rawSeries.flatMap(([, values]) => values.map((point) => point.value));
+        const observedMaximum = Math.max(100, ...observedValues);
+        const suggestedMaximum = Math.ceil(observedMaximum / 10) * 10;
 
         container.classList.remove('hidden');
         emptyState?.classList.add('hidden');
@@ -86,33 +128,25 @@
         const textColor = cssVariable('--kaori-content-secondary', 'CanvasText');
         const primaryColor = cssVariable('--kaori-content-primary', 'CanvasText');
         const gridColor = cssVariable('--kaori-outline-subtle', 'transparent');
-        const series = [
-            ['CPU', cpuTrend, cssVariable('--kaori-brand-primary', 'CanvasText')],
-            ['Memory', memoryTrend, cssVariable('--kaori-status-normal', 'CanvasText')],
-            ['Pods', podTrend, cssVariable('--kaori-status-pending', 'CanvasText')],
-        ];
-        const baseTrend = series.find(([, values]) => values.length)?.[1] || [];
-        const labels = baseTrend.map((item) => new Date(item.timestamp * 1000).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-        }));
+        const labels = aligned.timestamps.map((timestamp) => formatTimestamp(timestamp, data.trend_hours));
 
         window[CHART_KEY] = new Chart(canvas.getContext('2d'), {
             type: 'line',
             data: {
                 labels,
-                datasets: series.map(([label, values, color]) => ({
-                    label,
-                    data: values.map((item) => item.value),
-                    borderColor: color,
-                    backgroundColor: color,
-                    pointBackgroundColor: color,
+                datasets: aligned.datasets.map((dataset) => ({
+                    label: dataset.label,
+                    data: dataset.values,
+                    borderColor: dataset.color,
+                    backgroundColor: dataset.color,
+                    pointBackgroundColor: dataset.color,
                     pointBorderColor: cardColor,
                     pointBorderWidth: 2,
                     pointRadius: 2.5,
                     pointHoverRadius: 5,
                     borderWidth: 3,
                     fill: false,
+                    spanGaps: true,
                     tension: 0.35,
                 })),
             },
@@ -134,14 +168,14 @@
                         padding: 12,
                         displayColors: true,
                         callbacks: {
-                            label: (context) => `${context.dataset.label}: ${context.parsed.y.toFixed(2)}%`,
+                            label: (context) => `${context.dataset.label}: ${Number(context.parsed.y).toFixed(2)}%`,
                         },
                     },
                 },
                 scales: {
                     y: {
                         min: 0,
-                        max: 100,
+                        suggestedMax: suggestedMaximum,
                         ticks: { color: textColor, callback: (value) => `${value}%` },
                         grid: { color: gridColor, drawBorder: false },
                     },
@@ -157,6 +191,8 @@
     }
 
     function schedule(root = document, retry = 0) {
+        const panel = trendPanel(root);
+        if (!panel?.querySelector('#utilizationTrendChart')) return;
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
                 if (renderTrendChart(root)) return;

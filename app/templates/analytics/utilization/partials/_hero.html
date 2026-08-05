@@ -1,31 +1,20 @@
 {% import "components/page_hero.html" as page_hero %}
 {% set selected_cluster_name = cluster.name if cluster else 'No Cluster Selected' %}
-{% set cpu_util = summary.cpu_utilization|default(0) %}
-{% set memory_util = summary.memory_utilization|default(0) %}
-{% set storage_util = summary.storage_utilization|default(0) %}
-{% set pod_util = summary.pod_utilization|default(0) %}
-{% set highest_util = [cpu_util, memory_util, storage_util, pod_util]|max %}
-{% if highest_util == memory_util %}{% set highest_label = 'Memory' %}{% elif highest_util == storage_util %}{% set highest_label = 'Storage' %}{% elif highest_util == pod_util %}{% set highest_label = 'Pods' %}{% else %}{% set highest_label = 'CPU' %}{% endif %}
-{% if highest_util > 90 %}
-    {% set posture_label = 'Critical' %}{% set posture_tone = 'critical' %}
-{% elif highest_util >= 75 %}
-    {% set posture_label = 'Watch' %}{% set posture_tone = 'warning' %}
-{% else %}
-    {% set posture_label = 'Healthy' %}{% set posture_tone = 'normal' %}
-{% endif %}
+{% set presentation = utilization_presentation|default({}) %}
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('activity', 'Kubernetes Analytics', 'chart-no-axes-combined') %}
                 <h1 class="{{ page_hero.title_classes() }}">Resource Utilization</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review current utilization, trends, and node pressure across core resources.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review current utilization, trends, and node pressure across worker compute, node filesystems, and pod density.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('server', selected_cluster_name) }}
                     {% if dependency_blocker %}
                         {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
                     {% else %}
-                        {{ page_hero.meta_label('cpu', 'CPU ' ~ cpu_util ~ '%') }}
-                        {{ page_hero.meta_label('memory-stick', 'Memory ' ~ memory_util ~ '%') }}
+                        {% for metric in presentation.resource_rows|default([]) if metric.key in ['cpu', 'memory'] %}
+                            {{ page_hero.meta_label(metric.icon, metric.short_label ~ ' ' ~ metric.value_display) }}
+                        {% endfor %}
                     {% endif %}
                 </div>
             {% endcall %}
@@ -40,10 +29,10 @@
                 'Resource Utilization Posture',
                 'Utilization Posture',
                 'Resource Pressure',
-                posture_label,
-                posture_tone,
+                presentation.posture_label|default('Unknown'),
+                presentation.posture_tone|default('unknown'),
                 [
-                    ('gauge', 'Highest Pressure', highest_util ~ '%', highest_label ~ ' utilization'),
+                    ('gauge', 'Highest Pressure', presentation.highest_value_display|default('N/A'), presentation.highest_label|default('No evidence')),
                     ('list-checks', 'Actionable', recommendation_count|default(0), 'Prioritized recommendations')
                 ],
                 'Manage Clusters',

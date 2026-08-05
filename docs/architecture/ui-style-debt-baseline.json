@@ -52,15 +52,6 @@
     "app/templates/analytics/partials/_load_tracker.html": {
       "copied_standard_surface_shells": 1
     },
-    "app/templates/analytics/utilization/index.html": {
-      "semantic_border_utilities": 1
-    },
-    "app/templates/analytics/utilization/partials/_node_detail.html": {
-      "semantic_border_utilities": 1
-    },
-    "app/templates/analytics/utilization/partials/_trend.html": {
-      "semantic_border_utilities": 1
-    },
     "app/templates/auth/partials/_brand_panel.html": {
       "custom_hero_titles": 1,
       "font_extrabold_utilities": 2

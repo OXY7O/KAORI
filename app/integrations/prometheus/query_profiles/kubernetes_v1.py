@@ -5,6 +5,13 @@ from app.integrations.prometheus.query_profiles.types import QueryDefinition
 PROFILE_KEY = 'promql-kubernetes-v1'
 PROFILE_VERSION = 1
 
+_NODE_ROLE_LABEL = ('kube_node_role', ('node', 'role'))
+_ALLOCATABLE_NODE_RESOURCE_LABEL = ('kube_node_status_allocatable', ('node', 'resource', 'unit'))
+_CONTAINER_CPU_NODE_LABEL = ('container_cpu_usage_seconds_total', ('container', 'node'))
+_CONTAINER_MEMORY_NODE_LABEL = ('container_memory_working_set_bytes', ('container', 'node'))
+_POD_PHASE_LABEL = ('kube_pod_status_phase', ('namespace', 'pod', 'phase'))
+_POD_INFO_LABEL = ('kube_pod_info', ('namespace', 'pod', 'node'))
+
 QUERIES: dict[str, QueryDefinition] = {
     'prometheus.queries.CLUSTER_NODE_COUNT': QueryDefinition(
         key='prometheus.queries.CLUSTER_NODE_COUNT',
@@ -837,51 +844,45 @@ QUERIES: dict[str, QueryDefinition] = {
     ),
     'analytics.utilization.queries.CPU_CAPACITY': QueryDefinition(
         key='analytics.utilization.queries.CPU_CAPACITY',
-        expression='sum(\n    kube_node_status_capacity{\n        resource="cpu"\n    }\n)',
+        expression='sum(\n    kube_node_status_allocatable{\n        resource="cpu",\n        unit="core"\n    }\n    unless on(node)\n    kube_node_role{role=~"control-plane|master"}\n)',
         domain='app.analytics.utilization',
-        required_metrics=('kube_node_status_capacity',),
-        required_labels=(('kube_node_status_capacity', ('resource',)),),
+        required_metrics=('kube_node_status_allocatable', 'kube_node_role'),
+        required_labels=(_ALLOCATABLE_NODE_RESOURCE_LABEL, _NODE_ROLE_LABEL),
     ),
     'analytics.utilization.queries.CPU_USAGE': QueryDefinition(
         key='analytics.utilization.queries.CPU_USAGE',
-        expression='sum(\n    rate(\n        container_cpu_usage_seconds_total{\n            container!="",\n            container!="POD"\n        }[5m]\n    )\n)',
+        expression='sum(\n    rate(\n        container_cpu_usage_seconds_total{\n            container!="",\n            container!="POD",\n            node!=""\n        }[5m]\n    )\n    unless on(node)\n    kube_node_role{role=~"control-plane|master"}\n)',
         domain='app.analytics.utilization',
-        required_metrics=('container_cpu_usage_seconds_total',),
-        required_labels=(('container_cpu_usage_seconds_total', ('container',)),),
+        required_metrics=('container_cpu_usage_seconds_total', 'kube_node_role'),
+        required_labels=(_CONTAINER_CPU_NODE_LABEL, _NODE_ROLE_LABEL),
     ),
     'analytics.utilization.queries.CPU_UTILIZATION': QueryDefinition(
         key='analytics.utilization.queries.CPU_UTILIZATION',
-        expression='(\n    sum(\n        rate(\n            container_cpu_usage_seconds_total{\n                container!="",\n                container!="POD"\n            }[5m]\n        )\n    )\n/\n    sum(\n        kube_node_status_capacity{\n            resource="cpu"\n        }\n    )\n) * 100',
+        expression='(\n    sum(\n        rate(\n            container_cpu_usage_seconds_total{\n                container!="",\n                container!="POD",\n                node!=""\n            }[5m]\n        )\n        unless on(node)\n        kube_node_role{role=~"control-plane|master"}\n    )\n/\n    sum(\n        kube_node_status_allocatable{\n            resource="cpu",\n            unit="core"\n        }\n        unless on(node)\n        kube_node_role{role=~"control-plane|master"}\n    )\n) * 100',
         domain='app.analytics.utilization',
-        required_metrics=('container_cpu_usage_seconds_total', 'kube_node_status_capacity'),
-        required_labels=(
-            ('container_cpu_usage_seconds_total', ('container',)),
-            ('kube_node_status_capacity', ('resource',)),
-        ),
+        required_metrics=('container_cpu_usage_seconds_total', 'kube_node_role', 'kube_node_status_allocatable'),
+        required_labels=(_CONTAINER_CPU_NODE_LABEL, _NODE_ROLE_LABEL, _ALLOCATABLE_NODE_RESOURCE_LABEL),
     ),
     'analytics.utilization.queries.MEMORY_CAPACITY': QueryDefinition(
         key='analytics.utilization.queries.MEMORY_CAPACITY',
-        expression='sum(\n    kube_node_status_capacity{\n        resource="memory"\n    }\n)',
+        expression='sum(\n    kube_node_status_allocatable{\n        resource="memory",\n        unit="byte"\n    }\n    unless on(node)\n    kube_node_role{role=~"control-plane|master"}\n)',
         domain='app.analytics.utilization',
-        required_metrics=('kube_node_status_capacity',),
-        required_labels=(('kube_node_status_capacity', ('resource',)),),
+        required_metrics=('kube_node_status_allocatable', 'kube_node_role'),
+        required_labels=(_ALLOCATABLE_NODE_RESOURCE_LABEL, _NODE_ROLE_LABEL),
     ),
     'analytics.utilization.queries.MEMORY_USAGE': QueryDefinition(
         key='analytics.utilization.queries.MEMORY_USAGE',
-        expression='sum(\n    container_memory_working_set_bytes{\n        container!="",\n        container!="POD"\n    }\n)',
+        expression='sum(\n    container_memory_working_set_bytes{\n        container!="",\n        container!="POD",\n        node!=""\n    }\n    unless on(node)\n    kube_node_role{role=~"control-plane|master"}\n)',
         domain='app.analytics.utilization',
-        required_metrics=('container_memory_working_set_bytes',),
-        required_labels=(('container_memory_working_set_bytes', ('container',)),),
+        required_metrics=('container_memory_working_set_bytes', 'kube_node_role'),
+        required_labels=(_CONTAINER_MEMORY_NODE_LABEL, _NODE_ROLE_LABEL),
     ),
     'analytics.utilization.queries.MEMORY_UTILIZATION': QueryDefinition(
         key='analytics.utilization.queries.MEMORY_UTILIZATION',
-        expression='(\n    sum(\n        container_memory_working_set_bytes{\n            container!="",\n            container!="POD"\n        }\n    )\n/\n    sum(\n        kube_node_status_capacity{\n            resource="memory"\n        }\n    )\n) * 100',
+        expression='(\n    sum(\n        container_memory_working_set_bytes{\n            container!="",\n            container!="POD",\n            node!=""\n        }\n        unless on(node)\n        kube_node_role{role=~"control-plane|master"}\n    )\n/\n    sum(\n        kube_node_status_allocatable{\n            resource="memory",\n            unit="byte"\n        }\n        unless on(node)\n        kube_node_role{role=~"control-plane|master"}\n    )\n) * 100',
         domain='app.analytics.utilization',
-        required_metrics=('container_memory_working_set_bytes', 'kube_node_status_capacity'),
-        required_labels=(
-            ('container_memory_working_set_bytes', ('container',)),
-            ('kube_node_status_capacity', ('resource',)),
-        ),
+        required_metrics=('container_memory_working_set_bytes', 'kube_node_role', 'kube_node_status_allocatable'),
+        required_labels=(_CONTAINER_MEMORY_NODE_LABEL, _NODE_ROLE_LABEL, _ALLOCATABLE_NODE_RESOURCE_LABEL),
     ),
     'analytics.utilization.queries.STORAGE_CAPACITY': QueryDefinition(
         key='analytics.utilization.queries.STORAGE_CAPACITY',
@@ -919,38 +920,38 @@ QUERIES: dict[str, QueryDefinition] = {
     ),
     'analytics.utilization.queries.POD_COUNT': QueryDefinition(
         key='analytics.utilization.queries.POD_COUNT',
-        expression='count(\n    kube_pod_status_phase{\n        phase="Running"\n    }\n)',
+        expression='sum(\n    (kube_pod_status_phase{phase="Running"} == 1)\n    * on(namespace, pod) group_left(node)\n    (\n        kube_pod_info\n        unless on(node)\n        kube_node_role{role=~"control-plane|master"}\n    )\n)',
         domain='app.analytics.utilization',
-        required_metrics=('kube_pod_status_phase',),
-        required_labels=(('kube_pod_status_phase', ('phase',)),),
+        required_metrics=('kube_pod_status_phase', 'kube_pod_info', 'kube_node_role'),
+        required_labels=(_POD_PHASE_LABEL, _POD_INFO_LABEL, _NODE_ROLE_LABEL),
     ),
     'analytics.utilization.queries.POD_CAPACITY': QueryDefinition(
         key='analytics.utilization.queries.POD_CAPACITY',
-        expression='sum(\n    kube_node_status_capacity{\n        resource="pods"\n    }\n)',
+        expression='sum(\n    kube_node_status_allocatable{\n        resource="pods",\n        unit="integer"\n    }\n    unless on(node)\n    kube_node_role{role=~"control-plane|master"}\n)',
         domain='app.analytics.utilization',
-        required_metrics=('kube_node_status_capacity',),
-        required_labels=(('kube_node_status_capacity', ('resource',)),),
+        required_metrics=('kube_node_status_allocatable', 'kube_node_role'),
+        required_labels=(_ALLOCATABLE_NODE_RESOURCE_LABEL, _NODE_ROLE_LABEL),
     ),
     'analytics.utilization.queries.POD_UTILIZATION': QueryDefinition(
         key='analytics.utilization.queries.POD_UTILIZATION',
-        expression='(\n    count(\n        kube_pod_status_phase{\n            phase="Running"\n        }\n    )\n/\n    sum(\n        kube_node_status_capacity{\n            resource="pods"\n        }\n    )\n) * 100',
+        expression='(\n    sum(\n        (kube_pod_status_phase{phase="Running"} == 1)\n        * on(namespace, pod) group_left(node)\n        (\n            kube_pod_info\n            unless on(node)\n            kube_node_role{role=~"control-plane|master"}\n        )\n    )\n/\n    sum(\n        kube_node_status_allocatable{\n            resource="pods",\n            unit="integer"\n        }\n        unless on(node)\n        kube_node_role{role=~"control-plane|master"}\n    )\n) * 100',
         domain='app.analytics.utilization',
-        required_metrics=('kube_pod_status_phase', 'kube_node_status_capacity'),
-        required_labels=(('kube_node_status_capacity', ('resource',)), ('kube_pod_status_phase', ('phase',))),
+        required_metrics=('kube_pod_status_phase', 'kube_pod_info', 'kube_node_role', 'kube_node_status_allocatable'),
+        required_labels=(_POD_PHASE_LABEL, _POD_INFO_LABEL, _NODE_ROLE_LABEL, _ALLOCATABLE_NODE_RESOURCE_LABEL),
     ),
     'analytics.utilization.queries.TOP_CPU_CONSUMERS': QueryDefinition(
         key='analytics.utilization.queries.TOP_CPU_CONSUMERS',
-        expression='topk(\n    10,\n    sum by(namespace,pod)(\n        rate(\n            container_cpu_usage_seconds_total{\n                container!="",\n                container!="POD"\n            }[5m]\n        )\n    )\n)',
+        expression='topk(\n    10,\n    sum by(namespace, pod)(\n        rate(\n            container_cpu_usage_seconds_total{\n                container!="",\n                container!="POD",\n                node!=""\n            }[5m]\n        )\n        unless on(node)\n        kube_node_role{role=~"control-plane|master"}\n    )\n)',
         domain='app.analytics.utilization',
-        required_metrics=('container_cpu_usage_seconds_total',),
-        required_labels=(('container_cpu_usage_seconds_total', ('container',)),),
+        required_metrics=('container_cpu_usage_seconds_total', 'kube_node_role'),
+        required_labels=(('container_cpu_usage_seconds_total', ('container', 'namespace', 'pod', 'node')), _NODE_ROLE_LABEL),
     ),
     'analytics.utilization.queries.TOP_MEMORY_CONSUMERS': QueryDefinition(
         key='analytics.utilization.queries.TOP_MEMORY_CONSUMERS',
-        expression='topk(\n    10,\n    sum by(namespace,pod)(\n        container_memory_working_set_bytes{\n            container!="",\n            container!="POD"\n        }\n    )\n)',
+        expression='topk(\n    10,\n    sum by(namespace, pod)(\n        container_memory_working_set_bytes{\n            container!="",\n            container!="POD",\n            node!=""\n        }\n        unless on(node)\n        kube_node_role{role=~"control-plane|master"}\n    )\n)',
         domain='app.analytics.utilization',
-        required_metrics=('container_memory_working_set_bytes',),
-        required_labels=(('container_memory_working_set_bytes', ('container',)),),
+        required_metrics=('container_memory_working_set_bytes', 'kube_node_role'),
+        required_labels=(('container_memory_working_set_bytes', ('container', 'namespace', 'pod', 'node')), _NODE_ROLE_LABEL),
     ),
     'analytics.utilization.queries.KUBERNETES_VERSION': QueryDefinition(
         key='analytics.utilization.queries.KUBERNETES_VERSION',
@@ -982,17 +983,17 @@ QUERIES: dict[str, QueryDefinition] = {
     ),
     'analytics.utilization.queries.MASTER_NODES': QueryDefinition(
         key='analytics.utilization.queries.MASTER_NODES',
-        expression='count(\n    kube_node_role{\n        role="control-plane"\n    }\n)',
+        expression='count(\n    count by(node)(\n        kube_node_role{role=~"control-plane|master"}\n    )\n)',
         domain='app.analytics.utilization',
         required_metrics=('kube_node_role',),
-        required_labels=(('kube_node_role', ('role',)),),
+        required_labels=(_NODE_ROLE_LABEL,),
     ),
     'analytics.utilization.queries.WORKER_NODES': QueryDefinition(
         key='analytics.utilization.queries.WORKER_NODES',
-        expression='count(\n    kube_node_info\n)\n-\ncount(\n    kube_node_role{\n        role="control-plane"\n    }\n)',
+        expression='count(\n    kube_node_info\n    unless on(node)\n    kube_node_role{role=~"control-plane|master"}\n)',
         domain='app.analytics.utilization',
-        required_metrics=('kube_node_role', 'kube_node_info'),
-        required_labels=(('kube_node_role', ('role',)),),
+        required_metrics=('kube_node_info', 'kube_node_role'),
+        required_labels=(('kube_node_info', ('node',)), _NODE_ROLE_LABEL),
     ),
     'analytics.utilization.queries.NODE_LIST': QueryDefinition(
         key='analytics.utilization.queries.NODE_LIST',
@@ -1003,10 +1004,10 @@ QUERIES: dict[str, QueryDefinition] = {
     ),
     'analytics.utilization.queries.WORKER_NODE_LIST': QueryDefinition(
         key='analytics.utilization.queries.WORKER_NODE_LIST',
-        expression='kube_node_info\nunless on(node)\nkube_node_role{\n    role="control-plane"\n}',
+        expression='kube_node_info\nunless on(node)\nkube_node_role{role=~"control-plane|master"}',
         domain='app.analytics.utilization',
-        required_metrics=('kube_node_role', 'kube_node_info'),
-        required_labels=(('kube_node_role', ('role',)),),
+        required_metrics=('kube_node_info', 'kube_node_role'),
+        required_labels=(('kube_node_info', ('node',)), _NODE_ROLE_LABEL),
     ),
     'analytics.utilization.queries.FILESYSTEM_INSTANCE_LIST': QueryDefinition(
         key='analytics.utilization.queries.FILESYSTEM_INSTANCE_LIST',
@@ -1017,10 +1018,10 @@ QUERIES: dict[str, QueryDefinition] = {
     ),
     'analytics.utilization.queries.CPU_CAPACITY_BY_NODE': QueryDefinition(
         key='analytics.utilization.queries.CPU_CAPACITY_BY_NODE',
-        expression='sum(\n    kube_node_status_capacity{\n        resource="cpu",\n        node="{node}"\n    }\n)',
+        expression='sum(\n    kube_node_status_allocatable{\n        resource="cpu",\n        unit="core",\n        node="{node}"\n    }\n)',
         domain='app.analytics.utilization',
-        required_metrics=('kube_node_status_capacity',),
-        required_labels=(('kube_node_status_capacity', ('node', 'resource')),),
+        required_metrics=('kube_node_status_allocatable',),
+        required_labels=(_ALLOCATABLE_NODE_RESOURCE_LABEL,),
     ),
     'analytics.utilization.queries.CPU_USAGE_BY_NODE': QueryDefinition(
         key='analytics.utilization.queries.CPU_USAGE_BY_NODE',
@@ -1031,20 +1032,17 @@ QUERIES: dict[str, QueryDefinition] = {
     ),
     'analytics.utilization.queries.CPU_UTILIZATION_BY_NODE': QueryDefinition(
         key='analytics.utilization.queries.CPU_UTILIZATION_BY_NODE',
-        expression='(\n    sum(\n        rate(\n            container_cpu_usage_seconds_total{\n                container!="",\n                container!="POD",\n                node="{node}"\n            }[5m]\n        )\n    )\n/\n    sum(\n        kube_node_status_capacity{\n            resource="cpu",\n            node="{node}"\n        }\n    )\n) * 100',
+        expression='(\n    sum(\n        rate(\n            container_cpu_usage_seconds_total{\n                container!="",\n                container!="POD",\n                node="{node}"\n            }[5m]\n        )\n    )\n/\n    sum(\n        kube_node_status_allocatable{\n            resource="cpu",\n            unit="core",\n            node="{node}"\n        }\n    )\n) * 100',
         domain='app.analytics.utilization',
-        required_metrics=('container_cpu_usage_seconds_total', 'kube_node_status_capacity'),
-        required_labels=(
-            ('container_cpu_usage_seconds_total', ('container', 'node')),
-            ('kube_node_status_capacity', ('node', 'resource')),
-        ),
+        required_metrics=('container_cpu_usage_seconds_total', 'kube_node_status_allocatable'),
+        required_labels=(_CONTAINER_CPU_NODE_LABEL, _ALLOCATABLE_NODE_RESOURCE_LABEL),
     ),
     'analytics.utilization.queries.MEMORY_CAPACITY_BY_NODE': QueryDefinition(
         key='analytics.utilization.queries.MEMORY_CAPACITY_BY_NODE',
-        expression='sum(\n    kube_node_status_capacity{\n        resource="memory",\n        node="{node}"\n    }\n)',
+        expression='sum(\n    kube_node_status_allocatable{\n        resource="memory",\n        unit="byte",\n        node="{node}"\n    }\n)',
         domain='app.analytics.utilization',
-        required_metrics=('kube_node_status_capacity',),
-        required_labels=(('kube_node_status_capacity', ('node', 'resource')),),
+        required_metrics=('kube_node_status_allocatable',),
+        required_labels=(_ALLOCATABLE_NODE_RESOURCE_LABEL,),
     ),
     'analytics.utilization.queries.MEMORY_USAGE_BY_NODE': QueryDefinition(
         key='analytics.utilization.queries.MEMORY_USAGE_BY_NODE',
@@ -1055,13 +1053,10 @@ QUERIES: dict[str, QueryDefinition] = {
     ),
     'analytics.utilization.queries.MEMORY_UTILIZATION_BY_NODE': QueryDefinition(
         key='analytics.utilization.queries.MEMORY_UTILIZATION_BY_NODE',
-        expression='(\n    sum(\n        container_memory_working_set_bytes{\n            container!="",\n            container!="POD",\n            node="{node}"\n        }\n    )\n/\n    sum(\n        kube_node_status_capacity{\n            resource="memory",\n            node="{node}"\n        }\n    )\n) * 100',
+        expression='(\n    sum(\n        container_memory_working_set_bytes{\n            container!="",\n            container!="POD",\n            node="{node}"\n        }\n    )\n/\n    sum(\n        kube_node_status_allocatable{\n            resource="memory",\n            unit="byte",\n            node="{node}"\n        }\n    )\n) * 100',
         domain='app.analytics.utilization',
-        required_metrics=('container_memory_working_set_bytes', 'kube_node_status_capacity'),
-        required_labels=(
-            ('container_memory_working_set_bytes', ('container', 'node')),
-            ('kube_node_status_capacity', ('node', 'resource')),
-        ),
+        required_metrics=('container_memory_working_set_bytes', 'kube_node_status_allocatable'),
+        required_labels=(_CONTAINER_MEMORY_NODE_LABEL, _ALLOCATABLE_NODE_RESOURCE_LABEL),
     ),
     'analytics.utilization.queries.POD_COUNT_BY_NODE': QueryDefinition(
         key='analytics.utilization.queries.POD_COUNT_BY_NODE',
@@ -1072,21 +1067,17 @@ QUERIES: dict[str, QueryDefinition] = {
     ),
     'analytics.utilization.queries.POD_CAPACITY_BY_NODE': QueryDefinition(
         key='analytics.utilization.queries.POD_CAPACITY_BY_NODE',
-        expression='sum(\n    kube_node_status_capacity{\n        resource="pods",\n        node="{node}"\n    }\n)',
+        expression='sum(\n    kube_node_status_allocatable{\n        resource="pods",\n        unit="integer",\n        node="{node}"\n    }\n)',
         domain='app.analytics.utilization',
-        required_metrics=('kube_node_status_capacity',),
-        required_labels=(('kube_node_status_capacity', ('node', 'resource')),),
+        required_metrics=('kube_node_status_allocatable',),
+        required_labels=(_ALLOCATABLE_NODE_RESOURCE_LABEL,),
     ),
     'analytics.utilization.queries.POD_UTILIZATION_BY_NODE': QueryDefinition(
         key='analytics.utilization.queries.POD_UTILIZATION_BY_NODE',
-        expression='(\n    count(\n        (\n            kube_pod_status_phase{\n                phase="Running"\n            } == 1\n        )\n        * on(namespace,pod)\n        group_left(node)\n        kube_pod_info{\n            node="{node}"\n        }\n    )\n/\n    sum(\n        kube_node_status_capacity{\n            resource="pods",\n            node="{node}"\n        }\n    )\n) * 100',
+        expression='(\n    count(\n        (\n            kube_pod_status_phase{phase="Running"} == 1\n        )\n        * on(namespace, pod) group_left(node)\n        kube_pod_info{node="{node}"}\n    )\n/\n    sum(\n        kube_node_status_allocatable{\n            resource="pods",\n            unit="integer",\n            node="{node}"\n        }\n    )\n) * 100',
         domain='app.analytics.utilization',
-        required_metrics=('kube_pod_status_phase', 'kube_pod_info', 'kube_node_status_capacity'),
-        required_labels=(
-            ('kube_node_status_capacity', ('node', 'resource')),
-            ('kube_pod_info', ('node',)),
-            ('kube_pod_status_phase', ('phase',)),
-        ),
+        required_metrics=('kube_pod_status_phase', 'kube_pod_info', 'kube_node_status_allocatable'),
+        required_labels=(_POD_PHASE_LABEL, _POD_INFO_LABEL, _ALLOCATABLE_NODE_RESOURCE_LABEL),
     ),
     'analytics.utilization.queries.STORAGE_CAPACITY_BY_INSTANCE': QueryDefinition(
         key='analytics.utilization.queries.STORAGE_CAPACITY_BY_INSTANCE',

@@ -444,7 +444,7 @@ outgrown its original purpose:
 | `forecast/service.py` | 2,157 lines | High |
 | `overview/service.py` | 1,943 lines | High |
 | `storage/service.py` | 1,553 lines | High |
-| `utilization/service.py` | 1,233 lines | High |
+| `utilization/service.py` | 1,172 lines | High |
 | `capacity/service.py` | 1,198 lines | High |
 
 Refactor by cohesive responsibility and testability, not by arbitrary line
@@ -502,7 +502,9 @@ Capacity Analytics is now capability-gated through `PrometheusConsumer`. Worker 
 
 ## Utilization capability contract
 
-Utilization Analytics consumes Prometheus or Thanos only through `PrometheusConsumer` and requires instant query, range query, Kubernetes identity, utilization metrics, and canonical filesystem node identity. Node drill-down storage must use a canonical Kubernetes node label; `instance=IP:port` is not a supported identity fallback. Integration validation must report missing metrics or label remediation before the page is considered ready. Presentation strings introduced while touching Utilization templates are prepared in Python rather than formatted in Jinja.
+Utilization Analytics consumes Prometheus or Thanos only through `PrometheusConsumer` and requires instant query, range query, Kubernetes identity, utilization metrics, and canonical filesystem node identity. CPU, memory, and pod ratios use worker `kube_node_status_allocatable` denominators and exclude node roles matching `control-plane|master`; the numerator and top-consumer queries follow the same worker boundary. Node drill-down storage must use a canonical Kubernetes node label; `instance=IP:port` is not a supported identity fallback. Integration validation must report missing metrics or label remediation before the page is considered ready.
+
+Missing or zero denominator evidence is not zero utilization. The canonical Utilization presenter returns `Unknown`/`N/A` and suppresses semantic progress when allocatable or filesystem capacity evidence is unavailable. Presentation strings, tones, trend labels, and posture values belong to `app/analytics/utilization/presentation.py`, not Jinja.
 
 
 ## Workload Analytics capability contract
@@ -582,9 +584,12 @@ the partial-source warning is rendered explicitly.
 
 - Use `analytics/components/_analysis_surfaces.html`; no Overview-only compatibility surface path may remain.
 - Summary uses `analytics/components/_resource_pressure_lane.html` instead of duplicating four KPI cards.
+- The full-page request resolves only the summary snapshot. Summary materialization must not query trend series, node selectors, all-node detail, or report-only tables.
 - Trend and Node Detail are first-activation HTMX tabs. Pending polling begins only after activation and stops when the committed partial replaces the pending fragment.
-- Multi-series trend charts expose a visible shared legend and render through `app/static/js/analytics_utilization.js`.
+- Direct access to a fragment endpoint redirects to the full workspace. HTMX fragments are `no-store` and vary on `HX-Request`.
+- Multi-series trend charts expose a visible shared legend, align points by timestamp, preserve missing points as null, include dates for long windows, and render through `app/static/js/analytics_utilization.js` without a fixed 100% ceiling.
 - Resource Utilization uses local filter/Trend/Node indicators and does not use the Analytics Overview composite tracker.
+- See `docs/design/components/ANALYTICS_RESOURCE_UTILIZATION.md` and `docs/design/audits/KAORI_ANALYTICS_UTILIZATION_AUDIT_2026_08.md`.
 
 
 ## Workload Analysis presentation contract

@@ -132,8 +132,8 @@ def _empty_cluster_info() -> dict[str, int | float | str]:
 def _empty_risk_assessment() -> dict[str, dict[str, int | float | str]]:
     return {
         resource: {
-            'status': 'Normal',
-            'reason': 'No utilization data available',
+            'status': 'Unknown',
+            'reason': 'Capacity evidence unavailable',
             'pressure_nodes': 0,
             'utilization': 0,
         }
@@ -203,23 +203,14 @@ def _dependency_context(query_args: Mapping[str, Any]) -> tuple[Any, Utilization
 def get_utilization_summary_context(query_args: Mapping[str, Any]) -> dict[str, Any]:
     cluster, service, context = _dependency_context(query_args)
     summary = _empty_summary()
-    detail_summary = _empty_summary()
     cluster_info = _empty_cluster_info()
     risk_assessment = _empty_risk_assessment()
-    detail_risk_assessment = _empty_risk_assessment()
     base = {
         **context,
         'cluster': cluster,
         'summary': summary,
-        'summary_table': [],
-        'detail_summary': detail_summary,
         'cluster_info': cluster_info,
         'risk_assessment': risk_assessment,
-        'detail_risk_assessment': detail_risk_assessment,
-        'available_nodes': [],
-        'available_worker_nodes': [],
-        'selected_node': '',
-        'selected_trend_node': '',
         'error': None,
         'prometheus_connected': False,
         'prometheus_status': context.get('prometheus_status') or {
@@ -243,30 +234,18 @@ def get_utilization_summary_context(query_args: Mapping[str, Any]) -> dict[str, 
                     or 'Prometheus did not report a healthy connection.'
                 )
             )
-        available_nodes = service.get_node_names()
-        available_worker_nodes = service.get_worker_node_names()
         summary = service.get_summary()
         cluster_info = service.get_cluster_info(summary)
-        summary_table = service.get_summary_table(summary)
-        detail_summary = service.get_detail_summary(node_name=None)
         risk_assessment = service.get_capacity_pressure_risk(
             cast(dict[str, int | float], summary)
-        )
-        detail_risk_assessment = service.get_capacity_pressure_risk(
-            cast(dict[str, int | float], detail_summary)
         )
         top_cpu_consumers = service.get_top_cpu_consumers()[:5]
         top_memory_consumers = service.get_top_memory_consumers()[:5]
         base.update(
             {
                 'summary': summary,
-                'summary_table': summary_table,
-                'detail_summary': detail_summary,
                 'cluster_info': cluster_info,
                 'risk_assessment': risk_assessment,
-                'detail_risk_assessment': detail_risk_assessment,
-                'available_nodes': available_nodes,
-                'available_worker_nodes': available_worker_nodes,
                 'prometheus_status': prometheus_status,
                 'prometheus_connected': True,
                 'dependency_blocker': None,

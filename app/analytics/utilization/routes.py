@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flask import render_template, request
+from flask import make_response, redirect, render_template, request, url_for
 
 from app.analytics.materialization.presentation import (
     blocked_page_context,
@@ -12,8 +12,13 @@ from app.analytics.utilization.materialization import (
     ALLOWED_TREND_HOURS,
     build_utilization_trend_summary,
 )
+from app.analytics.utilization.presentation import (
+    build_node_presentation,
+    build_summary_presentation,
+    build_trend_options,
+    build_trend_presentation,
+)
 from app.analytics.utilization.service import get_utilization_clusters
-from app.common.dependencies import render_dependency_blocker
 from app.rbac.decorators import permission_required
 
 
@@ -34,13 +39,44 @@ def _trend_hours() -> int:
     return value if value in ALLOWED_TREND_HOURS else 24
 
 
-def _decorate_summary_context(context, materialized, *, trend_hours, selected_node, selected_trend_node):
+def _is_htmx_request() -> bool:
+    return request.headers.get('HX-Request') == 'true'
+
+
+def _fragment_response(template: str, **context):
+    response = make_response(render_template(template, **context))
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    response.headers['Vary'] = 'HX-Request'
+    return response
+
+
+def _redirect_to_workspace(*, tab: str):
+    return redirect(
+        url_for(
+            'analytics.utilization',
+            cluster_id=request.args.get('cluster_id', ''),
+            trend_hours=_trend_hours(),
+            trend_node=request.args.get('trend_node', ''),
+            node=request.args.get('node', ''),
+            tab=tab,
+        )
+    )
+
+
+def _decorate_summary_context(
+    context,
+    materialized,
+    *,
+    trend_hours,
+    selected_node,
+    selected_trend_node,
+):
     context.update(
         {
             'clusters': get_utilization_clusters(),
             'cluster': materialized.cluster,
             'trend_hours': trend_hours,
-            'allowed_trend_hours': list(ALLOWED_TREND_HOURS),
+            'trend_options': build_trend_options(ALLOWED_TREND_HOURS, trend_hours),
             'selected_node': selected_node,
             'selected_trend_node': selected_trend_node,
             'cluster_query_endpoint': 'analytics.utilization',
@@ -51,6 +87,11 @@ def _decorate_summary_context(context, materialized, *, trend_hours, selected_no
             },
             'analytics_materialization': snapshot_meta(materialized),
         }
+    )
+    context['utilization_presentation'] = build_summary_presentation(
+        summary=context.get('summary'),
+        cluster_info=context.get('cluster_info'),
+        trend_hours=trend_hours,
     )
     return context
 
@@ -74,7 +115,6 @@ def _base_context_or_state():
                 selected_trend_node=selected_trend_node,
             )
             context['dependency_blocker'] = materialized.dependency_blocker
-            context['trend_materialization_pending'] = False
             return context, None
         return None, blocked_page_context(
             materialized=materialized,
@@ -90,35 +130,8 @@ def _base_context_or_state():
         selected_node=selected_node,
         selected_trend_node=selected_trend_node,
     )
-    trend = resolve_materialized_request(
-        dataset_key='analytics.utilization.trend',
-        job_key='analytics.materialize',
-        parameters={
-            'cluster_id': str(materialized.cluster.id),
-            'trend_hours': str(trend_hours),
-            'trend_node': selected_trend_node,
-        },
-    )
-    trend_context = trend.result.context or {}
-    if (
-        trend.dependency_blocker is None
-        and trend.result.available
-        and not trend_context.get('dependency_blocker')
-    ):
-        context['trends'] = trend_context.get('trends') or {'cpu': [], 'memory': [], 'pods': []}
-        context['trend_summary'] = trend_context.get('trend_summary') or build_utilization_trend_summary(
-            context['trends']
-        )
-        context['selected_trend_node'] = trend_context.get('selected_trend_node', selected_trend_node)
-        context['available_worker_nodes'] = trend_context.get(
-            'available_worker_nodes',
-            context.get('available_worker_nodes', []),
-        )
-        context['trend_materialization_pending'] = False
-        context['trend_analytics_materialization'] = snapshot_meta(trend)
-    else:
-        context.setdefault('trends', {'cpu': [], 'memory': [], 'pods': []})
-        context['trend_materialization_pending'] = True
+    # Trend and node datasets are intentionally not resolved here. Their tabs own
+    # first activation, materialization dispatch, polling, and rendering.
     return context, None
 
 
@@ -137,34 +150,49 @@ def utilization() -> str:
 
 @permission_required('analytics.view')
 def utilization_trend() -> str:
+    if not _is_htmx_request():
+        return _redirect_to_workspace(tab='trend')
+
     trend_hours = _trend_hours()
+    selected_trend_node = request.args.get('trend_node', '')
     materialized = resolve_materialized_request(
         dataset_key='analytics.utilization.trend',
         job_key='analytics.materialize',
         parameters={
             'cluster_id': request.args.get('cluster_id', ''),
             'trend_hours': str(trend_hours),
-            'trend_node': request.args.get('trend_node', ''),
+            'trend_node': selected_trend_node,
         },
     )
     if materialized.dependency_blocker:
-        return render_dependency_blocker(materialized.dependency_blocker)
+        return _fragment_response(
+            'components/dependencies/_blocker.html',
+            dependency_blocker=materialized.dependency_blocker,
+        )
     if not materialized.result.available:
-        return render_template(
+        return _fragment_response(
             'analytics/utilization/partials/_trend_pending.html',
             cluster_id=request.args.get('cluster_id', ''),
             trend_hours=trend_hours,
-            selected_trend_node=request.args.get('trend_node', ''),
+            selected_trend_node=selected_trend_node,
         )
     context = dict(materialized.result.context or {})
     context.setdefault('trends', {'cpu': [], 'memory': [], 'pods': []})
     context.setdefault('trend_summary', build_utilization_trend_summary(context['trends']))
     context['analytics_materialization'] = snapshot_meta(materialized)
-    return render_template('analytics/utilization/partials/_trend.html', **context)
+    context['trend_presentation'] = build_trend_presentation(
+        trend_summary=context.get('trend_summary'),
+        trend_hours=trend_hours,
+        selected_node=str(context.get('selected_trend_node') or selected_trend_node),
+    )
+    return _fragment_response('analytics/utilization/partials/_trend.html', **context)
 
 
 @permission_required('analytics.view')
 def utilization_node_detail() -> str:
+    if not _is_htmx_request():
+        return _redirect_to_workspace(tab='nodes')
+
     selected_node = request.args.get('node', '', type=str)
     materialized = resolve_materialized_request(
         dataset_key='analytics.utilization.node',
@@ -175,13 +203,21 @@ def utilization_node_detail() -> str:
         },
     )
     if materialized.dependency_blocker:
-        return render_dependency_blocker(materialized.dependency_blocker)
+        return _fragment_response(
+            'components/dependencies/_blocker.html',
+            dependency_blocker=materialized.dependency_blocker,
+        )
     if not materialized.result.available:
-        return render_template(
+        return _fragment_response(
             'analytics/utilization/partials/_node_pending.html',
             cluster_id=request.args.get('cluster_id', ''),
             selected_node=selected_node,
         )
     context = dict(materialized.result.context or {})
     context['analytics_materialization'] = snapshot_meta(materialized)
-    return render_template('analytics/utilization/partials/_node_detail.html', **context)
+    context['node_presentation'] = build_node_presentation(
+        detail_summary=context.get('detail_summary'),
+        risk_assessment=context.get('detail_risk_assessment'),
+        selected_node=str(context.get('selected_node') or selected_node),
+    )
+    return _fragment_response('analytics/utilization/partials/_node_detail.html', **context)

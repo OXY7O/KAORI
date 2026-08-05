@@ -1,6 +1,6 @@
 {% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
-{% set ready_ratio = ((cluster_info.ready_nodes / cluster_info.total_nodes) * 100) if cluster_info.total_nodes else 0 %}
+{% set presentation = utilization_presentation|default({}) %}
 <form id="utilization-filter"
       method="get"
       hx-get="{{ url_for('analytics.utilization') }}"
@@ -15,7 +15,7 @@
     <input type="hidden" name="node" value="{{ selected_node }}" />
     {% call analytics_workspace.controls_readiness(
         'Utilization Controls & Data Readiness',
-        'Set the cluster and observation window, then confirm the Prometheus source, active cluster scope, and committed utilization snapshot.',
+        'Set the cluster and trend window, then confirm the Prometheus source, worker scope, and committed utilization snapshot.',
         'sliders-horizontal',
         'utilization-refresh-indicator',
         prometheus_status,
@@ -24,15 +24,15 @@
     ) %}
         <div class="grid gap-4 sm:grid-cols-2">
             <label class="block"><span class="{{ analytics_workspace.control_label_classes() }}">Cluster</span><select id="cluster_id" name="cluster_id" data-kaori-reset-fields="trend_node=,node=" class="{{ analytics_workspace.control_select_classes() }}">{% for item in clusters %}<option value="{{ item.id }}" {% if cluster and item.id == cluster.id %}selected{% endif %}>{{ item.name }}</option>{% endfor %}</select></label>
-            <label class="block"><span class="{{ analytics_workspace.control_label_classes() }}">Time Range</span><select name="trend_hours" class="{{ analytics_workspace.control_select_classes() }}">{% for option in allowed_trend_hours %}<option value="{{ option }}" {% if trend_hours == option %}selected{% endif %}>{% if option < 24 %}Last {{ option }}h{% elif option == 24 %}Last 24 Hours{% elif option == 168 %}Last 7 Days{% elif option == 720 %}Last 30 Days{% elif option == 1440 %}Last 60 Days{% endif %}</option>{% endfor %}</select></label>
+            <label class="block"><span class="{{ analytics_workspace.control_label_classes() }}">Trend Window</span><select name="trend_hours" data-kaori-reset-fields="trend_node=" class="{{ analytics_workspace.control_select_classes() }}">{% for option in trend_options %}<option value="{{ option.value }}" {% if option.selected %}selected{% endif %}>{{ option.label }}</option>{% endfor %}</select></label>
         </div>
         <div class="{{ analysis_surface.evidence_shell_classes() }}">
             <div class="grid gap-px bg-outline-subtle sm:grid-cols-2 xl:grid-cols-4">
                 {% for label, value, helper, icon in [
                     ('Active Cluster', cluster.name if cluster else 'No Cluster', cluster_info.kubernetes_version, 'server-cog'),
-                    ('Node Readiness', '%.0f%%'|format(ready_ratio), cluster_info.ready_nodes ~ ' ready · ' ~ cluster_info.not_ready_nodes ~ ' NotReady', 'badge-check'),
+                    ('Node Readiness', presentation.ready_ratio_display|default('N/A'), cluster_info.ready_nodes ~ ' ready · ' ~ cluster_info.not_ready_nodes ~ ' NotReady', 'badge-check'),
                     ('Worker Nodes', cluster_info.worker_nodes, cluster_info.master_nodes ~ ' control-plane nodes', 'server'),
-                    ('Pod Capacity', cluster_info.pod_capacity, 'Available pod slots', 'boxes')
+                    ('Pod Allocatable', cluster_info.pod_capacity, 'Worker pod slots', 'boxes')
                 ] %}
                     <article class="flex min-w-0 items-start gap-3 bg-surface-card px-4 py-4">
                         <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span>

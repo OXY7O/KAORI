@@ -13,6 +13,7 @@ def test_analytics_status_does_not_run_duplicate_health_query() -> None:
     utilization = _read('app/analytics/utilization/service.py')
     base = _read('app/analytics/common/base_service.py')
     profile = _read('app/integrations/prometheus/query_profiles/kubernetes_v1.py')
+    presentation = _read('app/analytics/common/presentation.py')
 
     assert 'def analytics_status' in consumer
     assert "vector(1)" not in consumer
@@ -20,7 +21,8 @@ def test_analytics_status_does_not_run_duplicate_health_query() -> None:
     assert 'consumer.analytics_status()' in base
     assert 'analytics.utilization.queries.PROMETHEUS_HEALTH' not in profile
     assert 'get_prometheus_status_snapshot' in utilization
-    assert "'status_label': 'Query Ready'" in utilization
+    assert "'status_label': status_label" in presentation
+    assert "status_label = 'Query Ready'" in presentation
 
 
 def test_prometheus_queries_reuse_clients_retry_transient_failures_and_keep_fingerprints() -> None:

@@ -14,7 +14,8 @@
             {% include "analytics/utilization/partials/_overview.html" %}
 
             {% if analytics_materialization.source_warning %}
-                <section class="rounded-xl border border-status-warning-border bg-status-warning-soft px-4 py-3"><div class="flex items-start gap-3"><i data-lucide="triangle-alert" class="mt-0.5 h-4 w-4 text-status-warning"></i><div class="min-w-0"><p class="text-sm font-semibold text-content-primary">Snapshot Available · Readiness Evidence Incomplete</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ analytics_materialization.source_warning.description }}</p>{% if analytics_materialization.source_warning.diagnostic_detail %}<p class="mt-1 text-xs leading-5 text-content-muted">{{ analytics_materialization.source_warning.diagnostic_detail }}</p>{% endif %}</div></div></section>
+                {% set source_warning_message = analytics_materialization.source_warning.description ~ (' ' ~ analytics_materialization.source_warning.diagnostic_detail if analytics_materialization.source_warning.diagnostic_detail else '') %}
+                {{ status_notice.render('Snapshot Available · Readiness Evidence Incomplete', source_warning_message, tone='warning') }}
             {% endif %}
 
             {% set utilization_tabs = [
