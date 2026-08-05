@@ -139,7 +139,8 @@ def individual_sync_status(task_id: str) -> ResponseReturnValue:
         failed_count=0 if snapshot['status'] == 'success' else 1,
         duration_seconds=snapshot.get('duration_seconds'),
         completed_label='Completed just now',
-        notification_saved=True,
+        activity_audit_saved=True,
+        notification_deck_visible=True,
     )
 
 

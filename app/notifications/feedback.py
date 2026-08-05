@@ -1,12 +1,35 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Any
 from uuid import uuid4
 
 from flask import has_request_context, session
 
 from app.notifications.constants import ALLOWED_STATUSES, OPERATIONAL_FEEDBACK_SESSION_KEY
+
+
+class OperationalDeliveryPolicy(StrEnum):
+    """Control Activity Audit persistence and Notification Deck visibility."""
+
+    AUDIT_ONLY = 'audit_only'
+    DECK_ON_FAILURE = 'deck_on_failure'
+    PERSISTENT = 'persistent'
+
+    @classmethod
+    def normalize(cls, value: OperationalDeliveryPolicy | str) -> OperationalDeliveryPolicy:
+        try:
+            return cls(str(value))
+        except ValueError:
+            return cls.PERSISTENT
+
+    def deck_visible(self, status: str) -> bool:
+        if self is self.PERSISTENT:
+            return True
+        if self is self.DECK_ON_FAILURE:
+            return status in {'warning', 'error'}
+        return False
 
 
 @dataclass(frozen=True)
@@ -19,9 +42,11 @@ class OperationalFeedbackSpec:
     action_label: str = 'View details'
     action_icon: str = 'arrow-up-right'
     completed_label: str = 'Completed just now'
-    notification_saved: bool = True
+    activity_audit_saved: bool = True
     activity_audit_expected: bool = True
+    notification_deck_visible: bool = False
     delivery: str = 'toast'
+    delivery_policy: OperationalDeliveryPolicy | str = OperationalDeliveryPolicy.PERSISTENT
     feedback_id: str | None = None
     auto_dismiss_ms: int | None = None
 
@@ -37,6 +62,7 @@ def build_operational_feedback(spec: OperationalFeedbackSpec) -> dict[str, Any]:
             'warning': 12000,
             'error': 0,
         }.get(normalized_status, 10000)
+    policy = OperationalDeliveryPolicy.normalize(spec.delivery_policy)
     return {
         'feedback_id': spec.feedback_id or f'feedback-{uuid4().hex}',
         'status': normalized_status,
@@ -47,9 +73,11 @@ def build_operational_feedback(spec: OperationalFeedbackSpec) -> dict[str, Any]:
         'action_label': spec.action_label,
         'action_icon': spec.action_icon,
         'completed_label': spec.completed_label,
-        'notification_saved': spec.notification_saved,
+        'activity_audit_saved': spec.activity_audit_saved,
         'activity_audit_expected': spec.activity_audit_expected,
+        'notification_deck_visible': spec.notification_deck_visible,
         'delivery': spec.delivery if spec.delivery in {'toast', 'activity_center'} else 'toast',
+        'delivery_policy': policy.value,
         'auto_dismiss_ms': max(0, int(auto_dismiss_ms)),
     }
 
@@ -68,10 +96,7 @@ def pop_operational_feedback() -> dict[str, Any] | None:
     if not has_request_context():
         return None
 
-    feedback = session.pop(
-        OPERATIONAL_FEEDBACK_SESSION_KEY,
-        None,
-    )
+    feedback = session.pop(OPERATIONAL_FEEDBACK_SESSION_KEY, None)
     if feedback is not None:
         session.modified = True
 

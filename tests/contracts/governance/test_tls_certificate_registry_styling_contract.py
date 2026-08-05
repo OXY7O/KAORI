@@ -9,7 +9,7 @@ def _read(relative: str) -> str:
 
 def test_tls_registry_uses_governance_resource_registry_pattern() -> None:
     page = _read('app/templates/governance/tls_certificates/partials/_page_content.html')
-    scope = _read('app/templates/governance/tls_certificates/partials/_inventory_scope.html')
+    scope = _read('app/templates/governance/tls_certificates/partials/_page_workspace.html')
     summary = _read('app/templates/governance/tls_certificates/partials/_summary_cards.html')
     table = _read('app/templates/governance/tls_certificates/partials/_table.html')
     index = _read('app/templates/governance/tls_certificates/index.html')
@@ -35,7 +35,7 @@ def test_tls_registry_uses_governance_resource_registry_pattern() -> None:
     assert 'hidden w-[10%]' in table
     assert 'resource_detail_modal.detail_button' in table
     assert "'whitespace-nowrap'" in table
-    assert '<th class="w-[12%] px-3 py-3 text-right">Details</th>' in table
+    assert '<th scope="col" class="w-[12%] px-3 py-3 text-right">Details</th>' in table
     assert '<td class="px-3 py-3 text-right align-middle">' in table
     assert 'inline-flex h-9 w-9' not in table
     assert 'data-lucide="server"' in table

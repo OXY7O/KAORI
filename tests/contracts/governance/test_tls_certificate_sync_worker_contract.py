@@ -29,7 +29,7 @@ def test_tls_manual_route_dispatches_worker_job_instead_of_collecting_inline() -
 
 def test_tls_worker_progress_is_owned_by_inventory_operations_loading_bar() -> None:
     scope = (
-        ROOT / 'app/templates/governance/tls_certificates/partials/_inventory_scope.html'
+        ROOT / 'app/templates/governance/tls_certificates/partials/_page_workspace.html'
     ).read_text()
     sync_panel = (
         ROOT / 'app/templates/governance/tls_certificates/partials/_sync_panel.html'
@@ -57,17 +57,21 @@ def test_tls_worker_progress_is_owned_by_inventory_operations_loading_bar() -> N
     assert 'hx-swap="outerHTML swap:0ms settle:0ms"' in live_state
     assert 'hx-sync="this:replace"' in live_state
     assert 'load delay:2s' not in live_state
-    assert 'toast_oob=true' in sync_response
+    assert 'toast_oob=true' not in sync_response
+    assert '_sync_progress_toast.html' in scope
     assert 'tls-sync-feedback' not in layout
     assert "url_for('governance.tls_certificates_active_sync')" not in layout
+    governance_routes = (ROOT / 'app/governance/routes.py').read_text()
+    assert 'tls_certificates_active_sync' not in governance_routes
+    assert 'def tls_certificates_active_sync' not in routes
     assert "'tlsInventorySyncFinished': True" in routes
     assert "response.headers['HX-Trigger-After-Swap']" in routes
     assert "response.headers['Cache-Control'] = 'no-store, max-age=0'" in routes
     assert 'feedback=feedback' in routes
 
-def test_tls_filter_state_keeps_one_inventory_scope_boundary() -> None:
+def test_tls_filter_state_keeps_one_canonical_workspace_boundary() -> None:
     scope = (
-        ROOT / 'app/templates/governance/tls_certificates/partials/_inventory_scope.html'
+        ROOT / 'app/templates/governance/tls_certificates/partials/_page_workspace.html'
     ).read_text()
     filters = (
         ROOT / 'app/templates/governance/tls_certificates/partials/_filters.html'
@@ -79,14 +83,14 @@ def test_tls_filter_state_keeps_one_inventory_scope_boundary() -> None:
         ROOT / 'app/templates/governance/tls_certificates/partials/_table.html'
     ).read_text()
 
-    assert 'id="tls-certificates-inventory-scope"' in scope
-    assert "partial_mode='inventory_scope'" in scope
-    assert 'hx-target="#tls-certificates-inventory-scope"' in filters
-    assert 'name="partial_mode" value="inventory_scope"' in filters
-    assert 'hx-target="#tls-certificates-inventory-scope"' in sync_panel
-    assert table.count('hx-target="#tls-certificates-inventory-scope"') >= 3
-    assert 'name="partial_mode" value="inventory_scope"' in table
-    assert "'partial_mode': 'inventory_scope'" in table
+    assert 'id="tls-certificates-page-workspace"' in scope
+    assert "partial_mode='page_workspace'" in scope
+    assert 'hx-target="#tls-certificates-page-workspace"' in filters
+    assert 'name="partial_mode" value="page_workspace"' in filters
+    assert 'hx-target="#tls-certificates-page-workspace"' in sync_panel
+    assert table.count('hx-target="#tls-certificates-table-card"') >= 3
+    assert "'partial_mode': 'table'" in table
+    assert 'name="partial_mode" value="table"' in table
 
 
 def test_tls_operation_buttons_share_the_same_kaori_component() -> None:
@@ -163,6 +167,8 @@ def test_tls_worker_reports_granular_progress_for_single_cluster_jobs() -> None:
     assert 'progress_callback: TLSProgressCallback | None = None' in service
     assert 'Reconciled {index} of {total_records} TLS inventory records' in service
     assert "message='Finalizing TLS Secret inventory synchronization.'" in tasks
+    assert "'warning_cluster_count': len(warnings)" in tasks
+    assert 'cluster_result.warning' in tasks
 
 
 def test_tls_live_progress_polling_does_not_replace_the_whole_operations_panel() -> None:
@@ -184,10 +190,10 @@ def test_tls_live_progress_polling_does_not_replace_the_whole_operations_panel()
     assert 'notification-progress-indeterminate' not in live_state
 
 def test_tls_sync_visibility_query_avoids_distinct_across_json_columns() -> None:
-    toast = (ROOT / 'app/governance/tls_certificates/toast.py').read_text()
+    presentation = (ROOT / 'app/governance/tls_certificates/job_presentation.py').read_text()
 
-    assert 'JobExecution.subscribers.any(' in toast
-    assert 'JobExecutionSubscriber.user_id == user_id' in toast
-    assert '.outerjoin(' not in toast
-    assert '.distinct()' not in toast
+    assert 'JobExecution.subscribers.any(' in presentation
+    assert 'JobExecutionSubscriber.user_id == user_id' in presentation
+    assert '.outerjoin(' not in presentation
+    assert '.distinct()' not in presentation
 

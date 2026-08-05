@@ -9,7 +9,7 @@ def read(relative: str) -> str:
 
 
 def test_create_secret_route_uses_create_service_dry_run_keyword() -> None:
-    route = read('app/kubernetes_operations/secrets/routes.py')
+    route = read('app/kubernetes_operations/secrets/crud_routes.py')
     create_service = read('app/kubernetes_operations/secrets/create_service.py')
 
     assert 'def execute_secret_operation(form: Any, files: Any, *, dry_run: bool)' in create_service

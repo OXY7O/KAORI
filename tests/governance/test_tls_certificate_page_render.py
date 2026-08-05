@@ -85,6 +85,7 @@ def test_tls_pagination_uses_inventory_navigation_contract() -> None:
         return f'/{endpoint}' + (f'?{query}' if query else '')
 
     environment.globals['url_for'] = url_for
+    environment.globals['request'] = SimpleNamespace(view_args={})
 
     rendered = environment.get_template(
         'governance/tls_certificates/partials/_table.html'
@@ -96,7 +97,7 @@ def test_tls_pagination_uses_inventory_navigation_contract() -> None:
     assert 'data-total-pages="5"' in rendered
     assert 'href="/governance.tls_certificates?' in rendered
     assert 'hx-get="/governance.tls_certificates?' in rendered
-    assert 'partial_mode=inventory_scope' in rendered
+    assert 'partial_mode=table' in rendered
 
 
 
@@ -114,6 +115,7 @@ def test_bulk_tls_target_table_uses_inventory_pagination_contract() -> None:
         return f'/{endpoint}' + (f'?{query}' if query else '')
 
     environment.globals['url_for'] = url_for
+    environment.globals['request'] = SimpleNamespace(view_args={})
 
     rendered = environment.get_template(
         'kubernetes_operations/secrets/_bulk_target_table.html'

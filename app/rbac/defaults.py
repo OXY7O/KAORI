@@ -95,18 +95,6 @@ DEFAULT_PERMISSIONS = [
         'Refresh TLS certificate metadata from Kubernetes TLS Secrets.',
     ),
     (
-        'tls_certificates.update',
-        'governance',
-        'update_tls_certificates',
-        'Update an existing Kubernetes TLS Secret using a validated certificate and private key upload.',
-    ),
-    (
-        'tls_certificates.bulk_update',
-        'governance',
-        'bulk_update_tls_certificates',
-        'Update multiple selected Kubernetes TLS Secrets using a validated certificate and private key upload.',
-    ),
-    (
         'intelligence.view',
         'intelligence',
         'view',

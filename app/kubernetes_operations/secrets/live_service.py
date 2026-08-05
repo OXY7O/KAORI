@@ -10,6 +10,8 @@ from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
+from app.common.inventory_generation import filter_current_generation
+from app.common.kubernetes_secrets import scrub_secret_payload
 from app.integrations.kubernetes.resolver import connection_for_cluster, tls_policy_for_cluster
 from app.integrations.kubernetes.tls import weak_tls_context
 from app.integrations.registry import get_integration
@@ -90,20 +92,6 @@ def validate_resource_name(value: str | None, label: str, *, namespace: bool = F
         qualifier = 'namespace name' if namespace else 'DNS subdomain'
         raise ValueError(f'{label} must be a valid Kubernetes {qualifier}.')
     return normalized
-
-
-def _scrub_secret(secret: Any) -> None:
-    """Best-effort removal of payload material from in-memory Kubernetes objects."""
-    for attribute in ('data', 'string_data'):
-        value = getattr(secret, attribute, None)
-        if isinstance(value, dict):
-            for key in list(value):
-                value[key] = ''
-            value.clear()
-        try:
-            setattr(secret, attribute, None)
-        except (AttributeError, TypeError):
-            pass
 
 
 def _api_error(exc: ApiException, operation: str) -> ValueError:
@@ -231,7 +219,7 @@ def list_live_secrets(
     finally:
         if response is not None:
             for item in response.items or []:
-                _scrub_secret(item)
+                scrub_secret_payload(item)
 
 
 def read_live_secret(
@@ -287,11 +275,14 @@ def read_live_secret(
         raise _connection_error('read operation') from exc
     finally:
         if secret is not None:
-            _scrub_secret(secret)
+            scrub_secret_payload(secret)
 
 
 def best_effort_inventory_id(target: LiveSecretSnapshot) -> int | None:
-    record = ConfigurationInventory.query.filter_by(
+    record = filter_current_generation(
+        ConfigurationInventory.query,
+        ConfigurationInventory,
+    ).filter_by(
         cluster_id=target.cluster.id,
         namespace=target.namespace,
         name=target.name,

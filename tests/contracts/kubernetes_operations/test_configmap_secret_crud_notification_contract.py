@@ -23,5 +23,5 @@ def test_secret_mutations_use_canonical_operational_feedback_component() -> None
         source = template.read_text()
         assert 'components/navigation/_operation_feedback_oob.html' not in source
 
-    routes = read('app/kubernetes_operations/secrets/routes.py')
-    assert 'record_operational_activity' in routes
+    support = read('app/kubernetes_operations/secrets/route_support.py')
+    assert 'record_operational_activity' in support

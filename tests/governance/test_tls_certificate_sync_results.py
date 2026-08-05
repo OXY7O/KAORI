@@ -19,3 +19,14 @@ def test_tls_sync_outcome_is_partial_when_some_clusters_fail() -> None:
 
 def test_tls_sync_outcome_fails_when_every_cluster_fails() -> None:
     assert classify_tls_sync_outcome(target_count=2, failed_count=2) == 'failed'
+
+
+def test_partial_when_collection_warning_exists_without_fatal_failure():
+    assert (
+        classify_tls_sync_outcome(
+            target_count=3,
+            failed_count=0,
+            warning_count=1,
+        )
+        == 'partially_succeeded'
+    )

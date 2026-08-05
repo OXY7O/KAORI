@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import base64
-from dataclasses import dataclass
 from typing import Any
 
 from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
+from app.common.kubernetes_secrets import scrub_mapping_values
 from app.integrations.kubernetes.resolver import tls_policy_for_cluster
 from app.integrations.kubernetes.tls import weak_tls_context
+from app.kubernetes_operations.secrets.contracts import SecretOperationResult
 from app.kubernetes_operations.secrets.live_service import (
     LiveSecretSnapshot,
     core_api,
@@ -18,6 +19,7 @@ from app.kubernetes_operations.secrets.live_service import (
     read_live_secret,
 )
 from app.kubernetes_operations.secrets.replace_payloads import build_replace_patch
+from app.kubernetes_operations.secrets.validation import required
 from app.models import Cluster
 
 SUPPORTED_REPLACE_TYPES = {
@@ -46,15 +48,6 @@ SUPPORTED_REPLACE_TYPES = {
         'icon': 'key',
     },
 }
-
-
-@dataclass(frozen=True)
-class SecretReplacementResult:
-    status: str
-    title: str
-    message: str
-    detail: str | None
-    metadata: dict[str, Any]
 
 
 def get_secret_replace_context() -> dict[str, Any]:
@@ -145,23 +138,16 @@ def get_replace_target_context(
     }
 
 
-def _required(value: str | None, label: str) -> str:
-    normalized = (value or '').strip()
-    if not normalized:
-        raise ValueError(f'{label} is required.')
-    return normalized
-
-
 def _bound_target(form: Any) -> LiveSecretSnapshot:
     selected = (
-        _required(form.get('cluster_id'), 'Cluster'),
-        _required(form.get('namespace'), 'Namespace'),
-        _required(form.get('secret_name'), 'Secret target'),
+        required(form.get('cluster_id'), 'Cluster'),
+        required(form.get('namespace'), 'Namespace'),
+        required(form.get('secret_name'), 'Secret target'),
     )
     bound = (
-        _required(form.get('target_cluster_id'), 'Bound cluster'),
-        _required(form.get('target_namespace'), 'Bound namespace'),
-        _required(form.get('target_secret_name'), 'Bound Secret target'),
+        required(form.get('target_cluster_id'), 'Bound cluster'),
+        required(form.get('target_namespace'), 'Bound namespace'),
+        required(form.get('target_secret_name'), 'Bound Secret target'),
     )
     if selected != bound:
         raise ValueError('The Secret selection changed after the live editor was loaded. Reload the target and retry.')
@@ -211,17 +197,22 @@ def _patch_secret(
         'data': encoded_data,
     }
 
-    with weak_tls_context(enabled=tls_policy_for_cluster(target.cluster)[1]):
-        response = core_api(target.cluster).patch_namespaced_secret(
-            name=target.name,
-            namespace=target.namespace,
-            body=body,
-            dry_run='All' if dry_run else None,
-            field_manager='kaori-secret-management',
-            _preload_content=False,
-            _request_timeout=10,
-        )
+    response = None
+    try:
+        with weak_tls_context(enabled=tls_policy_for_cluster(target.cluster)[1]):
+            response = core_api(target.cluster).patch_namespaced_secret(
+                name=target.name,
+                namespace=target.namespace,
+                body=body,
+                dry_run='All' if dry_run else None,
+                field_manager='kaori-secret-management',
+                _preload_content=False,
+                _request_timeout=10,
+            )
+    finally:
         _close_api_response(response)
+        scrub_mapping_values(encoded_data)
+        body['data'] = None
 
 
 def execute_secret_replacement(
@@ -229,7 +220,7 @@ def execute_secret_replacement(
     files: Any,
     *,
     dry_run: bool,
-) -> SecretReplacementResult:
+) -> SecretOperationResult:
     target = _bound_target(form)
     if target.immutable:
         raise ValueError('Immutable Secrets cannot be updated. Create a replacement Secret instead.')
@@ -243,14 +234,8 @@ def execute_secret_replacement(
         _patch_secret(
             target=target,
             string_data=patch_data,
-            dry_run=True,
+            dry_run=dry_run,
         )
-        if not dry_run:
-            _patch_secret(
-                target=target,
-                string_data=patch_data,
-                dry_run=False,
-            )
     except ApiException as exc:
         raise ValueError(_api_error_message(exc)) from exc
     except ConfigException as exc:
@@ -267,7 +252,7 @@ def execute_secret_replacement(
 
     operation = 'validation' if dry_run else 'replacement'
     type_config = SUPPORTED_REPLACE_TYPES[target.secret_type]
-    return SecretReplacementResult(
+    return SecretOperationResult(
         status='success',
         title=('Secret replacement validation completed' if dry_run else 'Secret data replacement completed'),
         message=(

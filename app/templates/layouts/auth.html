@@ -36,8 +36,9 @@
                     action_label=queued_operational_feedback.action_label,
                     action_icon=queued_operational_feedback.action_icon,
                     completed_label=queued_operational_feedback.completed_label,
-                    notification_saved=queued_operational_feedback.notification_saved,
-                    activity_audit_expected=queued_operational_feedback.activity_audit_expected|default(queued_operational_feedback.notification_saved),
+                    activity_audit_saved=queued_operational_feedback.activity_audit_saved,
+                    activity_audit_expected=queued_operational_feedback.activity_audit_expected|default(queued_operational_feedback.activity_audit_saved),
+                    notification_deck_visible=queued_operational_feedback.notification_deck_visible|default(false),
                     feedback_id=queued_operational_feedback.feedback_id|default(None),
                     auto_dismiss_ms=queued_operational_feedback.auto_dismiss_ms|default(None),
                     delivery=queued_operational_feedback.delivery|default('toast')

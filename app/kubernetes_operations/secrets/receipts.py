@@ -57,12 +57,12 @@ def verify_delete_receipt(
     if receipt_user_id != int(user_id):
         raise ValueError('The deletion validation belongs to a different KAORI user. Run validation again.')
 
-    selected = (cluster_id, namespace, secret_name)
     expected = (
         str(payload.get('cluster_id') or ''),
         str(payload.get('namespace') or ''),
         str(payload.get('secret_name') or ''),
     )
+    selected = (cluster_id, namespace, secret_name)
     if selected != expected:
         raise ValueError('The selected Secret changed after validation. Run validation again.')
 

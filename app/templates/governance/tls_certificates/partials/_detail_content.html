@@ -32,9 +32,21 @@
 
         {{ detail.summary_strip([
             ('Validity', presentation.status_label or 'Unknown', record.not_after|user_datetime('Not Reported')),
-            ('Days Remaining', record.days_remaining if record.days_remaining is not none else 'N/A', 'Timestamp-based validity'),
-            ('Host Coverage', presentation.coverage_label or 'Not Reported', (record.covered_host_count or 0) ~ '/' ~ (record.declared_host_count or 0) ~ ' Declared Hosts'),
-            ('Ingress Consumers', (record.used_by or [])|length, 'Committed relationship evidence')
+            ('Days Remaining', record.days_remaining if record.days_remaining is not none else 'Not Reported', 'Timestamp-based validity'),
+            (
+                'Host Coverage',
+                presentation.coverage_label or 'Not Reported',
+                ((record.covered_host_count or 0) ~ '/' ~ record.declared_host_count ~ ' Declared Hosts')
+                if presentation.coverage_reported and (record.declared_host_count or 0) > 0
+                else 'No Declared Hosts'
+                if presentation.coverage_reported
+                else 'Mapping evidence unavailable'
+            ),
+            (
+                'Ingress Consumers',
+                presentation.ingress_consumer_count if presentation.ingress_mapping_reported else 'Not Reported',
+                'Committed relationship evidence' if presentation.ingress_mapping_reported else 'Ingress mapping unavailable'
+            )
         ], compact=true) }}
 
         <div class="grid items-start gap-4 p-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
@@ -64,9 +76,9 @@
             <div class="space-y-4">
                 {% call detail.detail_card('Host Coverage', 'globe-2', presentation.coverage_label or 'Not Reported', 'status', presentation.coverage_tone or 'unknown', badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.evidence_grid([
-                        {'label': 'Declared Hosts', 'value': record.declared_host_count or 0},
-                        {'label': 'Covered Hosts', 'value': record.covered_host_count or 0},
-                        {'label': 'Uncovered Hosts', 'value': (record.uncovered_hosts or [])|length},
+                        {'label': 'Declared Hosts', 'value': record.declared_host_count if presentation.coverage_reported else 'Not Reported'},
+                        {'label': 'Covered Hosts', 'value': record.covered_host_count if presentation.coverage_reported else 'Not Reported'},
+                        {'label': 'Uncovered Hosts', 'value': (record.uncovered_hosts or [])|length if presentation.coverage_reported else 'Not Reported'},
                         {'label': 'Certificate Identities', 'value': (record.dns_names or [])|length if record.dns_names else (1 if record.common_name else 0)}
                     ], columns=2) }}
                     <p class="mt-3 text-xs leading-5 text-content-muted">Coverage compares declared Ingress hosts with certificate SANs or the Common Name. It does not prove live reachability.</p>
@@ -131,21 +143,32 @@
                             </tbody>
                         </table>
                     </div>
+                {% elif presentation.ingress_mapping_reported %}
+                    <div class="p-4">{{ detail.empty_evidence('No Declared Hosts', 'No Ingress host relationship is represented for this TLS Secret in the committed mapping snapshot.', 'route-off') }}</div>
                 {% else %}
-                    <div class="p-4">{{ detail.empty_evidence('No Declared Hosts', 'No Ingress host relationship is represented for this TLS Secret, or mapping evidence is unavailable.', 'route-off') }}</div>
+                    <div class="p-4">{{ detail.empty_evidence('Host Mapping Not Reported', 'Ingress relationship evidence was not collected for this cluster. Run TLS synchronization after restoring API access.', 'database-zap') }}</div>
                 {% endif %}
             </section>
 
             <div class="grid items-start gap-4 xl:col-span-2 xl:grid-cols-2">
-                {{ related_collection.render(
-                    'Ingress Consumers',
-                    'Ingress resources that declare this TLS Secret in the worker-generated governance snapshot.',
-                    presentation.ingress_resources or [],
-                    (record.used_by or [])|length,
-                    'route',
-                    'No Ingress Consumers Reported',
-                    'No Ingress consumer is represented, or Ingress mapping evidence is unavailable.'
-                ) }}
+                {% if presentation.ingress_mapping_reported %}
+                    {{ related_collection.render(
+                        'Ingress Consumers',
+                        'Ingress resources that declare this TLS Secret in the worker-generated governance snapshot.',
+                        presentation.ingress_resources or [],
+                        presentation.ingress_consumer_count or 0,
+                        'route',
+                        'No Ingress Consumers',
+                        'No Ingress consumer declares this TLS Secret in the committed mapping snapshot.'
+                    ) }}
+                {% else %}
+                    {{ operational_callout.render(
+                        'Ingress Consumer Evidence Not Reported',
+                        'KAORI cannot determine whether an Ingress declares this TLS Secret because Ingress mapping evidence is unavailable.',
+                        'database-zap',
+                        'warning'
+                    ) }}
+                {% endif %}
 
                 {% call detail.detail_card('Certificate Identities', 'badge-check', ((record.dns_names or [])|length) ~ ' SANs', badge_size='detail', stretch=false, density='compact') %}
                     {% if record.dns_names %}

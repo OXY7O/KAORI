@@ -28,6 +28,8 @@ def main() -> int:
         'app/templates/inventory/ingresses/partials/_inventory_scope.html',
         'app/templates/inventory/configuration/partials/_inventory_scope.html',
         'app/templates/inventory/storage/partials/_inventory_scope.html',
+        'app/kubernetes_operations/secrets/routes.py',
+        'tests/kubernetes_operations/test_secret_delete_workflow.py',
     )
     for relative in obsolete_paths:
         require(not (ROOT / relative).exists(), f'Obsolete compatibility file still exists: {relative}', errors)

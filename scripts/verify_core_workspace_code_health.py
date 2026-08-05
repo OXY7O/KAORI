@@ -31,6 +31,10 @@ TARGETS = (
     Path('app/inventory/collectors/storage.py'),
     Path('app/inventory/resources/storage.py'),
     Path('app/inventory/resources/storage_semantics.py'),
+    Path('app/kubernetes_operations/secrets'),
+    Path('app/governance/tls_certificates/service.py'),
+    Path('app/governance/tls_certificates/updates.py'),
+    Path('app/governance/tls_certificates/mutation.py'),
 )
 
 

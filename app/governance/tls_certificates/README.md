@@ -82,4 +82,14 @@ kubernetes_secrets.rotate_tls
 kubernetes_secrets.bulk_rotate_tls
 ```
 
-Legacy Governance mutation keys remain compatibility registry entries only and must not be used by new UI.
+TLS mutation authority is owned exclusively by the Kubernetes Secret permissions above. Retired Governance mutation permissions are removed from the registry and migrated to their canonical equivalents.
+## Operational feedback and Notification Deck
+
+TLS Governance uses two distinct execution paths:
+
+1. **Inventory synchronization** runs through the canonical inventory `JobExecution`. The page shows a compact progress toast and live operation panel. Queued acknowledgement is transient and does not create a duplicate Notification row. The worker writes terminal Activity Audit and requester Notification Deck evidence before closing the job; the terminal toast reports the actual persistence result.
+2. **TLS Secret rotation** is a foreground mutation. Validation is transient. Single and bulk terminal outcomes are persistent in toast, Notification Deck, and Activity Audit, including success because certificate replacement is a governance-significant change.
+
+Only safe metadata may be delivered: cluster, namespace, Secret identity, certificate fingerprint, validity dates, SAN coverage counts, job identifiers, and result counts. Certificate bytes and private-key material are never persisted or rendered.
+
+The canonical workspace is `_page_workspace.html`, the canonical job presenter is `job_presentation.py`, and active progress uses `_sync_progress_toast.html`. The removed `toast.py`, `_inventory_scope.html`, `_content.html`, and `_sync_toast.html` files must not return.

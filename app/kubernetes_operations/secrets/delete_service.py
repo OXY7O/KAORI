@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any
 
 from kubernetes import client
@@ -11,6 +10,8 @@ from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
 from app.integrations.kubernetes.resolver import tls_policy_for_cluster
 from app.integrations.kubernetes.tls import weak_tls_context
+from app.kubernetes_operations.secrets.contracts import SecretOperationResult
+from app.kubernetes_operations.secrets.impact import get_secret_impact_context
 from app.kubernetes_operations.secrets.live_service import (
     LiveSecretSnapshot,
     authorization_api,
@@ -19,18 +20,10 @@ from app.kubernetes_operations.secrets.live_service import (
     list_live_secrets,
     read_live_secret,
 )
-from app.models import Cluster, PodInventory
+from app.kubernetes_operations.secrets.validation import required
+from app.models import Cluster
 
 BLOCKED_DELETE_TYPES = {'kubernetes.io/service-account-token'}
-
-
-@dataclass(frozen=True)
-class SecretDeletionResult:
-    status: str
-    title: str
-    message: str
-    detail: str | None
-    metadata: dict[str, Any]
 
 
 def get_secret_delete_context() -> dict[str, Any]:
@@ -89,32 +82,6 @@ def get_delete_workspace(
     }
 
 
-def get_secret_impact_context(target: LiveSecretSnapshot) -> list[dict[str, str]]:
-    pods = PodInventory.query.filter_by(
-        cluster_id=target.cluster.id,
-        namespace=target.namespace,
-    ).all()
-    impacts: dict[tuple[str, str], dict[str, str]] = {}
-    for pod in pods:
-        references = pod.configuration_references or []
-        if not any(
-            ref.get('type') == 'Secret' and ref.get('name') == target.name
-            for ref in references
-        ):
-            continue
-        kind = pod.workload_type or 'Pod'
-        name = pod.workload_name or pod.pod_name
-        impacts[(kind, name)] = {
-            'kind': kind,
-            'name': name,
-            'supporting_primary': f'{kind} workload',
-            'supporting_secondary': 'Committed inventory reference',
-            'status': None,
-            'status_tone': None,
-        }
-    return sorted(impacts.values(), key=lambda item: (item['kind'], item['name']))
-
-
 def get_delete_target_context(
     cluster_id: str | None,
     namespace: str | None,
@@ -127,7 +94,7 @@ def get_delete_target_context(
             (secret_name or '').strip(),
         )
     ):
-        return {'target': None, 'impacts': [], 'target_error': None}
+        return {'target': None, 'impact': None, 'impacts': [], 'target_error': None}
     try:
         target = read_live_secret(
             cluster_id,
@@ -136,31 +103,26 @@ def get_delete_target_context(
             blocked_types=BLOCKED_DELETE_TYPES,
         )
     except ValueError as exc:
-        return {'target': None, 'impacts': [], 'target_error': str(exc)}
+        return {'target': None, 'impact': None, 'impacts': [], 'target_error': str(exc)}
+    impact = get_secret_impact_context(target)
     return {
         'target': target,
-        'impacts': get_secret_impact_context(target),
+        'impact': impact,
+        'impacts': impact.items,
         'target_error': None,
     }
 
 
-def _required(value: str | None, label: str) -> str:
-    normalized = (value or '').strip()
-    if not normalized:
-        raise ValueError(f'{label} is required.')
-    return normalized
-
-
 def _bound_target(form: Any) -> LiveSecretSnapshot:
     selected = (
-        _required(form.get('cluster_id'), 'Cluster'),
-        _required(form.get('namespace'), 'Namespace'),
-        _required(form.get('secret_name'), 'Secret target'),
+        required(form.get('cluster_id'), 'Cluster'),
+        required(form.get('namespace'), 'Namespace'),
+        required(form.get('secret_name'), 'Secret target'),
     )
     bound = (
-        _required(form.get('target_cluster_id'), 'Bound cluster'),
-        _required(form.get('target_namespace'), 'Bound namespace'),
-        _required(form.get('target_secret_name'), 'Bound Secret target'),
+        required(form.get('target_cluster_id'), 'Bound cluster'),
+        required(form.get('target_namespace'), 'Bound namespace'),
+        required(form.get('target_secret_name'), 'Bound Secret target'),
     )
     if selected != bound:
         raise ValueError(
@@ -237,9 +199,9 @@ def execute_secret_deletion(
     *,
     validate_only: bool,
     expected_resource_version: str | None = None,
-) -> SecretDeletionResult:
+) -> SecretOperationResult:
     target = _bound_target(form)
-    if _required(form.get('confirm_name'), 'Exact Secret name') != target.name:
+    if required(form.get('confirm_name'), 'Exact Secret name') != target.name:
         raise ValueError('Type the exact live Secret name to confirm deletion.')
 
     resource_version = str(target.resource_version or '')
@@ -283,7 +245,7 @@ def execute_secret_deletion(
         raise ValueError(f'KAORI could not reach the Kubernetes API while {operation}.') from exc
 
     operation = 'validation' if validate_only else 'deletion'
-    return SecretDeletionResult(
+    return SecretOperationResult(
         status='success',
         title=(
             'Secret deletion validation completed'
@@ -305,7 +267,9 @@ def execute_secret_deletion(
             'secret_type': target.secret_type,
             'key_names': list(target.key_names),
             'key_count': target.key_count,
-            'impact_count': len(impacts),
+            'impact_count': impacts.count,
+            'impact_collection_state': impacts.collection_state,
+            'impact_reported': impacts.reported,
             'resource_version': resource_version,
             'operation': operation,
             'validation_mode': (

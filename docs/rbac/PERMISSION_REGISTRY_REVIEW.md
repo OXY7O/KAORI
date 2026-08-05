@@ -2,7 +2,7 @@
 
 ## 1. Review result
 
-The current registry contains **45 permission keys**. Static review of Python route guards, aggregate guards, runtime `has_permission()` checks, navigation visibility, and welcome shortcut declarations found no application permission reference that is missing from `DEFAULT_PERMISSIONS`.
+The current registry contains **55 permission keys**. Static review of Python route guards, aggregate guards, runtime `has_permission()` checks, navigation visibility, and welcome shortcut declarations found no application permission reference that is missing from `DEFAULT_PERMISSIONS`.
 
 This means the registry is complete for the current code surface. It does not mean every registered key is an active independent authorization boundary.
 
@@ -37,16 +37,16 @@ Consequences:
 
 It must be treated as **reserved**, not as proof that a user can perform an existing system-management operation. Before a future feature adopts this key, its exact scope and sensitive-operation exclusions must be reviewed.
 
-### 2.4 Legacy compatibility keys
+### 2.4 Retired TLS mutation keys
 
-`tls_certificates.update` and `tls_certificates.bulk_update` remain in the registry for compatibility with the previous Governance implementation.
+The retired `tls_certificates.update` and `tls_certificates.bulk_update` permissions are removed. Existing role assignments are migrated to `kubernetes_secrets.rotate_tls` and `kubernetes_secrets.bulk_rotate_tls`.
 
 TLS Governance now owns only read and synchronization capabilities. Current UI, navigation, and rotation handoffs use Kubernetes Operations Secret permissions:
 
 - `kubernetes_secrets.rotate_tls`;
 - `kubernetes_secrets.bulk_rotate_tls`.
 
-The legacy TLS keys are deprecated compatibility aliases. Do not use them in new templates, navigation rules, or custom roles. Removing the registry rows still requires a controlled permission-deprecation migration because existing database roles, audits, or external documentation may reference them.
+Migration `20260805_secret_ops_v2` transfers existing role assignments to the canonical Secret permissions before deleting the retired registry rows and their old role-permission links. No compatibility aliases remain active.
 
 ## 3. Admin aggregation review
 

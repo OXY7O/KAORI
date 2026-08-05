@@ -19,15 +19,17 @@ from app.governance.tls_certificates.service import (
     get_tls_certificate_page,
 )
 from app.governance.tls_certificates.sync_state import build_tls_sync_state
-from app.governance.tls_certificates.toast import (
+from app.governance.tls_certificates.job_presentation import (
     get_visible_tls_sync_job,
-    present_tls_sync_toast,
+    present_tls_sync_job,
 )
 from app.jobs.dispatcher import dispatch_registered_job
 from app.jobs.service import JobQuotaExceeded
 from app.models.audit import AuditEvent
+from app.notifications.feedback import OperationalDeliveryPolicy
 from app.notifications.service import (
     get_navigation_notification_context,
+    queue_transient_feedback,
     record_operational_activity,
 )
 from app.rbac.decorators import permission_required
@@ -74,6 +76,7 @@ def _render_sync_response(
     *,
     filter_args: dict[str, str],
     feedback: dict[str, object] | None = None,
+    sync_progress: dict[str, object] | None = None,
     status_code: int = 202,
 ):
     payload = get_tls_certificate_page(filter_args)
@@ -87,9 +90,10 @@ def _render_sync_response(
         }
     return (
         render_template(
-            'governance/tls_certificates/partials/_inventory_scope.html',
+            'governance/tls_certificates/partials/_page_workspace.html',
             payload=payload,
             sync_feedback=rendered_feedback,
+            sync_progress=sync_progress,
         ),
         status_code,
     )
@@ -106,9 +110,9 @@ def tls_certificates_index():
             payload=payload,
         )
 
-    if partial_mode == 'inventory_scope':
+    if partial_mode == 'page_workspace':
         return render_template(
-            'governance/tls_certificates/partials/_inventory_scope.html',
+            'governance/tls_certificates/partials/_page_workspace.html',
             payload=payload,
         )
 
@@ -122,12 +126,6 @@ def tls_certificates_index():
         'governance/tls_certificates/index.html',
         payload=payload,
     )
-
-
-@permission_required('tls_certificates.sync')
-def tls_certificates_active_sync():
-    """Backward-compatible endpoint retained after active progress returned to the page panel."""
-    return ''
 
 
 @permission_required('tls_certificates.sync')
@@ -149,7 +147,42 @@ def tls_certificates_sync_status(public_id: str):
         'filters': filter_args,
         'sync_state': build_tls_sync_state(cluster_id=filter_args['cluster_id'] or None),
     }
-    sync = present_tls_sync_toast(job)
+    sync = present_tls_sync_job(job, user_id=int(current_user.id))
+    if request.args.get('surface') == 'toast':
+        if sync['is_active']:
+            response = make_response(
+                render_template(
+                    'governance/tls_certificates/partials/_sync_progress_toast.html',
+                    sync=sync,
+                    toast_oob=False,
+                )
+            )
+        else:
+            response = make_response(
+                render_template(
+                    'components/operational_toast.html',
+                    feedback_id=f"tls-sync-{sync['public_id']}",
+                    status=sync['status'],
+                    title=sync['title'],
+                    message=sync['message'],
+                    detail=sync['detail'],
+                    view_url=url_for('governance.tls_certificates'),
+                    action_label='View TLS Inventory',
+                    action_icon='shield-check',
+                    total_count=sync['total_count'],
+                    synced_count=sync['synced_count'],
+                    failed_count=sync['failed_count'],
+                    duration_seconds=sync['duration_seconds'],
+                    completed_label=sync['completed_label'],
+                    activity_audit_saved=sync['activity_audit_saved'],
+                    activity_audit_expected=True,
+                    notification_deck_visible=sync['notification_deck_visible'],
+                    delivery='toast',
+                )
+            )
+        response.headers['Cache-Control'] = 'no-store, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        return response
 
     response = make_response(
         render_template(
@@ -189,8 +222,12 @@ def tls_certificates_detail(certificate_id: int):
                 'Refresh the inventory and select a current record.'
             ),
             action_url=url_for('governance.tls_certificates'),
-            metadata={'certificate_id': certificate_id},
+            metadata={
+                'certificate_id': certificate_id,
+                'feedback_delivery': 'toast',
+            },
             queue_feedback=True,
+            delivery_policy=OperationalDeliveryPolicy.PERSISTENT,
         )
         return redirect(url_for('governance.tls_certificates'))
 
@@ -216,7 +253,7 @@ def tls_certificates_sync():
         page_payload = get_tls_certificate_page(filter_args)
         if is_htmx:
             return render_template(
-                'governance/tls_certificates/partials/_inventory_scope.html',
+                'governance/tls_certificates/partials/_page_workspace.html',
                 payload=page_payload,
             ), 409
         return redirect(url_for('governance.tls_certificates', **filter_args))
@@ -239,8 +276,13 @@ def tls_certificates_sync():
             action_url=url_for('jobs.executions', queue='inventory', search='tls_certificate_sync'),
             action_label='Review Active Jobs',
             action_icon='activity',
-            metadata={'cluster_id': cluster_id, 'reason': 'quota_exceeded'},
+            metadata={
+                'cluster_id': cluster_id,
+                'reason': 'quota_exceeded',
+                'feedback_delivery': 'toast',
+            },
             queue_feedback=not is_htmx,
+            delivery_policy=OperationalDeliveryPolicy.PERSISTENT,
         )
         _record_dispatch_audit(
             action_status='quota_exceeded',
@@ -263,8 +305,13 @@ def tls_certificates_sync():
             action_url=url_for('jobs.executions', queue='inventory', search='tls_certificate_sync'),
             action_label='Review Job Executions',
             action_icon='list-checks',
-            metadata={'cluster_id': cluster_id, 'reason': 'dispatch_failed'},
+            metadata={
+                'cluster_id': cluster_id,
+                'reason': 'dispatch_failed',
+                'feedback_delivery': 'toast',
+            },
             queue_feedback=not is_htmx,
+            delivery_policy=OperationalDeliveryPolicy.PERSISTENT,
         )
         _record_dispatch_audit(
             action_status='failed',
@@ -287,8 +334,13 @@ def tls_certificates_sync():
             action_url=url_for('integrations.kubernetes'),
             action_label='Review Kubernetes Connections',
             action_icon='server-cog',
-            metadata={'cluster_id': cluster_id, 'dispatch_status': outcome.status},
+            metadata={
+                'cluster_id': cluster_id,
+                'dispatch_status': outcome.status,
+                'feedback_delivery': 'toast',
+            },
             queue_feedback=not is_htmx,
+            delivery_policy=OperationalDeliveryPolicy.PERSISTENT,
         )
         _record_dispatch_audit(
             action_status='blocked',
@@ -300,25 +352,7 @@ def tls_certificates_sync():
             return _render_sync_response(filter_args=filter_args, feedback=feedback, status_code=409)
         return redirect(url_for('governance.tls_certificates', **filter_args))
 
-    feedback = record_operational_activity(
-        user_id=int(current_user.id),
-        event_type='governance_tls_secret_sync_dispatch',
-        status='success' if outcome.created else 'info',
-        title='TLS Secret Sync Queued' if outcome.created else 'TLS Secret Sync Already Active',
-        message=outcome.message,
-        detail='The inventory worker collects TLS Secrets and Ingress usage outside the web request.',
-        action_url=url_for('jobs.executions', queue='inventory', search=outcome.job.public_id),
-        action_label='Review Job Progress',
-        action_icon='activity',
-        metadata={
-            'cluster_id': cluster_id,
-            'job_execution_id': outcome.job.id,
-            'job_public_id': outcome.job.public_id,
-            'trigger_type': 'manual',
-            'created': outcome.created,
-        },
-        queue_feedback=not is_htmx,
-    )
+    sync_progress = present_tls_sync_job(outcome.job, user_id=int(current_user.id))
     _record_dispatch_audit(
         action_status='queued' if outcome.created else 'already_active',
         summary=(
@@ -333,6 +367,18 @@ def tls_certificates_sync():
     if is_htmx:
         return _render_sync_response(
             filter_args=filter_args,
-            feedback=feedback,
+            sync_progress=sync_progress,
         )
+    queue_transient_feedback(
+        status='success' if outcome.created else 'info',
+        title='TLS Secret Sync Queued' if outcome.created else 'TLS Secret Sync Already Active',
+        message=(
+            'The inventory worker is collecting TLS Secret and Ingress relationship evidence.'
+            if outcome.created
+            else 'The existing TLS Secret sync job remains active.'
+        ),
+        action_url=url_for('jobs.executions', queue='inventory', search=outcome.job.public_id),
+        action_label='View Job Progress',
+        action_icon='activity',
+    )
     return redirect(url_for('governance.tls_certificates', **filter_args))

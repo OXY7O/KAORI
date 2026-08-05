@@ -18,7 +18,7 @@ Use `queue_transient_feedback()` for validation feedback, read-only failures, or
 
 - uses the standard KAORI operational toast;
 - survives one normal redirect or render;
-- is explicitly marked `notification_saved=False`;
+- is explicitly marked `activity_audit_saved=False`;
 - does not persist a Notification or Activity Audit record.
 
 ### Direct Flask flash

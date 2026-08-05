@@ -72,7 +72,10 @@ def _collection_failure(exc: Exception) -> tuple[str, str]:
         return TLS_COLLECTION_PERMISSION_UNAVAILABLE, 'Kubernetes permission is unavailable for this collection source.'
     if status_code == 404:
         return TLS_COLLECTION_API_UNAVAILABLE, 'The required Kubernetes API is unavailable for this cluster.'
-    return TLS_COLLECTION_FAILED, str(exc) or 'Kubernetes collection failed.'
+    return (
+        TLS_COLLECTION_FAILED,
+        'Unexpected Kubernetes collection failure. Review inventory worker logs before retrying.',
+    )
 
 
 def build_kubernetes_client(cluster: Cluster):
@@ -86,6 +89,15 @@ def _secret_key(namespace: str | None, name: str | None) -> tuple[str, str] | No
     if not namespace or not name:
         return None
     return (namespace, name)
+
+
+def _has_secret_identity(secret: V1Secret) -> bool:
+    metadata = getattr(secret, 'metadata', None)
+    return bool(
+        metadata
+        and str(getattr(metadata, 'namespace', None) or '').strip()
+        and str(getattr(metadata, 'name', None) or '').strip()
+    )
 
 
 def _ingress_tls_usage(ingress: V1Ingress) -> list[dict[str, Any]]:
@@ -138,6 +150,25 @@ def collect_ingress_tls_usage(cluster: Cluster) -> dict[tuple[str, str], dict[st
 
     for value in usage_map.values():
         value['ingress_hosts'] = sorted({host for host in value['ingress_hosts'] if host})
+        unique_consumers: dict[tuple[str, str], dict[str, Any]] = {}
+        for consumer in value['used_by']:
+            identity = (
+                str(consumer.get('namespace') or ''),
+                str(consumer.get('name') or ''),
+            )
+            current = unique_consumers.setdefault(
+                identity,
+                {
+                    'namespace': identity[0],
+                    'name': identity[1],
+                    'hosts': [],
+                },
+            )
+            current['hosts'].extend(consumer.get('hosts') or [])
+        value['used_by'] = [
+            {**consumer, 'hosts': sorted({host for host in consumer['hosts'] if host})}
+            for consumer in unique_consumers.values()
+        ]
 
     return usage_map
 
@@ -290,7 +321,11 @@ def collect_tls_certificate_batch(
             error=secret_detail,
         )
 
-    tls_secrets = [secret for secret in _response_items(response) if secret.type == TLS_SECRET_TYPE]
+    tls_secrets = [
+        secret
+        for secret in _response_items(response)
+        if secret.type == TLS_SECRET_TYPE and _has_secret_identity(secret)
+    ]
     _report_progress(
         progress_callback,
         42,
@@ -327,20 +362,3 @@ def collect_tls_certificate_batch(
             ingress_mapping_detail=ingress_detail,
         ),
     )
-
-
-def collect_tls_certificates(
-    cluster: Cluster,
-    *,
-    progress_callback: TLSProgressCallback | None = None,
-    validity_policy: TLSValidityPolicy | None = None,
-) -> list[dict[str, Any]]:
-    """Backward-compatible record-only collector wrapper."""
-    batch = collect_tls_certificate_batch(
-        cluster,
-        progress_callback=progress_callback,
-        validity_policy=validity_policy,
-    )
-    if batch.error:
-        raise RuntimeError(batch.error)
-    return batch.records

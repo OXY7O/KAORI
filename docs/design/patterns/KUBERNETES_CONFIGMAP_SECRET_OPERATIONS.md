@@ -73,7 +73,7 @@ Server-side resourceVersion recheck
 Deletion
 ```
 
-The modal is the final human confirmation. It does not replace the signed receipt, RBAC preflight, or resourceVersion precondition. ConfigMap delete receipts are stateless, signed, bound to the KAORI user and exact live target, and expire after ten minutes.
+The modal is the final human confirmation. It does not replace the signed receipt, RBAC preflight, or resourceVersion precondition. ConfigMap and signed Secret delete receipts are stateless, bound to the KAORI user and exact live target plus resourceVersion, and expire after ten minutes.
 
 ## Protected Secret Reveal
 

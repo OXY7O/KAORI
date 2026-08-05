@@ -42,6 +42,7 @@ def _user_notification_query(user_id: int):
     return Notification.query.filter(
         Notification.user_id == user_id,
         Notification.event_type != 'authentication',
+        Notification.deck_visible.is_(True),
     )
 
 
@@ -315,6 +316,7 @@ def mark_notification_read(
     notification = Notification.query.filter(
         Notification.id == notification_id,
         Notification.user_id == user_id,
+        Notification.deck_visible.is_(True),
     ).first()
 
     if notification is None or notification.read_at is not None:
@@ -332,6 +334,7 @@ def mark_all_notifications_read(
 
     Notification.query.filter(
         Notification.user_id == user_id,
+        Notification.deck_visible.is_(True),
         Notification.read_at.is_(None),
     ).update(
         {

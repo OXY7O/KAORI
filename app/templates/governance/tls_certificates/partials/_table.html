@@ -16,14 +16,15 @@
     </div>
     <div class="w-full overflow-hidden">
         <table class="w-full table-fixed text-left text-sm text-content-secondary">
+            <caption class="sr-only">TLS certificate governance registry for the selected committed worker snapshot.</caption>
             <thead class="{{ table_ui.head_classes() }}">
                 <tr>
-                    <th class="w-[29%] px-4 py-3 text-left">Certificate</th>
-                    <th class="w-[20%] px-4 py-3 text-left">Scope</th>
-                    <th class="w-[16%] px-4 py-3 text-left">Validity</th>
-                    <th class="hidden w-[13%] px-4 py-3 text-left lg:table-cell">Host Coverage</th>
-                    <th class="hidden w-[10%] px-4 py-3 text-left xl:table-cell">Ingress Usage</th>
-                    <th class="w-[12%] px-3 py-3 text-right">Details</th>
+                    <th scope="col" class="w-[29%] px-4 py-3 text-left">Certificate</th>
+                    <th scope="col" class="w-[20%] px-4 py-3 text-left">Scope</th>
+                    <th scope="col" class="w-[16%] px-4 py-3 text-left">Validity</th>
+                    <th scope="col" class="hidden w-[13%] px-4 py-3 text-left lg:table-cell">Host Coverage</th>
+                    <th scope="col" class="hidden w-[10%] px-4 py-3 text-left xl:table-cell">Ingress Usage</th>
+                    <th scope="col" class="w-[12%] px-3 py-3 text-right">Details</th>
                 </tr>
             </thead>
             <tbody class="{{ table_ui.body_classes() }}">
@@ -75,17 +76,27 @@
                         <td class="hidden min-w-0 px-4 py-3 align-middle lg:table-cell">
                             <div class="min-w-0 space-y-1">
                                 {{ table_label.status_indicator_label(presentation.coverage_label or 'Not Reported', presentation.coverage_tone or 'unknown') }}
-                                <p class="truncate text-xs font-medium leading-5 text-content-primary">{{ record.covered_host_count or 0 }}/{{ record.declared_host_count or 0 }} Hosts Covered</p>
-                                {% if record.uncovered_hosts %}
-                                    <p class="truncate text-xs leading-5 text-content-muted" title="{{ record.uncovered_hosts|join(', ') }}">{{ record.uncovered_hosts|length }} Uncovered</p>
+                                {% if not presentation.coverage_reported %}
+                                    <p class="text-xs leading-5 text-content-muted">Host mapping evidence unavailable</p>
+                                {% elif (record.declared_host_count or 0) == 0 %}
+                                    <p class="text-xs leading-5 text-content-muted">No Declared Hosts</p>
                                 {% else %}
-                                    <p class="text-xs leading-5 text-content-muted">No Uncovered Hosts</p>
+                                    <p class="truncate text-xs font-medium leading-5 text-content-primary">{{ record.covered_host_count or 0 }}/{{ record.declared_host_count }} Hosts Covered</p>
+                                    <p class="truncate text-xs leading-5 text-content-muted"{% if record.uncovered_hosts %} title="{{ record.uncovered_hosts|join(', ') }}"{% endif %}>
+                                        {{ (record.uncovered_hosts or [])|length }} Uncovered
+                                    </p>
                                 {% endif %}
                             </div>
                         </td>
                         <td class="hidden min-w-0 px-4 py-3 align-middle xl:table-cell">
-                            <p class="truncate text-sm font-semibold text-content-primary">{{ (record.used_by or [])|length }} {{ 'Ingress' if (record.used_by or [])|length == 1 else 'Ingresses' }}</p>
-                            <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ record.declared_host_count or 0 }} Declared Hosts</p>
+                            {% if presentation.ingress_mapping_reported %}
+                                {% set consumer_count = presentation.ingress_consumer_count or 0 %}
+                                <p class="truncate text-sm font-semibold text-content-primary">{{ consumer_count }} {{ 'Ingress' if consumer_count == 1 else 'Ingresses' }}</p>
+                                <p class="mt-0.5 truncate text-xs leading-5 text-content-muted">{{ presentation.declared_host_count or 0 }} Declared Hosts</p>
+                            {% else %}
+                                <p class="text-sm font-semibold text-content-primary">Not Reported</p>
+                                <p class="mt-0.5 text-xs leading-5 text-content-muted">Ingress mapping unavailable</p>
+                            {% endif %}
                         </td>
                         <td class="px-3 py-3 text-right align-middle">
                             {{ resource_detail_modal.detail_button(
@@ -124,7 +135,7 @@
         'status': payload.filters.status,
         'search': payload.filters.search,
         'per_page': payload.pagination.per_page,
-        'partial_mode': 'inventory_scope'
+        'partial_mode': 'table'
     } %}
     <footer class="flex flex-col gap-4 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs text-content-muted lg:flex-row lg:items-center lg:justify-between">
         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
@@ -134,11 +145,11 @@
                 {{ 'TLS Certificate' if payload.pagination.total_items == 1 else 'TLS Certificates' }}
             </p>
             <form hx-get="{{ url_for('governance.tls_certificates') }}"
-                  hx-target="#tls-certificates-inventory-scope"
+                  hx-target="#tls-certificates-table-card"
                   hx-swap="outerHTML"
                   hx-indicator="#tls-certificates-table-loading"
                   class="flex items-center gap-2 text-left">
-                <input type="hidden" name="partial_mode" value="inventory_scope">
+                <input type="hidden" name="partial_mode" value="table">
                 <input type="hidden" name="page" value="1">
                 <input type="hidden" name="cluster_id" value="{{ payload.filters.cluster_id }}">
                 <input type="hidden" name="namespace" value="{{ payload.filters.namespace }}">
@@ -161,7 +172,7 @@
                 {% set prev_partial = url_for('governance.tls_certificates', page=payload.pagination.prev_page, **partial_query) %}
                 <a href="{{ prev_href }}"
                    hx-get="{{ prev_partial }}"
-                   hx-target="#tls-certificates-inventory-scope"
+                   hx-target="#tls-certificates-table-card"
                    hx-swap="outerHTML"
                    hx-indicator="#tls-certificates-table-loading"
                    class="{{ pagination_ui.navigation_classes(false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
@@ -173,7 +184,7 @@
                 payload.pagination.total_pages,
                 endpoint='governance.tls_certificates',
                 query_params=partial_query,
-                hx_target='#tls-certificates-inventory-scope',
+                hx_target='#tls-certificates-table-card',
                 hx_indicator='#tls-certificates-table-loading',
                 hx_swap='outerHTML'
             ) }}
@@ -182,7 +193,7 @@
                 {% set next_partial = url_for('governance.tls_certificates', page=payload.pagination.next_page, **partial_query) %}
                 <a href="{{ next_href }}"
                    hx-get="{{ next_partial }}"
-                   hx-target="#tls-certificates-inventory-scope"
+                   hx-target="#tls-certificates-table-card"
                    hx-swap="outerHTML"
                    hx-indicator="#tls-certificates-table-loading"
                    class="{{ pagination_ui.navigation_classes(false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>

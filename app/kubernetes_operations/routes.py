@@ -13,16 +13,20 @@ from app.kubernetes_operations.configmaps.routes import (
     delete_configmap_page,
     update_configmap_page,
 )
-from app.kubernetes_operations.secrets.routes import (
+from app.kubernetes_operations.secrets.crud_routes import (
     create_secret,
-    decide_secret_reveal_request,
     delete_secret,
     delete_secret_target,
     delete_secret_workspace,
-    reauthenticate_secret_reveal,
     replace_secret,
     replace_secret_content,
     replace_secret_workspace,
+    secret_management_index,
+    secret_namespace_options,
+)
+from app.kubernetes_operations.secrets.reveal_routes import (
+    decide_secret_reveal_request,
+    reauthenticate_secret_reveal,
     request_secret_reveal,
     reveal_secret_approvals,
     reveal_secret_content,
@@ -30,8 +34,8 @@ from app.kubernetes_operations.secrets.routes import (
     reveal_secret_status,
     reveal_secret_value,
     reveal_secret_workspace,
-    secret_management_index,
-    secret_namespace_options,
+)
+from app.kubernetes_operations.secrets.tls_routes import (
     tls_secret_bulk_rotation_apply,
     tls_secret_bulk_rotation_page,
     tls_secret_bulk_rotation_preview,

@@ -3,14 +3,14 @@
       method="get"
       action="{{ url_for('governance.tls_certificates') }}"
       hx-get="{{ url_for('governance.tls_certificates') }}"
-      hx-target="#tls-certificates-inventory-scope"
+      hx-target="#tls-certificates-page-workspace"
       hx-swap="outerHTML"
       hx-indicator="#tls-certificates-table-loading"
       hx-trigger="change, keyup changed delay:500ms from:find input[name='search']"
       class="grid gap-4 xl:grid-cols-12 xl:items-end">
     <input type="hidden" name="page" value="1">
     <input type="hidden" name="per_page" value="{{ payload.pagination.per_page }}">
-    <input type="hidden" name="partial_mode" value="inventory_scope">
+    <input type="hidden" name="partial_mode" value="page_workspace">
     <div class="xl:col-span-3">
         <label class="{{ table_ui.filter_label_classes() }}" for="tls-cluster-filter">Cluster</label>
         <select id="tls-cluster-filter" name="cluster_id" class="{{ table_ui.filter_select_classes() }}">

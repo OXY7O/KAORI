@@ -15,6 +15,7 @@ class Notification(db.Model):
         Index('ix_notifications_created_id', 'created_at', 'id'),
         Index('ix_notifications_status_created', 'status', 'created_at'),
         Index('ix_notifications_user_created', 'user_id', 'created_at'),
+        Index('ix_notifications_user_deck_created', 'user_id', 'deck_visible', 'created_at'),
         Index('ix_notifications_event_created', 'event_type', 'created_at'),
     )
 
@@ -62,6 +63,12 @@ class Notification(db.Model):
     metadata_json: Mapped[dict[str, Any] | None] = mapped_column(
         db.JSON,
         nullable=True,
+    )
+
+    deck_visible: Mapped[bool] = mapped_column(
+        db.Boolean,
+        nullable=False,
+        default=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(

@@ -20,10 +20,12 @@ def test_bulk_tls_update_is_validation_gated():
 
 
 def test_bulk_preview_enables_only_valid_nonempty_target_set():
-    routes = (ROOT / "app/kubernetes_operations/secrets/routes.py").read_text()
+    routes = (ROOT / "app/kubernetes_operations/secrets/tls_routes.py").read_text()
+    validation = (ROOT / "app/kubernetes_operations/secrets/tls_validation.py").read_text()
     assert "def _build_bulk_tls_rotation_preview_response" in routes
-    assert "and targets" in routes
-    assert '"formId":"tls-secret-update-form"' in routes
+    assert "require_targets=True" in routes
+    assert "require_targets and not targets" in validation
+    assert "form_id='tls-secret-update-form'" in routes
 
 
 def test_form_associated_bulk_controls_invalidate_validation():

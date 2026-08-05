@@ -680,14 +680,8 @@ def reveal_secret_value(request_id: str, *, user_id: int) -> RevealedSecretValue
     except (OSError, Urllib3HTTPError) as exc:
         raise ValueError('KAORI could not reach the Kubernetes API using the cluster kubeconfig.') from exc
     finally:
-        for key in list(secret_data):
-            secret_data[key] = ''
-        secret_data.clear()
-        object_data = getattr(secret_object, 'data', None)
-        if isinstance(object_data, dict):
-            for key in list(object_data):
-                object_data[key] = ''
-            object_data.clear()
+        scrub_mapping_values(secret_data)
+        scrub_secret_payload(secret_object)
 
     revealed_at = _now()
     record.status = 'revealed'

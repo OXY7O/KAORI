@@ -12,6 +12,7 @@ from app.notifications.constants import (
     NAVIGATION_NOTIFICATION_LIMIT,
 )
 from app.notifications.feedback import (
+    OperationalDeliveryPolicy,
     OperationalFeedbackSpec,
     build_operational_feedback,
     queue_operational_feedback,
@@ -127,6 +128,7 @@ def create_notification(
     detail: str | None = None,
     action_url: str | None = None,
     metadata: dict[str, Any] | None = None,
+    deck_visible: bool = True,
 ) -> Notification:
     """Create one normalized notification through the domain service."""
     normalized_status, normalized_title, normalized_message, normalized_detail = _normalize_notification_content(
@@ -146,6 +148,7 @@ def create_notification(
         detail=normalized_detail,
         action_url=action_url,
         metadata=metadata,
+        deck_visible=deck_visible,
     )
 
 
@@ -162,6 +165,7 @@ def record_operational_activity(
     action_icon: str = 'arrow-up-right',
     metadata: dict[str, Any] | None = None,
     queue_feedback: bool = False,
+    delivery_policy: OperationalDeliveryPolicy | str = OperationalDeliveryPolicy.PERSISTENT,
 ) -> dict[str, Any]:
     """Record an audit event and build its matching user feedback payload.
 
@@ -177,7 +181,9 @@ def record_operational_activity(
         detail=detail,
     )
 
-    notification_saved = True
+    policy = OperationalDeliveryPolicy.normalize(delivery_policy)
+    deck_visible = policy.deck_visible(normalized_status)
+    activity_audit_saved = True
     try:
         persist_notification(
             user_id=user_id,
@@ -188,6 +194,7 @@ def record_operational_activity(
             detail=normalized_detail,
             action_url=action_url,
             metadata=metadata,
+            deck_visible=deck_visible,
         )
     except Exception:
         db.session.rollback()
@@ -205,10 +212,11 @@ def record_operational_activity(
                 detail=normalized_detail,
                 action_url=action_url,
                 metadata=metadata,
+                deck_visible=deck_visible,
             )
         except Exception:
             db.session.rollback()
-            notification_saved = False
+            activity_audit_saved = False
             logger.exception(
                 'Could not persist operational notification for event %s.',
                 event_type,
@@ -223,7 +231,9 @@ def record_operational_activity(
             action_url=action_url,
             action_label=action_label,
             action_icon=action_icon,
-            notification_saved=notification_saved,
+            activity_audit_saved=activity_audit_saved,
+            notification_deck_visible=deck_visible and activity_audit_saved,
+            delivery_policy=policy,
             delivery=_feedback_delivery(
                 event_type=event_type,
                 status=normalized_status,
@@ -238,7 +248,8 @@ def record_operational_activity(
     return feedback
 
 
-def queue_transient_feedback(
+
+def create_transient_feedback(
     *,
     status: str,
     title: str,
@@ -247,13 +258,9 @@ def queue_transient_feedback(
     action_url: str | None = None,
     action_label: str = 'View details',
     action_icon: str = 'arrow-up-right',
+    queue_feedback: bool = False,
 ) -> dict[str, Any]:
-    """Queue one non-persistent operational toast for the next rendered response.
-
-    Use this for validation, navigation, or read-only failures that should not
-    create an Activity Audit record. Mutating operations should use
-    ``record_operational_activity`` instead.
-    """
+    """Build immediate feedback without Activity Audit or Notification Deck persistence."""
     normalized_status, normalized_title, normalized_message, normalized_detail = _normalize_notification_content(
         event_type='operational_feedback',
         status=status,
@@ -270,13 +277,38 @@ def queue_transient_feedback(
             action_url=action_url,
             action_label=action_label,
             action_icon=action_icon,
-            notification_saved=False,
+            activity_audit_saved=False,
             activity_audit_expected=False,
+            notification_deck_visible=False,
             delivery='toast',
+            delivery_policy=OperationalDeliveryPolicy.AUDIT_ONLY,
         )
     )
-    queue_operational_feedback(feedback)
+    if queue_feedback:
+        queue_operational_feedback(feedback)
     return feedback
+
+def queue_transient_feedback(
+    *,
+    status: str,
+    title: str,
+    message: str,
+    detail: str | None = None,
+    action_url: str | None = None,
+    action_label: str = 'View details',
+    action_icon: str = 'arrow-up-right',
+) -> dict[str, Any]:
+    """Queue one non-persistent operational toast for the next rendered response."""
+    return create_transient_feedback(
+        status=status,
+        title=title,
+        message=message,
+        detail=detail,
+        action_url=action_url,
+        action_label=action_label,
+        action_icon=action_icon,
+        queue_feedback=True,
+    )
 
 
 def get_navigation_notification_context(

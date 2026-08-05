@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import base64
 import json
-import re
-from dataclasses import dataclass
 from typing import Any
 
 from kubernetes.client import V1ObjectMeta, V1Secret
@@ -11,14 +9,27 @@ from kubernetes.client.exceptions import ApiException
 from kubernetes.config.config_exception import ConfigException
 from urllib3.exceptions import HTTPError as Urllib3HTTPError
 
+from app.common.kubernetes_secrets import scrub_secret_payload
 from app.governance.tls_certificates.certificate import validate_certificate_pair
 from app.integrations.kubernetes.resolver import tls_policy_for_cluster
 from app.integrations.kubernetes.tls import weak_tls_context
+from app.kubernetes_operations.secrets.contracts import SecretOperationResult
 from app.kubernetes_operations.secrets.live_service import (
     core_api,
     get_cluster,
-    list_live_namespaces,
     verify_live_namespace,
+)
+from app.kubernetes_operations.secrets.validation import (
+    decode_utf8,
+    read_required_upload,
+    required,
+    validate_data_key,
+    validate_namespace_name,
+    validate_optional_email,
+    validate_registry_server,
+    validate_secret_name,
+    validate_secret_size,
+    validate_ssh_private_key,
 )
 from app.models import Cluster
 
@@ -38,22 +49,6 @@ SECRET_KUBERNETES_TYPES = {
     'ssh-auth': 'kubernetes.io/ssh-auth',
 }
 
-_DNS_LABEL_PATTERN = re.compile(r'^[a-z0-9](?:[-a-z0-9]*[a-z0-9])?$')
-_SECRET_DATA_KEY_PATTERN = re.compile(r'^[-._a-zA-Z0-9]+$')
-_EMAIL_PATTERN = re.compile(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
-_MAX_KUBERNETES_SECRET_BYTES = 1024 * 1024
-_MAX_UPLOAD_BYTES = 1024 * 1024
-
-
-@dataclass(frozen=True)
-class SecretOperationResult:
-    status: str
-    title: str
-    message: str
-    detail: str | None
-    metadata: dict[str, Any]
-
-
 def get_secret_create_context() -> dict[str, Any]:
     """Return stable Create Secret page context.
 
@@ -68,85 +63,7 @@ def get_secret_create_context() -> dict[str, Any]:
     }
 
 
-def _cluster(cluster_id: str) -> Cluster:
-    return get_cluster(cluster_id)
 
-
-def _core_api(cluster: Cluster):
-    return core_api(cluster)
-
-
-def get_cluster_namespace_options(cluster_id: str | None) -> list[str]:
-    """Return namespaces directly from the selected Kubernetes API server."""
-    return list_live_namespaces(cluster_id)
-
-
-def _required(value: str | None, label: str) -> str:
-    normalized = (value or '').strip()
-    if not normalized:
-        raise ValueError(f'{label} is required.')
-    return normalized
-
-
-def _validate_secret_name(name: str) -> None:
-    labels = name.split('.')
-    invalid_label = any(not label or len(label) > 63 or not _DNS_LABEL_PATTERN.fullmatch(label) for label in labels)
-    if len(name) > 253 or invalid_label:
-        raise ValueError(
-            'Secret name must be a valid lowercase DNS subdomain using letters, numbers, dots, or hyphens.'
-        )
-
-
-def _validate_namespace_name(namespace: str) -> None:
-    if len(namespace) > 63 or not _DNS_LABEL_PATTERN.fullmatch(namespace):
-        raise ValueError('Namespace must be a valid lowercase Kubernetes namespace name.')
-
-
-def _validate_namespace_target(cluster: Cluster, namespace: str) -> None:
-    """Verify the submitted namespace against the live Kubernetes API."""
-    verify_live_namespace(cluster, namespace)
-
-
-def _read_upload(upload: Any, label: str) -> bytes:
-    if upload is None or not getattr(upload, 'filename', ''):
-        raise ValueError(f'{label} is required.')
-
-    payload = upload.read(_MAX_UPLOAD_BYTES + 1)
-    if len(payload) > _MAX_UPLOAD_BYTES:
-        raise ValueError(f'{label} must be 1 MiB or smaller.')
-    if not payload:
-        raise ValueError(f'{label} is empty.')
-    return payload
-
-
-def _decode_utf8(payload: bytes, label: str) -> str:
-    try:
-        return payload.decode('utf-8')
-    except UnicodeDecodeError as exc:
-        raise ValueError(f'{label} must use UTF-8 text encoding.') from exc
-
-
-def _validate_secret_size(string_data: dict[str, str]) -> None:
-    payload_size = sum(len(key.encode('utf-8')) + len(value.encode('utf-8')) for key, value in string_data.items())
-    if payload_size >= _MAX_KUBERNETES_SECRET_BYTES:
-        raise ValueError('Secret content must be smaller than the Kubernetes 1 MiB limit.')
-
-
-def _validate_ssh_private_key(raw_key: str) -> None:
-    try:
-        from cryptography.exceptions import UnsupportedAlgorithm
-        from cryptography.hazmat.primitives import serialization
-    except ModuleNotFoundError as exc:
-        raise ValueError('SSH private-key validation is unavailable on this KAORI instance.') from exc
-
-    key_bytes = raw_key.encode('utf-8')
-    try:
-        try:
-            serialization.load_pem_private_key(key_bytes, password=None)
-        except ValueError:
-            serialization.load_ssh_private_key(key_bytes, password=None)
-    except (TypeError, ValueError, UnsupportedAlgorithm) as exc:
-        raise ValueError('SSH private key must be a valid, unencrypted PEM or OpenSSH private key.') from exc
 
 
 def _build_string_data(form: Any, files: Any, secret_type: str) -> tuple[dict[str, str], dict[str, Any]]:
@@ -162,39 +79,36 @@ def _build_string_data(form: Any, files: Any, secret_type: str) -> tuple[dict[st
             normalized_key = key.strip()
             if not normalized_key:
                 continue
-            if len(normalized_key) > 253 or not _SECRET_DATA_KEY_PATTERN.fullmatch(normalized_key):
-                raise ValueError(
-                    f'Invalid Secret data key: {normalized_key}. Use letters, numbers, dots, hyphens, or underscores.'
-                )
+            validate_data_key(normalized_key)
             if normalized_key in string_data:
                 raise ValueError(f'Duplicate Secret data key: {normalized_key}.')
             string_data[normalized_key] = value
         if not string_data:
             raise ValueError('Add at least one key-value entry.')
         metadata['key_names'] = sorted(string_data)
-        _validate_secret_size(string_data)
+        validate_secret_size(string_data)
         return string_data, metadata
 
     if secret_type == 'basic-auth':
-        username = _required(form.get('username'), 'Username')
-        password = _required(form.get('password'), 'Password')
+        username = required(form.get('username'), 'Username')
+        password = required(form.get('password'), 'Password')
         if password != (form.get('password_confirm') or ''):
             raise ValueError('Password confirmation does not match.')
         string_data = {'username': username, 'password': password}
         metadata['key_names'] = ['username', 'password']
-        _validate_secret_size(string_data)
+        validate_secret_size(string_data)
         return string_data, metadata
 
     if secret_type == 'tls':
-        cert_bytes = _read_upload(files.get('tls_crt_file'), 'Certificate file')
-        key_bytes = _read_upload(files.get('tls_key_file'), 'Private key file')
+        cert_bytes = read_required_upload(files.get('tls_crt_file'), 'Certificate file')
+        key_bytes = read_required_upload(files.get('tls_key_file'), 'Private key file')
         validation = validate_certificate_pair(cert_bytes, key_bytes)
         if not validation.is_valid:
             raise ValueError(' '.join(validation.errors) or 'Certificate and private key do not match.')
         parsed = validation.parsed_certificate
         string_data = {
-            'tls.crt': _decode_utf8(cert_bytes, 'Certificate file'),
-            'tls.key': _decode_utf8(key_bytes, 'Private key file'),
+            'tls.crt': decode_utf8(cert_bytes, 'Certificate file'),
+            'tls.key': decode_utf8(key_bytes, 'Private key file'),
         }
         metadata.update(
             {
@@ -204,18 +118,16 @@ def _build_string_data(form: Any, files: Any, secret_type: str) -> tuple[dict[st
                 'certificate_fingerprint_sha256': getattr(parsed, 'fingerprint_sha256', None),
             }
         )
-        _validate_secret_size(string_data)
+        validate_secret_size(string_data)
         return string_data, metadata
 
     if secret_type == 'dockerconfigjson':
-        server = _required(form.get('registry_server'), 'Registry server')
-        username = _required(form.get('registry_username'), 'Registry username')
-        password = _required(form.get('registry_password'), 'Registry password or token')
+        server = required(form.get('registry_server'), 'Registry server')
+        username = required(form.get('registry_username'), 'Registry username')
+        password = required(form.get('registry_password'), 'Registry password or token')
         email = (form.get('registry_email') or '').strip()
-        if any(character.isspace() for character in server):
-            raise ValueError('Registry server must not contain spaces.')
-        if email and not _EMAIL_PATTERN.fullmatch(email):
-            raise ValueError('Registry email address is invalid.')
+        validate_registry_server(server)
+        validate_optional_email(email)
 
         auth = base64.b64encode(f'{username}:{password}'.encode()).decode()
         payload = {'auths': {server: {'username': username, 'password': password, 'auth': auth}}}
@@ -224,19 +136,19 @@ def _build_string_data(form: Any, files: Any, secret_type: str) -> tuple[dict[st
         string_data = {'.dockerconfigjson': json.dumps(payload, separators=(',', ':'))}
         metadata['key_names'] = ['.dockerconfigjson']
         metadata['registry_server'] = server
-        _validate_secret_size(string_data)
+        validate_secret_size(string_data)
         return string_data, metadata
 
     if secret_type == 'ssh-auth':
         key_file = files.get('ssh_private_key_file')
         if key_file is not None and getattr(key_file, 'filename', ''):
-            raw_key = _decode_utf8(_read_upload(key_file, 'SSH private key file'), 'SSH private key file')
+            raw_key = decode_utf8(read_required_upload(key_file, 'SSH private key file'), 'SSH private key file')
         else:
-            raw_key = _required(form.get('ssh_private_key'), 'SSH private key')
-        _validate_ssh_private_key(raw_key)
+            raw_key = required(form.get('ssh_private_key'), 'SSH private key')
+        validate_ssh_private_key(raw_key)
         string_data = {'ssh-privatekey': raw_key}
         metadata['key_names'] = ['ssh-privatekey']
-        _validate_secret_size(string_data)
+        validate_secret_size(string_data)
         return string_data, metadata
 
     raise ValueError('Unsupported Secret type.')
@@ -262,10 +174,10 @@ def _kubernetes_api_error_message(exc: ApiException) -> str:
 
 
 def execute_secret_operation(form: Any, files: Any, *, dry_run: bool) -> SecretOperationResult:
-    cluster_id = _required(form.get('cluster_id'), 'Cluster')
-    namespace = _required(form.get('namespace'), 'Namespace')
-    name = _required(form.get('secret_name'), 'Secret name')
-    secret_type = _required(form.get('secret_type'), 'Secret type')
+    cluster_id = required(form.get('cluster_id'), 'Cluster')
+    namespace = required(form.get('namespace'), 'Namespace')
+    name = required(form.get('secret_name'), 'Secret name')
+    secret_type = required(form.get('secret_type'), 'Secret type')
     immutable_value = (form.get('immutable') or 'false').strip().lower()
 
     if secret_type not in SECRET_KUBERNETES_TYPES:
@@ -273,11 +185,11 @@ def execute_secret_operation(form: Any, files: Any, *, dry_run: bool) -> SecretO
     if immutable_value not in {'true', 'false'}:
         raise ValueError('Mutability selection is invalid.')
 
-    _validate_secret_name(name)
-    _validate_namespace_name(namespace)
+    validate_secret_name(name)
+    validate_namespace_name(namespace)
 
-    cluster = _cluster(cluster_id)
-    _validate_namespace_target(cluster, namespace)
+    cluster = get_cluster(cluster_id)
+    verify_live_namespace(cluster, namespace)
 
     string_data, safe_metadata = _build_string_data(form, files, secret_type)
     body = V1Secret(
@@ -290,21 +202,20 @@ def execute_secret_operation(form: Any, files: Any, *, dry_run: bool) -> SecretO
     )
 
     created = None
+    created_uid = None
+    created_resource_version = None
     try:
         with weak_tls_context(enabled=tls_policy_for_cluster(cluster)[1]):
-            api = _core_api(cluster)
+            api = core_api(cluster)
             created = api.create_namespaced_secret(
                 namespace=namespace,
                 body=body,
-                dry_run='All',
+                dry_run='All' if dry_run else None,
                 _request_timeout=10,
             )
-            if not dry_run:
-                created = api.create_namespaced_secret(
-                    namespace=namespace,
-                    body=body,
-                    _request_timeout=10,
-                )
+            created_metadata = getattr(created, 'metadata', None)
+            created_uid = getattr(created_metadata, 'uid', None)
+            created_resource_version = getattr(created_metadata, 'resource_version', None)
     except ApiException as exc:
         raise ValueError(_kubernetes_api_error_message(exc)) from exc
     except ConfigException as exc:
@@ -319,6 +230,7 @@ def execute_secret_operation(form: Any, files: Any, *, dry_run: bool) -> SecretO
             string_data[key] = ''
         string_data.clear()
         body.string_data = None
+        scrub_secret_payload(created)
 
     operation = 'validation' if dry_run else 'creation'
     return SecretOperationResult(
@@ -341,8 +253,8 @@ def execute_secret_operation(form: Any, files: Any, *, dry_run: bool) -> SecretO
             'operation': operation,
             'live_target_source': True,
             'inventory_target_gate': False,
-            'resource_uid': getattr(getattr(created, 'metadata', None), 'uid', None),
-            'resource_version': getattr(getattr(created, 'metadata', None), 'resource_version', None),
+            'resource_uid': created_uid,
+            'resource_version': created_resource_version,
             **safe_metadata,
         },
     )

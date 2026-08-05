@@ -130,7 +130,7 @@ def main() -> int:
     for progress_usage in (
         'app/templates/components/navigation/_quick_sync_status.html',
         'app/templates/components/navigation/_individual_sync_status.html',
-        'app/templates/governance/tls_certificates/partials/_sync_toast.html',
+        'app/templates/governance/tls_certificates/partials/_sync_progress_toast.html',
     ):
         require('components/operational_progress_toast.html' in read(progress_usage),
                 f'Active progress surface must use canonical operational progress toast: {progress_usage}', errors)

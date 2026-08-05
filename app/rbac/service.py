@@ -28,8 +28,6 @@ PERMISSION_DEPENDENCIES: dict[str, set[str]] = {
     'kubernetes_secrets.rotate_tls': {'kubernetes_secrets.view'},
     'kubernetes_secrets.bulk_rotate_tls': {'kubernetes_secrets.view'},
     'tls_certificates.sync': {'tls_certificates.view'},
-    'tls_certificates.update': {'tls_certificates.view'},
-    'tls_certificates.bulk_update': {'tls_certificates.view'},
     'reports.generate': {'reports.view'},
     'reports.manage_templates': {'reports.view'},
     'reports.manage_schedules': {'reports.view'},

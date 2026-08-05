@@ -69,7 +69,11 @@ def render_sync_snapshot(
             'duration_seconds': snapshot.get('duration_seconds'),
             'completed_label': 'Completed just now',
             'notification_context': get_navigation_notification_context(user_id=current_user.id),
-            'notification_saved': sync_snapshot_visible_to_user(
+            'activity_audit_saved': sync_snapshot_visible_to_user(
+                snapshot,
+                user_id=int(current_user.id),
+            ),
+            'notification_deck_visible': sync_snapshot_visible_to_user(
                 snapshot,
                 user_id=int(current_user.id),
             ),
@@ -93,7 +97,8 @@ def render_enqueue_error(*, message: str, detail: str, response_status: int) -> 
             failed_count=0,
             duration_seconds=None,
             completed_label='Not started',
-            notification_saved=False,
+            activity_audit_saved=False,
+            notification_deck_visible=False,
         ),
         response_status,
     )

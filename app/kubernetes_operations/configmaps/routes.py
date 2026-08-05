@@ -20,7 +20,12 @@ from app.kubernetes_operations.configmaps.service import (
     read_configmap,
     update_configmap,
 )
-from app.notifications.service import get_navigation_notification_context, record_operational_activity
+from app.notifications.feedback import OperationalDeliveryPolicy
+from app.notifications.service import (
+    create_transient_feedback,
+    get_navigation_notification_context,
+    record_operational_activity,
+)
 from app.rbac.decorators import any_permission_required, permission_required
 
 
@@ -64,11 +69,28 @@ def _feedback(
     detail: str | None = None,
     queue_feedback: bool = False,
 ) -> dict[str, Any]:
-    normalized_metadata = {
-        **metadata,
-        'feedback_delivery': 'toast',
-        'operation_domain': 'kubernetes_configmaps',
-    }
+    is_validation = (
+        event_type.endswith('_validated')
+        or 'validation' in event_type
+        or metadata.get('operation') == 'validation'
+    )
+    if is_validation:
+        return create_transient_feedback(
+            status=status,
+            title=title,
+            message=message,
+            detail=detail,
+            action_url=action_url,
+            action_label='Open ConfigMap Management',
+            action_icon='file-cog',
+            queue_feedback=queue_feedback,
+        )
+
+    delivery_policy = (
+        OperationalDeliveryPolicy.PERSISTENT
+        if event_type == 'kubernetes_configmap_deleted'
+        else OperationalDeliveryPolicy.DECK_ON_FAILURE
+    )
     return record_operational_activity(
         user_id=int(current_user.id),
         event_type=event_type,
@@ -79,8 +101,13 @@ def _feedback(
         action_url=action_url,
         action_label='Open ConfigMap Management',
         action_icon='file-cog',
-        metadata=normalized_metadata,
+        metadata={
+            **metadata,
+            'feedback_delivery': 'toast',
+            'operation_domain': 'kubernetes_configmaps',
+        },
         queue_feedback=queue_feedback,
+        delivery_policy=delivery_policy,
     )
 
 

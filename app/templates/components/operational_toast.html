@@ -5,9 +5,10 @@
 {% set is_error = resolved_status == 'error' %}
 {% set resolved_tone = 'normal' if is_success else 'warning' if is_warning else 'critical' if is_error else 'info' %}
 {% set resolved_icon = 'check' if is_success else 'triangle-alert' if is_warning else 'x' if is_error else 'info' %}
-{% set resolved_notification_saved = notification_saved|default(false) %}
-{% set resolved_activity_audit_expected = activity_audit_expected|default(resolved_notification_saved) %}
-{% set suppress_toast = delivery|default('toast') == 'activity_center' and resolved_notification_saved %}
+{% set resolved_activity_audit_saved = activity_audit_saved|default(false) %}
+{% set resolved_activity_audit_expected = activity_audit_expected|default(resolved_activity_audit_saved) %}
+{% set resolved_notification_deck_visible = notification_deck_visible|default(false) %}
+{% set suppress_toast = delivery|default('toast') == 'activity_center' %}
 {% set resolved_toast_id = feedback_id|default(notification_id|default(task_id|default('toast-' ~ range(100000, 999999)|random))) %}
 {% set resolved_auto_dismiss = auto_dismiss_ms|default(0 if is_error else 12000 if is_warning else 8000 if is_success else 10000) %}
 {% if not suppress_toast %}
@@ -15,7 +16,7 @@
     <div data-operational-toast
          data-toast-id="{{ resolved_toast_id }}"
          data-auto-dismiss-ms="{{ resolved_auto_dismiss }}"
-         {% if resolved_notification_saved %}data-operational-notification-refresh="true"{% endif %}
+         {% if resolved_notification_deck_visible %}data-operational-notification-refresh="true"{% endif %}
          role="{{ 'alert' if is_error or is_warning else 'status' }}"
          aria-live="{{ 'assertive' if is_error else 'polite' }}"
          aria-atomic="true"
@@ -91,13 +92,18 @@
                                         <i data-lucide="timer" class="h-3.5 w-3.5"></i>{{ duration_seconds }}s
                                     </span>
                                 {% endif %}
-                                {% if resolved_notification_saved %}
+                                {% if resolved_activity_audit_saved %}
                                     <span class="inline-flex items-center gap-1.5">
-                                        <i data-lucide="bell" class="h-3.5 w-3.5"></i>Activity Audit
+                                        <i data-lucide="scroll-text" class="h-3.5 w-3.5"></i>Activity Audit
                                     </span>
                                 {% elif resolved_activity_audit_expected %}
                                     <span class="inline-flex items-center gap-1.5 text-status-warning-text">
                                         <i data-lucide="triangle-alert" class="h-3.5 w-3.5"></i>Activity Audit not confirmed
+                                    </span>
+                                {% endif %}
+                                {% if resolved_notification_deck_visible %}
+                                    <span class="inline-flex items-center gap-1.5">
+                                        <i data-lucide="bell-ring" class="h-3.5 w-3.5"></i>Notification Deck
                                     </span>
                                 {% endif %}
                             </div>
@@ -121,6 +127,6 @@
     </div>
     {% if toast_oob|default(false) %}</div>{% endif %}
 {% endif %}
-{% if delivery|default('toast') == 'activity_center' and resolved_notification_saved %}
+{% if delivery|default('toast') == 'activity_center' and resolved_notification_deck_visible %}
     <span hidden data-operational-notification-refresh="true"></span>
 {% endif %}

@@ -141,7 +141,7 @@ kubernetes_secrets.rotate_tls
 kubernetes_secrets.bulk_rotate_tls
 ```
 
-Legacy `tls_certificates.update` and `tls_certificates.bulk_update` keys remain registry compatibility aliases only. New UI and role design must not use them as mutation authorities.
+TLS mutation authority uses only `kubernetes_secrets.rotate_tls` and `kubernetes_secrets.bulk_rotate_tls`. The retired Governance mutation permission keys are removed from the registry and existing assignments are migrated to the canonical permissions.
 
 ## Data-minimization contract
 
@@ -150,6 +150,13 @@ The Kubernetes API response is processed transiently by the collector. KAORI may
 ## Pagination and filtering
 
 - filter events are scoped to the filter form;
-- the Rows selector refreshes `#tls-certificates-inventory-scope` using `outerHTML`;
+- the Rows selector refreshes `#tls-certificates-page-workspace` using `outerHTML`;
 - page size defaults to 5 and offers 5/10/25/50;
 - Previous, numeric pages, and Next preserve all active filters and use the same HTMX target and loading indicator.
+## Toast and Notification Deck policy
+
+- TLS inventory sync uses `JobExecution` as the active-progress authority. Dispatch acknowledgement is transient; terminal success, partial success, cancellation, and failure persist to Notification Deck and Activity Audit.
+- The worker must persist terminal delivery evidence before marking the job terminal. `result_summary_json` records `activity_audit_saved` and the requester IDs whose Notification Deck row was persisted.
+- TLS Secret validation remains transient. Single and bulk rotation terminal outcomes are persistent regardless of status.
+- Notification payloads contain only safe certificate metadata and counts; certificate bytes, private keys, Secret values, raw exceptions, and provider payload dumps are prohibited.
+- Toast labels may state **Activity Audit** or **Notification Deck** only when the corresponding persistence was confirmed.

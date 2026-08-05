@@ -109,29 +109,48 @@ explicit item action or **Mark all read**. Background refresh replaces only the 
 Notifications sections. It never replaces the bell, navbar, slider shell, tabs, or
 Alpine state, so polling cannot make controls flicker or leave a blank panel.
 
-## Toast delivery policy
+## Operational delivery policy
 
-Background progress and normal background completion must use the Activity Center,
-not stacked toast cards. `record_operational_activity()` automatically routes events
-with job references or background-event semantics to `activity_center` delivery.
+KAORI separates three responsibilities:
 
-Toast remains appropriate for immediate interruption feedback:
+- **Operational toast** provides immediate feedback for the request currently being performed.
+- **Notification Deck** is a persistent operational inbox for outcomes that remain actionable after navigation.
+- **Activity Audit** is the authoritative historical record and includes Deck-visible and audit-only events.
 
-- validation failures;
-- permission denial;
-- destructive-action outcomes;
-- session/security issues; and
-- foreground warning or error conditions that affect the action the user is currently taking.
+`OperationalDeliveryPolicy` defines persistence visibility:
 
-Warning or error outcomes tied to a background job still use Activity Center delivery;
-they raise the bell/Attention count instead of creating stacked toasts. Callers may set
-`metadata.feedback_delivery` to `toast` only when a background outcome must interrupt
-the current screen.
+- `audit_only` persists Activity Audit evidence but hides the row from Notification Deck.
+- `deck_on_failure` hides successful outcomes and shows warning/error outcomes in Notification Deck.
+- `persistent` shows every terminal outcome in Notification Deck.
 
-`queue_transient_feedback()` always remains toast-based because it is non-persistent
-and represents immediate request feedback. Background events still persist a
-`Notification` row and dispatch `kaori:notifications-changed`, even when no toast is
-rendered.
+`notifications.deck_visible` is the canonical boundary. Notification Deck queries must filter
+`deck_visible = true`; the administrative Activity Audit query must continue reading all rows.
+Audit-only rows are written as read so they never inflate unread counters.
+
+Foreground policy for ConfigMap, Secret, and TLS operations:
+
+| Event | Toast | Notification Deck | Activity Audit |
+|---|---:|---:|---:|
+| Validation/dry-run result | Yes | No | No |
+| ConfigMap/Secret create or replace success | Yes | No | Yes |
+| ConfigMap/Secret create or replace warning/failure | Yes | Yes | Yes |
+| ConfigMap/Secret delete terminal result | Yes | Yes | Yes |
+| Secret reveal request/approval/denial | Yes | Yes | Yes |
+| One-time Secret reveal completion | Yes | No | Yes |
+| TLS Secret rotation terminal result | Yes | Yes | Yes |
+| TLS inventory sync queued | Progress toast / JobExecution | No | Dispatch audit |
+| TLS inventory sync terminal result | Yes when the page is active | Yes | Yes |
+
+Background progress is owned by `JobExecution` and the canonical operational progress toast.
+Successful dispatch must not create a duplicate queued Notification row. The worker persists the
+terminal Activity Audit event and requester Notification Deck row before changing the JobExecution
+to its terminal state, so polling cannot stop before the persistent evidence is committed.
+
+`queue_transient_feedback()` never persists a Notification row. Use it only for validation, queued
+acknowledgement, and other request-local feedback. Never place Secret values, ConfigMap values,
+private keys, certificate bytes, tokens, stack traces, or raw provider payloads in toast, Deck, or
+Activity Audit metadata.
+
 ### Slider deck viewport boundary
 
 The Notification Deck is rendered through Alpine `x-teleport="body"`. The bell remains in the top navigation, while the dialog is moved to the document body. This is mandatory because the sticky navigation uses backdrop filtering, which creates a containing block and can otherwise clip a `position: fixed` drawer to the navbar height.

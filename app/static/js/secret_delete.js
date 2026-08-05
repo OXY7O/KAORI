@@ -3,6 +3,7 @@
 
   const invalidateDeleteValidation = (form) => {
     if (!(form instanceof HTMLFormElement)) return;
+
     form.querySelector('[data-secret-delete-validation-token]')?.remove();
     const finalAction = form.querySelector('[data-secret-delete-final-action]');
     if (finalAction instanceof HTMLButtonElement) {
@@ -13,6 +14,7 @@
         'Validate deletion after the latest target or confirmation change',
       );
     }
+
     const label = form.querySelector('[data-secret-delete-validation-label]');
     if (label) label.textContent = 'Validate Deletion';
   };

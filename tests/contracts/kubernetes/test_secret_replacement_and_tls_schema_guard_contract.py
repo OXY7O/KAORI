@@ -8,7 +8,7 @@ def read(relative: str) -> str:
 
 
 def test_secret_replacement_route_uses_the_service_dry_run_contract() -> None:
-    route = read('app/kubernetes_operations/secrets/routes.py')
+    route = read('app/kubernetes_operations/secrets/crud_routes.py')
     service = read('app/kubernetes_operations/secrets/replace_service.py')
 
     assert 'def execute_secret_replacement(' in service
@@ -33,12 +33,14 @@ def test_tls_inventory_checks_schema_before_querying_the_evolving_model() -> Non
 
 
 def test_tls_rotation_renders_an_operator_blocker_instead_of_a_500() -> None:
-    route = read('app/kubernetes_operations/secrets/routes.py')
+    route = read('app/kubernetes_operations/secrets/tls_routes.py')
     governance_route = read('app/governance/tls_certificates/routes.py')
+    service = read('app/governance/tls_certificates/service.py')
     page = read('app/templates/kubernetes_operations/secrets/tls_rotation.html')
     blocker = read('app/templates/governance/tls_certificates/partials/_schema_blocker.html')
 
-    assert "if not payload['schema_readiness']['ready']" in route
+    assert 'get_tls_certificate_page(request.args)' in route
+    assert 'return _schema_blocked_payload(args, schema_readiness)' in service
     assert 'check_tls_governance_schema_readiness()' in governance_route
     assert 'if not schema_readiness.ready' in governance_route
     assert 'if not payload.schema_readiness.ready' in page

@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-ROUTES = Path('app/kubernetes_operations/secrets/routes.py')
+ROUTES = Path('app/kubernetes_operations/secrets/tls_routes.py')
 
 
 def test_successful_single_tls_update_redirects_to_fresh_rotation_workspace():

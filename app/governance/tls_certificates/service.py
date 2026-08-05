@@ -1,26 +1,21 @@
 from __future__ import annotations
 
-import base64
-import uuid
 from collections.abc import Iterable
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from math import ceil
-from typing import Any, cast
+from typing import Any
 
 from flask import current_app
-from flask_login import current_user
 from sqlalchemy import case, func, or_
 
 from app.extensions.db import db
 from app.governance.tls_certificates.certificate import (
-    find_uncovered_hosts,
     matching_certificate_pattern,
-    validate_certificate_pair,
     validity_policy_from_config,
 )
 from app.governance.tls_certificates.collector import (
     TLSProgressCallback,
-    build_kubernetes_client,
     collect_tls_certificate_batch,
 )
 from app.governance.tls_certificates.constants import (
@@ -30,11 +25,8 @@ from app.governance.tls_certificates.constants import (
     TLS_COVERAGE_NOT_REPORTED,
     TLS_COVERAGE_PARTIAL,
     TLS_COVERAGE_UNCOVERED,
-    TLS_CRT_KEY,
     TLS_DEFAULT_PER_PAGE,
-    TLS_KEY_KEY,
     TLS_PER_PAGE_OPTIONS,
-    TLS_SECRET_TYPE,
     TLS_STATUS_OPTIONS,
 )
 from app.governance.tls_certificates.readiness import (
@@ -45,9 +37,14 @@ from app.models import (
     Cluster,
     TLSCertificateCollectionState,
     TLSCertificateInventory,
-    TLSCertificateUpdateEvent,
-    User,
 )
+
+
+@dataclass(frozen=True)
+class TLSClusterSyncResult:
+    collected_count: int
+    fatal_error: str | None = None
+    warning: str | None = None
 
 
 def _new_tls_inventory_record(
@@ -62,34 +59,6 @@ def _new_tls_inventory_record(
     record.secret_name = secret_name
     return record
 
-
-def _new_tls_update_event(
-    *,
-    cluster_id: str,
-    namespace: str,
-    secret_name: str,
-    old_fingerprint_sha256: str | None,
-    new_fingerprint_sha256: str | None,
-    old_not_after: datetime | None,
-    new_not_after: datetime | None,
-    status: str,
-    message: str | None,
-    actor_user_id: int | None,
-    bulk_job_id: str | None = None,
-) -> TLSCertificateUpdateEvent:
-    event = TLSCertificateUpdateEvent()
-    event.cluster_id = cluster_id
-    event.namespace = namespace
-    event.secret_name = secret_name
-    event.old_fingerprint_sha256 = old_fingerprint_sha256
-    event.new_fingerprint_sha256 = new_fingerprint_sha256
-    event.old_not_after = old_not_after
-    event.new_not_after = new_not_after
-    event.status = status
-    event.message = message
-    event.actor_user_id = actor_user_id
-    event.bulk_job_id = bulk_job_id
-    return event
 
 
 def _normalize_per_page(value: str | None) -> int:
@@ -320,6 +289,10 @@ def _present_record(
         'ingress_mapping_tone': _COLLECTION_PRESENTATION.get(ingress_state, ('Not Reported', 'unknown'))[1],
         'secret_collection_detail': collection_state.secret_collection_detail if collection_state else None,
         'ingress_mapping_detail': collection_state.ingress_mapping_detail if collection_state else None,
+        'coverage_reported': (record.coverage_state or TLS_COVERAGE_NOT_REPORTED) != TLS_COVERAGE_NOT_REPORTED,
+        'ingress_mapping_reported': ingress_state == TLS_COLLECTION_COLLECTED,
+        'ingress_consumer_count': len(ingress_resources) if ingress_state == TLS_COLLECTION_COLLECTED else None,
+        'declared_host_count': record.declared_host_count if ingress_state == TLS_COLLECTION_COLLECTED else None,
     }
     return record
 
@@ -517,10 +490,10 @@ def get_tls_certificate_page(args: Any) -> dict[str, Any]:
 def get_tls_certificate_detail(certificate_id: int) -> TLSCertificateInventory | None:
     if not check_tls_governance_schema_readiness().ready:
         return None
-    record = TLSCertificateInventory.query.get(certificate_id)
+    record = db.session.get(TLSCertificateInventory, certificate_id)
     if record is None:
         return None
-    state = TLSCertificateCollectionState.query.get(record.cluster_id)
+    state = db.session.get(TLSCertificateCollectionState, record.cluster_id)
     return _present_record(record, state)
 
 
@@ -533,7 +506,7 @@ def _persist_collection_state(
     ingress_detail: str | None,
     collected_at: datetime | None,
 ) -> TLSCertificateCollectionState:
-    state = TLSCertificateCollectionState.query.get(cluster_id)
+    state = db.session.get(TLSCertificateCollectionState, cluster_id)
     if state is None:
         state = TLSCertificateCollectionState()
         state.cluster_id = cluster_id
@@ -551,7 +524,7 @@ def sync_tls_certificates_for_cluster(
     cluster: Cluster,
     *,
     progress_callback: TLSProgressCallback | None = None,
-) -> tuple[int, str | None]:
+) -> TLSClusterSyncResult:
     policy = validity_policy_from_config(current_app.config)
     batch = collect_tls_certificate_batch(
         cluster,
@@ -571,7 +544,7 @@ def sync_tls_certificates_for_cluster(
     if batch.error:
         db.session.commit()
         current_app.logger.error('TLS certificate sync failed for cluster %s: %s', cluster.name, batch.error)
-        return 0, batch.error
+        return TLSClusterSyncResult(collected_count=0, fatal_error=batch.error)
 
     records = batch.records
     if progress_callback is not None:
@@ -617,266 +590,12 @@ def sync_tls_certificates_for_cluster(
     db.session.commit()
     if progress_callback is not None:
         progress_callback(100, f'TLS inventory snapshot committed for {cluster.name}.')
-    return len(records), None
-
-
-def _refresh_record_coverage(record: TLSCertificateInventory) -> None:
-    hosts = sorted({str(item) for item in (record.ingress_hosts or []) if item})
-    state = TLSCertificateCollectionState.query.get(record.cluster_id)
-    if state is None or state.ingress_mapping_status != TLS_COLLECTION_COLLECTED:
-        record.coverage_state = TLS_COVERAGE_NOT_REPORTED
-        record.declared_host_count = len(hosts)
-        record.covered_host_count = 0
-        record.uncovered_hosts = []
-        return
-    if not hosts:
-        record.coverage_state = TLS_COVERAGE_NONE
-        record.declared_host_count = 0
-        record.covered_host_count = 0
-        record.uncovered_hosts = []
-        return
-    uncovered = [
-        host
-        for host in hosts
-        if matching_certificate_pattern(host, record.dns_names or [], record.common_name) is None
-    ]
-    covered = len(hosts) - len(uncovered)
-    record.coverage_state = (
-        TLS_COVERAGE_FULL if not uncovered else TLS_COVERAGE_UNCOVERED if covered == 0 else TLS_COVERAGE_PARTIAL
+    warning = (
+        evidence.ingress_mapping_detail
+        if evidence.ingress_mapping_status != TLS_COLLECTION_COLLECTED
+        else None
     )
-    record.declared_host_count = len(hosts)
-    record.covered_host_count = covered
-    record.uncovered_hosts = uncovered
-
-
-def _read_uploaded_pair(files: Any) -> tuple[bytes, bytes]:
-    cert_file = files.get('tls_crt_file') or files.get('tls_crt')
-    key_file = files.get('tls_key_file') or files.get('tls_key')
-    cert_bytes = cert_file.read() if cert_file else b''
-    key_bytes = key_file.read() if key_file else b''
-    return cert_bytes, key_bytes
-
-
-def preview_uploaded_pair(files: Any, target_ids: Iterable[int] | None = None) -> dict[str, Any]:
-    cert_bytes, key_bytes = _read_uploaded_pair(files)
-    validation = validate_certificate_pair(
-        cert_bytes, key_bytes, policy=validity_policy_from_config(current_app.config)
+    return TLSClusterSyncResult(
+        collected_count=len(records),
+        warning=warning,
     )
-    targets: list[TLSCertificateInventory] = []
-    target_previews: list[dict[str, Any]] = []
-
-    if target_ids:
-        ids = [int(item) for item in target_ids if str(item).isdigit()]
-        targets = TLSCertificateInventory.query.filter(TLSCertificateInventory.id.in_(ids)).all() if ids else []
-
-    if validation.parsed_certificate and targets:
-        for target in targets:
-            uncovered_hosts = find_uncovered_hosts(target.ingress_hosts or [], validation.parsed_certificate)
-            status = 'ready'
-            message = 'Ready to update.'
-            if uncovered_hosts:
-                status = 'warning'
-                message = 'Certificate SAN does not cover all currently mapped Ingress hosts.'
-
-            target_previews.append(
-                {
-                    'target': target,
-                    'status': status,
-                    'message': message,
-                    'uncovered_hosts': uncovered_hosts,
-                    'new_not_after': validation.parsed_certificate.not_after,
-                    'new_days_remaining': validation.parsed_certificate.days_remaining,
-                    'new_fingerprint_sha256': validation.parsed_certificate.fingerprint_sha256,
-                }
-            )
-
-    return {
-        'validation': validation,
-        'targets': target_previews,
-        'cert_bytes': cert_bytes,
-        'key_bytes': key_bytes,
-    }
-
-
-def _patch_tls_secret(record: TLSCertificateInventory, cert_bytes: bytes, key_bytes: bytes) -> None:
-    cluster = Cluster.query.get(record.cluster_id)
-    if cluster is None:
-        raise ValueError('Cluster record no longer exists.')
-
-    client = build_kubernetes_client(cluster)
-    body = {
-        'type': TLS_SECRET_TYPE,
-        'data': {
-            TLS_CRT_KEY: base64.b64encode(cert_bytes).decode('utf-8'),
-            TLS_KEY_KEY: base64.b64encode(key_bytes).decode('utf-8'),
-        },
-    }
-    client.core_api().patch_namespaced_secret(
-        name=record.secret_name,
-        namespace=record.namespace,
-        body=body,
-    )
-
-
-def apply_certificate_update(certificate_id: int, files: Any) -> dict[str, Any]:
-    record = TLSCertificateInventory.query.get(certificate_id)
-    if record is None:
-        return {'status': 'failed', 'message': 'TLS certificate inventory record was not found.'}
-
-    cert_bytes, key_bytes = _read_uploaded_pair(files)
-    validation = validate_certificate_pair(
-        cert_bytes, key_bytes, policy=validity_policy_from_config(current_app.config)
-    )
-    if not validation.is_valid or validation.parsed_certificate is None:
-        return {'status': 'failed', 'message': ' '.join(validation.errors), 'errors': validation.errors}
-
-    actor = cast(User, current_user)
-    old_fingerprint = record.fingerprint_sha256
-    old_not_after = record.not_after
-
-    try:
-        _patch_tls_secret(record, cert_bytes, key_bytes)
-        parsed = validation.parsed_certificate
-        record.common_name = parsed.common_name
-        record.issuer = parsed.issuer
-        record.serial_number = parsed.serial_number
-        record.fingerprint_sha256 = parsed.fingerprint_sha256
-        record.dns_names = parsed.dns_names
-        record.not_before = parsed.not_before
-        record.not_after = parsed.not_after
-        record.days_remaining = parsed.days_remaining
-        record.status = parsed.status
-        record.risk_level = parsed.risk_level
-        record.parse_error = None
-        _refresh_record_coverage(record)
-        record.updated_at = datetime.now(UTC)
-
-        db.session.add(
-            _new_tls_update_event(
-                cluster_id=record.cluster_id,
-                namespace=record.namespace,
-                secret_name=record.secret_name,
-                old_fingerprint_sha256=old_fingerprint,
-                new_fingerprint_sha256=parsed.fingerprint_sha256,
-                old_not_after=old_not_after,
-                new_not_after=parsed.not_after,
-                status='success',
-                message='TLS Secret updated from uploaded certificate and key.',
-                actor_user_id=getattr(actor, 'id', None),
-            )
-        )
-        db.session.commit()
-        return {'status': 'success', 'message': 'TLS Secret updated successfully.'}
-    except Exception:
-        db.session.rollback()
-        current_app.logger.exception('TLS certificate update failed')
-        db.session.add(
-            _new_tls_update_event(
-                cluster_id=record.cluster_id,
-                namespace=record.namespace,
-                secret_name=record.secret_name,
-                old_fingerprint_sha256=old_fingerprint,
-                new_fingerprint_sha256=validation.parsed_certificate.fingerprint_sha256,
-                old_not_after=old_not_after,
-                new_not_after=validation.parsed_certificate.not_after,
-                status='failed',
-                message='The Kubernetes TLS Secret could not be updated.',
-                actor_user_id=getattr(actor, 'id', None),
-            )
-        )
-        db.session.commit()
-        return {
-            'status': 'failed',
-            'message': (
-                'The Kubernetes TLS Secret could not be updated. Review the cluster connection, '
-                'access permissions, and uploaded certificate pair, then retry.'
-            ),
-        }
-
-
-def apply_bulk_update(files: Any, target_ids: Iterable[int]) -> dict[str, Any]:
-    cert_bytes, key_bytes = _read_uploaded_pair(files)
-    validation = validate_certificate_pair(
-        cert_bytes, key_bytes, policy=validity_policy_from_config(current_app.config)
-    )
-    if not validation.is_valid or validation.parsed_certificate is None:
-        return {'status': 'failed', 'message': ' '.join(validation.errors), 'errors': validation.errors, 'results': []}
-
-    ids = [int(item) for item in target_ids if str(item).isdigit()]
-    targets = TLSCertificateInventory.query.filter(TLSCertificateInventory.id.in_(ids)).all() if ids else []
-    if not targets:
-        return {'status': 'failed', 'message': 'No TLS Secrets were selected.', 'results': []}
-
-    parsed = validation.parsed_certificate
-    bulk_job_id = uuid.uuid4().hex[:16]
-    actor = cast(User, current_user)
-    results: list[dict[str, Any]] = []
-
-    for target in targets:
-        old_fingerprint = target.fingerprint_sha256
-        old_not_after = target.not_after
-        try:
-            _patch_tls_secret(target, cert_bytes, key_bytes)
-            target.common_name = parsed.common_name
-            target.issuer = parsed.issuer
-            target.serial_number = parsed.serial_number
-            target.fingerprint_sha256 = parsed.fingerprint_sha256
-            target.dns_names = parsed.dns_names
-            target.not_before = parsed.not_before
-            target.not_after = parsed.not_after
-            target.days_remaining = parsed.days_remaining
-            target.status = parsed.status
-            target.risk_level = parsed.risk_level
-            target.parse_error = None
-            _refresh_record_coverage(target)
-            target.updated_at = datetime.now(UTC)
-
-            db.session.add(
-                _new_tls_update_event(
-                    cluster_id=target.cluster_id,
-                    namespace=target.namespace,
-                    secret_name=target.secret_name,
-                    old_fingerprint_sha256=old_fingerprint,
-                    new_fingerprint_sha256=parsed.fingerprint_sha256,
-                    old_not_after=old_not_after,
-                    new_not_after=parsed.not_after,
-                    status='success',
-                    message='TLS Secret updated by bulk upload.',
-                    bulk_job_id=bulk_job_id,
-                    actor_user_id=getattr(actor, 'id', None),
-                )
-            )
-            results.append({'target': target, 'status': 'success', 'message': 'Updated.'})
-        except Exception:
-            current_app.logger.exception('Bulk TLS update failed for %s/%s', target.namespace, target.secret_name)
-            db.session.add(
-                _new_tls_update_event(
-                    cluster_id=target.cluster_id,
-                    namespace=target.namespace,
-                    secret_name=target.secret_name,
-                    old_fingerprint_sha256=old_fingerprint,
-                    new_fingerprint_sha256=parsed.fingerprint_sha256,
-                    old_not_after=old_not_after,
-                    new_not_after=parsed.not_after,
-                    status='failed',
-                    message='The Kubernetes TLS Secret could not be updated by the bulk operation.',
-                    bulk_job_id=bulk_job_id,
-                    actor_user_id=getattr(actor, 'id', None),
-                )
-            )
-            results.append(
-                {
-                    'target': target,
-                    'status': 'failed',
-                    'message': 'Update failed. Review the cluster connection and access permissions.',
-                }
-            )
-
-    db.session.commit()
-    success_count = sum(1 for result in results if result['status'] == 'success')
-    return {
-        'status': 'success' if success_count else 'failed',
-        'message': f'{success_count} of {len(results)} selected TLS Secrets were updated.',
-        'bulk_job_id': bulk_job_id,
-        'results': results,
-    }

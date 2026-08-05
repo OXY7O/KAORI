@@ -74,7 +74,7 @@ Protected Reveal is the only plaintext-read workflow. It decodes one approved ke
 - The submitted namespace is revalidated with `read_namespace()`.
 - Supported types: `Opaque`, Basic Auth, TLS, Docker config JSON, and SSH Auth.
 - Validate performs server-side dry-run only.
-- Create performs server-side dry-run and then the actual create in one service call.
+- Validate invokes one server-side dry-run provider call. Final Create invokes one fresh dry-run and then one create mutation through the route orchestration; each service invocation performs exactly one Kubernetes provider call.
 - `NamespaceInventory` and `ConfigurationInventory` are not target gates.
 
 ### Replace Secret Data
@@ -87,7 +87,7 @@ Protected Reveal is the only plaintext-read workflow. It decodes one approved ke
 - Basic Auth can replace username and password independently.
 - Docker config JSON replacement is atomic.
 - SSH replacement submits one complete private key.
-- Apply always dry-runs and then patches the same bound live target.
+- Validate invokes one server-side dry-run patch. Final Apply invokes one fresh dry-run and then one resource-version-bound patch through route orchestration; each service invocation performs exactly one Kubernetes provider call.
 
 ### Protected Secret Reveal
 
@@ -108,8 +108,8 @@ Protected Reveal is the only plaintext-read workflow. It decodes one approved ke
 - Workload references from Pod inventory are best-effort impact context only.
 - Exact-name confirmation is mandatory.
 - Validation rereads the live Secret, verifies exact-name confirmation, records the resource version, and checks effective delete authorization with SelfSubjectAccessReview without calling `delete_namespaced_secret()`.
-- Successful validation issues a signed, session-bound receipt valid for ten minutes and tied to cluster, namespace, Secret name, and resource version.
-- Final Delete requires and consumes that receipt, rereads the same live target, rejects resource-version drift, and calls `delete_namespaced_secret()` exactly once with a resource-version precondition.
+- Successful validation issues a stateless signed receipt valid for ten minutes and bound to the KAORI user, cluster, namespace, Secret name, and resource version.
+- Final Delete verifies that receipt, rereads the same live target, rejects resource-version drift, and calls `delete_namespaced_secret()` exactly once with a resource-version precondition. Replay cannot mutate a changed or recreated object because the bound resource version must still match.
 - Service-account token Secrets are excluded from this generic workflow.
 
 ### TLS Secret Rotation
@@ -155,12 +155,23 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 
 ## Route ownership
 
+HTTP ownership is split by workflow rather than retained in one monolithic router:
+
+- `crud_routes.py` — landing, live selectors, Create, Replace, and Delete.
+- `reveal_routes.py` — Protected Reveal request, step-up, approval, and one-time value response.
+- `tls_routes.py` — single and bulk TLS rotation.
+- `route_support.py` — CSRF and canonical Operational Feedback/Activity Audit boundary.
+
+Registered endpoints remain:
+
 - `/kubernetes-operations/secrets` — landing page.
 - `/kubernetes-operations/secrets/create` — Create Secret.
 - `/kubernetes-operations/secrets/replace` — Replace Secret Data.
 - `/kubernetes-operations/secrets/delete` — Delete Secret.
 - `/kubernetes-operations/secrets/reveal` — Protected Secret Reveal.
 - `/kubernetes-operations/secrets/tls-rotation` — TLS rotation.
+
+The retired `app/kubernetes_operations/secrets/routes.py` file must not be recreated as an import or re-export compatibility wrapper.
 
 ## Design contract
 
@@ -170,6 +181,20 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 - Secret Type uses the responsive Operational Choice Card Group with one selected border, a quiet leading Violet accent, soft surface, and compact `Selected` marker; generic sensitive entries use Structured Entry Editor.
 - Validation, approval, expiry, readiness, and destructive states use semantic colors. Operation classification remains separate from permission state.
 - Secret material never appears in Hero context, operation summaries, notifications, or Activity Audit metadata.
+
+## Delivery policy
+
+Secret Management shares the global KAORI delivery contract:
+
+- Create and Replace success: toast + Activity Audit, hidden from Notification Deck.
+- Create and Replace warning/failure: persistent toast + Notification Deck + Activity Audit.
+- Delete terminal result: persistent toast + Notification Deck + Activity Audit.
+- Validation/dry-run: transient feedback only.
+- Reveal request, approval, denial, duplicate/security blockers: persistent.
+- One-time reveal completion: Activity Audit only beyond the immediate toast.
+- TLS single/bulk rotation terminal result: persistent for every status.
+
+Secret values, decoded payloads, certificate bytes, private keys, and tokens are prohibited from all three surfaces.
 
 ## Operation feedback and refresh contract
 
@@ -184,7 +209,8 @@ The built-in Admin role receives `kubernetes_secrets.delete` through the normal 
 
 - Create, replace, and delete forms use the shared validation gate in `app/static/js/validated_operations.js`.
 - The final mutation button stays disabled until the latest form state passes validation. Any input, uploaded payload, or selected target change invalidates that UI state.
-- The server never trusts the browser gate. Create and replace perform one fresh Kubernetes server-side dry-run immediately before one mutation; Delete requires a signed stateless receipt bound to the KAORI user, target, and resource version.
+- The server never trusts the browser gate. Create and replace rerun Kubernetes dry-run through `validate_then_apply`; Delete requires a stateless, user-bound signed validation receipt and rejects user, target, expiry, or resource-version drift.
+- Uploaded Secret streams are rewound between validation and mutation so the exact same payload is applied.
 - Successful create, replace, and delete operations redirect to a clean page state, clearing filters, target selection, confirmation values, and sensitive payload inputs.
 - Validation failures preserve the current form and use persistent KAORI notifications instead of Flask flash messages.
 

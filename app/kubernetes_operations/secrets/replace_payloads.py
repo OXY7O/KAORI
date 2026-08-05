@@ -2,64 +2,17 @@ from __future__ import annotations
 
 import base64
 import json
-import re
 from typing import Any
 
-_SECRET_DATA_KEY_PATTERN = re.compile(r'^[-._a-zA-Z0-9]+$')
-_EMAIL_PATTERN = re.compile(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
-_MAX_KUBERNETES_SECRET_BYTES = 1024 * 1024
-_MAX_UPLOAD_BYTES = 1024 * 1024
-
-
-def _required(value: str | None, label: str) -> str:
-    normalized = (value or '').strip()
-    if not normalized:
-        raise ValueError(f'{label} is required.')
-    return normalized
-
-
-def _validate_data_key(key: str) -> None:
-    if len(key) > 253 or not _SECRET_DATA_KEY_PATTERN.fullmatch(key):
-        raise ValueError(f'Invalid Secret data key: {key}. Use letters, numbers, dots, hyphens, or underscores.')
-
-
-def _validate_secret_size(string_data: dict[str, str]) -> None:
-    payload_size = sum(len(key.encode()) + len(value.encode()) for key, value in string_data.items())
-    if payload_size >= _MAX_KUBERNETES_SECRET_BYTES:
-        raise ValueError('Replacement content must be smaller than the Kubernetes 1 MiB Secret limit.')
-
-
-def _read_optional_upload(upload: Any, label: str) -> str | None:
-    if upload is None or not getattr(upload, 'filename', ''):
-        return None
-
-    payload = upload.read(_MAX_UPLOAD_BYTES + 1)
-    if len(payload) > _MAX_UPLOAD_BYTES:
-        raise ValueError(f'{label} must be 1 MiB or smaller.')
-    if not payload:
-        raise ValueError(f'{label} is empty.')
-    try:
-        return payload.decode('utf-8')
-    except UnicodeDecodeError as exc:
-        raise ValueError(f'{label} must use UTF-8 text encoding.') from exc
-
-
-def _validate_ssh_private_key(raw_key: str) -> None:
-    try:
-        from cryptography.exceptions import UnsupportedAlgorithm
-        from cryptography.hazmat.primitives import serialization
-    except ModuleNotFoundError as exc:
-        raise ValueError('SSH private-key validation is unavailable on this KAORI instance.') from exc
-
-    key_bytes = raw_key.encode()
-    try:
-        try:
-            serialization.load_pem_private_key(key_bytes, password=None)
-        except ValueError:
-            serialization.load_ssh_private_key(key_bytes, password=None)
-    except (TypeError, ValueError, UnsupportedAlgorithm) as exc:
-        raise ValueError('SSH private key must be a valid, unencrypted PEM or OpenSSH private key.') from exc
-
+from app.kubernetes_operations.secrets.validation import (
+    read_optional_upload,
+    required,
+    validate_data_key,
+    validate_optional_email,
+    validate_registry_server,
+    validate_secret_size,
+    validate_ssh_private_key,
+)
 
 def _build_opaque_patch(form: Any, target: Any) -> dict[str, str]:
     existing_names = form.getlist('existing_key_name')
@@ -92,7 +45,7 @@ def _build_opaque_patch(form: Any, target: Any) -> dict[str, str]:
             raise ValueError(
                 f'New Secret key {normalized_name} requires a value. Blank existing fields mean keep unchanged.'
             )
-        _validate_data_key(normalized_name)
+        validate_data_key(normalized_name)
         if normalized_name in live_keys or normalized_name in patch:
             raise ValueError(f'Duplicate Secret data key: {normalized_name}.')
         patch[normalized_name] = value
@@ -132,15 +85,13 @@ def _build_registry_patch(form: Any) -> dict[str, str]:
     if not any(value != '' for value in submitted_fields):
         return {}
 
-    normalized_server = _required(server, 'Registry server')
-    normalized_username = _required(username, 'Registry username')
-    normalized_password = _required(password, 'Registry password or token')
+    normalized_server = required(server, 'Registry server')
+    normalized_username = required(username, 'Registry username')
+    normalized_password = required(password, 'Registry password or token')
     normalized_email = email.strip()
 
-    if any(character.isspace() for character in normalized_server):
-        raise ValueError('Registry server must not contain spaces.')
-    if normalized_email and not _EMAIL_PATTERN.fullmatch(normalized_email):
-        raise ValueError('Registry email address is invalid.')
+    validate_registry_server(normalized_server)
+    validate_optional_email(normalized_email)
 
     auth = base64.b64encode(f'{normalized_username}:{normalized_password}'.encode()).decode('ascii')
     auth_entry: dict[str, str] = {
@@ -156,7 +107,7 @@ def _build_registry_patch(form: Any) -> dict[str, str]:
 
 
 def _build_ssh_patch(form: Any, files: Any) -> dict[str, str]:
-    uploaded = _read_optional_upload(files.get('ssh_private_key_file'), 'SSH private key file')
+    uploaded = read_optional_upload(files.get('ssh_private_key_file'), 'SSH private key file')
     pasted = form.get('ssh_private_key') or ''
 
     if uploaded is not None and pasted.strip():
@@ -166,7 +117,7 @@ def _build_ssh_patch(form: Any, files: Any) -> dict[str, str]:
     if raw_key == '':
         return {}
 
-    _validate_ssh_private_key(raw_key)
+    validate_ssh_private_key(raw_key)
     return {'ssh-privatekey': raw_key}
 
 
@@ -192,5 +143,5 @@ def build_replace_patch(
             'or enter at least one new value to continue.'
         )
 
-    _validate_secret_size(patch)
+    validate_secret_size(patch, label='Replacement content')
     return patch

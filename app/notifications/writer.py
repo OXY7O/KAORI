@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
 from app.extensions.db import db
@@ -16,6 +17,7 @@ def persist_notification(
     detail: str | None = None,
     action_url: str | None = None,
     metadata: dict[str, Any] | None = None,
+    deck_visible: bool = True,
 ) -> Notification:
     """Persist one already-normalized notification record.
 
@@ -34,6 +36,9 @@ def persist_notification(
     notification.detail = detail
     notification.action_url = action_url
     notification.metadata_json = metadata
+    notification.deck_visible = bool(deck_visible)
+    if not notification.deck_visible:
+        notification.read_at = datetime.now(UTC)
 
     db.session.add(notification)
     db.session.commit()

@@ -38,8 +38,9 @@
         action_label=password_toast.action_label,
         action_icon=password_toast.action_icon,
         completed_label=password_toast.completed_label,
-        notification_saved=password_toast.notification_saved,
-        activity_audit_expected=password_toast.activity_audit_expected|default(password_toast.notification_saved),
+        activity_audit_saved=password_toast.activity_audit_saved,
+        activity_audit_expected=password_toast.activity_audit_expected|default(password_toast.activity_audit_saved),
+        notification_deck_visible=password_toast.notification_deck_visible|default(false),
         delivery=password_toast.delivery|default('toast'),
         toast_oob=true
         %}
