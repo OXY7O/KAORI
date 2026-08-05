@@ -18,7 +18,7 @@
     <section class="{{ analysis_surface.evidence_shell_classes() }}">
         <div class="{{ analysis_surface.metric_grid_classes(4) }}">
             {% set metrics = [
-                ('Volumes', pv.count, 'Cluster PV inventory', 'database'),
+                ('Volumes', pv.count_display, 'Cluster PV inventory', 'database'),
                 ('Provisioned Capacity', pv.capacity, 'Total PV capacity', 'hard-drive'),
                 ('Requested Claims', pv.requested_claim_capacity, 'Requested across all namespaces', 'hard-drive-upload'),
                 ('Observed Claim Usage', pv.observed_claim_usage, 'Observed across all namespaces', 'hard-drive-download')
@@ -60,7 +60,7 @@
                     {% call evidence_list.cell(2, 'right') %}{{ evidence_list.mobile_label('Risk') }}{{ table_label.status_label(row.risk.label|default('Unknown'), row.risk.tone|default('unknown'), size='compact') }}{% endcall %}
                 {% endcall %}
             {% else %}
-                {{ evidence_list.empty('No PV Metrics Available', 'No volumes matched the current local filters, or committed PV evidence is unavailable.', 'database') }}
+                {% if pv.inventory_evidence_available %}{{ evidence_list.empty('No PV Records Found', 'No volumes matched the current local filters.', 'database') }}{% else %}{{ evidence_list.empty('PV Evidence Unavailable', 'Committed PV inventory evidence is not available for the selected cluster.', 'database') }}{% endif %}
             {% endfor %}
         </div>
     {% endcall %}
@@ -87,7 +87,7 @@
         'Volumes'
     ) }}
 
-    <section class="{{ analysis_surface.record_guidance_classes('p-0') }}">
+    <section class="{{ analysis_surface.record_guidance_classes() }}">
         {{ analysis_surface.interpretation_callout(
             'Operational Guidance',
             'Validate Ownership And Reclaim Policy Before Cleanup',

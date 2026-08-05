@@ -3,34 +3,19 @@
 {% set filesystem = storage_summary.node_filesystem.summary if storage_summary is defined else {} %}
 {% set pvc = storage_summary.persistent_storage.pvc if storage_summary is defined else {} %}
 {% set pv = storage_summary.persistent_storage.pv if storage_summary is defined else {} %}
-{% set filesystem_available = filesystem.evidence_available|default(false) %}
-{% set pvc_available = pvc.evidence_available|default(false) %}
-{% set highest_usage = filesystem.highest_usage if filesystem_available else none %}
-{% set pvc_used_percent = pvc.used_percent if pvc_available else none %}
-{% if not filesystem_available and not pvc_available %}
-    {% set posture_label = 'Unknown' %}{% set posture_tone = 'unknown' %}
-{% else %}
-    {% set highest_signal = [highest_usage|default(0, true), pvc_used_percent|default(0, true)]|max %}
-    {% if highest_signal >= 90 %}
-        {% set posture_label = 'Critical' %}{% set posture_tone = 'critical' %}
-    {% elif highest_signal >= 75 %}
-        {% set posture_label = 'Watch' %}{% set posture_tone = 'warning' %}
-    {% else %}
-        {% set posture_label = 'Healthy' %}{% set posture_tone = 'normal' %}
-    {% endif %}
-{% endif %}
+{% set posture = storage_posture|default({'label': 'Unknown', 'tone': 'unknown', 'reason': 'No committed storage evidence is available.'}) %}
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('hard-drive', 'Kubernetes Analytics', 'database') %}
                 <h1 class="{{ page_hero.title_classes() }}">Storage Analysis</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review filesystem pressure, PVC demand, and persistent storage risk.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review filesystem pressure, PVC volume usage, lifecycle health, and persistent storage provisioning.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('server', selected_cluster_name) }}
                     {% if dependency_blocker %}
                         {{ page_hero.meta_label('lock-keyhole', 'Step ' ~ dependency_blocker.stage ~ ' · ' ~ dependency_blocker.badge) }}
                     {% else %}
-                        {{ page_hero.meta_label('database', pv.count|default(0) ~ ' PVs') }}
+                        {{ page_hero.meta_label('database', pv.count_display|default('N/A') ~ ' PVs') }}
                         {{ page_hero.meta_label('list-checks', recommendation_count|default(0) ~ ' Actionable') }}
                     {% endif %}
                 </div>
@@ -45,12 +30,12 @@
             {{ page_hero.context_card(
                 'Storage Posture',
                 'Storage Posture',
-                'Storage Pressure',
-                posture_label,
-                posture_tone,
+                posture.reason,
+                posture.label,
+                posture.tone,
                 [
-                    ('server', 'Node Pressure', ('%.1f%%'|format(highest_usage|float)) if highest_usage is not none else 'N/A', 'Node filesystem'),
-                    ('box', 'PVC Demand', ('%.1f%%'|format(pvc_used_percent|float)) if pvc_used_percent is not none else 'N/A', pvc.scope_label|default('All Namespaces'))
+                    ('server', 'Node Pressure', ('%.1f%%'|format(filesystem.highest_usage|float)) if filesystem.highest_usage is not none else 'N/A', 'Node filesystem'),
+                    ('box', 'PVC Volume Usage', ('%.1f%%'|format(pvc.used_percent|float)) if pvc.pressure_evidence_available|default(false) else 'N/A', pvc.scope_label|default('All Namespaces'))
                 ],
                 'Manage Clusters',
                 url_for('integrations.kubernetes'),

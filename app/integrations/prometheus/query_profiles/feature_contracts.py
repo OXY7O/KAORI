@@ -80,8 +80,12 @@ FEATURE_CONTRACTS: tuple[FeatureContract, ...] = (
         'storage.pvc',
         'Storage Analytics',
         'PVC Usage Contract',
-        ('analytics.storage.queries.PVC_USED_BY_CLAIM_QUERY', 'analytics.storage.queries.PVC_AVAILABLE_BY_CLAIM_QUERY'),
-        'PVC usage queries execute successfully. An empty result is valid when no active PVC is observed.',
+        (
+            'analytics.storage.queries.PVC_CAPACITY_BY_CLAIM_QUERY',
+            'analytics.storage.queries.PVC_USED_BY_CLAIM_QUERY',
+            'analytics.storage.queries.PVC_AVAILABLE_BY_CLAIM_QUERY',
+        ),
+        'PVC observed capacity, used, and available queries execute successfully. An empty result is valid when no active PVC is observed.',
         allow_empty=True,
     ),
     FeatureContract(

@@ -212,7 +212,7 @@ def build_storage_analysis_presentation(
             'register': (
                 {'ref': 'P1', 'evidence': 'Persistent Volumes', 'value': pv_summary['count_display'], 'boundary': 'Committed Inventory', 'status': 'Current' if pv_summary['count'] else 'Not Available', 'tone': 'normal' if pv_summary['count'] else 'warning'},
                 {'ref': 'P2', 'evidence': 'Persistent Volume Claims', 'value': pvc_summary['count_display'], 'boundary': pvc_summary['scope'], 'status': pvc_summary['status'], 'tone': pvc_summary['tone']},
-                {'ref': 'P3', 'evidence': 'Claim Filesystem Usage', 'value': pvc_summary['used_percent_display'], 'boundary': 'Requested Capacity', 'status': pvc_summary['status'], 'tone': pvc_summary['tone']},
+                {'ref': 'P3', 'evidence': 'Claim Filesystem Usage', 'value': pvc_summary['used_percent_display'], 'boundary': 'Observed Volume Capacity', 'status': pvc_summary['status'], 'tone': pvc_summary['tone']},
                 {'ref': 'P4', 'evidence': 'Expansion Support', 'value': 'Available' if _expansion_evidence_available(pv_rows, pvc_rows) else 'Not Available', 'boundary': 'StorageClass / PVC', 'status': 'Review', 'tone': 'warning'},
             ),
             'pv_rows': _pv_records(pv_rows)[:3],
@@ -462,11 +462,11 @@ def _filesystem_records(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def _persistent_volume_summary(summary: Mapping[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:
     count = _safe_int(summary.get('count'), len(rows))
-    evidence_available = bool(summary.get('evidence_available')) or bool(rows)
+    evidence_available = bool(summary.get('capacity_evidence_available')) or bool(rows)
     return {
         'evidence_available': evidence_available,
         'count': count,
-        'count_display': str(count) if count else 'Not Available',
+        'count_display': str(count) if summary.get('inventory_evidence_available') or rows else 'Not Available',
         'capacity': _text(summary.get('capacity')) if evidence_available else 'Not Available',
         'observed_claim_usage': _text(summary.get('observed_claim_usage')) if evidence_available else 'Not Available',
         'requested_claim_capacity': _text(summary.get('requested_claim_capacity')) if evidence_available else 'Not Available',
@@ -477,13 +477,13 @@ def _persistent_volume_summary(summary: Mapping[str, Any], rows: list[dict[str, 
 def _persistent_claim_summary(summary: Mapping[str, Any], rows: list[dict[str, Any]]) -> dict[str, Any]:
     count = _safe_int(summary.get('count'), len(rows))
     used_percent = _safe_float(summary.get('used_percent'))
-    evidence_available = bool(summary.get('evidence_available')) or any(item.get('evidence_available') for item in rows)
-    status, tone = _status_from_percent(used_percent)
+    evidence_available = bool(summary.get('pressure_evidence_available')) or any(item.get('evidence_available') for item in rows)
+    status, tone = _status_from_percent(used_percent) if evidence_available else ('Unknown', 'muted')
     return {
         'evidence_available': evidence_available,
         'count': count,
-        'count_display': str(count) if count else 'Not Available',
-        'requested': _text(summary.get('requested')) if evidence_available else 'Not Available',
+        'count_display': str(count) if summary.get('inventory_evidence_available') or rows else 'Not Available',
+        'requested': _text(summary.get('requested')) if summary.get('requested_evidence_available') else 'Not Available',
         'used': _text(summary.get('used')) if evidence_available else 'Not Available',
         'free': _text(summary.get('free')) if evidence_available else 'Not Available',
         'used_percent': round(used_percent, 1) if used_percent is not None else None,

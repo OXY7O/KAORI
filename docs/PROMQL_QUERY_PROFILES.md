@@ -67,3 +67,7 @@ Current queries use the kube-state-metrics v2 resource/unit metric shape. Legacy
 Capacity query definitions use the `analytics.capacity.queries.WORKER_*` family only. Every schedulable CPU, memory, pod, request, limit, current-usage, and peak-usage expression excludes `control-plane|master` roles and intersects the remaining series with `kube_node_status_condition{condition="Ready",status="true"} == 1`. Request and limit metrics must expose `namespace`, `node`, `pod`, `resource`, and `unit`; without the node label KAORI cannot enforce the worker boundary and the capability remains incomplete.
 
 Node filesystem expressions are reused from the canonical Utilization query registry as optional operational reference evidence. They are not part of Kubernetes allocatable capacity and cannot block the Capacity scheduling contract. Unscoped legacy Capacity query definitions are not retained.
+
+## Storage Analytics Evidence Contract
+
+Storage Analytics registers one query per signal. Filesystem pressure requires a matching size and available-byte pair for `/var` or fallback `/`. PVC pressure uses `kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes`; requested claim bytes are a separate demand signal. Capacity, used, and available PVC gauges use `max by (namespace, persistentvolumeclaim)` so duplicate kubelet scrape targets do not inflate the value. Missing query results remain unavailable evidence rather than synthetic zero.

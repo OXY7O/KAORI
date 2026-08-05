@@ -7,7 +7,6 @@ from typing import Any
 from app.analytics.alerts.application import get_alerts_materialization_context
 from app.analytics.capacity.service import get_capacity_page_context
 from app.analytics.forecast.service import get_forecast_analysis_context
-from app.analytics.materialization.dashboard_alerts import build_dashboard_alerts_context
 from app.analytics.storage.service import get_storage_analysis_context
 from app.analytics.top_consumers.service import get_top_consumers_context
 from app.analytics.utilization.materialization import (
@@ -16,6 +15,7 @@ from app.analytics.utilization.materialization import (
     get_utilization_trend_context,
 )
 from app.analytics.workload.service import get_workload_analysis_context
+from app.dashboards.kubernetes.snapshot_builder import build_dashboard_alerts_context
 
 ContextBuilder = Callable[[Mapping[str, Any]], dict[str, Any]]
 
@@ -168,8 +168,6 @@ ANALYTICS_DATASETS: tuple[AnalyticsDataset, ...] = (
         required_capabilities=(
             'instant_query',
             'kubernetes_identity',
-            'pvc_usage',
-            'node_filesystem_identity',
         ),
         execution_priority=50,
         task_budget_seconds=180,

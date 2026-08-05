@@ -182,7 +182,7 @@ refresh. A pending or blocked response must retain the page wrapper selected by
 `hx-select` so the workspace never becomes a blank replacement. Capacity
 Analysis is cluster-level and must not expose a node selector; node-level pressure belongs to Resource Utilization.
 
-Storage Analysis uses mixed but explicit scope ownership: Cluster and Namespace remain top controls, Node is local to the Filesystem tab, PVC evidence follows Namespace, and PV evidence remains cluster-scoped. Storage uses one canonical `tab` parameter. Filesystem, PVC, and PV panels lazy-load on first activation and own their local HTMX filter and pagination indicators. PVC usage is not presented as synthetic PV utilization.
+Storage Analysis uses mixed but explicit scope ownership: Cluster and Namespace remain top controls, Node is local to the Filesystem tab, PVC evidence follows Namespace, and PV evidence remains cluster-scoped. The cluster-scoped materializer collects every registered signal once, while `presentation.py` owns Namespace, Node, local filters, and independent pagination. PVC pressure is observed used bytes divided by observed volume capacity; requested capacity remains demand evidence. Missing domains remain Unknown/Limited and never become zero or Healthy. Storage uses one canonical `tab` parameter, renders a directly requested deep-link tab immediately, and lazy-loads only hidden Filesystem, PVC, and PV panels.
 
 ## Analytics presentation contract
 

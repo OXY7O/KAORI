@@ -1,87 +1,74 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "analytics/components/_resource_pressure_lane.html" as resource_pressure_lane %}
 {% import "components/table_label.html" as table_label %}
-{% set filesystem = storage_summary.node_filesystem.summary %}
 {% set pv = storage_summary.persistent_storage.pv %}
-{% set pvc = storage_summary.persistent_storage.pvc %}
 <div class="space-y-5">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div class="flex items-start gap-3">
             <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="hard-drive" class="h-5 w-5"></i></span>
-            <div><h3 class="text-lg font-semibold text-content-primary">Storage Capacity &amp; Utilization</h3><p class="mt-1 text-sm leading-6 text-content-muted">Separate filesystem utilization, namespace claim demand, and cluster PV provisioning into evidence with explicit scope.</p></div>
+            <div><h3 class="text-lg font-semibold text-content-primary">Storage Capacity &amp; Utilization</h3><p class="mt-1 text-sm leading-6 text-content-muted">Separate node filesystem pressure, namespace PVC volume usage, and cluster PV provisioning into evidence with explicit scope.</p></div>
         </div>
         {{ table_label.metadata_label('Mixed Scope', 'scan-search') }}
     </div>
 
     <section class="{{ analysis_surface.evidence_shell_classes() }}">
         <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
-            <div><h4 class="{{ analysis_surface.section_title_classes() }}">Resource Pressure Detail</h4><p class="{{ analysis_surface.section_description_classes() }}">Each lane uses its own valid denominator and keeps semantic severity in the status label.</p></div>
+            <div><h4 class="{{ analysis_surface.section_title_classes() }}">Resource Pressure Detail</h4><p class="{{ analysis_surface.section_description_classes() }}">Each lane uses its own observed denominator. Missing evidence remains Unknown rather than becoming synthetic zero.</p></div>
             {{ table_label.metadata_label('Current Snapshot', 'database-clock') }}
         </header>
         <div class="divide-y divide-outline-subtle">
-            {{ resource_pressure_lane.render(
-                'Node Filesystem',
-                'server',
-                filesystem.usage_percent|default(0, true),
-                filesystem.used ~ ' / ' ~ filesystem.capacity,
-                'Scope: ' ~ storage_summary.node_filesystem.scope_label|default('All Nodes'),
-                tone=filesystem.risk.tone|default('unknown'),
-                reason=('Highest pressure is ' ~ ('%.1f%%'|format(filesystem.highest_usage|float)) ~ ' on ' ~ filesystem.highest_node) if filesystem.highest_usage is not none else '',
-                headroom=filesystem.free_percent,
-                status_label=filesystem.risk.label|default('Unknown'),
-                available=filesystem.evidence_available|default(false)
-            ) }}
-            {{ resource_pressure_lane.render(
-                'PVC Requested Capacity',
-                'box',
-                pvc.used_percent|default(0, true),
-                pvc.used ~ ' / ' ~ pvc.requested,
-                'Scope: ' ~ pvc.scope_label,
-                tone='critical' if pvc.used_percent is not none and pvc.used_percent >= 90 else ('warning' if pvc.used_percent is not none and pvc.used_percent >= 75 else 'normal'),
-                reason='Observed claim usage is measured against requested claim capacity.',
-                headroom=pvc.free_percent,
-                status_label='Critical' if pvc.used_percent is not none and pvc.used_percent >= 90 else ('Watch' if pvc.used_percent is not none and pvc.used_percent >= 75 else 'Healthy'),
-                available=pvc.evidence_available|default(false)
-            ) }}
+            {% for lane in storage_pressure_lanes %}
+                {{ resource_pressure_lane.render(
+                    lane.label,
+                    lane.icon,
+                    lane.value,
+                    lane.used_capacity,
+                    lane.description,
+                    tone=lane.tone,
+                    reason=lane.reason,
+                    headroom=lane.headroom,
+                    status_label=lane.status_label,
+                    available=lane.available
+                ) }}
+            {% endfor %}
         </div>
     </section>
 
     <section class="{{ analysis_surface.evidence_shell_classes() }}">
         <header class="flex flex-col gap-3 border-b border-outline-subtle px-4 py-4 sm:flex-row sm:items-start sm:justify-between">
-            <div><h4 class="{{ analysis_surface.section_title_classes() }}">Persistent Volume Provisioning Context</h4><p class="{{ analysis_surface.section_description_classes() }}">PV capacity is cluster-scoped. Claim usage and requested capacity are factual comparison values, not synthetic PV utilization.</p></div>
+            <div><h4 class="{{ analysis_surface.section_title_classes() }}">Persistent Volume Provisioning Context</h4><p class="{{ analysis_surface.section_description_classes() }}">PV capacity is cluster-scoped. Requested claims and observed usage are factual comparisons, not synthetic PV utilization.</p></div>
             {{ table_label.metadata_label('Scope: Cluster', 'globe-2') }}
         </header>
         <div class="{{ analysis_surface.metric_grid_classes(4) }}">
             {% set pv_metrics = [
-                ('Provisioned PV Capacity', pv.capacity, 'Total cluster PV capacity', 'database'),
-                ('Requested Claim Capacity', pv.requested_claim_capacity, 'Requested across all namespaces', 'hard-drive-upload'),
-                ('Observed Claim Usage', pv.observed_claim_usage, 'Observed across all namespaces', 'hard-drive-download'),
-                ('Unallocated Difference', pv.unallocated_provisioned_difference, 'Provisioned minus requested capacity', 'scale')
+                ('Provisioned PV Capacity', pv.capacity, 'Total cluster PV capacity', 'database', pv.capacity_evidence_available),
+                ('Requested Claim Capacity', pv.requested_claim_capacity, 'Requested across all namespaces', 'hard-drive-upload', pv.requested_claim_evidence_available),
+                ('Observed Claim Usage', pv.observed_claim_usage, 'Observed across all namespaces', 'hard-drive-download', pv.observed_claim_usage_evidence_available),
+                ('Unallocated Difference', pv.unallocated_provisioned_difference, 'Provisioned minus requested capacity', 'scale', pv.unallocated_evidence_available)
             ] %}
-            {% for label, value, helper, icon in pv_metrics %}
+            {% for label, value, helper, icon, available in pv_metrics %}
                 <article class="{{ analysis_surface.metric_cell_classes() }}">
                     <div class="flex items-center gap-2.5"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p></div>
-                    <p class="mt-3 break-words text-xl font-semibold tabular-nums {{ 'text-content-primary' if pv.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ value if pv.evidence_available else 'N/A' }}</p>
+                    <p class="mt-3 break-words text-xl font-semibold tabular-nums {{ 'text-content-primary' if available else analysis_surface.unavailable_value_classes() }}">{{ value if available else 'N/A' }}</p>
                     <p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p>
                 </article>
             {% endfor %}
         </div>
     </section>
 
-    {% set storage_action_tone = table_label.semantic_tone(storage_overview.tone|default('unknown'))|trim if storage_overview is defined else 'info' %}
     <section class="{{ analysis_surface.interpretation_grid_classes() }}">
         {{ analysis_surface.interpretation_callout(
             'How To Read',
             'Keep Filesystem, PVC, And PV Boundaries Separate',
-            'Filesystem pressure is node-scoped, PVC demand is namespace-scoped, and PV provisioning remains cluster-scoped. Do not combine them into one utilization percentage.',
+            'Filesystem pressure is node-scoped, PVC volume usage is namespace-scoped, and PV provisioning remains cluster-scoped. Do not combine them into one utilization percentage.',
             icon='database'
         ) }}
         {{ analysis_surface.interpretation_callout(
             'What To Do',
-            'Investigate Pressure Before Cleanup Or Expansion',
-            'Investigate filesystem or PVC lanes at 75% and above. Review PV binding, lifecycle, storage class, and reclaim policy before cleanup or capacity changes.',
+            'Investigate Pressure And Lifecycle Risk Before Cleanup',
+            'Investigate pressure lanes at 75% and above. Also review Pending or Lost claims and Released or Failed volumes before cleanup, expansion, or workload growth.',
             icon='scan-search',
-            tone=storage_action_tone,
+            tone=storage_posture.tone,
             extra='border-t border-outline-subtle lg:border-t-0'
         ) }}
     </section>

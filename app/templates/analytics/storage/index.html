@@ -9,6 +9,13 @@
         {% else %}
             {% if error %}{{ status_notice.render('Storage Data Unavailable', error, tone='warning') }}{% endif %}
             {% include "analytics/storage/partials/_controls_readiness.html" %}
+            {% if storage_capability_contract.degraded|default(false) %}
+                {{ status_notice.render(
+                    'Storage Evidence Is Partially Available',
+                    'Unavailable advisory capabilities: ' ~ storage_capability_contract.missing_labels|join(', ') ~ '. Available filesystem, PVC, and PV domains remain visible; missing evidence stays Unknown.',
+                    tone='warning'
+                ) }}
+            {% endif %}
             {% if cluster %}
                 {% include "analytics/storage/partials/_overview.html" %}
                 {% include "analytics/storage/partials/_storage_section.html" %}

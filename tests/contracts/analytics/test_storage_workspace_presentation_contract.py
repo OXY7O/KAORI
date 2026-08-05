@@ -30,14 +30,14 @@ def test_storage_heavy_record_tabs_load_on_first_activation() -> None:
 
 def test_storage_uses_canonical_tab_and_mixed_scope_ownership() -> None:
     routes = read('app/analytics/storage/routes.py')
-    service = read('app/analytics/storage/service.py')
+    presentation = read('app/analytics/storage/presentation.py')
     controls = read('app/templates/analytics/storage/partials/_controls_readiness.html')
     filesystem = read('app/templates/analytics/storage/partials/_filesystem_panel.html')
     contract = read('docs/design/components/ANALYTICS_STORAGE_ANALYSIS.md')
 
-    assert "STORAGE_TABS = ('capacity', 'filesystem', 'pvc', 'pv', 'recommendations')" in service
-    assert "name='tab'" in service
-    assert "name='storage_tab'" not in service
+    assert "STORAGE_TABS = ('capacity', 'filesystem', 'pvc', 'pv', 'recommendations')" in presentation
+    assert "name='tab'" in presentation
+    assert "name='storage_tab'" not in presentation
     assert "parameters=_snapshot_parameters()" in routes
     assert "return {'cluster_id': cluster_id}" in routes
     assert 'name="namespace"' in controls
@@ -102,17 +102,17 @@ def test_storage_pagination_owns_full_href_and_partial_htmx_endpoint() -> None:
 
 
 def test_storage_lifecycle_tones_are_domain_semantics_not_css_parsing() -> None:
-    service = read('app/analytics/storage/service.py')
+    domain = read('app/analytics/storage/domain.py')
     filesystem = read('app/templates/analytics/storage/partials/_filesystem_panel.html')
     pvc = read('app/templates/analytics/storage/partials/_persistent_volume_claims_panel.html')
     pv = read('app/templates/analytics/storage/partials/_persistent_volumes_panel.html')
 
-    assert "'Bound': 'normal'" in service
-    assert "'Pending': 'warning'" in service
-    assert "'Lost': 'critical'" in service
-    assert "'Available': 'info'" in service
-    assert "'Released': 'warning'" in service
-    assert "'Failed': 'critical'" in service
+    assert "'Bound': 'normal'" in domain
+    assert "'Pending': 'warning'" in domain
+    assert "'Lost': 'critical'" in domain
+    assert "'Available': 'info'" in domain
+    assert "'Released': 'warning'" in domain
+    assert "'Failed': 'critical'" in domain
     for source in (filesystem, pvc, pv):
         assert 'risk_lower' not in source
         assert 'risk.class' not in source

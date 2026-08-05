@@ -2,10 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.analytics.storage.service import (
-    StorageAnalysisService,
-    build_storage_recommendation_context,
-)
+from app.analytics.storage.presentation import present_storage_materialized_context
+from app.analytics.storage.service import StorageAnalysisService
 from app.analytics.utilization.service import UtilizationService
 from app.cluster.constants import get_environment_label
 from app.models.report import Report
@@ -40,33 +38,29 @@ def get_report_storage_analysis_payload(
             utilization_summary,
         )
 
-        storage_summary = storage_service.get_storage_capacity_summary(
-            selected_namespace=report.namespace or '',
-            selected_node='',
-            filesystem_page=1,
-            filesystem_per_page=1000,
-            selected_pvc_search='',
-            selected_pvc_status='',
-            selected_pvc_storage_class='',
-            pvc_page=1,
-            pvc_per_page=1000,
-            selected_pv_search='',
-            selected_pv_status='',
-            selected_pv_storage_class='',
-            pv_page=1,
-            pv_per_page=1000,
+        storage_payload = storage_service.collect_storage_payload()
+        presented_storage = present_storage_materialized_context(
+            storage_payload,
+            {
+                'namespace': report.namespace or '',
+                'filesystem_per_page': '50',
+                'pvc_per_page': '50',
+                'pv_per_page': '50',
+            },
         )
-
-        namespace_options = storage_service.get_storage_namespace_options()
+        storage_summary = presented_storage['storage_summary']
+        namespace_options = presented_storage.get('namespace_options', [])
         report_period = report.period or '24h'
         forecast_payload = _collect_forecast(
             cluster=cluster,
             namespace=report.namespace or '',
             period=report_period,
         )
-        recommendation_context = build_storage_recommendation_context(
-            storage_summary,
-        )
+        recommendation_context = {
+            'actionable_recommendations': presented_storage.get('actionable_recommendations', []),
+            'recommendation_cards': presented_storage.get('recommendation_cards', []),
+            'recommendation_count': presented_storage.get('recommendation_count', 0),
+        }
 
         return {
             'cluster': {
@@ -169,8 +163,15 @@ def _source_evidence(
     pv_summary = pv_summary if isinstance(pv_summary, dict) else {}
     pvc_summary = pvc_summary if isinstance(pvc_summary, dict) else {}
 
-    storage_state = 'Committed' if filesystem_summary.get('evidence_available') else 'Partial'
-    inventory_state = 'Committed' if pv_summary.get('evidence_available') or pvc_summary.get('count') else 'Partial'
+    storage_state = (
+        'Committed' if filesystem_summary.get('evidence_complete') else 'Partial'
+    )
+    inventory_state = (
+        'Committed'
+        if pv_summary.get('inventory_evidence_available')
+        and pvc_summary.get('inventory_evidence_available')
+        else 'Partial'
+    )
 
     return [
         {

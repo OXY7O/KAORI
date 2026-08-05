@@ -640,26 +640,39 @@ def _get_storage_snapshot(*, cluster_id: str) -> dict[str, Any]:
     if not raw:
         return default
 
-    used_percent = _safe_float(_as_float_like(raw.get('used_percent') or raw.get('pvc_used_percent')))
-    free_percent = max(0.0, 100.0 - used_percent)
+    used_percent = _maybe_float(
+        raw.get('used_percent')
+        if raw.get('used_percent') is not None
+        else raw.get('pvc_used_percent')
+    )
+    free_percent = (
+        _maybe_float(raw.get('free_percent'))
+        if raw.get('free_percent') is not None
+        else (max(0.0, 100.0 - used_percent) if used_percent is not None else None)
+    )
     risk_count = _safe_int(_as_float_like(raw.get('pvc_risk_count') or raw.get('risk_count')))
     recommendation_count = _get_snapshot_recommendation_count(
         raw,
         fallback_count=risk_count,
     )
     risk_meta = classify_count_risk(risk_count)
+    pressure_available = used_percent is not None and free_percent is not None
+    status = risk_meta['label'] if pressure_available or risk_count else 'Unknown'
+    tone = risk_meta['tone'] if pressure_available or risk_count else 'unknown'
 
     return {
         'available': True,
-        'pvc_requested': raw.get('pvc_requested') or raw.get('requested') or '0 GiB',
-        'pvc_used': raw.get('pvc_used') or raw.get('used') or '0 GiB',
-        'pvc_free': raw.get('pvc_free') or raw.get('free') or '0 GiB',
+        'pressure_available': pressure_available,
+        'pvc_requested': raw.get('pvc_requested') or raw.get('requested') or 'N/A',
+        'pvc_capacity': raw.get('pvc_capacity') or raw.get('capacity') or 'N/A',
+        'pvc_used': raw.get('pvc_used') or raw.get('used') or 'N/A',
+        'pvc_free': raw.get('pvc_free') or raw.get('free') or 'N/A',
         'pvc_risk_count': risk_count,
-        'used_percent': round(used_percent, 2),
-        'free_percent': round(free_percent, 2),
+        'used_percent': round(used_percent, 2) if used_percent is not None else None,
+        'free_percent': round(free_percent, 2) if free_percent is not None else None,
         'top_namespace': raw.get('top_namespace') or raw.get('top_storage_namespace') or '-',
-        'status': risk_meta['label'],
-        'tone': risk_meta['tone'],
+        'status': status,
+        'tone': tone,
         'href': '/analytics/storage',
         'recommendation_count': recommendation_count,
     }
@@ -1692,6 +1705,14 @@ def _as_float_like(value: Any) -> FloatLike | None:
 
 def _format_percent_value(value: float) -> int:
     return int(round(value))
+
+
+def _maybe_float(value: Any) -> float | None:
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed
 
 
 def _safe_float(value: FloatLike | None) -> float:

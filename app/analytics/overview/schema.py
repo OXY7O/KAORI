@@ -166,12 +166,14 @@ def _empty_capacity_snapshot() -> dict[str, Any]:
 def _empty_storage_snapshot() -> dict[str, Any]:
     return {
         'available': False,
+        'pressure_available': False,
         'pvc_requested': 'N/A',
+        'pvc_capacity': 'N/A',
         'pvc_used': 'N/A',
         'pvc_free': 'N/A',
         'pvc_risk_count': 0,
-        'used_percent': 0,
-        'free_percent': 0,
+        'used_percent': None,
+        'free_percent': None,
         'top_namespace': '-',
         'status': 'unknown',
         'tone': 'gray',

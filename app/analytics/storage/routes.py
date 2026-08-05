@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flask import Response, make_response, render_template, request, url_for
+from flask import Response, make_response, redirect, render_template, request, url_for
 
 from app.analytics.materialization.presentation import (
     blocked_page_context,
@@ -8,13 +8,12 @@ from app.analytics.materialization.presentation import (
     snapshot_meta,
 )
 from app.analytics.materialization.requests import resolve_materialized_request
-from app.analytics.storage.service import (
+from app.analytics.storage.presentation import (
     get_selected_storage_tab,
     present_storage_materialized_context,
 )
 from app.common.dependencies import render_dependency_blocker
 from app.rbac.decorators import permission_required
-
 
 _PAGE = {
     'dataset_key': 'analytics.storage',
@@ -49,11 +48,14 @@ def _context_or_state():
             return context, None
         return None, blocked_page_context(
             materialized=materialized,
-            **{k: v for k, v in _PAGE.items() if k != 'dataset_key'},
+            **{key: value for key, value in _PAGE.items() if key != 'dataset_key'},
         )
     if not materialized.result.available:
         return None, pending_page_context(materialized=materialized, **_PAGE)
-    context = present_storage_materialized_context(materialized.result.context or {}, request.args)
+    context = present_storage_materialized_context(
+        materialized.result.context or {},
+        request.args,
+    )
     context['analytics_materialization'] = snapshot_meta(materialized)
     context['initial_tab'] = get_selected_storage_tab(request.args)
     return context, None
@@ -65,9 +67,29 @@ def _full_storage_url(tab: str) -> str:
     return url_for('analytics.storage', **query_args)
 
 
+def _is_htmx_request() -> bool:
+    return request.headers.get('HX-Request', '').lower() == 'true'
+
+
 def _partial_response(template: str, context: dict, *, tab: str) -> Response:
     response = make_response(render_template(template, **context))
     response.headers['HX-Push-Url'] = _full_storage_url(tab)
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    response.headers['Vary'] = 'HX-Request'
+    return response
+
+
+def _partial_state_response(state: dict, *, tab: str) -> str | Response:
+    blocker = state.get('dependency_blocker')
+    if blocker:
+        response = make_response(render_dependency_blocker(blocker))
+    else:
+        response = make_response(
+            render_template('analytics/materialization/_pending.html', **state)
+        )
+    response.headers['HX-Push-Url'] = _full_storage_url(tab)
+    response.headers['Cache-Control'] = 'no-store, max-age=0'
+    response.headers['Vary'] = 'HX-Request'
     return response
 
 
@@ -86,17 +108,17 @@ def storage() -> str:
 
 @permission_required('analytics.view')
 def storage_filesystem_summary() -> str | Response:
+    if not _is_htmx_request():
+        return redirect(_full_storage_url('filesystem'))
     context, state = _context_or_state()
     if state:
-        blocker = state.get('dependency_blocker')
-        return (
-            render_dependency_blocker(blocker)
-            if blocker
-            else render_template('analytics/materialization/_pending.html', **state)
-        )
+        return _partial_state_response(state, tab='filesystem')
     dependency_blocker = (context or {}).get('dependency_blocker')
     if dependency_blocker:
-        return render_dependency_blocker(dependency_blocker)
+        return _partial_state_response(
+            {'dependency_blocker': dependency_blocker},
+            tab='filesystem',
+        )
     return _partial_response(
         'analytics/storage/partials/_filesystem_panel.html',
         context or {},
@@ -106,24 +128,24 @@ def storage_filesystem_summary() -> str | Response:
 
 @permission_required('analytics.view')
 def storage_persistent_summary() -> str | Response:
-    context, state = _context_or_state()
-    if state:
-        blocker = state.get('dependency_blocker')
-        return (
-            render_dependency_blocker(blocker)
-            if blocker
-            else render_template('analytics/materialization/_pending.html', **state)
-        )
-    dependency_blocker = (context or {}).get('dependency_blocker')
-    if dependency_blocker:
-        return render_dependency_blocker(dependency_blocker)
     selected_tab = get_selected_storage_tab(request.args, default='pvc')
     if selected_tab not in {'pvc', 'pv'}:
         selected_tab = 'pvc'
-    context = dict(context or {})
-    context['selected_storage_tab'] = selected_tab
+    if not _is_htmx_request():
+        return redirect(_full_storage_url(selected_tab))
+    context, state = _context_or_state()
+    if state:
+        return _partial_state_response(state, tab=selected_tab)
+    dependency_blocker = (context or {}).get('dependency_blocker')
+    if dependency_blocker:
+        return _partial_state_response(
+            {'dependency_blocker': dependency_blocker},
+            tab=selected_tab,
+        )
+    resolved = dict(context or {})
+    resolved['selected_storage_tab'] = selected_tab
     return _partial_response(
         'analytics/storage/partials/_persistent_storage_panel.html',
-        context,
+        resolved,
         tab=selected_tab,
     )

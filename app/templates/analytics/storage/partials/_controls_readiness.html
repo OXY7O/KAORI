@@ -8,7 +8,8 @@
       hx-swap="outerHTML"
       hx-push-url="true"
       hx-sync="#storage-page:replace"
-      hx-indicator="#storage-refresh-indicator">
+      hx-indicator="#storage-refresh-indicator"
+      data-analytics-preserve-tab>
     <input type="hidden" name="tab" value="{{ initial_tab|default('capacity') }}">
     {% call analytics_workspace.controls_readiness(
         'Storage Controls & Data Readiness',

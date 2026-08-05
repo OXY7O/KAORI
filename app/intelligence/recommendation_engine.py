@@ -781,189 +781,214 @@ STORAGE_ACTIONABLE_RISK_LABELS = {
 def build_storage_actionable_recommendations(
     payload: dict[str, Any],
 ) -> list[dict[str, Any]]:
-    recommendations: list[dict[str, Any]] = []
-
     storage_summary = payload.get('storage_summary', payload)
-
-    if not isinstance(storage_summary, dict):
-        storage_summary = {}
-
+    storage_summary = storage_summary if isinstance(storage_summary, dict) else {}
     node_filesystem = storage_summary.get('node_filesystem', {})
     persistent_storage = storage_summary.get('persistent_storage', {})
-
-    if not isinstance(node_filesystem, dict):
-        node_filesystem = {}
-
-    if not isinstance(persistent_storage, dict):
-        persistent_storage = {}
-
-    filesystem_summary = node_filesystem.get('summary', {})
-
-    if not isinstance(filesystem_summary, dict):
-        filesystem_summary = {}
-
-    filesystem_rows = _as_list(node_filesystem.get('all_rows') or node_filesystem.get('rows', []))
-    pvc_rows = _as_list(persistent_storage.get('pvc_all_rows') or persistent_storage.get('pvc_rows', []))
-    pv_rows = _as_list(persistent_storage.get('pv_all_rows') or persistent_storage.get('pv_rows', []))
-
-    highest_filesystem_usage = get_numeric_value(
-        filesystem_summary.get('highest_usage', filesystem_summary.get('usage_percent', 0)),
+    node_filesystem = node_filesystem if isinstance(node_filesystem, dict) else {}
+    persistent_storage = (
+        persistent_storage if isinstance(persistent_storage, dict) else {}
     )
-    highest_node = str(filesystem_summary.get('highest_node', '-') or '-')
 
-    if highest_filesystem_usage >= 90:
-        priority = 'Critical'
-    elif highest_filesystem_usage >= 75:
-        priority = 'Warning'
-    else:
-        priority = ''
+    recommendations = [
+        *_storage_filesystem_recommendations(node_filesystem),
+        *_storage_pvc_recommendations(persistent_storage),
+        *_storage_pv_recommendations(persistent_storage),
+    ]
+    recommendations = deduplicate_recommendations(recommendations)
+    if recommendations:
+        return recommendations
+    if not _storage_evidence_complete(node_filesystem, persistent_storage):
+        return [_storage_evidence_recommendation()]
+    return _storage_baseline_recommendations()
 
-    if priority:
-        recommendations.append(
-            build_recommendation(
-                title='Review Node Filesystem Pressure',
-                description=(
-                    f'Highest /var filesystem usage is {highest_filesystem_usage:.2f}% on {highest_node}. '
-                    'Review image growth, logs, ephemeral storage consumption, and node cleanup before scheduling more workloads.'
-                ),
-                priority=priority,
-                source='storage_filesystem',
-                source_label='Filesystem Storage',
-                resource='storage',
-                action_type='storage_review',
-                href='/analytics/storage?tab=filesystem',
-            )
+
+def _storage_filesystem_recommendations(
+    node_filesystem: dict[str, Any],
+) -> list[dict[str, Any]]:
+    summary = node_filesystem.get('summary', {})
+    summary = summary if isinstance(summary, dict) else {}
+    rows = _as_list(
+        node_filesystem.get('all_rows') or node_filesystem.get('rows', [])
+    )
+    recommendations: list[dict[str, Any]] = []
+    if summary.get('evidence_available'):
+        usage = get_numeric_value(
+            summary.get('highest_usage', summary.get('usage_percent', 0))
         )
-
-    fs_risk_count = _count_rows_by_risk_label(
-        filesystem_rows,
-        {'watch', 'high', 'critical'},
-    )
-
-    if fs_risk_count > 0:
+        priority = 'Critical' if usage >= 90 else ('Warning' if usage >= 75 else '')
+        if priority:
+            recommendations.append(
+                build_recommendation(
+                    title='Review Node Filesystem Pressure',
+                    description=(
+                        f"Highest {summary.get('highest_mountpoint') or '-'} "
+                        f"filesystem usage is {usage:.2f}% on "
+                        f"{summary.get('highest_node') or '-'}. Review image growth, "
+                        'logs, ephemeral storage consumption, and node cleanup before '
+                        'scheduling more workloads.'
+                    ),
+                    priority=priority, source='storage_filesystem',
+                    source_label='Filesystem Storage', resource='storage',
+                    action_type='storage_review',
+                    href='/analytics/storage?tab=filesystem',
+                )
+            )
+    risk_count = _count_rows_by_risk_label(rows, {'watch', 'high', 'critical'})
+    if risk_count:
         recommendations.append(
             build_recommendation(
                 title='Review Filesystem Risk Items',
                 description=(
-                    f'{fs_risk_count} filesystem row(s) have Watch, High, or Critical risk. '
-                    'Prioritize nodes with high /var usage before image pulls, log growth, or workload placement increases disk pressure.'
+                    f'{risk_count} filesystem row(s) have Watch, High, or Critical '
+                    'risk. Prioritize the affected node and mountpoint before image '
+                    'pulls, log growth, or workload placement increases disk pressure.'
                 ),
-                priority='Critical' if fs_risk_count >= 5 else 'Warning',
-                source='storage_filesystem',
-                source_label='Filesystem Storage',
-                resource='storage',
-                action_type='storage_review',
+                priority='Critical' if risk_count >= 5 else 'Warning',
+                source='storage_filesystem', source_label='Filesystem Storage',
+                resource='storage', action_type='storage_review',
                 href='/analytics/storage?tab=filesystem',
             )
         )
+    return recommendations
 
-    pvc_summary = persistent_storage.get('pvc', {})
 
-    if not isinstance(pvc_summary, dict):
-        pvc_summary = {}
-
-    pvc_used_percent = get_numeric_value(pvc_summary.get('used_percent', 0))
-    pvc_free_percent = get_numeric_value(pvc_summary.get('free_percent', 0))
-
-    if pvc_used_percent >= 90 or pvc_free_percent <= 10:
-        priority = 'Critical'
-    elif pvc_used_percent >= 75 or pvc_free_percent <= 25:
-        priority = 'Warning'
-    else:
-        priority = ''
-
-    if priority:
-        recommendations.append(
-            build_recommendation(
-                title='Review PVC Capacity Utilization',
-                description=(
-                    f'PVC used capacity is {pvc_used_percent:.2f}% with {pvc_free_percent:.2f}% free. '
-                    'Check namespace ownership, storage class expansion policy, and application growth before the volume reaches exhaustion.'
-                ),
-                priority=priority,
-                source='storage_pvc',
-                source_label='Persistent Volume Claim',
-                resource='storage',
-                action_type='storage_review',
-                href='/analytics/storage?tab=pvc',
-            )
-        )
-
-    pvc_risk_count = _count_rows_by_risk_label(
-        pvc_rows,
-        {'warning', 'watch', 'high', 'critical'},
+def _storage_pvc_recommendations(
+    persistent_storage: dict[str, Any],
+) -> list[dict[str, Any]]:
+    summary = persistent_storage.get('pvc', {})
+    summary = summary if isinstance(summary, dict) else {}
+    rows = _as_list(
+        persistent_storage.get('pvc_all_rows')
+        or persistent_storage.get('pvc_rows', [])
     )
-
-    if pvc_risk_count > 0:
+    recommendations: list[dict[str, Any]] = []
+    if summary.get('pressure_evidence_available'):
+        used = get_numeric_value(summary.get('used_percent', 0))
+        free = get_numeric_value(summary.get('free_percent', 0))
+        priority = (
+            'Critical' if used >= 90 or free <= 10
+            else 'Warning' if used >= 75 or free <= 25
+            else ''
+        )
+        if priority:
+            recommendations.append(
+                build_recommendation(
+                    title='Review PVC Volume Utilization',
+                    description=(
+                        f'PVC observed volume usage is {used:.2f}% with {free:.2f}% '
+                        'free. Check namespace ownership, storage class expansion '
+                        'policy, and application growth before volume exhaustion.'
+                    ),
+                    priority=priority, source='storage_pvc',
+                    source_label='Persistent Volume Claim', resource='storage',
+                    action_type='storage_review',
+                    href='/analytics/storage?tab=pvc',
+                )
+            )
+    risk_count = _count_rows_by_risk_label(
+        rows, {'warning', 'watch', 'high', 'critical'}
+    )
+    if risk_count:
         recommendations.append(
             build_recommendation(
                 title='Review PVC Risk Items',
                 description=(
-                    f'{pvc_risk_count} PVC risk item(s) require attention. '
-                    'Check PVC status, used capacity, namespace ownership, and storage expansion policy before increasing workload demand.'
+                    f'{risk_count} PVC risk item(s) require attention. Check '
+                    'lifecycle status, observed usage, namespace ownership, and '
+                    'storage expansion policy before increasing workload demand.'
                 ),
-                priority='Critical' if pvc_risk_count >= 5 else 'Warning',
-                source='storage_pvc',
-                source_label='Persistent Volume Claim',
-                resource='storage',
-                action_type='storage_review',
+                priority='Critical' if risk_count >= 5 else 'Warning',
+                source='storage_pvc', source_label='Persistent Volume Claim',
+                resource='storage', action_type='storage_review',
                 href='/analytics/storage?tab=pvc',
             )
         )
+    return recommendations
 
-    pv_risk_count = _count_rows_by_risk_label(
-        pv_rows,
-        {'watch', 'critical', 'unknown'},
+
+def _storage_pv_recommendations(
+    persistent_storage: dict[str, Any],
+) -> list[dict[str, Any]]:
+    rows = _as_list(
+        persistent_storage.get('pv_all_rows')
+        or persistent_storage.get('pv_rows', [])
+    )
+    risk_count = _count_rows_by_risk_label(
+        rows, {'watch', 'critical', 'unknown'}
+    )
+    if not risk_count:
+        return []
+    return [
+        build_recommendation(
+            title='Review PV Lifecycle Risk Items',
+            description=(
+                f'{risk_count} PV risk item(s) were detected. Review Available, '
+                'Released, Failed, or Unknown states, reclaim policy, and claim '
+                'binding before cleanup or reuse.'
+            ),
+            priority=(
+                'Critical'
+                if _has_row_with_risk_label(rows, {'critical'})
+                else 'Warning'
+            ),
+            source='storage_pv', source_label='Persistent Volume',
+            resource='storage', action_type='storage_review',
+            href='/analytics/storage?tab=pv',
+        )
+    ]
+
+
+def _storage_evidence_complete(
+    node_filesystem: dict[str, Any],
+    persistent_storage: dict[str, Any],
+) -> bool:
+    filesystem = node_filesystem.get('summary', {})
+    pvc = persistent_storage.get('pvc', {})
+    pv = persistent_storage.get('pv', {})
+    return all(
+        isinstance(item, dict) and bool(item.get('evidence_complete'))
+        for item in (filesystem, pvc, pv)
     )
 
-    if pv_risk_count > 0:
-        recommendations.append(
-            build_recommendation(
-                title='Review PV Lifecycle Risk Items',
-                description=(
-                    f'{pv_risk_count} PV risk item(s) were detected. '
-                    'Review Available, Released, Failed, or Unknown PV states, reclaim policy, and claim binding before cleanup or reuse.'
-                ),
-                priority='Critical' if _has_row_with_risk_label(pv_rows, {'critical'}) else 'Warning',
-                source='storage_pv',
-                source_label='Persistent Volume',
-                resource='storage',
-                action_type='storage_review',
-                href='/analytics/storage?tab=pv',
-            )
-        )
 
-    recommendations = deduplicate_recommendations(recommendations)
+def _storage_evidence_recommendation() -> dict[str, Any]:
+    return build_recommendation(
+        title='Restore Complete Storage Evidence',
+        description=(
+            'One or more filesystem, PVC, or PV evidence domains are incomplete. '
+            'Restore the missing Prometheus metrics before treating storage posture '
+            'as healthy or making capacity decisions.'
+        ),
+        priority='Warning', source='storage_evidence',
+        source_label='Storage Evidence', resource='storage',
+        action_type='storage_review', href='/analytics/storage?tab=capacity',
+    )
 
-    if recommendations:
-        return recommendations
 
+def _storage_baseline_recommendations() -> list[dict[str, Any]]:
     return [
         build_recommendation(
             title='Continue Regular Storage Monitoring',
             description=(
-                'No actionable storage risk was detected from filesystem, PV, or PVC signals. '
-                'Continue tracking filesystem usage, PVC growth, PV lifecycle state, and namespace storage demand.'
+                'No actionable storage risk was detected from complete filesystem, '
+                'PV, and PVC evidence. Continue tracking pressure, lifecycle state, '
+                'and namespace storage demand.'
             ),
-            priority='Normal',
-            source='storage_baseline',
-            source_label='Storage Baseline',
-            resource='storage',
-            action_type='storage_review',
-            href='/analytics/storage?tab=capacity',
+            priority='Normal', source='storage_baseline',
+            source_label='Storage Baseline', resource='storage',
+            action_type='storage_review', href='/analytics/storage?tab=capacity',
             is_actionable=False,
         ),
         build_recommendation(
             title='Validate Storage Classes and Reclaim Policies Periodically',
             description=(
-                'Review storage class expansion capability and PV reclaim policies for critical workloads before capacity incidents occur.'
+                'Review storage class expansion capability and PV reclaim policies '
+                'for critical workloads before capacity incidents occur.'
             ),
-            priority='Info',
-            source='storage_practice',
-            source_label='Storage Operating Practice',
-            resource='storage',
-            action_type='storage_review',
-            href='/analytics/storage?tab=capacity',
+            priority='Info', source='storage_practice',
+            source_label='Storage Operating Practice', resource='storage',
+            action_type='storage_review', href='/analytics/storage?tab=capacity',
             is_actionable=False,
         ),
     ]

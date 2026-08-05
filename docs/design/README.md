@@ -154,3 +154,4 @@ Domain-specific UI rules live under `docs/modules/` or the owning module README.
 ## Audit Reports
 
 - `audits/INTEGRATIONS_FULL_AUDIT_20260731.md`
+- `audits/KAORI_ANALYTICS_STORAGE_AUDIT_2026_08.md` — Storage evidence, lifecycle, HTMX, and report-boundary audit.

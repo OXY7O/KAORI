@@ -32,13 +32,26 @@
                 ('Filesystem Capacity', summary.capacity, 'Scope: ' ~ filesystem.scope_label, 'hard-drive'),
                 ('Filesystem Used', summary.used, ('%.1f%% of capacity'|format(summary.usage_percent|float)) if summary.evidence_available else 'Evidence unavailable', 'hard-drive-download'),
                 ('Filesystem Free', summary.free, ('%.1f%% remaining'|format(summary.free_percent|float)) if summary.evidence_available else 'Evidence unavailable', 'hard-drive'),
-                ('Highest Pressure', ('%.1f%%'|format(summary.highest_usage|float)) if summary.highest_usage is not none else 'N/A', summary.highest_node if summary.highest_usage is not none else 'No node evidence', 'gauge')
+                ('Highest Pressure', ('%.1f%%'|format(summary.highest_usage|float)) if summary.highest_usage is not none else 'N/A', (summary.highest_node ~ ' · ' ~ summary.highest_mountpoint) if summary.highest_usage is not none else 'No complete node evidence', 'gauge')
             ] %}
             {% for label, value, helper, icon in metrics %}
                 <article class="{{ analysis_surface.metric_cell_classes() }}"><div class="flex items-center gap-2.5"><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-kaori-soft text-kaori-primary"><i data-lucide="{{ icon }}" class="h-4 w-4"></i></span><p class="{{ analysis_surface.metric_label_classes() }}">{{ label }}</p></div><p class="mt-3 break-words text-xl font-semibold tabular-nums {{ 'text-content-primary' if value != 'N/A' else analysis_surface.unavailable_value_classes() }}">{{ value }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ helper }}</p></article>
             {% endfor %}
         </div>
     </section>
+
+    {% if summary.incomplete_node_count|default(0) > 0 %}
+        <section class="{{ analysis_surface.record_guidance_classes() }}">
+            {{ analysis_surface.interpretation_callout(
+                'Evidence Notice',
+                'Some Node Filesystem Evidence Is Incomplete',
+                summary.incomplete_node_count ~ ' node record(s) are missing a complete size and available-byte pair. Those records remain Unknown and are excluded from aggregate utilization.',
+                icon='circle-help',
+                tone='unknown',
+                compact=true
+            ) }}
+        </section>
+    {% endif %}
 
     {% call evidence_list.shell('Node Filesystem Records') %}
         {% call evidence_list.header() %}
