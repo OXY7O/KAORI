@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PAYLOAD_PATH = ROOT / 'app/reports/export/payloads/inventory.py'
 INGRESS_SEMANTICS_PATH = ROOT / 'app/inventory/resources/ingress_semantics.py'
 SEMANTICS_PATH = ROOT / 'app/inventory/resources/service_semantics.py'
+STORAGE_SEMANTICS_PATH = ROOT / 'app/inventory/resources/storage_semantics.py'
 
 
 def _load_payload(monkeypatch: pytest.MonkeyPatch):
@@ -89,6 +90,15 @@ def _load_payload(monkeypatch: pytest.MonkeyPatch):
     semantics = importlib.util.module_from_spec(semantics_spec)
     monkeypatch.setitem(sys.modules, 'app.inventory.resources.service_semantics', semantics)
     semantics_spec.loader.exec_module(semantics)
+
+    storage_spec = importlib.util.spec_from_file_location(
+        'app.inventory.resources.storage_semantics',
+        STORAGE_SEMANTICS_PATH,
+    )
+    assert storage_spec and storage_spec.loader
+    storage_semantics = importlib.util.module_from_spec(storage_spec)
+    monkeypatch.setitem(sys.modules, 'app.inventory.resources.storage_semantics', storage_semantics)
+    storage_spec.loader.exec_module(storage_semantics)
 
     spec = importlib.util.spec_from_file_location('service_export_payload_under_test', PAYLOAD_PATH)
     assert spec and spec.loader

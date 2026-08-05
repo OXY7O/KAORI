@@ -3,7 +3,7 @@
     {{ table_ui.inventory_block_header(
         'database',
         'Storage Inventory',
-        'Kubernetes storage provisioning, capacity, access, binding, and lifecycle evidence collected from connected clusters.',
+        'Committed Kubernetes storage provisioning, capacity, access, binding, and lifecycle evidence collected from connected clusters.',
         'storage-table-loading',
         'Refreshing Storage Inventory',
         url_for('integrations.kubernetes'),
@@ -11,14 +11,15 @@
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form hx-get="{{ url_for('inventory.storage') }}"
-              hx-target="#storage-inventory-scope"
+              hx-target="#storage-page-workspace"
               hx-swap="outerHTML"
               hx-indicator="#storage-table-loading"
               hx-trigger="change, keyup changed delay:500ms from:find input[name='search']"
-              class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+              aria-label="Storage inventory filters"
+              class="grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,0.9fr)_minmax(18rem,1.4fr)] xl:items-end">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
-            <input type="hidden" name="partial_mode" value="inventory_scope">
+            <input type="hidden" name="partial_mode" value="page_workspace">
             <div>
                 <label class="{{ table_ui.filter_label_classes() }}">Cluster</label>
                 <select name="cluster_id" class="{{ table_ui.filter_select_classes() }}">
@@ -44,12 +45,12 @@
                 <label class="{{ table_ui.filter_label_classes() }}">Lifecycle</label>
                 <select name="status" class="{{ table_ui.filter_select_classes() }}">
                     <option value="">All Lifecycle States</option>
-                    {% for status_name in inventory.storage_filter_statuses %}<option value="{{ status_name }}" {% if selected_status == status_name %}selected{% endif %}>{{ status_name }}</option>{% endfor %}
+                    {% for option in inventory.storage_filter_statuses %}<option value="{{ option.value }}" {% if selected_status == option.value %}selected{% endif %}>{{ option.label }}</option>{% endfor %}
                 </select>
             </div>
             <div>
                 <label class="{{ table_ui.filter_label_classes() }}">Search Storage Objects</label>
-                {{ table_ui.search_field('search', search, 'Search object name, class, provisioner, or binding') }}
+                {{ table_ui.search_field('search', search, 'Search object, namespace, class, provisioner, source, or binding') }}
             </div>
         </form>
     </div>

@@ -114,7 +114,12 @@ def _topology_builder_modules():
     )
     sys.modules['flask'] = flask
 
-    for package in ('app.cluster', 'app.integrations', 'app.integrations.kubernetes'):
+    for package in (
+        'app.cluster',
+        'app.integrations',
+        'app.integrations.kubernetes',
+        'app.inventory.resources',
+    ):
         module = sys.modules.setdefault(package, ModuleType(package))
         module.__path__ = []
 
@@ -125,6 +130,19 @@ def _topology_builder_modules():
     resolver = ModuleType('app.integrations.kubernetes.resolver')
     resolver.server_for_cluster = lambda cluster: getattr(cluster, 'server', None)
     sys.modules['app.integrations.kubernetes.resolver'] = resolver
+
+    _load_module(
+        'app.inventory.formatting',
+        'app/inventory/formatting.py',
+    )
+    _load_module(
+        'app.inventory.resources.ingress_semantics',
+        'app/inventory/resources/ingress_semantics.py',
+    )
+    _load_module(
+        'app.inventory.resources.storage_semantics',
+        'app/inventory/resources/storage_semantics.py',
+    )
 
     node_builder = _load_module(
         'app.inventory.topology.node_builder',
@@ -209,8 +227,15 @@ def test_topology_builder_preserves_canonical_nodes_and_relationships() -> None:
         backend_paths=[{'service_name': 'api', 'service_port': 443, 'path': '/'}],
         host='api.example.com',
         ingress_class='nginx',
-        address='10.0.0.20',
         tls_enabled=True,
+        details={
+            'specification_evidence_reported': True,
+            'ingress_class_source': 'spec.ingressClassName',
+            'hosts': ['api.example.com'],
+            'hostless_rule_count': 0,
+            'publication_evidence_reported': True,
+            'addresses': ['10.0.0.20'],
+        },
         collected_at=collected,
     )
     configuration = SimpleNamespace(
@@ -234,7 +259,13 @@ def test_topology_builder_preserves_canonical_nodes_and_relationships() -> None:
         status='Bound',
         storage_class='fast',
         capacity='10Gi',
-        details={'volume_name': 'pv-api'},
+        details={
+            'specification_evidence_reported': True,
+            'status_evidence_reported': True,
+            'capacity_evidence_reported': True,
+            'volume_name': 'pv-api',
+            'requested_storage': '10Gi',
+        },
         collected_at=collected,
     )
     pv = SimpleNamespace(
@@ -246,7 +277,12 @@ def test_topology_builder_preserves_canonical_nodes_and_relationships() -> None:
         status='Bound',
         storage_class='fast',
         capacity='10Gi',
-        details={'claim_name': 'payments/api-data'},
+        details={
+            'specification_evidence_reported': True,
+            'status_evidence_reported': True,
+            'claim_namespace': 'payments',
+            'claim_name': 'api-data',
+        },
         collected_at=collected,
     )
     pod = SimpleNamespace(
@@ -274,8 +310,15 @@ def test_topology_builder_preserves_canonical_nodes_and_relationships() -> None:
         backend_paths=[{'service_name': 'api', 'service_port': 443, 'path': '/orphan'}],
         host='orphan.example.com',
         ingress_class='nginx',
-        address='10.0.0.30',
         tls_enabled=False,
+        details={
+            'specification_evidence_reported': True,
+            'ingress_class_source': 'spec.ingressClassName',
+            'hosts': ['orphan.example.com'],
+            'hostless_rule_count': 0,
+            'publication_evidence_reported': True,
+            'addresses': ['10.0.0.30'],
+        },
         collected_at=collected,
     )
     records = contracts.TopologyRecords(

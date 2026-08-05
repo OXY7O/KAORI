@@ -17,6 +17,7 @@ def test_reviewed_core_workspaces_do_not_restore_internal_compatibility_bridges(
         'app/templates/inventory/pods/partials/_inventory_scope.html',
         'app/templates/inventory/services/partials/_inventory_scope.html',
         'app/templates/inventory/ingresses/partials/_inventory_scope.html',
+        'app/templates/inventory/storage/partials/_inventory_scope.html',
     )
     assert all(not (ROOT / relative).exists() for relative in obsolete)
 
@@ -50,7 +51,7 @@ def test_reviewed_core_workspaces_do_not_restore_internal_compatibility_bridges(
 
 
 def test_reviewed_inventory_resources_use_canonical_workspace_and_table_boundaries() -> None:
-    for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses'):
+    for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses', 'storage'):
         workspace = read(f'app/templates/inventory/{resource}/partials/_page_workspace.html')
         table = read(f'app/templates/inventory/{resource}/partials/_table_content.html')
 

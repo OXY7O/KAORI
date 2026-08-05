@@ -12,6 +12,10 @@ from app.inventory.resources.ingress_semantics import (
     ingress_class_presentation,
     publication_presentation as ingress_publication_presentation,
 )
+from app.inventory.resources.storage_semantics import (
+    binding_reference as storage_binding_reference,
+    lifecycle_presentation as storage_lifecycle_presentation,
+)
 from app.inventory.topology.contracts import (
     TopologyGraphState,
     TopologyNodeSpec,
@@ -359,23 +363,28 @@ class TopologyNodeBuilder:
             return None
 
         details = item.details or {}
+        lifecycle, lifecycle_tone = storage_lifecycle_presentation(
+            item.storage_type,
+            item.status,
+            details,
+        )
         return TopologyNodeSpec(
             element_id=element_id,
             label=item.name,
             resource_type=resource_type,
             kind=kind,
-            status=item.status or 'Unknown',
-            status_tone=status_tone(item.status, 'storage'),
+            status=lifecycle,
+            status_tone=lifecycle_tone,
             cluster_id=item.cluster_id,
             cluster_name=cluster.name,
             namespace=item.namespace,
             parent=parent,
             fields=[
-                field('Status', item.status),
+                field('Lifecycle', lifecycle),
                 field('Storage Class', item.storage_class),
-                field('Capacity', item.capacity),
-                field('Bound Volume', details.get('volume_name')),
-                field('Claim', details.get('claim_name')),
+                field('Reported Capacity', item.capacity),
+                field('Requested Capacity', details.get('requested_storage')),
+                field('Binding Reference', storage_binding_reference(item.storage_type, details)),
             ],
             collected_at=item.collected_at,
             action_url=action_url,

@@ -57,6 +57,7 @@ from app.inventory.resources.storage import (
     get_storage_filter_statuses,
     get_storage_filter_types,
     get_storage_inventory_view,
+    storage_status_filter_label,
 )
 from app.inventory.resources.workloads import (
     get_workload_detail,
@@ -82,7 +83,7 @@ _INVENTORY_PARTIAL_TEMPLATES = {
         'card': f'inventory/{resource}/partials/_table_card.html',
         'content': f'inventory/{resource}/partials/_table_content.html',
     }
-    for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses')
+    for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses', 'storage')
 }
 _INVENTORY_PARTIAL_TEMPLATES.update(
     {
@@ -92,7 +93,7 @@ _INVENTORY_PARTIAL_TEMPLATES.update(
             'card': f'inventory/{resource}/partials/_table_card.html',
             'content': f'inventory/{resource}/partials/_table_content.html',
         }
-        for resource in ('configuration', 'storage')
+        for resource in ('configuration',)
     }
 )
 
@@ -756,7 +757,10 @@ def storage():
     )
     inventory['namespaces'] = namespaces
     inventory['storage_filter_types'] = storage_types
-    inventory['storage_filter_statuses'] = storage_statuses
+    inventory['storage_filter_statuses'] = [
+        {'value': value, 'label': storage_status_filter_label(value)}
+        for value in storage_statuses
+    ]
 
     return render_template(
         _inventory_template('storage'),

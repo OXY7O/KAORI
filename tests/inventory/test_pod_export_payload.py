@@ -86,6 +86,15 @@ def _load_payload(monkeypatch: pytest.MonkeyPatch):
     for name, module in modules.items():
         monkeypatch.setitem(sys.modules, name, module)
 
+    storage_spec = importlib.util.spec_from_file_location(
+        'app.inventory.resources.storage_semantics',
+        ROOT / 'app/inventory/resources/storage_semantics.py',
+    )
+    assert storage_spec and storage_spec.loader
+    storage_semantics = importlib.util.module_from_spec(storage_spec)
+    monkeypatch.setitem(sys.modules, 'app.inventory.resources.storage_semantics', storage_semantics)
+    storage_spec.loader.exec_module(storage_semantics)
+
     spec = importlib.util.spec_from_file_location('pod_export_payload_under_test', PAYLOAD_PATH)
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)

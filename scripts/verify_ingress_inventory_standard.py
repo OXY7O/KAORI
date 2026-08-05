@@ -107,7 +107,7 @@ def main() -> int:
             'Missing Secret evidence must not be converted to Missing references.', errors)
 
     require(
-        "for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses')" in routes,
+        "for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses', 'storage')" in routes,
         'Ingress must participate directly in the canonical Inventory workspace mapping.',
         errors,
     )

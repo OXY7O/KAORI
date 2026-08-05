@@ -26,6 +26,7 @@ def main() -> int:
         'app/templates/inventory/pods/partials/_inventory_scope.html',
         'app/templates/inventory/services/partials/_inventory_scope.html',
         'app/templates/inventory/ingresses/partials/_inventory_scope.html',
+        'app/templates/inventory/storage/partials/_inventory_scope.html',
     )
     for relative in obsolete_paths:
         require(not (ROOT / relative).exists(), f'Obsolete compatibility file still exists: {relative}', errors)
@@ -70,14 +71,14 @@ def main() -> int:
             'Inventory Overview must not use a generic resource scope wrapper.', errors)
 
     routes = read('app/inventory/routes.py')
-    require("for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses')" in routes,
+    require("for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses', 'storage')" in routes,
             'Audited Inventory pages must use one canonical workspace mapping.', errors)
     require("templates.get('workspace', templates['scope'])" not in routes,
             'Inventory workspace routing must not fall back to compatibility scope wrappers.', errors)
     require('_build_cluster_context_from_request' not in routes,
             'Unused Inventory route wrapper must remain removed.', errors)
 
-    for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses'):
+    for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses', 'storage'):
         workspace = read(f'app/templates/inventory/{resource}/partials/_page_workspace.html')
         table = read(f'app/templates/inventory/{resource}/partials/_table_content.html')
         require(f'id="{resource}-page-workspace"' in workspace,
@@ -172,7 +173,7 @@ def main() -> int:
 
     print(
         'KAORI core workspace legacy cleanup passed: Welcome, Kubernetes Dashboard, Inventory Overview, '
-        'Topology, Node, Namespace, Workload, Pod, Service, and Ingress use canonical paths without internal wrappers.'
+        'Topology, Node, Namespace, Workload, Pod, Service, Ingress, and Storage use canonical paths without internal wrappers.'
     )
     return 0
 

@@ -18,6 +18,15 @@ from app.inventory.resources.service_semantics import (
     backend_registration as service_backend_registration,
     effective_service_type,
 )
+from app.inventory.resources.storage_semantics import (
+    NOT_CONFIGURED as STORAGE_NOT_CONFIGURED,
+    NOT_REPORTED as STORAGE_NOT_REPORTED,
+    binding_reference as storage_binding_reference,
+    expansion_presentation as storage_expansion_presentation,
+    lifecycle_presentation as storage_lifecycle_presentation,
+    list_presentation as storage_list_presentation,
+    provisioning_presentation as storage_provisioning_presentation,
+)
 from app.models import (
     Cluster,
     ClusterInventory,
@@ -320,20 +329,95 @@ def _ingress_row(item: IngressInventory, cluster_name: str, environment: str) ->
 def _storage_row(item: StorageInventory, cluster_name: str, environment: str) -> dict[str, Any]:
     namespace = item.namespace or 'Cluster-Wide'
     details = item.details or {}
+    lifecycle, _ = storage_lifecycle_presentation(item.storage_type, item.status, details)
+    specification_reported = details.get('specification_evidence_reported') is True
+    status_reported = details.get('status_evidence_reported') is True
+    storage_class_label = storage_provisioning_presentation(
+        item.storage_type,
+        item.storage_class,
+        details,
+    )[0]
+    source = details.get('source') if isinstance(details.get('source'), dict) else {}
+    if item.storage_type == 'PersistentVolumeClaim':
+        requested_access_modes = details.get('requested_access_modes') or []
+        reported_access_modes = details.get('reported_access_modes') or []
+        requested_capacity = _formatted_size(details.get('requested_storage'))
+        reported_capacity = _formatted_size(item.capacity) if details.get('capacity_evidence_reported') else None
+        requested_access_modes_label = storage_list_presentation(
+            requested_access_modes,
+            evidence_reported=specification_reported,
+        )
+        reported_access_modes_label = storage_list_presentation(
+            reported_access_modes,
+            evidence_reported=status_reported,
+        )
+    elif item.storage_type == 'PersistentVolume':
+        requested_access_modes = details.get('access_modes') or []
+        requested_capacity = None
+        reported_capacity = _formatted_size(item.capacity)
+        requested_access_modes_label = storage_list_presentation(
+            requested_access_modes,
+            evidence_reported=specification_reported,
+        )
+        reported_access_modes_label = 'Not Applicable'
+    else:
+        requested_capacity = None
+        reported_capacity = None
+        requested_access_modes_label = 'Not Applicable'
+        reported_access_modes_label = 'Not Applicable'
+
+    if item.storage_type == 'StorageClass':
+        reclaim_policy = _text(details.get('reclaim_policy'), STORAGE_NOT_REPORTED)
+        binding_mode = _text(details.get('volume_binding_mode'), STORAGE_NOT_REPORTED)
+        provisioner = _text(details.get('provisioner'), STORAGE_NOT_REPORTED)
+        volume_source = 'Not Applicable'
+        volume_mode = 'Not Applicable'
+    elif item.storage_type == 'PersistentVolume':
+        reclaim_policy = _text(
+            details.get('reclaim_policy'),
+            STORAGE_NOT_CONFIGURED if specification_reported else STORAGE_NOT_REPORTED,
+        )
+        binding_mode = 'Not Applicable'
+        provisioner = 'Not Applicable'
+        volume_source = _text(source.get('type'), STORAGE_NOT_REPORTED)
+        volume_mode = _text(
+            details.get('volume_mode'),
+            STORAGE_NOT_CONFIGURED if specification_reported else STORAGE_NOT_REPORTED,
+        )
+    else:
+        reclaim_policy = 'Not Applicable'
+        binding_mode = 'Not Applicable'
+        provisioner = 'Not Applicable'
+        volume_source = 'Not Applicable'
+        volume_mode = _text(
+            details.get('volume_mode'),
+            STORAGE_NOT_CONFIGURED if specification_reported else STORAGE_NOT_REPORTED,
+        )
     return {
-        'status': _text(item.status, 'Unknown'),
+        'status': lifecycle,
         'cluster': cluster_name,
-        'environment': _text(environment, 'Not Available'),
+        'environment': _text(environment, 'Not Reported'),
         'namespace': namespace,
         'name': item.name,
         'resource_type': item.storage_type,
-        'storage_class': _text(item.storage_class, 'Not Available'),
-        'capacity': _formatted_size(item.capacity),
-        'access_modes': _join_json(details.get('access_modes')),
-        'reclaim_policy': _text(details.get('reclaim_policy'), 'Not Available'),
-        'volume_mode': _text(details.get('volume_mode'), 'Not Available'),
-        'claim_name': _text(details.get('claim_name') or details.get('claim'), 'Not Available'),
-        'provisioner': _text(details.get('provisioner'), 'Not Available'),
+        'storage_class': storage_class_label,
+        'requested_capacity': requested_capacity,
+        'reported_capacity': reported_capacity,
+        'requested_access_modes': requested_access_modes_label,
+        'reported_access_modes': reported_access_modes_label,
+        'volume_mode': volume_mode,
+        'binding_reference': storage_binding_reference(item.storage_type, details),
+        'reclaim_policy': reclaim_policy,
+        'binding_mode': binding_mode,
+        'volume_expansion': storage_expansion_presentation(item.storage_type, details),
+        'provisioner': provisioner,
+        'volume_source': volume_source,
+        'specification_evidence': 'Reported' if specification_reported else STORAGE_NOT_REPORTED,
+        'status_evidence': (
+            'Not Applicable'
+            if item.storage_type == 'StorageClass'
+            else ('Reported' if status_reported else STORAGE_NOT_REPORTED)
+        ),
         'created_at': item.created_at,
         'collected_at': item.collected_at,
     }
@@ -418,7 +502,9 @@ _INVENTORY_REPORT_CONFIG: dict[str, dict[str, Any]] = {
         'model': StorageInventory,
         'asset_label': 'Storage Assets',
         'row_builder': _storage_row,
-        'status_builder': lambda item: _text(item.status, 'Unknown'),
+        'status_builder': lambda item: storage_lifecycle_presentation(
+            item.storage_type, item.status, item.details or {}
+        )[0],
         'type_builder': lambda item: _text(item.storage_type, 'Unknown'),
     },
 }

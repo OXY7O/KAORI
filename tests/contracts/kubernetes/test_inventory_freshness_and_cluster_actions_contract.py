@@ -25,7 +25,7 @@ def test_every_inventory_workspace_shows_committed_snapshot_freshness() -> None:
     )
     for page in pages:
         source = read(INVENTORY_TEMPLATES / page / 'index.html')
-        if page in {'nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses'}:
+        if page in {'nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses', 'storage'}:
             source += read(INVENTORY_TEMPLATES / page / 'partials' / '_page_workspace.html')
         assert 'inventory/components/_data_freshness.html' in source, page
 
@@ -72,8 +72,8 @@ def test_inventory_freshness_uses_committed_cluster_inventory_snapshots() -> Non
     assert 'get_inventory_freshness_context(cluster_id=cluster_id)' in routes
 
 
-def test_service_and_ingress_inventory_offer_open_cluster_list() -> None:
-    for page in ('services', 'ingresses'):
+def test_network_and_storage_inventory_offer_open_cluster_list() -> None:
+    for page in ('services', 'ingresses', 'storage'):
         source = read(INVENTORY_TEMPLATES / page / 'partials' / '_table_card.html')
         assert "url_for('integrations.kubernetes')" in source
         assert 'Open Cluster List' in source

@@ -52,7 +52,7 @@ def test_service_page_filters_refresh_complete_committed_scope() -> None:
     card = read('app/templates/inventory/services/partials/_table_card.html')
     table = read('app/templates/inventory/services/partials/_table_content.html')
 
-    assert "for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses')" in routes
+    assert "for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses', 'storage')" in routes
     assert 'id="services-page-workspace"' in workspace
     assert 'inventory/components/_data_freshness.html' in workspace
     assert 'hx-target="#services-page-workspace"' in card

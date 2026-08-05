@@ -25,6 +25,9 @@ TARGETS = (
     Path('app/inventory/collectors/ingresses.py'),
     Path('app/inventory/resources/ingresses.py'),
     Path('app/inventory/resources/ingress_semantics.py'),
+    Path('app/inventory/collectors/storage.py'),
+    Path('app/inventory/resources/storage.py'),
+    Path('app/inventory/resources/storage_semantics.py'),
 )
 
 

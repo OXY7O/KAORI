@@ -16,20 +16,22 @@ def test_service_selector_matching_uses_postgresql_jsonb_containment() -> None:
     assert '_selector_matches' in source
 
 
-def test_storage_pvc_relationships_use_postgresql_jsonb_containment() -> None:
+def test_storage_pvc_relationships_use_postgresql_jsonb_overlap() -> None:
     source = STORAGE_SOURCE.read_text()
 
-    assert 'from sqlalchemy.dialects.postgresql import JSONB' in source
-    assert 'cast(PodInventory.persistent_volume_claims, JSONB).contains([name])' in source
+    assert 'from sqlalchemy.dialects.postgresql import JSONB, array' in source
+    assert "cast(PodInventory.persistent_volume_claims, JSONB).op('?|')" in source
+    assert 'array(sorted(names))' in source
     assert 'PodInventory.persistent_volume_claims.contains([name])' not in source
+    assert 'claims[:200]' not in source
     assert "dialect == 'postgresql'" in source
     assert '.limit(8)' in source
 
 
-def test_postgresql_jsonb_containment_compiles_to_at_operator() -> None:
+def test_postgresql_jsonb_containment_and_overlap_compile_to_native_operators() -> None:
     from sqlalchemy import JSON, Column, MetaData, Table, cast, select
     from sqlalchemy.dialects import postgresql
-    from sqlalchemy.dialects.postgresql import JSONB
+    from sqlalchemy.dialects.postgresql import JSONB, array
 
     table = Table(
         'pod_inventory',
@@ -38,11 +40,16 @@ def test_postgresql_jsonb_containment_compiles_to_at_operator() -> None:
         Column('persistent_volume_claims', JSON),
     )
     statements = (
-        select(table).where(cast(table.c.labels, JSONB).contains({'app': 'demo'})),
-        select(table).where(cast(table.c.persistent_volume_claims, JSONB).contains(['claim'])),
+        (select(table).where(cast(table.c.labels, JSONB).contains({'app': 'demo'})), '@>'),
+        (
+            select(table).where(
+                cast(table.c.persistent_volume_claims, JSONB).op('?|')(array(['claim']))
+            ),
+            '?|',
+        ),
     )
 
-    for statement in statements:
+    for statement, operator in statements:
         compiled = str(statement.compile(dialect=postgresql.dialect()))
-        assert '@>' in compiled
+        assert operator in compiled
         assert ' LIKE ' not in compiled

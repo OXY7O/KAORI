@@ -15,7 +15,7 @@
                         {{ table_label.metadata_label(item.namespace, 'folder-tree') }}
                         {% if item.is_default %}{{ table_label.metadata_label('Default') }}{% endif %}
                     </div>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Committed provisioning, capacity, binding, relationship, and lifecycle evidence.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Committed provisioning, capacity, access, binding, relationship, and lifecycle evidence.</p>
                 </div>
             </div>
             <div class="self-start sm:self-auto">
@@ -24,10 +24,10 @@
         </header>
 
         {{ detail.summary_strip([
-            ('Resource Type', item.type_label, 'Storage inventory kind'),
+            ('Resource Type', item.type_label, 'Kubernetes storage kind'),
             ('Lifecycle', item.lifecycle_label, item.binding_reference),
-            ('Capacity', item.requested_storage if item.type == 'PersistentVolumeClaim' else item.capacity, 'Requested or reported capacity'),
-            ('Related Resources', item.claim_count + item.pod_count, item.claim_count ~ ' claims · ' ~ item.pod_count ~ ' Pods')
+            ('Capacity', item.capacity, item.capacity_supporting),
+            ('Related Resources', item.claim_count + item.pod_count if item.claims_reported and item.pods_reported else 'Not Reported', item.claim_count ~ ' claims · ' ~ item.pod_count ~ ' Pods' if item.claims_reported and item.pods_reported else 'Relationship evidence incomplete')
         ], compact=true) }}
 
         <div class="grid items-start gap-4 p-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
@@ -38,19 +38,43 @@
                     {{ detail.metadata_row('Resource Type', item.type_label) }}
                     {{ detail.technical_row('Kubernetes UID', item.uid) }}
                     {{ detail.detail_row('Age', item.age) }}
-                    {{ detail.detail_row('Created', item.created_at|user_datetime if item.created_at else '-') }}
+                    {{ detail.detail_row('Created', item.created_at|user_datetime if item.created_at else 'Not Reported') }}
                     {{ detail.detail_row('Collected', item.collected_at|user_datetime) }}
                 {% endcall %}
 
                 {% call detail.detail_card('Capacity & Access', 'gauge', item.capacity, badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.evidence_grid([
-                        {'label': 'Reported Capacity', 'value': item.capacity},
-                        {'label': 'Requested Storage', 'value': item.requested_storage},
-                        {'label': 'Volume Mode', 'value': item.volume_mode},
-                        {'label': 'Access Modes', 'value': item.access_modes|join(', ') if item.access_modes else 'Not Reported'},
-                        {'label': 'Expansion', 'value': 'Allowed' if item.allow_expansion else 'Not Reported'},
-                        {'label': 'Node Affinity', 'value': 'Configured' if item.node_affinity_configured else 'Not Configured'}
-                    ], columns=2) }}
+                    {% if item.type == 'PersistentVolumeClaim' %}
+                        {{ detail.evidence_grid([
+                            {'label': 'Requested Storage', 'value': item.requested_storage},
+                            {'label': 'Bound Capacity', 'value': item.reported_capacity},
+                            {'label': 'Allocated Storage', 'value': item.allocated_storage},
+                            {'label': 'Volume Mode', 'value': item.volume_mode},
+                            {'label': 'Requested Access Modes', 'value': item.requested_access_modes},
+                            {'label': 'Reported Access Modes', 'value': item.reported_access_modes},
+                            {'label': 'Specification Evidence', 'value': item.specification_evidence},
+                            {'label': 'Status Evidence', 'value': item.status_evidence}
+                        ], columns=2) }}
+                    {% elif item.type == 'PersistentVolume' %}
+                        {{ detail.evidence_grid([
+                            {'label': 'Configured Capacity', 'value': item.reported_capacity},
+                            {'label': 'Volume Mode', 'value': item.volume_mode},
+                            {'label': 'Access Modes', 'value': item.requested_access_modes},
+                            {'label': 'Node Affinity', 'value': item.node_affinity},
+                            {'label': 'Volume Source', 'value': item.source_type},
+                            {'label': 'Mount Options', 'value': item.mount_options|length if item.mount_options_reported else 'Not Reported'},
+                            {'label': 'Specification Evidence', 'value': item.specification_evidence},
+                            {'label': 'Status Evidence', 'value': item.status_evidence}
+                        ], columns=2) }}
+                    {% else %}
+                        {{ detail.evidence_grid([
+                            {'label': 'Capacity', 'value': 'Not Applicable'},
+                            {'label': 'Volume Expansion', 'value': item.expansion},
+                            {'label': 'Binding Mode', 'value': item.binding_mode},
+                            {'label': 'Topology Terms', 'value': item.allowed_topology_count},
+                            {'label': 'Mount Options', 'value': item.mount_options|length if item.mount_options_reported else 'Not Reported'},
+                            {'label': 'Default Class', 'value': 'Yes' if item.is_default else 'No'}
+                        ], columns=2) }}
+                    {% endif %}
                 {% endcall %}
             </div>
 
@@ -62,12 +86,12 @@
                         {'label': 'StorageClass', 'value': item.storage_class},
                         {'label': 'Reclaim Policy', 'value': item.reclaim_policy},
                         {'label': 'Data Source', 'value': item.data_source},
-                        {'label': 'Finalizers', 'value': item.finalizers|length}
+                        {'label': 'Finalizers', 'value': item.finalizers|length},
+                        {'label': 'Specification Evidence', 'value': item.specification_evidence},
+                        {'label': 'Status Evidence', 'value': item.status_evidence}
                     ], columns=2) }}
                     {% if item.conditions %}
-                        <div class="mt-3">
-                            {{ metadata_collection.render('Reported Conditions', item.conditions, 'activity', 'No Conditions Reported', 'No storage condition is represented in the committed snapshot.', 'Condition values remain factual until interpreted by resource kind and reason.', compact=true, mode='records') }}
-                        </div>
+                        <div class="mt-3">{{ metadata_collection.render('Reported Conditions', item.conditions, 'activity', 'No Conditions Reported', 'No storage condition is represented in the committed snapshot.', 'Condition values remain factual until interpreted by resource kind and reason.', compact=true, mode='records') }}</div>
                     {% endif %}
                 {% endcall %}
 
@@ -76,28 +100,45 @@
                         {'label': 'Provisioner', 'value': item.provisioner},
                         {'label': 'Binding Mode', 'value': item.binding_mode},
                         {'label': 'Reclaim Policy', 'value': item.reclaim_policy},
+                        {'label': 'Volume Expansion', 'value': item.expansion},
                         {'label': 'Topology Terms', 'value': item.allowed_topology_count},
-                        {'label': 'Default Class', 'value': 'Yes' if item.is_default else 'No'},
-                        {'label': 'Mount Options', 'value': item.mount_options|length}
+                        {'label': 'Default Class', 'value': 'Yes' if item.is_default else ('No' if item.type == 'StorageClass' else 'Not Applicable')}
                     ], columns=2) }}
                 {% endcall %}
             </div>
 
             <div class="xl:col-span-2 grid items-start gap-4 xl:grid-cols-2">
-                {{ related_collection.render('Related Claims', 'PersistentVolumeClaim references represented by the committed storage snapshot.', item.claims, item.claim_count, 'folder-check', 'No Related Claims', 'No PersistentVolumeClaim relationship is represented for this storage object.', item.claims_truncated, url_for('inventory.storage', cluster_id=item.cluster_id, type='PersistentVolumeClaim'), 'Open Claim Inventory') }}
-                {{ related_collection.render('Mounted Pods', 'Pods whose committed volume references include the related claim.', item.pods, item.pod_count, 'package', 'No Mounted Pods', 'No Pod mount relationship is represented in the committed snapshot.', item.pods_truncated, url_for('inventory.pods', cluster_id=item.cluster_id), 'Open Pod Inventory') }}
+                {% set claims_empty_title = 'No Related Claims' if item.claims_reported else 'Claim Evidence Not Reported' %}
+                {% set claims_empty_description = 'No PersistentVolumeClaim relationship is represented for this storage object.' if item.claims_reported else 'PersistentVolumeClaim collection evidence is unavailable for this cluster.' %}
+                {{ related_collection.render('Related Claims', 'PersistentVolumeClaim references represented by the committed storage snapshot.', item.claims, item.claim_count, 'folder-check', claims_empty_title, claims_empty_description, item.claims_truncated, url_for('inventory.storage', cluster_id=item.cluster_id, type='PersistentVolumeClaim'), 'Open Claim Inventory') }}
+                {% set pods_empty_title = 'No Mounted Pods' if item.pods_reported else 'Pod Mount Evidence Not Reported' %}
+                {% set pods_empty_description = 'No Pod mount relationship is represented in the committed snapshot.' if item.pods_reported else 'Pod collection evidence is unavailable for this cluster.' %}
+                {{ related_collection.render('Mounted Pods', 'Pods whose committed volume references include the related claim.', item.pods, item.pod_count, 'package', pods_empty_title, pods_empty_description, item.pods_truncated, url_for('inventory.pods', cluster_id=item.cluster_id), 'Open Pod Inventory') }}
             </div>
 
             <div class="grid items-start gap-4 xl:col-span-2 xl:grid-cols-2">
-                {{ metadata_collection.render('Provisioner Parameters', item.parameters, 'sliders-horizontal', 'No Provisioner Parameters', 'No StorageClass parameter is represented in the committed snapshot.', 'Parameters are factual provisioner configuration.', compact=true) }}
-                {{ metadata_collection.render('Claim Selector', item.selector, 'list-filter', 'No Claim Selector', 'No PVC selector is represented in the committed snapshot.', 'Selectors remain factual binding evidence.', compact=true) }}
-                {{ metadata_collection.render('Mount Options', item.mount_options, 'list', 'No Mount Options', 'No mount option is represented in the committed snapshot.', 'Mount options remain factual storage configuration.', compact=true) }}
+                {% if item.type == 'StorageClass' %}
+                    {{ metadata_collection.render('Provisioner Parameters', item.parameters, 'sliders-horizontal', 'No Provisioner Parameters', 'No StorageClass parameter is represented in the committed snapshot.', 'Parameters are factual provisioner configuration.', compact=true) }}
+                {% endif %}
+                {% if item.type == 'PersistentVolumeClaim' %}
+                    {% set selector_empty_title = 'No Claim Selector' if item.selector_reported else 'Claim Selector Not Reported' %}
+                    {% set selector_empty_description = 'No PVC selector is configured in the committed snapshot.' if item.selector_reported else 'PVC specification evidence is unavailable for this committed snapshot.' %}
+                    {{ metadata_collection.render('Claim Selector', item.selector, 'list-filter', selector_empty_title, selector_empty_description, 'Selectors remain factual binding evidence.', compact=true) }}
+                {% endif %}
+                {% if item.type in ['StorageClass', 'PersistentVolume'] %}
+                    {% set mount_empty_title = 'No Mount Options' if item.mount_options_reported else 'Mount Options Not Reported' %}
+                    {% set mount_empty_description = 'No mount option is configured in the committed snapshot.' if item.mount_options_reported else 'Storage specification evidence is unavailable for this committed snapshot.' %}
+                    {{ metadata_collection.render('Mount Options', item.mount_options, 'list', mount_empty_title, mount_empty_description, 'Mount options remain factual storage configuration.', compact=true) }}
+                {% endif %}
+                {% if item.type == 'PersistentVolume' %}
+                    {{ metadata_collection.render('Volume Source Evidence', item.source, 'database-zap', 'Volume Source Not Reported', 'No persistent-volume source evidence is available.', 'Source values are factual provider configuration and may contain infrastructure identifiers.', compact=true) }}
+                {% endif %}
                 {{ metadata_collection.render('Storage Labels', item.labels, 'tags', 'No Storage Labels', 'No labels are represented in the committed snapshot.', 'Labels remain factual identity and controller metadata.', compact=true) }}
                 <div class="xl:col-span-2">{{ metadata_collection.render('Storage Annotations', item.annotations, 'notebook-tabs', 'No Storage Annotations', 'No annotations are represented in the committed snapshot.', 'Annotations may be managed by provisioners or storage controllers.', compact=true) }}</div>
             </div>
 
             <section class="grid gap-3 xl:col-span-2 xl:grid-cols-2">
-                {{ operational_callout.render('Committed Snapshot Boundary', 'This detail reports committed storage configuration and binding evidence. It does not report live usage, pressure, growth, or application I/O health.', 'database', 'info') }}
+                {{ operational_callout.render('Committed Snapshot Boundary', 'This detail reports committed storage configuration and binding evidence. It does not report live filesystem usage, pressure, growth, performance, durability, or application I/O health.', 'database', 'info') }}
                 {{ operational_callout.render(item.operational_context.title, item.operational_context.description, item.operational_context.icon, item.operational_context.tone, 'semantic') }}
             </section>
         </div>

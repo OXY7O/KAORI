@@ -674,10 +674,16 @@ def save_storage_inventory(
         synchronize_session=False,
     )
 
-    items = get_storage_inventory(
+    items, collection_evidence = get_storage_inventory(
         core_api,
         storage_api,
+        with_evidence=True,
     )
+
+    cluster_inventory = ClusterInventory.query.filter_by(cluster_id=cluster.id).one()
+    committed_evidence = dict(cluster_inventory.collection_evidence or {})
+    committed_evidence.update(collection_evidence)
+    cluster_inventory.collection_evidence = committed_evidence
 
     for item in items:
         storage_inventory = StorageInventory()

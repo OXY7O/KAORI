@@ -15,7 +15,7 @@ def test_resource_filter_forms_only_listen_to_their_own_controls() -> None:
 
 
 def test_page_size_changes_refresh_only_the_canonical_table_content() -> None:
-    for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses'):
+    for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses', 'storage'):
         template = read(f'app/templates/inventory/{resource}/partials/_table_content.html')
         form_start = template.index('<form hx-get=')
         form_end = template.index('</form>', form_start)
