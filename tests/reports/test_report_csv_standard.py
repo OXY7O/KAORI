@@ -57,6 +57,8 @@ def test_csv_formula_controls_are_escaped() -> None:
         assert protect_spreadsheet_formula(value).startswith("'")
     assert protect_spreadsheet_formula('normal') == 'normal'
     assert protect_spreadsheet_formula('42') == '42'
+    assert protect_spreadsheet_formula('-42.5') == '-42.5'
+    assert protect_spreadsheet_formula('+3.2e4') == '+3.2e4'
 
 
 def test_csv_writer_uses_utf8_bom_lf_and_stable_header_order(tmp_path: Path) -> None:
@@ -82,6 +84,16 @@ def test_csv_writer_uses_utf8_bom_lf_and_stable_header_order(tmp_path: Path) -> 
         rows = list(csv.DictReader(handle))
     assert tuple(rows[0]) == headers
     assert rows[0]['value'] == "'=danger"
+
+
+def test_csv_writer_preserves_negative_numeric_values(tmp_path: Path) -> None:
+    output = tmp_path / 'negative-number.csv'
+    _write_dict_rows(output, ('value',), [{'value': -42.5}, {'value': '-17.25'}])
+
+    with output.open(encoding=CSV_ENCODING, newline='') as handle:
+        rows = list(csv.DictReader(handle))
+    assert rows[0]['value'] == '-42.5'
+    assert rows[1]['value'] == '-17.25'
 
 
 def test_nested_csv_values_use_deterministic_json() -> None:

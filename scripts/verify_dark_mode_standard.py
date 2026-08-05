@@ -191,8 +191,9 @@ def verify() -> None:
     if OBSOLETE_TOPBAR.exists():
         raise AssertionError("Obsolete raw-Slate navigation/topbar.html still exists")
 
+    compiled_compact = re.sub(r"\s+", "", compiled)
     _require_tokens(
-        compiled,
+        compiled_compact,
         (
             "--kaori-surface-shell:#15121d",
             ".bg-surface-shell",

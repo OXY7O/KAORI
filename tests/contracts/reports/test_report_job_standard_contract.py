@@ -28,3 +28,22 @@ def test_report_worker_is_registered_and_notifies() -> None:
     assert 'JobExecutionContext' in task
     assert 'report_generation_completed' in task
     assert 'report_generation_failed' in task
+
+
+def test_schedule_worker_finalizes_the_exact_schedule_run() -> None:
+    service = read('app/reports/jobs/service.py')
+    task = read('app/reports/jobs/tasks.py')
+
+    assert "'schedule_run_id': schedule_run_id" in service
+    assert 'schedule_run_id: int | None = None' in task
+    assert 'db.session.get(ReportScheduleRun, schedule_run_id)' in task
+    assert 'run.report_id != report.id' in task
+    assert 'order_by(ReportScheduleRun.id.desc())' not in task
+
+
+def test_report_worker_hides_raw_delivery_exceptions_from_public_feedback() -> None:
+    task = read('app/reports/jobs/tasks.py')
+
+    assert '_PUBLIC_WORKER_FAILURE_MESSAGE' in task
+    assert 'message=public_failure_message' in task
+    assert '_notify(job, report, success=False, message=str(exc))' not in task

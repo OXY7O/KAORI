@@ -3,16 +3,26 @@ from __future__ import annotations
 from collections.abc import Mapping
 from datetime import UTC, date, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Final
 
 from openpyxl import Workbook
 from openpyxl.formatting.rule import CellIsRule, FormulaRule
-from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
+from openpyxl.styles import Font, PatternFill
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.table import Table, TableStyleInfo
 from openpyxl.worksheet.worksheet import Worksheet
 
-from app.reports.export.inventory_common import InventoryExportContext, get_inventory_rows
+from app.reports.export.inventory_common import (
+    InventoryExportContext,
+    InventoryExportDataset,
+    build_inventory_export_dataset,
+)
+from app.reports.export.tabular import (
+    TABULAR_EXPORT_STANDARD,
+    TABULAR_SCHEMA_VERSION,
+    protect_spreadsheet_formula,
+    serialize_tabular_value,
+)
 from app.reports.export.xlsx.standard import (
     INVENTORY_DATA_SHEET,
     INVENTORY_DICTIONARY_SHEET,
@@ -21,36 +31,98 @@ from app.reports.export.xlsx.standard import (
     INVENTORY_WORKBOOK_STANDARD,
     InventoryColumn,
     InventoryWorkbookProfile,
-    get_inventory_workbook_profile,
+)
+from app.reports.export.xlsx.style import (
+    KAORI_AMBER_FILL,
+    KAORI_AMBER_TEXT,
+    KAORI_BLUE_FILL,
+    KAORI_BLUE_TEXT,
+    KAORI_GREEN_FILL,
+    KAORI_GREEN_TEXT,
+    KAORI_RED_FILL,
+    KAORI_RED_TEXT,
+    KAORI_SLATE_FILL,
+    KAORI_SLATE_TEXT,
+    configure_sheet_page,
+    set_footer,
+    style_body,
+    style_context,
+    style_empty,
+    style_header,
+    style_subtitle,
+    style_title,
 )
 
-KAORI_PRIMARY = '7C3AED'
-KAORI_PRIMARY_DARK = '5B21B6'
-KAORI_PRIMARY_SOFT = 'EDE9FE'
-KAORI_INK = '0F172A'
-KAORI_MUTED = '64748B'
-KAORI_LINE = 'CBD5E1'
-KAORI_LINE_LIGHT = 'E2E8F0'
-KAORI_PANEL = 'F8FAFC'
-KAORI_GREEN_FILL = 'DCFCE7'
-KAORI_GREEN_TEXT = '166534'
-KAORI_AMBER_FILL = 'FEF3C7'
-KAORI_AMBER_TEXT = '92400E'
-KAORI_RED_FILL = 'FEE2E2'
-KAORI_RED_TEXT = '991B1B'
-KAORI_BLUE_FILL = 'DBEAFE'
-KAORI_BLUE_TEXT = '1E40AF'
-KAORI_SLATE_FILL = 'F1F5F9'
-KAORI_SLATE_TEXT = '475569'
+HEADER_ROW = 5
+DATA_START_ROW = 6
+_METADATA_HEADER_ROW: Final = 4
+_METADATA_DATA_START_ROW: Final = 5
+_DICTIONARY_HEADER_ROW: Final = 4
+_DICTIONARY_DATA_START_ROW: Final = 5
 
-_THIN_LINE = Side(style='thin', color=KAORI_LINE_LIGHT)
-_HEADER_BORDER = Border(
-    left=Side(style='thin', color=KAORI_PRIMARY_DARK),
-    right=Side(style='thin', color=KAORI_PRIMARY_DARK),
-    top=Side(style='thin', color=KAORI_PRIMARY_DARK),
-    bottom=Side(style='thin', color=KAORI_PRIMARY_DARK),
+
+_STATUS_GROUPS: Final = (
+    (
+        (
+            'Ready',
+            'Yes',
+            'Current',
+            'Valid',
+            'In Use',
+            'Fully Covered',
+            'Passed',
+            'Schedulable',
+            'Discovered',
+            'Active',
+            'Bound',
+            'Running',
+            'Available',
+        ),
+        KAORI_GREEN_FILL,
+        KAORI_GREEN_TEXT,
+    ),
+    (
+        (
+            'Review',
+            'Warning',
+            'Renewal Window',
+            'Expiring Soon',
+            'Unknown Usage',
+            'Partial Coverage',
+            'Stale',
+            'Pending',
+            'Terminating',
+        ),
+        KAORI_AMBER_FILL,
+        KAORI_AMBER_TEXT,
+    ),
+    (
+        (
+            'Critical',
+            'Critical Expiry',
+            'Expired',
+            'Invalid',
+            'Failed',
+            'Unavailable',
+            'Not Ready',
+            'No',
+            'Lost',
+            'Error',
+        ),
+        KAORI_RED_FILL,
+        KAORI_RED_TEXT,
+    ),
+    (
+        ('Unused', 'Information', 'Query Ready'),
+        KAORI_BLUE_FILL,
+        KAORI_BLUE_TEXT,
+    ),
+    (
+        ('Unknown', 'Not Available', 'Not Collected', 'Not Reported', 'TLS Disabled'),
+        KAORI_SLATE_FILL,
+        KAORI_SLATE_TEXT,
+    ),
 )
-_BODY_BORDER = Border(bottom=_THIN_LINE)
 
 
 def build_inventory_workbook(
@@ -60,8 +132,11 @@ def build_inventory_workbook(
     context: InventoryExportContext,
     output_path: Path,
 ) -> None:
-    profile = get_inventory_workbook_profile(report_type)
-    rows = get_inventory_rows(payload, profile)
+    dataset = build_inventory_export_dataset(
+        report_type=report_type,
+        payload=payload,
+        context=context,
+    )
 
     workbook = Workbook()
     inventory_sheet = workbook.active
@@ -69,14 +144,17 @@ def build_inventory_workbook(
     metadata_sheet = workbook.create_sheet(INVENTORY_METADATA_SHEET)
     dictionary_sheet = workbook.create_sheet(INVENTORY_DICTIONARY_SHEET)
 
-    _build_inventory_sheet(inventory_sheet, profile, rows)
-    _build_metadata_sheet(metadata_sheet, profile, payload, context, len(rows))
-    _build_dictionary_sheet(dictionary_sheet, profile)
+    _build_inventory_sheet(inventory_sheet, dataset)
+    _build_metadata_sheet(metadata_sheet, dataset, payload)
+    _build_dictionary_sheet(dictionary_sheet, dataset.profile, context)
 
-    workbook.properties.title = f'KAORI - {profile.title}'
-    workbook.properties.subject = profile.description
+    workbook.properties.title = f'KAORI - {dataset.profile.title}'
+    workbook.properties.subject = dataset.profile.description
     workbook.properties.creator = context.generated_by or 'KAORI'
-    workbook.properties.keywords = f'KAORI,{INVENTORY_WORKBOOK_FAMILY},{report_type},xlsx'
+    workbook.properties.keywords = (
+        f'KAORI,{INVENTORY_WORKBOOK_FAMILY},{report_type},xlsx,'
+        f'{TABULAR_EXPORT_STANDARD}'
+    )
     workbook.properties.created = _naive_datetime(context.generated_at)
     workbook.properties.modified = _naive_datetime(context.generated_at)
 
@@ -84,83 +162,52 @@ def build_inventory_workbook(
     workbook.save(output_path)
 
 
-
 def _build_inventory_sheet(
     sheet: Worksheet,
-    profile: InventoryWorkbookProfile,
-    rows: list[dict[str, Any]],
+    dataset: InventoryExportDataset,
 ) -> None:
+    profile = dataset.profile
     max_column = len(profile.columns)
     last_column = get_column_letter(max_column)
 
     sheet.merge_cells(f'A1:{last_column}1')
     title = sheet['A1']
     title.value = f'KAORI — {profile.title}'
-    title.font = Font(name='Aptos Display', size=16, bold=True, color='FFFFFF')
-    title.fill = PatternFill('solid', fgColor=KAORI_PRIMARY_DARK)
-    title.alignment = Alignment(horizontal='left', vertical='center')
+    style_title(title)
     sheet.row_dimensions[1].height = 30
 
     sheet.merge_cells(f'A2:{last_column}2')
     subtitle = sheet['A2']
     subtitle.value = profile.description
-    subtitle.font = Font(name='Aptos', size=10, color=KAORI_INK)
-    subtitle.fill = PatternFill('solid', fgColor=KAORI_PRIMARY_SOFT)
-    subtitle.alignment = Alignment(horizontal='left', vertical='center', wrap_text=True)
-    sheet.row_dimensions[2].height = 28
-    sheet.row_dimensions[3].height = 8
+    style_subtitle(subtitle)
+    sheet.row_dimensions[2].height = 30
+
+    sheet.merge_cells(f'A3:{last_column}3')
+    context_cell = sheet['A3']
+    context_cell.value = _inventory_context_line(dataset)
+    style_context(context_cell)
+    sheet.row_dimensions[3].height = 26
+    sheet.row_dimensions[4].height = 8
 
     for index, column_spec in enumerate(profile.columns, start=1):
-        cell = sheet.cell(row=4, column=index, value=column_spec.label)
-        cell.font = Font(name='Aptos', size=10, bold=True, color='FFFFFF')
-        cell.fill = PatternFill('solid', fgColor=KAORI_PRIMARY)
-        cell.border = _HEADER_BORDER
-        cell.alignment = Alignment(horizontal='left', vertical='center', wrap_text=True)
-        sheet.column_dimensions[get_column_letter(index)].width = column_spec.width
-    sheet.row_dimensions[4].height = 34
+        cell = sheet.cell(row=HEADER_ROW, column=index, value=column_spec.label)
+        style_header(cell)
+        sheet.column_dimensions[get_column_letter(index)].width = min(
+            max(float(column_spec.width), 10.0),
+            48.0,
+        )
+    sheet.row_dimensions[HEADER_ROW].height = 34
 
-    start_row = 5
-    for row_index, row in enumerate(rows, start=start_row):
-        for column_index, column_spec in enumerate(profile.columns, start=1):
-            cell = sheet.cell(
-                row=row_index,
-                column=column_index,
-                value=_cell_value(row.get(column_spec.key), column_spec),
-            )
-            cell.font = Font(name='Aptos', size=9, color=KAORI_INK)
-            cell.border = _BODY_BORDER
-            cell.alignment = Alignment(horizontal='left', vertical='center', wrap_text=True)
-            if column_spec.number_format:
-                cell.number_format = column_spec.number_format
-            if row_index % 2 == 0:
-                cell.fill = PatternFill('solid', fgColor=KAORI_PANEL)
-        sheet.row_dimensions[row_index].height = 30
+    if dataset.rows:
+        for row_index, row in enumerate(dataset.rows, start=DATA_START_ROW):
+            _write_inventory_row(sheet, row_index, row, profile)
+    else:
+        _write_empty_inventory_row(sheet, profile)
 
-    if not rows:
-        for column_index, column_spec in enumerate(profile.columns, start=1):
-            value = (
-                'No committed inventory rows were found for the selected reporting boundary.'
-                if column_index == 1
-                else None
-            )
-            cell = sheet.cell(row=5, column=column_index, value=value)
-            cell.font = Font(
-                name='Aptos',
-                size=9,
-                italic=column_index == 1,
-                color=KAORI_MUTED,
-            )
-            cell.fill = PatternFill('solid', fgColor=KAORI_PANEL)
-            cell.alignment = Alignment(horizontal='left', vertical='center', wrap_text=True)
-            cell.border = _BODY_BORDER
-            if column_spec.number_format:
-                cell.number_format = column_spec.number_format
-        sheet.row_dimensions[5].height = 28
-
-    final_row = max(start_row, start_row + len(rows) - 1)
+    final_row = max(DATA_START_ROW, DATA_START_ROW + dataset.row_count - 1)
     table = Table(
         displayName=f'{_safe_table_name(profile.report_type)}InventoryTable',
-        ref=f'A4:{last_column}{final_row}',
+        ref=f'A{HEADER_ROW}:{last_column}{final_row}',
     )
     table.tableStyleInfo = TableStyleInfo(
         name='TableStyleMedium4',
@@ -170,143 +217,250 @@ def _build_inventory_sheet(
         showColumnStripes=False,
     )
     sheet.add_table(table)
-    sheet.auto_filter.ref = f'A4:{last_column}{final_row}'
-    sheet.freeze_panes = profile.freeze_panes
-    sheet.sheet_view.showGridLines = False
-    sheet.auto_filter.ref = f'A4:{last_column}{final_row}'
+    sheet.auto_filter.ref = f'A{HEADER_ROW}:{last_column}{final_row}'
 
-    _apply_status_conditional_formatting(sheet, profile, start_row, max(start_row, final_row))
+    frozen_column = get_column_letter(max(1, len(profile.identity_columns) + 1))
+    sheet.freeze_panes = f'{frozen_column}{DATA_START_ROW}'
+
+    _apply_status_conditional_formatting(
+        sheet,
+        profile,
+        DATA_START_ROW,
+        final_row,
+    )
+    configure_sheet_page(
+        sheet,
+        print_area=f'A1:{last_column}{final_row}',
+        print_title_rows=f'$1:${HEADER_ROW}',
+        fit_to_width=_inventory_print_width(max_column),
+    )
+    set_footer(sheet, str(dataset.context.report_id))
+
+
+def _write_inventory_row(
+    sheet: Worksheet,
+    row_index: int,
+    row: Mapping[str, Any],
+    profile: InventoryWorkbookProfile,
+) -> None:
+    rendered_values: list[str] = []
+    for column_index, column_spec in enumerate(profile.columns, start=1):
+        value = _cell_value(row.get(column_spec.key), column_spec)
+        cell = sheet.cell(row=row_index, column=column_index, value=value)
+        style_body(cell, alternate=row_index % 2 == 0)
+        if column_spec.number_format:
+            cell.number_format = column_spec.number_format
+        rendered_values.append('' if value is None else str(value))
+
+    sheet.row_dimensions[row_index].height = _inventory_row_height(rendered_values)
+
+
+def _write_empty_inventory_row(
+    sheet: Worksheet,
+    profile: InventoryWorkbookProfile,
+) -> None:
+    message = 'No committed inventory rows were found for the selected reporting boundary.'
+    for column_index, column_spec in enumerate(profile.columns, start=1):
+        value = message if column_index == 1 else None
+        cell = sheet.cell(row=DATA_START_ROW, column=column_index, value=value)
+        style_empty(cell, primary=column_index == 1)
+        if column_spec.number_format:
+            cell.number_format = column_spec.number_format
+    sheet.row_dimensions[DATA_START_ROW].height = 28
 
 
 def _build_metadata_sheet(
     sheet: Worksheet,
-    profile: InventoryWorkbookProfile,
+    dataset: InventoryExportDataset,
     payload: Mapping[str, Any],
-    context: InventoryExportContext,
-    row_count: int,
 ) -> None:
+    context = dataset.context
+    profile = dataset.profile
+
     sheet.merge_cells('A1:D1')
     title = sheet['A1']
     title.value = 'KAORI Inventory Workbook Metadata'
-    title.font = Font(name='Aptos Display', size=16, bold=True, color='FFFFFF')
-    title.fill = PatternFill('solid', fgColor=KAORI_PRIMARY_DARK)
-    title.alignment = Alignment(horizontal='left', vertical='center')
+    style_title(title)
     sheet.row_dimensions[1].height = 30
+
+    sheet.merge_cells('A2:D2')
+    subtitle = sheet['A2']
+    subtitle.value = 'Canonical source, scope, schema, security, and parity controls.'
+    style_subtitle(subtitle)
+    sheet.row_dimensions[2].height = 26
+    sheet.row_dimensions[3].height = 8
 
     headers = ('Field', 'Value', 'Applies To', 'Notes')
     for index, label in enumerate(headers, start=1):
-        cell = sheet.cell(row=3, column=index, value=label)
-        _style_header_cell(cell)
-    sheet.row_dimensions[3].height = 28
+        cell = sheet.cell(row=_METADATA_HEADER_ROW, column=index, value=label)
+        style_header(cell)
+    sheet.row_dimensions[_METADATA_HEADER_ROW].height = 28
 
     metadata = [
         ('Workbook Standard', INVENTORY_WORKBOOK_STANDARD, 'All sheets', 'Canonical reusable KAORI Inventory Excel contract.'),
-        ('Report Reference', str(context.report_id), 'Workbook', 'Stable KAORI document reference; the internal database key is not exposed.'),
+        ('Tabular Standard', TABULAR_EXPORT_STANDARD, 'Workbook', 'Shared CSV/XLSX source, identity, and metadata contract.'),
+        ('Schema Version', TABULAR_SCHEMA_VERSION, 'Workbook', 'Public tabular schema version.'),
+        ('Report Reference', str(context.report_id), 'Workbook', 'Stable KAORI document reference; internal database keys are not exposed.'),
         ('Report Name', context.report_name, 'Workbook', 'User-visible report request name.'),
         ('Report Type', context.report_type, 'Workbook', profile.title),
         ('Report Family', INVENTORY_WORKBOOK_FAMILY, 'Workbook', 'Inventory is table-first and excludes analytical recommendations.'),
-        ('Primary Format', 'XLSX', 'Workbook', 'Native Excel workbook with tables, filters, freeze panes, and field dictionary.'),
+        ('Primary Format', 'XLSX', 'Workbook', 'Native Excel workbook with one canonical Inventory table.'),
+        ('CSV Parity', 'Enabled', 'Inventory', 'CSV and XLSX use the same InventoryExportDataset and profile order.'),
+        ('Classification', context.classification, 'Workbook', 'Artifact handling classification.'),
         ('Generated At', context.generated_at, 'Workbook', 'Artifact generation timestamp.'),
-        ('Generated By', context.generated_by or 'Not Available', 'Workbook', 'Persisted report owner snapshot.'),
-        ('Classification', context.classification, 'Workbook', 'Report classification.'),
-        ('Cluster Scope', context.cluster_scope, 'Inventory', 'Selected cluster boundary.'),
-        ('Namespace Scope', context.namespace_scope, 'Inventory', 'Selected namespace boundary.'),
-        ('Reporting Period', context.period_label, 'Inventory', 'Inventory workbooks use the committed snapshot period.'),
+        ('Generated By', context.generated_by, 'Workbook', 'Committed user display-name or username snapshot.'),
+        ('Selected Cluster', context.cluster_scope, 'Inventory', 'Mandatory single-cluster boundary.'),
+        ('Selected Namespace', context.namespace_scope, 'Inventory', 'All Namespaces remains inside the selected cluster.'),
+        ('Reporting Period', context.period_label, 'Inventory', 'Inventory reports use the committed snapshot boundary.'),
         ('Data Cut-off', context.data_cutoff or payload.get('data_cutoff') or payload.get('collected_at'), 'Inventory', 'Committed evidence cut-off.'),
-        ('Source', context.source_label, 'Inventory', 'No live Kubernetes API call is performed during workbook generation.'),
-        ('Total Rows', row_count, 'Inventory', 'Number of committed rows exported.'),
-        ('Missing Text Rule', 'Not Available', 'Inventory', 'Missing text evidence remains explicit.'),
+        ('Source', context.source_label, 'Inventory', 'No live Kubernetes API call occurs during workbook rendering.'),
+        ('Total Rows', dataset.row_count, 'Inventory', 'Number of committed inventory rows exported.'),
+        ('Identity Columns', ', '.join(profile.identity_columns) or 'None', 'Inventory', 'Leading columns used for stable record identity and frozen-column behavior.'),
+        ('Missing Text Rule', 'Profile-defined; normally Not Available', 'Inventory', 'Missing text evidence remains explicit.'),
         ('Missing Numeric Rule', 'Blank', 'Inventory', 'Numeric columns remain numeric and sortable.'),
         ('Horizontal Alignment', 'Left', 'Inventory', 'Canonical KAORI table alignment.'),
         ('Vertical Alignment', 'Middle', 'Inventory', 'Text is vertically centered in every table row.'),
         ('Private Key Export', 'Excluded', 'TLS Inventory', 'tls.key, Secret values, and recoverable key material are never exported.'),
     ]
 
-    for row_index, metadata_row in enumerate(metadata, start=4):
+    for row_index, metadata_row in enumerate(metadata, start=_METADATA_DATA_START_ROW):
         for column_index, value in enumerate(metadata_row, start=1):
             cell = sheet.cell(row=row_index, column=column_index, value=_metadata_value(value))
-            _style_body_cell(cell, alternate=row_index % 2 == 0)
+            style_body(cell, alternate=row_index % 2 == 0)
             if isinstance(value, datetime):
                 cell.number_format = 'yyyy-mm-dd hh:mm'
-        sheet.row_dimensions[row_index].height = 26
+        sheet.row_dimensions[row_index].height = 28
 
-    end_row = 3 + len(metadata)
-    table = Table(displayName='InventoryWorkbookMetadataTable', ref=f'A3:D{end_row}')
+    end_row = _METADATA_HEADER_ROW + len(metadata)
+    table = Table(
+        displayName='InventoryWorkbookMetadataTable',
+        ref=f'A{_METADATA_HEADER_ROW}:D{end_row}',
+    )
     table.tableStyleInfo = TableStyleInfo(name='TableStyleMedium4', showRowStripes=False)
     sheet.add_table(table)
-    sheet.freeze_panes = 'A4'
-    sheet.sheet_view.showGridLines = False
-    for column, width in {'A': 25, 'B': 40, 'C': 22, 'D': 58}.items():
+    sheet.freeze_panes = f'A{_METADATA_DATA_START_ROW}'
+    for column, width in {'A': 25, 'B': 42, 'C': 22, 'D': 58}.items():
         sheet.column_dimensions[column].width = width
+    configure_sheet_page(
+        sheet,
+        print_area=f'A1:D{end_row}',
+        print_title_rows=f'$1:${_METADATA_HEADER_ROW}',
+        fit_to_width=1,
+    )
+    set_footer(sheet, str(context.report_id))
 
 
 def _build_dictionary_sheet(
     sheet: Worksheet,
     profile: InventoryWorkbookProfile,
+    context: InventoryExportContext,
 ) -> None:
-    sheet.merge_cells('A1:F1')
+    sheet.merge_cells('A1:H1')
     title = sheet['A1']
     title.value = 'KAORI Inventory Field Dictionary'
-    title.font = Font(name='Aptos Display', size=16, bold=True, color='FFFFFF')
-    title.fill = PatternFill('solid', fgColor=KAORI_PRIMARY_DARK)
-    title.alignment = Alignment(horizontal='left', vertical='center')
+    style_title(title)
     sheet.row_dimensions[1].height = 30
 
-    headers = ('Report Type', 'Column', 'Definition', 'Data Type', 'Source / Rule', 'Missing Value Rule')
-    for index, label in enumerate(headers, start=1):
-        cell = sheet.cell(row=3, column=index, value=label)
-        _style_header_cell(cell)
-    sheet.row_dimensions[3].height = 28
+    sheet.merge_cells('A2:H2')
+    subtitle = sheet['A2']
+    subtitle.value = f'{profile.title} — canonical field order, meaning, source, and formatting.'
+    style_subtitle(subtitle)
+    sheet.row_dimensions[2].height = 26
+    sheet.row_dimensions[3].height = 8
 
-    for row_index, column_spec in enumerate(profile.columns, start=4):
+    headers = (
+        'Field Key',
+        'Column',
+        'Definition',
+        'Data Type',
+        'Source / Rule',
+        'Missing Value Rule',
+        'Semantic Role',
+        'Excel Number Format',
+    )
+    for index, label in enumerate(headers, start=1):
+        cell = sheet.cell(row=_DICTIONARY_HEADER_ROW, column=index, value=label)
+        style_header(cell)
+    sheet.row_dimensions[_DICTIONARY_HEADER_ROW].height = 30
+
+    for row_index, column_spec in enumerate(profile.columns, start=_DICTIONARY_DATA_START_ROW):
         values = (
-            profile.report_type,
+            column_spec.key,
             column_spec.label,
             column_spec.definition,
             column_spec.data_type,
             column_spec.source,
             column_spec.missing_value_rule,
+            column_spec.semantic_type or 'None',
+            column_spec.number_format or 'General',
         )
         for column_index, value in enumerate(values, start=1):
             cell = sheet.cell(row=row_index, column=column_index, value=value)
-            _style_body_cell(cell, alternate=row_index % 2 == 0)
-        sheet.row_dimensions[row_index].height = 30
+            style_body(cell, alternate=row_index % 2 == 0)
+        sheet.row_dimensions[row_index].height = 32
 
-    end_row = 3 + len(profile.columns)
-    table = Table(displayName=f'{_safe_table_name(profile.report_type)}FieldDictionaryTable', ref=f'A3:F{end_row}')
+    end_row = _DICTIONARY_HEADER_ROW + len(profile.columns)
+    table = Table(
+        displayName=f'{_safe_table_name(profile.report_type)}FieldDictionaryTable',
+        ref=f'A{_DICTIONARY_HEADER_ROW}:H{end_row}',
+    )
     table.tableStyleInfo = TableStyleInfo(name='TableStyleMedium4', showRowStripes=False)
     sheet.add_table(table)
-    sheet.freeze_panes = 'A4'
-    sheet.sheet_view.showGridLines = False
-    for column, width in {'A': 24, 'B': 28, 'C': 58, 'D': 16, 'E': 36, 'F': 22}.items():
+    sheet.freeze_panes = f'A{_DICTIONARY_DATA_START_ROW}'
+    for column, width in {
+        'A': 25,
+        'B': 28,
+        'C': 58,
+        'D': 16,
+        'E': 36,
+        'F': 22,
+        'G': 20,
+        'H': 20,
+    }.items():
         sheet.column_dimensions[column].width = width
+    configure_sheet_page(
+        sheet,
+        print_area=f'A1:H{end_row}',
+        print_title_rows=f'$1:${_DICTIONARY_HEADER_ROW}',
+        fit_to_width=1,
+    )
+    set_footer(sheet, str(context.report_id))
 
 
-def _style_header_cell(cell: Any) -> None:
-    cell.font = Font(name='Aptos', size=10, bold=True, color='FFFFFF')
-    cell.fill = PatternFill('solid', fgColor=KAORI_PRIMARY)
-    cell.border = _HEADER_BORDER
-    cell.alignment = Alignment(horizontal='left', vertical='center', wrap_text=True)
+def _inventory_context_line(dataset: InventoryExportDataset) -> str:
+    context = dataset.context
+    cutoff = serialize_tabular_value(context.data_cutoff) or 'Not Available'
+    return (
+        f'Reference: {context.report_id}  |  Cluster: {context.cluster_scope}  |  '
+        f'Namespace: {context.namespace_scope}  |  Data Cut-off: {cutoff}  |  '
+        f'Rows: {dataset.row_count}'
+    )
 
 
-def _style_body_cell(cell: Any, *, alternate: bool) -> None:
-    cell.font = Font(name='Aptos', size=9, color=KAORI_INK)
-    cell.border = _BODY_BORDER
-    cell.alignment = Alignment(horizontal='left', vertical='center', wrap_text=True)
-    if alternate:
-        cell.fill = PatternFill('solid', fgColor=KAORI_PANEL)
+def _inventory_print_width(column_count: int) -> int:
+    if column_count <= 12:
+        return 1
+    if column_count <= 24:
+        return 2
+    return 3
+
+
+def _inventory_row_height(values: list[str]) -> float:
+    longest = max((len(value) for value in values), default=0)
+    estimated_lines = max(1, min(4, (longest // 48) + 1))
+    return float(min(60, 18 + ((estimated_lines - 1) * 12)))
 
 
 def _cell_value(value: Any, column_spec: InventoryColumn) -> Any:
     if value is None or value == '':
         if column_spec.data_type in {'integer', 'number', 'decimal'}:
             return None
-        return 'Not Available'
+        return column_spec.missing_value_rule or 'Not Available'
 
     if column_spec.data_type == 'boolean':
         if isinstance(value, bool):
             return 'Yes' if value else 'No'
-        return value
+        return _safe_text_value(value)
 
     if column_spec.data_type in {'integer', 'number', 'decimal'}:
         return _numeric_value(value)
@@ -316,15 +470,15 @@ def _cell_value(value: Any, column_spec: InventoryColumn) -> Any:
             return _naive_datetime(value)
         if isinstance(value, date):
             return value
-        return value
+        return _safe_text_value(value)
 
-    if isinstance(value, (list, tuple, set)):
-        rendered = ', '.join(str(item) for item in value if item not in {None, ''})
-        return rendered or 'Not Available'
-    if isinstance(value, Mapping):
-        rendered = ', '.join(f'{key}={item}' for key, item in sorted(value.items()))
-        return rendered or 'Not Available'
-    return value
+    if isinstance(value, (Mapping, list, tuple, set)):
+        return protect_spreadsheet_formula(serialize_tabular_value(value))
+    return _safe_text_value(value)
+
+
+def _safe_text_value(value: Any) -> str:
+    return protect_spreadsheet_formula(str(value))
 
 
 def _numeric_value(value: Any) -> int | float | None:
@@ -345,9 +499,13 @@ def _numeric_value(value: Any) -> int | float | None:
 def _metadata_value(value: Any) -> Any:
     if isinstance(value, datetime):
         return _naive_datetime(value)
+    if isinstance(value, date):
+        return value
     if value is None or value == '':
         return 'Not Available'
-    return value
+    if isinstance(value, (Mapping, list, tuple, set)):
+        return protect_spreadsheet_formula(serialize_tabular_value(value))
+    return _safe_text_value(value) if isinstance(value, str) else value
 
 
 def _naive_datetime(value: datetime) -> datetime:
@@ -366,65 +524,94 @@ def _apply_status_conditional_formatting(
     start_row: int,
     end_row: int,
 ) -> None:
-    label_to_index = {column.key: index for index, column in enumerate(profile.columns, start=1)}
-    for key in profile.status_columns:
-        column_index = label_to_index.get(key)
-        if column_index is None:
+    for column_index, column_spec in enumerate(profile.columns, start=1):
+        semantic_type = column_spec.semantic_type
+        if semantic_type is None:
             continue
+
         letter = get_column_letter(column_index)
         range_ref = f'{letter}{start_row}:{letter}{max(start_row, end_row)}'
         first_cell = f'{letter}{start_row}'
-        for values, fill, font in (
-            (
-                ('Ready', 'Yes', 'Current', 'Valid', 'In Use', 'Fully Covered', 'Passed', 'Schedulable', 'Discovered'),
-                KAORI_GREEN_FILL,
-                KAORI_GREEN_TEXT,
-            ),
-            (
-                ('Review', 'Warning', 'Renewal Window', 'Expiring Soon', 'Unknown Usage', 'Partial Coverage', 'Stale'),
-                KAORI_AMBER_FILL,
-                KAORI_AMBER_TEXT,
-            ),
-            (
-                ('Critical', 'Critical Expiry', 'Expired', 'Invalid', 'Failed', 'Unavailable', 'Not Ready', 'No'),
+
+        if semantic_type == 'negative_condition':
+            _add_value_group_rule(
+                sheet,
+                range_ref,
+                first_cell,
+                ('True', 'Yes', 'Active'),
                 KAORI_RED_FILL,
                 KAORI_RED_TEXT,
-            ),
-            (
-                ('Unused', 'Information', 'Query Ready'),
-                KAORI_BLUE_FILL,
-                KAORI_BLUE_TEXT,
-            ),
-            (
-                ('Unknown', 'Not Available', 'Not Collected', 'Not Reported', 'TLS Disabled'),
-                KAORI_SLATE_FILL,
-                KAORI_SLATE_TEXT,
-            ),
-        ):
-            expression = ','.join(f'"{value}"' for value in values)
-            formula = f'ISNUMBER(MATCH({first_cell},{{{expression}}},0))'
-            sheet.conditional_formatting.add(
-                range_ref,
-                FormulaRule(
-                    formula=[formula],
-                    fill=PatternFill('solid', fgColor=fill),
-                    font=Font(color=font, bold=True),
-                ),
             )
+            _add_value_group_rule(
+                sheet,
+                range_ref,
+                first_cell,
+                ('False', 'No', 'Inactive'),
+                KAORI_GREEN_FILL,
+                KAORI_GREEN_TEXT,
+            )
+            continue
 
-    days_index = label_to_index.get('days_remaining')
-    if days_index:
-        letter = get_column_letter(days_index)
-        range_ref = f'{letter}{start_row}:{letter}{max(start_row, end_row)}'
-        sheet.conditional_formatting.add(
-            range_ref,
-            CellIsRule(operator='lessThan', formula=['0'], fill=PatternFill('solid', fgColor=KAORI_RED_FILL), font=Font(color=KAORI_RED_TEXT, bold=True)),
-        )
-        sheet.conditional_formatting.add(
-            range_ref,
-            CellIsRule(operator='between', formula=['0', '7'], fill=PatternFill('solid', fgColor=KAORI_RED_FILL), font=Font(color=KAORI_RED_TEXT, bold=True)),
-        )
-        sheet.conditional_formatting.add(
-            range_ref,
-            CellIsRule(operator='between', formula=['8', '30'], fill=PatternFill('solid', fgColor=KAORI_AMBER_FILL), font=Font(color=KAORI_AMBER_TEXT, bold=True)),
-        )
+        for values, fill, font in _STATUS_GROUPS:
+            _add_value_group_rule(sheet, range_ref, first_cell, values, fill, font)
+
+    days_index = next(
+        (
+            index
+            for index, column in enumerate(profile.columns, start=1)
+            if column.key == 'days_remaining'
+        ),
+        None,
+    )
+    if days_index is None:
+        return
+
+    letter = get_column_letter(days_index)
+    range_ref = f'{letter}{start_row}:{letter}{max(start_row, end_row)}'
+    sheet.conditional_formatting.add(
+        range_ref,
+        CellIsRule(
+            operator='lessThan',
+            formula=['0'],
+            fill=PatternFill('solid', fgColor=KAORI_RED_FILL),
+            font=Font(color=KAORI_RED_TEXT, bold=True),
+        ),
+    )
+    sheet.conditional_formatting.add(
+        range_ref,
+        CellIsRule(
+            operator='between',
+            formula=['0', '7'],
+            fill=PatternFill('solid', fgColor=KAORI_RED_FILL),
+            font=Font(color=KAORI_RED_TEXT, bold=True),
+        ),
+    )
+    sheet.conditional_formatting.add(
+        range_ref,
+        CellIsRule(
+            operator='between',
+            formula=['8', '30'],
+            fill=PatternFill('solid', fgColor=KAORI_AMBER_FILL),
+            font=Font(color=KAORI_AMBER_TEXT, bold=True),
+        ),
+    )
+
+
+def _add_value_group_rule(
+    sheet: Worksheet,
+    range_ref: str,
+    first_cell: str,
+    values: tuple[str, ...],
+    fill: str,
+    font: str,
+) -> None:
+    expression = ','.join(f'"{value}"' for value in values)
+    formula = f'ISNUMBER(MATCH({first_cell},{{{expression}}},0))'
+    sheet.conditional_formatting.add(
+        range_ref,
+        FormulaRule(
+            formula=[formula],
+            fill=PatternFill('solid', fgColor=fill),
+            font=Font(color=font, bold=True),
+        ),
+    )

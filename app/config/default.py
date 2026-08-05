@@ -736,43 +736,21 @@ class Config:
     # S3-compatible backend configuration.
     # AWS S3: leave REPORT_S3_ENDPOINT_URL empty.
     # MinIO: set REPORT_S3_ENDPOINT_URL, for example http://minio:9000.
-    REPORT_S3_BUCKET = _env_str(
-        'REPORT_S3_BUCKET',
-        '',
-    )
-
-    REPORT_S3_REGION = _env_str(
-        'REPORT_S3_REGION',
-        'us-east-1',
-    )
-
-    REPORT_S3_ACCESS_KEY_ID = _env_optional_str(
-        'REPORT_S3_ACCESS_KEY_ID',
-    )
-
-    REPORT_S3_SECRET_ACCESS_KEY = _env_optional_str(
-        'REPORT_S3_SECRET_ACCESS_KEY',
-    )
-
-    REPORT_S3_ENDPOINT_URL = _env_optional_str(
-        'REPORT_S3_ENDPOINT_URL',
-    )
+    REPORT_S3_BUCKET = _env_str('REPORT_S3_BUCKET', '')
+    REPORT_S3_REGION = _env_str('REPORT_S3_REGION', 'us-east-1')
+    REPORT_S3_ACCESS_KEY_ID = _env_optional_str('REPORT_S3_ACCESS_KEY_ID')
+    REPORT_S3_SECRET_ACCESS_KEY = _env_optional_str('REPORT_S3_SECRET_ACCESS_KEY')
+    REPORT_S3_ENDPOINT_URL = _env_optional_str('REPORT_S3_ENDPOINT_URL')
 
     # Optional root prefix inside bucket. Keep empty by default because the
     # generated object key already starts with reports/YYYY/MM/...
-    REPORT_S3_PREFIX = (
-        _env_str(
-            'REPORT_S3_PREFIX',
-            '',
-        )
-        .strip()
-        .strip('/')
-    )
+    REPORT_S3_PREFIX = _env_str('REPORT_S3_PREFIX', '').strip().strip('/')
+    REPORT_S3_FORCE_PATH_STYLE = _env_bool('REPORT_S3_FORCE_PATH_STYLE', False)
 
-    REPORT_S3_FORCE_PATH_STYLE = _env_bool(
-        'REPORT_S3_FORCE_PATH_STYLE',
-        False,
-    )
+    REPORT_S3_CONNECT_TIMEOUT_SECONDS = _bounded_env_int('REPORT_S3_CONNECT_TIMEOUT_SECONDS', 2, 1, 30)
+    REPORT_S3_READ_TIMEOUT_SECONDS = _bounded_env_int('REPORT_S3_READ_TIMEOUT_SECONDS', 3, 1, 60)
+    REPORT_S3_MAX_ATTEMPTS = _bounded_env_int('REPORT_S3_MAX_ATTEMPTS', 1, 1, 5)
+    REPORT_STORAGE_STATUS_CACHE_SECONDS = _bounded_env_int('REPORT_STORAGE_STATUS_CACHE_SECONDS', 15, 0, 300)
 
     # Report artifact retention and cleanup policy. MVP2 defines the policy and
     # exposes dry-run visibility in the UI; destructive deletion remains guarded

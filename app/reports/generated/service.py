@@ -9,8 +9,8 @@ from sqlalchemy import Select, func, or_, select
 
 from app.extensions.db import db
 from app.jobs.presentation import present_job_execution
-from app.models.job import JobExecution
 from app.models.cluster import Cluster
+from app.models.job import JobExecution
 from app.models.report import Report
 from app.models.user import User
 from app.reports.catalog import REPORT_TYPE_SPECS
@@ -18,8 +18,8 @@ from app.reports.export.artifacts import get_report_artifact_format
 from app.reports.generate.service import REPORT_TYPE_OPTIONS
 from app.reports.storage.service import (
     get_configured_storage_backend_name,
-    parse_report_storage_uri,
-    report_file_exists,
+    get_report_storage_backend_status,
+    probe_report_artifact,
 )
 
 REPORT_TYPE_LABELS = {spec.value: spec.label for spec in REPORT_TYPE_SPECS}
@@ -76,6 +76,7 @@ PENDING_STATUSES = [
 def get_generated_reports_payload(
     query_args: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
+    backend_status = get_report_storage_backend_status()
     selected_filters = get_selected_filters(
         query_args,
     )
@@ -90,12 +91,19 @@ def get_generated_reports_payload(
         for item in reports
         if item.get('file_path') and not bool(item.get('storage_reachable', True))
     )
-    storage_notice = (
-        f'{unavailable_artifacts} artifact(s) on this page could not be verified because the storage backend is unreachable. '
-        'Report records remain available; download actions stay paused until connectivity returns.'
-        if unavailable_artifacts
-        else None
-    )
+    if not bool(backend_status.get('reachable', False)):
+        storage_notice = str(backend_status.get('description') or '').strip() or (
+            'Report storage is temporarily unavailable. Report records remain available; download actions stay paused '
+            'until connectivity returns.'
+        )
+    elif unavailable_artifacts:
+        storage_notice = (
+            f'{unavailable_artifacts} artifact(s) on this page could not be verified because '
+            'their storage backend is unreachable. Report records remain available; download '
+            'actions stay paused until connectivity returns.'
+        )
+    else:
+        storage_notice = None
 
     return {
         'page_title': 'Generated Reports',
@@ -112,6 +120,7 @@ def get_generated_reports_payload(
         ),
         'lifecycle_status': get_lifecycle_status(),
         'storage_context': get_storage_context(),
+        'backend_status': backend_status,
         'hero_posture': get_hero_posture(),
         'storage_notice': storage_notice,
     }
@@ -601,6 +610,7 @@ def get_storage_context(
     artifact_access: Mapping[str, Any] | None = None,
 ) -> list[dict[str, str]]:
     backend_name = _get_active_storage_backend_name()
+    backend_status = get_report_storage_backend_status(backend_name)
     ready_reports = _count_reports_by_status(
         [
             'ready',
@@ -631,6 +641,10 @@ def get_storage_context(
             f"KAORI could not reach {artifact_access.get('backend_label', 'Report Storage')} "
             'to verify this report artifact. The report record remains available for review.'
         )
+    elif artifact_access is None and not bool(backend_status.get('reachable', False)):
+        storage_tone = str(backend_status.get('tone') or 'amber')
+        storage_status = str(backend_status.get('status') or 'Unavailable')
+        storage_description = str(backend_status.get('description') or storage_description)
     elif missing_artifacts > 0:
         storage_tone = 'amber'
         storage_status = 'Review needed'
@@ -880,7 +894,11 @@ def _serialize_report(
         report.file_path,
     )
     artifact_format = get_report_artifact_format(report.output_format)
-    can_generate_artifact = report.status in ['requested', 'failed', 'ready']
+    active_backend_status = get_report_storage_backend_status()
+    can_generate_artifact = (
+        report.status in ['requested', 'failed', 'ready']
+        and bool(active_backend_status.get('write_available', False))
+    )
     can_download_artifact = (
         report.status in ['ready', 'archived']
         and bool(report.file_path)
@@ -1783,9 +1801,10 @@ def _count_missing_artifacts() -> int:
             missing_count += 1
             continue
 
-        if not _report_file_exists(
-            report.file_path,
-        ):
+        artifact_access = _probe_report_file(report.file_path)
+        if not bool(artifact_access.get('reachable', True)):
+            continue
+        if not bool(artifact_access.get('exists', False)):
             missing_count += 1
 
     return missing_count
@@ -1804,44 +1823,7 @@ def _report_file_exists(
 def _probe_report_file(
     file_path: str | None,
 ) -> dict[str, Any]:
-    if not file_path:
-        return {
-            'exists': False,
-            'reachable': True,
-            'backend': 'none',
-            'backend_label': 'Report Storage',
-            'state': 'not_generated',
-        }
-
-    backend_name = 'unknown'
-
-    try:
-        backend_name, _object_key = parse_report_storage_uri(
-            file_path,
-        )
-        file_exists = report_file_exists(
-            file_path,
-        )
-    except Exception:  # External storage failures must not break report detail rendering.
-        current_app.logger.warning(
-            'Unable to verify generated report artifact in storage backend.',
-            exc_info=True,
-        )
-        return {
-            'exists': False,
-            'reachable': False,
-            'backend': backend_name,
-            'backend_label': _format_storage_backend_label(backend_name),
-            'state': 'unavailable',
-        }
-
-    return {
-        'exists': bool(file_exists),
-        'reachable': True,
-        'backend': backend_name,
-        'backend_label': _format_storage_backend_label(backend_name),
-        'state': 'available' if file_exists else 'missing',
-    }
+    return probe_report_artifact(file_path)
 
 
 def _format_storage_backend_label(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from typing import Any
 
 from celery import shared_task
@@ -41,11 +42,18 @@ def _notify(job: JobExecution, report: Report, *, success: bool, message: str) -
         )
 
 
-def _finalize_schedule(report: Report, *, success: bool, message: str) -> None:
-    run = ReportScheduleRun.query.filter_by(report_id=report.id).order_by(ReportScheduleRun.id.desc()).first()
-    if run is None:
+def _finalize_schedule(
+    report: Report,
+    *,
+    schedule_run_id: int | None,
+    success: bool,
+    message: str,
+) -> None:
+    if schedule_run_id is None:
         return
-    from datetime import UTC, datetime
+    run = db.session.get(ReportScheduleRun, schedule_run_id)
+    if run is None or run.report_id != report.id:
+        return
     run.status = 'success' if success else 'failed'
     run.finished_at = datetime.now(UTC)
     run.error_message = None if success else message
@@ -59,6 +67,12 @@ def _finalize_schedule(report: Report, *, success: bool, message: str) -> None:
     db.session.commit()
 
 
+_PUBLIC_WORKER_FAILURE_MESSAGE = (
+    'KAORI could not complete report generation or scheduled delivery. Review report scope, '
+    'source readiness, storage readiness, delivery configuration, and worker logs before retrying.'
+)
+
+
 @shared_task(
     bind=True,
     name='app.reports.jobs.tasks.generate_report_job',
@@ -70,6 +84,7 @@ def generate_report_job(
     self,
     *,
     report_id: int,
+    schedule_run_id: int | None = None,
     job_execution_id: int | None = None,
 ) -> dict[str, Any]:
     lifecycle = JobExecutionContext(str(self.request.id), job_execution_id)
@@ -80,15 +95,23 @@ def generate_report_job(
         lifecycle.fail(exc, error_code='report_not_found')
         raise exc
 
+    public_failure_message = _PUBLIC_WORKER_FAILURE_MESSAGE
+
     try:
         lifecycle.checkpoint(current=1, total=4, message='Resolving selected-cluster evidence boundary.')
         lifecycle.checkpoint(current=2, total=4, message='Rendering the governed report artifact.')
         success, message = generate_report_artifact(report_id)
         report = db.session.get(Report, report_id) or report
         if not success:
+            public_failure_message = message
             raise RuntimeError(message)
         lifecycle.checkpoint(current=3, total=4, message='Committing artifact metadata and delivery state.')
-        _finalize_schedule(report, success=True, message=message)
+        _finalize_schedule(
+            report,
+            schedule_run_id=schedule_run_id,
+            success=True,
+            message=message,
+        )
         lifecycle.succeed(
             result_type='report_artifact',
             result_reference=report.file_path,
@@ -109,9 +132,14 @@ def generate_report_job(
     except Exception as exc:
         db.session.rollback()
         report = db.session.get(Report, report_id) or report
-        _finalize_schedule(report, success=False, message=str(exc))
+        _finalize_schedule(
+            report,
+            schedule_run_id=schedule_run_id,
+            success=False,
+            message=public_failure_message,
+        )
         lifecycle.fail(exc, error_code='report_generation_failed')
         job = db.session.get(JobExecution, job_execution_id) if job_execution_id else None
         if job is not None:
-            _notify(job, report, success=False, message=str(exc))
+            _notify(job, report, success=False, message=public_failure_message)
         raise

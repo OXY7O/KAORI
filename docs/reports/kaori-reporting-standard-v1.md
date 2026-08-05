@@ -107,7 +107,7 @@ A PDF artifact is valid only when it exists, has a plausible size, and starts wi
 
 ## 7. XLSX default style — Inventory
 
-Inventory XLSX uses `kaori-inventory-xlsx-v1.0` and exactly three reusable sheets:
+Inventory XLSX uses `kaori-inventory-xlsx-v2.0` and exactly three reusable sheets:
 
 1. `Inventory` — report-specific columns from the canonical inventory profile;
 2. `Metadata` — scope, source, cutoff, ownership, format, security, and standard information;
@@ -124,11 +124,11 @@ Default workbook rules:
 - empty datasets retain valid headers/table structure and show an explicit no-data message;
 - private keys and Secret values are always excluded.
 
-The reusable schema is defined in `app/reports/export/xlsx/standard.py`; shared collection/context/row logic is in `app/reports/export/inventory_common.py`.
+The reusable schema is defined in `app/reports/export/xlsx/standard.py`; shared collection/context/row logic is in `app/reports/export/inventory_common.py`. The cross-format contract is defined in [`kaori-tabular-export-standard-v2.md`](kaori-tabular-export-standard-v2.md).
 
 ## 8. CSV default style — Analytics and Inventory
 
-CSV standard identifier: `KAORI Reporting CSV v1`.
+CSV standard identifier: `kaori-reporting-csv-v2.0`.
 
 Common rules:
 
@@ -138,13 +138,13 @@ Common rules:
 - quoting/escaping: Python `csv.DictWriter`;
 - stable header order;
 - ISO-8601 date/time values;
-- semicolon-separated serialization for list/dict values;
+- compact deterministic JSON serialization for list/dict values;
 - cells beginning with spreadsheet formula control characters are escaped;
 - no decorative rows, merged cells, or format-specific presentation logic.
 
 Analytics CSV is a normalized long-form export of the same `ReportDocument` used by PDF. It contains source metrics, section status, metrics, findings, table cells, notes, and methodology records.
 
-Inventory CSV contains common report metadata, `row_number`, and the same report-specific columns and ordering used by the XLSX Inventory sheet. An empty inventory dataset produces a header-only CSV, which is the canonical machine-readable no-data representation.
+Inventory CSV contains common report metadata, `record_type`, `record_reference`, `row_number`, and the same report-specific columns and ordering used by the XLSX Inventory sheet. An empty inventory dataset produces one explicit `no_data` row so metadata and the selected-cluster boundary remain auditable.
 
 ## 9. Template and schedule rules
 

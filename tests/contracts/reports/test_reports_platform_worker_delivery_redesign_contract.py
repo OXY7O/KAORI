@@ -146,7 +146,7 @@ def test_report_delivery_is_telegram_first_and_channel_extensible() -> None:
     migration = read(ROOT / 'migrations' / 'versions' / '20260729_report_schedule_delivery_channels.py')
     delivery = read(ROOT / 'app' / 'reports' / 'delivery' / 'service.py')
     telegram = read(ROOT / 'app' / 'reports' / 'delivery' / 'telegram.py')
-    schedule_service = read(ROOT / 'app' / 'reports' / 'schedules' / 'service.py')
+    report_worker = read(ROOT / 'app' / 'reports' / 'jobs' / 'tasks.py')
     schedule_template = read(REPORT_TEMPLATES / 'schedules' / 'index.html')
 
     assert 'notification_channels' in model
@@ -156,7 +156,7 @@ def test_report_delivery_is_telegram_first_and_channel_extensible() -> None:
         assert f"'value': '{channel}'" in delivery
     assert "_CHANNELS: dict[str, ReportDeliveryChannel] = {'telegram': TelegramReportDelivery()}" in delivery
     assert 'api.telegram.org' in telegram
-    assert 'deliver_generated_report(' in schedule_service
+    assert 'deliver_generated_report(' in report_worker
     assert 'Delivery Channels' in schedule_template
     assert 'notification_channels' in schedule_template
     assert 'Delivery:' in schedule_template

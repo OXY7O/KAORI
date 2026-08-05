@@ -14,9 +14,9 @@ from app.extensions.db import db
 from app.models.cluster import Cluster
 from app.models.report import Report, ReportSchedule, ReportScheduleRun
 from app.models.user import User
-from app.reports.catalog import ReportContractError, validate_report_contract
-from app.reports.export.constants import DEFAULT_REPORT_DOMAIN, DEFAULT_REPORT_SOURCE_KIND
+from app.reports.catalog import ReportContractError, get_report_type_label, validate_report_contract
 from app.reports.delivery import get_delivery_channel_catalog
+from app.reports.export.constants import DEFAULT_REPORT_DOMAIN, DEFAULT_REPORT_SOURCE_KIND
 from app.reports.generate.service import (
     OUTPUT_FORMAT_OPTIONS,
     PERIOD_OPTIONS,
@@ -26,10 +26,10 @@ from app.reports.generate.service import (
     get_report_primary_output_format,
     validate_form_state,
 )
-from app.reports.catalog import get_report_type_label
+from app.reports.jobs.service import ReportJobEnqueueError, enqueue_report_generation
+from app.reports.schedules.failures import mark_schedule_dispatch_failed
 from app.reports.storage.health import build_local_storage_health, build_s3_storage_health
 from app.reports.storage.service import get_configured_storage_backend_name
-from app.reports.jobs.service import enqueue_report_generation
 
 CADENCE_OPTIONS: list[dict[str, str]] = [
     {
@@ -372,13 +372,28 @@ def execute_schedule(
     schedule.next_run_at = calculate_next_run_at(schedule, base=run.started_at)
     db.session.commit()
 
-    dispatch = enqueue_report_generation(
-        report,
-        requested_by_user_id=schedule.created_by_id,
-        trigger_type=trigger_source,
-        schedule_id=schedule.id,
-        schedule_run_id=run.id,
-    )
+    try:
+        dispatch = enqueue_report_generation(
+            report,
+            requested_by_user_id=schedule.created_by_id,
+            trigger_type=trigger_source,
+            schedule_id=schedule.id,
+            schedule_run_id=run.id,
+        )
+    except ReportJobEnqueueError:
+        current_app.logger.exception(
+            'Scheduled report %s could not be queued for schedule %s.',
+            report.id,
+            schedule.id,
+        )
+        db.session.rollback()
+        failed_report_id = mark_schedule_dispatch_failed(
+            schedule_id=schedule.id,
+            schedule_run_id=run.id,
+            report_id=report.id,
+        )
+        return False, 'The scheduled report could not be queued.', failed_report_id
+
     run = db.session.get(ReportScheduleRun, run.id)
     if run is not None:
         run.job_execution_id = dispatch.job.id
@@ -773,13 +788,10 @@ def _get_timezone(value: str) -> ZoneInfo:
 
 
 def _ensure_utc(value: datetime) -> datetime:
-    if value.tzinfo is None:
-        return value.replace(tzinfo=UTC)
-    return value.astimezone(UTC)
+    return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
 
 
 def _format_datetime(value: datetime | None, timezone: str) -> str:
     if value is None:
         return 'Never'
-    tz = _get_timezone(timezone)
-    return value.astimezone(tz).strftime('%Y-%m-%d %H:%M %Z')
+    return value.astimezone(_get_timezone(timezone)).strftime('%Y-%m-%d %H:%M %Z')

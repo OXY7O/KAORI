@@ -6,10 +6,18 @@ from datetime import UTC, datetime
 from typing import Any
 
 from app.models.report import Report
-from app.reports.catalog import validate_report_instance
+from app.reports.catalog import (
+    REPORT_FAMILY_INVENTORY,
+    get_report_type_spec,
+    validate_report_instance,
+)
 from app.reports.export.payloads.inventory import get_report_kubernetes_inventory_payload
 from app.reports.export.payloads.tls_inventory import get_report_tls_inventory_payload
-from app.reports.export.xlsx.standard import InventoryWorkbookProfile
+from app.reports.export.tabular import TabularExportMetadata, build_record_reference
+from app.reports.export.xlsx.standard import (
+    InventoryWorkbookProfile,
+    get_inventory_workbook_profile,
+)
 from app.reports.reference import build_report_reference
 from app.reports.storage.naming import get_report_cluster_name
 
@@ -28,6 +36,44 @@ class InventoryExportContext:
     source_label: str = 'Kubernetes Committed Inventory'
     classification: str = 'Internal'
 
+    def tabular_metadata(self, *, format_standard: str) -> TabularExportMetadata:
+        report_spec = get_report_type_spec(self.report_type)
+        return TabularExportMetadata(
+            format_standard=format_standard,
+            document_reference=str(self.report_id),
+            report_name=self.report_name,
+            report_type=self.report_type,
+            report_type_label=report_spec.label,
+            report_family=REPORT_FAMILY_INVENTORY,
+            classification=self.classification,
+            generated_at=self.generated_at,
+            generated_by=self.generated_by,
+            selected_cluster=self.cluster_scope,
+            selected_namespace=self.namespace_scope,
+            reporting_period=self.period_label,
+            data_cutoff=self.data_cutoff,
+            source_label=self.source_label,
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class InventoryExportDataset:
+    profile: InventoryWorkbookProfile
+    context: InventoryExportContext
+    rows: tuple[dict[str, Any], ...]
+
+    @property
+    def row_count(self) -> int:
+        return len(self.rows)
+
+    def record_reference(self, row: Mapping[str, Any], row_number: int) -> str:
+        return build_record_reference(
+            row,
+            self.profile.identity_columns,
+            row_number=row_number,
+            prefix=self.profile.report_type.upper().replace('-', '_'),
+        )
+
 
 def get_inventory_rows(
     payload: Mapping[str, Any],
@@ -38,6 +84,24 @@ def get_inventory_rows(
         return []
 
     return [dict(row) for row in raw_rows if isinstance(row, Mapping)]
+
+
+def build_inventory_export_dataset(
+    *,
+    report_type: str,
+    payload: Mapping[str, Any],
+    context: InventoryExportContext,
+) -> InventoryExportDataset:
+    profile = get_inventory_workbook_profile(report_type)
+    if context.report_type != report_type:
+        raise ValueError(
+            'Inventory export context does not match the requested report type.'
+        )
+    return InventoryExportDataset(
+        profile=profile,
+        context=context,
+        rows=tuple(get_inventory_rows(payload, profile)),
+    )
 
 
 PERIOD_LABELS = {

@@ -14,7 +14,7 @@ def test_inventory_snapshot_source_uses_aligned_detail_row_for_canonical_value()
 
     assert 'macro detail_row(' in details
     assert 'whitespace-nowrap' in details
-    assert "detail_row('Snapshot Source', cluster.snapshot_source)" in inventory
+    assert "detail_row('Snapshot Source', cluster.snapshot_source, nowrap=True)" in inventory
 
 
 def test_kubernetes_dashboard_forecast_schema_matches_latest_daily_average_payload() -> None:
