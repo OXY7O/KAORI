@@ -1,14 +1,7 @@
 {% import "components/page_hero.html" as page_hero %}
 {% set selected_cluster_name = cluster.name if cluster else 'No Cluster Selected' %}
-{% if not capacity_headroom_available|default(false) %}
-    {% set posture_label = 'Unknown' %}{% set posture_tone = 'unknown' %}
-{% elif lowest_headroom < 15 %}
-    {% set posture_label = 'Critical' %}{% set posture_tone = 'critical' %}
-{% elif lowest_headroom < 40 %}
-    {% set posture_label = 'Watch' %}{% set posture_tone = 'warning' %}
-{% else %}
-    {% set posture_label = 'Healthy' %}{% set posture_tone = 'normal' %}
-{% endif %}
+{% set posture_label = capacity_posture.label|default('Unknown') %}
+{% set posture_tone = capacity_posture.tone|default('unknown') %}
 <section class="{{ page_hero.shell_classes() }}">
     <div class="{{ page_hero.layout_classes() }}">
         <div class="{{ page_hero.content_classes() }}">

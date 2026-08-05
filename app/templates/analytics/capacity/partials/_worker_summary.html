@@ -20,7 +20,7 @@
                         <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="{{ card.icon }}" class="h-4 w-4"></i></span>
                         <p class="{{ analysis_surface.metric_label_classes() }}">{{ card.label }}</p>
                     </div>
-                    <p class="mt-3 break-words text-2xl font-semibold tabular-nums text-content-primary">{{ card.value }}</p>
+                    <p class="mt-3 break-words text-2xl font-semibold tabular-nums {{ 'text-content-primary' if card.available else analysis_surface.unavailable_value_classes() }}">{{ card.value }}</p>
                     <p class="mt-1 text-xs leading-5 text-content-muted">{{ card.caption }}</p>
                     {% if card.footer %}<p class="mt-3 border-t border-outline-subtle pt-3 text-xs leading-5 text-content-muted">{{ card.footer }}</p>{% endif %}
                 </article>

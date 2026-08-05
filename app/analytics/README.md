@@ -180,7 +180,7 @@ provider query.
 Use one HTMX loading indicator and preserve filter state across pagination and
 refresh. A pending or blocked response must retain the page wrapper selected by
 `hx-select` so the workspace never becomes a blank replacement. Capacity
-Analysis must retain the agreed Cluster → Node selector hierarchy.
+Analysis is cluster-level and must not expose a node selector; node-level pressure belongs to Resource Utilization.
 
 Storage Analysis uses mixed but explicit scope ownership: Cluster and Namespace remain top controls, Node is local to the Filesystem tab, PVC evidence follows Namespace, and PV evidence remains cluster-scoped. Storage uses one canonical `tab` parameter. Filesystem, PVC, and PV panels lazy-load on first activation and own their local HTMX filter and pagination indicators. PVC usage is not presented as synthetic PV utilization.
 
@@ -498,7 +498,9 @@ consumer-facing storage service.
 
 ### Capacity capability boundary
 
-Capacity Analytics is now capability-gated through `PrometheusConsumer`. Worker allocatable, usage, node-role, pod-placement, and request/limit contracts must pass integration validation before the page, dashboard snapshot, or report section executes capacity queries.
+Capacity Analytics is capability-gated through `PrometheusConsumer`. CPU, memory, and pod scheduling evidence uses one exact Ready-worker boundary: control-plane and legacy master nodes are excluded, and every allocatable, requests, limits, current usage, peak usage, and pod-placement signal is intersected with the Ready node condition. Request/limit validation requires the `node` label in addition to namespace, pod, resource, and unit.
+
+`app/analytics/capacity/evidence.py` collects each provider signal once per materialization, `domain.py` owns calculation and risk semantics, `service.py` orchestrates the payload, and `presentation.py` normalizes display state. Missing evidence remains Unknown/N/A and is never synthesized as zero. Node Filesystem is an optional operational reference with `scheduling_resource=False`; it cannot determine scheduling posture or Capacity recommendations.
 
 ## Utilization capability contract
 
@@ -601,7 +603,7 @@ Request Coverage, Limit Coverage, QoS, Risk, and Analytics Evidence Coverage are
 
 ## Capacity Analysis Presentation
 
-Capacity is a cluster-level Ready-worker fleet analysis. It uses the shared Analytics Analysis Surface and Resource Pressure Lane contracts, renders missing denominators as Unknown/N/A without progress, keeps progress fills KAORI Violet, separates governance findings from review navigation, and does not load a composite tracker or Chart.js runtime. See `docs/design/components/ANALYTICS_CAPACITY_ANALYSIS.md`.
+Capacity is a cluster-level Ready-worker fleet analysis. CPU, memory, and pods share the same Ready-worker denominator; Node Filesystem is a non-scheduling operational reference. The workspace uses shared Analytics surfaces, renders missing evidence as Unknown/N/A without progress, keeps progress fills KAORI Violet, preserves the selected tab across filter changes, separates governance findings from review navigation, and does not load a composite tracker or Chart.js runtime. See `docs/design/components/ANALYTICS_CAPACITY_ANALYSIS.md` and `docs/design/audits/KAORI_ANALYTICS_CAPACITY_AUDIT_2026_08.md`.
 
 
 ## Resource Forecast Presentation and Semantics

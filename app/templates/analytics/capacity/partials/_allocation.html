@@ -3,32 +3,45 @@
 {% import "analytics/capacity/partials/_helpers.html" as capacity_ui %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
-{% set resources = [('cpu', 'CPU', 'cpu'), ('memory', 'Memory', 'memory-stick'), ('pods', 'Pods', 'boxes'), ('storage', 'Storage', 'hard-drive')] %}
+{% set resources = [('cpu', 'CPU', 'cpu'), ('memory', 'Memory', 'memory-stick'), ('pods', 'Pods', 'boxes'), ('storage', 'Node Filesystem', 'hard-drive')] %}
 <div class="space-y-5">
     <div class="flex items-start gap-3">
         <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="chart-pie" class="h-5 w-5"></i></span>
-        <div><h3 class="text-lg font-semibold text-content-primary">Cluster Resource Allocation &amp; Headroom</h3><p class="mt-1 text-sm leading-6 text-content-muted">Compare the complete Ready-worker resource envelope, then inspect request, limit, and actual commitment pressure.</p></div>
+        <div>
+            <h3 class="text-lg font-semibold text-content-primary">Cluster Resource Allocation &amp; Headroom</h3>
+            <p class="mt-1 text-sm leading-6 text-content-muted">Compare the Ready-worker scheduling envelope, then inspect requests, limits, actual usage, and observed peak pressure.</p>
+        </div>
     </div>
 
     <section class="{{ analysis_surface.evidence_shell_classes() }}">
         <header class="border-b border-outline-subtle px-4 py-3">
             <h4 class="{{ analysis_surface.section_title_classes() }}">Resource Envelope</h4>
-            <p class="{{ analysis_surface.section_description_classes() }}">Current utilization, absolute consumption, and remaining scheduling margin by resource.</p>
+            <p class="{{ analysis_surface.section_description_classes() }}">CPU, memory, and pods use Ready-worker allocatable capacity. Node filesystem remains an operational reference owned by Storage Analysis.</p>
         </header>
         <div class="divide-y divide-outline-subtle">
             {% for key, label, icon in resources %}
                 {% set item = capacity_summary[key] %}
+                {% if not item.evidence_available %}
+                    {% set operational_reason = 'Restore Complete Evidence Before Deciding' %}
+                {% elif item.tone == 'critical' %}
+                    {% set operational_reason = 'Headroom Is Constrained And Needs Immediate Remediation' %}
+                {% elif item.tone == 'warning' %}
+                    {% set operational_reason = 'Review Growth And Allocation Pressure Before The Next Placement Event' %}
+                {% else %}
+                    {% set operational_reason = 'Current Margin Remains Within The Healthy Operating Range' %}
+                {% endif %}
                 {{ resource_pressure_lane.render(
                     label,
                     icon,
                     item.utilization_percent,
-                    capacity_ui.resource_value(key, item.used, item.evidence_available) ~ (' / ' ~ capacity_ui.resource_value(key, item.capacity, true) if item.evidence_available else ''),
-                    'Ready-worker allocatable capacity is the scheduling denominator.',
+                    capacity_ui.resource_value(key, item.used, item.usage_evidence_available) ~ (' / ' ~ capacity_ui.resource_value(key, item.capacity, true) if item.capacity_evidence_available else ''),
+                    item.scope_label,
                     tone=item.tone,
-                    reason=('Headroom is constrained and needs immediate remediation.' if item.tone == 'critical' else ('Review near-term growth and allocation pressure before the next placement event.' if item.tone == 'warning' else 'Current scheduling margin remains within the healthy operating range.')),
+                    reason=operational_reason,
                     headroom=item.headroom,
                     status_label=item.status_label,
-                    available=item.evidence_available
+                    available=item.evidence_available,
+                    progress_fill_classes='bg-kaori-primary'
                 ) }}
             {% endfor %}
         </div>
@@ -37,41 +50,42 @@
     <section class="{{ analysis_surface.evidence_shell_classes() }}">
         <header class="border-b border-outline-subtle px-4 py-3">
             <h4 class="{{ analysis_surface.section_title_classes() }}">Commitment Profile</h4>
-            <p class="{{ analysis_surface.section_description_classes() }}">Requests represent scheduling commitments, limits represent configured ceilings, and actual usage shows current pressure.</p>
+            <p class="{{ analysis_surface.section_description_classes() }}">Requests are scheduling reservations, limits are configured ceilings, actual usage is current pressure, and peak usage belongs to the selected observation window.</p>
         </header>
         <div class="grid divide-y divide-outline-subtle lg:grid-cols-3 lg:divide-x lg:divide-y-0">
             {% for key, section in allocation_summary.items() %}
                 {% set section_status = section['status'] %}
                 <article class="p-4">
-                    <div class="flex items-center justify-between gap-3">
-                        <h4 class="font-semibold text-content-primary">{{ section['title'] }} Allocation</h4>
+                    <div class="flex items-start justify-between gap-3">
+                        <div>
+                            <h4 class="font-semibold text-content-primary">{{ section['title'] }} Allocation</h4>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">{{ section_status['reason'] }}</p>
+                        </div>
                         {{ table_label.status_label(section_status['label'], tone=section_status['tone']|default('unknown'), size='compact') }}
                     </div>
                     {% if section['available']|default(false) %}
                         <div class="mt-4 space-y-3">
                             {% for allocation_item in section['items']|default([], true) %}
-                                {% set item_label = allocation_item['label'] %}
-                                {% set item_percent = allocation_item['percent']|default(0)|float %}
-                                {% set item_tone = allocation_item['tone']|default('', true) %}
-                                {% if not item_tone %}
-                                    {% if item_label in ['Allocatable', 'Pod Capacity'] %}
-                                        {% set item_tone = 'normal' %}
-                                    {% elif item_label == 'Remaining Pod Slots' %}
-                                        {% set item_tone = progress_bar.headroom_tone(item_percent)|trim %}
-                                    {% else %}
-                                        {% set item_tone = progress_bar.pressure_tone(item_percent)|trim %}
-                                    {% endif %}
-                                {% endif %}
                                 <div>
-                                    <div class="flex items-center justify-between gap-3 text-xs"><span class="font-medium text-content-secondary">{{ item_label }}</span><span class="font-semibold tabular-nums text-content-primary">{{ allocation_item['display'] }}</span></div>
-                                    {{ progress_bar.semantic_bar(item_percent, item_tone, track_classes='mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-hover', label=item_label ~ ' allocation status') }}
+                                    <div class="flex items-center justify-between gap-3 text-xs">
+                                        <span class="font-medium text-content-secondary">{{ allocation_item['label'] }}</span>
+                                        <span class="font-semibold tabular-nums {{ 'text-content-primary' if allocation_item['available'] else analysis_surface.unavailable_value_classes() }}">{{ allocation_item['display'] }}</span>
+                                    </div>
+                                    {% if allocation_item['available'] %}
+                                        {{ progress_bar.bar(allocation_item['percent'], 'mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-hover', 'h-full rounded-full bg-kaori-primary transition-all duration-500', allocation_item['label'] ~ ' allocation status') }}
+                                    {% else %}
+                                        <div class="mt-1.5 h-1.5 rounded-full border border-dashed border-outline-strong bg-surface-hover" aria-label="{{ allocation_item['label'] }} evidence unavailable"></div>
+                                    {% endif %}
                                 </div>
                             {% endfor %}
                         </div>
+                        {% if section['missing_metrics'] %}
+                            <p class="mt-4 rounded-md border border-outline-subtle bg-surface-hover px-3 py-2 text-xs leading-5 text-content-muted">Missing evidence: {{ section['missing_metrics']|join(', ') }}.</p>
+                        {% endif %}
                     {% else %}
                         <div class="mt-4 rounded-lg border border-dashed border-outline-strong bg-surface-hover px-4 py-5">
                             <p class="text-sm font-semibold text-content-primary">Allocation Evidence Unavailable</p>
-                            <p class="mt-1 text-xs leading-5 text-content-muted">KAORI cannot calculate requests, limits, or usage ratios until allocatable {{ section['title'] }} evidence is committed.</p>
+                            <p class="mt-1 text-xs leading-5 text-content-muted">KAORI cannot calculate commitment ratios until Ready-worker allocatable {{ section['title'] }} evidence is committed.</p>
                         </div>
                     {% endif %}
                 </article>
@@ -79,18 +93,18 @@
         </div>
     </section>
 
-    {% set capacity_action_tone = table_label.semantic_tone(capacity_posture.tone|default('unknown'))|trim if capacity_posture is defined else 'info' %}
+    {% set capacity_action_tone = table_label.semantic_tone(capacity_posture.tone|default('unknown'))|trim %}
     <div class="{{ analysis_surface.interpretation_grid_classes('rounded-lg border border-outline-subtle') }}">
         {{ analysis_surface.interpretation_callout(
             'How To Read',
             'Compare Utilization, Commitments, And Remaining Headroom',
-            'High utilization with low headroom indicates immediate capacity pressure. High requests with low actual usage indicates reservation inefficiency.',
+            'High usage with low headroom indicates immediate pressure. High requests with low actual usage indicates reservation inefficiency. Limits above allocatable indicate overcommit exposure, not current consumption.',
             icon='chart-pie'
         ) }}
         {{ analysis_surface.interpretation_callout(
             'What To Do',
             'Validate The Constrained Resource Before Expanding Capacity',
-            'Validate the constrained resource, identify workloads driving commitments, then resize requests or expand Ready-worker capacity.',
+            'Validate the constrained resource, identify workloads driving requests and limits, then right-size reservations or expand Ready-worker capacity.',
             icon='scan-search',
             tone=capacity_action_tone,
             extra='border-t border-outline-subtle lg:border-t-0'

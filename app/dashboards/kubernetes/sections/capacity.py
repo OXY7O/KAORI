@@ -62,9 +62,18 @@ def _worker_capacity_item(
     unit: str,
     digits: int,
 ) -> CapacityItem:
+    evidence_available = section.get('evidence_available') is not False
     capacity = safe_float(section.get('capacity'))
     used = safe_float(section.get('used'))
-    headroom = safe_optional_float(section.get('headroom')) if capacity > 0 else None
+    if not evidence_available or capacity <= 0:
+        return CapacityItem(
+            label=label,
+            used_percent=None,
+            headroom_percent=None,
+            description='Ready-worker capacity evidence unavailable',
+        )
+
+    headroom = safe_optional_float(section.get('headroom'))
     used_percent = max(0.0, min(100.0, 100.0 - headroom)) if headroom is not None else None
 
     if digits == 0:

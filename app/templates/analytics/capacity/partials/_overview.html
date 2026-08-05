@@ -2,7 +2,7 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "analytics/capacity/partials/_helpers.html" as capacity_ui %}
 {% import "components/progress_bar.html" as progress_bar %}
-{% set resources = [('cpu', 'CPU', 'cpu'), ('memory', 'Memory', 'memory-stick'), ('pods', 'Pods', 'boxes'), ('storage', 'Storage', 'hard-drive')] %}
+{% set resources = [('cpu', 'CPU', 'cpu'), ('memory', 'Memory', 'memory-stick'), ('pods', 'Pods', 'boxes'), ('storage', 'Node Filesystem', 'hard-drive')] %}
 {% call analytics_workspace.overview(
     'Capacity Analysis Overview',
     'Summarize current worker utilization, schedulable capacity, and remaining headroom using normalized display units.',
@@ -27,15 +27,16 @@
                             <p class="mt-1 text-2xl font-semibold tabular-nums {{ 'text-content-primary' if item.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ capacity_ui.percent(item.utilization_percent, available=item.evidence_available) }}</p>
                         </div>
                         <p class="text-right text-xs leading-5 {{ 'text-content-muted' if item.evidence_available else analysis_surface.unavailable_value_classes() }}">
-                            <span class="block font-semibold {{ 'text-content-secondary' if item.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ capacity_ui.resource_value(key, item.used, item.evidence_available) }}</span>
-                            {% if item.evidence_available %}of {{ capacity_ui.resource_value(key, item.capacity, true) }}{% else %}Capacity unavailable{% endif %}
+                            <span class="block font-semibold {{ 'text-content-secondary' if item.usage_evidence_available else analysis_surface.unavailable_value_classes() }}">{{ capacity_ui.resource_value(key, item.used, item.usage_evidence_available) }}</span>
+                            {% if item.capacity_evidence_available %}of {{ capacity_ui.resource_value(key, item.capacity, true) }}{% else %}Capacity unavailable{% endif %}
                         </p>
                     </div>
                     {% if item.evidence_available %}
-                        {{ progress_bar.semantic_bar(item.utilization_percent, item.tone, track_classes='mt-3 h-2 overflow-hidden rounded-full bg-surface-hover', label=label ~ ' capacity status') }}
+                        {{ progress_bar.bar(item.utilization_percent, 'mt-3 h-2 overflow-hidden rounded-full bg-surface-hover', 'h-full rounded-full bg-kaori-primary transition-all duration-500', label ~ ' capacity status') }}
                     {% else %}
                         <div class="mt-3 flex h-8 items-center rounded-md border border-dashed border-outline-strong bg-surface-hover px-3 text-xs font-medium text-content-muted">No committed capacity evidence</div>
                     {% endif %}
+                    <p class="mt-3 text-xs leading-5 text-content-muted">{{ item.scope_label }}</p>
                     <div class="mt-3 flex items-center justify-between gap-3 text-xs">
                         <span class="text-content-muted">Remaining Headroom</span>
                         <span class="font-semibold tabular-nums {{ 'text-content-primary' if item.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ capacity_ui.percent(item.headroom, available=item.evidence_available) }}</span>
@@ -50,7 +51,7 @@
                 <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="gauge" class="h-4 w-4"></i></span>
                 <div>
                     <h3 class="{{ analysis_surface.section_title_classes() }}">Capacity Posture</h3>
-                    <p class="mt-1 text-sm leading-6 text-content-secondary">{% if capacity_headroom_available %}The tightest scheduling margin is <span class="font-semibold">{{ lowest_headroom_metric_display }}</span>. Prioritize that resource before approving placement growth.{% else %}No resource has committed capacity evidence. Restore worker data before approving placement growth.{% endif %}</p>
+                    <p class="mt-1 text-sm leading-6 text-content-secondary">{% if capacity_posture.tone in ['critical', 'warning'] %}{{ capacity_posture.reason }}{% if capacity_headroom_available %} The lowest known Ready-worker margin is <span class="font-semibold">{{ lowest_headroom_metric_display }}</span>.{% endif %}{% elif capacity_scheduling_evidence_complete %}The tightest Ready-worker scheduling margin is <span class="font-semibold">{{ lowest_headroom_metric_display }}</span>. Node filesystem evidence is shown separately and does not determine Kubernetes scheduling posture.{% elif capacity_headroom_available %}Partial Ready-worker evidence identifies <span class="font-semibold">{{ lowest_headroom_metric_display }}</span> as the lowest known margin. Restore missing allocation or usage signals before approving placement growth.{% else %}No Ready-worker scheduling resource has complete committed evidence. Restore worker capacity and usage data before approving placement growth.{% endif %}</p>
                 </div>
             </div>
         </div>
@@ -58,7 +59,7 @@
             {{ analysis_surface.interpretation_callout(
                 'Measurement Standard',
                 'Ready Worker Allocatable Capacity',
-                'CPU uses Cores, memory and storage use GiB, and pod capacity uses whole Pods.',
+                'CPU uses Cores, memory uses GiB, and pod capacity uses whole Pods. Node filesystem GiB is an operational reference, not Kubernetes allocatable capacity.',
                 icon='ruler'
             ) }}
         </div>

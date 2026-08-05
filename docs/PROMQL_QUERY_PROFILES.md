@@ -61,3 +61,9 @@ Current queries use the kube-state-metrics v2 resource/unit metric shape. Legacy
 4. Keep the old stable key until all consumers have migrated.
 5. Run metadata validation and full query execution against each supported estate profile.
 6. Update this document and the compatibility matrix.
+
+## Capacity Ready-Worker Query Contract
+
+Capacity query definitions use the `analytics.capacity.queries.WORKER_*` family only. Every schedulable CPU, memory, pod, request, limit, current-usage, and peak-usage expression excludes `control-plane|master` roles and intersects the remaining series with `kube_node_status_condition{condition="Ready",status="true"} == 1`. Request and limit metrics must expose `namespace`, `node`, `pod`, `resource`, and `unit`; without the node label KAORI cannot enforce the worker boundary and the capability remains incomplete.
+
+Node filesystem expressions are reused from the canonical Utilization query registry as optional operational reference evidence. They are not part of Kubernetes allocatable capacity and cannot block the Capacity scheduling contract. Unscoped legacy Capacity query definitions are not retained.

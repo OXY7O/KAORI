@@ -50,33 +50,56 @@ def get_empty_capacity_payload(
 
     empty_resource = {
         'evidence_available': False,
-        'capacity': 0,
-        'used': 0,
-        'available': 0,
-        'headroom': 0,
+        'capacity_evidence_available': False,
+        'usage_evidence_available': False,
+        'capacity': None,
+        'used': None,
+        'available': None,
+        'headroom': None,
+        'scheduling_resource': True,
+        'scope_label': 'Ready worker allocatable capacity',
     }
     unknown_allocation = {
         'available': False,
-        'status': {'label': 'Unknown', 'tone': 'unknown'},
+        'complete': False,
+        'status': {
+            'label': 'Unknown',
+            'tone': 'unknown',
+            'reason': 'Allocatable capacity evidence is unavailable.',
+            'missing_metrics': [],
+        },
         'items': [],
+        'missing_metrics': [],
     }
 
     return {
         'cluster_info': {
             'kubernetes_version': '-',
             'total_nodes': 0,
-            'ready_nodes': 0,
-            'not_ready_nodes': 0,
-            'worker_nodes': 0,
+            'ready_nodes': None,
+            'not_ready_nodes': None,
+            'worker_nodes': None,
+            'ready_worker_nodes': None,
+            'not_ready_worker_nodes': None,
+            'worker_node_evidence_available': False,
             'master_nodes': 0,
-            'cpu_capacity': 0,
-            'memory_capacity': 0,
-            'pod_capacity': 0,
+        },
+        'capacity_posture': {
+            'label': 'Unknown',
+            'tone': 'unknown',
+            'reason': 'Ready-worker scheduling evidence is unavailable.',
+            'evidence_complete': False,
         },
         'capacity_summary': {
             'cpu': dict(empty_resource),
             'memory': dict(empty_resource),
-            'storage': dict(empty_resource),
+            'storage': {
+                **empty_resource,
+                'scheduling_resource': False,
+                'scope_label': (
+                    'Operational node-filesystem reference; not Kubernetes allocatable capacity'
+                ),
+            },
             'pods': dict(empty_resource),
         },
         'worker_capacity_summary': {
@@ -135,9 +158,15 @@ def get_empty_capacity_payload(
         'risk_summary': [
             {
                 'resource': resource,
-                'label': 'Pods' if resource == 'pods' else resource.title(),
+                'label': {'cpu': 'CPU', 'memory': 'Memory', 'pods': 'Pods', 'storage': 'Node Filesystem'}[resource],
                 'headroom': None,
                 'evidence_available': False,
+                'scheduling_resource': resource != 'storage',
+                'scope_label': (
+                    'Operational node-filesystem reference; not Kubernetes allocatable capacity'
+                    if resource == 'storage'
+                    else 'Ready worker allocatable capacity'
+                ),
                 'status': {'label': 'Unknown', 'tone': 'unknown'},
                 'icon': icon,
             }

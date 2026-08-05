@@ -1,5 +1,6 @@
 {% import "analytics/components/_analysis_workspace.html" as analytics_workspace %}
 <form id="capacity-filter"
+      data-analytics-preserve-tab
       method="get"
       hx-get="{{ url_for('analytics.capacity') }}"
       hx-trigger="change delay:120ms"

@@ -25,6 +25,7 @@ def test_capacity_uses_shared_surface_and_control_contracts() -> None:
 
     assert 'analytics_workspace.control_select_classes()' in controls
     assert 'analytics_workspace.control_label_classes()' in controls
+    assert 'data-analytics-preserve-tab' in controls
     assert 'analysis_surface.evidence_shell_classes()' in overview
     assert 'analysis_surface.metric_grid_classes(4)' in overview
     assert 'resource_pressure_lane.render(' in allocation
@@ -34,41 +35,43 @@ def test_capacity_uses_shared_surface_and_control_contracts() -> None:
 
 
 def test_capacity_unavailable_state_is_unknown_na_and_suppresses_progress() -> None:
-    presenter = read('app/analytics/common/presentation.py')
+    presenter = read('app/analytics/capacity/presentation.py')
+    domain = read('app/analytics/capacity/domain.py')
     lane = read('app/templates/analytics/components/_resource_pressure_lane.html')
     overview = read('app/templates/analytics/capacity/partials/_overview.html')
     contract = read('docs/design/components/ANALYTICS_CAPACITY_ANALYSIS.md')
 
-    assert "item['utilization_percent'] = utilization" in presenter
-    assert "headroom = None" in presenter
-    assert "result['lowest_headroom_display'] = 'N/A'" in presenter
+    assert "'utilization_percent': utilization" in presenter
+    assert "'headroom': normalized_headroom" in presenter
+    assert "'capacity': converter(capacity.value) if capacity_available else None" in domain
     assert "if resolved_available" in lane
     assert 'Capacity evidence unavailable' in lane
     assert 'No committed capacity evidence' in overview
     assert 'Missing capacity evidence is not zero utilization' in contract
 
 
-def test_capacity_semantic_status_is_not_inferred_from_css_classes() -> None:
+def test_capacity_semantic_status_is_owned_by_domain_not_css_or_jinja() -> None:
+    domain = read('app/analytics/capacity/domain.py')
     service = read('app/analytics/capacity/service.py')
     payloads = read('app/analytics/common/payloads.py')
     allocation = read('app/templates/analytics/capacity/partials/_allocation.html')
     risk = read('app/templates/analytics/capacity/partials/_risk.html')
 
-    assert "'tone': 'critical'" in service
-    assert "'tone': 'warning'" in service
-    assert "'tone': 'normal'" in service
-    assert "'class': 'bg-" not in service
-    assert "'icon_class':" not in service
-    assert 'bar_class' not in service
-    capacity_payload = payloads.split('def get_empty_capacity_payload', 1)[1].split('def get_empty_storage_payload', 1)[0]
+    for tone in ("'critical'", "'warning'", "'normal'", "'unknown'"):
+        assert tone in domain
+    assert "'class': 'bg-" not in domain
+    assert "'icon_class':" not in domain
+    assert 'bar_class' not in domain
+    assert 'include_presentation_classes=False' in service
+    capacity_payload = payloads.split('def get_empty_capacity_payload', 1)[1].split(
+        'def get_empty_storage_payload', 1
+    )[0]
     assert "'class': 'bg-" not in capacity_payload
     assert "'icon_class':" not in capacity_payload
     assert "'tone': 'unknown'" in capacity_payload
     assert "section_status['tone']" in allocation
-    assert "'available': pod_capacity > 0" in service
-    assert 'include_presentation_classes=False' in service
-    assert "card.pop('icon_class', None)" not in service
-    assert "item.status.tone" in risk
+    assert "allocation_item['available']" in allocation
+    assert 'item.status.tone' in risk
     assert "'critical' in item.status.class" not in risk
 
 
@@ -86,17 +89,19 @@ def test_capacity_progress_remains_violet_and_primary_evidence_is_bright() -> No
     assert 'progress bars remain KAORI Violet' in contract
 
 
-def test_capacity_separates_findings_from_review_navigation() -> None:
+def test_capacity_separates_findings_from_review_navigation_and_storage_actions() -> None:
+    domain = read('app/analytics/capacity/domain.py')
     service = read('app/analytics/capacity/service.py')
     risk = read('app/templates/analytics/capacity/partials/_risk.html')
 
-    governance_function = service.split('def get_capacity_governance_findings', 1)[1].split('def get_headroom_status', 1)[0]
+    governance_function = domain.split('def build_governance_findings', 1)[1]
+    assert "for resource in ('cpu', 'memory', 'pods')" in governance_function
     assert 'Open Workload Analysis' not in governance_function
     assert 'Open Storage Analysis' not in governance_function
-    assert "review_paths = get_capacity_review_paths()" in service
-    assert "'review_paths': review_paths" in service
+    assert "'review_paths': get_capacity_review_paths()" in service
     assert 'Governance Findings' in risk
     assert 'Recommended Review Path' in risk
+    assert 'Continue in Storage Analysis' in risk
     assert 'analysis_surface.guidance_card_classes()' in risk
 
 

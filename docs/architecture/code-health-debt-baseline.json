@@ -98,7 +98,6 @@
   "module_line_limits": {
     "app/alertmanager/routes.py": 977,
     "app/analytics/alerts/sources.py": 812,
-    "app/analytics/capacity/service.py": 1245,
     "app/analytics/forecast/service.py": 2171,
     "app/analytics/overview/service.py": 1943,
     "app/analytics/storage/service.py": 1644,

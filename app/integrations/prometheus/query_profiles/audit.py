@@ -10,6 +10,41 @@ from app.integrations.prometheus.exceptions import PrometheusError
 from app.integrations.prometheus.query_profiles import PROFILE_KEY, list_queries
 from app.integrations.prometheus.query_profiles.feature_contracts import evaluate_feature_contracts
 
+_CAPACITY_LABEL_REQUIREMENTS = {
+    'kube_node_status_allocatable': {'node', 'resource', 'unit'},
+    'container_cpu_usage_seconds_total': {'node', 'container'},
+    'container_memory_working_set_bytes': {'node', 'container'},
+    'kube_node_role': {'node', 'role'},
+    'kube_node_status_condition': {'node', 'condition', 'status'},
+    'kube_pod_info': {'node', 'namespace', 'pod'},
+}
+_RESOURCE_COMMITMENT_LABEL_REQUIREMENTS = {
+    'kube_pod_container_resource_requests': {'namespace', 'node', 'pod', 'resource', 'unit'},
+    'kube_pod_container_resource_limits': {'namespace', 'node', 'pod', 'resource', 'unit'},
+}
+
+
+def _metric_capability_state(
+    available_metrics: set[str],
+    metric_labels: dict[str, set[str]],
+    requirements: dict[str, set[str]],
+    *,
+    ready_evidence: str,
+    invalid_prefix: str,
+) -> tuple[str, str]:
+    missing = sorted(set(requirements) - available_metrics)
+    if missing:
+        return 'missing', f'Missing metrics: {", ".join(missing)}'
+    invalid = sorted(
+        metric
+        for metric, required_labels in requirements.items()
+        if not required_labels.issubset(metric_labels.get(metric, set()))
+    )
+    if invalid:
+        return 'misconfigured', f'{invalid_prefix}: {", ".join(invalid)}.'
+    return 'available', ready_evidence
+
+
 
 @dataclass(frozen=True)
 class QueryCheckResult:
@@ -412,48 +447,25 @@ class PromQLProfileAuditor:
             )
         add('workload_metrics', workload_status, workload_evidence)
 
-        capacity_metrics = {
-            'kube_node_status_allocatable',
-            'container_cpu_usage_seconds_total',
-            'container_memory_working_set_bytes',
-            'kube_node_role',
-            'kube_pod_info',
-        }
-        missing_capacity = sorted(capacity_metrics - available_metrics)
-        capacity_label_requirements = {
-            'kube_node_status_allocatable': {'node', 'resource', 'unit'},
-            'container_cpu_usage_seconds_total': {'node', 'container'},
-            'container_memory_working_set_bytes': {'node', 'container'},
-            'kube_node_role': {'node', 'role'},
-            'kube_pod_info': {'node', 'namespace', 'pod'},
-        }
-        invalid_capacity_labels = sorted(
-            metric
-            for metric, required_labels in capacity_label_requirements.items()
-            if metric in available_metrics and not required_labels.issubset(metric_labels.get(metric, set()))
+        capacity_status, capacity_evidence = _metric_capability_state(
+            available_metrics,
+            metric_labels,
+            _CAPACITY_LABEL_REQUIREMENTS,
+            ready_evidence=(
+                'Ready-worker allocatable, usage, role, readiness, and pod-placement contracts are queryable.'
+            ),
+            invalid_prefix='Required worker-capacity labels are incomplete on',
         )
-        if missing_capacity:
-            capacity_status = 'missing'
-            capacity_evidence = f'Missing metrics: {", ".join(missing_capacity)}'
-        elif invalid_capacity_labels:
-            capacity_status = 'misconfigured'
-            capacity_evidence = (
-                f'Required worker-capacity labels are incomplete on: {", ".join(invalid_capacity_labels)}.'
-            )
-        else:
-            capacity_status = 'available'
-            capacity_evidence = 'Worker allocatable, usage, role, and pod-placement contracts are queryable.'
         add('capacity_metrics', capacity_status, capacity_evidence)
 
-        resource = {'kube_pod_container_resource_requests', 'kube_pod_container_resource_limits'}
-        missing_resource = sorted(resource - available_metrics)
-        add(
-            'resource_requests_limits',
-            'available' if not missing_resource else 'missing',
-            'Request and limit metrics are queryable.'
-            if not missing_resource
-            else f'Missing metrics: {", ".join(missing_resource)}',
+        resource_status, resource_evidence = _metric_capability_state(
+            available_metrics,
+            metric_labels,
+            _RESOURCE_COMMITMENT_LABEL_REQUIREMENTS,
+            ready_evidence='Request and limit metrics are queryable with worker-node placement labels.',
+            invalid_prefix='Required request/limit placement labels are incomplete on',
         )
+        add('resource_requests_limits', resource_status, resource_evidence)
 
         pvc_metrics = (
             'kubelet_volume_stats_capacity_bytes',

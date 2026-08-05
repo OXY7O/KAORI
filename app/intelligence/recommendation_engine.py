@@ -510,7 +510,7 @@ def build_capacity_actionable_recommendations(payload: dict[str, Any]) -> list[d
             if not isinstance(item, dict):
                 continue
 
-            if item.get('evidence_available') is False:
+            if item.get('evidence_available') is False or item.get('scheduling_resource') is False:
                 continue
 
             resource_key = str(item.get('resource') or '').lower()
@@ -545,7 +545,11 @@ def build_capacity_actionable_recommendations(payload: dict[str, Any]) -> list[d
         for resource_key, item in capacity_summary.items():
             if not isinstance(item, dict):
                 continue
-            if item.get('evidence_available') is False or get_numeric_value(item.get('capacity', 0)) <= 0:
+            if (
+                item.get('evidence_available') is False
+                or item.get('scheduling_resource') is False
+                or get_numeric_value(item.get('capacity', 0)) <= 0
+            ):
                 continue
 
             headroom = get_numeric_value(item.get('headroom', 0))

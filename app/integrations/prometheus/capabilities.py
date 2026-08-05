@@ -73,6 +73,7 @@ CAPABILITIES: dict[str, CapabilityDefinition] = {
             'container_cpu_usage_seconds_total',
             'container_memory_working_set_bytes',
             'kube_node_role',
+            'kube_node_status_condition',
             'kube_pod_info',
         ),
         validation_query='count(kube_node_status_allocatable{resource="cpu",unit="core"})',

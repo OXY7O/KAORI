@@ -5,9 +5,6 @@ STATUS_FILES = [
     'app/templates/analytics/utilization/partials/_overview.html',
     'app/templates/analytics/utilization/partials/_trend.html',
     'app/templates/analytics/utilization/partials/_node_detail.html',
-    'app/templates/analytics/capacity/partials/_overview.html',
-    'app/templates/analytics/capacity/partials/_allocation.html',
-    'app/templates/analytics/capacity/partials/_risk.html',
     'app/templates/analytics/storage/partials/_overview.html',
     'app/templates/analytics/storage/partials/_filesystem_panel.html',
     'app/templates/analytics/storage/partials/_persistent_volume_claims_panel.html',
@@ -40,9 +37,18 @@ def test_neutral_progress_and_composition_bars_remain_violet():
     materialization = Path('app/templates/analytics/materialization/_pending.html').read_text()
     ranked = Path('app/templates/analytics/components/_ranked_evidence_panel.html').read_text()
     consumers = Path('app/templates/analytics/top_consumers/partials/_consumer_detail_results.html').read_text()
+    capacity_paths = (
+        'app/templates/analytics/capacity/partials/_overview.html',
+        'app/templates/analytics/capacity/partials/_allocation.html',
+        'app/templates/analytics/capacity/partials/_risk.html',
+    )
     assert 'bg-kaori-primary' in materialization
     assert 'bg-kaori-primary' in ranked
     assert 'bg-kaori-primary' in consumers
+    for path in capacity_paths:
+        source = Path(path).read_text()
+        assert 'bg-kaori-primary' in source, path
+        assert 'progress_bar.semantic_bar(' not in source, path
 
 
 def test_alert_routing_only_semanticizes_severity_distribution():

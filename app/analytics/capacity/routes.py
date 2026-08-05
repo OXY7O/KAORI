@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from flask import render_template, request
 
-from app.analytics.common.presentation import present_capacity_context
+from app.analytics.capacity.presentation import present_capacity_context
 from app.analytics.materialization.presentation import (
     blocked_page_context,
     pending_page_context,

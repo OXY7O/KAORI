@@ -1,6 +1,7 @@
 {% import "analytics/components/_analysis_surfaces.html" as analysis_surface %}
 {% import "components/progress_bar.html" as progress_bar %}
 {% import "components/table_label.html" as table_label %}
+{% import "analytics/components/_scoped_link.html" as scoped_link %}
 <div class="space-y-5">
     <div class="flex items-start gap-3">
         <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="shield-alert" class="h-5 w-5"></i></span>
@@ -16,21 +17,21 @@
             <div class="divide-y divide-outline-subtle">
                 {% for item in risk_summary %}
                     {% set tone = item.status.tone|default('unknown') %}
-                    {% set resource_label = 'CPU' if item.resource|default('') == 'cpu' else ('PVC' if item.resource|default('') == 'pvc' else item.label) %}
+                    {% set resource_label = item.label %}
                     <article class="grid gap-3 bg-surface-card px-4 py-4 sm:grid-cols-3 sm:items-center">
                         <div class="flex items-center gap-3">
                             <span class="{{ analysis_surface.snapshot_header_icon_classes() }}"><i data-lucide="{{ item.icon }}" class="h-4 w-4"></i></span>
-                            <div><p class="text-sm font-semibold text-content-primary">{{ resource_label }}</p><div class="mt-1">{{ table_label.status_label(item.status.label, tone=tone, size='compact') }}</div></div>
+                            <div><p class="text-sm font-semibold text-content-primary">{{ resource_label }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ item.scope_label }}</p><div class="mt-2">{{ table_label.status_label(item.status.label, tone=tone, size='compact') }}</div></div>
                         </div>
                         <div>
                             <div class="flex items-center justify-between gap-3 text-xs"><span class="text-content-muted">Remaining Headroom</span><span class="font-semibold tabular-nums {{ 'text-content-primary' if item.evidence_available else analysis_surface.unavailable_value_classes() }}">{{ item.headroom_display }}</span></div>
                             {% if item.evidence_available %}
-                                {{ progress_bar.semantic_bar(item.headroom, tone, track_classes='mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', label=resource_label ~ ' headroom status') }}
+                                {{ progress_bar.bar(item.headroom, 'mt-2 h-2 overflow-hidden rounded-full bg-surface-hover', 'h-full rounded-full bg-kaori-primary transition-all duration-500', resource_label ~ ' headroom status') }}
                             {% else %}
                                 <div class="mt-2 flex h-8 items-center rounded-md border border-dashed border-outline-strong bg-surface-hover px-3 text-xs font-medium text-content-muted">Evidence unavailable</div>
                             {% endif %}
                         </div>
-                        <div><p class="{{ analysis_surface.metric_label_classes() }}">Recommended Response</p><p class="mt-1 text-xs leading-5 text-content-secondary">{% if tone == 'critical' %}Start remediation now and protect the remaining scheduling margin.{% elif tone == 'warning' %}Plan capacity or workload right-sizing before the next growth event.{% elif tone == 'normal' %}Continue monitoring and validate changes against the Ready-worker baseline.{% else %}Restore committed capacity evidence before making a placement decision.{% endif %}</p></div>
+                        <div><p class="{{ analysis_surface.metric_label_classes() }}">Recommended Response</p><p class="mt-1 text-xs leading-5 text-content-secondary">{% if not item.scheduling_resource %}{% if tone in ['critical', 'warning'] %}Continue in Storage Analysis and validate node filesystem pressure before changing node pools.{% elif tone == 'normal' %}Continue filesystem monitoring in Storage Analysis.{% else %}Restore node filesystem evidence before interpreting this operational reference.{% endif %}{% elif tone == 'critical' %}Start remediation now and protect the remaining scheduling margin.{% elif tone == 'warning' %}Plan capacity or workload right-sizing before the next growth event.{% elif tone == 'normal' %}Continue monitoring and validate changes against the Ready-worker baseline.{% else %}Restore committed capacity evidence before making a placement decision.{% endif %}</p></div>
                     </article>
                 {% endfor %}
             </div>
@@ -60,7 +61,7 @@
                 </div>
                 <div class="{{ analysis_surface.review_path_grid_classes() }}">
                     {% for review in review_paths|default([]) %}
-                        <a href="{{ review.href }}?cluster_id={{ cluster.id }}&time_range={{ selected_time_range }}" class="rounded-lg border border-outline-subtle bg-surface-card px-4 py-3 transition hover:border-kaori-primary/40 hover:bg-kaori-mist/25">
+                        <a href="{{ scoped_link.href(review.href, cluster.id, selected_time_range) }}" class="rounded-lg border border-outline-subtle bg-surface-card px-4 py-3 transition hover:border-kaori-primary/40 hover:bg-kaori-mist/25">
                             <span class="flex items-center gap-2 text-sm font-semibold text-content-primary"><i data-lucide="{{ review.icon }}" class="h-4 w-4 text-kaori-primary"></i>{{ review.label }}</span>
                             <span class="mt-1 block text-xs leading-5 text-content-muted">{{ review.description }}</span>
                         </a>
