@@ -5,14 +5,15 @@
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <div class="overflow-x-auto overscroll-x-contain">
     <table class="{{ table_ui.table_classes('min-w-[72rem]') }}">
+        <caption class="sr-only">Kubernetes Pod inventory for the active committed-snapshot scope.</caption>
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
-                <th class="{{ table_ui.header_cell_classes() }} min-w-[18rem]">Pod</th>
-                <th class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Scope</th>
-                <th class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Runtime State</th>
-                <th class="{{ table_ui.header_cell_classes() }} min-w-[13rem]">Placement</th>
-                <th class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Ownership & Activity</th>
-                <th class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[18rem]">Pod</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Scope</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Runtime State</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[13rem]">Placement</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Ownership & Activity</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
             </tr>
         </thead>
         <tbody class="{{ table_ui.body_classes() }}">

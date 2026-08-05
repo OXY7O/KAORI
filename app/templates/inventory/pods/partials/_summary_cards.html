@@ -1,18 +1,21 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/resource_posture_grid.html" as posture_grid %}
+{% set empty_tone = 'unknown' if inventory.total_pods == 0 else none %}
 {% set posture_metrics = [
-    ('loader-circle', 'Starting', inventory.starting_count, 'Pods waiting for scheduling, initialization, or startup.', 'warning' if inventory.starting_count > 0 else 'normal'),
-    ('shield-alert', 'Not Ready', inventory.not_ready_count, 'Running Pods without all regular containers ready.', 'warning' if inventory.not_ready_count > 0 else 'normal'),
-    ('circle-x', 'Failed', inventory.failed_count, 'Pods reporting a failed Kubernetes phase.', 'critical' if inventory.failed_count > 0 else 'normal'),
-    ('circle-check-big', 'Completed', inventory.completed_count, 'Pods that completed successfully in the committed snapshot.', 'info' if inventory.completed_count > 0 else 'normal'),
-    ('rotate-ccw', 'Restart Activity', inventory.restart_activity, 'Pods with cumulative container restart evidence.', 'info' if inventory.restart_activity > 0 else 'normal'),
-    ('images', 'Unique Images', inventory.unique_image_count, inventory.total_image_references ~ ' container image references reported.', 'brand')
+    ('loader-circle', 'Starting', inventory.starting_count, 'Pods waiting for scheduling, initialization, or startup.', empty_tone or ('warning' if inventory.starting_count > 0 else 'normal')),
+    ('shield-alert', 'Not Ready', inventory.not_ready_count, 'Running Pods without authoritative all-container readiness.', empty_tone or ('warning' if inventory.not_ready_count > 0 else 'normal')),
+    ('hourglass', 'Terminating', inventory.terminating_count, 'Pods with an active deletion timestamp in the committed snapshot.', empty_tone or ('warning' if inventory.terminating_count > 0 else 'normal')),
+    ('circle-x', 'Failed', inventory.failed_count, 'Pods reporting a failed lifecycle phase.', empty_tone or ('critical' if inventory.failed_count > 0 else 'normal')),
+    ('circle-check-big', 'Completed', inventory.completed_count, 'Pods that completed successfully in the committed snapshot.', empty_tone or ('info' if inventory.completed_count > 0 else 'normal')),
+    ('circle-help', 'Unknown State', inventory.unknown_count, 'Pods without authoritative phase or container readiness evidence.', empty_tone or ('warning' if inventory.unknown_count > 0 else 'normal')),
+    ('rotate-ccw', 'Restart Activity', inventory.restart_activity, 'Pods with cumulative container restart evidence.', empty_tone or ('warning' if inventory.restart_activity > 0 else 'normal')),
+    ('images', 'Unique Images', inventory.unique_image_count, inventory.total_image_references ~ ' regular, init, and ephemeral image references reported.', empty_tone or 'brand')
 ] %}
 {% call operational_section_card.render(
     'Pod Runtime Posture',
-    'Runtime exceptions, completion evidence, restart activity, and image diversity for the active Pod Inventory filters.',
+    'Lifecycle exceptions, completion evidence, restart activity, and image diversity for the active Pod Inventory filters.',
     'gauge',
     body_classes='p-0'
 ) %}
-    {{ posture_grid.render(posture_metrics, columns=3) }}
+    {{ posture_grid.render(posture_metrics, columns=4) }}
 {% endcall %}

@@ -216,7 +216,7 @@ INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
             column('node', 'Node', 'Committed node placement.', width=32),
             column('pod_ip', 'Pod IP', 'Committed pod IP.', width=16),
             column('container_count', 'Containers', 'Number of committed containers.', data_type='integer', missing_value_rule='Blank', width=13, number_format='0'),
-            column('image_count', 'Images', 'Number of distinct committed images.', data_type='integer', missing_value_rule='Blank', width=11, number_format='0'),
+            column('image_count', 'Images', 'Number of committed regular, init, and ephemeral image references.', data_type='integer', missing_value_rule='Blank', width=11, number_format='0'),
             column('configuration_references', 'Configuration References', 'Number of ConfigMap/Secret references.', data_type='integer', missing_value_rule='Blank', width=21, number_format='0'),
             column('persistent_volume_claims', 'PVC References', 'Number of PVC references.', data_type='integer', missing_value_rule='Blank', width=15, number_format='0'),
             column('qos_class', 'QoS Class', 'Committed Kubernetes QoS class.', width=15),

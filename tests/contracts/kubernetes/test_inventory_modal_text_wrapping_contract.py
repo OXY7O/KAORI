@@ -55,4 +55,5 @@ def test_pod_and_workload_tolerations_use_compact_pair_spacing() -> None:
         'app/templates/inventory/workloads/partials/_workload_detail_content.html',
     ):
         source = read(relative)
-        assert "'Tolerations remain factual scheduling evidence until evaluated against an explicit policy.', compact_pairs=true" in source
+        assert 'Tolerations remain factual scheduling evidence until evaluated against an explicit policy.' in source
+        assert 'compact_pairs=true' in source

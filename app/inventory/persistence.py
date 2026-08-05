@@ -477,11 +477,17 @@ def save_pods(
         synchronize_session=False,
     )
 
-    pods = get_pods(
+    pods, collection_evidence = get_pods(
         api,
         apps_api,
         batch_api,
+        with_evidence=True,
     )
+
+    cluster_inventory = ClusterInventory.query.filter_by(cluster_id=cluster.id).one()
+    committed_evidence = dict(cluster_inventory.collection_evidence or {})
+    committed_evidence.update(collection_evidence)
+    cluster_inventory.collection_evidence = committed_evidence
 
     for pod in pods:
         pod_inventory = PodInventory()

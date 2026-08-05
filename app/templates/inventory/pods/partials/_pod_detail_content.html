@@ -26,7 +26,7 @@
         {{ detail.summary_strip([
             ('Runtime State', pod.operational_state_label, pod.state_evidence),
             ('Ready Containers', pod.ready, ''),
-            ('Restart Activity', pod.restarts, 'Cumulative snapshot value'),
+            ('Restart Activity', pod.restarts, 'Cumulative snapshot value' if pod.runtime_evidence_reported else 'Runtime evidence not reported'),
             ('Owner', pod.owner_display, '')
         ], compact=true) }}
 
@@ -38,26 +38,31 @@
                     {{ detail.detail_row('Owner', pod.owner_display) }}
                     {{ detail.detail_row('Age', pod.age) }}
                     {{ detail.technical_row('Kubernetes UID', pod.uid) }}
-                    {{ detail.detail_row('Created', pod.created_at|user_datetime if pod.created_at else '-') }}
-                    {{ detail.detail_row('Collected', pod.collected_at|user_datetime) }}
+                    {{ detail.detail_row('Created', pod.created_at|user_datetime if pod.created_at else 'Not Reported') }}
+                    {{ detail.detail_row('Collected', pod.collected_at|user_datetime if pod.collected_at else 'Not Reported') }}
                 {% endcall %}
 
                 {% call detail.detail_card('Runtime & Conditions', 'activity', pod.operational_state_label, 'status', pod.operational_state_tone, badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.evidence_grid([
                         {'label': 'Kubernetes Phase', 'value': pod.status},
+                        {'label': 'Lifecycle State', 'value': pod.lifecycle_phase},
                         {'label': 'Ready Containers', 'value': pod.ready},
                         {'label': 'Restart Activity', 'value': pod.restarts},
-                        {'label': 'Runtime Reason', 'value': pod.reason or 'Not Reported'}
+                        {'label': 'Runtime Reason', 'value': pod.reason or 'Not Reported'},
+                        {'label': 'Deletion Requested', 'value': pod.deletion_timestamp|user_datetime if pod.deletion_timestamp else 'No'}
                     ], columns=2) }}
                     <div class="mt-3">
                         {{ detail.subsection('Reported Conditions', 'Condition status is interpreted by condition type, not by boolean value alone.') }}
                         {% if pod.condition_evidence_rows %}
                             {{ detail.evidence_grid(pod.condition_evidence_rows, columns=2) }}
+                        {% elif pod.condition_evidence_reported %}
+                            {{ detail.empty_evidence('No Conditions Reported', 'The Kubernetes API reported no Pod condition records in this committed snapshot.', 'list-checks') }}
                         {% else %}
-                            {{ detail.empty_evidence('No Conditions Reported', 'The committed Pod snapshot does not contain condition records.', 'list-checks') }}
+                            {{ detail.empty_evidence('Condition Evidence Not Reported', 'Pod condition evidence was not available in the committed snapshot. Refresh inventory before interpreting condition absence.', 'shield-question') }}
                         {% endif %}
                     </div>
                     {% if pod.message %}<div class="mt-3">{{ operational_callout.render('Runtime Message', pod.message, 'message-square-text', 'info') }}</div>{% endif %}
+                    {% if pod.owner_resolution_review %}<div class="mt-3">{{ operational_callout.render('Owner Resolution Incomplete', 'KAORI retained the direct Kubernetes owner, but higher-level Deployment or CronJob enrichment was unavailable. Review collection permissions before interpreting this Pod as standalone.', 'git-branch', 'warning') }}</div>{% endif %}
                 {% endcall %}
             </div>
 
@@ -69,14 +74,33 @@
                         {{ detail.evidence_grid(pod.placement_evidence_rows, columns=2) }}
                     </div>
                     <div class="mt-4 grid items-start gap-4 lg:grid-cols-2">
-                        {{ metadata_collection.render('Node Selectors', pod.node_selectors, 'binary', 'No Node Selectors', 'No node selector was declared in the committed Pod specification.', 'Selectors remain factual scheduling evidence until evaluated against an explicit policy.') }}
-                        {{ metadata_collection.render('Tolerations', pod.toleration_entries, 'shield', 'No Tolerations', 'No toleration was declared in the committed Pod specification.', 'Tolerations remain factual scheduling evidence until evaluated against an explicit policy.', compact_pairs=true) }}
+                        {{ metadata_collection.render(
+                            'Node Selectors',
+                            pod.node_selectors,
+                            'binary',
+                            'No Node Selectors' if pod.specification_evidence_reported else 'Node Selector Evidence Not Reported',
+                            'No node selector was declared in the committed Pod specification.' if pod.specification_evidence_reported else 'Pod specification evidence was unavailable, so KAORI cannot determine whether node selectors were configured.',
+                            'Selectors remain factual scheduling evidence until evaluated against an explicit policy.'
+                        ) }}
+                        {{ metadata_collection.render(
+                            'Tolerations',
+                            pod.toleration_entries,
+                            'shield',
+                            'No Tolerations' if pod.specification_evidence_reported else 'Toleration Evidence Not Reported',
+                            'No toleration was declared in the committed Pod specification.' if pod.specification_evidence_reported else 'Pod specification evidence was unavailable, so KAORI cannot determine whether tolerations were configured.',
+                            'Tolerations remain factual scheduling evidence until evaluated against an explicit policy.',
+                            compact_pairs=true
+                        ) }}
                     </div>
                 {% endcall %}
 
-                {% call detail.detail_card('Pod Specification', 'settings-2', pod.configuration.container_count ~ ' Containers', badge_size='detail', stretch=false, density='compact') %}
-                    {{ detail.evidence_grid(pod.specification_rows, columns=3) }}
-                    <p class="mt-3 text-xs leading-5 text-content-muted">QoS, restart, DNS, network, and security configuration remain factual evidence until compared with an explicit governance policy.</p>
+                {% call detail.detail_card('Pod Specification', 'settings-2', (pod.configuration.container_count ~ ' Containers') if pod.specification_evidence_reported and pod.configuration.container_count is not none else 'Not Reported', badge_size='detail', stretch=false, density='compact') %}
+                    {% if pod.specification_evidence_reported %}
+                        {{ detail.evidence_grid(pod.specification_rows, columns=3) }}
+                        <p class="mt-3 text-xs leading-5 text-content-muted">QoS, restart, DNS, network, and security configuration remain factual evidence until compared with an explicit governance policy.</p>
+                    {% else %}
+                        {{ detail.empty_evidence('Pod Specification Not Reported', 'Authoritative Pod specification evidence was not available in the committed snapshot.', 'settings-2') }}
+                    {% endif %}
                 {% endcall %}
             </div>
 
@@ -93,12 +117,20 @@
                             <p class="mt-1 text-xs leading-5 text-content-muted">Volume mounts, configuration references, and PersistentVolumeClaims represented in the Pod snapshot.</p>
                         </div>
                     </div>
-                    {{ table_label.metadata_label(pod.volumes|length ~ ' ' ~ ('Volume' if pod.volumes|length == 1 else 'Volumes')) }}
+                    {{ table_label.metadata_label((pod.volumes|length ~ ' ' ~ ('Volume' if pod.volumes|length == 1 else 'Volumes')) if pod.volume_evidence_reported else 'Not Reported') }}
                 </header>
                 {% if pod.volumes %}
                     <div class="overflow-x-auto">
                         <table class="{{ table_ui.table_classes('min-w-[52rem]') }}">
-                            <thead class="{{ table_ui.head_classes() }}"><tr><th class="{{ table_ui.header_cell_classes() }}">Volume</th><th class="{{ table_ui.header_cell_classes() }}">Type</th><th class="{{ table_ui.header_cell_classes() }} min-w-[20rem]">Source</th><th class="{{ table_ui.header_cell_classes() }}">Mounted By</th></tr></thead>
+                            <caption class="sr-only">Volumes and mounts for Pod {{ pod.name }}.</caption>
+                            <thead class="{{ table_ui.head_classes() }}">
+                                <tr>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Volume</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Type</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[20rem]">Source</th>
+                                    <th scope="col" class="{{ table_ui.header_cell_classes() }}">Mounted By</th>
+                                </tr>
+                            </thead>
                             <tbody class="{{ table_ui.body_classes() }}">
                                 {% for volume in pod.volumes %}
                                     <tr class="{{ table_ui.row_classes() }}">
@@ -111,8 +143,10 @@
                             </tbody>
                         </table>
                     </div>
+                {% elif pod.volume_evidence_reported %}
+                    <div class="p-4">{{ detail.empty_evidence('No Volumes Configured', 'The committed Pod specification reported no volume definitions.', 'database') }}</div>
                 {% else %}
-                    <div class="p-4">{{ detail.empty_evidence('No Volumes Reported', 'No volume records are present in the committed Pod snapshot.', 'database') }}</div>
+                    <div class="p-4">{{ detail.empty_evidence('Volume Evidence Not Reported', 'Pod specification evidence was unavailable, so volume absence cannot be established.', 'shield-question') }}</div>
                 {% endif %}
                 <div class="grid gap-4 border-t border-outline-subtle p-4 lg:grid-cols-2">
                     {{ related_collection.render(
@@ -121,8 +155,8 @@
                         pod.configuration_references,
                         pod.configuration_references|length,
                         'file-key-2',
-                        'No Configuration References',
-                        'No ConfigMap or Secret reference is represented in this Pod snapshot.'
+                        'No Configuration References' if pod.reference_evidence_reported else 'Configuration Reference Evidence Not Reported',
+                        'No ConfigMap or Secret reference is represented in this Pod specification.' if pod.reference_evidence_reported else 'Pod specification evidence was unavailable, so KAORI cannot determine whether configuration references exist.'
                     ) }}
                     {{ related_collection.render(
                         'Storage References',
@@ -130,8 +164,8 @@
                         pod.storage_references,
                         pod.storage_references|length,
                         'database-zap',
-                        'No Storage References',
-                        'No PersistentVolumeClaim reference is represented in this Pod snapshot.'
+                        'No Storage References' if pod.reference_evidence_reported else 'Storage Reference Evidence Not Reported',
+                        'No PersistentVolumeClaim reference is represented in this Pod specification.' if pod.reference_evidence_reported else 'Pod specification evidence was unavailable, so KAORI cannot determine whether storage references exist.'
                     ) }}
                 </div>
             </section>
