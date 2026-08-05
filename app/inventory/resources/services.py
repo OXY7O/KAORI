@@ -16,6 +16,15 @@ from app.inventory.resources.common import (
     format_age,
 )
 from app.inventory.resources.descriptions import SERVICE_TYPE_DESCRIPTIONS
+from app.inventory.resources.pod_semantics import pod_operational_state
+from app.inventory.resources.service_semantics import (
+    access_model,
+    access_presentation,
+    backend_registration,
+    effective_service_type,
+    operational_context,
+    port_mapping,
+)
 from app.models import Cluster, PodInventory, ServiceInventory
 
 
@@ -35,145 +44,11 @@ def get_service_filter_types(cluster_id: str | None = None, namespace: str | Non
         query = query.filter(ServiceInventory.cluster_id == cluster_id)
     if namespace:
         query = query.filter(ServiceInventory.namespace == namespace)
-    rows = query.distinct().all()
     values = {
-        'Headless' if raw_type == 'ClusterIP' and cluster_ip == 'None' else (raw_type or 'Unknown')
-        for raw_type, cluster_ip in rows
+        effective_service_type(raw_type, cluster_ip)
+        for raw_type, cluster_ip in query.distinct().all()
     }
     return sorted(values)
-
-
-def _effective_type(service_type: str | None, cluster_ip: str | None) -> str:
-    raw_type = service_type or 'Unknown'
-    return 'Headless' if raw_type == 'ClusterIP' and cluster_ip == 'None' else raw_type
-
-
-def _backend_registration(
-    service_type: str,
-    selector: dict[str, str],
-    endpoints: dict[str, Any],
-) -> dict[str, Any]:
-    ready = len(endpoints.get('ready_addresses') or [])
-    not_ready = len(endpoints.get('not_ready_addresses') or [])
-    reported = bool(endpoints.get('reported'))
-    source = str(endpoints.get('source') or 'Endpoint Evidence')
-
-    if service_type == 'ExternalName':
-        return {
-            'label': 'External Destination',
-            'tone': 'info',
-            'supporting': 'DNS destination',
-            'ready': ready,
-            'not_ready': not_ready,
-            'reported': reported,
-            'source': source,
-            'exception': False,
-        }
-    if not selector:
-        return {
-            'label': 'Manually Managed',
-            'tone': 'info',
-            'supporting': f'{ready + not_ready} registered addresses' if reported else 'Selectorless Service',
-            'ready': ready,
-            'not_ready': not_ready,
-            'reported': reported,
-            'source': source,
-            'exception': False,
-        }
-    if not reported:
-        return {
-            'label': 'Not Reported',
-            'tone': 'unknown',
-            'supporting': 'Endpoint evidence unavailable',
-            'ready': ready,
-            'not_ready': not_ready,
-            'reported': False,
-            'source': source,
-            'exception': True,
-        }
-    if ready > 0 and not_ready == 0:
-        return {
-            'label': 'Registered',
-            'tone': 'normal',
-            'supporting': f'{ready} ready',
-            'ready': ready,
-            'not_ready': not_ready,
-            'reported': True,
-            'source': source,
-            'exception': False,
-        }
-    if ready > 0 and not_ready > 0:
-        return {
-            'label': 'Partial',
-            'tone': 'warning',
-            'supporting': f'{ready} ready · {not_ready} not ready',
-            'ready': ready,
-            'not_ready': not_ready,
-            'reported': True,
-            'source': source,
-            'exception': True,
-        }
-    if not_ready > 0:
-        return {
-            'label': 'Not Ready',
-            'tone': 'critical',
-            'supporting': f'{not_ready} not ready',
-            'ready': ready,
-            'not_ready': not_ready,
-            'reported': True,
-            'source': source,
-            'exception': True,
-        }
-    return {
-        'label': 'No Registered Backends',
-        'tone': 'warning',
-        'supporting': '0 registered addresses',
-        'ready': 0,
-        'not_ready': 0,
-        'reported': True,
-        'source': source,
-        'exception': True,
-    }
-
-
-def _access_model(service_type: str) -> str:
-    return {
-        'ClusterIP': 'Cluster Internal',
-        'Headless': 'Direct Pod Discovery',
-        'NodePort': 'Node Port Publication',
-        'LoadBalancer': 'Load Balancer Publication',
-        'ExternalName': 'External DNS Alias',
-    }.get(service_type, service_type)
-
-
-def _port_mapping(port_rows: list[dict[str, Any]]) -> tuple[str, str]:
-    if not port_rows:
-        return 'No Ports', 'No port mapping reported'
-    first = port_rows[0]
-    target = first.get('target_port') or '-'
-    primary = f'{first.get("port", 0)}/{first.get("protocol", "TCP")} → {target}'
-    supporting = f'{len(port_rows)} ' + ('Port' if len(port_rows) == 1 else 'Ports')
-    return primary, supporting
-
-
-def _pod_operational_state(phase: str | None, ready: str | None) -> tuple[str, str]:
-    phase_value = (phase or '').strip()
-    ready_value = (ready or '').strip()
-    ready_all = False
-    if '/' in ready_value:
-        numerator, denominator = ready_value.split('/', 1)
-        ready_all = numerator.isdigit() and denominator.isdigit() and int(denominator) > 0 and numerator == denominator
-    if phase_value == 'Failed':
-        return 'Failed', 'critical'
-    if phase_value == 'Succeeded':
-        return 'Completed', 'info'
-    if phase_value == 'Pending':
-        return 'Starting', 'pending'
-    if phase_value == 'Running' and ready_all:
-        return 'Ready', 'normal'
-    if phase_value == 'Running':
-        return 'Not Ready', 'warning'
-    return 'Unknown', 'unknown'
 
 
 def _apply_filters(query, cluster_id=None, namespace=None, service_type=None, search=None):
@@ -183,9 +58,22 @@ def _apply_filters(query, cluster_id=None, namespace=None, service_type=None, se
         query = query.filter(ServiceInventory.namespace == namespace)
     if service_type:
         if service_type == 'Headless':
-            query = query.filter(ServiceInventory.service_type == 'ClusterIP', ServiceInventory.cluster_ip == 'None')
+            query = query.filter(
+                ServiceInventory.service_type == 'ClusterIP',
+                ServiceInventory.cluster_ip == 'None',
+            )
         elif service_type == 'ClusterIP':
-            query = query.filter(ServiceInventory.service_type == 'ClusterIP', ServiceInventory.cluster_ip != 'None')
+            query = query.filter(
+                ServiceInventory.service_type == 'ClusterIP',
+                ServiceInventory.cluster_ip != 'None',
+            )
+        elif service_type == 'Unknown':
+            query = query.filter(
+                or_(
+                    ServiceInventory.service_type.is_(None),
+                    func.trim(ServiceInventory.service_type) == '',
+                )
+            )
         else:
             query = query.filter(ServiceInventory.service_type == service_type)
     if search:
@@ -193,12 +81,86 @@ def _apply_filters(query, cluster_id=None, namespace=None, service_type=None, se
         query = query.filter(
             or_(
                 ServiceInventory.service_name.ilike(pattern),
+                ServiceInventory.namespace.ilike(pattern),
+                ServiceInventory.service_type.ilike(pattern),
                 ServiceInventory.cluster_ip.ilike(pattern),
                 ServiceInventory.external_ip.ilike(pattern),
                 ServiceInventory.ports.ilike(pattern),
             )
         )
     return query
+
+
+def _service_summary_rows(cluster_id=None, namespace=None, service_type=None, search=None):
+    query = db.session.query(
+        ServiceInventory.service_type,
+        ServiceInventory.cluster_ip,
+        ServiceInventory.selector,
+        ServiceInventory.details,
+    )
+    query = filter_current_generation(query, ServiceInventory)
+    return _apply_filters(query, cluster_id, namespace, service_type, search).all()
+
+
+def _service_summary(summary_rows) -> dict[str, Any]:
+    type_counts: dict[str, int] = {}
+    registration_counts = {'registered': 0, 'exceptions': 0, 'not_reported': 0}
+    for raw_type, cluster_ip, selector, details in summary_rows:
+        effective = effective_service_type(raw_type, cluster_ip)
+        type_counts[effective] = type_counts.get(effective, 0) + 1
+        registration = backend_registration(
+            effective,
+            selector or {},
+            (details or {}).get('endpoints') or {},
+        )
+        if registration['ready'] > 0 and not registration['exception']:
+            registration_counts['registered'] += 1
+        if registration['exception']:
+            registration_counts['exceptions'] += 1
+        if registration['label'] == 'Not Reported':
+            registration_counts['not_reported'] += 1
+    return {'type_counts': type_counts, 'registration_counts': registration_counts}
+
+
+def _service_access_details(service: ServiceInventory, effective_type: str) -> tuple[str, str]:
+    details = service.details or {}
+    cluster_ips = list(details.get('cluster_ips') or ([service.cluster_ip] if service.cluster_ip else []))
+    external_addresses = list(details.get('external_addresses') or _split_inventory_values(service.external_ip))
+    return access_presentation(
+        effective_type,
+        cluster_ips,
+        external_addresses,
+        details.get('external_name'),
+    )
+
+
+def _present_service_row(service: ServiceInventory, cluster_name: str, cluster_environment: str) -> dict[str, Any]:
+    effective = effective_service_type(service.service_type, service.cluster_ip)
+    details = service.details or {}
+    registration = backend_registration(
+        effective,
+        service.selector or {},
+        details.get('endpoints') or {},
+    )
+    ports = _service_port_rows(service)
+    mapping, port_supporting = port_mapping(ports)
+    access_address, access_supporting = _service_access_details(service, effective)
+    return {
+        'id': service.id,
+        'cluster_name': cluster_name,
+        'cluster_environment': cluster_environment,
+        'namespace': service.namespace,
+        'service_name': service.service_name,
+        'service_type': effective,
+        'access_model': access_model(effective),
+        'access_address': access_address,
+        'access_supporting': access_supporting,
+        'port_mapping': mapping,
+        'port_supporting': port_supporting,
+        'backend': registration,
+        'created_at': service.created_at,
+        'collected_at': service.collected_at,
+    }
 
 
 def get_service_inventory(
@@ -217,69 +179,20 @@ def get_service_inventory(
     query = filter_current_generation(query, ServiceInventory)
     query = _apply_filters(query, cluster_id, namespace, service_type, search)
 
-    summary_query = db.session.query(
-        ServiceInventory.service_type,
-        ServiceInventory.cluster_ip,
-        ServiceInventory.selector,
-        ServiceInventory.details,
-    )
-    summary_query = filter_current_generation(summary_query, ServiceInventory)
-    summary_query = _apply_filters(summary_query, cluster_id, namespace, service_type, search)
-    summary_rows = summary_query.all()
-
     services, pagination = paginate_query(
         query.order_by(Cluster.name, ServiceInventory.namespace, ServiceInventory.service_name),
         page=page,
         per_page=per_page,
     )
-
-    type_counts: dict[str, int] = {}
-    registration_counts = {
-        'registered': 0,
-        'exceptions': 0,
-        'not_reported': 0,
-    }
-    for raw_type, cluster_ip, selector, details in summary_rows:
-        effective = _effective_type(raw_type, cluster_ip)
-        type_counts[effective] = type_counts.get(effective, 0) + 1
-        registration = _backend_registration(effective, selector or {}, (details or {}).get('endpoints') or {})
-        if registration['label'] == 'Registered':
-            registration_counts['registered'] += 1
-        if registration['exception']:
-            registration_counts['exceptions'] += 1
-        if registration['label'] == 'Not Reported':
-            registration_counts['not_reported'] += 1
-
-    rows: list[dict[str, Any]] = []
-    for service, cluster_name, cluster_environment in services:
-        effective = _effective_type(service.service_type, service.cluster_ip)
-        details = service.details or {}
-        endpoint_evidence = details.get('endpoints') or {}
-        registration = _backend_registration(effective, service.selector or {}, endpoint_evidence)
-        ports = _service_port_rows(service)
-        port_mapping, port_supporting = _port_mapping(ports)
-        external_addresses = _split_inventory_values(service.external_ip)
-        cluster_ips = details.get('cluster_ips') or ([service.cluster_ip] if service.cluster_ip else [])
-        access_addresses = [value for value in [*cluster_ips, *external_addresses] if value and value != '-']
-        rows.append(
-            {
-                'id': service.id,
-                'cluster_name': cluster_name,
-                'cluster_environment': cluster_environment,
-                'namespace': service.namespace,
-                'service_name': service.service_name,
-                'service_type': effective,
-                'access_model': _access_model(effective),
-                'access_address': access_addresses[0] if access_addresses else (details.get('external_name') or '-'),
-                'address_count': len(access_addresses),
-                'port_mapping': port_mapping,
-                'port_supporting': port_supporting,
-                'backend': registration,
-                'age': format_age(service.created_at),
-                'created_at': service.created_at,
-                'collected_at': service.collected_at,
-            }
-        )
+    summary = _service_summary(
+        _service_summary_rows(cluster_id, namespace, service_type, search)
+    )
+    type_counts = summary['type_counts']
+    registration_counts = summary['registration_counts']
+    rows = [
+        _present_service_row(service, cluster_name, cluster_environment)
+        for service, cluster_name, cluster_environment in services
+    ]
 
     total = pagination['total_items']
     exceptions = registration_counts['exceptions']
@@ -292,6 +205,7 @@ def get_service_inventory(
         'load_balancer': type_counts.get('LoadBalancer', 0),
         'external_name': type_counts.get('ExternalName', 0),
         'headless': type_counts.get('Headless', 0),
+        'unknown_type': type_counts.get('Unknown', 0),
         'access_model_count': len(type_counts),
         'registered_backends': registration_counts['registered'],
         'backend_exceptions': exceptions,
@@ -322,9 +236,145 @@ def _matched_pod_preview(service: ServiceInventory, selector: dict[str, str]) ->
     return len(matched), matched[:8]
 
 
+def _present_selected_pods(pods: list[PodInventory]) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for pod in pods:
+        row = _pod_summary(pod)
+        state, tone, evidence = pod_operational_state(pod.phase, pod.ready)
+        details = pod.details or {}
+        specification_reported = details.get('specification_evidence_reported', True)
+        container_count = len(pod.container_names or []) if specification_reported else None
+        age = format_age(pod.created_at)
+        age_display = age if age != '-' else 'Not Reported'
+        row.update(
+            {
+                'status': state,
+                'status_tone': tone,
+                'supporting_primary': f'Node {pod.node_name or "Not Scheduled"} · {evidence}',
+                'supporting_secondary': (
+                    f'{container_count} Containers · Age {age_display}'
+                    if container_count is not None
+                    else f'Container evidence not reported · Age {age_display}'
+                ),
+            }
+        )
+        rows.append(row)
+    return rows
+
+
+def _endpoint_resource(item: dict[str, Any], registration: dict[str, Any], state: str) -> dict[str, Any]:
+    terminating = item.get('terminating') is True
+    serving = item.get('serving')
+    condition_parts = []
+    if serving is not None:
+        condition_parts.append(f'Serving {"Yes" if serving else "No"}')
+    if terminating:
+        condition_parts.append('Terminating')
+    condition_context = ' · '.join(condition_parts) or registration['source']
+    return {
+        'name': item.get('ip') or item.get('hostname') or 'Endpoint Address',
+        'supporting_primary': f"{item.get('target_kind') or 'Target'} · {item.get('target_name') or 'Not Reported'}",
+        'supporting_secondary': f"Node {item.get('node_name') or 'Not Reported'} · {condition_context}",
+        'status': state,
+        'status_tone': 'normal' if state == 'Ready' and not terminating else 'warning',
+    }
+
+
+def _present_endpoint_resources(endpoint_evidence: dict[str, Any], registration: dict[str, Any]):
+    ready = [item for item in endpoint_evidence.get('ready_addresses') or [] if isinstance(item, dict)]
+    not_ready = [item for item in endpoint_evidence.get('not_ready_addresses') or [] if isinstance(item, dict)]
+    resources = [
+        *[_endpoint_resource(item, registration, 'Ready') for item in ready[:12]],
+        *[_endpoint_resource(item, registration, 'Not Ready') for item in not_ready[:12]],
+    ]
+    return ready, not_ready, resources
+
+
+
+def _service_detail_configuration(
+    service: ServiceInventory,
+    cluster_name: str,
+    details: dict[str, Any],
+    effective: str,
+) -> dict[str, Any]:
+    cluster_ips = list(details.get('cluster_ips') or ([service.cluster_ip] if service.cluster_ip else []))
+    external_ips = list(details.get('external_addresses') or _split_inventory_values(service.external_ip))
+    return {
+        'id': service.id,
+        'cluster_name': cluster_name,
+        'cluster_id': service.cluster_id,
+        'namespace': service.namespace,
+        'name': service.service_name,
+        'type': effective,
+        'access_model': access_model(effective),
+        'type_description': SERVICE_TYPE_DESCRIPTIONS.get(
+            effective,
+            'Exposes a stable network endpoint for an application or external destination.',
+        ),
+        'specification_evidence_reported': details.get('specification_evidence_reported', True),
+        'uid': details.get('uid') or 'Not Reported',
+        'generation': int(details.get('generation') or 0) or 'Not Reported',
+        'cluster_ip': 'None (Headless)' if effective == 'Headless' else (service.cluster_ip or 'Not Reported'),
+        'cluster_ips': [value for value in cluster_ips if value and value != 'None'],
+        'external_ips': external_ips,
+        'declared_external_ips': list(details.get('declared_external_ips') or []),
+        'load_balancer_addresses': list(details.get('load_balancer_ingress') or []),
+        'load_balancer_status_reported': details.get('load_balancer_status_reported'),
+        'external_name': details.get('external_name') or 'Not Configured',
+        'ip_families': details.get('ip_families') or [],
+        'ip_family_policy': details.get('ip_family_policy') or 'Not Reported',
+        'session_affinity': details.get('session_affinity') or 'None',
+        'internal_traffic_policy': details.get('internal_traffic_policy') or 'Not Reported',
+        'external_traffic_policy': details.get('external_traffic_policy') or 'Not Reported',
+        'publish_not_ready_addresses': bool(details.get('publish_not_ready_addresses')),
+        'health_check_node_port': int(details.get('health_check_node_port') or 0),
+        'load_balancer_class': details.get('load_balancer_class') or 'Not Configured',
+        'allocate_load_balancer_node_ports': details.get('allocate_load_balancer_node_ports'),
+        'age': format_age(service.created_at),
+        'created_at': service.created_at,
+        'collected_at': service.collected_at,
+        'labels': dict(sorted((details.get('labels') or {}).items())),
+        'annotations': dict(sorted((details.get('annotations') or {}).items())),
+    }
+
+
+def _service_detail_relationships(
+    *,
+    selector: dict[str, str],
+    effective: str,
+    registration: dict[str, Any],
+    pod_count: int,
+    matched_pods: list[PodInventory],
+    ready_endpoints: list[dict[str, Any]],
+    not_ready_endpoints: list[dict[str, Any]],
+    endpoint_resources: list[dict[str, Any]],
+) -> dict[str, Any]:
+    endpoint_registration_applicable = effective != 'ExternalName'
+    endpoints_reported = registration['reported'] if endpoint_registration_applicable else False
+    pod_relationship_applicable = bool(selector)
+    return {
+        'selector': selector,
+        'selector_entries': dict(sorted(selector.items())),
+        'selector_applicable': effective != 'ExternalName',
+        'pod_relationship_applicable': pod_relationship_applicable,
+        'pod_count': pod_count if pod_relationship_applicable else None,
+        'pods': _present_selected_pods(matched_pods),
+        'pods_truncated': pod_count > len(matched_pods),
+        'backend': registration,
+        'endpoint_registration_applicable': endpoint_registration_applicable,
+        'endpoints_reported': endpoints_reported,
+        'endpoint_source': registration['source'],
+        'ready_endpoint_count': registration['ready'] if endpoints_reported else None,
+        'not_ready_endpoint_count': registration['not_ready'] if endpoints_reported else None,
+        'endpoint_resources': endpoint_resources,
+        'endpoints_truncated': len(ready_endpoints) > 12 or len(not_ready_endpoints) > 12,
+        'operational_context': operational_context(registration),
+    }
+
 def get_service_detail(service_id: int) -> dict[str, Any] | None:
     query = db.session.query(ServiceInventory, Cluster.name.label('cluster_name')).join(
-        Cluster, Cluster.id == ServiceInventory.cluster_id
+        Cluster,
+        Cluster.id == ServiceInventory.cluster_id,
     )
     query = filter_current_generation(query, ServiceInventory)
     result = query.filter(ServiceInventory.id == service_id).first()
@@ -334,142 +384,27 @@ def get_service_detail(service_id: int) -> dict[str, Any] | None:
     service, cluster_name = result
     details = dict(service.details or {})
     selector = service.selector or {}
-    effective = _effective_type(service.service_type, service.cluster_ip)
+    effective = effective_service_type(service.service_type, service.cluster_ip)
     endpoint_evidence = dict(details.get('endpoints') or {})
-    registration = _backend_registration(effective, selector, endpoint_evidence)
-    ready_endpoints = [item for item in endpoint_evidence.get('ready_addresses') or [] if isinstance(item, dict)]
-    not_ready_endpoints = [item for item in endpoint_evidence.get('not_ready_addresses') or [] if isinstance(item, dict)]
+    registration = backend_registration(effective, selector, endpoint_evidence)
+    ready_endpoints, not_ready_endpoints, endpoint_resources = _present_endpoint_resources(
+        endpoint_evidence,
+        registration,
+    )
     pod_count, matched_pods = _matched_pod_preview(service, selector)
-
-    pod_rows = []
-    for pod in matched_pods:
-        row = _pod_summary(pod)
-        state, tone = _pod_operational_state(pod.phase, pod.ready)
-        row.update(
-            {
-                'status': state,
-                'status_tone': tone,
-                'supporting_primary': f'Node {pod.node_name or "Not Scheduled"} · Ready {pod.ready or "-"}',
-                'supporting_secondary': f'{len(pod.container_names or [])} Containers · Age {format_age(pod.created_at)}',
-            }
-        )
-        pod_rows.append(row)
-
     ports = _service_port_rows(service)
-    labels = details.get('labels') or {}
-    annotations = details.get('annotations') or {}
-    cluster_ips = details.get('cluster_ips') or ([service.cluster_ip] if service.cluster_ip else [])
-    external_ips = _split_inventory_values(service.external_ip)
-
-    endpoint_rows = []
-    endpoint_resources = []
-    for item in ready_endpoints[:12]:
-        endpoint_rows.append({**item, 'state': 'Ready', 'tone': 'normal'})
-        endpoint_resources.append({
-            'name': item.get('ip') or item.get('hostname') or 'Endpoint Address',
-            'supporting_primary': f"{item.get('target_kind') or 'Target'} · {item.get('target_name') or 'Not Reported'}",
-            'supporting_secondary': f"Node {item.get('node_name') or 'Not Reported'} · {registration['source']}",
-            'status': 'Ready',
-            'status_tone': 'normal',
-        })
-    for item in not_ready_endpoints[:12]:
-        endpoint_rows.append({**item, 'state': 'Not Ready', 'tone': 'warning'})
-        endpoint_resources.append({
-            'name': item.get('ip') or item.get('hostname') or 'Endpoint Address',
-            'supporting_primary': f"{item.get('target_kind') or 'Target'} · {item.get('target_name') or 'Not Reported'}",
-            'supporting_secondary': f"Node {item.get('node_name') or 'Not Reported'} · {registration['source']}",
-            'status': 'Not Ready',
-            'status_tone': 'warning',
-        })
-
-    if registration['label'] == 'No Registered Backends':
-        operational_context = {
-            'title': 'Review Service Backend Registration',
-            'description': 'No registered backend address is present for this selector-based Service. Confirm selector matching and workload readiness.',
-            'icon': 'route-off',
-            'tone': 'warning',
-        }
-    elif registration['label'] == 'Partial':
-        operational_context = {
-            'title': 'Investigate Not-Ready Endpoints',
-            'description': 'Ready and not-ready backend addresses are both present. Review selected Pod readiness and endpoint conditions.',
-            'icon': 'triangle-alert',
-            'tone': 'warning',
-        }
-    elif registration['label'] == 'Not Ready':
-        operational_context = {
-            'title': 'Restore Backend Readiness',
-            'description': 'All reported backend addresses are not ready. Review selected Pods and endpoint conditions before relying on this Service.',
-            'icon': 'shield-alert',
-            'tone': 'critical',
-        }
-    elif registration['label'] == 'Not Reported':
-        operational_context = {
-            'title': 'Refresh Endpoint Evidence',
-            'description': 'Endpoint registration evidence was not reported. Run inventory sync before drawing backend readiness conclusions.',
-            'icon': 'refresh-cw',
-            'tone': 'unknown',
-        }
-    elif registration['label'] == 'External Destination':
-        operational_context = {
-            'title': 'Review External Destination',
-            'description': 'This ExternalName Service delegates resolution to an external DNS destination. Inventory does not validate destination reachability.',
-            'icon': 'external-link',
-            'tone': 'info',
-        }
-    else:
-        operational_context = {
-            'title': 'Service Snapshot Ready for Review',
-            'description': 'Backend registration evidence is available in the committed snapshot. Traffic health and reachability remain outside inventory scope.',
-            'icon': 'circle-check',
-            'tone': 'normal',
-        }
-
     return {
-        'id': service.id,
-        'cluster_name': cluster_name,
-        'cluster_id': service.cluster_id,
-        'namespace': service.namespace,
-        'name': service.service_name,
-        'type': effective,
-        'access_model': _access_model(effective),
-        'type_description': SERVICE_TYPE_DESCRIPTIONS.get(
-            effective, 'Exposes a stable network endpoint for an application or external destination.'
+        **_service_detail_configuration(service, cluster_name, details, effective),
+        **_service_detail_relationships(
+            selector=selector,
+            effective=effective,
+            registration=registration,
+            pod_count=pod_count,
+            matched_pods=matched_pods,
+            ready_endpoints=ready_endpoints,
+            not_ready_endpoints=not_ready_endpoints,
+            endpoint_resources=endpoint_resources,
         ),
-        'uid': details.get('uid') or '-',
-        'generation': int(details.get('generation') or 0),
-        'cluster_ip': service.cluster_ip or '-',
-        'cluster_ips': cluster_ips,
-        'external_ips': external_ips,
-        'external_name': details.get('external_name') or '-',
-        'ip_families': details.get('ip_families') or [],
-        'ip_family_policy': details.get('ip_family_policy') or '-',
-        'session_affinity': details.get('session_affinity') or 'None',
-        'internal_traffic_policy': details.get('internal_traffic_policy') or '-',
-        'external_traffic_policy': details.get('external_traffic_policy') or '-',
-        'publish_not_ready_addresses': bool(details.get('publish_not_ready_addresses')),
-        'health_check_node_port': int(details.get('health_check_node_port') or 0),
-        'load_balancer_class': details.get('load_balancer_class') or '-',
-        'allocate_load_balancer_node_ports': details.get('allocate_load_balancer_node_ports'),
         'ports': ports,
         'port_count': len(ports),
-        'selector': selector,
-        'selector_entries': dict(sorted(selector.items())),
-        'age': format_age(service.created_at),
-        'created_at': service.created_at,
-        'collected_at': service.collected_at,
-        'pod_count': pod_count,
-        'pods': pod_rows,
-        'pods_truncated': pod_count > len(pod_rows),
-        'has_selector': bool(selector),
-        'backend': registration,
-        'endpoint_source': registration['source'],
-        'ready_endpoint_count': registration['ready'],
-        'not_ready_endpoint_count': registration['not_ready'],
-        'endpoint_rows': endpoint_rows,
-        'endpoint_resources': endpoint_resources,
-        'endpoints_truncated': len(ready_endpoints) > 12 or len(not_ready_endpoints) > 12,
-        'labels': dict(sorted(labels.items())),
-        'annotations': dict(sorted(annotations.items())),
-        'operational_context': operational_context,
     }

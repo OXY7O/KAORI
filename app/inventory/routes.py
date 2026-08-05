@@ -96,6 +96,7 @@ _INVENTORY_PARTIAL_TEMPLATES['nodes']['workspace'] = 'inventory/nodes/partials/_
 _INVENTORY_PARTIAL_TEMPLATES['namespaces']['workspace'] = 'inventory/namespaces/partials/_page_workspace.html'
 _INVENTORY_PARTIAL_TEMPLATES['workloads']['workspace'] = 'inventory/workloads/partials/_page_workspace.html'
 _INVENTORY_PARTIAL_TEMPLATES['pods']['workspace'] = 'inventory/pods/partials/_page_workspace.html'
+_INVENTORY_PARTIAL_TEMPLATES['services']['workspace'] = 'inventory/services/partials/_page_workspace.html'
 
 inventory_bp = Blueprint(
     'inventory',

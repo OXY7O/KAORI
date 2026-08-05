@@ -68,7 +68,6 @@
     "app/intelligence/recommendation_engine.py::build_workload_actionable_recommendations": 50,
     "app/inventory/collectors/ingresses.py::get_ingresses": 46,
     "app/inventory/collectors/storage.py::get_storage_inventory": 47,
-    "app/inventory/resources/services.py::get_service_detail": 36,
     "app/inventory/topology/service.py::build_topology_graph": 148,
     "app/notifications/event_catalog.py::build_event_context": 41,
     "app/prometheus/presentation.py::_capability_row": 40,

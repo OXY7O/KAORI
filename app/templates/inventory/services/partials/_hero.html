@@ -19,7 +19,7 @@
             inventory.overall_posture_label,
             inventory.overall_posture_tone,
             [
-                ('circle-check', 'Registered', inventory.registered_backends, 'Ready backends present'),
+                ('circle-check', 'Ready Backends', inventory.registered_backends, 'Services with ready registration'),
                 ('triangle-alert', 'Exceptions', inventory.backend_exceptions, 'Missing or partial')
             ],
             'Manage Clusters',

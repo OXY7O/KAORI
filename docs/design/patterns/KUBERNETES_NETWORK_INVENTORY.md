@@ -51,3 +51,7 @@ Network details use Adaptive Detail Stacks and natural-height cards. Tables use 
 ## Data boundary
 
 Inventory reports declared configuration and committed registration evidence. It does not prove public exposure, live reachability, traffic health, certificate validity, or certificate expiry.
+
+## Service collection resilience
+
+Service backend collection records a committed evidence state. EndpointSlice permission/API compatibility failures may use Endpoints fallback. Unexpected API failures are not hidden. Selectorless Services distinguish reported manual registration from missing endpoint evidence, and exports leave endpoint-derived counts blank when evidence was not reported.

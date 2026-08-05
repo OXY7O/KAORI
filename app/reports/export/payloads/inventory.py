@@ -8,6 +8,11 @@ from typing import Any
 from app.common.inventory_generation import filter_current_generation
 from app.extensions.db import db
 from app.inventory.formatting import format_kubernetes_size
+from app.inventory.resources.service_semantics import (
+    access_model as service_access_model,
+    backend_registration as service_backend_registration,
+    effective_service_type,
+)
 from app.models import (
     Cluster,
     ClusterInventory,
@@ -215,21 +220,67 @@ def _pod_row(item: PodInventory, cluster_name: str, environment: str) -> dict[st
     }
 
 
+def _service_port_export_value(details: dict[str, Any], legacy_value: str | None) -> str:
+    rows = [row for row in details.get('ports') or [] if isinstance(row, dict)]
+    if not rows:
+        return _text(legacy_value, 'Not Configured')
+    values = []
+    for row in rows:
+        service_port = int(row.get('port') or 0)
+        protocol = _text(row.get('protocol'), 'TCP')
+        target_port = _text(row.get('target_port'), str(service_port or 'Not Reported'))
+        node_port = int(row.get('node_port') or 0)
+        rendered = f'{service_port}/{protocol} -> {target_port}'
+        if node_port:
+            rendered += f' (NodePort {node_port})'
+        values.append(rendered)
+    return ', '.join(values) if values else 'Not Configured'
+
+
 def _service_row(item: ServiceInventory, cluster_name: str, environment: str) -> dict[str, Any]:
     details = item.details or {}
+    effective_type = effective_service_type(item.service_type, item.cluster_ip)
+    registration = service_backend_registration(
+        effective_type,
+        item.selector or {},
+        details.get('endpoints') or {},
+    )
+    endpoint_applicable = effective_type != 'ExternalName'
+    endpoint_reported = registration['reported'] and endpoint_applicable
+    external_addresses = list(details.get('external_addresses') or [])
+    load_balancer_addresses = list(details.get('load_balancer_ingress') or [])
+    cluster_ip = 'None (Headless)' if effective_type == 'Headless' else _text(item.cluster_ip, 'Not Reported')
+    port_rows = [row for row in details.get('ports') or [] if isinstance(row, dict)]
+    legacy_port_count = len([value for value in str(item.ports or '').split(',') if value.strip()])
+    load_balancer_reported = details.get('load_balancer_status_reported')
+    if load_balancer_addresses:
+        load_balancer_value = ', '.join(load_balancer_addresses)
+    elif effective_type == 'LoadBalancer':
+        load_balancer_value = 'No Address Assigned' if load_balancer_reported else 'Not Reported'
+    else:
+        load_balancer_value = 'Not Applicable'
     return {
-        'status': 'Discovered',
+        'status': registration['label'],
         'cluster': cluster_name,
         'environment': _text(environment, 'Not Available'),
         'namespace': item.namespace,
         'name': item.service_name,
-        'resource_type': _text(item.service_type, 'Unknown'),
-        'cluster_ip': _text(item.cluster_ip, 'Not Available'),
-        'external_ip': _text(item.external_ip, 'Not Available'),
-        'ports': _text(item.ports, 'Not Available'),
+        'resource_type': effective_type,
+        'access_model': service_access_model(effective_type),
+        'cluster_ip': cluster_ip,
+        'external_ip': ', '.join(external_addresses) if external_addresses else 'Not Configured',
+        'ports': _service_port_export_value(details, item.ports),
+        'port_count': len(port_rows) if port_rows else legacy_port_count,
         'selector_count': _count_json(item.selector),
-        'selector': _join_json(item.selector),
-        'load_balancer': _text(details.get('load_balancer') or details.get('load_balancer_ip'), 'Not Available'),
+        'selector': _join_json(item.selector, fallback='Not Configured'),
+        'endpoint_source': 'Not Applicable' if not endpoint_applicable else registration['source'],
+        'ready_endpoints': registration['ready'] if endpoint_reported else None,
+        'not_ready_endpoints': registration['not_ready'] if endpoint_reported else None,
+        'load_balancer': load_balancer_value,
+        'external_name': _text(details.get('external_name'), 'Not Configured'),
+        'internal_traffic_policy': _text(details.get('internal_traffic_policy'), 'Not Reported'),
+        'external_traffic_policy': _text(details.get('external_traffic_policy'), 'Not Reported'),
+        'publish_not_ready': bool(details.get('publish_not_ready_addresses')),
         'created_at': item.created_at,
         'collected_at': item.collected_at,
     }

@@ -1,12 +1,13 @@
 {% import "components/operational_section_card.html" as operational_section_card %}
 {% import "components/resource_posture_grid.html" as posture_grid %}
+{% set neutral_tone = 'unknown' if inventory.total_services == 0 else 'brand' %}
 {% set metrics = [
-    ('shield', 'ClusterIP & Headless', inventory.cluster_ip + inventory.headless, 'Cluster-internal and direct Pod discovery access models.', 'brand'),
-    ('plug-zap', 'NodePort', inventory.node_port, 'Services declaring node-level port publication.', 'brand'),
-    ('globe-2', 'LoadBalancer', inventory.load_balancer, 'Services declaring load balancer publication.', 'brand'),
-    ('external-link', 'ExternalName', inventory.external_name, 'Services delegating resolution to external DNS.', 'brand'),
-    ('triangle-alert', 'Backend Exceptions', inventory.backend_exceptions, 'Partial, not-ready, or missing backend registration evidence.', 'warning' if inventory.backend_exceptions > 0 else 'normal'),
-    ('database-zap', 'Endpoint Evidence Missing', inventory.endpoint_evidence_missing, 'Services without reported EndpointSlice or Endpoints evidence.', 'unknown' if inventory.endpoint_evidence_missing > 0 else 'normal')
+    ('shield', 'ClusterIP & Headless', inventory.cluster_ip + inventory.headless, 'Cluster-internal and direct Pod discovery access models.', neutral_tone),
+    ('plug-zap', 'NodePort', inventory.node_port, 'Services declaring node-level port publication.', neutral_tone),
+    ('globe-2', 'LoadBalancer', inventory.load_balancer, 'Services declaring load balancer publication.', neutral_tone),
+    ('external-link', 'ExternalName', inventory.external_name, 'Services delegating resolution to external DNS.', neutral_tone),
+    ('triangle-alert', 'Backend Exceptions', inventory.backend_exceptions, 'Partial, not-ready, missing, or empty manual backend registration evidence.', 'unknown' if inventory.total_services == 0 else ('warning' if inventory.backend_exceptions > 0 else 'normal')),
+    ('database-zap', 'Endpoint Evidence Missing', inventory.endpoint_evidence_missing, 'Services whose EndpointSlice or Endpoints evidence was not reported.', 'unknown' if inventory.total_services == 0 or inventory.endpoint_evidence_missing > 0 else 'normal')
 ] %}
 {% call operational_section_card.render(
     'Service Network Posture',

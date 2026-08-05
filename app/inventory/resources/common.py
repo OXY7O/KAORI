@@ -69,12 +69,12 @@ def _service_port_rows(service: ServiceInventory) -> list[dict[str, Any]]:
             continue
         rows.append(
             {
-                'name': str(port.get('name') or '-'),
+                'name': str(port.get('name') or 'Not Reported'),
                 'protocol': str(port.get('protocol') or 'TCP'),
                 'port': int(port.get('port') or 0),
-                'target_port': str(port.get('target_port') or '-'),
+                'target_port': str(port.get('target_port') or port.get('port') or 'Not Reported'),
                 'node_port': int(port.get('node_port') or 0),
-                'app_protocol': str(port.get('app_protocol') or '-'),
+                'app_protocol': str(port.get('app_protocol') or 'Not Configured'),
             }
         )
 
@@ -85,12 +85,12 @@ def _service_port_rows(service: ServiceInventory) -> list[dict[str, Any]]:
         port_value, _, protocol = value.partition('/')
         rows.append(
             {
-                'name': '-',
+                'name': 'Not Reported',
                 'protocol': protocol or 'TCP',
                 'port': int(port_value) if port_value.isdigit() else 0,
-                'target_port': '-',
+                'target_port': port_value if port_value.isdigit() else 'Not Reported',
                 'node_port': 0,
-                'app_protocol': '-',
+                'app_protocol': 'Not Configured',
             }
         )
 

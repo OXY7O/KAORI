@@ -570,10 +570,16 @@ def save_services(
         synchronize_session=False,
     )
 
-    services = get_services(
+    services, collection_evidence = get_services(
         api,
         discovery_api,
+        with_evidence=True,
     )
+
+    cluster_inventory = ClusterInventory.query.filter_by(cluster_id=cluster.id).one()
+    committed_evidence = dict(cluster_inventory.collection_evidence or {})
+    committed_evidence.update(collection_evidence)
+    cluster_inventory.collection_evidence = committed_evidence
 
     for service in services:
         service_inventory = ServiceInventory()

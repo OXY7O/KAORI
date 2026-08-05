@@ -11,14 +11,15 @@
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form hx-get="{{ url_for('inventory.services') }}"
-              hx-target="#services-inventory-scope"
+              hx-target="#services-page-workspace"
               hx-swap="outerHTML"
               hx-trigger="change, keyup changed delay:500ms from:find input[name='search']"
               hx-indicator="#services-table-loading"
+              aria-label="Service inventory filters"
               class="grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.9fr)_minmax(18rem,1.4fr)] xl:items-end">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
-            <input type="hidden" name="partial_mode" value="inventory_scope">
+            <input type="hidden" name="partial_mode" value="page_workspace">
             <div>
                 <label class="{{ table_ui.filter_label_classes() }}">Cluster</label>
                 <select name="cluster_id" class="{{ table_ui.filter_select_classes() }}">
@@ -42,7 +43,7 @@
             </div>
             <div>
                 <label class="{{ table_ui.filter_label_classes() }}">Search Services</label>
-                {{ table_ui.search_field('search', search, 'Search Service name, IP, or port') }}
+                {{ table_ui.search_field('search', search, 'Search Service, namespace, type, IP, or port') }}
             </div>
         </form>
     </div>
