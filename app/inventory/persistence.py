@@ -753,9 +753,7 @@ def save_configuration_inventory(
         inventory.object_type = item['object_type']
         inventory.secret_type = item['secret_type']
         inventory.key_names = item['key_names']
-        inventory.key_count = item['key_count']
         inventory.immutable = item['immutable']
-        inventory.payload_size_bytes = item['payload_size_bytes']
         inventory.created_at = item['created_at']
         db.session.add(inventory)
 

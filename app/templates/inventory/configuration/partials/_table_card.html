@@ -3,7 +3,7 @@
     {{ table_ui.inventory_block_header(
         'file-key-2',
         'Configuration Inventory',
-        'ConfigMap and Secret identity, protected key-index metadata, mutation configuration, and current Pod reference evidence.',
+        'ConfigMap and Secret identity, protected key-index metadata, mutation configuration, collection evidence, and current Pod references.',
         'configuration-table-loading',
         'Refreshing Configuration Inventory',
         url_for('integrations.kubernetes'),
@@ -11,14 +11,15 @@
     ) }}
     <div class="{{ table_ui.inventory_filter_bar_classes() }}">
         <form hx-get="{{ url_for('inventory.configuration') }}"
-              hx-target="#configuration-inventory-scope"
+              hx-target="#configuration-page-workspace"
               hx-swap="outerHTML"
               hx-indicator="#configuration-table-loading"
               hx-trigger="change, keyup changed delay:500ms from:find input[name='search']"
+              aria-label="Configuration inventory filters"
               class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <input type="hidden" name="page" value="1">
             <input type="hidden" name="per_page" value="{{ pagination.per_page }}">
-            <input type="hidden" name="partial_mode" value="inventory_scope">
+            <input type="hidden" name="partial_mode" value="page_workspace">
             <div>
                 <label class="{{ table_ui.filter_label_classes() }}">Cluster</label>
                 <select name="cluster_id" class="{{ table_ui.filter_select_classes() }}"><option value="">All Clusters</option>{% for cluster in clusters %}<option value="{{ cluster.id }}" {% if selected_cluster_id == cluster.id|string or selected_cluster_id == cluster.id %}selected{% endif %}>{{ cluster.name }}</option>{% endfor %}</select>
@@ -33,7 +34,7 @@
             </div>
             <div>
                 <label class="{{ table_ui.filter_label_classes() }}">Search Configuration Objects</label>
-                {{ table_ui.search_field('search', search, 'Search object name or namespace') }}
+                {{ table_ui.search_field('search', search, 'Search name, namespace, type, or Secret type') }}
             </div>
         </form>
     </div>

@@ -246,8 +246,7 @@ def test_topology_builder_preserves_canonical_nodes_and_relationships() -> None:
         name='api-config',
         immutable=False,
         secret_type=None,
-        key_count=2,
-        payload_size_bytes=128,
+        key_names=['LOG_LEVEL', 'API_URL'],
         collected_at=collected,
     )
     pvc = SimpleNamespace(

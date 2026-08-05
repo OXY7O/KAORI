@@ -58,9 +58,7 @@ def get_configuration_inventory(
                 'object_type': 'ConfigMap',
                 'secret_type': None,
                 'key_names': key_names,
-                'key_count': len(key_names),
                 'immutable': bool(config_map.immutable),
-                'payload_size_bytes': 0,
                 'created_at': metadata.creation_timestamp,
             }
         )
@@ -88,9 +86,7 @@ def get_configuration_inventory(
                 'object_type': 'Secret',
                 'secret_type': secret.type or 'Opaque',
                 'key_names': key_names,
-                'key_count': len(key_names),
                 'immutable': bool(secret.immutable),
-                'payload_size_bytes': 0,
                 'created_at': metadata.creation_timestamp,
             }
         )

@@ -13,9 +13,9 @@
                         <h3 class="break-words text-base font-semibold leading-6 text-content-primary [overflow-wrap:anywhere]">{{ item.name }}</h3>
                         {{ table_label.metadata_label(item.type) }}
                         {{ table_label.metadata_label(item.namespace, 'folder-tree') }}
-                        {{ table_label.metadata_label(item.mutation_label) }}
+                        {{ table_label.status_indicator_label(item.mutation_label, item.mutation_tone) }}
                     </div>
-                    <p class="mt-1 text-xs leading-5 text-content-muted">Protected key-index metadata, collection capability, mutation configuration, and current Pod references.</p>
+                    <p class="mt-1 text-xs leading-5 text-content-muted">Protected key-index metadata, collection capability, mutation configuration, and evidence-aware current Pod references.</p>
                 </div>
             </div>
             <div class="self-start sm:self-auto">{{ table_label.metadata_label(item.collection_state, 'database') }}</div>
@@ -24,8 +24,8 @@
         {{ detail.summary_strip([
             ('Object Type', item.type, item.secret_type if item.type == 'Secret' else 'ConfigMap metadata'),
             ('Key Count', item.key_count, 'Key names indexed'),
-            ('Mutation Model', item.mutation_label, 'Factual object configuration'),
-            ('Current Pod References', item.used_by_count, 'Committed Pod snapshot evidence')
+            ('Mutation Model', item.mutation_label, 'Committed object configuration'),
+            ('Current Pod References', item.used_by_display, 'Committed Pod reference evidence')
         ], compact=true) }}
 
         <div class="grid items-start gap-4 p-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
@@ -36,30 +36,36 @@
                     {{ detail.metadata_row('Object Type', item.type) }}
                     {% if item.type == 'Secret' %}{{ detail.metadata_row('Secret Type', item.secret_type) }}{% endif %}
                     {{ detail.detail_row('Age', item.age) }}
-                    {{ detail.detail_row('Created', item.created_at|user_datetime if item.created_at else '-') }}
-                    {{ detail.detail_row('Collected', item.collected_at|user_datetime) }}
+                    {{ detail.detail_row('Created', item.created_at|user_datetime if item.created_at else 'Not Reported') }}
+                    {{ detail.detail_row('Collected', item.collected_at|user_datetime if item.collected_at else 'Not Reported') }}
                 {% endcall %}
 
                 {% call detail.detail_card('Protected Data Boundary', 'shield-check', 'Values Not Persisted', badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.evidence_grid([
-                        {'label': 'Collection State', 'value': item.collection_state},
+                        {'label': 'Object Collection', 'value': item.collection_state},
+                        {'label': 'Pod Reference Collection', 'value': item.pod_collection_state},
                         {'label': 'Key Names', 'value': item.key_count ~ ' Indexed'},
                         {'label': 'Value Persistence', 'value': 'None'},
                         {'label': 'Value Display', 'value': 'Never Displayed'},
-                        {'label': 'Mutation Model', 'value': item.mutation_label},
-                        {'label': 'Inventory Mode', 'value': 'Key-Index Metadata'}
+                        {'label': 'Mutation Model', 'value': item.mutation_label}
                     ], columns=2) }}
                     <p class="mt-3 text-xs leading-5 text-content-muted">Kubernetes list responses arrive transiently in the collector process. KAORI indexes key names only and does not decode, log, persist, or display value content.</p>
                 {% endcall %}
             </div>
 
             <div class="space-y-4">
-                {{ metadata_collection.render('Key Inventory', item.key_entries, 'key-round', 'No Key Names Indexed', 'No key name is represented in the committed inventory snapshot.', 'Key names are indexed without persisting or displaying their values.', compact=true, mode='keys') }}
-                {{ related_collection.render('Current Pod References', 'Pods whose committed configuration references include this object.', item.used_by, item.used_by_count, 'package-check', 'No Current Pod References', 'No Pod reference is represented in the current committed snapshot. Other consumers may still exist.', item.used_by_truncated, url_for('inventory.pods', cluster_id=item.cluster_id, namespace=item.namespace), 'Open Pod Inventory') }}
+                {{ metadata_collection.render('Key Inventory', item.key_entries, 'key-round', 'No Key Names Indexed', 'The committed object contains no indexed key names.', 'Key names are indexed without persisting or displaying their values.', compact=true, mode='keys', total_count=item.key_count, truncated=item.key_entries_truncated) }}
+                {% if item.pod_reference_reported %}
+                    {{ related_collection.render('Current Pod References', 'Pods whose committed configuration references include this object.', item.used_by, item.used_by_count, 'package-check', 'No Current Pod References', 'No Pod reference is represented in the current committed snapshot. Other consumers may still exist.', item.used_by_truncated, url_for('inventory.pods', cluster_id=item.cluster_id, namespace=item.namespace), 'Open Pod Inventory') }}
+                {% else %}
+                    {% call detail.detail_card('Current Pod References', 'circle-help', 'Not Reported', badge_size='detail', stretch=false, density='compact') %}
+                        {{ detail.empty_evidence('Pod Reference Evidence Not Reported', 'Pod collection is recorded as ' ~ item.pod_collection_state ~ '. KAORI cannot determine current Pod references from this snapshot.', 'circle-help') }}
+                    {% endcall %}
+                {% endif %}
             </div>
 
             <section class="grid gap-3 xl:col-span-2 xl:grid-cols-2">
-                {{ operational_callout.render('Committed Snapshot Boundary', 'This detail reports protected key-index metadata and current Pod reference evidence. It does not query the Kubernetes API live or expose configuration values.', 'database', 'info') }}
+                {{ operational_callout.render('Committed Snapshot Boundary', 'This detail reports protected key-index metadata and committed Pod reference evidence. It does not query the Kubernetes API live or expose configuration values.', 'database', 'info') }}
                 {{ operational_callout.render(item.operational_context.title, item.operational_context.description, item.operational_context.icon, item.operational_context.tone, 'semantic') }}
             </section>
 

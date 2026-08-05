@@ -75,7 +75,7 @@ def main() -> int:
     require('claims[:200]' not in backend,
             'Mounted-Pod relationship evidence must not be silently capped at 200 claims.', errors)
 
-    require("for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses', 'storage')" in routes,
+    require("for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')" in routes,
             'Storage must participate directly in canonical Inventory workspace mapping.', errors)
     require(not (ROOT / 'app/templates/inventory/storage/partials/_inventory_scope.html').exists(),
             'Legacy Storage inventory scope wrapper must be removed.', errors)

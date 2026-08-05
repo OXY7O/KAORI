@@ -83,19 +83,8 @@ _INVENTORY_PARTIAL_TEMPLATES = {
         'card': f'inventory/{resource}/partials/_table_card.html',
         'content': f'inventory/{resource}/partials/_table_content.html',
     }
-    for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses', 'storage')
+    for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')
 }
-_INVENTORY_PARTIAL_TEMPLATES.update(
-    {
-        resource: {
-            'index': f'inventory/{resource}/index.html',
-            'scope': f'inventory/{resource}/partials/_inventory_scope.html',
-            'card': f'inventory/{resource}/partials/_table_card.html',
-            'content': f'inventory/{resource}/partials/_table_content.html',
-        }
-        for resource in ('configuration',)
-    }
-)
 
 inventory_bp = Blueprint(
     'inventory',
@@ -203,14 +192,8 @@ def _inventory_template(resource: str) -> str:
     if partial_mode == 'table_content' or hx_target == f'{resource}-table-content':
         return templates['content']
 
-    if 'workspace' in templates:
-        if partial_mode == 'page_workspace' or hx_target == f'{resource}-page-workspace':
-            return templates['workspace']
-        return templates['card']
-
-    if partial_mode == 'inventory_scope' or hx_target == f'{resource}-inventory-scope':
-        return templates['scope']
-
+    if partial_mode == 'page_workspace' or hx_target == f'{resource}-page-workspace':
+        return templates['workspace']
     return templates['card']
 
 
@@ -424,6 +407,7 @@ def configuration():
     )
     inventory['namespaces'] = namespaces
     inventory['types'] = object_types
+    inventory['scope_label'] = _inventory_scope_label(clusters, cluster_id)
 
     return render_template(
         _inventory_template('configuration'),

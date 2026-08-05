@@ -283,7 +283,7 @@ INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
     'configuration_inventory': InventoryWorkbookProfile(
         report_type='configuration_inventory',
         title='Configuration Inventory',
-        description='Committed ConfigMap and Secret identities and metadata. Secret values are never exported.',
+        description='Committed ConfigMap and Secret identities and key-index metadata. Configuration values are never persisted or exported.',
         identity_columns=('cluster', 'environment', 'namespace', 'name'),
         columns=(
             *COMMON_NAMESPACE_COLUMNS,
@@ -293,7 +293,8 @@ INVENTORY_WORKBOOK_PROFILES: dict[str, InventoryWorkbookProfile] = {
             column('key_count', 'Key Count', 'Number of committed key names.', data_type='integer', missing_value_rule='Blank', width=13, number_format='0'),
             column('key_names', 'Key Names', 'Committed key names only; values are excluded.', width=40),
             column('immutable', 'Immutable', 'Committed immutable flag.', data_type='boolean', width=13),
-            column('payload_size_bytes', 'Payload Size (bytes)', 'Committed aggregate payload size without exporting values.', data_type='integer', missing_value_rule='Blank', width=19, number_format='#,##0'),
+            column('metadata_boundary', 'Metadata Boundary', 'Key Names Only; configuration values are excluded.', width=20),
+            column('value_persistence', 'Value Persistence', 'None; configuration values are never persisted or exported.', width=18),
             CREATED_AT_COLUMN,
             COLLECTED_AT_COLUMN,
         ),

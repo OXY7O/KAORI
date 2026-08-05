@@ -157,7 +157,7 @@ def _workload_row(item: WorkloadInventory, cluster_name: str, environment: str) 
     return {
         'status': _text(item.status, 'Unknown'),
         'cluster': cluster_name,
-        'environment': _text(environment, 'Not Available'),
+        'environment': _text(environment, 'Not Reported'),
         'namespace': item.namespace,
         'name': item.name,
         'resource_type': item.workload_type,
@@ -435,11 +435,16 @@ def _configuration_row(
         'namespace': item.namespace,
         'name': item.name,
         'resource_type': _text(item.object_type, 'Unknown'),
-        'secret_type': _text(item.secret_type, 'Not Available'),
-        'key_count': item.key_count,
+        'secret_type': (
+            _text(item.secret_type, 'Opaque')
+            if item.object_type == 'Secret'
+            else 'Not Applicable'
+        ),
+        'key_count': len(item.key_names or []),
         'key_names': item.key_names or [],
         'immutable': item.immutable,
-        'payload_size_bytes': item.payload_size_bytes,
+        'metadata_boundary': 'Key Names Only',
+        'value_persistence': 'None',
         'created_at': item.created_at,
         'collected_at': item.collected_at,
     }

@@ -650,11 +650,7 @@ class ConfigurationInventory(db.Model):
 
     key_names: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
 
-    key_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-
     immutable: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-
-    payload_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
 
     created_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 

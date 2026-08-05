@@ -306,9 +306,8 @@ class TopologyNodeBuilder:
                     fields=[
                         field('Object Type', object_type),
                         field('Secret Type', item.secret_type),
-                        field('Keys', item.key_count, empty='0'),
+                        field('Keys', len(item.key_names or []), empty='0'),
                         field('Immutable', item.immutable),
-                        field('Payload Bytes', item.payload_size_bytes, empty='0'),
                     ],
                     collected_at=item.collected_at,
                     action_url=url_for(

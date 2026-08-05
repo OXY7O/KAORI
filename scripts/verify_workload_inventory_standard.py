@@ -103,7 +103,7 @@ def main() -> int:
     )
 
     require(
-        "for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses', 'storage')" in routes,
+        "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')" in routes,
         'Workload workspace partial must be registered.',
         errors,
     )

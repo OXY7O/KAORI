@@ -39,7 +39,7 @@ HERO_EXPECTATIONS = {
         'Storage Lifecycle',
     ),
     'configuration': (
-        'Review ConfigMap and Secret metadata, mutation, collection, and Pod references.',
+        'Review ConfigMap and Secret keys, mutation, collection, and Pod references.',
         'Protected Metadata',
     ),
     'topology': (

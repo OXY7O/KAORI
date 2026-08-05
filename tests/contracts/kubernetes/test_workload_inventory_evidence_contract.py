@@ -50,7 +50,7 @@ def test_workload_filters_refresh_complete_workspace_and_use_canonical_state() -
     workspace = _read('app/templates/inventory/workloads/partials/_page_workspace.html')
     service = _read('app/inventory/resources/workloads.py')
 
-    assert "for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses', 'storage')" in routes
+    assert "for resource in ('nodes', 'namespaces', 'configuration', 'workloads', 'pods', 'services', 'ingresses', 'storage')" in routes
     assert 'id="workloads-page-workspace"' in workspace
     assert 'inventory/components/_data_freshness.html' in workspace
     assert 'hx-target="#workloads-page-workspace"' in table

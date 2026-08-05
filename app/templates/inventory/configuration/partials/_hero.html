@@ -4,7 +4,7 @@
         <div class="{{ page_hero.content_classes() }}">
             {% call page_hero.intro('file-key-2', 'Kubernetes Configuration Inventory', 'braces') %}
                 <h1 class="{{ page_hero.title_classes() }}">Configuration Inventory</h1>
-                <p class="mt-2 {{ page_hero.description_classes() }}">Review ConfigMap and Secret metadata, mutation, collection, and Pod references.</p>
+                <p class="mt-2 {{ page_hero.description_classes() }}">Review ConfigMap and Secret keys, mutation, collection, and Pod references.</p>
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('files', inventory.total_items ~ ' Configuration Objects in Scope') }}
                     {{ page_hero.meta_label('scan-search', inventory.scope_label) }}
@@ -13,14 +13,14 @@
             {% endcall %}
         </div>
         {{ page_hero.context_card(
-            'Configuration Metadata Boundary',
+            'Protected Metadata Boundary',
             'Configuration Boundary',
-            'Protected Metadata',
+            'Key Names Only',
             'Protected',
             'normal',
             [
-                ('key-round', 'Indexed Keys', inventory.total_key_names, 'Names only'),
-                ('shield-check', 'Stored Values', 'None', 'Never persisted')
+                ('key-round', 'Indexed Key Names', inventory.total_key_names, 'Values excluded'),
+                ('shield-check', 'Persisted Values', 'None', 'Never exported')
             ],
             'Manage Clusters',
             url_for('integrations.kubernetes'),
