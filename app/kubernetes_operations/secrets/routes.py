@@ -6,7 +6,6 @@ from typing import Any
 from flask import current_app, make_response, redirect, render_template, request, session, url_for
 from flask_login import current_user
 from flask_wtf.csrf import validate_csrf
-from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 from wtforms.validators import ValidationError
 
 from app.cluster.onboarding import has_registered_clusters
@@ -39,6 +38,7 @@ from app.kubernetes_operations.secrets.reveal_service import (
     get_reveal_workspace,
 )
 from app.kubernetes_operations.secrets.reveal_service import reveal_secret_value as execute_secret_value_reveal
+from app.kubernetes_operations.secrets.receipts import issue_delete_receipt, verify_delete_receipt
 from app.kubernetes_operations.secrets.service import (
     apply_bulk_update,
     apply_certificate_update,
@@ -48,7 +48,6 @@ from app.kubernetes_operations.secrets.service import (
     preview_uploaded_pair,
 )
 from app.models.user import User
-from app.kubernetes_operations.operation_flow import validate_then_apply
 from app.notifications.service import (
     create_notification,
     get_navigation_notification_context,
@@ -154,75 +153,6 @@ def _validate_secret_operation_csrf() -> None:
         raise ValueError('The security token is missing or expired. Refresh the page and retry.') from exc
 
 
-_SECRET_DELETE_RECEIPT_SESSION_KEY = 'secret_delete_validation_receipt'
-_SECRET_DELETE_RECEIPT_MAX_AGE_SECONDS = 600
-
-
-def _secret_delete_receipt_serializer() -> URLSafeTimedSerializer:
-    return URLSafeTimedSerializer(
-        current_app.config['SECRET_KEY'],
-        salt='kaori-secret-delete-validation',
-    )
-
-
-def _secret_delete_target_values(source: Any) -> tuple[str, str, str]:
-    return (
-        (source.get('cluster_id') or '').strip(),
-        (source.get('namespace') or '').strip(),
-        (source.get('secret_name') or '').strip(),
-    )
-
-
-def _issue_secret_delete_receipt(metadata: dict[str, Any]) -> str:
-    token = _secret_delete_receipt_serializer().dumps(
-        {
-            'cluster_id': str(metadata['cluster_id']),
-            'namespace': metadata['namespace'],
-            'secret_name': metadata['secret_name'],
-            'resource_version': metadata['resource_version'],
-        }
-    )
-    session[_SECRET_DELETE_RECEIPT_SESSION_KEY] = token
-    return token
-
-
-def _verify_secret_delete_receipt(source: Any) -> dict[str, str]:
-    token = (source.get('delete_validation_token') or '').strip()
-    if not token:
-        raise ValueError(
-            'Validate the Secret deletion before applying the final delete action.'
-        )
-    session_token = session.get(_SECRET_DELETE_RECEIPT_SESSION_KEY)
-    if not session_token or token != session_token:
-        raise ValueError(
-            'The Secret deletion validation is no longer active. Run validation again.'
-        )
-    try:
-        payload = _secret_delete_receipt_serializer().loads(
-            token,
-            max_age=_SECRET_DELETE_RECEIPT_MAX_AGE_SECONDS,
-        )
-    except SignatureExpired as exc:
-        raise ValueError(
-            'The deletion validation expired. Run validation again before deleting.'
-        ) from exc
-    except BadSignature as exc:
-        raise ValueError(
-            'The deletion validation receipt is invalid. Run validation again.'
-        ) from exc
-
-    expected = (
-        str(payload.get('cluster_id') or ''),
-        payload.get('namespace') or '',
-        payload.get('secret_name') or '',
-    )
-    if _secret_delete_target_values(source) != expected:
-        raise ValueError(
-            'The selected Secret changed after validation. Run validation again.'
-        )
-    return {'resource_version': str(payload.get('resource_version') or '')}
-
-
 def _record_validation_activity(
     *,
     preview: dict[str, Any],
@@ -312,14 +242,6 @@ def _safe_secret_submission(form: Any) -> dict[str, str]:
     return {key: form.get(key, '') for key in _SAFE_SUBMITTED_FIELDS if form.get(key) is not None}
 
 
-def _rewind_uploaded_files(files: Any) -> None:
-    """Reset uploaded streams so validation and mutation can consume the same payload."""
-    for storage in files.values():
-        stream = getattr(storage, 'stream', None)
-        if stream is not None and hasattr(stream, 'seek'):
-            stream.seek(0)
-
-
 def _safe_opaque_entries(form: Any) -> list[dict[str, Any]]:
     keys = [value.strip() for value in form.getlist('generic_key')]
     normalized = [{'key': key, 'value': '', 'visible': False} for key in keys if key]
@@ -391,11 +313,7 @@ def create_secret():
             result = (
                 execute_secret_operation(request.form, request.files, dry_run=True)
                 if dry_run
-                else validate_then_apply(
-                    validate=lambda: execute_secret_operation(request.form, request.files, dry_run=True),
-                    prepare_apply=lambda: _rewind_uploaded_files(request.files),
-                    apply=lambda: execute_secret_operation(request.form, request.files, dry_run=False),
-                )
+                else execute_secret_operation(request.form, request.files, dry_run=False)
             )
             event_type = 'kubernetes_secret_validation' if dry_run else 'kubernetes_secret_created'
             feedback = _record_secret_activity(
@@ -542,11 +460,7 @@ def replace_secret():
             result = (
                 execute_secret_replacement(request.form, request.files, dry_run=True)
                 if dry_run
-                else validate_then_apply(
-                    validate=lambda: execute_secret_replacement(request.form, request.files, dry_run=True),
-                    prepare_apply=lambda: _rewind_uploaded_files(request.files),
-                    apply=lambda: execute_secret_replacement(request.form, request.files, dry_run=False),
-                )
+                else execute_secret_replacement(request.form, request.files, dry_run=False)
             )
             feedback = _record_secret_activity(
                 event_type=(
@@ -685,10 +599,14 @@ def delete_secret():
 
             expected_resource_version = None
             if not validate_only:
-                receipt = _verify_secret_delete_receipt(request.form)
-                expected_resource_version = receipt['resource_version']
-                # Consume the receipt before mutation so it cannot be replayed.
-                session.pop(_SECRET_DELETE_RECEIPT_SESSION_KEY, None)
+                receipt = verify_delete_receipt(
+                    (request.form.get('delete_validation_token') or '').strip(),
+                    user_id=current_user.id,
+                    cluster_id=cluster_id.strip(),
+                    namespace=namespace.strip(),
+                    secret_name=secret_name.strip(),
+                )
+                expected_resource_version = receipt.resource_version
 
             result = execute_secret_deletion(
                 request.form,
@@ -696,8 +614,8 @@ def delete_secret():
                 expected_resource_version=expected_resource_version,
             )
             if validate_only:
-                delete_validation_token = _issue_secret_delete_receipt(
-                    result.metadata
+                delete_validation_token = issue_delete_receipt(
+                    result.metadata, user_id=current_user.id
                 )
             else:
                 delete_completed = True
@@ -733,7 +651,6 @@ def delete_secret():
                     return response
                 return redirect(redirect_url)
         except ValueError as exc:
-            session.pop(_SECRET_DELETE_RECEIPT_SESSION_KEY, None)
             title = (
                 'Secret deletion validation failed'
                 if validate_only
@@ -757,7 +674,6 @@ def delete_secret():
                 queue_feedback=not is_htmx,
             )
         except Exception:
-            session.pop(_SECRET_DELETE_RECEIPT_SESSION_KEY, None)
             current_app.logger.exception(
                 'Unexpected Kubernetes Secret deletion failure.'
             )
@@ -803,22 +719,6 @@ def delete_secret():
                     '{"kaori:operation-validated":{"formId":"delete-secret-form"}}'
                 )
             return response
-    else:
-        session_token = session.get(_SECRET_DELETE_RECEIPT_SESSION_KEY)
-        if session_token:
-            try:
-                _verify_secret_delete_receipt(
-                    {
-                        'delete_validation_token': session_token,
-                        'cluster_id': cluster_id,
-                        'namespace': namespace,
-                        'secret_name': secret_name,
-                    }
-                )
-            except ValueError:
-                session.pop(_SECRET_DELETE_RECEIPT_SESSION_KEY, None)
-            else:
-                delete_validation_token = session_token
 
     return render_template(
         'kubernetes_operations/secrets/delete.html',
