@@ -23,7 +23,7 @@ def test_namespace_summary_uses_control_posture_and_sentence_case_descriptions()
         "ResourceQuota Configured",
         "LimitRange Configured",
         "NetworkPolicy Configured",
-        "PSA Enforce Configured",
+        "PSA Enforce Explicitly Set",
         "Missing Default ServiceAccount",
         "Lifecycle Exceptions",
     ):

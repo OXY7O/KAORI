@@ -92,9 +92,8 @@ _INVENTORY_PARTIAL_TEMPLATES = {
         'storage',
     )
 }
-_INVENTORY_PARTIAL_TEMPLATES['nodes']['workspace'] = (
-    'inventory/nodes/partials/_page_workspace.html'
-)
+_INVENTORY_PARTIAL_TEMPLATES['nodes']['workspace'] = 'inventory/nodes/partials/_page_workspace.html'
+_INVENTORY_PARTIAL_TEMPLATES['namespaces']['workspace'] = 'inventory/namespaces/partials/_page_workspace.html'
 
 inventory_bp = Blueprint(
     'inventory',
@@ -219,6 +218,10 @@ def _inventory_cluster_scope(cluster_id: str) -> tuple[list[Any], str]:
     return clusters, cluster_id
 
 
+def _inventory_scope_label(clusters: list[Any], cluster_id: str) -> str:
+    return next((item.name for item in clusters if str(item.id) == str(cluster_id)), 'All Clusters')
+
+
 @inventory_bp.route('/')
 @permission_required('inventory.view')
 def overview():
@@ -318,11 +321,7 @@ def nodes():
     )
     inventory['node_roles'] = node_roles
     inventory['node_statuses'] = node_statuses
-    selected_cluster = next(
-        (cluster for cluster in clusters if str(cluster.id) == str(cluster_id)),
-        None,
-    )
-    inventory['scope_label'] = selected_cluster.name if selected_cluster else 'All Clusters'
+    inventory['scope_label'] = _inventory_scope_label(clusters, cluster_id)
 
     return render_template(
         _inventory_template('nodes'),
@@ -335,7 +334,6 @@ def nodes():
         selected_status=status,
         search=search,
         pagination=inventory['pagination'],
-        inventory_freshness=get_inventory_freshness_context(cluster_id=cluster_id),
     )
 
 
@@ -369,6 +367,7 @@ def namespaces():
         per_page=per_page,
     )
     inventory['namespace_statuses'] = namespace_statuses
+    inventory['scope_label'] = _inventory_scope_label(clusters, cluster_id)
 
     return render_template(
         _inventory_template('namespaces'),
@@ -488,11 +487,7 @@ def workloads():
     inventory['namespaces'] = namespaces
     inventory['workload_types'] = workload_types
     inventory['workload_statuses'] = workload_statuses
-    selected_cluster = next(
-        (cluster for cluster in clusters if str(cluster.id) == str(cluster_id)),
-        None,
-    )
-    inventory['scope_label'] = selected_cluster.name if selected_cluster else 'All Clusters'
+    inventory['scope_label'] = _inventory_scope_label(clusters, cluster_id)
 
     return render_template(
         _inventory_template('workloads'),
@@ -790,20 +785,8 @@ def storage_details(storage_id: int):
 
 def _build_cluster_context_from_request() -> dict:
     return build_cluster_context(
-        page=request.args.get(
-            'page',
-            '1',
-        ),
-        per_page=request.args.get(
-            'per_page',
-            '5',
-        ),
-        search=request.args.get(
-            'search',
-            '',
-        ),
-        environment=request.args.get(
-            'environment',
-            'all',
-        ),
+        page=request.args.get('page', '1'),
+        per_page=request.args.get('per_page', '5'),
+        search=request.args.get('search', ''),
+        environment=request.args.get('environment', 'all'),
     )

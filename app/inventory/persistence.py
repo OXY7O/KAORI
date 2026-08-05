@@ -1,7 +1,16 @@
 from datetime import datetime
 from typing import Any, cast
 
-from kubernetes.client import AppsV1Api, BatchV1Api, CoreV1Api, DiscoveryV1Api, NetworkingV1Api, StorageV1Api, V1NamespaceList, V1Node
+from kubernetes.client import (
+    AppsV1Api,
+    BatchV1Api,
+    CoreV1Api,
+    DiscoveryV1Api,
+    NetworkingV1Api,
+    StorageV1Api,
+    V1NamespaceList,
+    V1Node,
+)
 from kubernetes.client.exceptions import ApiException
 
 from app.extensions.db import db
@@ -740,13 +749,23 @@ def save_resource_quotas(
     collected_at: datetime,
     api: CoreV1Api,
 ) -> None:
+    quota_items, collection_evidence = get_resource_quotas(
+        api,
+        with_evidence=True,
+    )
+
     ResourceQuotaInventory.query.filter_by(
         cluster_id=cluster.id,
     ).delete(
         synchronize_session=False,
     )
 
-    for item in get_resource_quotas(api):
+    cluster_inventory = ClusterInventory.query.filter_by(cluster_id=cluster.id).one()
+    committed_evidence = dict(cluster_inventory.collection_evidence or {})
+    committed_evidence['inventory.resourcequotas'] = collection_evidence
+    cluster_inventory.collection_evidence = committed_evidence
+
+    for item in quota_items:
         inventory = ResourceQuotaInventory()
         inventory.collected_at = collected_at
         inventory.cluster_id = cluster.id

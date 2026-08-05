@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any, Literal, cast, overload
 
 from kubernetes.client import CoreV1Api, V1ConfigMapList, V1ResourceQuotaList, V1SecretList
 from kubernetes.client.exceptions import ApiException
@@ -98,16 +98,55 @@ def get_configuration_inventory(
     return (items, evidence) if with_evidence else items
 
 
-def get_resource_quotas(api: CoreV1Api) -> list[dict]:
-    result = cast(V1ResourceQuotaList, api.list_resource_quota_for_all_namespaces())
+@overload
+def get_resource_quotas(
+    api: CoreV1Api,
+    *,
+    with_evidence: Literal[False] = False,
+) -> list[dict]: ...
+
+
+@overload
+def get_resource_quotas(
+    api: CoreV1Api,
+    *,
+    with_evidence: Literal[True],
+) -> tuple[list[dict], str]: ...
+
+
+def get_resource_quotas(
+    api: CoreV1Api,
+    *,
+    with_evidence: bool = False,
+) -> list[dict] | tuple[list[dict], str]:
+    evidence = COLLECTED
+    try:
+        result = cast(V1ResourceQuotaList, api.list_resource_quota_for_all_namespaces())
+        quota_items = result.items or []
+    except ApiException as exc:
+        if getattr(exc, 'status', None) in {403, 404}:
+            quota_items = []
+            evidence = _collection_error_state(exc)
+        else:
+            raise
+
     items: list[dict[str, Any]] = []
-    for quota in result.items or []:
+    for quota in quota_items:
         metadata = quota.metadata
-        status = quota.status
+        spec = getattr(quota, 'spec', None)
+        status = getattr(quota, 'status', None)
         if metadata is None or not metadata.namespace or not metadata.name:
             continue
-        hard = {str(key): str(value) for key, value in ((status.hard or {}) if status else {}).items()}
-        used = {str(key): str(value) for key, value in ((status.used or {}) if status else {}).items()}
+        configured_hard = (spec.hard or {}) if spec else {}
+        observed_hard = (status.hard or {}) if status else {}
+        hard = {
+            str(key): str(value)
+            for key, value in (configured_hard or observed_hard).items()
+        }
+        used = {
+            str(key): str(value)
+            for key, value in ((status.used or {}) if status else {}).items()
+        }
         items.append(
             {
                 'namespace': metadata.namespace,
@@ -117,4 +156,4 @@ def get_resource_quotas(api: CoreV1Api) -> list[dict]:
                 'created_at': metadata.creation_timestamp,
             }
         )
-    return items
+    return (items, evidence) if with_evidence else items

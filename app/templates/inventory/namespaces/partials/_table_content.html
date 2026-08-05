@@ -4,24 +4,22 @@
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <div class="overflow-x-auto">
     <table class="{{ table_ui.table_classes('min-w-[76rem]') }}">
+        <caption class="sr-only">Namespace inventory records for {{ inventory.scope_label }}.</caption>
         <thead class="{{ table_ui.head_classes() }}">
             <tr>
-                <th class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Namespace</th>
-                <th class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Cluster</th>
-                <th class="{{ table_ui.header_cell_classes() }} min-w-[9rem]">Lifecycle</th>
-                <th class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Resource Controls</th>
-                <th class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Security Context</th>
-                <th class="{{ table_ui.header_cell_classes(true) }}">Details</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Namespace</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[12rem]">Cluster</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[9rem]">Lifecycle</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Resource Controls</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Security Context</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes(true) }}">Details</th>
             </tr>
         </thead>
         <tbody class="{{ table_ui.body_classes() }}">
             {% for namespace in inventory.namespaces %}
                 <tr class="{{ table_ui.row_classes() }}">
                     <td class="{{ table_ui.cell_classes() }}">
-                        <div>
-                            {{ table_ui.namespace_identity(namespace.namespace, 'max-w-[280px]') }}
-                            <p class="mt-0.5 pl-9 text-xs leading-5 text-content-muted">{{ namespace.age }}</p>
-                        </div>
+                        {{ table_ui.namespace_identity(namespace.namespace, 'max-w-[280px]') }}
                     </td>
                     <td class="{{ table_ui.cell_classes() }}">{{ table_ui.cluster_identity(namespace.cluster_name, namespace.cluster_environment) }}</td>
                     <td class="{{ table_ui.cell_classes() }}">{{ table_label.status_indicator_label(namespace.lifecycle_label, namespace.lifecycle_tone) }}</td>
@@ -63,6 +61,7 @@
             <input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}">
             <input type="hidden" name="status" value="{{ selected_status }}">
             <input type="hidden" name="search" value="{{ search }}">
+            <input type="hidden" name="partial_mode" value="inventory_scope">
             <label for="namespaces-per-page" class="font-semibold text-content-secondary">Rows</label>
             <select id="namespaces-per-page" name="per_page" aria-label="Rows Per Page" data-kaori-auto-submit class="{{ pagination_ui.page_size_classes() }}">
                 {% for option in pagination.allowed_per_page %}<option value="{{ option }}" {% if pagination.per_page == option %}selected{% endif %}>{{ option }}</option>{% endfor %}

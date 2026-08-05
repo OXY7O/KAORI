@@ -1,0 +1,9 @@
+<div id="namespaces-page-workspace" class="space-y-6">
+    {% include "inventory/namespaces/partials/_hero.html" %}
+    {% include "inventory/components/_data_freshness.html" %}
+    {% if cluster_onboarding.is_blocked %}
+        {% include "components/cluster/_onboarding_banner.html" %}
+    {% else %}
+        {% include "inventory/namespaces/partials/_inventory_scope.html" %}
+    {% endif %}
+</div>

@@ -47,7 +47,7 @@
                     ], columns=2) }}
                     <div class="mt-3">{{ operational_callout.render(
                         'Control Interpretation',
-                        'Inherited or absent namespace-level controls remain neutral evidence until compared with an explicit governance policy. Default ServiceAccount presence is shown separately because it affects the namespace access baseline.',
+                        'Controls that are not explicitly set at namespace level remain neutral evidence until compared with an explicit governance policy. KAORI does not infer a cluster-level Pod Security Admission default from absent labels. Default ServiceAccount presence is shown separately because it affects the namespace access baseline.',
                         'shield-check',
                         'info'
                     ) }}</div>
@@ -55,16 +55,23 @@
             </div>
 
             <div class="space-y-4">
-                {% call detail.detail_card('Object Composition', 'boxes', table_label.count_text(namespace.object_counts.tracked_total, 'Tracked Object'), badge_size='detail', stretch=false, density='compact') %}
+                {% call detail.detail_card('Object Composition', 'boxes', namespace.object_counts.evidence_display, badge_size='detail', stretch=false, density='compact') %}
                     {{ detail.evidence_grid([
                         ('Workloads', namespace.object_counts.workloads, ''),
                         ('Pods', namespace.object_counts.pods, ''),
                         ('Services', namespace.object_counts.services, ''),
                         ('Ingresses', namespace.object_counts.ingresses, ''),
                         ('PVCs', namespace.object_counts.persistent_volume_claims, ''),
-                        ('ConfigMaps', namespace.object_counts.config_maps, ''),
-                        ('Secrets', namespace.object_counts.secrets, '')
+                        ('ConfigMaps', namespace.object_counts.config_maps if namespace.object_counts.config_maps is not none else 'Not Reported', ''),
+                        ('Secrets', namespace.object_counts.secrets if namespace.object_counts.secrets is not none else 'Not Reported', '')
                     ], columns=4) }}
+                    {% if namespace.object_counts.missing_evidence %}
+                        {{ detail.empty_evidence(
+                            'Configuration Object Evidence Not Reported',
+                            namespace.object_counts.missing_evidence|join(', ') ~ ' collection is unavailable in the committed snapshot. The tracked-object total excludes unreported object families.',
+                            'shield-question'
+                        ) }}
+                    {% endif %}
                     {% if namespace.object_counts.workloads > 0 %}
                         <div class="pt-1">
                             {{ detail.subsection('Workload Breakdown') }}
@@ -88,7 +95,13 @@
                         ('NetworkPolicy', namespace.network_policy_display, ''),
                         ('PSA Enforce', namespace.pod_security_enforce_display, '')
                     ], columns=2) }}
-                    {% if namespace.quotas %}
+                    {% if namespace.quota_collection_state != 'Collected' %}
+                        {{ detail.empty_evidence(
+                            'ResourceQuota Evidence Not Reported',
+                            'ResourceQuota collection state: ' ~ namespace.quota_collection_state ~ '. Refresh collection permissions before interpreting quota absence.',
+                            'shield-question'
+                        ) }}
+                    {% elif namespace.quotas %}
                         <div class="space-y-3 pt-1">
                             {{ detail.subsection('Reported Quotas', 'Hard limits represented in the current committed snapshot.') }}
                             {% for quota in namespace.quotas %}
