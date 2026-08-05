@@ -519,14 +519,6 @@ class IngressInventory(db.Model):
     )
 
     ingress_class: Mapped[str | None] = mapped_column(
-        String(100),
-    )
-
-    host: Mapped[str | None] = mapped_column(
-        String(255),
-    )
-
-    address: Mapped[str | None] = mapped_column(
         String(255),
     )
 

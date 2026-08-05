@@ -2,57 +2,50 @@ from __future__ import annotations
 
 from typing import Any
 
-from sqlalchemy import or_
+from sqlalchemy import String, cast, func, or_
 
 from app.common.inventory_generation import filter_current_generation
 from app.common.pagination import paginate_query
 from app.extensions.db import db
-from app.inventory.resources.common import _split_inventory_values, format_age
-from app.models import Cluster, IngressInventory, ServiceInventory
+from app.inventory.resources.common import format_age
+from app.inventory.resources.ingress_semantics import (
+    COLLECTED,
+    UNSET_CLASS_FILTER,
+    host_presentation,
+    ingress_class_presentation,
+    publication_presentation,
+    route_backend_identity,
+    route_reference_state,
+    tls_reference_state,
+)
+from app.models import (
+    Cluster,
+    ClusterInventory,
+    ConfigurationInventory,
+    IngressInventory,
+    ServiceInventory,
+)
 
 
 def get_ingress_filter_namespaces(cluster_id: str | None = None) -> list[str]:
-    query = db.session.query(IngressInventory.namespace)
-    query = filter_current_generation(query, IngressInventory)
+    query = filter_current_generation(db.session.query(IngressInventory.namespace), IngressInventory)
     if cluster_id:
         query = query.filter(IngressInventory.cluster_id == cluster_id)
-    rows = query.distinct().order_by(IngressInventory.namespace).all()
-    return [row[0] for row in rows if row[0]]
+    return [value for (value,) in query.distinct().order_by(IngressInventory.namespace).all() if value]
 
 
 def get_ingress_filter_classes(cluster_id: str | None = None, namespace: str | None = None) -> list[str]:
-    query = db.session.query(IngressInventory.ingress_class)
-    query = filter_current_generation(query, IngressInventory)
+    query = filter_current_generation(db.session.query(IngressInventory.ingress_class), IngressInventory)
     if cluster_id:
         query = query.filter(IngressInventory.cluster_id == cluster_id)
     if namespace:
         query = query.filter(IngressInventory.namespace == namespace)
-    rows = query.distinct().order_by(IngressInventory.ingress_class).all()
-    return [row[0] for row in rows if row[0]]
+    values = {str(value).strip() if value and str(value).strip() else UNSET_CLASS_FILTER for (value,) in query.distinct().all()}
+    return sorted(values, key=lambda value: (value == UNSET_CLASS_FILTER, value.lower()))
 
 
-def _ingress_hosts(host: str | None, details: dict[str, Any]) -> list[str]:
-    hosts = [str(value) for value in (details.get('hosts') or []) if value and value != '-']
-    if not hosts and host and host != '-':
-        hosts.append(host)
-    return list(dict.fromkeys(hosts))
-
-
-def _ingress_addresses(address: str | None) -> list[str]:
-    values = _split_inventory_values(address)
-    if values:
-        return values
-    return []
-
-
-def _ingress_tls_secret_count(tls_entries: list[Any]) -> int:
-    return len(
-        {
-            item.get('secret_name')
-            for item in tls_entries
-            if isinstance(item, dict) and item.get('secret_name') not in (None, '', '-')
-        }
-    )
+def ingress_class_filter_label(value: str) -> str:
+    return 'Not Explicitly Set' if value == UNSET_CLASS_FILTER else value
 
 
 def _apply_filters(query, cluster_id=None, namespace=None, ingress_class=None, tls_status=None, search=None):
@@ -60,7 +53,14 @@ def _apply_filters(query, cluster_id=None, namespace=None, ingress_class=None, t
         query = query.filter(IngressInventory.cluster_id == cluster_id)
     if namespace:
         query = query.filter(IngressInventory.namespace == namespace)
-    if ingress_class:
+    if ingress_class == UNSET_CLASS_FILTER:
+        query = query.filter(
+            or_(
+                IngressInventory.ingress_class.is_(None),
+                func.trim(IngressInventory.ingress_class) == '',
+            )
+        )
+    elif ingress_class:
         query = query.filter(IngressInventory.ingress_class == ingress_class)
     if tls_status == 'enabled':
         query = query.filter(IngressInventory.tls_enabled.is_(True))
@@ -71,9 +71,10 @@ def _apply_filters(query, cluster_id=None, namespace=None, ingress_class=None, t
         query = query.filter(
             or_(
                 IngressInventory.ingress_name.ilike(pattern),
-                IngressInventory.host.ilike(pattern),
-                IngressInventory.address.ilike(pattern),
+                IngressInventory.namespace.ilike(pattern),
                 IngressInventory.ingress_class.ilike(pattern),
+                cast(IngressInventory.details, String).ilike(pattern),
+                cast(IngressInventory.backend_paths, String).ilike(pattern),
             )
         )
     return query
@@ -83,7 +84,112 @@ def _route_service_names(paths: list[Any]) -> set[str]:
     return {
         str(item.get('service_name'))
         for item in paths
-        if isinstance(item, dict) and item.get('service_name') not in (None, '', '-')
+        if isinstance(item, dict)
+        and item.get('backend_type') == 'Service'
+        and item.get('service_name') not in (None, '')
+    }
+
+
+def _summary_rows(cluster_id=None, namespace=None, ingress_class=None, tls_status=None, search=None):
+    query = db.session.query(
+        IngressInventory.ingress_class,
+        IngressInventory.tls_enabled,
+        IngressInventory.backend_paths,
+        IngressInventory.details,
+    )
+    query = filter_current_generation(query, IngressInventory)
+    return _apply_filters(query, cluster_id, namespace, ingress_class, tls_status, search).all()
+
+
+def _summary_metrics(summary_rows) -> dict[str, int]:
+    hosts: set[str] = set()
+    classes: set[str] = set()
+    backend_services: set[str] = set()
+    metrics = {
+        'backend_route_count': 0,
+        'resource_backend_count': 0,
+        'tls_ingresses': 0,
+        'tls_secret_references': 0,
+        'publication_exceptions': 0,
+        'routing_exceptions': 0,
+        'publication_not_reported': 0,
+    }
+    for class_name, tls_enabled, backend_paths, details in summary_rows:
+        details = details or {}
+        hosts.update(str(value) for value in (details.get('hosts') or []) if value)
+        class_label, _ = ingress_class_presentation(class_name, details.get('ingress_class_source'))
+        classes.add(class_label)
+        paths = [item for item in (backend_paths or []) if isinstance(item, dict)]
+        backend_services.update(_route_service_names(paths))
+        metrics['backend_route_count'] += len(paths)
+        metrics['resource_backend_count'] += sum(1 for item in paths if item.get('backend_type') == 'Resource')
+        metrics['tls_ingresses'] += int(bool(tls_enabled))
+        metrics['tls_secret_references'] += len(
+            {
+                str(item.get('secret_name'))
+                for item in (details.get('tls') or [])
+                if isinstance(item, dict) and item.get('secret_name')
+            }
+        )
+        publication = publication_presentation(details)
+        metrics['publication_exceptions'] += int(publication['exception'])
+        metrics['publication_not_reported'] += int(not publication['reported'])
+        if details.get('specification_evidence_reported') is False or not paths:
+            metrics['routing_exceptions'] += 1
+    return {
+        **metrics,
+        'total_hosts': len(hosts),
+        'ingress_classes': len(classes),
+        'backend_service_count': len(backend_services),
+    }
+
+
+def _present_ingress_row(ingress: IngressInventory, cluster_name: str, environment: str) -> dict[str, Any]:
+    details = ingress.details or {}
+    class_label, class_supporting = ingress_class_presentation(
+        ingress.ingress_class,
+        details.get('ingress_class_source'),
+    )
+    host_label, host_supporting, host_count = host_presentation(details)
+    publication = publication_presentation(details)
+    paths = [item for item in (ingress.backend_paths or []) if isinstance(item, dict)]
+    service_names = _route_service_names(paths)
+    resource_count = sum(1 for item in paths if item.get('backend_type') == 'Resource')
+    tls_entries = [item for item in (details.get('tls') or []) if isinstance(item, dict)]
+    tls_secret_count = len({str(item.get('secret_name')) for item in tls_entries if item.get('secret_name')})
+    tls_host_count = len({str(host) for item in tls_entries for host in (item.get('hosts') or []) if host})
+    route_supporting_parts = [f'{len(service_names)} Services']
+    if resource_count:
+        route_supporting_parts.append(f'{resource_count} Resource Backends')
+    return {
+        'id': ingress.id,
+        'cluster_name': cluster_name,
+        'cluster_environment': environment,
+        'namespace': ingress.namespace,
+        'name': ingress.ingress_name,
+        'class': class_label,
+        'class_supporting': class_supporting,
+        'host': host_label,
+        'host_supporting': host_supporting,
+        'host_count': host_count,
+        'address': publication['address'],
+        'address_count': len(publication['addresses']),
+        'publication_label': publication['label'],
+        'publication_tone': publication['tone'],
+        'publication_supporting': publication['supporting'],
+        'tls_reference_label': (
+            f'{tls_secret_count} Secret Reference' + ('' if tls_secret_count == 1 else 's')
+            if tls_secret_count
+            else ('TLS Declared · No Secret Reference' if tls_entries else 'No TLS Reference')
+        ),
+        'tls_host_count': tls_host_count,
+        'backend_count': len(paths),
+        'service_count': len(service_names),
+        'resource_backend_count': resource_count,
+        'routing_label': f'{len(paths)} Route' + ('' if len(paths) == 1 else 's'),
+        'routing_supporting': ' · '.join(route_supporting_parts),
+        'created_at': ingress.created_at,
+        'collected_at': ingress.collected_at,
     }
 
 
@@ -103,98 +209,355 @@ def get_ingress_inventory(
     ).join(Cluster, Cluster.id == IngressInventory.cluster_id)
     query = filter_current_generation(query, IngressInventory)
     query = _apply_filters(query, cluster_id, namespace, ingress_class, tls_status, search)
-
-    summary_query = db.session.query(
-        IngressInventory.tls_enabled,
-        IngressInventory.host,
-        IngressInventory.address,
-        IngressInventory.ingress_class,
-        IngressInventory.backend_paths,
-        IngressInventory.details,
-    )
-    summary_query = filter_current_generation(summary_query, IngressInventory)
-    summary_query = _apply_filters(summary_query, cluster_id, namespace, ingress_class, tls_status, search)
-    summary_rows = summary_query.all()
-
-    ingresses, pagination = paginate_query(
+    rows, pagination = paginate_query(
         query.order_by(Cluster.name, IngressInventory.namespace, IngressInventory.ingress_name),
         page=page,
         per_page=per_page,
     )
-
-    hosts: set[str] = set()
-    classes: set[str] = set()
-    backend_services: set[str] = set()
-    tls_reference_count = 0
-    backend_route_count = 0
-    missing_addresses = 0
-    routing_exceptions = 0
-    for tls_enabled, host, address, class_name, backend_paths, details in summary_rows:
-        hosts.update(_ingress_hosts(host, details or {}))
-        if class_name:
-            classes.add(class_name)
-        paths = [item for item in (backend_paths or []) if isinstance(item, dict)]
-        backend_services.update(_route_service_names(paths))
-        backend_route_count += len(paths)
-        tls_reference_count += int(bool(tls_enabled))
-        if not _ingress_addresses(address):
-            missing_addresses += 1
-        if not paths:
-            routing_exceptions += 1
-
-    ingress_data: list[dict[str, Any]] = []
-    for ingress, cluster_name, cluster_environment in ingresses:
-        details = ingress.details or {}
-        ingress_hosts = _ingress_hosts(ingress.host, details)
-        addresses = _ingress_addresses(ingress.address)
-        paths = [item for item in (ingress.backend_paths or []) if isinstance(item, dict)]
-        service_names = _route_service_names(paths)
-        ingress_data.append(
-            {
-                'id': ingress.id,
-                'cluster_name': cluster_name,
-                'cluster_environment': cluster_environment,
-                'namespace': ingress.namespace,
-                'name': ingress.ingress_name,
-                'class': ingress.ingress_class or 'Not Reported',
-                'host': ingress_hosts[0] if ingress_hosts else 'No Host Declared',
-                'host_count': len(ingress_hosts),
-                'address': addresses[0] if addresses else 'Not Published',
-                'address_count': len(addresses),
-                'tls_reference_label': (
-                    f'{_ingress_tls_secret_count(details.get("tls") or [])} Secret References'
-                    if ingress.tls_enabled
-                    else 'No TLS Reference'
-                ),
-                'tls_host_count': sum(len(item.get('hosts') or []) for item in (details.get('tls') or []) if isinstance(item, dict)),
-                'backend_count': len(paths),
-                'service_count': len(service_names),
-                'routing_label': f'{len(paths)} Paths · {len(service_names)} Services',
-                'publication_label': 'Published' if addresses else 'Address Pending',
-                'publication_tone': 'normal' if addresses else 'pending',
-                'age': format_age(ingress.created_at),
-                'created_at': ingress.created_at,
-                'collected_at': ingress.collected_at,
-            }
-        )
-
+    summary = _summary_metrics(_summary_rows(cluster_id, namespace, ingress_class, tls_status, search))
+    presented = [_present_ingress_row(item, cluster_name, environment) for item, cluster_name, environment in rows]
     total = pagination['total_items']
-    exceptions = missing_addresses + routing_exceptions
-    posture_label = 'No Data' if total == 0 else ('Attention' if exceptions else 'Published')
-    posture_tone = 'unknown' if total == 0 else ('warning' if exceptions else 'normal')
+    exceptions = summary['publication_exceptions'] + summary['routing_exceptions']
     return {
         'total_ingresses': total,
-        'total_hosts': len(hosts),
-        'ingress_classes': len(classes),
-        'backend_route_count': backend_route_count,
-        'backend_service_count': len(backend_services),
-        'tls_references': tls_reference_count,
-        'missing_addresses': missing_addresses,
-        'routing_exceptions': routing_exceptions,
-        'overall_posture_label': posture_label,
-        'overall_posture_tone': posture_tone,
-        'ingresses': ingress_data,
+        **summary,
+        'overall_posture_label': 'No Data' if total == 0 else ('Attention' if exceptions else 'Represented'),
+        'overall_posture_tone': 'unknown' if total == 0 else ('warning' if exceptions else 'normal'),
+        'ingresses': presented,
         'pagination': pagination,
+    }
+
+
+def _collection_states(cluster_id: str) -> tuple[str, str]:
+    cluster_inventory = ClusterInventory.query.filter_by(cluster_id=cluster_id).first()
+    evidence = dict(cluster_inventory.collection_evidence or {}) if cluster_inventory else {}
+    return (
+        str(evidence.get('inventory.services') or 'Not Reported'),
+        str(evidence.get('inventory.secrets') or 'Not Reported'),
+    )
+
+
+def _service_map(ingress: IngressInventory, service_names: set[str]) -> dict[str, ServiceInventory]:
+    if not service_names:
+        return {}
+    query = filter_current_generation(ServiceInventory.query, ServiceInventory).filter(
+        ServiceInventory.cluster_id == ingress.cluster_id,
+        ServiceInventory.namespace == ingress.namespace,
+        ServiceInventory.service_name.in_(sorted(service_names)),
+    )
+    return {item.service_name: item for item in query.all()}
+
+
+def _secret_map(ingress: IngressInventory, secret_names: set[str]) -> dict[str, ConfigurationInventory]:
+    if not secret_names:
+        return {}
+    query = filter_current_generation(ConfigurationInventory.query, ConfigurationInventory).filter(
+        ConfigurationInventory.cluster_id == ingress.cluster_id,
+        ConfigurationInventory.namespace == ingress.namespace,
+        ConfigurationInventory.object_type == 'Secret',
+        ConfigurationInventory.name.in_(sorted(secret_names)),
+    )
+    return {item.name: item for item in query.all()}
+
+
+def _resolved_routes(
+    backend_paths: list[dict[str, Any]],
+    service_map: dict[str, ServiceInventory],
+    service_collection_state: str,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for route in backend_paths:
+        service_name = str(route.get('service_name') or '')
+        service = service_map.get(service_name)
+        state, tone = route_reference_state(
+            route,
+            service_exists=service is not None,
+            service_collection_state=service_collection_state,
+        )
+        backend_name, backend_supporting = route_backend_identity(route)
+        rows.append(
+            {
+                'host': str(route.get('host') or 'Not Reported'),
+                'path': str(route.get('path') or 'Not Reported'),
+                'path_type': str(route.get('path_type') or 'Not Reported'),
+                'route_source': str(route.get('route_source') or 'Not Reported'),
+                'backend_type': str(route.get('backend_type') or 'Unknown'),
+                'backend_name': backend_name,
+                'backend_supporting': backend_supporting,
+                'service_name': service_name or None,
+                'service_port': route.get('service_port'),
+                'reference_state': state,
+                'reference_tone': tone,
+            }
+        )
+    return rows
+
+
+def _related_services(
+    ingress: IngressInventory,
+    service_names: set[str],
+    service_map: dict[str, ServiceInventory],
+    service_collection_state: str,
+) -> list[dict[str, Any]]:
+    rows = []
+    for name in sorted(service_names):
+        service = service_map.get(name)
+        state, tone = route_reference_state(
+            {'backend_type': 'Service', 'service_name': name},
+            service_exists=service is not None,
+            service_collection_state=service_collection_state,
+        )
+        rows.append(
+            {
+                'name': name,
+                'supporting_primary': f'Namespace {ingress.namespace}',
+                'supporting_secondary': (
+                    f'{service.service_type or "Not Reported"} · '
+                    f'{len((service.details or {}).get("ports") or [])} declared ports'
+                    if service
+                    else (
+                        'Service collection evidence unavailable'
+                        if service_collection_state != COLLECTED
+                        else 'No matching Service in the committed snapshot'
+                    )
+                ),
+                'status': state,
+                'status_tone': tone,
+            }
+        )
+    return rows
+
+
+def _tls_resources(
+    ingress: IngressInventory,
+    tls_entries: list[dict[str, Any]],
+    secret_collection_state: str,
+) -> tuple[list[dict[str, Any]], int, int]:
+    secret_names = {str(item.get('secret_name')) for item in tls_entries if item.get('secret_name')}
+    secret_map = _secret_map(ingress, secret_names)
+    resources = []
+    missing = not_reported = 0
+    for name in sorted(secret_names):
+        secret = secret_map.get(name)
+        state, tone = tls_reference_state(secret is not None, secret_collection_state)
+        missing += int(state == 'Missing')
+        not_reported += int(state == 'Not Reported')
+        hosts = sorted({str(host) for item in tls_entries if item.get('secret_name') == name for host in (item.get('hosts') or []) if host})
+        resources.append(
+            {
+                'name': name,
+                'supporting_primary': ', '.join(hosts) if hosts else 'No TLS hosts declared',
+                'supporting_secondary': (
+                    secret.secret_type or 'Secret present in committed inventory'
+                    if secret
+                    else (
+                        'Secret collection evidence unavailable'
+                        if secret_collection_state != COLLECTED
+                        else 'No matching Secret in the committed inventory'
+                    )
+                ),
+                'status': state,
+                'status_tone': tone,
+            }
+        )
+    return resources, missing, not_reported
+
+
+def _operational_context(
+    *,
+    specification_reported: bool,
+    routes: list[dict[str, Any]],
+    publication: dict[str, Any],
+    missing_backends: int,
+    unresolved_backends: int,
+    missing_tls_secrets: int,
+    tls_not_reported: int,
+    tls_enabled: bool,
+) -> dict[str, str]:
+    if not specification_reported:
+        return {
+            'title': 'Refresh Ingress Specification Evidence',
+            'description': 'Ingress specification evidence is not represented. Run inventory sync before evaluating routes or TLS references.',
+            'icon': 'refresh-cw',
+            'tone': 'warning',
+        }
+    if not routes:
+        return {
+            'title': 'Review Routing Declaration',
+            'description': 'No backend route is represented in the committed snapshot. Confirm rule paths or the default backend.',
+            'icon': 'route-off',
+            'tone': 'warning',
+        }
+    if missing_backends:
+        return {
+            'title': 'Resolve Backend Service References',
+            'description': f'{missing_backends} backend Service reference could not be resolved in the current committed Service Inventory.',
+            'icon': 'unlink',
+            'tone': 'critical',
+        }
+    if unresolved_backends:
+        return {
+            'title': 'Refresh Service Inventory Evidence',
+            'description': 'Backend Service references cannot be evaluated because Service collection evidence is unavailable.',
+            'icon': 'refresh-cw',
+            'tone': 'warning',
+        }
+    if missing_tls_secrets:
+        return {
+            'title': 'Resolve TLS Secret References',
+            'description': f'{missing_tls_secrets} TLS Secret reference could not be resolved in the committed Secret Inventory.',
+            'icon': 'key-round',
+            'tone': 'critical',
+        }
+    if tls_not_reported:
+        return {
+            'title': 'Refresh Secret Inventory Evidence',
+            'description': 'TLS Secret references cannot be evaluated because Secret collection evidence is unavailable.',
+            'icon': 'refresh-cw',
+            'tone': 'warning',
+        }
+    if publication['label'] == 'Not Reported':
+        return {
+            'title': 'Refresh Publication Evidence',
+            'description': 'Ingress controller publication status was not reported. Confirm controller RBAC and reconcile state before drawing publication conclusions.',
+            'icon': 'refresh-cw',
+            'tone': 'warning',
+        }
+    if publication['label'] == 'Address Pending':
+        return {
+            'title': 'Await Controller Publication',
+            'description': 'The controller reported publication status without assigning an address. Confirm that reconciliation is progressing.',
+            'icon': 'clock-3',
+            'tone': 'pending',
+        }
+    if not tls_enabled:
+        return {
+            'title': 'TLS Reference Not Configured',
+            'description': 'No TLS Secret reference is declared. This remains neutral inventory evidence until an explicit governance policy evaluates it.',
+            'icon': 'shield-off',
+            'tone': 'info',
+        }
+    return {
+        'title': 'Ingress Snapshot Ready for Review',
+        'description': 'Publication, route references, and Secret references are represented. Live reachability, traffic health, and certificate validity remain outside inventory scope.',
+        'icon': 'circle-check',
+        'tone': 'normal',
+    }
+
+
+def _detail_reference_context(ingress: IngressInventory, details: dict[str, Any]) -> dict[str, Any]:
+    specification_reported = details.get('specification_evidence_reported') is True
+    backend_paths = [item for item in (ingress.backend_paths or []) if isinstance(item, dict)]
+    service_names = _route_service_names(backend_paths)
+    service_collection_state, secret_collection_state = _collection_states(ingress.cluster_id)
+    service_map = _service_map(ingress, service_names)
+    resolved_paths = _resolved_routes(backend_paths, service_map, service_collection_state)
+    backend_resources = _related_services(ingress, service_names, service_map, service_collection_state)
+    tls_entries = [item for item in (details.get('tls') or []) if isinstance(item, dict)]
+    tls_resources, missing_tls_secrets, tls_not_reported = _tls_resources(
+        ingress,
+        tls_entries,
+        secret_collection_state,
+    )
+    publication = publication_presentation(details)
+    missing_backends = sum(1 for item in resolved_paths if item['reference_state'] == 'Missing')
+    unresolved_backends = sum(1 for item in resolved_paths if item['reference_state'] == 'Not Reported')
+    resource_backend_count = sum(1 for item in resolved_paths if item['backend_type'] == 'Resource')
+    operational_context = _operational_context(
+        specification_reported=specification_reported,
+        routes=resolved_paths,
+        publication=publication,
+        missing_backends=missing_backends,
+        unresolved_backends=unresolved_backends,
+        missing_tls_secrets=missing_tls_secrets,
+        tls_not_reported=tls_not_reported,
+        tls_enabled=ingress.tls_enabled,
+    )
+    critical = missing_backends + missing_tls_secrets
+    warnings = int(not resolved_paths or publication['exception'] or unresolved_backends > 0 or tls_not_reported > 0)
+    return {
+        'specification_reported': specification_reported,
+        'service_names': service_names,
+        'service_collection_state': service_collection_state,
+        'secret_collection_state': secret_collection_state,
+        'resolved_paths': resolved_paths,
+        'backend_resources': backend_resources,
+        'tls_entries': tls_entries,
+        'tls_resources': tls_resources,
+        'missing_tls_secrets': missing_tls_secrets,
+        'tls_not_reported': tls_not_reported,
+        'publication': publication,
+        'missing_backends': missing_backends,
+        'unresolved_backends': unresolved_backends,
+        'resource_backend_count': resource_backend_count,
+        'operational_context': operational_context,
+        'detail_label': 'Attention' if critical or warnings else 'Represented',
+        'detail_tone': 'critical' if critical else ('warning' if warnings else 'normal'),
+    }
+
+
+def _present_ingress_detail(
+    ingress: IngressInventory,
+    cluster_name: str,
+    details: dict[str, Any],
+    context: dict[str, Any],
+) -> dict[str, Any]:
+    class_label, class_supporting = ingress_class_presentation(
+        ingress.ingress_class,
+        details.get('ingress_class_source'),
+    )
+    host_label, host_supporting, host_count = host_presentation(details)
+    hosts = [str(value) for value in (details.get('hosts') or []) if value]
+    publication = context['publication']
+    return {
+        'id': ingress.id,
+        'cluster_name': cluster_name,
+        'cluster_id': ingress.cluster_id,
+        'namespace': ingress.namespace,
+        'name': ingress.ingress_name,
+        'class': class_label,
+        'class_supporting': class_supporting,
+        'uid': details.get('uid') or 'Not Reported',
+        'generation': int(details.get('generation') or 0),
+        'specification_reported': context['specification_reported'],
+        'host_label': host_label,
+        'host_supporting': host_supporting,
+        'hosts': hosts,
+        'host_count': host_count,
+        'hostless_rule_count': int(details.get('hostless_rule_count') or 0),
+        'addresses': publication['addresses'],
+        'publication_label': publication['label'],
+        'publication_tone': publication['tone'],
+        'publication_supporting': publication['supporting'],
+        'tls': ingress.tls_enabled,
+        'tls_entries': context['tls_entries'],
+        'tls_resources': context['tls_resources'],
+        'tls_secret_count': len(context['tls_resources']),
+        'missing_tls_secret_count': context['missing_tls_secrets'],
+        'tls_not_reported_count': context['tls_not_reported'],
+        'secret_collection_state': context['secret_collection_state'],
+        'backend_paths': context['resolved_paths'],
+        'backend_resources': context['backend_resources'],
+        'backend_count': len(context['resolved_paths']),
+        'service_count': len(context['service_names']),
+        'resource_backend_count': context['resource_backend_count'],
+        'missing_backend_count': context['missing_backends'],
+        'unresolved_backend_count': context['unresolved_backends'],
+        'service_collection_state': context['service_collection_state'],
+        'rule_count': int(details.get('rule_count') or 0),
+        'default_backend': details.get('default_backend'),
+        'finalizers': details.get('finalizers') or [],
+        'finalizer_entries': {str(value): 'Lifecycle finalizer' for value in (details.get('finalizers') or [])},
+        'host_entries': {str(value): 'Explicit host declaration' for value in hosts},
+        'address_entries': {str(value): 'Controller-published address' for value in publication['addresses']},
+        'age': format_age(ingress.created_at),
+        'created_at': ingress.created_at,
+        'collected_at': ingress.collected_at,
+        'labels': dict(sorted((details.get('labels') or {}).items())),
+        'annotations': dict(sorted((details.get('annotations') or {}).items())),
+        'detail_posture_label': context['detail_label'],
+        'detail_posture_tone': context['detail_tone'],
+        'operational_context': context['operational_context'],
     }
 
 
@@ -206,157 +569,11 @@ def get_ingress_detail(ingress_id: int) -> dict[str, Any] | None:
     result = query.filter(IngressInventory.id == ingress_id).first()
     if result is None:
         return None
-
     ingress, cluster_name = result
     details = dict(ingress.details or {})
-    backend_paths = [item for item in (ingress.backend_paths or []) if isinstance(item, dict)]
-    hosts = _ingress_hosts(ingress.host, details)
-    if not hosts:
-        hosts = sorted({str(item.get('host')) for item in backend_paths if item.get('host') not in (None, '', '-')})
-    addresses = _ingress_addresses(ingress.address)
-    service_names = sorted(_route_service_names(backend_paths))
-
-    service_map: dict[str, ServiceInventory] = {}
-    if service_names:
-        service_query = filter_current_generation(ServiceInventory.query, ServiceInventory).filter(
-            ServiceInventory.cluster_id == ingress.cluster_id,
-            ServiceInventory.namespace == ingress.namespace,
-            ServiceInventory.service_name.in_(service_names),
-        )
-        service_map = {item.service_name: item for item in service_query.all()}
-
-    resolved_paths: list[dict[str, Any]] = []
-    for item in backend_paths:
-        service_name = str(item.get('service_name') or '-')
-        if service_name == '-':
-            state, tone = 'Not Reported', 'unknown'
-        elif service_name in service_map:
-            state, tone = 'Resolved', 'normal'
-        else:
-            state, tone = 'Missing', 'critical'
-        resolved_paths.append(
-            {
-                'host': str(item.get('host') or '-'),
-                'path': str(item.get('path') or '/'),
-                'path_type': str(item.get('path_type') or '-'),
-                'service_name': service_name,
-                'service_port': str(item.get('service_port') or '-'),
-                'reference_state': state,
-                'reference_tone': tone,
-            }
-        )
-
-    backend_resources = []
-    for service_name in service_names:
-        resolved = service_map.get(service_name)
-        backend_resources.append(
-            {
-                'name': service_name,
-                'supporting_primary': f'Namespace {ingress.namespace}',
-                'supporting_secondary': (
-                    f'{resolved.service_type or "Service"} · {resolved.cluster_ip or "No Cluster IP"}'
-                    if resolved
-                    else 'No matching Service in the committed snapshot'
-                ),
-                'status': 'Resolved' if resolved else 'Missing',
-                'status_tone': 'normal' if resolved else 'critical',
-            }
-        )
-
-    tls_entries = [item for item in (details.get('tls') or []) if isinstance(item, dict)]
-    tls_reference_entries = {
-        str(item.get('secret_name') or f'TLS Entry {index + 1}'): ', '.join(item.get('hosts') or []) or 'No hosts declared'
-        for index, item in enumerate(tls_entries)
-    }
-    tls_secrets = sorted(
-        {str(item.get('secret_name')) for item in tls_entries if item.get('secret_name') not in (None, '', '-')}
+    return _present_ingress_detail(
+        ingress,
+        cluster_name,
+        details,
+        _detail_reference_context(ingress, details),
     )
-    labels = dict(sorted((details.get('labels') or {}).items()))
-    annotations = dict(sorted((details.get('annotations') or {}).items()))
-    missing_backend_count = sum(1 for item in resolved_paths if item['reference_state'] == 'Missing')
-
-    if not resolved_paths:
-        operational_context = {
-            'title': 'Review Routing Declaration',
-            'description': 'No backend route is represented in the committed snapshot. Confirm the intended Ingress rules and default backend.',
-            'icon': 'route-off',
-            'tone': 'warning',
-        }
-    elif missing_backend_count:
-        operational_context = {
-            'title': 'Resolve Backend References',
-            'description': f'{missing_backend_count} backend Service reference could not be resolved in the current committed Service Inventory.',
-            'icon': 'unlink',
-            'tone': 'critical',
-        }
-    elif not addresses:
-        operational_context = {
-            'title': 'Await Controller Publication',
-            'description': 'No publication address is reported yet. Confirm the Ingress controller continues reconciling the declared routes.',
-            'icon': 'clock-3',
-            'tone': 'pending',
-        }
-    elif not ingress.tls_enabled:
-        operational_context = {
-            'title': 'TLS Reference Not Configured',
-            'description': 'No TLS Secret reference is declared. This remains factual inventory evidence until an explicit governance policy requires TLS.',
-            'icon': 'shield-off',
-            'tone': 'info',
-        }
-    else:
-        operational_context = {
-            'title': 'Ingress Snapshot Ready for Review',
-            'description': 'Publication and backend references are represented in the committed snapshot. Live traffic and certificate health remain outside inventory scope.',
-            'icon': 'circle-check',
-            'tone': 'normal',
-        }
-
-    detail_posture_label = (
-        'Missing Backends'
-        if missing_backend_count
-        else ('No Routes' if not resolved_paths else ('Address Pending' if not addresses else 'Published'))
-    )
-    detail_posture_tone = (
-        'critical'
-        if missing_backend_count
-        else ('warning' if not resolved_paths else ('pending' if not addresses else 'normal'))
-    )
-    first_host = hosts[0] if hosts else None
-    declared_host_url = f'{"https" if ingress.tls_enabled else "http"}://{first_host}' if first_host else None
-    return {
-        'id': ingress.id,
-        'cluster_name': cluster_name,
-        'cluster_id': ingress.cluster_id,
-        'namespace': ingress.namespace,
-        'name': ingress.ingress_name,
-        'class': ingress.ingress_class or 'Not Reported',
-        'uid': details.get('uid') or '-',
-        'generation': int(details.get('generation') or 0),
-        'hosts': hosts,
-        'addresses': addresses,
-        'declared_host_url': declared_host_url,
-        'tls': ingress.tls_enabled,
-        'tls_entries': tls_entries,
-        'tls_reference_entries': tls_reference_entries,
-        'tls_secrets': tls_secrets,
-        'backend_paths': resolved_paths,
-        'backend_resources': backend_resources,
-        'backend_count': len(resolved_paths),
-        'host_count': len(hosts),
-        'service_count': len(service_names),
-        'missing_backend_count': missing_backend_count,
-        'rule_count': int(details.get('rule_count') or 0),
-        'default_backend': details.get('default_backend'),
-        'finalizers': details.get('finalizers') or [],
-        'finalizer_entries': {str(value): 'Lifecycle finalizer' for value in (details.get('finalizers') or [])},
-        'host_entries': {str(value): 'Declared host' for value in hosts},
-        'address_entries': {str(value): 'Controller-published address' for value in addresses},
-        'age': format_age(ingress.created_at),
-        'created_at': ingress.created_at,
-        'collected_at': ingress.collected_at,
-        'labels': labels,
-        'annotations': annotations,
-        'detail_posture_label': detail_posture_label,
-        'detail_posture_tone': detail_posture_tone,
-        'operational_context': operational_context,
-    }

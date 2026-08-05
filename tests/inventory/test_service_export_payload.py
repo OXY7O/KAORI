@@ -11,6 +11,7 @@ pytestmark = pytest.mark.functional
 
 ROOT = Path(__file__).resolve().parents[2]
 PAYLOAD_PATH = ROOT / 'app/reports/export/payloads/inventory.py'
+INGRESS_SEMANTICS_PATH = ROOT / 'app/inventory/resources/ingress_semantics.py'
 SEMANTICS_PATH = ROOT / 'app/inventory/resources/service_semantics.py'
 
 
@@ -70,6 +71,15 @@ def _load_payload(monkeypatch: pytest.MonkeyPatch):
 
     for name, module in modules.items():
         monkeypatch.setitem(sys.modules, name, module)
+
+    ingress_spec = importlib.util.spec_from_file_location(
+        'app.inventory.resources.ingress_semantics',
+        INGRESS_SEMANTICS_PATH,
+    )
+    assert ingress_spec and ingress_spec.loader
+    ingress_semantics = importlib.util.module_from_spec(ingress_spec)
+    monkeypatch.setitem(sys.modules, 'app.inventory.resources.ingress_semantics', ingress_semantics)
+    ingress_spec.loader.exec_module(ingress_semantics)
 
     semantics_spec = importlib.util.spec_from_file_location(
         'app.inventory.resources.service_semantics',

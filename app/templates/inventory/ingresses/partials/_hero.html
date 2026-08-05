@@ -8,7 +8,7 @@
                 <div class="{{ page_hero.metadata_row_classes() }}">
                     {{ page_hero.meta_label('route', inventory.total_ingresses ~ ' Ingresses in Scope') }}
                     {{ page_hero.meta_label('scan-search', inventory.scope_label) }}
-                    {{ page_hero.meta_label('network', inventory.ingress_classes ~ ' Ingress Classes') }}
+                    {{ page_hero.meta_label('network', inventory.ingress_classes ~ ' Class States') }}
                 </div>
             {% endcall %}
         </div>
@@ -19,8 +19,8 @@
             inventory.overall_posture_label,
             inventory.overall_posture_tone,
             [
-                ('globe-2', 'Published Hosts', inventory.total_hosts, 'Declared host routes'),
-                ('triangle-alert', 'Exceptions', inventory.missing_addresses + inventory.routing_exceptions, 'Address or routing')
+                ('globe-2', 'Declared Hosts', inventory.total_hosts, 'Explicit host declarations'),
+                ('triangle-alert', 'Exceptions', inventory.publication_exceptions + inventory.routing_exceptions, 'Publication or routing')
             ],
             'Manage Clusters',
             url_for('integrations.kubernetes'),

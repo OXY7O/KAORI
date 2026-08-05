@@ -622,10 +622,16 @@ def save_ingresses(
         synchronize_session=False,
     )
 
-    ingresses = get_ingresses(
+    ingresses, collection_evidence = get_ingresses(
         api,
         ingress_items=ingress_items,
+        with_evidence=True,
     )
+
+    cluster_inventory = ClusterInventory.query.filter_by(cluster_id=cluster.id).one()
+    committed_evidence = dict(cluster_inventory.collection_evidence or {})
+    committed_evidence.update(collection_evidence)
+    cluster_inventory.collection_evidence = committed_evidence
 
     for ingress in ingresses:
         ingress_inventory = IngressInventory()
@@ -638,10 +644,6 @@ def save_ingresses(
         ingress_inventory.ingress_name = ingress['ingress_name']
 
         ingress_inventory.ingress_class = ingress['ingress_class']
-
-        ingress_inventory.host = ingress['host']
-
-        ingress_inventory.address = ingress['address']
 
         ingress_inventory.tls_enabled = ingress['tls_enabled']
 

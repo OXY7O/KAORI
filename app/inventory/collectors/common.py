@@ -53,9 +53,20 @@ def _to_modelish(value: Any) -> Any:
     return SimpleNamespace(**{snake(key): _to_modelish(item) for key, item in value.items()})
 
 
+
+def _mapping_dict(value: Any) -> dict[str, Any]:
+    """Return Kubernetes mapping fields from model, dict, or raw discovery objects."""
+    if isinstance(value, dict):
+        return dict(value)
+    attributes = getattr(value, '__dict__', None)
+    if isinstance(attributes, dict):
+        return dict(attributes)
+    return {}
+
+
 def _metadata_details(metadata) -> dict:
-    labels = dict(sorted((_model_value(metadata, 'labels', default={}) or {}).items()))
-    annotations = dict(sorted((_model_value(metadata, 'annotations', default={}) or {}).items()))
+    labels = dict(sorted(_mapping_dict(_model_value(metadata, 'labels', default={})).items()))
+    annotations = dict(sorted(_mapping_dict(_model_value(metadata, 'annotations', default={})).items()))
 
     return {
         'uid': _string_value(_model_value(metadata, 'uid')),

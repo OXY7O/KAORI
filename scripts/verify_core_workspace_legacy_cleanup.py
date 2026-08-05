@@ -25,6 +25,7 @@ def main() -> int:
         'app/templates/inventory/workloads/partials/_inventory_scope.html',
         'app/templates/inventory/pods/partials/_inventory_scope.html',
         'app/templates/inventory/services/partials/_inventory_scope.html',
+        'app/templates/inventory/ingresses/partials/_inventory_scope.html',
     )
     for relative in obsolete_paths:
         require(not (ROOT / relative).exists(), f'Obsolete compatibility file still exists: {relative}', errors)
@@ -69,14 +70,14 @@ def main() -> int:
             'Inventory Overview must not use a generic resource scope wrapper.', errors)
 
     routes = read('app/inventory/routes.py')
-    require("for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services')" in routes,
-            'Audited Inventory pages must use canonical workspace mappings.', errors)
+    require("for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses')" in routes,
+            'Audited Inventory pages must use one canonical workspace mapping.', errors)
     require("templates.get('workspace', templates['scope'])" not in routes,
             'Inventory workspace routing must not fall back to compatibility scope wrappers.', errors)
     require('_build_cluster_context_from_request' not in routes,
             'Unused Inventory route wrapper must remain removed.', errors)
 
-    for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services'):
+    for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses'):
         workspace = read(f'app/templates/inventory/{resource}/partials/_page_workspace.html')
         table = read(f'app/templates/inventory/{resource}/partials/_table_content.html')
         require(f'id="{resource}-page-workspace"' in workspace,
@@ -151,6 +152,19 @@ def main() -> int:
     require("op.drop_column('service_inventory', 'external_ip')" in service_migration,
             'Service canonicalization migration must drop external_ip.', errors)
 
+
+    ingress_class = service_model.split('class IngressInventory', 1)[1].split('class StorageInventory', 1)[0]
+    ingress_collector = read('app/inventory/collectors/ingresses.py')
+    ingress_migration = read('migrations/versions/20260805_ingress_inventory_v2.py')
+    require('host:' not in ingress_class and 'address:' not in ingress_class,
+            'IngressInventory duplicate presentation columns must be removed.', errors)
+    require("'namespace': str(namespace),\n                'ingress_name': str(name),\n                'ingress_class': ingress_class,\n                'tls_enabled': bool(tls_entries)" in ingress_collector,
+            'Ingress collector must persist only canonical top-level fields.', errors)
+    require("op.drop_column('ingress_inventory', 'host')" in ingress_migration,
+            'Ingress canonicalization migration must drop host.', errors)
+    require("op.drop_column('ingress_inventory', 'address')" in ingress_migration,
+            'Ingress canonicalization migration must drop address.', errors)
+
     if errors:
         for error in errors:
             print(f'ERROR: {error}')
@@ -158,7 +172,7 @@ def main() -> int:
 
     print(
         'KAORI core workspace legacy cleanup passed: Welcome, Kubernetes Dashboard, Inventory Overview, '
-        'Topology, Node, Namespace, Workload, Pod, and Service use canonical paths without internal wrappers.'
+        'Topology, Node, Namespace, Workload, Pod, Service, and Ingress use canonical paths without internal wrappers.'
     )
     return 0
 

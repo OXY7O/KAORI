@@ -13,7 +13,7 @@ def test_namespace_filters_refresh_complete_scope_and_include_unknown() -> None:
     table = read('app/templates/inventory/namespaces/partials/_table_card.html')
     workspace = read('app/templates/inventory/namespaces/partials/_page_workspace.html')
 
-    assert "for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services')" in routes
+    assert "for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses')" in routes
     assert 'hx-target="#namespaces-page-workspace"' in table
     assert 'name="partial_mode" value="page_workspace"' in table
     assert 'id="namespaces-page-workspace"' in workspace

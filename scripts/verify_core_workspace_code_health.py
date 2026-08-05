@@ -22,6 +22,9 @@ TARGETS = (
     Path('app/inventory/resources/pods.py'),
     Path('app/inventory/resources/pod_detail.py'),
     Path('app/inventory/resources/services.py'),
+    Path('app/inventory/collectors/ingresses.py'),
+    Path('app/inventory/resources/ingresses.py'),
+    Path('app/inventory/resources/ingress_semantics.py'),
 )
 
 

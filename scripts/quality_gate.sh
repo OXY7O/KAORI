@@ -21,6 +21,7 @@ run_static() {
     python scripts/verify_workload_inventory_standard.py
     python scripts/verify_pod_inventory_standard.py
     python scripts/verify_service_inventory_standard.py
+    python scripts/verify_ingress_inventory_standard.py
     python scripts/verify_core_workspace_legacy_cleanup.py
     python scripts/verify_core_workspace_code_health.py
     python scripts/verify_dark_mode_standard.py

@@ -16,6 +16,7 @@ def test_reviewed_core_workspaces_do_not_restore_internal_compatibility_bridges(
         'app/templates/inventory/workloads/partials/_inventory_scope.html',
         'app/templates/inventory/pods/partials/_inventory_scope.html',
         'app/templates/inventory/services/partials/_inventory_scope.html',
+        'app/templates/inventory/ingresses/partials/_inventory_scope.html',
     )
     assert all(not (ROOT / relative).exists() for relative in obsolete)
 
@@ -49,7 +50,7 @@ def test_reviewed_core_workspaces_do_not_restore_internal_compatibility_bridges(
 
 
 def test_reviewed_inventory_resources_use_canonical_workspace_and_table_boundaries() -> None:
-    for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services'):
+    for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses'):
         workspace = read(f'app/templates/inventory/{resource}/partials/_page_workspace.html')
         table = read(f'app/templates/inventory/{resource}/partials/_table_content.html')
 
@@ -69,3 +70,16 @@ def test_service_inventory_uses_json_evidence_without_duplicate_columns() -> Non
     assert 'ports:' not in service_class
     assert "op.drop_column('service_inventory', 'ports')" in migration
     assert "op.drop_column('service_inventory', 'external_ip')" in migration
+
+
+def test_ingress_inventory_uses_json_evidence_without_duplicate_columns() -> None:
+    model = read('app/models/inventory.py')
+    ingress_class = model.split('class IngressInventory', 1)[1].split('class StorageInventory', 1)[0]
+    collector = read('app/inventory/collectors/ingresses.py')
+    migration = read('migrations/versions/20260805_ingress_inventory_v2.py')
+
+    assert 'host:' not in ingress_class
+    assert 'address:' not in ingress_class
+    assert "'namespace': str(namespace),\n                'ingress_name': str(name),\n                'ingress_class': ingress_class,\n                'tls_enabled': bool(tls_entries)" in collector
+    assert "op.drop_column('ingress_inventory', 'host')" in migration
+    assert "op.drop_column('ingress_inventory', 'address')" in migration

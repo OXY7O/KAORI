@@ -1,7 +1,0 @@
-app/static/js/inventory/topology_bootstrap.js
-app/templates/inventory/components/_detail_macros.html
-app/templates/inventory/namespaces/partials/_inventory_scope.html
-app/templates/inventory/nodes/partials/_inventory_scope.html
-app/templates/inventory/pods/partials/_inventory_scope.html
-app/templates/inventory/services/partials/_inventory_scope.html
-app/templates/inventory/workloads/partials/_inventory_scope.html

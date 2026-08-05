@@ -24,6 +24,7 @@ from app.inventory.resources.ingresses import (
     get_ingress_filter_classes,
     get_ingress_filter_namespaces,
     get_ingress_inventory,
+    ingress_class_filter_label,
 )
 from app.inventory.resources.namespaces import (
     get_namespace_detail,
@@ -81,7 +82,7 @@ _INVENTORY_PARTIAL_TEMPLATES = {
         'card': f'inventory/{resource}/partials/_table_card.html',
         'content': f'inventory/{resource}/partials/_table_content.html',
     }
-    for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services')
+    for resource in ('nodes', 'namespaces', 'workloads', 'pods', 'services', 'ingresses')
 }
 _INVENTORY_PARTIAL_TEMPLATES.update(
     {
@@ -91,7 +92,7 @@ _INVENTORY_PARTIAL_TEMPLATES.update(
             'card': f'inventory/{resource}/partials/_table_card.html',
             'content': f'inventory/{resource}/partials/_table_content.html',
         }
-        for resource in ('configuration', 'ingresses', 'storage')
+        for resource in ('configuration', 'storage')
     }
 )
 
@@ -685,7 +686,10 @@ def ingresses():
         page=page,
         per_page=per_page,
     )
-    inventory['classes'] = ingress_classes
+    inventory['classes'] = [
+        {'value': value, 'label': ingress_class_filter_label(value)}
+        for value in ingress_classes
+    ]
     inventory['namespaces'] = namespaces
     inventory['scope_label'] = _inventory_scope_label(clusters, cluster_id)
 

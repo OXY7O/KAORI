@@ -31,6 +31,7 @@ obsolete_paths=(
   'app/templates/inventory/nodes/partials/_inventory_scope.html'
   'app/templates/inventory/pods/partials/_inventory_scope.html'
   'app/templates/inventory/services/partials/_inventory_scope.html'
+  'app/templates/inventory/ingresses/partials/_inventory_scope.html'
   'app/templates/inventory/workloads/partials/_inventory_scope.html'
   'app/templates/jobs/executions/partials/_hero_context_metrics.html'
   'app/templates/jobs/executions/partials/_hero_metadata.html'

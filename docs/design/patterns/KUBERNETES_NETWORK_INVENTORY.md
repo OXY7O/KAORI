@@ -42,7 +42,9 @@ Ingress | Scope | Publication | TLS References | Routing | Details
 
 TLS references remain factual. A Secret reference does not validate certificate existence, expiry, hostname coverage, or live termination. No TLS reference remains neutral until an explicit governance policy evaluates it.
 
-Backend Service references are resolved only against the current committed Service Inventory and display Resolved, Missing, or Not Reported.
+Backend Service references are resolved only against the current committed Service Inventory and display Resolved, Missing, or Not Reported. Resource backends remain factual declarations and are not evaluated as missing Services.
+
+Controller publication is represented as Published, Address Pending, or Not Reported. Hostless rules are represented as All Hosts rather than missing configuration. TLS Secret references are resolved only when committed Secret collection evidence is available.
 
 ## Detail density
 
@@ -55,3 +57,7 @@ Inventory reports declared configuration and committed registration evidence. It
 ## Service collection resilience
 
 Service backend collection records a committed evidence state. EndpointSlice permission/API compatibility failures may use Endpoints fallback. Unexpected API failures are not hidden. Selectorless Services distinguish reported manual registration from missing endpoint evidence, and exports leave endpoint-derived counts blank when evidence was not reported.
+
+## Ingress collection resilience
+
+Ingress list permission/API compatibility failures are recorded as committed collection evidence. Unexpected API failures are not hidden. Supported provider v1beta1 payloads are normalized at the collector boundary; downstream services use only the canonical route contract.

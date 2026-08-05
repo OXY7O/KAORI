@@ -5,22 +5,83 @@
 {% import "components/resource_detail_modal.html" as resource_detail_modal %}
 <div class="overflow-x-auto overscroll-x-contain">
     <table class="{{ table_ui.table_classes('min-w-[72rem]') }}">
-        <thead class="{{ table_ui.head_classes() }}"><tr><th class="{{ table_ui.header_cell_classes() }} min-w-[18rem]">Ingress</th><th class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Scope</th><th class="{{ table_ui.header_cell_classes() }} min-w-[16rem]">Publication</th><th class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">TLS References</th><th class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Routing</th><th class="{{ table_ui.header_cell_classes(action=true) }}">Details</th></tr></thead>
+        <caption class="sr-only">Committed Kubernetes Ingress inventory for the active cluster, namespace, class, TLS, and search filters.</caption>
+        <thead class="{{ table_ui.head_classes() }}">
+            <tr>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[18rem]">Ingress</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">Scope</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[17rem]">Publication</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[14rem]">TLS References</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes() }} min-w-[15rem]">Routing</th>
+                <th scope="col" class="{{ table_ui.header_cell_classes(action=true) }}">Details</th>
+            </tr>
+        </thead>
         <tbody class="{{ table_ui.body_classes() }}">
             {% for ingress in inventory.ingresses %}
                 <tr id="ingress-row-{{ ingress.id }}" class="{{ table_ui.row_classes() }}">
-                    <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(ingress.name, ingress.class ~ ' · Age ' ~ ingress.age, 'route') }}</td>
+                    <td class="{{ table_ui.cell_classes() }}">{{ table_ui.title_cell(ingress.name, ingress.class ~ ' · ' ~ ingress.class_supporting, 'route') }}</td>
                     <td class="{{ table_ui.cell_classes() }}">{{ table_ui.namespaced_scope_identity(ingress.cluster_name, ingress.cluster_environment, ingress.namespace) }}</td>
-                    <td class="{{ table_ui.cell_classes() }}"><p class="text-sm font-semibold text-content-primary">{{ ingress.host }}</p><div class="mt-1">{{ technical_value.render(ingress.address) }}</div><div class="mt-1">{{ table_label.status_indicator_label(ingress.publication_label, ingress.publication_tone) }}</div></td>
-                    <td class="{{ table_ui.cell_classes() }}"><p class="text-sm font-semibold text-content-primary">{{ ingress.tls_reference_label }}</p><p class="mt-1 text-xs leading-5 text-content-muted">{{ ingress.tls_host_count }} TLS hosts declared</p></td>
-                    <td class="{{ table_ui.cell_classes() }}"><p class="text-sm font-semibold text-content-primary">{{ ingress.routing_label }}</p><p class="mt-1 text-xs leading-5 text-content-muted">Declared routing evidence</p></td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <p class="text-sm font-semibold text-content-primary">{{ ingress.host }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ ingress.host_supporting }}</p>
+                        <div class="mt-1">{{ technical_value.render(ingress.address) }}</div>
+                        <div class="mt-1">{{ table_label.status_indicator_label(ingress.publication_label, ingress.publication_tone) }}</div>
+                    </td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <p class="text-sm font-semibold text-content-primary">{{ ingress.tls_reference_label }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ ingress.tls_host_count }} declared TLS {{ 'host' if ingress.tls_host_count == 1 else 'hosts' }}</p>
+                    </td>
+                    <td class="{{ table_ui.cell_classes() }}">
+                        <p class="text-sm font-semibold text-content-primary">{{ ingress.routing_label }}</p>
+                        <p class="mt-1 text-xs leading-5 text-content-muted">{{ ingress.routing_supporting }}</p>
+                    </td>
                     <td class="{{ table_ui.cell_classes(action=true) }}">{{ resource_detail_modal.detail_button(ingress.id, url_for('inventory.ingress_details', ingress_id=ingress.id), ingress.name, 'Ingress') }}</td>
                 </tr>
-            {% else %}<tr><td colspan="6" class="p-0">{% set empty_state_icon='route-off' %}{% set empty_state_title='No Ingress Inventory Found' %}{% set empty_state_description='Adjust the active filters or sync cluster inventory to collect Kubernetes Ingress data.' %}{% set empty_state_min_height='min-h-[190px]' %}{% include 'components/states/_empty_state.html' %}</td></tr>{% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="6" class="p-0">
+                        {% set empty_state_icon='route-off' %}
+                        {% set empty_state_title='No Ingress Inventory Found' %}
+                        {% set empty_state_description='Adjust the active filters or sync cluster inventory to collect Kubernetes Ingress evidence.' %}
+                        {% set empty_state_min_height='min-h-[190px]' %}
+                        {% include 'components/states/_empty_state.html' %}
+                    </td>
+                </tr>
+            {% endfor %}
         </tbody>
     </table>
 </div>
 <footer class="flex flex-col gap-4 border-t border-outline-subtle bg-surface-hover px-5 py-3.5 text-xs text-content-muted lg:flex-row lg:items-center lg:justify-between">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4"><p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ 'Ingress' if pagination.total_items == 1 else 'Ingresses' }}</p><form hx-get="{{ url_for('inventory.ingresses') }}" hx-target="#ingresses-inventory-scope" hx-swap="outerHTML" hx-indicator="#ingresses-table-loading" class="flex items-center gap-2"><label for="ingresses-per-page" class="text-xs font-semibold text-content-secondary">Rows</label><input type="hidden" name="page" value="1"><input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}"><input type="hidden" name="namespace" value="{{ selected_namespace }}"><input type="hidden" name="class" value="{{ selected_class }}"><input type="hidden" name="tls" value="{{ selected_tls }}"><input type="hidden" name="search" value="{{ search }}"><input type="hidden" name="partial_mode" value="inventory_scope"><select id="ingresses-per-page" name="per_page" aria-label="Rows Per Page" data-kaori-auto-submit class="{{ pagination_ui.page_size_classes() }}">{% for size in pagination.allowed_per_page %}<option value="{{ size }}" {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}</select></form></div>
-    <div class="flex flex-wrap items-center gap-2">{% set pagination_params={'cluster_id': selected_cluster_id, 'namespace': selected_namespace, 'class': selected_class, 'tls': selected_tls, 'search': search, 'per_page': pagination.per_page, 'partial_mode': 'table_content'} %}{% if pagination.has_prev %}{% set prev_url=url_for('inventory.ingresses', cluster_id=selected_cluster_id, namespace=selected_namespace, class=selected_class, tls=selected_tls, search=search, per_page=pagination.per_page, partial_mode='table_content', page=pagination.prev_page) %}<a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#ingresses-table-content" hx-swap="innerHTML" hx-indicator="#ingresses-table-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>{% else %}<span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>{% endif %}{{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, endpoint='inventory.ingresses', query_params=pagination_params, hx_target='#ingresses-table-content', hx_indicator='#ingresses-table-loading') }}{% if pagination.has_next %}{% set next_url=url_for('inventory.ingresses', cluster_id=selected_cluster_id, namespace=selected_namespace, class=selected_class, tls=selected_tls, search=search, per_page=pagination.per_page, partial_mode='table_content', page=pagination.next_page) %}<a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#ingresses-table-content" hx-swap="innerHTML" hx-indicator="#ingresses-table-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>{% else %}<span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>{% endif %}</div>
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <p>Showing <span class="font-semibold text-content-primary">{{ pagination.start_item }}</span>–<span class="font-semibold text-content-primary">{{ pagination.end_item }}</span> of <span class="font-semibold text-content-primary">{{ pagination.total_items }}</span> {{ 'Ingress' if pagination.total_items == 1 else 'Ingresses' }}</p>
+        <form hx-get="{{ url_for('inventory.ingresses') }}" hx-target="#ingresses-table-content" hx-swap="innerHTML" hx-indicator="#ingresses-table-loading" class="flex items-center gap-2">
+            <label for="ingresses-per-page" class="text-xs font-semibold text-content-secondary">Rows</label>
+            <input type="hidden" name="page" value="1">
+            <input type="hidden" name="cluster_id" value="{{ selected_cluster_id }}">
+            <input type="hidden" name="namespace" value="{{ selected_namespace }}">
+            <input type="hidden" name="class" value="{{ selected_class }}">
+            <input type="hidden" name="tls" value="{{ selected_tls }}">
+            <input type="hidden" name="search" value="{{ search }}">
+            <input type="hidden" name="partial_mode" value="table_content">
+            <select id="ingresses-per-page" name="per_page" aria-label="Rows Per Page" data-kaori-auto-submit class="{{ pagination_ui.page_size_classes() }}">
+                {% for size in pagination.allowed_per_page %}<option value="{{ size }}" {% if pagination.per_page == size %}selected{% endif %}>{{ size }}</option>{% endfor %}
+            </select>
+        </form>
+    </div>
+    <div class="flex flex-wrap items-center gap-2">
+        {% set pagination_params={'cluster_id': selected_cluster_id, 'namespace': selected_namespace, 'class': selected_class, 'tls': selected_tls, 'search': search, 'per_page': pagination.per_page, 'partial_mode': 'table_content'} %}
+        {% if pagination.has_prev %}
+            {% set prev_url=url_for('inventory.ingresses', cluster_id=selected_cluster_id, namespace=selected_namespace, class=selected_class, tls=selected_tls, search=search, per_page=pagination.per_page, partial_mode='table_content', page=pagination.prev_page) %}
+            <a href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#ingresses-table-content" hx-swap="innerHTML" hx-indicator="#ingresses-table-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</a>
+        {% else %}
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}"><i data-lucide="chevron-left" class="h-4 w-4"></i>Previous</span>
+        {% endif %}
+        {{ pagination_ui.numeric_pages(pagination.page, pagination.total_pages, endpoint='inventory.ingresses', query_params=pagination_params, hx_target='#ingresses-table-content', hx_indicator='#ingresses-table-loading') }}
+        {% if pagination.has_next %}
+            {% set next_url=url_for('inventory.ingresses', cluster_id=selected_cluster_id, namespace=selected_namespace, class=selected_class, tls=selected_tls, search=search, per_page=pagination.per_page, partial_mode='table_content', page=pagination.next_page) %}
+            <a href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#ingresses-table-content" hx-swap="innerHTML" hx-indicator="#ingresses-table-loading" class="{{ pagination_ui.navigation_classes(disabled=false) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></a>
+        {% else %}
+            <span class="{{ pagination_ui.navigation_classes(disabled=true) }}">Next<i data-lucide="chevron-right" class="h-4 w-4"></i></span>
+        {% endif %}
+    </div>
 </footer>

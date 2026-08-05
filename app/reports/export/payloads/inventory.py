@@ -8,6 +8,11 @@ from typing import Any
 from app.common.inventory_generation import filter_current_generation
 from app.extensions.db import db
 from app.inventory.formatting import format_kubernetes_size
+from app.inventory.resources.ingress_semantics import (
+    host_presentation as ingress_host_presentation,
+    ingress_class_presentation,
+    publication_presentation as ingress_publication_presentation,
+)
 from app.inventory.resources.service_semantics import (
     access_model as service_access_model,
     backend_registration as service_backend_registration,
@@ -258,20 +263,55 @@ def _service_row(item: ServiceInventory, cluster_name: str, environment: str) ->
 
 def _ingress_row(item: IngressInventory, cluster_name: str, environment: str) -> dict[str, Any]:
     details = item.details or {}
+    ingress_class, _ = ingress_class_presentation(
+        item.ingress_class,
+        details.get('ingress_class_source'),
+    )
+    host_label, host_supporting, host_count = ingress_host_presentation(details)
+    publication = ingress_publication_presentation(details)
+    routes = [row for row in (item.backend_paths or []) if isinstance(row, dict)]
+    service_backends = {
+        str(row.get('service_name'))
+        for row in routes
+        if row.get('backend_type') == 'Service' and row.get('service_name')
+    }
+    resource_backends = sum(1 for row in routes if row.get('backend_type') == 'Resource')
+    explicit_hosts = [str(value) for value in (details.get('hosts') or []) if value]
+    explicit_hosts_label = (
+        ', '.join(explicit_hosts)
+        if explicit_hosts
+        else ('Not Reported' if details.get('specification_evidence_reported') is False else 'Not Configured')
+    )
+    tls_entries = [row for row in (details.get('tls') or []) if isinstance(row, dict)]
+    tls_secrets = {str(row.get('secret_name')) for row in tls_entries if row.get('secret_name')}
+    tls_hosts = {str(host) for row in tls_entries for host in (row.get('hosts') or []) if host}
     return {
-        'status': 'TLS Enabled' if item.tls_enabled else 'TLS Disabled',
+        'status': publication['label'],
         'cluster': cluster_name,
         'environment': _text(environment, 'Not Available'),
         'namespace': item.namespace,
         'name': item.ingress_name,
-        'resource_type': _text(item.ingress_class, 'Default Class'),
-        'ingress_class': _text(item.ingress_class, 'Default Class'),
-        'host': _text(item.host, 'Not Available'),
-        'address': _text(item.address, 'Not Available'),
+        'resource_type': ingress_class,
+        'ingress_class': ingress_class,
+        'ingress_class_source': _text(details.get('ingress_class_source'), 'Not Reported'),
+        'host_scope': host_label,
+        'host_scope_supporting': host_supporting,
+        'host_count': host_count,
+        'hosts': explicit_hosts_label,
+        'all_host_rule_count': int(details.get('hostless_rule_count') or 0),
+        'publication_status': publication['label'],
+        'addresses': ', '.join(publication['addresses']) if publication['addresses'] else publication['address'],
+        'address_count': len(publication['addresses']) if publication['reported'] else None,
         'tls_enabled': bool(item.tls_enabled),
-        'backend_count': len(item.backend_paths or []),
-        'backend_paths': item.backend_paths or [],
-        'tls_secret_count': len(details.get('tls') or details.get('tls_secrets') or []),
+        'tls_status': (
+            'TLS Referenced' if tls_secrets else ('TLS Declared · No Secret Reference' if tls_entries else 'No TLS Declaration')
+        ),
+        'tls_secret_count': len(tls_secrets),
+        'tls_hosts': ', '.join(sorted(tls_hosts)) or 'Not Configured',
+        'backend_count': len(routes),
+        'service_backend_count': len(service_backends),
+        'resource_backend_count': resource_backends,
+        'backend_paths': routes,
         'created_at': item.created_at,
         'collected_at': item.collected_at,
     }
@@ -361,8 +401,11 @@ _INVENTORY_REPORT_CONFIG: dict[str, dict[str, Any]] = {
         'model': IngressInventory,
         'asset_label': 'Ingresses',
         'row_builder': _ingress_row,
-        'status_builder': lambda item: 'TLS Enabled' if item.tls_enabled else 'TLS Disabled',
-        'type_builder': lambda item: _text(item.ingress_class, 'Default Class'),
+        'status_builder': lambda item: ingress_publication_presentation(item.details or {})['label'],
+        'type_builder': lambda item: ingress_class_presentation(
+            item.ingress_class,
+            (item.details or {}).get('ingress_class_source'),
+        )[0],
     },
     'configuration_inventory': {
         'model': ConfigurationInventory,

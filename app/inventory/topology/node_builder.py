@@ -7,6 +7,11 @@ from flask import url_for
 
 from app.cluster.constants import get_environment_label
 from app.integrations.kubernetes.resolver import server_for_cluster
+from app.inventory.resources.ingress_semantics import (
+    host_presentation as ingress_host_presentation,
+    ingress_class_presentation,
+    publication_presentation as ingress_publication_presentation,
+)
 from app.inventory.topology.contracts import (
     TopologyGraphState,
     TopologyNodeSpec,
@@ -231,24 +236,34 @@ class TopologyNodeBuilder:
             cluster = self.records.cluster_by_id[item.cluster_id]
             element_id = f'ingress:{item.id}'
             self.state.ingress_node_ids[(item.cluster_id, item.namespace, item.ingress_name)] = element_id
+            details = item.details or {}
+            ingress_class, _ = ingress_class_presentation(
+                item.ingress_class,
+                details.get('ingress_class_source'),
+            )
+            host_scope, _, _ = ingress_host_presentation(details)
+            publication = ingress_publication_presentation(details)
+            has_routes = bool(item.backend_paths)
+            status = publication['label'] if has_routes else 'No Backend Routes'
+            tone = publication['tone'] if has_routes else 'warning'
             self._append(
                 TopologyNodeSpec(
                     element_id=element_id,
                     label=item.ingress_name,
                     resource_type='ingress',
                     kind='Ingress',
-                    status='Configured' if item.backend_paths else 'No Backends',
-                    status_tone='info' if item.backend_paths else 'warning',
+                    status=status,
+                    status_tone=tone,
                     cluster_id=item.cluster_id,
                     cluster_name=cluster.name,
                     namespace=item.namespace,
                     parent=parent,
                     fields=[
-                        field('Host', item.host),
-                        field('Ingress Class', item.ingress_class),
-                        field('Address', item.address),
-                        field('TLS Enabled', item.tls_enabled),
-                        field('Backend Paths', len(item.backend_paths or []), empty='0'),
+                        field('Host Scope', host_scope),
+                        field('Ingress Class', ingress_class),
+                        field('Publication', publication['address']),
+                        field('TLS Referenced', item.tls_enabled),
+                        field('Backend Routes', len(item.backend_paths or []), empty='0'),
                     ],
                     collected_at=item.collected_at,
                     action_url=url_for(
